@@ -18,10 +18,12 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Store, Phone, Mail, Calendar } from 'lucide-react';
+import { Store, Phone, Mail, Calendar, Eye } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 export default function MerchantsManagement() {
   const utils = trpc.useUtils();
+  const [, setLocation] = useLocation();
   const { data: merchants, isLoading } = trpc.merchants.list.useQuery();
   
   const updateStatusMutation = trpc.merchants.updateStatus.useMutation({
@@ -138,7 +140,8 @@ export default function MerchantsManagement() {
                     <TableHead>الباقة</TableHead>
                     <TableHead>الحالة</TableHead>
                     <TableHead>تاريخ التسجيل</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead>تغيير الحالة</TableHead>
+                    <TableHead>عرض التفاصيل</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -198,6 +201,16 @@ export default function MerchantsManagement() {
                             <SelectItem value="suspended">معلق</SelectItem>
                           </SelectContent>
                         </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setLocation(`/admin/merchants/${merchant.id}`)}
+                        >
+                          <Eye className="h-4 w-4 ml-2" />
+                          عرض التفاصيل
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

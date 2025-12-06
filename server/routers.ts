@@ -90,6 +90,28 @@ export const appRouter = router({
         await db.updateMerchant(input.merchantId, { status: input.status });
         return { success: true };
       }),
+
+    // Get merchant by ID (Admin only)
+    getById: adminProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getMerchantById(input.merchantId);
+      }),
+
+    // Get merchant subscriptions (Admin only)
+    getSubscriptions: adminProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input }) => {
+        const subscription = await db.getActiveSubscriptionByMerchantId(input.merchantId);
+        return subscription ? [subscription] : [];
+      }),
+
+    // Get merchant campaigns (Admin only)
+    getCampaigns: adminProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getCampaignsByMerchantId(input.merchantId);
+      }),
   }),
 
   // Campaign Management
