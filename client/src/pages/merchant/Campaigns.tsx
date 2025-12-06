@@ -27,6 +27,16 @@ export default function Campaigns() {
     },
   });
 
+  const sendMutation = trpc.campaigns.send.useMutation({
+    onSuccess: () => {
+      toast.success('تم بدء إرسال الحملة بنجاح');
+      refetch();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل إرسال الحملة');
+    },
+  });
+
   const handleDelete = async (id: number) => {
     if (confirm('هل أنت متأكد من حذف هذه الحملة؟')) {
       await deleteMutation.mutateAsync({ id });
@@ -166,6 +176,15 @@ export default function Campaigns() {
                         
                         {campaign.status === 'draft' && (
                           <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => sendMutation.mutateAsync({ id: campaign.id })}
+                              disabled={sendMutation.isPending}
+                              title="إرسال الحملة الآن"
+                            >
+                              <Send className="w-4 h-4 text-green-600" />
+                            </Button>
                             <Button
                               size="sm"
                               variant="ghost"

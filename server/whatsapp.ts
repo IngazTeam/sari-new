@@ -363,3 +363,50 @@ export async function sendTypingIndicator(
     console.error('Error sending typing indicator:', error);
   }
 }
+
+
+/**
+ * Send campaign messages to multiple recipients with random delay
+ * @param recipients Array of phone numbers (format: 966XXXXXXXXX@c.us)
+ * @param message Text message to send
+ * @param imageUrl Optional image URL to send with message
+ * @param minDelay Minimum delay in seconds (default: 3)
+ * @param maxDelay Maximum delay in seconds (default: 6)
+ * @returns Array of results for each recipient
+ */
+export async function sendCampaign(
+  recipients: string[],
+  message: string,
+  imageUrl?: string,
+  minDelay: number = 3,
+  maxDelay: number = 6
+): Promise<Array<{ phone: string; success: boolean; error?: string }>> {
+  const results: Array<{ phone: string; success: boolean; error?: string }> = [];
+
+  for (const phone of recipients) {
+    try {
+      // Send message (with image if provided)
+      if (imageUrl) {
+        await sendImageMessage(phone, imageUrl, message);
+      } else {
+        await sendTextMessage(phone, message);
+      }
+
+      results.push({ phone, success: true });
+
+      // Random delay between messages (3-6 seconds by default)
+      if (recipients.indexOf(phone) < recipients.length - 1) {
+        const delay = Math.floor(Math.random() * (maxDelay - minDelay + 1) + minDelay) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    } catch (error) {
+      results.push({
+        phone,
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+
+  return results;
+}

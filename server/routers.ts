@@ -355,7 +355,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Delete campaign
+      // Delete campaign
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
@@ -370,15 +370,69 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN' });
         }
 
-        // Can only delete draft campaigns
-        if (campaign.status !== 'draft') {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Can only delete draft campaigns' });
+        // Mark campaign as failed to hide it (soft delete)
+        await db.updateCampaign(input.id, { status: 'failed' });
+        return { success: true };
+      }),
+
+    // Send campaign
+    send: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const campaign = await db.getCampaignById(input.id);
+        if (!campaign) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
         }
 
-        // Note: We don't have a delete function in db.ts, so we'll update status instead
-        await db.updateCampaign(input.id, { status: 'failed' }); // Mark as failed to hide it
+        // Check ownership
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant || campaign.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
 
-        return { success: true };
+        // Check if campaign is already sent or in progress
+        if (campaign.status === 'completed' || campaign.status === 'sending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign already sent or in progress' });
+        }
+
+        // Update status to sending
+        await db.updateCampaign(input.id, { status: 'sending' });
+
+        // Parse recipients from targetAudience (assuming JSON array of phone numbers)
+        let recipients: string[] = [];
+        try {
+          if (campaign.targetAudience) {
+            recipients = JSON.parse(campaign.targetAudience);
+          }
+        } catch (error) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid target audience format' });
+        }
+
+        if (recipients.length === 0) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No recipients found' });
+        }
+
+        // Send campaign in background
+        const whatsapp = await import('./whatsapp');
+        whatsapp.sendCampaign(
+          recipients,
+          campaign.message,
+          campaign.imageUrl || undefined
+        ).then(async (results) => {
+          // Count successes
+          const successCount = results.filter((r: any) => r.success).length;
+          
+          // Update campaign status
+          await db.updateCampaign(input.id, {
+            status: 'completed',
+            sentCount: successCount,
+          });
+        }).catch(async (error) => {
+          console.error('Error sending campaign:', error);
+          await db.updateCampaign(input.id, { status: 'failed' });
+        });
+
+        return { success: true, message: 'Campaign is being sent' };
       }),
 
     // Get all campaigns (Admin only)
