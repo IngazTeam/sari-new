@@ -11,6 +11,8 @@ import Home from "./pages/Home";
 import MerchantDashboard from "./pages/merchant/Dashboard";
 import Campaigns from "./pages/merchant/Campaigns";
 import NewCampaign from "./pages/merchant/NewCampaign";
+import Products from "./pages/merchant/Products";
+import UploadProducts from "./pages/merchant/UploadProducts";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -38,6 +40,18 @@ function Router() {
       <Route path="/merchant/campaigns/new">
         <DashboardLayout>
           <NewCampaign />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/products">
+        <DashboardLayout>
+          <Products />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/products/upload">
+        <DashboardLayout>
+          <UploadProducts />
         </DashboardLayout>
       </Route>
       
