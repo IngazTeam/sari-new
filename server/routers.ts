@@ -487,6 +487,68 @@ export const appRouter = router({
       }),
   }),
 
+  // WhatsApp Integration
+  whatsapp: router({
+    // Get QR Code for connection
+    getQRCode: protectedProcedure.mutation(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      const whatsapp = await import('./whatsapp');
+      return await whatsapp.getQRCode();
+    }),
+
+    // Get connection status
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      const whatsapp = await import('./whatsapp');
+      return await whatsapp.getConnectionStatus();
+    }),
+
+    // Send text message
+    sendMessage: protectedProcedure
+      .input(
+        z.object({
+          phoneNumber: z.string(),
+          message: z.string(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const whatsapp = await import('./whatsapp');
+        return await whatsapp.sendTextMessage(input.phoneNumber, input.message);
+      }),
+
+    // Send image message
+    sendImage: protectedProcedure
+      .input(
+        z.object({
+          phoneNumber: z.string(),
+          imageUrl: z.string(),
+          caption: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const whatsapp = await import('./whatsapp');
+        return await whatsapp.sendImageMessage(input.phoneNumber, input.imageUrl, input.caption);
+      }),
+  }),
+
   // Conversations
   conversations: router({
     // Get all conversations for current merchant

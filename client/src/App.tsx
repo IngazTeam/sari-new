@@ -14,6 +14,7 @@ import NewCampaign from "./pages/merchant/NewCampaign";
 import Products from "./pages/merchant/Products";
 import UploadProducts from "./pages/merchant/UploadProducts";
 import Conversations from "./pages/merchant/Conversations";
+import WhatsApp from "./pages/merchant/WhatsApp";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -59,6 +60,12 @@ function Router() {
       <Route path="/merchant/conversations">
         <DashboardLayout>
           <Conversations />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/whatsapp">
+        <DashboardLayout>
+          <WhatsApp />
         </DashboardLayout>
       </Route>
       

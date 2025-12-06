@@ -30,7 +30,8 @@ import {
   Package, 
   Megaphone,
   Settings,
-  ShieldCheck
+  ShieldCheck,
+  Smartphone
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -44,6 +45,7 @@ const getMerchantMenuItems = () => [
   { icon: Megaphone, label: "الحملات", path: "/merchant/campaigns" },
   { icon: Package, label: "المنتجات", path: "/merchant/products" },
   { icon: MessageSquare, label: "المحادثات", path: "/merchant/conversations" },
+  { icon: Smartphone, label: "ربط الواتساب", path: "/merchant/whatsapp" },
 ];
 
 const getAdminMenuItems = () => [

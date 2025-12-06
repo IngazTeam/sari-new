@@ -722,3 +722,33 @@ export async function createNotification(data: InsertNotification) {
   const result = await db.insert(notifications).values(data);
   return result;
 }
+
+
+// WhatsApp connection functions
+export async function getWhatsappConnectionByPhone(phoneNumber: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(whatsappConnections)
+    .where(eq(whatsappConnections.phoneNumber, phoneNumber))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function getConversationByCustomerPhone(merchantId: number, customerPhone: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.merchantId, merchantId), eq(conversations.customerPhone, customerPhone)))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : null;
+}
+
+

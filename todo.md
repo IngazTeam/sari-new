@@ -179,3 +179,17 @@
 - [x] دمج الإشعارات في DashboardLayout Header
 - [x] كتابة الاختبارات
 - [x] اختبار النظام
+
+
+## تكامل Green API للواتساب
+- [x] إنشاء ملف server/whatsapp.ts مع دوال Green API
+- [x] إضافة دالة getQRCode للحصول على QR Code
+- [x] إضافة دالة sendMessage لإرسال رسائل نصية
+- [x] إضافة دالة sendImage لإرسال صور
+- [x] إضافة دالة getConnectionStatus للتحقق من حالة الاتصال
+- [x] إضافة APIs في routers.ts لربط الواتساب
+- [x] إنشاء Webhook handler لاستقبال الرسائل الواردة
+- [x] إنشاء صفحة /merchant/whatsapp لربط الواتساب
+- [x] إضافة رابط في Sidebar
+- [x] كتابة الاختبارات
+- [x] اختبار التكامل الكامل
