@@ -32,7 +32,8 @@ import {
   Settings,
   ShieldCheck,
   Smartphone,
-  BarChart3
+  BarChart3,
+  CreditCard
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -47,6 +48,7 @@ const getMerchantMenuItems = () => [
   { icon: Package, label: "المنتجات", path: "/merchant/products" },
   { icon: MessageSquare, label: "المحادثات", path: "/merchant/conversations" },
   { icon: BarChart3, label: "التقارير", path: "/merchant/reports" },
+  { icon: CreditCard, label: "الاشتراكات", path: "/merchant/subscriptions" },
   { icon: Smartphone, label: "ربط الواتساب", path: "/merchant/whatsapp" },
   { icon: Settings, label: "الإعدادات", path: "/merchant/settings" },
 ];

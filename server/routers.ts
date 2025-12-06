@@ -148,6 +148,94 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getCampaignsByMerchantId(input.merchantId);
       }),
+
+    // Get current plan for merchant
+    getCurrentPlan: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+      if (!subscription) {
+        return null;
+      }
+
+      const plan = await db.getPlanById(subscription.planId);
+      return {
+        subscription,
+        plan,
+      };
+    }),
+
+    // Request plan upgrade
+    requestUpgrade: protectedProcedure
+      .input(z.object({ planId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Check if merchant is active
+        if (merchant.status !== 'active') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Merchant account is not active' });
+        }
+
+        // Get the requested plan
+        const plan = await db.getPlanById(input.planId);
+        if (!plan || !plan.isActive) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found or inactive' });
+        }
+
+        // Get current subscription
+        const currentSubscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+        
+        // If no current subscription, create new one
+        if (!currentSubscription) {
+          const startDate = new Date();
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + 30); // 30 days subscription
+
+          await db.createSubscription({
+            merchantId: merchant.id,
+            planId: input.planId,
+            status: 'active',
+            startDate,
+            endDate,
+          });
+
+          // Notify owner about new subscription
+          const { notifyOwner } = await import('./_core/notification');
+          await notifyOwner({
+            title: 'اشتراك جديد',
+            content: `التاجر ${merchant.businessName} اشترك في الباقة ${plan.nameAr}`,
+          });
+
+          return { success: true, message: 'تم الاشتراك بنجاح' };
+        }
+
+        // Check if trying to upgrade to same plan
+        if (currentSubscription.planId === input.planId) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'You are already subscribed to this plan' });
+        }
+
+        // Update subscription to new plan
+        await db.updateSubscription(currentSubscription.id, {
+          planId: input.planId,
+          startDate: new Date(),
+        });
+
+        // Notify owner about upgrade
+        const currentPlan = await db.getPlanById(currentSubscription.planId);
+        const { notifyOwner } = await import('./_core/notification');
+        await notifyOwner({
+          title: 'ترقية باقة',
+          content: `التاجر ${merchant.businessName} قام بالترقية من ${currentPlan?.nameAr} إلى ${plan.nameAr}`,
+        });
+
+        return { success: true, message: 'تم الترقية بنجاح' };
+      }),
   }),
 
   // Products Management
