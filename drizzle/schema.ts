@@ -193,6 +193,23 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 export type InsertSupportTicket = typeof supportTickets.$inferInsert;
 
 /**
+ * Notifications (الإشعارات) - system notifications for users
+ */
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(), // Reference to users table
+  type: mysqlEnum("type", ["info", "success", "warning", "error"]).default("info").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  message: text("message").notNull(),
+  link: varchar("link", { length: 500 }), // Optional link to related page
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
  * Payments (المدفوعات)
  */
 export const payments = mysqlTable("payments", {

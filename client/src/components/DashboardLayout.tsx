@@ -36,6 +36,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { NotificationBell } from "./NotificationBell";
 
 // Menu items based on user role
 const getMerchantMenuItems = () => [
@@ -278,6 +279,12 @@ function DashboardLayoutContent({
                 </div>
               </div>
             </div>
+            <NotificationBell />
+          </div>
+        )}
+        {!isMobile && (
+          <div className="flex border-b h-14 items-center justify-end bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+            <NotificationBell />
           </div>
         )}
         <main className="flex-1 p-4">{children}</main>

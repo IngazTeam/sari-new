@@ -15,6 +15,31 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const appRouter = router({
+  notifications: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getNotificationsByUserId(ctx.user.id);
+    }),
+    
+    unreadCount: protectedProcedure.query(async ({ ctx }) => {
+      return await db.getUnreadNotificationsCount(ctx.user.id);
+    }),
+    
+    markAsRead: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.markNotificationAsRead(input.id, ctx.user.id);
+      }),
+    
+    markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
+      return await db.markAllNotificationsAsRead(ctx.user.id);
+    }),
+    
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        return await db.deleteNotification(input.id, ctx.user.id);
+      }),
+  }),
   system: systemRouter,
   
   auth: router({

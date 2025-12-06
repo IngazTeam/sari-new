@@ -30,12 +30,15 @@ import {
   supportTickets,
   SupportTicket,
   InsertSupportTicket,
-  payments,
-  Payment,
-  InsertPayment,
   analytics,
   Analytics,
   InsertAnalytics,
+  notifications,
+  Notification,
+  InsertNotification,
+  payments,
+  Payment,
+  InsertPayment,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -649,4 +652,73 @@ export async function getAnalyticsByMerchantId(
   }
 
   return db.select().from(analytics).where(eq(analytics.merchantId, merchantId)).orderBy(desc(analytics.date));
+}
+
+
+// Notifications functions
+export async function getNotificationsByUserId(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50);
+}
+
+export async function getUnreadNotificationsCount(userId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  
+  const result = await db
+    .select()
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+  
+  return result.length;
+}
+
+export async function markNotificationAsRead(notificationId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
+  
+  return true;
+}
+
+export async function markAllNotificationsAsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(eq(notifications.userId, userId));
+  
+  return true;
+}
+
+export async function deleteNotification(notificationId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  
+  await db
+    .delete(notifications)
+    .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
+  
+  return true;
+}
+
+export async function createNotification(data: InsertNotification) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db.insert(notifications).values(data);
+  return result;
 }
