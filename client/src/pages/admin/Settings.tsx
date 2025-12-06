@@ -21,8 +21,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Settings as SettingsIcon, Plus, Pencil, Check, X, History, Clock } from 'lucide-react';
-import { useState } from 'react';
+import { Settings as SettingsIcon, Plus, Pencil, Check, X, History, Clock, Filter, RotateCcw } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
 interface PlanFormData {
@@ -39,9 +39,52 @@ interface PlanFormData {
 export default function Settings() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlanFormData | null>(null);
+  
+  // Filters state
+  const [filterPlanId, setFilterPlanId] = useState<number | 'all'>('all');
+  const [filterFieldName, setFilterFieldName] = useState<string>('all');
+  const [filterDateFrom, setFilterDateFrom] = useState<string>('');
+  const [filterDateTo, setFilterDateTo] = useState<string>('');
 
   const { data: plans, isLoading, refetch } = trpc.plans.list.useQuery();
   const { data: changeLogs, refetch: refetchLogs } = trpc.plans.getChangeLogs.useQuery({});
+  
+  // Filter logs
+  const filteredLogs = useMemo(() => {
+    if (!changeLogs) return [];
+    
+    return changeLogs.filter((log) => {
+      // Filter by plan
+      if (filterPlanId !== 'all' && log.planId !== filterPlanId) {
+        return false;
+      }
+      
+      // Filter by field name
+      if (filterFieldName !== 'all' && log.fieldName !== filterFieldName) {
+        return false;
+      }
+      
+      // Filter by date range
+      if (filterDateFrom) {
+        const logDate = new Date(log.createdAt);
+        const fromDate = new Date(filterDateFrom);
+        if (logDate < fromDate) {
+          return false;
+        }
+      }
+      
+      if (filterDateTo) {
+        const logDate = new Date(log.createdAt);
+        const toDate = new Date(filterDateTo);
+        toDate.setHours(23, 59, 59, 999); // End of day
+        if (logDate > toDate) {
+          return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [changeLogs, filterPlanId, filterFieldName, filterDateFrom, filterDateTo]);
   const { data: users } = trpc.auth.me.useQuery();
 
   const createMutation = trpc.plans.create.useMutation({
@@ -323,7 +366,100 @@ export default function Settings() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {changeLogs && changeLogs.length > 0 ? (
+          {/* Filters */}
+          <div className="mb-6 p-4 bg-muted/50 rounded-lg space-y-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Filter className="w-4 h-4" />
+              <h4 className="font-semibold">فلترة السجل</h4>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-4">
+              {/* Plan Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="filter-plan">الباقة</Label>
+                <select
+                  id="filter-plan"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                  value={filterPlanId}
+                  onChange={(e) => setFilterPlanId(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
+                >
+                  <option value="all">جميع الباقات</option>
+                  {plans?.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} - {plan.nameAr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Field Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="filter-field">نوع الحقل</Label>
+                <select
+                  id="filter-field"
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                  value={filterFieldName}
+                  onChange={(e) => setFilterFieldName(e.target.value)}
+                >
+                  <option value="all">جميع الحقول</option>
+                  <option value="priceMonthly">السعر الشهري</option>
+                  <option value="conversationLimit">حد المحادثات</option>
+                  <option value="voiceMessageLimit">حد الرسائل الصوتية</option>
+                  <option value="name">الرمز</option>
+                  <option value="nameAr">الاسم العربي</option>
+                  <option value="isActive">الحالة</option>
+                </select>
+              </div>
+
+              {/* Date From Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="filter-date-from">من تاريخ</Label>
+                <Input
+                  id="filter-date-from"
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                />
+              </div>
+
+              {/* Date To Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="filter-date-to">إلى تاريخ</Label>
+                <Input
+                  id="filter-date-to"
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Reset Button */}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilterPlanId('all');
+                  setFilterFieldName('all');
+                  setFilterDateFrom('');
+                  setFilterDateTo('');
+                }}
+              >
+                <RotateCcw className="w-4 h-4 ml-2" />
+                إعادة تعيين
+              </Button>
+            </div>
+          </div>
+
+          {/* Results Count */}
+          {changeLogs && changeLogs.length > 0 && (
+            <div className="mb-4 text-sm text-muted-foreground">
+              عرض {filteredLogs.length} من {changeLogs.length} سجل
+            </div>
+          )}
+
+          {filteredLogs.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -335,7 +471,7 @@ export default function Settings() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {changeLogs.map((log) => {
+                {filteredLogs.map((log) => {
                   const plan = plans?.find((p) => p.id === log.planId);
                   const fieldNameAr: Record<string, string> = {
                     priceMonthly: 'السعر الشهري',
