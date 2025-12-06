@@ -607,6 +607,99 @@ export const appRouter = router({
 
   // WhatsApp Integration
   whatsapp: router({
+    // Request WhatsApp connection
+    requestConnection: protectedProcedure
+      .input(z.object({
+        countryCode: z.string(),
+        phoneNumber: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Check if there's already a pending request
+        const existingRequest = await db.getWhatsAppConnectionRequestByMerchantId(merchant.id);
+        if (existingRequest && existingRequest.status === 'pending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'You already have a pending request' });
+        }
+
+        // Create new request
+        const fullNumber = `${input.countryCode}${input.phoneNumber}`;
+        const request = await db.createWhatsAppConnectionRequest({
+          merchantId: merchant.id,
+          countryCode: input.countryCode,
+          phoneNumber: input.phoneNumber,
+          fullNumber,
+          status: 'pending',
+        });
+
+        // Notify admin
+        const notifyOwner = await import('./_core/notification');
+        await notifyOwner.notifyOwner({
+          title: 'طلب ربط واتساب جديد',
+          content: `التاجر ${merchant.businessName} يطلب ربط رقم الواتساب: ${fullNumber}`,
+        });
+
+        return { success: true, request };
+      }),
+
+    // Get current connection request status
+    getRequestStatus: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getWhatsAppConnectionRequestByMerchantId(merchant.id);
+    }),
+
+    // Get all connection requests (Admin only)
+    listRequests: adminProcedure
+      .input(z.object({ status: z.enum(['pending', 'approved', 'rejected']).optional() }))
+      .query(async ({ input }) => {
+        return await db.getAllWhatsAppConnectionRequests(input.status);
+      }),
+
+    // Approve connection request (Admin only)
+    approveRequest: adminProcedure
+      .input(z.object({ requestId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const request = await db.getWhatsAppConnectionRequestById(input.requestId);
+        if (!request) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
+        }
+
+        if (request.status !== 'pending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request already processed' });
+        }
+
+        const userId = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
+        await db.approveWhatsAppConnectionRequest(input.requestId, userId);
+
+        return { success: true };
+      }),
+
+    // Reject connection request (Admin only)
+    rejectRequest: adminProcedure
+      .input(z.object({ requestId: z.number(), reason: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        const request = await db.getWhatsAppConnectionRequestById(input.requestId);
+        if (!request) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
+        }
+
+        if (request.status !== 'pending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request already processed' });
+        }
+
+        const userId = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
+        await db.rejectWhatsAppConnectionRequest(input.requestId, userId, input.reason);
+
+        return { success: true };
+      }),
+
     // Get QR Code for connection
     getQRCode: protectedProcedure.mutation(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);

@@ -261,3 +261,23 @@ export const planChangeLogs = mysqlTable("planChangeLogs", {
 
 export type PlanChangeLog = typeof planChangeLogs.$inferSelect;
 export type InsertPlanChangeLog = typeof planChangeLogs.$inferInsert;
+
+/**
+ * WhatsApp Connection Requests (طلبات ربط الواتساب)
+ */
+export const whatsappConnectionRequests = mysqlTable("whatsapp_connection_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(), // Reference to merchants table
+  countryCode: varchar("countryCode", { length: 10 }).notNull(), // e.g., "+966"
+  phoneNumber: varchar("phoneNumber", { length: 20 }).notNull(), // WhatsApp number without country code
+  fullNumber: varchar("fullNumber", { length: 30 }).notNull(), // Full number with country code
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  rejectionReason: text("rejectionReason"), // Reason for rejection if rejected
+  reviewedBy: int("reviewedBy"), // Admin user ID who reviewed the request
+  reviewedAt: timestamp("reviewedAt"), // When the request was reviewed
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WhatsAppConnectionRequest = typeof whatsappConnectionRequests.$inferSelect;
+export type InsertWhatsAppConnectionRequest = typeof whatsappConnectionRequests.$inferInsert;

@@ -29,6 +29,13 @@
       "when": 1765059284069,
       "tag": "0003_parallel_random",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1765061518967,
+      "tag": "0004_faulty_zombie",
+      "breakpoints": true
     }
   ]
 }

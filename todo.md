@@ -244,3 +244,19 @@
 - [x] إضافة الصفحة إلى DashboardLayout
 - [x] كتابة الاختبارات (8 اختبارات جديدة)
 - [x] اختبار الصفحة (67 اختبار ناجح)
+
+
+## تحسين صفحة ربط الواتساب
+- [x] إضافة جدول whatsapp_connection_requests في schema.ts
+- [x] إضافة دوال لإدارة طلبات الربط فيdb.ts
+- [x] إضافة API لإرسال طلب الربط (whatsapp.requestConnection)
+- [x] إضافة API لعرض طلبات الربط للمدير (whatsapp.listRequests)
+- [x] إضافة API لقبول/رفض الطلب (whatsapp.approveRequest, whatsapp.rejectRequest)
+- [x] تحسين صفحة /merchant/whatsapp
+- [x] إضافة اختيار مفتاح الدولة (10 دول عربية)
+- [x] تحسين واجهة إدخال رقم الواتساب
+- [x] عرض حالة الطلب (pending, approved, rejected)
+- [x] إنشاء صفحة /admin/whatsapp-requests لمراجعة الطلبات
+- [x] إضافة إشعار تلقائي للمدير عند طلب جديد
+- [x] كتابة الاختبارات (9 اختبارات جديدة)
+- [x] اختبار النظام الكامل (74 اختبار ناجح)

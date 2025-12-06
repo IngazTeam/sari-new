@@ -53,6 +53,7 @@ const getAdminMenuItems = () => [
   { icon: LayoutDashboard, label: "لوحة التحكم", path: "/admin/dashboard" },
   { icon: Users, label: "التجار", path: "/admin/merchants" },
   { icon: Megaphone, label: "الحملات", path: "/admin/campaigns" },
+  { icon: Smartphone, label: "طلبات الواتساب", path: "/admin/whatsapp-requests" },
   { icon: Settings, label: "الإعدادات", path: "/admin/settings" },
 ];
 

@@ -15,6 +15,9 @@ import {
   whatsappConnections,
   WhatsappConnection,
   InsertWhatsappConnection,
+  whatsappConnectionRequests,
+  WhatsAppConnectionRequest,
+  InsertWhatsAppConnectionRequest,
   products,
   Product,
   InsertProduct,
@@ -798,4 +801,97 @@ export async function getAllPlanChangeLogs(): Promise<PlanChangeLog[]> {
   if (!db) return [];
 
   return db.select().from(planChangeLogs).orderBy(desc(planChangeLogs.createdAt)).limit(100);
+}
+
+
+// ============================================
+// WhatsApp Connection Requests Management
+// ============================================
+
+export async function createWhatsAppConnectionRequest(request: InsertWhatsAppConnectionRequest): Promise<WhatsAppConnectionRequest | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(whatsappConnectionRequests).values(request);
+  const insertedId = Number(result[0].insertId);
+
+  const inserted = await db.select().from(whatsappConnectionRequests).where(eq(whatsappConnectionRequests.id, insertedId)).limit(1);
+  return inserted.length > 0 ? inserted[0] : undefined;
+}
+
+export async function getWhatsAppConnectionRequestById(id: number): Promise<WhatsAppConnectionRequest | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(whatsappConnectionRequests).where(eq(whatsappConnectionRequests.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getWhatsAppConnectionRequestByMerchantId(merchantId: number): Promise<WhatsAppConnectionRequest | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db
+    .select()
+    .from(whatsappConnectionRequests)
+    .where(eq(whatsappConnectionRequests.merchantId, merchantId))
+    .orderBy(desc(whatsappConnectionRequests.createdAt))
+    .limit(1);
+  
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getAllWhatsAppConnectionRequests(status?: "pending" | "approved" | "rejected"): Promise<WhatsAppConnectionRequest[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (status) {
+    return db
+      .select()
+      .from(whatsappConnectionRequests)
+      .where(eq(whatsappConnectionRequests.status, status))
+      .orderBy(desc(whatsappConnectionRequests.createdAt));
+  }
+
+  return db.select().from(whatsappConnectionRequests).orderBy(desc(whatsappConnectionRequests.createdAt));
+}
+
+export async function updateWhatsAppConnectionRequest(
+  id: number,
+  data: Partial<InsertWhatsAppConnectionRequest>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(whatsappConnectionRequests).set(data).where(eq(whatsappConnectionRequests.id, id));
+}
+
+export async function approveWhatsAppConnectionRequest(
+  id: number,
+  reviewedBy: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(whatsappConnectionRequests).set({
+    status: 'approved',
+    reviewedBy,
+    reviewedAt: new Date(),
+  }).where(eq(whatsappConnectionRequests.id, id));
+}
+
+export async function rejectWhatsAppConnectionRequest(
+  id: number,
+  reviewedBy: number,
+  rejectionReason: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(whatsappConnectionRequests).set({
+    status: 'rejected',
+    reviewedBy,
+    reviewedAt: new Date(),
+    rejectionReason,
+  }).where(eq(whatsappConnectionRequests.id, id));
 }

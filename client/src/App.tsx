@@ -23,6 +23,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import MerchantsManagement from "./pages/admin/Merchants";
 import MerchantDetails from "./pages/admin/MerchantDetails";
 import AdminSettings from "./pages/admin/Settings";
+import WhatsAppRequests from "./pages/admin/WhatsAppRequests";
 
 function Router() {
   return (
@@ -106,6 +107,12 @@ function Router() {
       <Route path="/admin/settings">
         <DashboardLayout>
           <AdminSettings />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/whatsapp-requests">
+        <DashboardLayout>
+          <WhatsAppRequests />
         </DashboardLayout>
       </Route>
       
