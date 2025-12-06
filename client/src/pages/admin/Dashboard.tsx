@@ -87,7 +87,7 @@ export default function AdminDashboard() {
           <CardContent>
             {merchants && merchants.length > 0 ? (
               <div className="space-y-4">
-                {merchants.slice(0, 5).map((merchant) => (
+                {merchants.slice(0, 5).map((merchant: any) => (
                   <div key={merchant.id} className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{merchant.businessName}</p>
@@ -166,7 +166,7 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">نشط</p>
                   <p className="text-2xl font-bold text-green-700">
-                    {merchants?.filter(m => m.status === 'active').length || 0}
+                    {merchants?.filter((m: any) => m.status === 'active').length || 0}
                   </p>
                 </div>
                 <Users className="w-8 h-8 text-green-600" />
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">قيد المراجعة</p>
                   <p className="text-2xl font-bold text-yellow-700">
-                    {merchants?.filter(m => m.status === 'pending').length || 0}
+                    {merchants?.filter((m: any) => m.status === 'pending').length || 0}
                   </p>
                 </div>
                 <Users className="w-8 h-8 text-yellow-600" />
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
                 <div>
                   <p className="text-sm text-muted-foreground">معلق</p>
                   <p className="text-2xl font-bold text-red-700">
-                    {merchants?.filter(m => m.status === 'suspended').length || 0}
+                    {merchants?.filter((m: any) => m.status === 'suspended').length || 0}
                   </p>
                 </div>
                 <Users className="w-8 h-8 text-red-600" />

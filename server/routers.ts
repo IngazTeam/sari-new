@@ -77,7 +77,7 @@ export const appRouter = router({
 
     // Get all merchants (Admin only)
     list: adminProcedure.query(async () => {
-      return db.getAllMerchants();
+      return await db.getAllMerchants();
     }),
 
     // Update merchant status (Admin only)
