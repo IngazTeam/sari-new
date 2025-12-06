@@ -281,3 +281,21 @@ export const whatsappConnectionRequests = mysqlTable("whatsapp_connection_reques
 
 export type WhatsAppConnectionRequest = typeof whatsappConnectionRequests.$inferSelect;
 export type InsertWhatsAppConnectionRequest = typeof whatsappConnectionRequests.$inferInsert;
+
+/**
+ * Payment Gateways Configuration (إعدادات بوابات الدفع)
+ */
+export const paymentGateways = mysqlTable("payment_gateways", {
+  id: int("id").autoincrement().primaryKey(),
+  gateway: mysqlEnum("gateway", ["tap", "paypal"]).notNull().unique(), // Gateway name
+  isEnabled: boolean("isEnabled").default(false).notNull(), // Whether the gateway is enabled
+  publicKey: text("publicKey"), // Public/Publishable key
+  secretKey: text("secretKey"), // Secret/Private key (encrypted)
+  webhookSecret: text("webhookSecret"), // Webhook secret for verification
+  testMode: boolean("testMode").default(true).notNull(), // Sandbox/Test mode
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PaymentGateway = typeof paymentGateways.$inferSelect;
+export type InsertPaymentGateway = typeof paymentGateways.$inferInsert;

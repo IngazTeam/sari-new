@@ -292,3 +292,22 @@
 - [x] إضافة رابط في DashboardLayout
 - [x] كتابة الاختبارات (5 اختبارات جديدة)
 - [x] اختبار الصفحة (86 اختبار ناجح)
+
+
+## تكامل بوابات الدفع (Payment Gateways)
+- [x] إضافة جدول payment_gateways في schema.ts
+- [x] إضافة دوال إدارة بوابات الدفع في db.ts
+- [x] إضافة دوال إدارة المدفوعات في db.ts
+- [x] إنشاء صفحة /admin/payment-gateways لإدارة المفاتيح
+- [x] تكامل Tap Payment API (server/payment/tap.ts)
+- [x] تكامل PayPal API (server/payment/paypal.ts)
+- [x] إضافة APIs لإنشاء جلسة دفع (payments.createSession)
+- [x] إضافة APIs للتحقق من حالة الدفع (payments.verifyPayment)
+- [x] إنشاء صفحة /merchant/checkout لاختيار طريقة الدفع
+- [x] تحديث حالة الاشتراك تلقائياً بعد الدفع الناجح
+- [x] إضافة صفحة نجاح الدفع (/merchant/payment/success)
+- [x] إضافة صفحة فشل الدفع (/merchant/payment/cancel)
+- [x] ربط صفحة الاشتراكات بصفحة الدفع
+- [ ] إضافة Webhooks لاستقبال إشعارات الدفع (اختياري)
+- [ ] كتابة الاختبارات
+- [ ] اختبار النظام الكامل

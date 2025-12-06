@@ -956,6 +956,166 @@ export const appRouter = router({
         return db.getMessagesByConversationId(input.conversationId);
       }),
   }),
+
+  // Payments Router
+  payments: router({ createSession: protectedProcedure
+      .input(z.object({
+        planId: z.number(),
+        gateway: z.enum(['tap', 'paypal']),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Get merchant
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Get plan
+        const plan = await db.getPlanById(input.planId);
+        if (!plan) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+        }
+
+        // Create subscription first
+        const startDate = new Date();
+        const endDate = new Date();
+        endDate.setDate(endDate.getDate() + 30); // 30 days subscription
+
+        const subscription = await db.createSubscription({
+          merchantId: merchant.id,
+          planId: plan.id,
+          status: 'pending',
+          startDate,
+          endDate,
+          autoRenew: true,
+        });
+
+        if (!subscription) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create subscription' });
+        }
+
+        // Prepare payment parameters
+        const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/merchant/payment/success?subscriptionId=${subscription.id}`;
+        const cancelUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/merchant/payment/cancel?subscriptionId=${subscription.id}`;
+
+        // Create payment session based on gateway
+        if (input.gateway === 'tap') {
+          const { createTapCharge } = await import('./payment/tap');
+          const result = await createTapCharge({
+            amount: plan.priceMonthly,
+            currency: 'SAR',
+            merchantId: merchant.id,
+            subscriptionId: subscription.id,
+            planId: plan.id,
+            customerEmail: ctx.user.email || '',
+            customerPhone: merchant.phone || '',
+            returnUrl,
+          });
+
+          if (!result.success) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to create payment' });
+          }
+
+          return {
+            success: true,
+            paymentUrl: result.paymentUrl,
+            subscriptionId: subscription.id,
+          };
+        } else if (input.gateway === 'paypal') {
+          const { createPayPalOrder } = await import('./payment/paypal');
+          const result = await createPayPalOrder({
+            amount: plan.priceMonthly,
+            currency: 'USD', // PayPal typically uses USD
+            merchantId: merchant.id,
+            subscriptionId: subscription.id,
+            planId: plan.id,
+            returnUrl,
+            cancelUrl,
+          });
+
+          if (!result.success) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to create payment' });
+          }
+
+          return {
+            success: true,
+            paymentUrl: result.paymentUrl,
+            subscriptionId: subscription.id,
+          };
+        }
+
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid payment gateway' });
+      }),
+
+    verifyPayment: protectedProcedure
+      .input(z.object({
+        subscriptionId: z.number(),
+        transactionId: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+
+        // Get payment
+        const payment = await db.getPaymentByTransactionId(input.transactionId);
+        if (!payment || payment.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
+        }
+
+        // Verify based on gateway
+        if (payment.paymentMethod === 'tap') {
+          const { verifyTapPayment } = await import('./payment/tap');
+          const result = await verifyTapPayment(input.transactionId);
+          
+          if (result.success && result.status === 'CAPTURED') {
+            // Update subscription status
+            await db.updateSubscription(input.subscriptionId, { status: 'active' });
+            // Update merchant subscription
+            await db.updateMerchant(merchant.id, { subscriptionId: input.subscriptionId });
+          }
+
+          return result;
+        } else if (payment.paymentMethod === 'paypal') {
+          const { capturePayPalOrder } = await import('./payment/paypal');
+          const result = await capturePayPalOrder(input.transactionId);
+          
+          if (result.success && result.status === 'COMPLETED') {
+            await db.updateSubscription(input.subscriptionId, { status: 'active' });
+            await db.updateMerchant(merchant.id, { subscriptionId: input.subscriptionId });
+          }
+
+          return result;
+        }
+
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid payment method' });
+      }),
+  }),
+
+  // Payment Gateways Router (Admin only)
+  paymentGateways: router({
+    list: adminProcedure.query(async () => {
+      return await db.getAllPaymentGateways();
+    }),
+
+    upsert: adminProcedure
+      .input(z.object({
+        gateway: z.enum(['tap', 'paypal']),
+        isEnabled: z.boolean(),
+        publicKey: z.string().optional(),
+        secretKey: z.string().optional(),
+        webhookSecret: z.string().optional(),
+        testMode: z.boolean(),
+      }))
+      .mutation(async ({ input }) => {
+        const result = await db.createOrUpdatePaymentGateway(input);
+        if (!result) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save payment gateway' });
+        }
+        return { success: true, gateway: result };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

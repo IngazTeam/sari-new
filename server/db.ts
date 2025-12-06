@@ -45,6 +45,9 @@ import {
   planChangeLogs,
   PlanChangeLog,
   InsertPlanChangeLog,
+  paymentGateways,
+  PaymentGateway,
+  InsertPaymentGateway,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -894,4 +897,98 @@ export async function rejectWhatsAppConnectionRequest(
     reviewedAt: new Date(),
     rejectionReason,
   }).where(eq(whatsappConnectionRequests.id, id));
+}
+
+
+// ============================================
+// Payment Gateways Functions
+// ============================================
+
+export async function createOrUpdatePaymentGateway(gateway: InsertPaymentGateway): Promise<PaymentGateway | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  // Check if gateway already exists
+  const existing = await db.select().from(paymentGateways).where(eq(paymentGateways.gateway, gateway.gateway)).limit(1);
+
+  if (existing.length > 0) {
+    // Update existing gateway
+    await db.update(paymentGateways)
+      .set({
+        ...gateway,
+        updatedAt: new Date(),
+      })
+      .where(eq(paymentGateways.gateway, gateway.gateway));
+    
+    return getPaymentGatewayByName(gateway.gateway);
+  } else {
+    // Create new gateway
+    const result = await db.insert(paymentGateways).values(gateway);
+    const insertedId = Number(result[0].insertId);
+    return getPaymentGatewayById(insertedId);
+  }
+}
+
+export async function getPaymentGatewayById(id: number): Promise<PaymentGateway | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(paymentGateways).where(eq(paymentGateways.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getPaymentGatewayByName(gateway: 'tap' | 'paypal'): Promise<PaymentGateway | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(paymentGateways).where(eq(paymentGateways.gateway, gateway)).limit(1);
+  return result[0];
+}
+
+export async function getAllPaymentGateways(): Promise<PaymentGateway[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(paymentGateways);
+}
+
+export async function getEnabledPaymentGateways(): Promise<PaymentGateway[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(paymentGateways).where(eq(paymentGateways.isEnabled, true));
+}
+
+// ============================================
+// Additional Payment Functions
+// ============================================
+
+export async function getPaymentByTransactionId(transactionId: string): Promise<Payment | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(payments).where(eq(payments.transactionId, transactionId)).limit(1);
+  return result[0];
+}
+
+export async function updatePaymentStatus(id: number, status: 'pending' | 'completed' | 'failed' | 'refunded', transactionId?: string): Promise<Payment | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const updateData: any = {
+    status,
+    updatedAt: new Date(),
+  };
+
+  if (status === 'completed') {
+    updateData.paidAt = new Date();
+  }
+
+  if (transactionId) {
+    updateData.transactionId = transactionId;
+  }
+
+  await db.update(payments).set(updateData).where(eq(payments.id, id));
+
+  return getPaymentById(id);
 }

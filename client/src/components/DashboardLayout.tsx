@@ -58,6 +58,7 @@ const getAdminMenuItems = () => [
   { icon: Users, label: "التجار", path: "/admin/merchants" },
   { icon: Megaphone, label: "الحملات", path: "/admin/campaigns" },
   { icon: Smartphone, label: "طلبات الواتساب", path: "/admin/whatsapp-requests" },
+  { icon: CreditCard, label: "بوابات الدفع", path: "/admin/payment-gateways" },
   { icon: Settings, label: "الإعدادات", path: "/admin/settings" },
 ];
 

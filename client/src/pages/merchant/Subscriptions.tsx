@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Crown, Zap, Rocket } from "lucide-react";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
 export default function Subscriptions() {
   const { data: currentPlan, isLoading: currentPlanLoading } = trpc.merchants.getCurrentPlan.useQuery();
@@ -45,12 +46,15 @@ export default function Subscriptions() {
     return colors[index % colors.length];
   };
 
+  const [, setLocation] = useLocation();
+
   const handleUpgrade = async (planId: number) => {
     if (currentPlanId === planId) {
       toast.info('أنت مشترك بالفعل في هذه الباقة');
       return;
     }
-    await upgradeMutation.mutateAsync({ planId });
+    // Redirect to checkout page
+    setLocation(`/merchant/checkout?planId=${planId}`);
   };
 
   return (

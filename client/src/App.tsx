@@ -19,6 +19,9 @@ import WhatsApp from "./pages/merchant/WhatsApp";
 import MerchantSettings from "./pages/merchant/Settings";
 import Reports from "./pages/merchant/Reports";
 import Subscriptions from "./pages/merchant/Subscriptions";
+import Checkout from "./pages/merchant/Checkout";
+import PaymentSuccess from "./pages/merchant/PaymentSuccess";
+import PaymentCancel from "./pages/merchant/PaymentCancel";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -26,6 +29,7 @@ import MerchantsManagement from "./pages/admin/Merchants";
 import MerchantDetails from "./pages/admin/MerchantDetails";
 import AdminSettings from "./pages/admin/Settings";
 import WhatsAppRequests from "./pages/admin/WhatsAppRequests";
+import PaymentGateways from "./pages/admin/PaymentGateways";
 
 function Router() {
   return (
@@ -98,6 +102,20 @@ function Router() {
           <Subscriptions />
         </DashboardLayout>
       </Route>
+
+      <Route path="/merchant/checkout">
+        <DashboardLayout>
+          <Checkout />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/payment/success">
+        <PaymentSuccess />
+      </Route>
+
+      <Route path="/merchant/payment/cancel">
+        <PaymentCancel />
+      </Route>
       
       {/* Admin Routes */}
       <Route path="/admin/dashboard">
@@ -118,6 +136,12 @@ function Router() {
         </DashboardLayout>
       </Route>
       
+      <Route path="/admin/payment-gateways">
+        <DashboardLayout>
+          <PaymentGateways />
+        </DashboardLayout>
+      </Route>
+
       <Route path="/admin/settings">
         <DashboardLayout>
           <AdminSettings />
