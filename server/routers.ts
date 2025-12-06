@@ -481,10 +481,63 @@ export const appRouter = router({
         features: z.string().optional(),
         isActive: z.boolean().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         const { id, ...updateData } = input;
+        
+        // Get old values before update
+        const oldPlan = await db.getPlanById(id);
+        if (!oldPlan) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+        }
+        
+        // Update plan
         await db.updatePlan(id, updateData);
+        
+        // Log changes
+        const changedBy = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
+        const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
+        
+        if (updateData.priceMonthly !== undefined && updateData.priceMonthly !== oldPlan.priceMonthly) {
+          changes.push({ field: 'priceMonthly', oldValue: oldPlan.priceMonthly.toString(), newValue: updateData.priceMonthly.toString() });
+        }
+        if (updateData.conversationLimit !== undefined && updateData.conversationLimit !== oldPlan.conversationLimit) {
+          changes.push({ field: 'conversationLimit', oldValue: oldPlan.conversationLimit.toString(), newValue: updateData.conversationLimit.toString() });
+        }
+        if (updateData.voiceMessageLimit !== undefined && updateData.voiceMessageLimit !== oldPlan.voiceMessageLimit) {
+          changes.push({ field: 'voiceMessageLimit', oldValue: oldPlan.voiceMessageLimit.toString(), newValue: updateData.voiceMessageLimit.toString() });
+        }
+        if (updateData.name !== undefined && updateData.name !== oldPlan.name) {
+          changes.push({ field: 'name', oldValue: oldPlan.name, newValue: updateData.name });
+        }
+        if (updateData.nameAr !== undefined && updateData.nameAr !== oldPlan.nameAr) {
+          changes.push({ field: 'nameAr', oldValue: oldPlan.nameAr, newValue: updateData.nameAr });
+        }
+        if (updateData.isActive !== undefined && updateData.isActive !== oldPlan.isActive) {
+          changes.push({ field: 'isActive', oldValue: oldPlan.isActive.toString(), newValue: updateData.isActive.toString() });
+        }
+        
+        // Save change logs
+        for (const change of changes) {
+          await db.createPlanChangeLog({
+            planId: id,
+            changedBy,
+            fieldName: change.field,
+            oldValue: change.oldValue,
+            newValue: change.newValue,
+          });
+        }
+        
         return { success: true };
+      }),
+
+    // Get change logs (Admin only)
+    getChangeLogs: adminProcedure
+      .input(z.object({ planId: z.number().optional() }))
+      .query(async ({ input }) => {
+        if (input.planId) {
+          return db.getPlanChangeLogs(input.planId);
+        }
+        return db.getAllPlanChangeLogs();
       }),
   }),
 

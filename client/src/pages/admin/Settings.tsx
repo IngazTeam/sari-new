@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Settings as SettingsIcon, Plus, Pencil, Check, X } from 'lucide-react';
+import { Settings as SettingsIcon, Plus, Pencil, Check, X, History, Clock } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -41,6 +41,8 @@ export default function Settings() {
   const [editingPlan, setEditingPlan] = useState<PlanFormData | null>(null);
 
   const { data: plans, isLoading, refetch } = trpc.plans.list.useQuery();
+  const { data: changeLogs, refetch: refetchLogs } = trpc.plans.getChangeLogs.useQuery({});
+  const { data: users } = trpc.auth.me.useQuery();
 
   const createMutation = trpc.plans.create.useMutation({
     onSuccess: () => {
@@ -58,6 +60,7 @@ export default function Settings() {
     onSuccess: () => {
       toast.success('تم تحديث الباقة بنجاح');
       refetch();
+      refetchLogs();
       setIsDialogOpen(false);
       setEditingPlan(null);
     },
@@ -305,6 +308,82 @@ export default function Settings() {
               </CardContent>
             </Card>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Change Logs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="w-5 h-5" />
+            سجل التغييرات
+          </CardTitle>
+          <CardDescription>
+            تاريخ جميع التعديلات التي تمت على الباقات
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {changeLogs && changeLogs.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>الباقة</TableHead>
+                  <TableHead>الحقل</TableHead>
+                  <TableHead>القيمة القديمة</TableHead>
+                  <TableHead>القيمة الجديدة</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {changeLogs.map((log) => {
+                  const plan = plans?.find((p) => p.id === log.planId);
+                  const fieldNameAr: Record<string, string> = {
+                    priceMonthly: 'السعر الشهري',
+                    conversationLimit: 'حد المحادثات',
+                    voiceMessageLimit: 'حد الرسائل الصوتية',
+                    name: 'الرمز',
+                    nameAr: 'الاسم العربي',
+                    isActive: 'الحالة',
+                  };
+                  
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">
+                        {plan?.name || `Plan #${log.planId}`}
+                      </TableCell>
+                      <TableCell>{fieldNameAr[log.fieldName] || log.fieldName}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {log.oldValue || '-'}
+                      </TableCell>
+                      <TableCell className="font-semibold text-green-600">
+                        {log.newValue}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {new Date(log.createdAt).toLocaleString('ar-SA', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">لا توجد تغييرات بعد</h3>
+              <p className="text-muted-foreground">
+                سيتم عرض جميع التعديلات التي تتم على الباقات هنا
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

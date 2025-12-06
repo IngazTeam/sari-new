@@ -245,3 +245,19 @@ export const analytics = mysqlTable("analytics", {
 
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertAnalytics = typeof analytics.$inferInsert;
+
+/**
+ * Plan Change Logs (سجل تغييرات الباقات)
+ */
+export const planChangeLogs = mysqlTable("planChangeLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  planId: int("planId").notNull(),
+  changedBy: int("changedBy").notNull(), // User ID who made the change
+  fieldName: varchar("fieldName", { length: 100 }).notNull(), // priceMonthly, conversationLimit, etc.
+  oldValue: text("oldValue"), // Previous value
+  newValue: text("newValue").notNull(), // New value
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PlanChangeLog = typeof planChangeLogs.$inferSelect;
+export type InsertPlanChangeLog = typeof planChangeLogs.$inferInsert;

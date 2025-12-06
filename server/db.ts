@@ -39,6 +39,9 @@ import {
   payments,
   Payment,
   InsertPayment,
+  planChangeLogs,
+  PlanChangeLog,
+  InsertPlanChangeLog,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -752,3 +755,39 @@ export async function getConversationByCustomerPhone(merchantId: number, custome
 }
 
 
+// ============================================
+// Plan Change Logs Management
+// ============================================
+
+export async function createPlanChangeLog(log: InsertPlanChangeLog): Promise<PlanChangeLog | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(planChangeLogs).values(log);
+  const insertedId = Number(result[0].insertId);
+
+  const inserted = await db.select().from(planChangeLogs).where(eq(planChangeLogs.id, insertedId)).limit(1);
+  return inserted.length > 0 ? inserted[0] : undefined;
+}
+
+export async function getPlanChangeLogs(planId?: number): Promise<PlanChangeLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (planId) {
+    return db
+      .select()
+      .from(planChangeLogs)
+      .where(eq(planChangeLogs.planId, planId))
+      .orderBy(desc(planChangeLogs.createdAt));
+  }
+
+  return db.select().from(planChangeLogs).orderBy(desc(planChangeLogs.createdAt)).limit(100);
+}
+
+export async function getAllPlanChangeLogs(): Promise<PlanChangeLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(planChangeLogs).orderBy(desc(planChangeLogs.createdAt)).limit(100);
+}
