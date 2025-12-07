@@ -1,11 +1,79 @@
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, MessageSquare, TrendingUp, Clock, Package, Percent } from 'lucide-react';
+import { BarChart3, MessageSquare, TrendingUp, Clock, Package, FileDown, FileSpreadsheet } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function Analytics() {
   const [dateRange] = useState<{ start?: string; end?: string }>({});
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportPDF = trpc.messageAnalytics.exportPDF.useMutation();
+  const exportExcel = trpc.messageAnalytics.exportExcel.useMutation();
+
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportPDF.mutateAsync({
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+      });
+
+      // Convert base64 to blob and download
+      const byteCharacters = atob(result.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('تم تصدير التقرير PDF بنجاح');
+    } catch (error) {
+      toast.error('فشل تصدير PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportExcel.mutateAsync({
+        startDate: dateRange.start,
+        endDate: dateRange.end,
+      });
+
+      // Convert base64 to blob and download
+      const byteCharacters = atob(result.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.filename;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('تم تصدير التقرير Excel بنجاح');
+    } catch (error) {
+      toast.error('فشل تصدير Excel');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Fetch analytics data
   const { data: messageStats, isLoading: loadingMessages } = trpc.messageAnalytics.getMessageStats.useQuery({
@@ -81,9 +149,31 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">التحليلات</h1>
-        <p className="text-muted-foreground mt-2">إحصائيات شاملة عن أداء متجرك</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">التحليلات</h1>
+          <p className="text-muted-foreground mt-2">إحصائيات شاملة عن أداء متجرك</p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            variant="outline"
+            className="gap-2"
+          >
+            <FileDown className="h-4 w-4" />
+            تصدير PDF
+          </Button>
+          <Button
+            onClick={handleExportExcel}
+            disabled={isExporting}
+            variant="outline"
+            className="gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            تصدير Excel
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

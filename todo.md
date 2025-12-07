@@ -1097,3 +1097,18 @@
 - [x] دمج الصفحة مع App.tsx (/merchant/message-analytics)
 - [x] اختبارات (13 اختبار ناجح)
 - [ ] حفظ checkpoint
+
+
+## تصدير تقارير Analytics (PDF & Excel)
+- [x] تثبيت مكتبات التصدير (exceljs, jspdf, jspdf-autotable)
+- [x] إنشاء دالة generatePDFReport في exportReports.ts
+- [x] إنشاء دالة generateExcelReport في exportReports.ts
+- [x] إضافة API: exportPDF في messageAnalytics router
+- [x] إضافة API: exportExcel في messageAnalytics router
+- [x] إضافة زر "تصدير PDF" في Analytics.tsx
+- [x] إضافة زر "تصدير Excel" في Analytics.tsx
+- [x] تنسيق PDF مع جداول ومخططات
+- [x] تنسيق Excel مع 4 sheets منظمة
+- [x] تحويل base64 وتحميل تلقائي
+- [x] اختبار التصدير (9 اختبارات ناجحة)
+- [ ] حفظ checkpoint

@@ -2882,6 +2882,94 @@ export const appRouter = router({
 
         return db.getDailyMessageCount(merchant.id, input.days || 30);
       }),
+
+    // تصدير PDF
+    exportPDF: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        }
+
+        const startDate = input.startDate ? new Date(input.startDate) : undefined;
+        const endDate = input.endDate ? new Date(input.endDate) : undefined;
+
+        // Gather all analytics data
+        const messageStats = await db.getMessageStats(merchant.id, startDate, endDate);
+        const peakHours = await db.getPeakHours(merchant.id, startDate, endDate);
+        const topProducts = await db.getTopProducts(merchant.id, 10);
+        const conversionRate = await db.getConversionRate(merchant.id, startDate, endDate);
+        const dailyMessages = await db.getDailyMessageCount(merchant.id, 30);
+
+        const dateRange = input.startDate && input.endDate
+          ? `${input.startDate} - ${input.endDate}`
+          : 'All Time';
+
+        const { generatePDFReport } = await import('./exportReports');
+        const pdfBuffer = generatePDFReport({
+          merchantName: merchant.businessName,
+          dateRange,
+          messageStats,
+          peakHours,
+          topProducts,
+          conversionRate,
+          dailyMessages,
+        });
+
+        // Return base64 encoded PDF
+        return {
+          data: pdfBuffer.toString('base64'),
+          filename: `sari-analytics-${Date.now()}.pdf`,
+        };
+      }),
+
+    // تصدير Excel
+    exportExcel: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        }
+
+        const startDate = input.startDate ? new Date(input.startDate) : undefined;
+        const endDate = input.endDate ? new Date(input.endDate) : undefined;
+
+        // Gather all analytics data
+        const messageStats = await db.getMessageStats(merchant.id, startDate, endDate);
+        const peakHours = await db.getPeakHours(merchant.id, startDate, endDate);
+        const topProducts = await db.getTopProducts(merchant.id, 10);
+        const conversionRate = await db.getConversionRate(merchant.id, startDate, endDate);
+        const dailyMessages = await db.getDailyMessageCount(merchant.id, 30);
+
+        const dateRange = input.startDate && input.endDate
+          ? `${input.startDate} - ${input.endDate}`
+          : 'All Time';
+
+        const { generateExcelReport } = await import('./exportReports');
+        const excelBuffer = await generateExcelReport({
+          merchantName: merchant.businessName,
+          dateRange,
+          messageStats,
+          peakHours,
+          topProducts,
+          conversionRate,
+          dailyMessages,
+        });
+
+        // Return base64 encoded Excel
+        return {
+          data: excelBuffer.toString('base64'),
+          filename: `sari-analytics-${Date.now()}.xlsx`,
+        };
+      }),
   }),
 });
 
