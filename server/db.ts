@@ -274,6 +274,51 @@ export async function updateMerchant(id: number, data: Partial<InsertMerchant>):
   await db.update(merchants).set(data).where(eq(merchants.id, id));
 }
 
+/**
+ * Get onboarding status for a merchant
+ */
+export async function getOnboardingStatus(merchantId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  const merchant = await getMerchantById(merchantId);
+  if (!merchant) throw new Error('Merchant not found');
+  
+  return {
+    completed: merchant.onboardingCompleted,
+    currentStep: merchant.onboardingStep,
+    completedAt: merchant.onboardingCompletedAt,
+  };
+}
+
+/**
+ * Update onboarding step for a merchant
+ */
+export async function updateOnboardingStep(merchantId: number, step: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.update(merchants)
+    .set({ onboardingStep: step })
+    .where(eq(merchants.id, merchantId));
+}
+
+/**
+ * Mark onboarding as completed for a merchant
+ */
+export async function completeOnboarding(merchantId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.update(merchants)
+    .set({ 
+      onboardingCompleted: true, 
+      onboardingStep: 4,
+      onboardingCompletedAt: new Date(),
+    })
+    .where(eq(merchants.id, merchantId));
+}
+
 // ============================================
 // Plan Management
 // ============================================

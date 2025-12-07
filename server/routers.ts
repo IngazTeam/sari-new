@@ -348,6 +348,37 @@ export const appRouter = router({
 
         return { success: true, message: 'تم الترقية بنجاح' };
       }),
+
+    // Get onboarding status
+    getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+      return await db.getOnboardingStatus(merchant.id);
+    }),
+
+    // Update onboarding step
+    updateOnboardingStep: protectedProcedure
+      .input(z.object({ step: z.number().min(0).max(4) }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        await db.updateOnboardingStep(merchant.id, input.step);
+        return { success: true };
+      }),
+
+    // Complete onboarding
+    completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+      await db.completeOnboarding(merchant.id);
+      return { success: true };
+    }),
   }),
 
   // Products Management

@@ -30,6 +30,9 @@ export const merchants = mysqlTable("merchants", {
   status: mysqlEnum("status", ["active", "suspended", "pending"]).default("pending").notNull(),
   subscriptionId: int("subscriptionId"), // Current subscription
   autoReplyEnabled: boolean("autoReplyEnabled").default(true).notNull(), // Enable/disable AI auto-reply
+  onboardingCompleted: boolean("onboardingCompleted").default(false).notNull(), // Has merchant completed onboarding wizard?
+  onboardingStep: int("onboardingStep").default(0).notNull(), // Current onboarding step (0-4)
+  onboardingCompletedAt: timestamp("onboardingCompletedAt"), // When onboarding was completed
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

@@ -993,3 +993,20 @@
 - [x] تحديث DashboardLayout
 - [x] كتابة الاختبارات (9 اختبارات ناجحة)
 - [x] اختبار النظام الكامل
+
+
+## نظام Onboarding Wizard للتاجر الجديد
+- [x] إضافة حقول onboarding في جدول merchants (onboardingCompleted, onboardingStep, onboardingCompletedAt)
+- [x] تحديث schema.ts وتطبيق migration
+- [x] إضافة دوال قاعدة البيانات (3 دوال: getOnboardingStatus, updateOnboardingStep, completeOnboarding)
+- [x] إضافة APIs في routers.ts (3 APIs)
+- [x] إنشاء مكون OnboardingWizard.tsx مع 4 خطوات
+- [x] الخطوة 1: الترحيب ونظرة عامة (مع مزايا ساري)
+- [x] الخطوة 2: إعداد معلومات المتجر (اسم المتجر ورقم الجوال)
+- [x] الخطوة 3: ربط واتساب (توجيه إلى WhatsAppSetup)
+- [x] الخطوة 4: الإكمال والتوجيه (مع الخطوات التالية)
+- [x] دمج Wizard مع لوحة التحكم (عرض تلقائي للتجار الجدد)
+- [x] إضافة Progress Bar وأزرار التنقل (التالي/السابق)
+- [x] إمكانية تخطي الـ Wizard والعودة لاحقاً
+- [x] كتابة الاختبارات (6 اختبارات ناجحة)
+- [x] اختبار النظام الكامل

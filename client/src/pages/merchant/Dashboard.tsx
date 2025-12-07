@@ -1,12 +1,33 @@
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Send, Users, TrendingUp } from 'lucide-react';
+import { OnboardingWizard } from '@/components/OnboardingWizard';
 
 export default function MerchantDashboard() {
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const { data: merchant } = trpc.merchants.getCurrent.useQuery();
+  const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery();
+  const completeOnboarding = trpc.merchants.completeOnboarding.useMutation();
   const { data: subscription } = trpc.subscriptions.getCurrent.useQuery();
   const { data: conversations } = trpc.conversations.list.useQuery();
   const { data: campaigns } = trpc.campaigns.list.useQuery();
+
+  // Show onboarding wizard for new merchants
+  useEffect(() => {
+    if (onboardingStatus && !onboardingStatus.completed) {
+      setShowOnboarding(true);
+    }
+  }, [onboardingStatus]);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+  };
+
+  const handleOnboardingSkip = async () => {
+    await completeOnboarding.mutateAsync();
+    setShowOnboarding(false);
+  };
 
   const stats = [
     {
@@ -44,7 +65,15 @@ export default function MerchantDashboard() {
   ];
 
   return (
-    <div className="space-y-8">
+    <>
+      {showOnboarding && (
+        <OnboardingWizard
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      )}
+      
+      <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">مرحباً، {merchant?.businessName || 'التاجر'}</h1>
@@ -183,6 +212,7 @@ export default function MerchantDashboard() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </>
   );
 }
