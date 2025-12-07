@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, lt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -60,6 +60,21 @@ import {
   orders,
   Order,
   InsertOrder,
+  discountCodes,
+  DiscountCode,
+  InsertDiscountCode,
+  referralCodes,
+  ReferralCode,
+  InsertReferralCode,
+  abandonedCarts,
+  AbandonedCart,
+  InsertAbandonedCart,
+  automationRules,
+  AutomationRule,
+  InsertAutomationRule,
+  customerReviews,
+  CustomerReview,
+  InsertCustomerReview,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1322,4 +1337,369 @@ export async function updateOrderBySallaId(merchantId: number, sallaOrderId: str
       eq(orders.sallaOrderId, sallaOrderId)
     )
   );
+}
+
+
+// ============================================
+// Discount Codes Functions
+// ============================================
+
+export async function createDiscountCode(data: InsertDiscountCode): Promise<DiscountCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(discountCodes).values(data);
+  const id = Number(result[0].insertId);
+  
+  return getDiscountCodeById(id);
+}
+
+export async function getDiscountCodeById(id: number): Promise<DiscountCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(discountCodes).where(eq(discountCodes.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(discountCodes).where(eq(discountCodes.code, code.toUpperCase())).limit(1);
+  return result[0];
+}
+
+export async function getDiscountCodesByMerchantId(merchantId: number): Promise<DiscountCode[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(discountCodes).where(eq(discountCodes.merchantId, merchantId)).orderBy(desc(discountCodes.createdAt));
+}
+
+export async function updateDiscountCode(id: number, data: Partial<InsertDiscountCode>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(discountCodes).set({
+    ...data,
+    updatedAt: new Date()
+  }).where(eq(discountCodes.id, id));
+}
+
+export async function incrementDiscountCodeUsage(code: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const discountCode = await getDiscountCodeByCode(code);
+  if (!discountCode) return;
+
+  await db.update(discountCodes).set({
+    usedCount: discountCode.usedCount + 1,
+    updatedAt: new Date()
+  }).where(eq(discountCodes.id, discountCode.id));
+}
+
+export async function deleteDiscountCode(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(discountCodes).where(eq(discountCodes.id, id));
+}
+
+// ============================================
+// Referral Codes Functions
+// ============================================
+
+export async function createReferralCode(data: InsertReferralCode): Promise<ReferralCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(referralCodes).values(data);
+  const id = Number(result[0].insertId);
+  
+  return getReferralCodeById(id);
+}
+
+export async function getReferralCodeById(id: number): Promise<ReferralCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(referralCodes).where(eq(referralCodes.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getReferralCodeByCode(code: string): Promise<ReferralCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(referralCodes).where(eq(referralCodes.code, code.toUpperCase())).limit(1);
+  return result[0];
+}
+
+export async function getReferralCodeByCustomerId(merchantId: number, customerId: number): Promise<ReferralCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(referralCodes).where(
+    and(
+      eq(referralCodes.merchantId, merchantId),
+      eq(referralCodes.customerId, customerId)
+    )
+  ).limit(1);
+  
+  return result[0];
+}
+
+export async function incrementReferralCount(code: string, rewardValue: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const referralCode = await getReferralCodeByCode(code);
+  if (!referralCode) return;
+
+  await db.update(referralCodes).set({
+    referralCount: referralCode.referralCount + 1,
+    totalRewards: referralCode.totalRewards + rewardValue,
+    updatedAt: new Date()
+  }).where(eq(referralCodes.id, referralCode.id));
+}
+
+// ============================================
+// Abandoned Carts Functions
+// ============================================
+
+export async function createAbandonedCart(data: InsertAbandonedCart): Promise<AbandonedCart | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(abandonedCarts).values(data);
+  const id = Number(result[0].insertId);
+  
+  return getAbandonedCartById(id);
+}
+
+export async function getAbandonedCartById(id: number): Promise<AbandonedCart | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(abandonedCarts).where(eq(abandonedCarts.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getAbandonedCartsByMerchantId(merchantId: number): Promise<AbandonedCart[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(abandonedCarts).where(eq(abandonedCarts.merchantId, merchantId)).orderBy(desc(abandonedCarts.createdAt));
+}
+
+export async function getPendingAbandonedCarts(): Promise<AbandonedCart[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get carts created more than 24 hours ago that haven't received reminder
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  
+  return db.select().from(abandonedCarts).where(
+    and(
+      eq(abandonedCarts.reminderSent, false),
+      eq(abandonedCarts.recovered, false),
+      lt(abandonedCarts.createdAt, twentyFourHoursAgo)
+    )
+  ).limit(50);
+}
+
+export async function markAbandonedCartReminderSent(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(abandonedCarts).set({
+    reminderSent: true,
+    reminderSentAt: new Date(),
+    updatedAt: new Date()
+  }).where(eq(abandonedCarts.id, id));
+}
+
+export async function markAbandonedCartRecovered(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(abandonedCarts).set({
+    recovered: true,
+    recoveredAt: new Date(),
+    updatedAt: new Date()
+  }).where(eq(abandonedCarts.id, id));
+}
+
+// ============================================
+// Automation Rules Functions
+// ============================================
+
+export async function createAutomationRule(data: InsertAutomationRule): Promise<AutomationRule | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(automationRules).values(data);
+  const id = Number(result[0].insertId);
+  
+  return getAutomationRuleById(id);
+}
+
+export async function getAutomationRuleById(id: number): Promise<AutomationRule | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(automationRules).where(eq(automationRules.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getAutomationRuleByType(merchantId: number, type: string): Promise<AutomationRule | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(automationRules).where(
+    and(
+      eq(automationRules.merchantId, merchantId),
+      eq(automationRules.type, type as any)
+    )
+  ).limit(1);
+  
+  return result[0];
+}
+
+export async function getAutomationRulesByMerchantId(merchantId: number): Promise<AutomationRule[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(automationRules).where(eq(automationRules.merchantId, merchantId));
+}
+
+export async function updateAutomationRule(id: number, data: Partial<InsertAutomationRule>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(automationRules).set({
+    ...data,
+    updatedAt: new Date()
+  }).where(eq(automationRules.id, id));
+}
+
+// ============================================
+// Customer Reviews Functions
+// ============================================
+
+export async function createCustomerReview(data: InsertCustomerReview): Promise<CustomerReview | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(customerReviews).values(data);
+  const id = Number(result[0].insertId);
+  
+  return getCustomerReviewById(id);
+}
+
+export async function getCustomerReviewById(id: number): Promise<CustomerReview | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(customerReviews).where(eq(customerReviews.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getCustomerReviewsByMerchantId(merchantId: number): Promise<CustomerReview[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(customerReviews).where(eq(customerReviews.merchantId, merchantId)).orderBy(desc(customerReviews.createdAt));
+}
+
+export async function getCustomerReviewsByOrderId(orderId: number): Promise<CustomerReview[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(customerReviews).where(eq(customerReviews.orderId, orderId));
+}
+
+export async function getPublicReviews(merchantId: number, limit: number = 10): Promise<CustomerReview[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(customerReviews).where(
+    and(
+      eq(customerReviews.merchantId, merchantId),
+      eq(customerReviews.isPublic, true)
+    )
+  ).orderBy(desc(customerReviews.createdAt)).limit(limit);
+}
+
+export async function updateCustomerReview(id: number, data: Partial<InsertCustomerReview>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(customerReviews).set({
+    ...data,
+    updatedAt: new Date()
+  }).where(eq(customerReviews.id, id));
+}
+
+// ============================================
+// Orders - Additional Functions for Automation
+// ============================================
+
+export async function getOrdersForReviewRequest(): Promise<Order[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get delivered orders from 3 days ago that haven't received review request
+  const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+  const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
+  
+  return db.select().from(orders).where(
+    and(
+      eq(orders.status, 'delivered'),
+      eq(orders.reviewRequested, false),
+      gte(orders.updatedAt, fourDaysAgo),
+      lte(orders.updatedAt, threeDaysAgo)
+    )
+  ).limit(50);
+}
+
+export async function markOrderReviewRequested(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(orders).set({
+    reviewRequested: true,
+    reviewRequestedAt: new Date(),
+    updatedAt: new Date()
+  }).where(eq(orders.id, id));
+}
+
+// ============================================
+// Conversations - Additional Functions for Automation
+// ============================================
+
+export async function getInactiveConversations(days: number = 30): Promise<Conversation[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  
+  return db.select().from(conversations).where(
+    and(
+      eq(conversations.status, 'active'),
+      lt(conversations.lastActivityAt, cutoffDate)
+    )
+  ).limit(100);
+}
+
+export async function updateConversationActivity(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(conversations).set({
+    lastActivityAt: new Date(),
+    updatedAt: new Date()
+  }).where(eq(conversations.id, id));
 }

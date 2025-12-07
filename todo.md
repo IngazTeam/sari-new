@@ -536,3 +536,100 @@
 - [ ] كتابة الاختبارات
 - [ ] إنشاء دليل SALLA_INTEGRATION.md
 - [ ] اختبار التكامل الكامل
+
+
+## نظام الأتمتة التسويقية الكامل
+
+### المرحلة 1: البنية التحتية
+- [x] تحديث schema.ts بإضافة الجداول الجديدة
+  - [x] جدول discount_codes (كودات الخصم)
+  - [x] جدول referral_codes (كودات الإحالة)
+  - [x] جدول abandoned_carts (السلات المهجورة)
+  - [x] جدول automation_rules (قواعد الأتمتة)
+  - [x] جدول customer_reviews (التقييمات)
+  - [x] تحديث جدول orders بحقول جديدة (isGift, giftMessage, reviewRequested)
+  - [x] تحديث جدول conversations بحقل lastActivityAt
+- [x] تطبيق Migration (pnpm db:push)
+- [x] إضافة دوال قاعدة البيانات في db.ts (40+ دالة)
+
+### المرحلة 2: الطلب الكامل من الواتساب
+- [x] إنشاء ملف server/automation/order-from-chat.ts
+- [x] دالة parseOrderMessage (تحليل رسالة الطلب باستخدام AI)
+- [x] مطابقة المنتجات مع قاعدة البيانات
+- [x] دالة createOrderFromChat (إنشاء طلب في Salla)
+- [x] دعم الطلبات كهدية مع رسالة تهنئة
+- [x] دالة generateOrderConfirmationMessage
+- [x] دالة generateGiftOrderConfirmationMessage
+- [x] دالة isOrderRequest (اكتشاف طلبات الشراء)
+- [ ] إضافة APIs في routers.ts
+- [ ] تحديث Green API Webhook لمعالجة الطلبات
+- [ ] إنشاء صفحة /merchant/chat-orders لعرض الطلبات من الواتساب
+
+### المرحلة 3: كودات الخصم والإحالة
+- [ ] إنشاء ملف server/automation/discount-codes.ts
+- [ ] دالة createDiscountCode (إنشاء كود خصم)
+- [ ] دالة validateDiscountCode (التحقق من الكود)
+- [ ] دالة applyDiscount (تطبيق الخصم)
+- [ ] دالة createReferralCode (إنشاء كود إحالة)
+- [ ] دالة trackReferral (تتبع الإحالات)
+- [ ] دالة sendReferralReward (مكافأة المُحيل)
+- [ ] إضافة APIs في routers.ts
+- [ ] إنشاء صفحة /merchant/discount-codes لإدارة الكودات
+
+### المرحلة 4: تتبع الطلبات التلقائي
+- [ ] إنشاء ملف server/automation/order-tracking.ts
+- [ ] دالة trackOrderStatus (تتبع حالة الطلب من Salla)
+- [ ] دالة sendOrderUpdate (إرسال تحديث للعميل)
+- [ ] دالة sendShippingNotification (إشعار الشحن)
+- [ ] دالة sendDeliveryNotification (إشعار التسليم)
+- [ ] إضافة Cron Job للتحقق من الطلبات كل ساعة
+- [ ] تحديث Salla Webhook لمعالجة تحديثات الطلبات
+
+### المرحلة 5: استعادة السلة المهجورة
+- [ ] إنشاء ملف server/automation/abandoned-cart.ts
+- [ ] دالة detectAbandonedCart (اكتشاف السلة المهجورة)
+- [ ] دالة sendAbandonedCartReminder (إرسال تذكير)
+- [ ] دالة createAbandonedCartDiscount (إنشاء خصم خاص)
+- [ ] إضافة Cron Job للتحقق كل 6 ساعات
+- [ ] إضافة APIs في routers.ts
+
+### المرحلة 6: طلب التقييم بعد الشراء
+- [ ] إنشاء ملف server/automation/review-request.ts
+- [ ] دالة scheduleReviewRequest (جدولة طلب التقييم)
+- [ ] دالة sendReviewRequest (إرسال طلب التقييم)
+- [ ] دالة saveReview (حفظ التقييم)
+- [ ] إضافة Cron Job للتحقق يومياً
+- [ ] إضافة APIs في routers.ts
+- [ ] إنشاء صفحة /merchant/reviews لعرض التقييمات
+
+### المرحلة 7: الطلب كهدية
+- [ ] تحديث parseOrderMessage لاكتشاف الهدايا
+- [ ] دالة createGiftOrder (إنشاء طلب هدية)
+- [ ] دالة sendGiftNotification (إرسال إشعار للمستلم)
+- [ ] دالة addGiftCard (إضافة كرت تهنئة)
+- [ ] تحديث Salla order notes بمعلومات الهدية
+
+### المرحلة 8: التهنئة بالأعياد
+- [ ] إنشاء ملف server/automation/seasonal.ts
+- [ ] دالة detectUpcomingHoliday (اكتشاف العيد القادم)
+- [ ] دالة sendHolidayGreeting (إرسال تهنئة)
+- [ ] دالة sendHolidayOffer (إرسال عرض خاص)
+- [ ] إضافة Cron Job للتحقق أسبوعياً
+- [ ] قائمة الأعياد (عيد الفطر، عيد الأضحى، اليوم الوطني، رأس السنة)
+
+### المرحلة 9: رسائل "افتقدناك"
+- [ ] دالة detectInactiveCustomers (اكتشاف العملاء غير النشطين)
+- [ ] دالة sendWeMissYouMessage (إرسال رسالة افتقدناك)
+- [ ] دالة createWinbackOffer (إنشاء عرض استرجاع)
+- [ ] إضافة Cron Job للتحقق أسبوعياً (30 يوم بدون نشاط)
+
+### المرحلة 10: لوحة تحكم الأتمتة
+- [ ] إنشاء صفحة /merchant/automation لإدارة القواعد
+- [ ] تفعيل/تعطيل كل نوع من الأتمتة
+- [ ] إعدادات مخصصة (التوقيت، الرسائل، الخصومات)
+- [ ] عرض إحصائيات الأتمتة (عدد الرسائل، معدل التحويل)
+
+### المرحلة 11: الاختبار والتوثيق
+- [ ] كتابة اختبارات Vitest لجميع الميزات
+- [ ] إنشاء دليل AUTOMATION_GUIDE.md
+- [ ] اختبار النظام الكامل

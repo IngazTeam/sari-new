@@ -131,6 +131,7 @@ export const conversations = mysqlTable("conversations", {
   customerName: varchar("customerName", { length: 255 }),
   status: mysqlEnum("status", ["active", "closed", "archived"]).default("active").notNull(),
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
+  lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(), // For "افتقدناك" automation
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -381,9 +382,122 @@ export const orders = mysqlTable("orders", {
   paymentUrl: text("paymentUrl"), // Payment link from Salla
   trackingNumber: varchar("trackingNumber", { length: 100 }),
   notes: text("notes"),
+  // Gift order fields
+  isGift: boolean("isGift").default(false).notNull(),
+  giftRecipientName: varchar("giftRecipientName", { length: 255 }),
+  giftMessage: text("giftMessage"),
+  // Review request tracking
+  reviewRequested: boolean("reviewRequested").default(false).notNull(),
+  reviewRequestedAt: timestamp("reviewRequestedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
+
+/**
+ * Discount Codes (كودات الخصم)
+ */
+export const discountCodes = mysqlTable("discount_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  code: varchar("code", { length: 50 }).notNull().unique(), // e.g., WELCOME10
+  type: mysqlEnum("type", ["percentage", "fixed"]).notNull(), // Percentage or fixed amount
+  value: int("value").notNull(), // Percentage (10 = 10%) or amount in SAR
+  minOrderAmount: int("minOrderAmount").default(0), // Minimum order amount to apply
+  maxUses: int("maxUses"), // Max number of uses (null = unlimited)
+  usedCount: int("usedCount").default(0).notNull(), // How many times used
+  expiresAt: timestamp("expiresAt"), // Expiration date (null = no expiration)
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DiscountCode = typeof discountCodes.$inferSelect;
+export type InsertDiscountCode = typeof discountCodes.$inferInsert;
+
+/**
+ * Referral Codes (كودات الإحالة)
+ */
+export const referralCodes = mysqlTable("referral_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  customerId: int("customerId").notNull(), // Customer who owns this referral code
+  code: varchar("code", { length: 50 }).notNull().unique(), // e.g., AHMED123
+  discountValue: int("discountValue").notNull(), // Discount for referred friend
+  rewardValue: int("rewardValue").notNull(), // Reward for referrer
+  maxReferrals: int("maxReferrals").default(5).notNull(), // Max 5 friends
+  referralCount: int("referralCount").default(0).notNull(), // How many used
+  totalRewards: int("totalRewards").default(0).notNull(), // Total rewards earned
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReferralCode = typeof referralCodes.$inferSelect;
+export type InsertReferralCode = typeof referralCodes.$inferInsert;
+
+/**
+ * Abandoned Carts (السلات المهجورة)
+ */
+export const abandonedCarts = mysqlTable("abandoned_carts", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  customerPhone: varchar("customerPhone", { length: 20 }).notNull(),
+  customerName: varchar("customerName", { length: 255 }),
+  items: text("items").notNull(), // JSON string of cart items
+  totalAmount: int("totalAmount").notNull(), // Total in SAR
+  reminderSent: boolean("reminderSent").default(false).notNull(),
+  reminderSentAt: timestamp("reminderSentAt"),
+  recovered: boolean("recovered").default(false).notNull(), // Did customer complete purchase?
+  recoveredAt: timestamp("recoveredAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AbandonedCart = typeof abandonedCarts.$inferSelect;
+export type InsertAbandonedCart = typeof abandonedCarts.$inferInsert;
+
+/**
+ * Automation Rules (قواعد الأتمتة)
+ */
+export const automationRules = mysqlTable("automation_rules", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  type: mysqlEnum("type", [
+    "abandoned_cart",
+    "review_request",
+    "order_tracking",
+    "gift_notification",
+    "holiday_greeting",
+    "winback",
+  ]).notNull(),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  settings: text("settings"), // JSON string of rule settings
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AutomationRule = typeof automationRules.$inferSelect;
+export type InsertAutomationRule = typeof automationRules.$inferInsert;
+
+/**
+ * Customer Reviews (التقييمات)
+ */
+export const customerReviews = mysqlTable("customer_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  orderId: int("orderId").notNull(),
+  customerPhone: varchar("customerPhone", { length: 20 }).notNull(),
+  customerName: varchar("customerName", { length: 255 }),
+  rating: int("rating").notNull(), // 1-5 stars
+  comment: text("comment"),
+  productId: int("productId"), // Optional: review for specific product
+  isPublic: boolean("isPublic").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CustomerReview = typeof customerReviews.$inferSelect;
+export type InsertCustomerReview = typeof customerReviews.$inferInsert;
