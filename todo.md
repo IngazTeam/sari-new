@@ -1043,3 +1043,11 @@
   - [x] دمج مع حالة loading
 - [x] اختبار جميع الصفحات
 - [ ] حفظ checkpoint
+
+
+## تغيير فونت النظام إلى Expo Arabic
+- [x] إضافة Expo Arabic من Google Fonts في index.html
+- [x] تحديث font-family في index.css (body, headings)
+- [x] تحديث أوزان الفونت (Regular: 400, Bold: 700 للعناوين)
+- [x] اختبار الفونت في جميع الصفحات
+- [ ] حفظ checkpoint

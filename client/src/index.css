@@ -119,6 +119,15 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Expo Arabic', sans-serif;
+    font-weight: 400;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Expo Arabic', sans-serif;
+    font-weight: 700;
+  }
+  strong, b {
+    font-weight: 700;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
