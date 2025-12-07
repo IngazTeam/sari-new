@@ -216,8 +216,17 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                         <HelpCircle className="w-4 h-4" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <p>اسم متجرك الذي سيظهر للعملاء في جميع المحادثات والرسائل. اختر اسماً واضحاً يعكس هوية متجرك.</p>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <div className="space-y-2">
+                        <p className="font-medium">اسم متجرك الذي سيظهر للعملاء في جميع المحادثات</p>
+                        <div className="space-y-1 text-xs">
+                          <p className="text-green-600">✅ متجر الهدايا الفاخرة</p>
+                          <p className="text-green-600">✅ عطور الرياض</p>
+                          <p className="text-green-600">✅ متجر الإلكترونيات</p>
+                          <p className="text-red-600">❌ متجري (غير واضح)</p>
+                          <p className="text-red-600">❌ ABC Store (بالإنجليزية)</p>
+                        </div>
+                      </div>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -242,8 +251,18 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                         <HelpCircle className="w-4 h-4" />
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <p>رقم جوالك الشخصي للتواصل الإداري (ليس رقم واتساب المتجر). سنستخدمه للتواصل معك بخصوص حسابك.</p>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <div className="space-y-2">
+                        <p className="font-medium">رقمك الشخصي للتواصل الإداري (ليس رقم المتجر)</p>
+                        <div className="space-y-1 text-xs">
+                          <p className="text-green-600">✅ 0512345678</p>
+                          <p className="text-green-600">✅ 0501234567</p>
+                          <p className="text-green-600">✅ +966512345678</p>
+                          <p className="text-red-600">❌ 512345678 (بدون 05)</p>
+                          <p className="text-red-600">❌ 05-123-4567 (بفواصل)</p>
+                        </div>
+                        <p className="text-xs text-gray-400">سنستخدمه للتواصل معك بخصوص حسابك</p>
+                      </div>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -278,7 +297,16 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm">
-                      <p>ستحتاج إلى رقم جوال جديد غير مستخدم في واتساب. هذا الرقم سيكون رقم متجرك الرسمي الذي يستقبل رسائل العملاء ويرد عليها تلقائياً.</p>
+                      <div className="space-y-2">
+                        <p className="font-medium">رقم متجرك الرسمي للرد التلقائي</p>
+                        <div className="space-y-1 text-xs">
+                          <p className="text-green-600">✅ رقم جديد غير مستخدم</p>
+                          <p className="text-green-600">✅ رقم مخصص للمتجر فقط</p>
+                          <p className="text-red-600">❌ رقمك الشخصي</p>
+                          <p className="text-red-600">❌ رقم مستخدم في واتساب</p>
+                        </div>
+                        <p className="text-xs text-gray-400">يمكنك شراء رقم جديد من أي مزود خدمة</p>
+                      </div>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -297,7 +325,16 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm">
-                      <p>لربط واتساب بنجاح: احصل على رقم جوال جديد، احتفظ بجهازك لمسح QR code، وتأكد من وجود اتصال إنترنت مستقر.</p>
+                      <div className="space-y-2">
+                        <p className="font-medium">خطوات الربط الناجح:</p>
+                        <div className="space-y-1 text-xs">
+                          <p>📱 احصل على رقم جديد وفعّله</p>
+                          <p>📲 افتح واتساب على جهازك</p>
+                          <p>🔒 امسح QR code من الموقع</p>
+                          <p>✅ انتظر التفعيل (2-5 دقائق)</p>
+                        </div>
+                        <p className="text-xs text-gray-400">تأكد من اتصال إنترنت مستقر</p>
+                      </div>
                     </TooltipContent>
                   </Tooltip>
                 </div>
@@ -355,7 +392,16 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                       </button>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm">
-                      <p>هذه الخطوات ستساعدك على إطلاق متجرك بنجاح. يمكنك البدء بأي خطوة تريدها من لوحة التحكم.</p>
+                      <div className="space-y-2">
+                        <p className="font-medium">الخطوات المقترحة للبدء:</p>
+                        <div className="space-y-1 text-xs">
+                          <p>📦 أضف 5-10 منتجات على الأقل</p>
+                          <p>📱 اربط واتساب إن لم تفعل</p>
+                          <p>✅ جرّب إرسال رسالة تجريبية</p>
+                          <p>🚀 ابدأ استقبال العملاء!</p>
+                        </div>
+                        <p className="text-xs text-gray-400">يمكنك البدء بأي خطوة من لوحة التحكم</p>
+                      </div>
                     </TooltipContent>
                   </Tooltip>
                 </div>
