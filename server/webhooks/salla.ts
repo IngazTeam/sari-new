@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import * as db from '../db';
 import { SallaIntegration } from '../integrations/salla';
+import { processOrderStatusUpdate } from '../automation/order-tracking';
 
 /**
  * Salla Webhook Handler
@@ -124,18 +125,28 @@ async function handleOrderUpdated(merchantId: number, data: any) {
   try {
     console.log(`[Salla Webhook] Updating order ${data.id} for merchant ${merchantId}`);
     
-    // Update order status in our database
-    await db.updateOrderBySallaId(merchantId, data.id, {
-      status: mapSallaOrderStatus(data.status?.name),
-      trackingNumber: data.shipping?.tracking_number,
-    });
+    // الحصول على الطلب من قاعدة البيانات
+    const order = await db.getOrderBySallaId(merchantId, data.id);
     
-    console.log(`[Salla Webhook] ✅ Order ${data.id} updated to status: ${data.status?.name}`);
+    if (!order) {
+      console.log(`[Salla Webhook] Order ${data.id} not found in database`);
+      return;
+    }
     
-    // TODO: Send WhatsApp notification to customer if order is shipped
-    if (data.status?.name === 'shipped' && data.customer?.mobile) {
-      console.log(`[Salla Webhook] TODO: Send WhatsApp notification to ${data.customer.mobile}`);
-      // await sendWhatsAppMessage(data.customer.mobile, `تم شحن طلبك رقم ${data.reference_id}`);
+    const newStatus = mapSallaOrderStatus(data.status?.name);
+    const trackingNumber = data.shipping?.tracking_number;
+    
+    // معالجة تحديث الحالة مع إرسال إشعار واتساب تلقائي
+    const notified = await processOrderStatusUpdate(
+      order.id,
+      newStatus,
+      trackingNumber
+    );
+    
+    if (notified) {
+      console.log(`[Salla Webhook] ✅ Order ${data.id} updated and customer notified`);
+    } else {
+      console.log(`[Salla Webhook] ✅ Order ${data.id} updated (no notification sent)`);
     }
   } catch (error: any) {
     console.error(`[Salla Webhook] Failed to update order ${data.id}:`, error.message);

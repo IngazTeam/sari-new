@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import webhookRoutes from "../webhooks/routes";
 import { initializeSallaCronJobs } from "../jobs/salla-sync";
+import { startOrderTrackingJob } from "../jobs/order-tracking";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -66,6 +67,9 @@ async function startServer() {
     
     // Initialize Salla cron jobs
     initializeSallaCronJobs();
+    
+    // Initialize Order Tracking cron job
+    startOrderTrackingJob();
   });
 }
 

@@ -636,3 +636,39 @@
 - [ ] كتابة اختبارات Vitest لجميع الميزات
 - [ ] إنشاء دليل AUTOMATION_GUIDE.md
 - [ ] اختبار النظام الكامل
+
+
+## نظام تتبع الطلبات التلقائي
+
+### المرحلة 1: ملف التتبع وقوالب الرسائل
+- [x] إنشاء ملف server/automation/order-tracking.ts
+- [x] دالة generateTrackingMessage (قوالب رسائل لـ 5 حالات)
+- [x] دالة sendOrderStatusUpdate (إرسال إشعار واتساب)
+- [x] دالة checkOrderStatus (التحقق من حالة الطلب في Salla)
+- [x] دالة shouldNotifyCustomer (تحديد متى يتم الإشعار)
+- [x] دالة processOrderStatusUpdate
+- [x] دالة checkAllActiveOrders
+- [x] دالة getOrderTrackingHistory
+
+### المرحلة 2: Cron Job للتحقق الدوري
+- [x] إنشاء ملف server/jobs/order-tracking.ts
+- [x] Cron Job يعمل كل ساعة (startOrderTrackingJob)
+- [x] التحقق من جميع الطلبات النشطة
+- [x] إرسال الإشعارات للعملاء تلقائياً
+- [x] تشغيل Cron Job عند بدء السيرفر
+
+### المرحلة 3: تحديث Salla Webhook
+- [x] تحديث معالج order.updated في Salla Webhook
+- [x] تحديث حالة الطلب في قاعدة البيانات
+- [x] إرسال إشعار فوري للعميل عبر الواتساب
+
+### المرحلة 4: سجل التتبع
+- [x] إضافة جدول order_tracking_logs
+- [x] تسجيل كل تحديث للحالة مع التفاصيل
+- [x] تسجيل الإشعارات المرسلة والفاشلة
+- [x] دوال قاعدة البيانات (createOrderTrackingLog, getOrderTrackingLogs, getLatestOrderTrackingLog)
+
+### المرحلة 5: الاختبارات والتوثيق
+- [x] كتابة اختبارات Vitest (22 اختبار - 100% نجاح)
+- [ ] إنشاء دليل ORDER_TRACKING.md
+- [x] اختبار النظام بالكامل

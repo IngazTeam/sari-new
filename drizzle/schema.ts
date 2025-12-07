@@ -501,3 +501,21 @@ export const customerReviews = mysqlTable("customer_reviews", {
 
 export type CustomerReview = typeof customerReviews.$inferSelect;
 export type InsertCustomerReview = typeof customerReviews.$inferInsert;
+
+/**
+ * Order Tracking Logs (سجل تتبع الطلبات)
+ */
+export const orderTrackingLogs = mysqlTable("order_tracking_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  oldStatus: varchar("oldStatus", { length: 50 }).notNull(),
+  newStatus: varchar("newStatus", { length: 50 }).notNull(),
+  trackingNumber: varchar("trackingNumber", { length: 255 }),
+  notificationSent: boolean("notificationSent").default(false).notNull(),
+  notificationMessage: text("notificationMessage"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OrderTrackingLog = typeof orderTrackingLogs.$inferSelect;
+export type InsertOrderTrackingLog = typeof orderTrackingLogs.$inferInsert;

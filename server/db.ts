@@ -75,6 +75,9 @@ import {
   customerReviews,
   CustomerReview,
   InsertCustomerReview,
+  orderTrackingLogs,
+  OrderTrackingLog,
+  InsertOrderTrackingLog,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1702,4 +1705,38 @@ export async function updateConversationActivity(id: number): Promise<void> {
     lastActivityAt: new Date(),
     updatedAt: new Date()
   }).where(eq(conversations.id, id));
+}
+
+
+// ============================================
+// Order Tracking Logs
+// ============================================
+
+export async function createOrderTrackingLog(data: InsertOrderTrackingLog) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(orderTrackingLogs).values(data);
+  return { id: Number(result[0].insertId), ...data };
+}
+
+export async function getOrderTrackingLogs(orderId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return await db
+    .select()
+    .from(orderTrackingLogs)
+    .where(eq(orderTrackingLogs.orderId, orderId))
+    .orderBy(desc(orderTrackingLogs.createdAt));
+}
+
+export async function getLatestOrderTrackingLog(orderId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const logs = await db
+    .select()
+    .from(orderTrackingLogs)
+    .where(eq(orderTrackingLogs.orderId, orderId))
+    .orderBy(desc(orderTrackingLogs.createdAt))
+    .limit(1);
+  return logs[0] || null;
 }
