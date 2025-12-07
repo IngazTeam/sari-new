@@ -1,0 +1,1 @@
+ALTER TABLE `merchants` ADD `autoReplyEnabled` boolean DEFAULT true NOT NULL;

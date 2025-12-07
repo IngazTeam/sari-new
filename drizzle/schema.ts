@@ -29,6 +29,7 @@ export const merchants = mysqlTable("merchants", {
   phone: varchar("phone", { length: 20 }),
   status: mysqlEnum("status", ["active", "suspended", "pending"]).default("pending").notNull(),
   subscriptionId: int("subscriptionId"), // Current subscription
+  autoReplyEnabled: boolean("autoReplyEnabled").default(true).notNull(), // Enable/disable AI auto-reply
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

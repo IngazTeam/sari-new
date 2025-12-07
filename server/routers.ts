@@ -146,6 +146,7 @@ export const appRouter = router({
       .input(z.object({
         businessName: z.string().optional(),
         phone: z.string().optional(),
+        autoReplyEnabled: z.boolean().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);

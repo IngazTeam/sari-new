@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, User, Store, CreditCard, Save } from 'lucide-react';
+import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -18,6 +19,7 @@ export default function MerchantSettings() {
   // Merchant profile state
   const [businessName, setBusinessName] = useState('');
   const [phone, setPhone] = useState('');
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
 
   // Initialize form data
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function MerchantSettings() {
     if (merchant) {
       setBusinessName(merchant.businessName || '');
       setPhone(merchant.phone || '');
+      setAutoReplyEnabled(merchant.autoReplyEnabled ?? true);
     }
   }, [merchant]);
 
@@ -75,6 +78,7 @@ export default function MerchantSettings() {
     updateMerchantMutation.mutate({
       businessName,
       phone: phone || undefined,
+      autoReplyEnabled,
     });
   };
 
@@ -170,6 +174,55 @@ export default function MerchantSettings() {
               />
             </div>
           </div>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={handleUpdateMerchant}
+              disabled={updateMerchantMutation.isPending}
+            >
+              <Save className="w-4 h-4 ml-2" />
+              {updateMerchantMutation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI Auto-Reply Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-5 h-5" />
+            إعدادات الرد الآلي
+          </CardTitle>
+          <CardDescription>
+            تفعيل أو تعطيل الرد التلقائي على رسائل العملاء باستخدام الذكاء الاصطناعي
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-1">
+              <div className="font-medium">تفعيل الرد الآلي</div>
+              <div className="text-sm text-muted-foreground">
+                عند التفعيل، سيقوم "ساري" بالرد تلقائياً على استفسارات العملاء باللهجة السعودية
+              </div>
+            </div>
+            <Switch
+              checked={autoReplyEnabled}
+              onCheckedChange={setAutoReplyEnabled}
+            />
+          </div>
+
+          {autoReplyEnabled && (
+            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">ميزات الرد الآلي:</h4>
+              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                <li>• الرد على استفسارات العملاء باللهجة السعودية</li>
+                <li>• البحث في منتجاتك واقتراح المنتجات المناسبة</li>
+                <li>• توضيح الأسعار والمواصفات</li>
+                <li>• مساعدة العملاء في اتخاذ قرار الشراء</li>
+              </ul>
+            </div>
+          )}
 
           <div className="flex justify-end">
             <Button

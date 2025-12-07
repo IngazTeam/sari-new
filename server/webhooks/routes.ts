@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { handleTapWebhook, verifyTapSignature } from './tap';
 import { handlePayPalWebhook, verifyPayPalSignature } from './paypal';
+import { handleGreenAPIWebhook } from './greenapi';
 import { getPaymentGatewayByName } from '../db';
 
 const router = Router();
@@ -77,6 +78,28 @@ router.post('/paypal', async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error('[PayPal Webhook] Error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Green API Webhook Endpoint
+ * POST /api/webhooks/greenapi
+ */
+router.post('/greenapi', async (req: Request, res: Response) => {
+  try {
+    console.log('[Green API Webhook] Received:', JSON.stringify(req.body, null, 2));
+    
+    // Process webhook
+    const result = await handleGreenAPIWebhook(req.body);
+    
+    if (result.success) {
+      return res.status(200).json({ message: result.message });
+    } else {
+      return res.status(400).json({ error: result.message });
+    }
+  } catch (error) {
+    console.error('[Green API Webhook] Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
