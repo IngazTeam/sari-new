@@ -13,7 +13,6 @@ export default function Checkout() {
   const planId = parseInt(params.get('planId') || '0');
 
   const { data: plan, isLoading: planLoading } = trpc.plans.getById.useQuery({ id: planId });
-  const { data: gateways, isLoading: gatewaysLoading } = trpc.paymentGateways.list.useQuery();
   const createSessionMutation = trpc.payments.createSession.useMutation({
     onSuccess: (data) => {
       if (data.paymentUrl) {
@@ -28,7 +27,7 @@ export default function Checkout() {
 
   const [selectedGateway, setSelectedGateway] = useState<'tap' | 'paypal' | null>(null);
 
-  if (planLoading || gatewaysLoading) {
+  if (planLoading) {
     return (
       <div className="p-6">
         <div className="animate-pulse space-y-4">
@@ -51,7 +50,8 @@ export default function Checkout() {
     );
   }
 
-  const enabledGateways = gateways?.filter(g => g.isEnabled) || [];
+  // Tap is always enabled
+  const enabledGateways = [{ id: 1, gateway: 'tap' as const, testMode: true }];
 
   const handlePayment = async () => {
     if (!selectedGateway) {
@@ -135,42 +135,52 @@ export default function Checkout() {
               </div>
             )}
 
-            {enabledGateways.map((gateway) => (
-              <button
-                key={gateway.id}
-                onClick={() => setSelectedGateway(gateway.gateway)}
-                className={`w-full p-4 border-2 rounded-lg transition-all ${
-                  selectedGateway === gateway.gateway
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:border-primary/50'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <CreditCard className="h-6 w-6" />
-                  <div className="flex-1 text-right">
-                    <p className="font-medium">
-                      {gateway.gateway === 'tap' ? 'Tap Payment' : 'PayPal'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {gateway.gateway === 'tap' 
-                        ? 'الدفع بالبطاقات السعودية' 
-                        : 'الدفع الدولي'}
-                    </p>
-                  </div>
-                  {gateway.testMode && (
-                    <Badge variant="outline" className="text-xs">
-                      تجريبي
-                    </Badge>
-                  )}
+            <button
+              onClick={() => setSelectedGateway('tap')}
+              className={`w-full p-4 border-2 rounded-lg transition-all ${
+                selectedGateway === 'tap'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-6 w-6" />
+                <div className="flex-1 text-right">
+                  <p className="font-medium">Tap Payment</p>
+                  <p className="text-sm text-muted-foreground">
+                    الدفع بالبطاقات السعودية
+                  </p>
                 </div>
-              </button>
-            ))}
+                <Badge>موصى به</Badge>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setSelectedGateway('paypal')}
+              className={`w-full p-4 border-2 rounded-lg transition-all ${
+                selectedGateway === 'paypal'
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-6 w-6 bg-[#0070ba] rounded flex items-center justify-center text-white text-xs font-bold">
+                  PP
+                </div>
+                <div className="flex-1 text-right">
+                  <p className="font-medium">PayPal</p>
+                  <p className="text-sm text-muted-foreground">
+                    الدفع الدولي
+                  </p>
+                </div>
+              </div>
+            </button>
 
             <Button
               className="w-full"
               size="lg"
               onClick={handlePayment}
-              disabled={!selectedGateway || createSessionMutation.isPending || enabledGateways.length === 0}
+              disabled={!selectedGateway || createSessionMutation.isPending}
             >
               {createSessionMutation.isPending ? (
                 <>

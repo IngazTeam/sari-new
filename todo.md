@@ -429,3 +429,18 @@
 - [x] إصلاح React Hooks error (نقل useLocation قبل early returns)
 - [x] حذف الباقات التجريبية
 - [x] اختبار الصفحة بنجاح (3 باقات فقط مع جدول مقارنة وFAQ)
+
+
+## نظام الدفع - Tap Payments Integration
+- [x] طلب Tap API Keys من المستخدم (Secret Key & Public Key)
+- [x] إضافة TAP_SECRET_KEY إلى env.ts
+- [x] كتابة واختبار Tap API validation
+- [x] جدول payments موجود بالفعل
+- [x] تحديث server/payment/tap.ts لاستخدام ENV.tapSecretKey
+- [x] API payments.createSession موجود ويعمل
+- [x] تحديث صفحة Checkout للعمل مع Tap مباشرة
+- [x] Tap Webhook موجود في server/webhooks/tap.ts
+- [x] تحديث routes.ts لاستخدام ENV.tapSecretKey
+- [x] Webhook يحدث الاشتراك تلقائياً
+- [x] Webhook ينشئ ويرسل الفاتورة تلقائياً
+- [x] اختبار الموقع بنجاح - جميع الصفحات تعمل

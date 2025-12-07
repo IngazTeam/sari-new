@@ -4,6 +4,7 @@
  */
 
 import * as db from '../db';
+import { ENV } from '../_core/env';
 
 interface TapChargeRequest {
   amount: number;
@@ -49,21 +50,11 @@ export async function createTapCharge(params: {
   returnUrl: string;
 }): Promise<{ success: boolean; paymentUrl?: string; chargeId?: string; error?: string }> {
   try {
-    // Get Tap gateway configuration
-    const tapGateway = await db.getPaymentGatewayByName('tap');
-    
-    if (!tapGateway || !tapGateway.isEnabled) {
-      return { success: false, error: 'Tap Payment is not enabled' };
-    }
-
-    if (!tapGateway.secretKey) {
+    if (!ENV.tapSecretKey) {
       return { success: false, error: 'Tap Secret Key is not configured' };
     }
 
-    // Determine API URL based on test mode
-    const apiUrl = tapGateway.testMode 
-      ? 'https://api.tap.company/v2/charges'
-      : 'https://api.tap.company/v2/charges';
+    const apiUrl = 'https://api.tap.company/v2/charges';
 
     // Prepare charge request
     const chargeRequest: TapChargeRequest = {
@@ -93,7 +84,7 @@ export async function createTapCharge(params: {
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${tapGateway.secretKey}`,
+        'Authorization': `Bearer ${ENV.tapSecretKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(chargeRequest),
@@ -131,20 +122,16 @@ export async function createTapCharge(params: {
 
 export async function verifyTapPayment(chargeId: string): Promise<{ success: boolean; status: string; error?: string }> {
   try {
-    const tapGateway = await db.getPaymentGatewayByName('tap');
-    
-    if (!tapGateway || !tapGateway.secretKey) {
+    if (!ENV.tapSecretKey) {
       return { success: false, status: 'failed', error: 'Tap configuration not found' };
     }
 
-    const apiUrl = tapGateway.testMode 
-      ? `https://api.tap.company/v2/charges/${chargeId}`
-      : `https://api.tap.company/v2/charges/${chargeId}`;
+    const apiUrl = `https://api.tap.company/v2/charges/${chargeId}`;
 
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${tapGateway.secretKey}`,
+        'Authorization': `Bearer ${ENV.tapSecretKey}`,
       },
     });
 
