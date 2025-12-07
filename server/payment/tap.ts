@@ -49,8 +49,17 @@ export async function createTapCharge(params: {
   customerPhone: string;
   returnUrl: string;
 }): Promise<{ success: boolean; paymentUrl?: string; chargeId?: string; error?: string }> {
+  const startTime = Date.now();
+  console.log('[Tap Payment] Creating charge:', {
+    merchantId: params.merchantId,
+    amount: params.amount,
+    currency: params.currency,
+    planId: params.planId,
+  });
+
   try {
     if (!ENV.tapSecretKey) {
+      console.error('[Tap Payment] Secret key not configured');
       return { success: false, error: 'Tap Secret Key is not configured' };
     }
 
@@ -92,7 +101,11 @@ export async function createTapCharge(params: {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Tap API Error:', errorData);
+      console.error('[Tap Payment] API Error:', {
+        status: response.status,
+        error: errorData,
+        merchantId: params.merchantId,
+      });
       return { success: false, error: errorData.message || 'Failed to create charge' };
     }
 
@@ -109,13 +122,25 @@ export async function createTapCharge(params: {
       status: 'pending',
     });
 
+    const duration = Date.now() - startTime;
+    console.log('[Tap Payment] Charge created successfully:', {
+      chargeId: chargeResponse.id,
+      merchantId: params.merchantId,
+      duration: `${duration}ms`,
+    });
+
     return {
       success: true,
       paymentUrl: chargeResponse.transaction.url,
       chargeId: chargeResponse.id,
     };
   } catch (error) {
-    console.error('Tap Payment Error:', error);
+    const duration = Date.now() - startTime;
+    console.error('[Tap Payment] Exception:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      merchantId: params.merchantId,
+      duration: `${duration}ms`,
+    });
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

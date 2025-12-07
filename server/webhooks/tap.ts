@@ -30,10 +30,19 @@ export async function verifyTapSignature(
  * Handle Tap webhook events
  */
 export async function handleTapWebhook(payload: any): Promise<{ success: boolean; message: string }> {
+  const startTime = Date.now();
+  console.log('[Tap Webhook] Received webhook:', {
+    tapId: payload.id,
+    status: payload.status,
+    amount: payload.amount,
+    currency: payload.currency,
+  });
+
   try {
     const { id: tapId, status, reference, amount, currency } = payload;
 
     if (!reference) {
+      console.error('[Tap Webhook] Missing reference in payload');
       return { success: false, message: 'Missing reference (payment ID)' };
     }
 
@@ -42,8 +51,16 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
     // Get payment from database
     const payment = await getPaymentById(paymentId);
     if (!payment) {
+      console.error('[Tap Webhook] Payment not found:', paymentId);
       return { success: false, message: 'Payment not found' };
     }
+
+    console.log('[Tap Webhook] Processing payment:', {
+      paymentId,
+      merchantId: payment.merchantId,
+      subscriptionId: payment.subscriptionId,
+      status,
+    });
 
     // Handle different statuses
     if (status === 'CAPTURED' || status === 'AUTHORIZED') {
@@ -100,6 +117,12 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
         console.error('[Tap Webhook] Error generating invoice:', error);
       }
 
+      const duration = Date.now() - startTime;
+      console.log('[Tap Webhook] Payment completed successfully:', {
+        paymentId,
+        merchantId: payment.merchantId,
+        duration: `${duration}ms`,
+      });
       return { success: true, message: 'Payment completed successfully' };
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // Payment failed
@@ -126,7 +149,12 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
 
     return { success: true, message: `Status ${status} processed` };
   } catch (error) {
-    console.error('[Tap Webhook] Error processing webhook:', error);
+    const duration = Date.now() - startTime;
+    console.error('[Tap Webhook] Exception:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      duration: `${duration}ms`,
+      payload,
+    });
     return { success: false, message: 'Internal server error' };
   }
 }

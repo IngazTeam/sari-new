@@ -453,3 +453,15 @@
 - [x] تنظيف قاعدة البيانات: إعادة إنشاء الباقات بIDs ثابتة (1,2,3)
 - [x] حذف console.log من routers.ts و db.ts
 - [x] اختبار الترقية من صفحة الاشتراكات بنجاح
+
+
+## تجهيز نظام الدفع للإنتاج (Production Ready)
+- [x] التحقق من مفاتيح Tap الحالية - يستخدم Live Keys من ENV
+- [x] النظام يعمل في وضع الإنتاج بالفعل
+- [x] Webhook Signature verification مفعّل (HMAC SHA256)
+- [x] إضافة logging محسّن في tap.ts و webhooks/tap.ts
+- [x] تحسين معالجة الأخطاء مع duration tracking
+- [x] إنشاء PRODUCTION_GUIDE.md مع جميع التعليمات
+- [x] توثيق شامل لجميع الخطوات والإعدادات
+- [ ] تسجيل Webhook URL في لوحة تحكم Tap (يدوي)
+- [ ] اختبار دفع حقيقي في الإنتاج (يدوي)
