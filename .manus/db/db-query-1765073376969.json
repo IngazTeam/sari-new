@@ -1,0 +1,25 @@
+{
+  "query": "SELECT id, nameAr, priceMonthly FROM plans ORDER BY id",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT id, nameAr, priceMonthly FROM plans ORDER BY id",
+  "rows": [
+    {
+      "id": "150001",
+      "nameAr": "المبتدئ",
+      "priceMonthly": "99"
+    },
+    {
+      "id": "150002",
+      "nameAr": "الاحترافي",
+      "priceMonthly": "299"
+    },
+    {
+      "id": "150003",
+      "nameAr": "المؤسسات",
+      "priceMonthly": "999"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnameAr\tpriceMonthly\n150001\tالمبتدئ\t99\n150002\tالاحترافي\t299\n150003\tالمؤسسات\t999\n",
+  "stderr": "",
+  "execution_time_ms": 1618
+}

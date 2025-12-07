@@ -8,9 +8,9 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 
 export default function Checkout() {
-  const [location] = useLocation();
-  const params = new URLSearchParams(location.split('?')[1]);
-  const planId = parseInt(params.get('planId') || '0');
+  const params = new URLSearchParams(window.location.search);
+  const planIdStr = params.get('planId');
+  const planId = parseInt(planIdStr || '0', 10);
 
   const { data: plan, isLoading: planLoading } = trpc.plans.getById.useQuery({ id: planId });
   const createSessionMutation = trpc.payments.createSession.useMutation({

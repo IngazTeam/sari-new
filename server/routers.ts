@@ -742,7 +742,8 @@ export const appRouter = router({
     getById: publicProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
-        return db.getPlanById(input.id);
+        const plan = await db.getPlanById(input.id);
+        return plan;
       }),
 
     // Create plan (Admin only)

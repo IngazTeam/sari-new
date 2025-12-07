@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM plans;\nINSERT INTO plans (id, name, nameAr, priceMonthly, conversationLimit, voiceMessageLimit, features, isActive) VALUES \n(1, 'Starter', 'المبتدئ', 99, 100, 50, '[\"100 محادثة شهرياً\", \"50 رسالة صوتية شهرياً\", \"حملات تسويقية غير محدودة\", \"دعم فني على مدار الساعة\"]', 1),\n(2, 'Professional', 'الاحترافي', 299, 500, 200, '[\"500 محادثة شهرياً\", \"200 رسالة صوتية شهرياً\", \"حملات تسويقية غير محدودة\", \"دعم فني على مدار الساعة\", \"تحليلات متقدمة\"]', 1),\n(3, 'Enterprise', 'المؤسسات', 999, -1, -1, '[\"محادثات غير محدودة\", \"رسائل صوتية غير محدودة\", \"حملات تسويقية غير محدودة\", \"دعم فني على مدار الساعة\", \"تحليلات متقدمة\", \"أولوية في الدعم الفني\"]', 1)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute DELETE FROM plans;\nINSERT INTO plans (id, name, nameAr, priceMonthly, conversationLimit, voiceMessageLimit, features, isActive) VALUES \n(1, 'Starter', 'المبتدئ', 99, 100, 50, '[\"100 محادثة شهرياً\", \"50 رسالة صوتية شهرياً\", \"حملات تسويقية غير محدودة\", \"دعم فني على مدار الساعة\"]', 1),\n(2, 'Professional', 'الاحترافي', 299, 500, 200, '[\"500 محادثة شهرياً\", \"200 رسالة صوتية شهرياً\", \"حملات تسويقية غير محدودة\", \"دعم فني على مدار الساعة\", \"تحليلات متقدمة\"]', 1),\n(3, 'Enterprise', 'المؤسسات', 999, -1, -1, '[\"محادثات غير محدودة\", \"رسائل صوتية غير محدودة\", \"حملات تسويقية غير محدودة\", \"دعم فني على مدار الساعة\", \"تحليلات متقدمة\", \"أولوية في الدعم الفني\"]', 1)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1698
+}
