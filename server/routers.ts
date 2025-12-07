@@ -1534,6 +1534,218 @@ export const appRouter = router({
         return { success: true, message: 'تم تحديث حالة الطلب' };
       }),
   }),
+
+  // Discount Codes Management
+  discounts: router({
+    // Create discount code
+    create: protectedProcedure
+      .input(z.object({
+        merchantId: z.number(),
+        code: z.string().min(4).max(50),
+        type: z.enum(['percentage', 'fixed']),
+        value: z.number().positive(),
+        minOrderAmount: z.number().optional(),
+        maxUses: z.number().optional(),
+        expiresAt: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Verify user owns this merchant
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const discountCode = await db.createDiscountCode({
+          merchantId: input.merchantId,
+          code: input.code.toUpperCase(),
+          type: input.type,
+          value: input.value,
+          minOrderAmount: input.minOrderAmount || null,
+          maxUses: input.maxUses || null,
+          usedCount: 0,
+          isActive: true,
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+        });
+
+        return { success: true, discountCode };
+      }),
+
+    // List all discount codes
+    list: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        return await db.getDiscountCodesByMerchantId(input.merchantId);
+      }),
+
+    // Get discount code by ID
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const discountCode = await db.getDiscountCodeById(input.id);
+        if (!discountCode) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+
+        const merchant = await db.getMerchantById(discountCode.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        return discountCode;
+      }),
+
+    // Update discount code
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        isActive: z.boolean().optional(),
+        maxUses: z.number().optional(),
+        expiresAt: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const discountCode = await db.getDiscountCodeById(input.id);
+        if (!discountCode) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+
+        const merchant = await db.getMerchantById(discountCode.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        await db.updateDiscountCode(input.id, {
+          isActive: input.isActive,
+          maxUses: input.maxUses,
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+        });
+
+        return { success: true, message: 'تم تحديث كود الخصم' };
+      }),
+
+    // Delete discount code
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const discountCode = await db.getDiscountCodeById(input.id);
+        if (!discountCode) {
+          throw new TRPCError({ code: 'NOT_FOUND' });
+        }
+
+        const merchant = await db.getMerchantById(discountCode.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        await db.deleteDiscountCode(input.id);
+        return { success: true, message: 'تم حذف كود الخصم' };
+      }),
+
+    // Get statistics
+    getStats: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const codes = await db.getDiscountCodesByMerchantId(input.merchantId);
+        const active = codes.filter(c => c.isActive).length;
+        const used = codes.reduce((sum, c) => sum + c.usedCount, 0);
+
+        return {
+          total: codes.length,
+          active,
+          used,
+        };
+      }),
+  }),
+
+  // Referrals Management
+  referrals: router({
+    // List all referral codes
+    list: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        // Get all referral codes for this merchant
+        const db_instance = await db.getDb();
+        if (!db_instance) return [];
+
+        const { referralCodes } = await import('../drizzle/schema.js');
+        const { eq } = await import('drizzle-orm');
+        
+        return await db_instance.select().from(referralCodes).where(eq(referralCodes.merchantId, input.merchantId));
+      }),
+
+    // Get statistics
+    getStats: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const db_instance = await db.getDb();
+        if (!db_instance) return { totalReferrals: 0, successfulReferrals: 0, rewardsGiven: 0 };
+
+        const { referralCodes, referrals } = await import('../drizzle/schema.js');
+        const { eq, and } = await import('drizzle-orm');
+        
+        const codes = await db_instance.select().from(referralCodes).where(eq(referralCodes.merchantId, input.merchantId));
+        const totalReferrals = codes.reduce((sum, c) => sum + c.referralCount, 0);
+        const rewardsGiven = codes.filter(c => c.rewardGiven).length;
+
+        // Count successful referrals (completed orders)
+        let successfulReferrals = 0;
+        for (const code of codes) {
+          const codeReferrals = await db_instance.select().from(referrals).where(
+            and(
+              eq(referrals.referralCodeId, code.id),
+              eq(referrals.orderCompleted, true)
+            )
+          );
+          successfulReferrals += codeReferrals.length;
+        }
+
+        return {
+          totalReferrals,
+          successfulReferrals,
+          rewardsGiven,
+        };
+      }),
+
+    // Get top referrers
+    getTopReferrers: protectedProcedure
+      .input(z.object({ merchantId: z.number(), limit: z.number().default(5) }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const db_instance = await db.getDb();
+        if (!db_instance) return [];
+
+        const { referralCodes } = await import('../drizzle/schema.js');
+        const { eq, desc } = await import('drizzle-orm');
+        
+        return await db_instance.select().from(referralCodes)
+          .where(eq(referralCodes.merchantId, input.merchantId))
+          .orderBy(desc(referralCodes.referralCount))
+          .limit(input.limit);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

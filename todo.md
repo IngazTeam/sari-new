@@ -723,3 +723,41 @@
 - [ ] كتابة اختبارات Vitest
 - [ ] إنشاء دليل DISCOUNT_REFERRAL_GUIDE.md
 - [ ] اختبار النظام الكامل
+
+
+## واجهات إدارة كودات الخصم والإحالات
+
+### المرحلة 1: APIs
+- [x] إضافة discount router في routers.ts
+  - [x] discounts.create (إنشاء كود خصم)
+  - [x] discounts.list (عرض جميع الكودات)
+  - [x] discounts.getById (تفاصيل كود)
+  - [x] discounts.update (تحديث كود)
+  - [x] discounts.delete (حذف كود)
+  - [x] discounts.getStats (إحصائيات)
+- [x] إضافة referrals router في routers.ts
+  - [x] referrals.list (عرض جميع الإحالات)
+  - [x] referrals.getStats (إحصائيات)
+  - [x] referrals.getTopReferrers (أفضل 5 عملاء)
+
+### المرحلة 2: صفحة كودات الخصم
+- [x] إنشاء صفحة /merchant/discounts
+- [x] بطاقات الإحصائيات (3 بطاقات)
+- [x] جدول الكودات مع جميع التفاصيل
+- [x] نموذج إنشاء كود جديد (Dialog)
+- [x] تعطيل/حذف الكودات
+
+### المرحلة 3: صفحة الإحالات
+- [x] إنشاء صفحة /merchant/referrals
+- [x] بطاقات الإحصائيات (3 بطاقات)
+- [x] جدول الإحالات مع شريط التقدم
+- [x] أفضل 5 عملاء مع Progress Bar
+- [x] تتبع التقدم والمكافآت
+
+### المرحلة 4: الربط
+- [x] إضافة روابط في DashboardLayout (Ticket, UserPlus icons)
+- [x] إضافة routes في App.tsx
+
+### المرحلة 5: الاختبار
+- [x] اختبار APIs (جميع APIs تعمل)
+- [x] اختبار الواجهات (جاهزة للاستخدام)

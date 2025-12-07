@@ -23,6 +23,8 @@ import Conversations from "./pages/merchant/Conversations";
 import WhatsApp from "./pages/merchant/WhatsApp";
 import SallaIntegration from "./pages/SallaIntegration";
 import ChatOrders from "./pages/ChatOrders";
+import DiscountCodes from "./pages/DiscountCodes";
+import Referrals from "./pages/Referrals";
 import MerchantSettings from "./pages/merchant/Settings";
 import Reports from "./pages/merchant/Reports";
 import Subscriptions from "./pages/merchant/Subscriptions";
@@ -107,6 +109,18 @@ function Router() {
       <Route path="/merchant/chat-orders">
         <DashboardLayout>
           <ChatOrders />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/discounts">
+        <DashboardLayout>
+          <DiscountCodes />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/referrals">
+        <DashboardLayout>
+          <Referrals />
         </DashboardLayout>
       </Route>
       
