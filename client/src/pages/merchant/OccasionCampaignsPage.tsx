@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, Gift, TrendingUp, Send, Clock, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 // Occasion names in Arabic
 const OCCASION_NAMES: Record<string, string> = {
   ramadan: 'رمضان المبارك',
@@ -30,6 +31,8 @@ const OCCASION_EMOJIS: Record<string, string> = {
 };
 
 export default function OccasionCampaignsPage() {
+  const { t } = useTranslation();
+
   const { user } = useAuth();
 
   // Get merchant
@@ -53,7 +56,7 @@ export default function OccasionCampaignsPage() {
   // Toggle mutation
   const toggleMutation = trpc.occasionCampaigns.toggle.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث حالة الحملة بنجاح');
+      toast.success(t('toast.common.msg1'));
       refetchCampaigns();
     },
     onError: (error) => {

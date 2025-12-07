@@ -9,7 +9,10 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import { ArrowRight, Send, Image as ImageIcon } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 export default function NewCampaign() {
+  const { t } = useTranslation();
+
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     name: '',
@@ -20,7 +23,7 @@ export default function NewCampaign() {
 
   const createMutation = trpc.campaigns.create.useMutation({
     onSuccess: () => {
-      toast.success('تم إنشاء الحملة بنجاح');
+      toast.success(t('toast.campaigns.msg1'));
       setLocation('/merchant/campaigns');
     },
     onError: (error) => {
@@ -32,12 +35,12 @@ export default function NewCampaign() {
     e.preventDefault();
 
     if (!formData.name.trim()) {
-      toast.error('يرجى إدخال اسم الحملة');
+      toast.error(t('toast.campaigns.msg7'));
       return;
     }
 
     if (!formData.message.trim()) {
-      toast.error('يرجى إدخال نص الرسالة');
+      toast.error(t('toast.campaigns.msg8'));
       return;
     }
 

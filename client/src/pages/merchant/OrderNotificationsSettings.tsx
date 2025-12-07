@@ -8,7 +8,10 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Bell, Check, X, Clock } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 export default function OrderNotificationsSettings() {
+  const { t } = useTranslation();
+
   const { data: templates, isLoading, refetch } = trpc.orderNotifications.getTemplates.useQuery();
   const updateTemplate = trpc.orderNotifications.updateTemplate.useMutation();
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -38,7 +41,7 @@ export default function OrderNotificationsSettings() {
       toast.success(enabled ? 'تم تفعيل الإشعار' : 'تم تعطيل الإشعار');
       refetch();
     } catch (error) {
-      toast.error('فشل تحديث الإشعار');
+      toast.error(t('toast.notifications.msg3'));
     }
   };
 
@@ -50,11 +53,11 @@ export default function OrderNotificationsSettings() {
   const handleSave = async (id: number) => {
     try {
       await updateTemplate.mutateAsync({ id, template: editingTemplate });
-      toast.success('تم حفظ القالب بنجاح');
+      toast.success(t('toast.notifications.msg4'));
       setEditingId(null);
       refetch();
     } catch (error) {
-      toast.error('فشل حفظ القالب');
+      toast.error(t('toast.notifications.msg5'));
     }
   };
 

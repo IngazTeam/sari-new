@@ -25,6 +25,7 @@ import { Settings as SettingsIcon, Plus, Pencil, Check, X, History, Clock, Filte
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 interface PlanFormData {
   id?: number;
   name: string;
@@ -37,6 +38,8 @@ interface PlanFormData {
 }
 
 export default function Settings() {
+  const { t } = useTranslation();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlanFormData | null>(null);
   
@@ -89,7 +92,7 @@ export default function Settings() {
 
   const createMutation = trpc.plans.create.useMutation({
     onSuccess: () => {
-      toast.success('تم إضافة الباقة بنجاح');
+      toast.success(t('toast.common.msg1'));
       refetch();
       setIsDialogOpen(false);
       setEditingPlan(null);
@@ -101,7 +104,7 @@ export default function Settings() {
 
   const updateMutation = trpc.plans.update.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث الباقة بنجاح');
+      toast.success(t('toast.common.msg1'));
       refetch();
       refetchLogs();
       setIsDialogOpen(false);

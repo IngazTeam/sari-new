@@ -21,7 +21,7 @@ export default function Campaigns() {
   const { data: campaigns, isLoading, refetch } = trpc.campaigns.list.useQuery();
   const deleteMutation = trpc.campaigns.delete.useMutation({
     onSuccess: () => {
-      toast.success('تم حذف الحملة بنجاح');
+      toast.success(t('toast.campaigns.msg3'));
       refetch();
     },
     onError: (error) => {
@@ -31,7 +31,7 @@ export default function Campaigns() {
 
   const sendMutation = trpc.campaigns.send.useMutation({
     onSuccess: () => {
-      toast.success('تم بدء إرسال الحملة بنجاح');
+      toast.success(t('toast.campaigns.msg5'));
       refetch();
     },
     onError: (error) => {

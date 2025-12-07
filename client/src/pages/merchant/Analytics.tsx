@@ -6,7 +6,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function Analytics() {
+  const { t } = useTranslation();
+
   const [dateRange] = useState<{ start?: string; end?: string }>({});
   const [isExporting, setIsExporting] = useState(false);
 
@@ -36,9 +39,9 @@ export default function Analytics() {
       link.click();
       window.URL.revokeObjectURL(url);
 
-      toast.success('تم تصدير التقرير PDF بنجاح');
+      toast.success(t('toast.analytics.msg1'));
     } catch (error) {
-      toast.error('فشل تصدير PDF');
+      toast.error(t('toast.analytics.msg2'));
     } finally {
       setIsExporting(false);
     }
@@ -67,9 +70,9 @@ export default function Analytics() {
       link.click();
       window.URL.revokeObjectURL(url);
 
-      toast.success('تم تصدير التقرير Excel بنجاح');
+      toast.success(t('toast.analytics.msg3'));
     } catch (error) {
-      toast.error('فشل تصدير Excel');
+      toast.error(t('toast.analytics.msg4'));
     } finally {
       setIsExporting(false);
     }

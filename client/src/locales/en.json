@@ -335,7 +335,9 @@
       "msg5": "Instance set as primary",
       "msg6": "Instance deleted successfully",
       "msg7": "Failed to delete instance",
-      "msg8": "Please enter Instance ID and Token"
+      "msg8": "Please enter Instance ID and Token",
+      "msg9": "Connection successful! Status",
+      "msg10": "Connection failed"
     },
     "notifications": {
       "msg1": "Notification enabled",

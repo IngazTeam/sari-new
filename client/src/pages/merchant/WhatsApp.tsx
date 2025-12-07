@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle2, XCircle, Clock, Smartphone, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 // Popular country codes
 const COUNTRY_CODES = [
   { code: '+966', name: 'السعودية', flag: '🇸🇦' },
@@ -24,6 +25,8 @@ const COUNTRY_CODES = [
 ];
 
 export default function WhatsAppConnection() {
+  const { t } = useTranslation();
+
   const [countryCode, setCountryCode] = useState('+966');
   const [phoneNumber, setPhoneNumber] = useState('');
 
@@ -41,7 +44,7 @@ export default function WhatsAppConnection() {
   // Request connection mutation
   const requestConnectionMutation = trpc.whatsapp.requestConnection.useMutation({
     onSuccess: () => {
-      toast.success('تم إرسال طلب الربط بنجاح');
+      toast.success(t('toast.common.msg2'));
       refetchRequest();
       setPhoneNumber('');
     },
@@ -54,14 +57,14 @@ export default function WhatsAppConnection() {
     e.preventDefault();
 
     if (!phoneNumber.trim()) {
-      toast.error('الرجاء إدخال رقم الهاتف');
+      toast.error(t('toast.common.msg4'));
       return;
     }
 
     // Validate phone number (basic validation)
     const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
     if (cleanNumber.length < 8 || cleanNumber.length > 15) {
-      toast.error('رقم الهاتف غير صحيح');
+      toast.error(t('toast.common.msg5'));
       return;
     }
 

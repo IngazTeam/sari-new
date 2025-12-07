@@ -11,7 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CheckCircle2, XCircle, Clock, Smartphone } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function WhatsAppRequests() {
+  const { t } = useTranslation();
+
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -25,7 +28,7 @@ export default function WhatsAppRequests() {
   // Approve mutation
   const approveMutation = trpc.whatsapp.approveRequest.useMutation({
     onSuccess: () => {
-      toast.success('تم قبول الطلب بنجاح');
+      toast.success(t('toast.common.msg18'));
       refetch();
     },
     onError: (error) => {
@@ -36,7 +39,7 @@ export default function WhatsAppRequests() {
   // Reject mutation
   const rejectMutation = trpc.whatsapp.rejectRequest.useMutation({
     onSuccess: () => {
-      toast.success('تم رفض الطلب بنجاح');
+      toast.success(t('toast.common.msg20'));
       setIsRejectDialogOpen(false);
       setRejectionReason('');
       setSelectedRequest(null);
@@ -60,7 +63,7 @@ export default function WhatsAppRequests() {
 
   const handleRejectConfirm = () => {
     if (!rejectionReason.trim()) {
-      toast.error('الرجاء إدخال سبب الرفض');
+      toast.error(t('toast.common.msg23'));
       return;
     }
 

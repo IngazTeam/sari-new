@@ -6,7 +6,10 @@ import { ArrowRight, Send, Calendar, Users, CheckCircle, XCircle } from 'lucide-
 import { useLocation, useRoute } from 'wouter';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function CampaignDetails() {
+  const { t } = useTranslation();
+
   const [, params] = useRoute('/merchant/campaigns/:id');
   const [, setLocation] = useLocation();
   const campaignId = params?.id ? parseInt(params.id) : 0;
@@ -15,7 +18,7 @@ export default function CampaignDetails() {
 
   const sendMutation = trpc.campaigns.send.useMutation({
     onSuccess: () => {
-      toast.success('تم بدء إرسال الحملة بنجاح');
+      toast.success(t('toast.campaigns.msg5'));
       refetch();
     },
     onError: (error) => {

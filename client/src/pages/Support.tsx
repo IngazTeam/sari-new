@@ -20,7 +20,10 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function Support() {
+  const { t } = useTranslation();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -31,7 +34,7 @@ export default function Support() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement form submission
-    toast.success('تم إرسال رسالتك بنجاح! سنرد عليك في أقرب وقت.');
+    toast.success(t('toast.support.msg1'));
     setFormData({ name: '', email: '', subject: '', message: '' });
   };
 

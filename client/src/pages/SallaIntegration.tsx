@@ -9,7 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Store, CheckCircle2, XCircle, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function SallaIntegration() {
+  const { t } = useTranslation();
+
   const [storeUrl, setStoreUrl] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -32,7 +35,7 @@ export default function SallaIntegration() {
   // Mutations
   const connectMutation = trpc.salla.connect.useMutation({
     onSuccess: (data) => {
-      toast.success('نجح الربط!', {
+      toast.success(t('toast.common.msg10'), {
         description: data.message,
       });
       setStoreUrl('');
@@ -40,7 +43,7 @@ export default function SallaIntegration() {
       refetch();
     },
     onError: (error) => {
-      toast.error('فشل الربط', {
+      toast.error(t('toast.common.msg11'), {
         description: error.message,
       });
     },
@@ -51,13 +54,13 @@ export default function SallaIntegration() {
 
   const disconnectMutation = trpc.salla.disconnect.useMutation({
     onSuccess: (data) => {
-      toast.success('تم الفصل', {
+      toast.success(t('toast.common.msg12'), {
         description: data.message,
       });
       refetch();
     },
     onError: (error) => {
-      toast.error('فشل الفصل', {
+      toast.error(t('toast.common.msg13'), {
         description: error.message,
       });
     },
@@ -65,13 +68,13 @@ export default function SallaIntegration() {
 
   const syncMutation = trpc.salla.syncNow.useMutation({
     onSuccess: (data) => {
-      toast.success('تمت المزامنة ✅', {
+      toast.success(t('toast.common.msg14'), {
         description: data.message,
       });
       refetch();
     },
     onError: (error) => {
-      toast.error('فشلت المزامنة', {
+      toast.error(t('toast.common.msg15'), {
         description: error.message,
       });
     },
@@ -79,7 +82,7 @@ export default function SallaIntegration() {
 
   const handleConnect = () => {
     if (!storeUrl || !accessToken) {
-      toast.error('خطأ', {
+      toast.error(t('toast.common.msg16'), {
         description: 'يرجى إدخال رابط المتجر والـ Token',
       });
       return;

@@ -11,7 +11,10 @@ import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Clock, Smartphone, QrCode, Loader2, ArrowRight } from 'lucide-react';
 import { useLocation } from 'wouter';
 
+import { useTranslation } from 'react-i18next';
 export default function WhatsAppSetupWizard() {
+  const { t } = useTranslation();
+
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -72,7 +75,7 @@ export default function WhatsAppSetupWizard() {
       },
       {
         onSuccess: () => {
-          toast.success('تم إرسال الطلب بنجاح! سيتم مراجعته قريباً');
+          toast.success(t('toast.common.msg6'));
           setPhoneNumber('');
           refetchRequests();
         },
@@ -98,7 +101,7 @@ export default function WhatsAppSetupWizard() {
 
   const handleRefreshQRCode = async () => {
     await refetchQRCode();
-    toast.success('تم تحديث الكود');
+    toast.success(t('toast.common.msg7'));
   };
 
   const getStatusBadge = (status: string) => {

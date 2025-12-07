@@ -60,7 +60,7 @@ export default function Orders() {
   // Update status mutation
   const updateStatusMutation = trpc.orders.updateStatus.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث حالة الطلب');
+      toast.success(t('toast.orders.msg2'));
       setIsUpdateStatusOpen(false);
       refetch();
     },
@@ -72,7 +72,7 @@ export default function Orders() {
   // Cancel order mutation
   const cancelOrderMutation = trpc.orders.cancel.useMutation({
     onSuccess: () => {
-      toast.success('تم إلغاء الطلب');
+      toast.success(t('toast.orders.msg5'));
       setIsDetailsOpen(false);
       refetch();
     },

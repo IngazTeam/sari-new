@@ -7,7 +7,10 @@ import { Upload, FileText, Download, ArrowRight, CheckCircle2, XCircle, AlertCir
 import { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
 
+import { useTranslation } from 'react-i18next';
 export default function UploadProducts() {
+  const { t } = useTranslation();
+
   const [, setLocation] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -16,14 +19,14 @@ export default function UploadProducts() {
   const uploadMutation = trpc.products.uploadCSV.useMutation({
     onSuccess: (data) => {
       setUploadResult(data);
-      toast.success(`تم استيراد ${data.imported} منتج بنجاح`);
+      toast.success(`t('toast.upload.msg1')} ${data.imported} منتج بنجاح`);
       setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     },
     onError: (error) => {
-      toast.error('فشل رفع الملف: ' + error.message);
+      toast.error(t('toast.upload.msg2') + ': ' + error.message);
     },
   });
 
@@ -31,7 +34,7 @@ export default function UploadProducts() {
     const file = event.target.files?.[0];
     if (file) {
       if (!file.name.endsWith('.csv')) {
-        toast.error('يرجى اختيار ملف CSV فقط');
+        toast.error(t('toast.upload.msg3'));
         return;
       }
       setSelectedFile(file);
@@ -41,7 +44,7 @@ export default function UploadProducts() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast.error('يرجى اختيار ملف CSV أولاً');
+      toast.error(t('toast.upload.msg4'));
       return;
     }
 
@@ -49,7 +52,7 @@ export default function UploadProducts() {
       const text = await selectedFile.text();
       uploadMutation.mutate({ csvData: text });
     } catch (error) {
-      toast.error('فشل قراءة الملف');
+      toast.error(t('toast.common.msg9'));
     }
   };
 

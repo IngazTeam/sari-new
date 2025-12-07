@@ -6,7 +6,10 @@ import { Check, Crown, Zap, Rocket } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
+import { useTranslation } from 'react-i18next';
 export default function Subscriptions() {
+  const { t } = useTranslation();
+
   const [, setLocation] = useLocation();
   const { data: currentPlan, isLoading: currentPlanLoading } = trpc.merchants.getCurrentPlan.useQuery();
   const { data: plans, isLoading: plansLoading } = trpc.plans.list.useQuery();
@@ -49,7 +52,7 @@ export default function Subscriptions() {
 
   const handleUpgrade = async (planId: number) => {
     if (currentPlanId === planId) {
-      toast.info('أنت مشترك بالفعل في هذه الباقة');
+      toast.info(t('toast.subscriptions.msg1'));
       return;
     }
     // Redirect to checkout page

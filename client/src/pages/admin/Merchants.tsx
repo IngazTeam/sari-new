@@ -21,18 +21,21 @@ import { toast } from 'sonner';
 import { Store, Phone, Mail, Calendar, Eye } from 'lucide-react';
 import { useLocation } from 'wouter';
 
+import { useTranslation } from 'react-i18next';
 export default function MerchantsManagement() {
+  const { t } = useTranslation();
+
   const utils = trpc.useUtils();
   const [, setLocation] = useLocation();
   const { data: merchants, isLoading } = trpc.merchants.list.useQuery();
   
   const updateStatusMutation = trpc.merchants.updateStatus.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث حالة التاجر بنجاح');
+      toast.success(t('toast.merchants.msg1'));
       utils.merchants.list.invalidate();
     },
     onError: (error) => {
-      toast.error('فشل تحديث حالة التاجر: ' + error.message);
+      toast.error(t('toast.merchants.msg2') + ': ' + error.message);
     },
   });
 

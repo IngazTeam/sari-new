@@ -10,7 +10,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Clock, Phone, Building2, Calendar } from 'lucide-react';
 
+import { useTranslation } from 'react-i18next';
 export default function WhatsAppRequestsPage() {
+  const { t } = useTranslation();
+
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
@@ -34,7 +37,7 @@ export default function WhatsAppRequestsPage() {
   const handleApprove = () => {
     if (!selectedRequest) return;
     if (!instanceId || !token) {
-      toast.error('يرجى إدخال Instance ID و Token');
+      toast.error(t('toast.common.msg8'));
       return;
     }
 
@@ -48,7 +51,7 @@ export default function WhatsAppRequestsPage() {
       },
       {
         onSuccess: () => {
-          toast.success('تمت الموافقة على الطلب بنجاح');
+          toast.success(t('toast.common.msg18'));
           setApproveDialogOpen(false);
           resetForm();
           refetch();
@@ -63,7 +66,7 @@ export default function WhatsAppRequestsPage() {
   const handleReject = () => {
     if (!selectedRequest) return;
     if (!rejectionReason) {
-      toast.error('يرجى إدخال سبب الرفض');
+      toast.error(t('toast.common.msg23'));
       return;
     }
 
@@ -74,7 +77,7 @@ export default function WhatsAppRequestsPage() {
       },
       {
         onSuccess: () => {
-          toast.success('تم رفض الطلب');
+          toast.success(t('toast.common.msg21'));
           setRejectDialogOpen(false);
           resetForm();
           refetch();

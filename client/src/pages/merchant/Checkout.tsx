@@ -7,7 +7,10 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { useLocation } from "wouter";
 
+import { useTranslation } from 'react-i18next';
 export default function Checkout() {
+  const { t } = useTranslation();
+
   const params = new URLSearchParams(window.location.search);
   const planIdStr = params.get('planId');
   const planId = parseInt(planIdStr || '0', 10);
@@ -55,7 +58,7 @@ export default function Checkout() {
 
   const handlePayment = async () => {
     if (!selectedGateway) {
-      toast.error('الرجاء اختيار طريقة الدفع');
+      toast.error(t('toast.subscriptions.msg2'));
       return;
     }
 

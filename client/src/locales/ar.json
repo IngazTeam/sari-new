@@ -335,7 +335,9 @@
       "msg5": "تم تعيين Instance كـ Primary",
       "msg6": "تم حذف Instance بنجاح",
       "msg7": "فشل حذف Instance",
-      "msg8": "يرجى إدخال Instance ID و Token"
+      "msg8": "يرجى إدخال Instance ID و Token",
+      "msg9": "الاتصال ناجح! الحالة",
+      "msg10": "فشل الاتصال"
     },
     "notifications": {
       "msg1": "تم تفعيل الإشعار",

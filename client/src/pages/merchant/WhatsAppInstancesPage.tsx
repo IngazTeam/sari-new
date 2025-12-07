@@ -57,7 +57,7 @@ export default function WhatsAppInstancesPage() {
   // Mutations
   const createMutation = trpc.whatsappInstances.create.useMutation({
     onSuccess: () => {
-      toast.success("تم إضافة Instance بنجاح");
+      toast.success("t('toast.instances.msg1')}");
       setShowAddDialog(false);
       resetForm();
       refetch();
@@ -69,7 +69,7 @@ export default function WhatsAppInstancesPage() {
 
   const updateMutation = trpc.whatsappInstances.update.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث Instance بنجاح");
+      toast.success("t('toast.instances.msg3')}");
       setShowEditDialog(false);
       setSelectedInstance(null);
       resetForm();
@@ -82,7 +82,7 @@ export default function WhatsAppInstancesPage() {
 
   const setPrimaryMutation = trpc.whatsappInstances.setPrimary.useMutation({
     onSuccess: () => {
-      toast.success("تم تعيين Instance كـ Primary");
+      toast.success("t('toast.instances.msg5')}");
       refetch();
     },
     onError: (error) => {
@@ -92,7 +92,7 @@ export default function WhatsAppInstancesPage() {
 
   const deleteMutation = trpc.whatsappInstances.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف Instance بنجاح");
+      toast.success("t('toast.instances.msg7')}");
       refetch();
     },
     onError: (error) => {
@@ -103,9 +103,9 @@ export default function WhatsAppInstancesPage() {
   const testConnectionMutation = trpc.whatsappInstances.testConnection.useMutation({
     onSuccess: (data) => {
       if (data.success) {
-        toast.success(`الاتصال ناجح! الحالة: ${data.status}`);
+        toast.success(`t('toast.instances.msg9')}: ${data.status}`);
       } else {
-        toast.error(`فشل الاتصال: ${data.message}`);
+        toast.error(`t('toast.instances.msg10')}: ${data.message}`);
       }
       setTestingConnection(false);
     },

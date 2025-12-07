@@ -8,7 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ShoppingCart, TrendingUp, Send, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function AbandonedCartsPage() {
+  const { t } = useTranslation();
+
   const { user } = useAuth();
   const [selectedCart, setSelectedCart] = useState<number | null>(null);
 
@@ -30,7 +33,7 @@ export default function AbandonedCartsPage() {
   // Send reminder mutation
   const sendReminderMutation = trpc.abandonedCarts.sendReminder.useMutation({
     onSuccess: () => {
-      toast.success('تم إرسال رسالة التذكير بنجاح');
+      toast.success(t('toast.carts.msg1'));
       refetchCarts();
     },
     onError: (error) => {
@@ -41,7 +44,7 @@ export default function AbandonedCartsPage() {
   // Mark as recovered mutation
   const markRecoveredMutation = trpc.abandonedCarts.markRecovered.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث حالة السلة بنجاح');
+      toast.success(t('toast.common.msg1'));
       refetchCarts();
     },
     onError: (error) => {

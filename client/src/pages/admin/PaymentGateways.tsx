@@ -9,11 +9,14 @@ import { CreditCard, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
+import { useTranslation } from 'react-i18next';
 export default function PaymentGateways() {
+  const { t } = useTranslation();
+
   const { data: gateways, isLoading, refetch } = trpc.paymentGateways.list.useQuery();
   const upsertMutation = trpc.paymentGateways.upsert.useMutation({
     onSuccess: () => {
-      toast.success('تم حفظ الإعدادات بنجاح');
+      toast.success(t('toast.common.msg1'));
       refetch();
     },
     onError: (error) => {

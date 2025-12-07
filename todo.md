@@ -1236,3 +1236,12 @@
 - [x] حفظ checkpoint
 
 ملاحظة: تم إعداد البنية التحتية لترجمة جميع الرسائل. يمكن إكمال تحديث باقي الصفحات (25 ملف) باستخدام toast-mapping.json كمرجع.
+
+## Script استبدال رسائل Toast تلقائياً
+- [x] تطوير replace-toast-messages.py script (باستخدام toast-mapping.json)
+- [x] تشغيل Script على جميع الملفات (68 رسالة في 25 ملف)
+- [x] إنشاء add-usetranslation.py لإضافة useTranslation تلقائياً
+- [x] إضافة useTranslation في 20 ملف مفقود
+- [x] إصلاح جميع أخطاء TypeScript (0 أخطاء)
+- [x] اختبار الموقع في كلا اللغتين بنجاح
+- [x] حفظ checkpoint

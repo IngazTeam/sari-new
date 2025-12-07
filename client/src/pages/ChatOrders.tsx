@@ -30,7 +30,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function ChatOrders() {
+  const { t } = useTranslation();
+
   const [selectedMerchantId] = useState(1); // TODO: Get from context
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
@@ -40,7 +43,7 @@ export default function ChatOrders() {
 
   const updateStatusMutation = trpc.orders.updateStatus.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث حالة الطلب بنجاح');
+      toast.success(t('toast.orders.msg1'));
       refetch();
     },
     onError: (error) => {

@@ -53,7 +53,7 @@ export default function DiscountCodes() {
   // Mutations
   const createMutation = trpc.discounts.create.useMutation({
     onSuccess: () => {
-      toast.success("تم إنشاء كود الخصم بنجاح");
+      toast.success("t('toast.discounts.msg1')}");
       refetch();
       setIsCreateDialogOpen(false);
       setNewCode({
@@ -72,7 +72,7 @@ export default function DiscountCodes() {
 
   const updateMutation = trpc.discounts.update.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث كود الخصم");
+      toast.success("t('toast.discounts.msg3')}");
       refetch();
     },
     onError: (error) => {
@@ -82,7 +82,7 @@ export default function DiscountCodes() {
 
   const deleteMutation = trpc.discounts.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف كود الخصم");
+      toast.success("t('toast.discounts.msg5')}");
       refetch();
     },
     onError: (error) => {
@@ -92,7 +92,7 @@ export default function DiscountCodes() {
 
   const handleCreate = () => {
     if (!newCode.code || !newCode.value) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error("t('toast.discounts.msg7')}");
       return;
     }
 

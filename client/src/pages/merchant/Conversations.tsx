@@ -311,7 +311,7 @@ export default function Conversations() {
 
                         if (uploadResult.success) {
                           toast.dismiss();
-                          toast.success(`تم رفع التسجيل بنجاح (${uploadResult.size.toFixed(2)}MB)`);
+                          toast.success(`t('toast.conversations.msg1')} (${uploadResult.size.toFixed(2)}MB)`);
 
                           // TODO: إرسال الرسالة الصوتية عبر WhatsApp
                           console.log('Audio URL:', uploadResult.audioUrl);
@@ -319,12 +319,12 @@ export default function Conversations() {
                       };
                     } catch (error) {
                       toast.dismiss();
-                      toast.error('فشل رفع التسجيل');
+                      toast.error(t('toast.conversations.msg2'));
                       console.error('Upload error:', error);
                     }
                   }}
                   onCancel={() => {
-                    toast.info('تم إلغاء التسجيل');
+                    toast.info(t('toast.conversations.msg3'));
                   }}
                 />
               </CardContent>

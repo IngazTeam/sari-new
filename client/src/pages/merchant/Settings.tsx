@@ -8,7 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
+import { useTranslation } from 'react-i18next';
 export default function MerchantSettings() {
+  const { t } = useTranslation();
+
   const { data: user, refetch: refetchUser } = trpc.auth.me.useQuery();
   const { data: merchant, refetch: refetchMerchant } = trpc.merchants.getCurrent.useQuery();
 
@@ -39,7 +42,7 @@ export default function MerchantSettings() {
 
   const updateProfileMutation = trpc.auth.updateProfile.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث معلومات الحساب بنجاح');
+      toast.success(t('toast.settings.msg1'));
       refetchUser();
     },
     onError: (error) => {
@@ -49,7 +52,7 @@ export default function MerchantSettings() {
 
   const updateMerchantMutation = trpc.merchants.update.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث معلومات المتجر بنجاح');
+      toast.success(t('toast.settings.msg3'));
       refetchMerchant();
     },
     onError: (error) => {
@@ -59,7 +62,7 @@ export default function MerchantSettings() {
 
   const handleUpdateProfile = () => {
     if (!userName.trim()) {
-      toast.error('الاسم مطلوب');
+      toast.error(t('toast.settings.msg5'));
       return;
     }
 
@@ -71,7 +74,7 @@ export default function MerchantSettings() {
 
   const handleUpdateMerchant = () => {
     if (!businessName.trim()) {
-      toast.error('اسم المتجر مطلوب');
+      toast.error(t('toast.settings.msg6'));
       return;
     }
 
