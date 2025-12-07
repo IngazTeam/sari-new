@@ -48,6 +48,9 @@ import {
   paymentGateways,
   PaymentGateway,
   InsertPaymentGateway,
+  invoices,
+  Invoice,
+  InsertInvoice,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -991,4 +994,78 @@ export async function updatePaymentStatus(id: number, status: 'pending' | 'compl
   await db.update(payments).set(updateData).where(eq(payments.id, id));
 
   return getPaymentById(id);
+}
+
+
+// ============================================
+// Invoice Functions
+// ============================================
+
+export async function createInvoice(invoice: InsertInvoice): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  await db.insert(invoices).values(invoice);
+  return getInvoiceByNumber(invoice.invoiceNumber);
+}
+
+export async function getInvoiceById(id: number): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(invoices).where(eq(invoices.invoiceNumber, invoiceNumber)).limit(1);
+  return result[0];
+}
+
+export async function getInvoicesByMerchantId(merchantId: number): Promise<Invoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(invoices).where(eq(invoices.merchantId, merchantId)).orderBy(desc(invoices.createdAt));
+}
+
+export async function getAllInvoices(): Promise<Invoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(invoices).orderBy(desc(invoices.createdAt));
+}
+
+export async function updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(invoices).set(data).where(eq(invoices.id, id));
+}
+
+export async function generateInvoiceNumber(): Promise<string> {
+  const db = await getDb();
+  if (!db) return `INV-${new Date().getFullYear()}-0001`;
+
+  // Get the latest invoice number for this year
+  const year = new Date().getFullYear();
+  const prefix = `INV-${year}-`;
+  
+  const result = await db
+    .select()
+    .from(invoices)
+    .where(sql`${invoices.invoiceNumber} LIKE ${prefix + '%'}`)
+    .orderBy(desc(invoices.invoiceNumber))
+    .limit(1);
+
+  if (result.length === 0) {
+    return `${prefix}0001`;
+  }
+
+  const lastNumber = result[0].invoiceNumber.split('-')[2];
+  const nextNumber = (parseInt(lastNumber) + 1).toString().padStart(4, '0');
+  return `${prefix}${nextNumber}`;
 }

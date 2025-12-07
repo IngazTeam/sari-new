@@ -325,3 +325,18 @@
 - [x] إرسال إشعارات للمدير عند كل حدث
 - [ ] كتابة الاختبارات (اختياري)
 - [x] اختبار النظام الكامل
+
+
+## نظام الفواتير (Invoicing System)
+- [x] إضافة جدول invoices في schema.ts
+- [x] تثبيت مكتبات PDF (pdfkit, nodemailer)
+- [x] إضافة دوال إدارة الفواتير في db.ts
+- [x] إنشاء نظام توليد PDF (server/invoices/generator.ts)
+- [x] تصميم فاتورة احترافية (عربي/إنجليزي)
+- [x] تكامل البريد الإلكتروني (server/invoices/email.ts)
+- [x] ربط النظام مع Tap Webhook
+- [x] ربط النظام مع PayPal Webhook
+- [x] إضافة APIs للفواتير (invoices.list, invoices.getByMerchant, invoices.getById)
+- [ ] إنشاء صفحة /admin/invoices لعرض جميع الفواتير (اختياري)
+- [ ] كتابة الاختبارات (اختياري)
+- [x] اختبار النظام الكامل

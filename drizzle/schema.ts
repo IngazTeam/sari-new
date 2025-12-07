@@ -299,3 +299,25 @@ export const paymentGateways = mysqlTable("payment_gateways", {
 
 export type PaymentGateway = typeof paymentGateways.$inferSelect;
 export type InsertPaymentGateway = typeof paymentGateways.$inferInsert;
+
+
+// Invoices table
+export const invoices = mysqlTable('invoices', {
+  id: int('id').autoincrement().primaryKey(),
+  invoiceNumber: varchar('invoice_number', { length: 50 }).notNull().unique(), // e.g., INV-2024-0001
+  paymentId: int('payment_id').notNull(),
+  merchantId: int('merchant_id').notNull(),
+  subscriptionId: int('subscription_id'),
+  amount: int('amount').notNull(), // Amount in cents
+  currency: varchar('currency', { length: 10 }).notNull().default('SAR'),
+  status: mysqlEnum('status', ['draft', 'sent', 'paid', 'cancelled']).notNull().default('paid'),
+  pdfPath: text('pdf_path'), // S3 path to PDF file
+  pdfUrl: text('pdf_url'), // Public URL to PDF
+  emailSent: boolean('email_sent').notNull().default(false),
+  emailSentAt: timestamp('email_sent_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;

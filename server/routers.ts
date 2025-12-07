@@ -1116,6 +1116,25 @@ export const appRouter = router({
         return { success: true, gateway: result };
       }),
   }),
+
+  // Invoices router
+  invoices: router({
+    list: adminProcedure.query(async () => {
+      return await db.getAllInvoices();
+    }),
+
+    getByMerchant: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getInvoicesByMerchantId(input.merchantId);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await db.getInvoiceById(input.id);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

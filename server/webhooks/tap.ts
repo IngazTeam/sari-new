@@ -1,6 +1,8 @@
 import crypto from 'crypto';
-import { getPaymentGatewayByName, updatePaymentStatus, getPaymentById, updateSubscription } from '../db';
+import { getPaymentGatewayByName, updatePaymentStatus, getPaymentById, updateSubscription, createInvoice, generateInvoiceNumber, updateInvoice } from '../db';
 import { notifyOwner } from '../_core/notification';
+import { generateInvoicePDF } from '../invoices/generator';
+import { sendInvoiceEmail, isSMTPConfigured } from '../invoices/email';
 
 /**
  * Verify Tap webhook signature
@@ -57,6 +59,45 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
           title: '✅ دفع ناجح - Tap',
           content: `تم استلام دفع بقيمة ${amount} ${currency} للاشتراك #${payment.subscriptionId}`,
         });
+      }
+
+      // Generate invoice
+      try {
+        const invoiceNumber = await generateInvoiceNumber();
+        const invoice = await createInvoice({
+          invoiceNumber,
+          paymentId,
+          merchantId: payment.merchantId,
+          subscriptionId: payment.subscriptionId || null,
+          amount: payment.amount,
+          currency: payment.currency,
+          status: 'paid',
+          emailSent: false,
+        });
+
+        if (invoice) {
+          // Generate PDF
+          const pdfResult = await generateInvoicePDF(invoice);
+          if (pdfResult) {
+            await updateInvoice(invoice.id, {
+              pdfPath: pdfResult.pdfPath,
+              pdfUrl: pdfResult.pdfUrl,
+            });
+
+            // Send email if SMTP is configured
+            if (isSMTPConfigured()) {
+              const emailSent = await sendInvoiceEmail({ ...invoice, pdfUrl: pdfResult.pdfUrl });
+              if (emailSent) {
+                await updateInvoice(invoice.id, {
+                  emailSent: true,
+                  emailSentAt: new Date(),
+                });
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[Tap Webhook] Error generating invoice:', error);
       }
 
       return { success: true, message: 'Payment completed successfully' };
