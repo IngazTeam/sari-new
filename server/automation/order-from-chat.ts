@@ -12,6 +12,15 @@
 import { invokeLLM } from '../_core/llm';
 import { SallaIntegration } from '../integrations/salla';
 import * as db from '../db';
+import { 
+  extractDiscountCodeFromMessage, 
+  validateDiscountCode,
+  calculateFinalPrice 
+} from './discount-system';
+import { 
+  extractReferralCodeFromMessage,
+  trackReferral 
+} from './referral-system';
 
 interface ParsedOrder {
   products: Array<{
@@ -25,6 +34,16 @@ interface ParsedOrder {
   isGift?: boolean;
   giftRecipientName?: string;
   giftMessage?: string;
+}
+
+interface DiscountInfo {
+  code: string;
+  type: 'discount' | 'referral';
+  discountType: 'percentage' | 'fixed';
+  value: number;
+  originalAmount: number;
+  discountAmount: number;
+  finalAmount: number;
 }
 
 /**
@@ -121,8 +140,9 @@ export async function createOrderFromChat(
   merchantId: number,
   customerPhone: string,
   customerName: string,
-  parsedOrder: ParsedOrder
-): Promise<{ orderId: number; paymentUrl: string | null; orderNumber: string | null } | null> {
+  parsedOrder: ParsedOrder,
+  message?: string
+): Promise<{ orderId: number; paymentUrl: string | null; orderNumber: string | null; discountInfo?: DiscountInfo } | null> {
   try {
     // Get Salla connection
     const sallaConnection = await db.getSallaConnectionByMerchantId(merchantId);
@@ -157,6 +177,46 @@ export async function createOrderFromChat(
       throw new Error('No valid products found');
     }
 
+    // Check for discount or referral codes
+    let discountInfo: DiscountInfo | undefined;
+    let finalAmount = totalAmount;
+
+    if (message) {
+      // Try to extract discount code
+      const discountCode = extractDiscountCodeFromMessage(message);
+      if (discountCode) {
+        const validation = await validateDiscountCode(merchantId, discountCode, totalAmount);
+        if (validation.valid && validation.discountCode) {
+          finalAmount = validation.finalAmount || totalAmount;
+          const discountAmount = validation.discount || 0;
+          discountInfo = {
+            code: discountCode,
+            type: 'discount',
+            discountType: validation.discountCode.type,
+            value: validation.discountCode.value,
+            originalAmount: totalAmount,
+            discountAmount,
+            finalAmount
+          };
+          // Increment usage count
+          await db.incrementDiscountCodeUsage(discountCode);
+        }
+      }
+
+      // Try to extract referral code if no discount applied
+      if (!discountInfo) {
+        const referralCode = extractReferralCodeFromMessage(message);
+        if (referralCode) {
+          const referralCodeData = await db.getReferralCodeByCode(referralCode);
+          if (referralCodeData && referralCodeData.merchantId === merchantId) {
+            // Track referral (will be completed when order is paid)
+            await trackReferral(merchantId, referralCode, customerPhone, customerName);
+            // Note: Referral discount is applied after first successful purchase
+          }
+        }
+      }
+    }
+
     // Create order in Salla
     const sallaOrder = await salla.createOrder({
       customerName,
@@ -188,12 +248,13 @@ export async function createOrderFromChat(
       address: parsedOrder.address,
       city: parsedOrder.city,
       items: JSON.stringify(items),
-      totalAmount,
+      totalAmount: finalAmount, // Use final amount after discount
       status: 'pending',
       paymentUrl: sallaOrder.paymentUrl || null,
       isGift: parsedOrder.isGift || false,
       giftRecipientName: parsedOrder.giftRecipientName,
-      giftMessage: parsedOrder.giftMessage
+      giftMessage: parsedOrder.giftMessage,
+      discountCode: discountInfo?.code
     });
 
     if (!order) {
@@ -203,7 +264,8 @@ export async function createOrderFromChat(
     return {
       orderId: order.id,
       paymentUrl: sallaOrder.paymentUrl || null,
-      orderNumber: order.orderNumber
+      orderNumber: order.orderNumber,
+      discountInfo
     };
   } catch (error) {
     console.error('[OrderFromChat] Error creating order:', error);
@@ -218,19 +280,29 @@ export function generateOrderConfirmationMessage(
   orderNumber: string,
   items: Array<{ name: string; quantity: number; price: number }>,
   totalAmount: number,
-  paymentUrl: string
+  paymentUrl: string,
+  discountInfo?: DiscountInfo
 ): string {
   const itemsList = items.map(item => 
     `• ${item.name} × ${item.quantity} = ${item.price * item.quantity} ريال`
   ).join('\n');
+
+  let discountSection = '';
+  if (discountInfo) {
+    const discountTypeText = discountInfo.type === 'discount' ? 'كود خصم' : 'كود إحالة';
+    discountSection = `
+💳 *${discountTypeText}:* ${discountInfo.code}
+💵 *السعر الأصلي:* ${discountInfo.originalAmount} ريال
+🎉 *الخصم:* -${discountInfo.discountAmount} ريال
+`;
+  }
 
   return `✅ *تم إنشاء طلبك بنجاح!*
 
 📦 *رقم الطلب:* ${orderNumber}
 
 *المنتجات:*
-${itemsList}
-
+${itemsList}${discountSection}
 💰 *الإجمالي:* ${totalAmount} ريال
 
 🔗 *لإتمام الطلب، اضغط على الرابط التالي للدفع:*
@@ -249,11 +321,22 @@ export function generateGiftOrderConfirmationMessage(
   recipientName: string,
   items: Array<{ name: string; quantity: number; price: number }>,
   totalAmount: number,
-  paymentUrl: string
+  paymentUrl: string,
+  discountInfo?: DiscountInfo
 ): string {
   const itemsList = items.map(item => 
     `• ${item.name} × ${item.quantity}`
   ).join('\n');
+
+  let discountSection = '';
+  if (discountInfo) {
+    const discountTypeText = discountInfo.type === 'discount' ? 'كود خصم' : 'كود إحالة';
+    discountSection = `
+💳 *${discountTypeText}:* ${discountInfo.code}
+💵 *السعر الأصلي:* ${discountInfo.originalAmount} ريال
+🎉 *الخصم:* -${discountInfo.discountAmount} ريال
+`;
+  }
 
   return `🎁 *تم إنشاء طلب الهدية بنجاح!*
 
@@ -261,8 +344,7 @@ export function generateGiftOrderConfirmationMessage(
 👤 *المستلم:* ${recipientName}
 
 *المنتجات:*
-${itemsList}
-
+${itemsList}${discountSection}
 💰 *الإجمالي:* ${totalAmount} ريال
 
 🔗 *لإتمام الطلب، اضغط على الرابط التالي للدفع:*

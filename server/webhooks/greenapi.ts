@@ -91,12 +91,13 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const parsedOrder = await parseOrderMessage(messageText, conversation.merchantId);
         
         if (parsedOrder && parsedOrder.products.length > 0) {
-          // إنشاء الطلب
+          // إنشاء الطلب (مع تمرير الرسالة لاكتشاف كودات الخصم)
           const orderResult = await createOrderFromChat(
             conversation.merchantId,
             customerPhone,
             conversation.customerName || customerPhone,
-            parsedOrder
+            parsedOrder,
+            messageText // تمرير الرسالة لاكتشاف كودات الخصم
           );
           
           if (orderResult) {
@@ -112,13 +113,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
                     order.giftRecipientName || '',
                     items,
                     order.totalAmount,
-                    orderResult.paymentUrl || ''
+                    orderResult.paymentUrl || '',
+                    orderResult.discountInfo
                   )
                 : generateOrderConfirmationMessage(
                     order.orderNumber || '',
                     items,
                     order.totalAmount,
-                    orderResult.paymentUrl || ''
+                    orderResult.paymentUrl || '',
+                    orderResult.discountInfo
                   );
               
               // إرسال رسالة التأكيد
