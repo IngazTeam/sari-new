@@ -48,6 +48,12 @@ export default function WhatsAppInstancesPage() {
     { enabled: !!merchant }
   );
 
+  // Get expiring instances
+  const { data: expiringData } = trpc.whatsappInstances.getExpiring.useQuery(
+    { merchantId: merchant?.id || 0 },
+    { enabled: !!merchant }
+  );
+
   // Mutations
   const createMutation = trpc.whatsappInstances.create.useMutation({
     onSuccess: () => {
@@ -216,6 +222,50 @@ export default function WhatsAppInstancesPage() {
           إضافة Instance جديد
         </Button>
       </div>
+
+      {/* Expiring Instances Alert */}
+      {expiringData && (expiringData.expiring1Day.length > 0 || expiringData.expiring3Days.length > 0 || expiringData.expired.length > 0) && (
+        <Card className="border-red-500 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-700 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5" />
+              تحذير: Instances قريبة من الانتهاء
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {expiringData.expired.length > 0 && (
+                <div className="flex items-center gap-2 text-red-700">
+                  <XCircle className="w-4 h-4" />
+                  <span className="font-semibold">{expiringData.expired.length}</span>
+                  <span>instance منتهي - يرجى التجديد فوراً</span>
+                </div>
+              )}
+              {expiringData.expiring1Day.length > 0 && (
+                <div className="flex items-center gap-2 text-orange-700">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-semibold">{expiringData.expiring1Day.length}</span>
+                  <span>instance ينتهي خلال 24 ساعة</span>
+                </div>
+              )}
+              {expiringData.expiring3Days.length > 0 && (
+                <div className="flex items-center gap-2 text-yellow-700">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-semibold">{expiringData.expiring3Days.length}</span>
+                  <span>instance ينتهي خلال 3 أيام</span>
+                </div>
+              )}
+              {expiringData.expiring7Days.length > 0 && (
+                <div className="flex items-center gap-2 text-blue-700">
+                  <Clock className="w-4 h-4" />
+                  <span className="font-semibold">{expiringData.expiring7Days.length}</span>
+                  <span>instance ينتهي خلال 7 أيام</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Statistics Cards */}
       {stats && (

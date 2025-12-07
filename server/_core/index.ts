@@ -82,6 +82,13 @@ async function startServer() {
       console.log('[Cron] Running occasion campaigns check...');
       await runOccasionCampaignsCron();
     });
+
+    // Instance Expiry Check (runs daily at 8 AM)
+    cron.schedule('0 8 * * *', async () => {
+      console.log('[Cron] Running instance expiry check...');
+      const { checkInstanceExpiry } = await import('../jobs/instance-expiry-check');
+      await checkInstanceExpiry();
+    });
   });
 }
 

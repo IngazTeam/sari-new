@@ -1,4 +1,4 @@
-import { eq, and, desc, gte, lte, lt, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, lt, gt, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -2082,4 +2082,71 @@ export async function markWhatsAppInstanceExpired(id: number): Promise<void> {
   await db.update(whatsappInstances)
     .set({ status: 'expired', updatedAt: new Date() })
     .where(eq(whatsappInstances.id, id));
+}
+
+
+/**
+ * Get WhatsApp instances expiring within specified days
+ */
+export async function getInstancesExpiringSoon(days: number): Promise<WhatsAppInstance[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + days);
+
+  return db.select().from(whatsappInstances)
+    .where(and(
+      eq(whatsappInstances.status, 'active'),
+      gt(whatsappInstances.expiresAt, now),
+      lt(whatsappInstances.expiresAt, futureDate)
+    ));
+}
+
+/**
+ * Get WhatsApp instances expiring in 7, 3, or 1 day(s)
+ */
+export async function getExpiringWhatsAppInstances(): Promise<{
+  expiring7Days: WhatsAppInstance[];
+  expiring3Days: WhatsAppInstance[];
+  expiring1Day: WhatsAppInstance[];
+  expired: WhatsAppInstance[];
+}> {
+  const db = await getDb();
+  if (!db) return { expiring7Days: [], expiring3Days: [], expiring1Day: [], expired: [] };
+
+  const now = new Date();
+  const in7Days = new Date();
+  in7Days.setDate(in7Days.getDate() + 7);
+  const in3Days = new Date();
+  in3Days.setDate(in3Days.getDate() + 3);
+  const in1Day = new Date();
+  in1Day.setDate(in1Day.getDate() + 1);
+
+  const allInstances = await db.select().from(whatsappInstances)
+    .where(eq(whatsappInstances.status, 'active'));
+
+  const expiring7Days: WhatsAppInstance[] = [];
+  const expiring3Days: WhatsAppInstance[] = [];
+  const expiring1Day: WhatsAppInstance[] = [];
+  const expired: WhatsAppInstance[] = [];
+
+  for (const instance of allInstances) {
+    if (!instance.expiresAt) continue;
+
+    const expiryDate = new Date(instance.expiresAt);
+
+    if (expiryDate <= now) {
+      expired.push(instance);
+    } else if (expiryDate <= in1Day) {
+      expiring1Day.push(instance);
+    } else if (expiryDate <= in3Days) {
+      expiring3Days.push(instance);
+    } else if (expiryDate <= in7Days) {
+      expiring7Days.push(instance);
+    }
+  }
+
+  return { expiring7Days, expiring3Days, expiring1Day, expired };
 }

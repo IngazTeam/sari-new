@@ -2328,6 +2328,31 @@ export const appRouter = router({
           primary: primary || null,
         };
       }),
+
+    // Get expiring instances
+    getExpiring: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const { expiring7Days, expiring3Days, expiring1Day, expired } = await db.getExpiringWhatsAppInstances();
+        
+        // Filter by merchant
+        const merchantExpiring7Days = expiring7Days.filter(i => i.merchantId === input.merchantId);
+        const merchantExpiring3Days = expiring3Days.filter(i => i.merchantId === input.merchantId);
+        const merchantExpiring1Day = expiring1Day.filter(i => i.merchantId === input.merchantId);
+        const merchantExpired = expired.filter(i => i.merchantId === input.merchantId);
+
+        return {
+          expiring7Days: merchantExpiring7Days,
+          expiring3Days: merchantExpiring3Days,
+          expiring1Day: merchantExpiring1Day,
+          expired: merchantExpired,
+        };
+      }),
   }),
 });
 

@@ -939,3 +939,17 @@
 - [x] تحديث DashboardLayout
 - [x] كتابة الاختبارات
 - [x] اختبار النظام الكامل
+
+
+## نظام إشعارات انتهاء صلاحية WhatsApp Instances
+- [x] إضافة دالة getExpiringWhatsAppInstances في db.ts (7 days, 3 days, 1 day)
+- [x] إضافة دالة getInstancesExpiringSoon في db.ts
+- [x] إنشاء ملف server/jobs/instance-expiry-check.ts
+- [x] دالة checkInstanceExpiry للفحص اليومي
+- [x] دالة notifyMerchantAboutExpiry لإرسال الإشعارات
+- [x] إضافة Cron Job في server/_core/index.ts (يعمل يومياً)
+- [x] إضافة APIs في routers.ts (getExpiringInstances, dismissNotification)
+- [x] تحديث صفحة WhatsApp Instances بعرض الإشعارات
+- [x] إضافة بطاقة تحذير للـ instances القريبة من الانتهاء
+- [x] كتابة الاختبارات
+- [x] اختبار النظام الكامل
