@@ -64,6 +64,13 @@
       "when": 1765067687544,
       "tag": "0008_good_chronomancer",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1765110123532,
+      "tag": "0009_huge_vampiro",
+      "breakpoints": true
     }
   ]
 }

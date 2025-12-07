@@ -51,6 +51,15 @@ import {
   invoices,
   Invoice,
   InsertInvoice,
+  sallaConnections,
+  SallaConnection,
+  InsertSallaConnection,
+  syncLogs,
+  SyncLog,
+  InsertSyncLog,
+  orders,
+  Order,
+  InsertOrder,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1116,4 +1125,201 @@ export async function generateInvoiceNumber(): Promise<string> {
   const lastNumber = result[0].invoiceNumber.split('-')[2];
   const nextNumber = (parseInt(lastNumber) + 1).toString().padStart(4, '0');
   return `${prefix}${nextNumber}`;
+}
+
+
+// ============================================
+// Salla Integration Functions
+// ============================================
+
+export async function createSallaConnection(connection: InsertSallaConnection): Promise<SallaConnection | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  await db.insert(sallaConnections).values(connection);
+  return getSallaConnectionByMerchantId(connection.merchantId);
+}
+
+export async function getSallaConnectionByMerchantId(merchantId: number): Promise<SallaConnection | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(sallaConnections).where(eq(sallaConnections.merchantId, merchantId)).limit(1);
+  return result[0];
+}
+
+export async function updateSallaConnection(merchantId: number, data: Partial<InsertSallaConnection>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(sallaConnections).set({
+    ...data,
+    updatedAt: new Date()
+  }).where(eq(sallaConnections.merchantId, merchantId));
+}
+
+export async function deleteSallaConnection(merchantId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(sallaConnections).where(eq(sallaConnections.merchantId, merchantId));
+}
+
+export async function getAllSallaConnections(): Promise<SallaConnection[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(sallaConnections).where(eq(sallaConnections.syncStatus, 'active'));
+}
+
+// ============================================
+// Sync Logs Functions
+// ============================================
+
+export async function createSyncLog(merchantId: number, syncType: 'full_sync' | 'stock_sync' | 'single_product', status: 'success' | 'failed' | 'in_progress'): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db.insert(syncLogs).values({
+    merchantId,
+    syncType,
+    status,
+    itemsSynced: 0,
+    startedAt: new Date()
+  });
+
+  return result[0].insertId;
+}
+
+export async function updateSyncLog(id: number, status: 'success' | 'failed', itemsSynced: number, errors?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(syncLogs).set({
+    status,
+    itemsSynced,
+    errors,
+    completedAt: new Date()
+  }).where(eq(syncLogs.id, id));
+}
+
+export async function getSyncLogsByMerchantId(merchantId: number, limit: number = 50): Promise<SyncLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(syncLogs).where(eq(syncLogs.merchantId, merchantId)).orderBy(desc(syncLogs.startedAt)).limit(limit);
+}
+
+// ============================================
+// Products - Salla Integration Functions
+// ============================================
+
+export async function getProductBySallaId(merchantId: number, sallaProductId: string): Promise<Product | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(products).where(
+    and(
+      eq(products.merchantId, merchantId),
+      eq(products.sallaProductId, sallaProductId)
+    )
+  ).limit(1);
+  
+  return result[0];
+}
+
+export async function getProductsWithSallaId(merchantId: number): Promise<Product[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(products).where(
+    and(
+      eq(products.merchantId, merchantId),
+      sql`${products.sallaProductId} IS NOT NULL`
+    )
+  );
+}
+
+export async function updateProductStock(productId: number, stock: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(products).set({
+    stock,
+    isActive: stock > 0,
+    lastSyncedAt: new Date(),
+    updatedAt: new Date()
+  }).where(eq(products.id, productId));
+}
+
+// ============================================
+// Orders Functions
+// ============================================
+
+export async function createOrder(order: InsertOrder): Promise<Order | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(orders).values(order);
+  return getOrderById(result[0].insertId);
+}
+
+export async function getOrderById(id: number): Promise<Order | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(orders).where(eq(orders.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getOrderBySallaId(merchantId: number, sallaOrderId: string): Promise<Order | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(orders).where(
+    and(
+      eq(orders.merchantId, merchantId),
+      eq(orders.sallaOrderId, sallaOrderId)
+    )
+  ).limit(1);
+  
+  return result[0];
+}
+
+export async function getOrdersByMerchantId(merchantId: number): Promise<Order[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(orders).where(eq(orders.merchantId, merchantId)).orderBy(desc(orders.createdAt));
+}
+
+export async function updateOrderStatus(id: number, status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled', trackingNumber?: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const updateData: any = {
+    status,
+    updatedAt: new Date()
+  };
+
+  if (trackingNumber) {
+    updateData.trackingNumber = trackingNumber;
+  }
+
+  await db.update(orders).set(updateData).where(eq(orders.id, id));
+}
+
+export async function updateOrderBySallaId(merchantId: number, sallaOrderId: string, data: Partial<InsertOrder>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(orders).set({
+    ...data,
+    updatedAt: new Date()
+  }).where(
+    and(
+      eq(orders.merchantId, merchantId),
+      eq(orders.sallaOrderId, sallaOrderId)
+    )
+  );
 }

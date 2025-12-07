@@ -1249,6 +1249,160 @@ export const appRouter = router({
         return await db.getInvoiceById(input.id);
       }),
   }),
+
+  // Salla Integration Router
+  salla: router({
+    // Get connection status
+    getConnection: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        // Verify user owns this merchant
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const connection = await db.getSallaConnectionByMerchantId(input.merchantId);
+        if (!connection) {
+          return { connected: false };
+        }
+
+        return {
+          connected: true,
+          storeUrl: connection.storeUrl,
+          syncStatus: connection.syncStatus,
+          lastSyncAt: connection.lastSyncAt,
+        };
+      }),
+
+    // Connect to Salla store
+    connect: protectedProcedure
+      .input(z.object({
+        merchantId: z.number(),
+        storeUrl: z.string().url(),
+        accessToken: z.string().min(10),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Verify user owns this merchant
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        // Test connection first
+        const { SallaIntegration } = await import('./integrations/salla');
+        const salla = new SallaIntegration(input.merchantId, input.accessToken);
+        const testResult = await salla.testConnection();
+
+        if (!testResult.success) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: 'فشل الاتصال بـ Salla. تأكد من صحة الرابط والـ Token' 
+          });
+        }
+
+        // Check if connection already exists
+        const existing = await db.getSallaConnectionByMerchantId(input.merchantId);
+        
+        if (existing) {
+          // Update existing connection
+          await db.updateSallaConnection(input.merchantId, {
+            storeUrl: input.storeUrl,
+            accessToken: input.accessToken,
+            syncStatus: 'active',
+          });
+        } else {
+          // Create new connection
+          await db.createSallaConnection({
+            merchantId: input.merchantId,
+            storeUrl: input.storeUrl,
+            accessToken: input.accessToken,
+            syncStatus: 'active',
+          });
+        }
+
+        // Start initial sync in background
+        salla.fullSync().catch(err => {
+          console.error('[Salla] Initial sync failed:', err);
+        });
+
+        return { 
+          success: true, 
+          message: 'تم ربط المتجر بنجاح! جاري مزامنة المنتجات...' 
+        };
+      }),
+
+    // Disconnect from Salla
+    disconnect: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        // Verify user owns this merchant
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        await db.deleteSallaConnection(input.merchantId);
+        return { success: true, message: 'تم فصل المتجر بنجاح' };
+      }),
+
+    // Manual sync
+    syncNow: protectedProcedure
+      .input(z.object({ 
+        merchantId: z.number(),
+        syncType: z.enum(['full', 'stock']).default('stock'),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Verify user owns this merchant
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const connection = await db.getSallaConnectionByMerchantId(input.merchantId);
+        if (!connection) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'المتجر غير مربوط' });
+        }
+
+        const { SallaIntegration } = await import('./integrations/salla');
+        const salla = new SallaIntegration(input.merchantId, connection.accessToken);
+
+        try {
+          let result;
+          if (input.syncType === 'full') {
+            result = await salla.fullSync();
+            return { 
+              success: true, 
+              message: `تمت مزامنة ${result.synced} منتج بنجاح` 
+            };
+          } else {
+            result = await salla.syncStock();
+            return { 
+              success: true, 
+              message: `تم تحديث ${result.updated} منتج بنجاح` 
+            };
+          }
+        } catch (error: any) {
+          throw new TRPCError({ 
+            code: 'INTERNAL_SERVER_ERROR', 
+            message: error.message || 'فشلت المزامنة' 
+          });
+        }
+      }),
+
+    // Get sync logs
+    getSyncLogs: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        // Verify user owns this merchant
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        return await db.getSyncLogsByMerchantId(input.merchantId, 20);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

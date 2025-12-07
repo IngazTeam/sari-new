@@ -102,6 +102,7 @@ export type InsertWhatsappConnection = typeof whatsappConnections.$inferInsert;
 export const products = mysqlTable("products", {
   id: int("id").autoincrement().primaryKey(),
   merchantId: int("merchantId").notNull(),
+  sallaProductId: varchar("sallaProductId", { length: 100 }), // Salla product ID for syncing
   name: varchar("name", { length: 255 }).notNull(),
   nameAr: varchar("nameAr", { length: 255 }),
   description: text("description"),
@@ -112,6 +113,7 @@ export const products = mysqlTable("products", {
   category: varchar("category", { length: 100 }),
   isActive: boolean("isActive").default(true).notNull(),
   stock: int("stock").default(0),
+  lastSyncedAt: timestamp("lastSyncedAt"), // Last time synced from Salla
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -323,3 +325,65 @@ export const invoices = mysqlTable('invoices', {
 
 export type Invoice = typeof invoices.$inferSelect;
 export type InsertInvoice = typeof invoices.$inferInsert;
+
+/**
+ * Salla Store Connections (ربط متاجر سلة)
+ */
+export const sallaConnections = mysqlTable("salla_connections", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull().unique(), // One Salla store per merchant
+  storeUrl: varchar("storeUrl", { length: 255 }).notNull(), // e.g., https://mystore.salla.sa
+  accessToken: text("accessToken").notNull(), // Personal Access Token
+  syncStatus: mysqlEnum("syncStatus", ["active", "syncing", "error", "paused"]).default("active").notNull(),
+  lastSyncAt: timestamp("lastSyncAt"),
+  syncErrors: text("syncErrors"), // JSON string of recent errors
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SallaConnection = typeof sallaConnections.$inferSelect;
+export type InsertSallaConnection = typeof sallaConnections.$inferInsert;
+
+/**
+ * Sync Logs (سجل المزامنة)
+ */
+export const syncLogs = mysqlTable("sync_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  syncType: mysqlEnum("syncType", ["full_sync", "stock_sync", "single_product"]).notNull(),
+  status: mysqlEnum("status", ["success", "failed", "in_progress"]).notNull(),
+  itemsSynced: int("itemsSynced").default(0).notNull(),
+  errors: text("errors"), // JSON string of errors
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type SyncLog = typeof syncLogs.$inferSelect;
+export type InsertSyncLog = typeof syncLogs.$inferInsert;
+
+/**
+ * Orders (الطلبات من الواتساب)
+ */
+export const orders = mysqlTable("orders", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  sallaOrderId: varchar("sallaOrderId", { length: 100 }), // Salla order ID
+  orderNumber: varchar("orderNumber", { length: 100 }), // Display order number
+  customerPhone: varchar("customerPhone", { length: 20 }).notNull(),
+  customerName: varchar("customerName", { length: 255 }).notNull(),
+  customerEmail: varchar("customerEmail", { length: 255 }),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  items: text("items").notNull(), // JSON string of order items
+  totalAmount: int("totalAmount").notNull(), // Total in SAR (integer)
+  discountCode: varchar("discountCode", { length: 50 }),
+  status: mysqlEnum("status", ["pending", "paid", "processing", "shipped", "delivered", "cancelled"]).default("pending").notNull(),
+  paymentUrl: text("paymentUrl"), // Payment link from Salla
+  trackingNumber: varchar("trackingNumber", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = typeof orders.$inferInsert;

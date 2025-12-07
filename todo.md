@@ -465,3 +465,74 @@
 - [x] توثيق شامل لجميع الخطوات والإعدادات
 - [ ] تسجيل Webhook URL في لوحة تحكم Tap (يدوي)
 - [ ] اختبار دفع حقيقي في الإنتاج (يدوي)
+
+
+## تكامل Salla API مع التخزين المحلي
+- [x] تحديث schema.ts بإضافة الجداول الجديدة
+  - [x] جدول salla_connections
+  - [x] جدول sync_logs
+  - [x] إضافة حقل sallaProductId في products
+  - [x] إضافة حقل lastSyncedAt في products
+  - [x] جدول orders (ربط الطلبات)
+- [x] تطبيق Migration (pnpm db:push)
+- [x] إنشاء ملف server/integrations/salla.ts
+  - [x] دالة fullSync (المزامنة الكاملة)
+  - [x] دالة syncStock (مزامنة المخزون)
+  - [x] دالة createOrder (إنشاء طلب)
+  - [x] دالة syncSingleProduct (تحديث منتج واحد)
+  - [x] دالة getOrderStatus (حالة الطلب)
+  - [x] دالة testConnection (اختبار الاتصال)
+- [x] إضافة دوال قاعدة البيانات في db.ts (18 دالة)
+  - [x] createSallaConnection, getSallaConnectionByMerchantId
+  - [x] updateSallaConnection, deleteSallaConnection
+  - [x] getAllSallaConnections
+  - [x] createSyncLog, updateSyncLog, getSyncLogsByMerchantId
+  - [x] getProductBySallaId, getProductsWithSallaId
+  - [x] updateProductStock
+  - [x] createOrder, getOrderById, getOrderBySallaId
+  - [x] getOrdersByMerchantId, updateOrderStatus
+  - [x] updateOrderBySallaId
+- [x] إضافة APIs في routers.ts
+  - [x] salla.connect (ربط المتجر مع اختبار الاتصال)
+  - [x] salla.disconnect (فصل المتجر)
+  - [x] salla.syncNow (مزامنة يدوية - full/stock)
+  - [x] salla.getConnection (حالة المزامنة)
+  - [x] salla.getSyncLogs (سجل المزامنة)
+- [x] إنشاء صفحة /merchant/salla
+  - [x] Connection Status Card (مربوط/غير مربوط)
+  - [x] Connection Form (رابط المتجر + Token)
+  - [x] Sync Logs (سجل المزامنة)
+  - [x] Info Card (شرح كيفية العمل)
+- [x] إضافة رابط في DashboardLayout
+- [x] إضافة route في App.tsx
+- [x] إنشاء Cron Jobs (server/jobs/salla-sync.ts)
+  - [x] مزامنة يومية كاملة (3 صباحاً)
+  - [x] مزامنة ساعية للمخزون
+- [x] إنشاء Webhook Handler (server/webhooks/salla.ts)
+  - [x] product.updated
+  - [x] product.deleted
+  - [x] product.quantity.updated
+  - [x] order.updated
+- [x] تسجيل webhook route في server/webhooks/routes.ts
+- [x] تشغيل Cron Jobs عند بدء السيرفر
+- [x] إنشاء دليل SALLA_INTEGRATION.md (توثيق شامل)
+- [x] كتابة اختبارات Vitest (23 اختبار)
+- [x] تشغيل الاختبارات والتأكد من نجاحها (100% نجاح)
+- [ ] تسجيل Webhook URL في Salla Dashboard (يدوي)
+- [ ] اختبار مع متجر Salla حقيقي
+  - [ ] نموذج ربط المتجر (URL + Token)
+  - [ ] عرض حالة المزامنة
+  - [ ] زر مزامنة يدوية
+  - [ ] عرض سجل المزامنة
+- [ ] إضافة Cron Jobs (server/jobs/salla-sync.ts)
+  - [ ] مزامنة كاملة يومياً (3 صباحاً)
+  - [ ] مزامنة المخزون كل ساعة
+- [ ] إنشاء Webhook Handler (server/webhooks/salla.ts)
+  - [ ] معالجة product.updated
+  - [ ] معالجة product.deleted
+  - [ ] معالجة product.quantity.updated
+  - [ ] معالجة order.updated
+- [ ] تحديث DashboardLayout (إضافة رابط تكامل Salla)
+- [ ] كتابة الاختبارات
+- [ ] إنشاء دليل SALLA_INTEGRATION.md
+- [ ] اختبار التكامل الكامل

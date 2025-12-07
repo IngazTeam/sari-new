@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { handleTapWebhook, verifyTapSignature } from './tap';
 import { handlePayPalWebhook, verifyPayPalSignature } from './paypal';
 import { handleGreenAPIWebhook } from './greenapi';
+import { handleSallaWebhook } from './salla';
 import { getPaymentGatewayByName } from '../db';
 import { ENV } from '../_core/env';
 
@@ -99,6 +100,22 @@ router.post('/greenapi', async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error('[Green API Webhook] Error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Salla Webhook Endpoint
+ * POST /api/webhooks/salla
+ */
+router.post('/salla', async (req: Request, res: Response) => {
+  try {
+    console.log('[Salla Webhook] Received:', JSON.stringify(req.body, null, 2));
+    
+    // Process webhook
+    await handleSallaWebhook(req, res);
+  } catch (error) {
+    console.error('[Salla Webhook] Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

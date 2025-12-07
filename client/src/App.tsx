@@ -21,6 +21,7 @@ import Products from "./pages/merchant/Products";
 import UploadProducts from "./pages/merchant/UploadProducts";
 import Conversations from "./pages/merchant/Conversations";
 import WhatsApp from "./pages/merchant/WhatsApp";
+import SallaIntegration from "./pages/SallaIntegration";
 import MerchantSettings from "./pages/merchant/Settings";
 import Reports from "./pages/merchant/Reports";
 import Subscriptions from "./pages/merchant/Subscriptions";
@@ -93,6 +94,12 @@ function Router() {
       <Route path="/merchant/whatsapp">
         <DashboardLayout>
           <WhatsApp />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/salla">
+        <DashboardLayout>
+          <SallaIntegration />
         </DashboardLayout>
       </Route>
       
