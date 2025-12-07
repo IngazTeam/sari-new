@@ -2410,3 +2410,295 @@ export async function deleteNotificationTemplate(id: number) {
   if (!db) throw new Error('Database not initialized');
   await db.delete(notificationTemplates).where(eq(notificationTemplates.id, id));
 }
+
+
+// ============================================
+// Analytics Functions
+// ============================================
+
+/**
+ * Get message statistics for a merchant
+ * Returns count of messages by type (text, voice, image)
+ */
+export async function getMessageStats(merchantId: number, startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return { text: 0, voice: 0, image: 0, total: 0 };
+
+  // Get all conversations for this merchant
+  const merchantConversations = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.merchantId, merchantId));
+
+  if (merchantConversations.length === 0) {
+    return { text: 0, voice: 0, image: 0, total: 0 };
+  }
+
+  const conversationIds = merchantConversations.map(c => c.id);
+
+  // Build date filter
+  let dateFilter = sql`1=1`;
+  if (startDate && endDate) {
+    dateFilter = and(
+      gte(messages.createdAt, startDate),
+      lte(messages.createdAt, endDate)
+    ) || sql`1=1`;
+  }
+
+  // Count messages by type
+  const result = await db
+    .select({
+      messageType: messages.messageType,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(messages)
+    .where(
+      and(
+        sql`${messages.conversationId} IN (${sql.join(conversationIds.map(id => sql`${id}`), sql`, `)})`,
+        dateFilter
+      )
+    )
+    .groupBy(messages.messageType);
+
+  const stats = {
+    text: 0,
+    voice: 0,
+    image: 0,
+    total: 0,
+  };
+
+  result.forEach((row: any) => {
+    const count = Number(row.count);
+    stats.total += count;
+    if (row.messageType === 'text') stats.text = count;
+    else if (row.messageType === 'voice') stats.voice = count;
+    else if (row.messageType === 'image') stats.image = count;
+  });
+
+  return stats;
+}
+
+/**
+ * Get peak hours for messages
+ * Returns message count by hour of day
+ */
+export async function getPeakHours(merchantId: number, startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get all conversations for this merchant
+  const merchantConversations = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.merchantId, merchantId));
+
+  if (merchantConversations.length === 0) {
+    return [];
+  }
+
+  const conversationIds = merchantConversations.map(c => c.id);
+
+  // Build date filter
+  let dateFilter = sql`1=1`;
+  if (startDate && endDate) {
+    dateFilter = and(
+      gte(messages.createdAt, startDate),
+      lte(messages.createdAt, endDate)
+    ) || sql`1=1`;
+  }
+
+  // Get message count by hour
+  const result = await db
+    .select({
+      hour: sql<number>`HOUR(${messages.createdAt})`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(messages)
+    .where(
+      and(
+        sql`${messages.conversationId} IN (${sql.join(conversationIds.map(id => sql`${id}`), sql`, `)})`,
+        dateFilter
+      )
+    )
+    .groupBy(sql`HOUR(${messages.createdAt})`)
+    .orderBy(sql`HOUR(${messages.createdAt})`);
+
+  return result.map((row: any) => ({
+    hour: Number(row.hour),
+    count: Number(row.count),
+  }));
+}
+
+/**
+ * Get top products mentioned in conversations
+ * Searches for product names in message content
+ */
+export async function getTopProducts(merchantId: number, limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+
+  // Get all products for this merchant
+  const merchantProducts = await getProductsByMerchantId(merchantId);
+
+  if (merchantProducts.length === 0) {
+    return [];
+  }
+
+  // Get all conversations for this merchant
+  const merchantConversations = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.merchantId, merchantId));
+
+  if (merchantConversations.length === 0) {
+    return [];
+  }
+
+  const conversationIds = merchantConversations.map(c => c.id);
+
+  // Get all messages
+  const allMessages = await db
+    .select({
+      content: messages.content,
+    })
+    .from(messages)
+    .where(
+      sql`${messages.conversationId} IN (${sql.join(conversationIds.map(id => sql`${id}`), sql`, `)})`
+    );
+
+  // Count product mentions
+  const productMentions: { [key: number]: number } = {};
+
+  allMessages.forEach((msg: any) => {
+    const content = (msg.content || '').toLowerCase();
+    merchantProducts.forEach(product => {
+      const productName = product.name.toLowerCase();
+      if (content.includes(productName)) {
+        productMentions[product.id] = (productMentions[product.id] || 0) + 1;
+      }
+    });
+  });
+
+  // Sort by mention count
+  const sortedProducts = Object.entries(productMentions)
+    .map(([productId, count]) => {
+      const product = merchantProducts.find(p => p.id === Number(productId));
+      return {
+        productId: Number(productId),
+        productName: product?.name || '',
+        mentionCount: count,
+        price: product?.price || 0,
+      };
+    })
+    .sort((a, b) => b.mentionCount - a.mentionCount)
+    .slice(0, limit);
+
+  return sortedProducts;
+}
+
+/**
+ * Get conversion rate
+ * Calculates percentage of conversations that led to orders
+ */
+export async function getConversionRate(merchantId: number, startDate?: Date, endDate?: Date) {
+  const db = await getDb();
+  if (!db) return { rate: 0, totalConversations: 0, convertedConversations: 0 };
+
+  // Build date filter
+  let dateFilter = sql`1=1`;
+  if (startDate && endDate) {
+    dateFilter = and(
+      gte(conversations.createdAt, startDate),
+      lte(conversations.createdAt, endDate)
+    ) || sql`1=1`;
+  }
+
+  // Get total conversations
+  const totalConversations = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(conversations)
+    .where(
+      and(
+        eq(conversations.merchantId, merchantId),
+        dateFilter
+      )
+    );
+
+  const total = Number(totalConversations[0]?.count || 0);
+
+  if (total === 0) {
+    return { rate: 0, totalConversations: 0, convertedConversations: 0 };
+  }
+
+  // Get conversations with orders
+  // A conversation is "converted" if there's an order with the same customerPhone
+  const conversationsWithOrders = await db
+    .selectDistinct({ customerPhone: conversations.customerPhone })
+    .from(conversations)
+    .innerJoin(
+      orders,
+      and(
+        eq(orders.merchantId, conversations.merchantId),
+        eq(orders.customerPhone, conversations.customerPhone)
+      )
+    )
+    .where(
+      and(
+        eq(conversations.merchantId, merchantId),
+        dateFilter
+      )
+    );
+
+  const converted = conversationsWithOrders.length;
+  const rate = (converted / total) * 100;
+
+  return {
+    rate: Math.round(rate * 100) / 100, // Round to 2 decimal places
+    totalConversations: total,
+    convertedConversations: converted,
+  };
+}
+
+/**
+ * Get daily message count for the last N days
+ */
+export async function getDailyMessageCount(merchantId: number, days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  // Get all conversations for this merchant
+  const merchantConversations = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(eq(conversations.merchantId, merchantId));
+
+  if (merchantConversations.length === 0) {
+    return [];
+  }
+
+  const conversationIds = merchantConversations.map(c => c.id);
+
+  // Get message count by date
+  const result = await db
+    .select({
+      date: sql<string>`DATE(${messages.createdAt})`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(messages)
+    .where(
+      and(
+        sql`${messages.conversationId} IN (${sql.join(conversationIds.map(id => sql`${id}`), sql`, `)})`,
+        gte(messages.createdAt, startDate)
+      )
+    )
+    .groupBy(sql`DATE(${messages.createdAt})`)
+    .orderBy(sql`DATE(${messages.createdAt})`);
+
+  return result.map((row: any) => ({
+    date: row.date,
+    count: Number(row.count),
+  }));
+}

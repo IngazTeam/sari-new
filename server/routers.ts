@@ -2798,6 +2798,91 @@ export const appRouter = router({
         }
       }),
   }),
+
+  // Message Analytics APIs
+  messageAnalytics: router({
+    // إحصائيات الرسائل
+    getMessageStats: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        }
+
+        const startDate = input.startDate ? new Date(input.startDate) : undefined;
+        const endDate = input.endDate ? new Date(input.endDate) : undefined;
+
+        return db.getMessageStats(merchant.id, startDate, endDate);
+      }),
+
+    // أوقات الذروة
+    getPeakHours: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        }
+
+        const startDate = input.startDate ? new Date(input.startDate) : undefined;
+        const endDate = input.endDate ? new Date(input.endDate) : undefined;
+
+        return db.getPeakHours(merchant.id, startDate, endDate);
+      }),
+
+    // المنتجات الأكثر استفساراً
+    getTopProducts: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        }
+
+        return db.getTopProducts(merchant.id, input.limit || 10);
+      }),
+
+    // معدل التحويل
+    getConversionRate: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        }
+
+        const startDate = input.startDate ? new Date(input.startDate) : undefined;
+        const endDate = input.endDate ? new Date(input.endDate) : undefined;
+
+        return db.getConversionRate(merchant.id, startDate, endDate);
+      }),
+
+    // عدد الرسائل اليومي
+    getDailyMessageCount: protectedProcedure
+      .input(z.object({
+        days: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+        }
+
+        return db.getDailyMessageCount(merchant.id, input.days || 30);
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

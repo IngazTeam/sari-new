@@ -1077,3 +1077,23 @@
 - [x] تحديث الرسالة بالنص المحول (content)
 - [x] اختبار التدفق الكامل (8 اختبارات ناجحة)
 - [ ] حفظ checkpoint
+
+
+## لوحة التحليلات (Analytics Dashboard)
+- [x] إضافة دوال قاعدة البيانات للتحليلات في db.ts (5 دوال)
+- [x] إحصائيات الرسائل (صوتية/نصية/صور)
+- [x] معدل التحويل (Conversion Rate)
+- [x] أوقات الذروة (Peak Hours)
+- [x] المنتجات الأكثر استفساراً
+- [x] عدد الرسائل اليومي
+- [x] إضافة messageAnalytics router فيrouters.ts
+- [x] API: getMessageStats
+- [x] API: getConversionRate
+- [x] API: getPeakHours
+- [x] API: getTopProducts
+- [x] API: getDailyMessageCount
+- [x] إنشاء صفحة Analytics.tsx
+- [x] إضافة مخططات بيانية (Progress Bars + Bar Charts)
+- [x] دمج الصفحة مع App.tsx (/merchant/message-analytics)
+- [x] اختبارات (13 اختبار ناجح)
+- [ ] حفظ checkpoint
