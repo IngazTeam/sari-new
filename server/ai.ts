@@ -92,6 +92,87 @@ interface ProductInfo {
   category: string | null;
 }
 
+interface OrderInfo {
+  id: number;
+  status: string;
+  totalAmount: number;
+  createdAt: Date;
+  trackingNumber: string | null;
+  items: string;
+}
+
+interface MerchantInfo {
+  businessName: string;
+  phone: string | null;
+  autoReplyEnabled: boolean;
+}
+
+/**
+ * الحصول على معلومات التاجر
+ */
+async function getMerchantInfo(merchantId: number): Promise<MerchantInfo | null> {
+  const merchant = await db.getMerchantById(merchantId);
+  if (!merchant) return null;
+  
+  return {
+    businessName: merchant.businessName,
+    phone: merchant.phone,
+    autoReplyEnabled: merchant.autoReplyEnabled || false,
+  };
+}
+
+/**
+ * البحث عن طلبات العميل
+ */
+async function searchCustomerOrders(merchantId: number, customerPhone: string): Promise<OrderInfo[]> {
+  try {
+    const orders = await db.getOrdersByMerchantId(merchantId);
+    
+    // تصفية الطلبات حسب رقم الهاتف
+    const customerOrders = orders.filter((order: any) => 
+      order.customerPhone === customerPhone
+    );
+    
+    return customerOrders.slice(0, 5).map((order: any) => ({
+      id: order.id,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      createdAt: order.createdAt,
+      trackingNumber: order.trackingNumber,
+      items: order.items,
+    }));
+  } catch (error) {
+    console.error('[AI] Error searching customer orders:', error);
+    return [];
+  }
+}
+
+/**
+ * تنسيق معلومات الطلبات للعرض
+ */
+function formatOrdersInfo(orders: OrderInfo[]): string {
+  if (orders.length === 0) {
+    return "لا توجد طلبات سابقة.";
+  }
+  
+  return orders.map(order => {
+    const statusMap: Record<string, string> = {
+      'pending': 'قيد الانتظار',
+      'paid': 'مدفوع',
+      'processing': 'قيد التجهيز',
+      'shipped': 'تم الشحن',
+      'delivered': 'تم التوصيل',
+      'cancelled': 'ملغي'
+    };
+    
+    const statusAr = statusMap[order.status] || order.status;
+    const tracking = order.trackingNumber ? ` - رقم التتبع: ${order.trackingNumber}` : '';
+    const date = new Date(order.createdAt).toLocaleDateString('ar-SA');
+    
+    return `• طلب رقم ${order.id} - ${statusAr}${tracking}\n  المبلغ: ${order.totalAmount} ريال - التاريخ: ${date}`;
+  }).join('\n\n');
+}
+
 /**
  * البحث في المنتجات بناءً على استفسار العميل
  */
@@ -142,23 +223,42 @@ function formatProductsInfo(products: ProductInfo[]): string {
 export async function generateAIResponse(
   merchantId: number,
   customerMessage: string,
-  conversationHistory: Array<{ role: 'user' | 'assistant', content: string }> = []
+  conversationHistory: Array<{ role: 'user' | 'assistant', content: string }> = [],
+  customerPhone?: string
 ): Promise<string> {
   try {
+    // الحصول على معلومات التاجر
+    const merchantInfo = await getMerchantInfo(merchantId);
+    
     // البحث عن منتجات ذات صلة
     const relevantProducts = await searchProducts(merchantId, customerMessage);
+    
+    // البحث عن طلبات العميل إذا كان رقم الهاتف متوفر
+    let customerOrders: OrderInfo[] = [];
+    if (customerPhone) {
+      customerOrders = await searchCustomerOrders(merchantId, customerPhone);
+    }
     
     // إعداد معلومات المنتجات
     let productsContext = '';
     if (relevantProducts.length > 0) {
       productsContext = `\n\nالمنتجات المتاحة ذات الصلة:\n${formatProductsInfo(relevantProducts)}`;
     }
+    
+    // إعداد معلومات الطلبات
+    let ordersContext = '';
+    if (customerOrders.length > 0) {
+      ordersContext = `\n\nطلبات العميل السابقة:\n${formatOrdersInfo(customerOrders)}`;
+    }
+    
+    // إعداد معلومات التاجر
+    const merchantContext = merchantInfo ? `\n\nمعلومات المتجر:\nاسم المتجر: ${merchantInfo.businessName}\nرقم التواصل: ${merchantInfo.phone || 'غير متوفر'}` : '';
 
     // بناء سياق المحادثة
     const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = [
       {
         role: 'system',
-        content: SARI_PERSONALITY + productsContext
+        content: SARI_PERSONALITY + merchantContext + productsContext + ordersContext
       }
     ];
 
@@ -213,8 +313,8 @@ export async function processIncomingMessage(
       content: msg.content
     }));
 
-    // توليد الرد
-    const aiResponse = await generateAIResponse(merchantId, messageText, conversationHistory);
+    // توليد الرد مع تمرير رقم هاتف العميل
+    const aiResponse = await generateAIResponse(merchantId, messageText, conversationHistory, customerPhone);
 
     // حفظ رسالة الرد في قاعدة البيانات
     await db.createMessage({
