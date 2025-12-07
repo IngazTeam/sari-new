@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { 
   CheckCircle2, 
   Store, 
@@ -13,7 +14,8 @@ import {
   Sparkles,
   ArrowRight,
   ArrowLeft,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -206,7 +208,19 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
           {currentStep === 1 && (
             <div className="space-y-4 py-6">
               <div className="space-y-2">
-                <Label htmlFor="businessName">اسم المتجر *</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="businessName">اسم المتجر *</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-gray-400 hover:text-gray-600">
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p>اسم متجرك الذي سيظهر للعملاء في جميع المحادثات والرسائل. اختر اسماً واضحاً يعكس هوية متجرك.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <Input
                   id="businessName"
                   value={businessName}
@@ -220,7 +234,19 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الجوال (اختياري)</Label>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="phone">رقم الجوال (اختياري)</Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-gray-400 hover:text-gray-600">
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p>رقم جوالك الشخصي للتواصل الإداري (ليس رقم واتساب المتجر). سنستخدمه للتواصل معك بخصوص حسابك.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <Input
                   id="phone"
                   value={phone}
@@ -243,14 +269,38 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                 <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
                   <MessageSquare className="w-8 h-8 text-green-600" />
                 </div>
-                <h3 className="text-lg font-semibold">ربط رقم واتساب</h3>
+                <div className="flex items-center justify-center gap-2">
+                  <h3 className="text-lg font-semibold">ربط رقم واتساب</h3>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-gray-400 hover:text-gray-600">
+                        <HelpCircle className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p>ستحتاج إلى رقم جوال جديد غير مستخدم في واتساب. هذا الرقم سيكون رقم متجرك الرسمي الذي يستقبل رسائل العملاء ويرد عليها تلقائياً.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <p className="text-gray-600 max-w-md mx-auto">
                   لكي يتمكن ساري من استقبال الرسائل والرد على العملاء، نحتاج إلى ربط رقم واتساب خاص بمتجرك.
                 </p>
               </div>
 
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
-                <h4 className="font-semibold text-blue-900">ما تحتاجه:</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-blue-900">ما تحتاجه:</h4>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-blue-600 hover:text-blue-800">
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p>لربط واتساب بنجاح: احصل على رقم جوال جديد، احتفظ بجهازك لمسح QR code، وتأكد من وجود اتصال إنترنت مستقر.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <ul className="space-y-1 text-sm text-blue-800">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -296,7 +346,19 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
               </div>
 
               <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6 space-y-4">
-                <h4 className="font-semibold text-blue-900">الخطوات التالية:</h4>
+                <div className="flex items-center gap-2">
+                  <h4 className="font-semibold text-blue-900">الخطوات التالية:</h4>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-blue-600 hover:text-blue-800">
+                        <HelpCircle className="w-4 h-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-sm">
+                      <p>هذه الخطوات ستساعدك على إطلاق متجرك بنجاح. يمكنك البدء بأي خطوة تريدها من لوحة التحكم.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm flex-shrink-0">
