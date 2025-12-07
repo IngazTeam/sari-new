@@ -48,8 +48,8 @@ export default function Home() {
                 </Button>
               </>
             ) : (
-              <Button asChild>
-                <a href={getLoginUrl()}>تسجيل الدخول</a>
+              <Button onClick={() => setLocation('/login')}>
+                تسجيل الدخول
               </Button>
             )}
           </div>
@@ -80,8 +80,8 @@ export default function Home() {
                 الذهاب إلى لوحة التحكم
               </Button>
             ) : (
-              <Button size="lg" asChild>
-                <a href={getLoginUrl()}>ابدأ الآن مجاناً</a>
+              <Button size="lg" onClick={() => setLocation('/login')}>
+                ابدأ الآن مجاناً
               </Button>
             )}
             <Button size="lg" variant="outline">
