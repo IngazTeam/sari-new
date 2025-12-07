@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, email, name, password FROM users WHERE email = 'merchant@sari.sa' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT id, email, name, password FROM users WHERE email = 'merchant@sari.sa' LIMIT 1",
+  "rows": [
+    {
+      "id": "360029",
+      "email": "merchant@sari.sa",
+      "name": "هلا",
+      "password": "$2b$10$ndb3xQ0SpXSlqOKEEwTS2eavTFSd2I1OYpLjhWW/3HQNfKXD1Twae"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\tname\tpassword\n360029\tmerchant@sari.sa\tهلا\t$2b$10$ndb3xQ0SpXSlqOKEEwTS2eavTFSd2I1OYpLjhWW/3HQNfKXD1Twae\n",
+  "stderr": "",
+  "execution_time_ms": 1686
+}

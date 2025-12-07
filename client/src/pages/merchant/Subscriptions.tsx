@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 export default function Subscriptions() {
+  const [, setLocation] = useLocation();
   const { data: currentPlan, isLoading: currentPlanLoading } = trpc.merchants.getCurrentPlan.useQuery();
   const { data: plans, isLoading: plansLoading } = trpc.plans.list.useQuery();
   const upgradeMutation = trpc.merchants.requestUpgrade.useMutation({
@@ -45,8 +46,6 @@ export default function Subscriptions() {
     const colors = ['text-yellow-500', 'text-blue-500', 'text-purple-500'];
     return colors[index % colors.length];
   };
-
-  const [, setLocation] = useLocation();
 
   const handleUpgrade = async (planId: number) => {
     if (currentPlanId === planId) {

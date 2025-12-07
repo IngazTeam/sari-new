@@ -1,0 +1,70 @@
+{
+  "query": "SELECT * FROM plans LIMIT 5",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT * FROM plans LIMIT 5",
+  "rows": [
+    {
+      "id": "1",
+      "name": "TEST",
+      "nameAr": "Test Plan",
+      "priceMonthly": "120",
+      "conversationLimit": "200",
+      "voiceMessageLimit": "50",
+      "features": "{\"test\":true}",
+      "isActive": "0",
+      "createdAt": "2025-12-06 22:02:57",
+      "updatedAt": "2025-12-06 22:02:59"
+    },
+    {
+      "id": "2",
+      "name": "B1",
+      "nameAr": "Starter",
+      "priceMonthly": "90",
+      "conversationLimit": "150",
+      "voiceMessageLimit": "50",
+      "features": "{\"ai\":true,\"whatsapp\":true}",
+      "isActive": "0",
+      "createdAt": "2025-12-06 22:02:58",
+      "updatedAt": "2025-12-06 22:02:58"
+    },
+    {
+      "id": "3",
+      "name": "B2",
+      "nameAr": "Growth",
+      "priceMonthly": "230",
+      "conversationLimit": "600",
+      "voiceMessageLimit": "-1",
+      "features": "{\"ai\":true,\"whatsapp\":true,\"unlimited_voice\":true}",
+      "isActive": "0",
+      "createdAt": "2025-12-06 22:02:59",
+      "updatedAt": "2025-12-06 22:02:59"
+    },
+    {
+      "id": "4",
+      "name": "TEST",
+      "nameAr": "Test Plan",
+      "priceMonthly": "120",
+      "conversationLimit": "200",
+      "voiceMessageLimit": "50",
+      "features": "{\"test\":true}",
+      "isActive": "0",
+      "createdAt": "2025-12-06 22:03:55",
+      "updatedAt": "2025-12-06 22:03:58"
+    },
+    {
+      "id": "5",
+      "name": "B1",
+      "nameAr": "Starter",
+      "priceMonthly": "90",
+      "conversationLimit": "150",
+      "voiceMessageLimit": "50",
+      "features": "{\"ai\":true,\"whatsapp\":true}",
+      "isActive": "0",
+      "createdAt": "2025-12-06 22:03:56",
+      "updatedAt": "2025-12-06 22:03:56"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tnameAr\tpriceMonthly\tconversationLimit\tvoiceMessageLimit\tfeatures\tisActive\tcreatedAt\tupdatedAt\n1\tTEST\tTest Plan\t120\t200\t50\t{\"test\":true}\t0\t2025-12-06 22:02:57\t2025-12-06 22:02:59\n2\tB1\tStarter\t90\t150\t50\t{\"ai\":true,\"whatsapp\":true}\t0\t2025-12-06 22:02:58\t2025-12-06 22:02:58\n3\tB2\tGrowth\t230\t600\t-1\t{\"ai\":true,\"whatsapp\":true,\"unlimited_voice\":true}\t0\t2025-12-06 22:02:59\t2025-12-06 22:02:59\n4\tTEST\tTest Plan\t120\t200\t50\t{\"test\":true}\t0\t2025-12-06 22:03:55\t2025-12-06 22:03:58\n5\tB1\tStarter\t90\t150\t50\t{\"ai\":true,\"whatsapp\":true}\t0\t2025-12-06 22:03:56\t2025-12-06 22:03:56\n",
+  "stderr": "",
+  "execution_time_ms": 1581
+}
