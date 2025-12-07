@@ -2706,6 +2706,98 @@ export const appRouter = router({
         return db.getOrderNotificationsByOrderId(input.orderId);
       }),
   }),
+
+  // Voice router
+  voice: router({
+    // رفع ملف صوتي إلى S3
+    uploadAudio: protectedProcedure
+      .input(z.object({
+        audioBase64: z.string(), // الملف الصوتي بصيغة base64
+        mimeType: z.string(), // نوع الملف (audio/webm, audio/mp4, etc.)
+        duration: z.number(), // مدة التسجيل بالثواني
+        conversationId: z.number().optional(), // معرف المحادثة (اختياري)
+      }))
+      .mutation(async ({ input, ctx }) => {
+        try {
+          // تحويل base64 إلى Buffer
+          const audioBuffer = Buffer.from(input.audioBase64, 'base64');
+          
+          // التحقق من حجم الملف (16MB max)
+          const sizeMB = audioBuffer.length / (1024 * 1024);
+          if (sizeMB > 16) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: `حجم الملف كبير جداً (${sizeMB.toFixed(2)}MB). الحد الأقصى 16MB`
+            });
+          }
+
+          // تحديد امتداد الملف
+          const extension = input.mimeType.includes('webm') ? 'webm' : 'mp3';
+          const timestamp = Date.now();
+          const randomStr = Math.random().toString(36).substring(7);
+          const fileName = `voice-${ctx.user.id}-${timestamp}-${randomStr}.${extension}`;
+          
+          // رفع الملف إلى S3
+          const { storagePut } = await import('./storage');
+          const { url } = await storagePut(
+            `audio/${fileName}`,
+            audioBuffer,
+            input.mimeType
+          );
+
+          return {
+            success: true,
+            audioUrl: url,
+            duration: input.duration,
+            size: sizeMB,
+          };
+        } catch (error) {
+          console.error('[Voice] Upload failed:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'فشل رفع الملف الصوتي'
+          });
+        }
+      }),
+
+    // تحويل الصوت إلى نص
+    transcribe: protectedProcedure
+      .input(z.object({
+        audioUrl: z.string().url(),
+        language: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const { transcribeAudio } = await import('./_core/voiceTranscription');
+          const result = await transcribeAudio({
+            audioUrl: input.audioUrl,
+            language: input.language || 'ar',
+          });
+
+          // التحقق من وجود خطأ
+          if ('error' in result) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: result.error,
+            });
+          }
+
+          return {
+            success: true,
+            text: result.text,
+            language: result.language,
+            duration: result.duration,
+            segments: result.segments,
+          };
+        } catch (error) {
+          console.error('[Voice] Transcription failed:', error);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'فشل تحويل الصوت إلى نص'
+          });
+        }
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

@@ -11,12 +11,15 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
 import { ConversationsSkeleton } from '@/components/ConversationsSkeleton';
+import { VoiceRecorder } from '@/components/VoiceRecorder';
+import { toast } from 'sonner';
 
 export default function Conversations() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: conversations, isLoading } = trpc.conversations.list.useQuery();
+  const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
 
   // Show loading skeleton
   if (isLoading) {
@@ -280,6 +283,48 @@ export default function Conversations() {
                     </div>
                   )}
                 </ScrollArea>
+              </CardContent>
+              {/* Voice Recorder */}
+              <Separator />
+              <CardContent className="p-4">
+                <VoiceRecorder
+                  onRecordingComplete={async (audioBlob, duration) => {
+                    try {
+                      // تحويل Blob إلى base64
+                      const reader = new FileReader();
+                      reader.readAsDataURL(audioBlob);
+                      reader.onloadend = async () => {
+                        const base64 = reader.result as string;
+                        const audioBase64 = base64.split(',')[1]; // إزالة data:audio/webm;base64,
+
+                        toast.loading('جاري رفع التسجيل...');
+
+                        // رفع الملف إلى S3
+                        const uploadResult = await uploadAudioMutation.mutateAsync({
+                          audioBase64,
+                          mimeType: audioBlob.type,
+                          duration,
+                          conversationId: selectedConversationId!,
+                        });
+
+                        if (uploadResult.success) {
+                          toast.dismiss();
+                          toast.success(`تم رفع التسجيل بنجاح (${uploadResult.size.toFixed(2)}MB)`);
+
+                          // TODO: إرسال الرسالة الصوتية عبر WhatsApp
+                          console.log('Audio URL:', uploadResult.audioUrl);
+                        }
+                      };
+                    } catch (error) {
+                      toast.dismiss();
+                      toast.error('فشل رفع التسجيل');
+                      console.error('Upload error:', error);
+                    }
+                  }}
+                  onCancel={() => {
+                    toast.info('تم إلغاء التسجيل');
+                  }}
+                />
               </CardContent>
             </>
           ) : (

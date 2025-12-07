@@ -1051,3 +1051,16 @@
 - [x] تحديث أوزان الفونت (Regular: 400, Bold: 700 للعناوين)
 - [x] اختبار الفونت في جميع الصفحات
 - [ ] حفظ checkpoint
+
+
+## تنفيذ Voice Over - واجهة تسجيل الصوت
+- [x] إنشاء مكون VoiceRecorder مع MediaRecorder API
+- [x] إضافة أزرار تسجيل/إيقاف/إلغاء/إرسال
+- [x] عرض مؤقت التسجيل مع Progress Bar
+- [x] إيقاف تلقائي عند 120 ثانية
+- [x] إضافة voice router في routers.ts
+- [x] إضافة uploadAudio API (رفع إلى S3 مع تحقق من الحجم 16MB)
+- [x] إضافة transcribe API (تحويل الصوت إلى نص)
+- [x] دمج VoiceRecorder في صفحة Conversations
+- [x] اختبار التسجيل والرفع (9 اختبارات ناجحة)
+- [ ] حفظ checkpoint
