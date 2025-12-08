@@ -53,18 +53,21 @@ export default function WhatsAppTest() {
       if (data.success) {
         toast.success(`الاتصال ناجح! ✅\nالحالة: ${data.status}`);
       } else {
-        toast.error(`فشل الاتصال ❌\nالحالة: ${data.status}`);
+        // Error returned in response (not thrown)
+        toast.error(data.error || `فشل الاتصال ❌\nالحالة: ${data.status}`);
       }
     },
     onError: (error: any) => {
-      console.error('[WhatsApp Test] Error:', error);
-      const errorDetails = error.data?.cause || {};
-      toast.error(`خطأ في الاتصال: ${error.message}`);
+      console.error('[WhatsApp Test] Unexpected Error:', error);
+      toast.error(`خطأ غير متوقع: ${error.message}`);
       setConnectionStatus({
         success: false,
         status: 'error',
         error: error.message,
-        debug: errorDetails,
+        debug: {
+          errorMessage: error.message,
+          note: 'Unexpected error - check console',
+        },
       });
     },
   });

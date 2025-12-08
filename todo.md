@@ -1487,4 +1487,11 @@
 - [x] إضافة logging في server (console.log)
 - [x] إضافة debug info في API response
 - [x] اختبار الـ logging (لا توجد أخطاء TypeScript)
+- [x] حفظ checkpoint (632c30bb)
+
+## إصلاح عرض Debug Info في WhatsApp Test
+- [x] فحص كيفية إرسال Debug Info في حالة الخطأ من Backend
+- [x] تغيير الطريقة: إرجاع Debug Info في response بدلاً من TRPCError.cause
+- [x] إصلاح عرض Debug Info في Frontend
+- [x] اختبار مع Instance ID و Token حقيقيين - يعمل بنجاح!
 - [ ] حفظ checkpoint

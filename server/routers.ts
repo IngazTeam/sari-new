@@ -1138,11 +1138,13 @@ export const appRouter = router({
             errorMessage = 'انتهى وقت الاتصال';
           }
           
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: errorMessage,
-            cause: errorDetails,
-          });
+          // Return error with debug info instead of throwing
+          return {
+            success: false,
+            status: 'error',
+            error: errorMessage,
+            debug: errorDetails,
+          };
         }
       }),
 
