@@ -1,9 +1,10 @@
 /**
  * نظام إرسال البريد الإلكتروني
- * يستخدم nodemailer لإرسال رسائل البريد
+ * يستخدم nodemailer مع SMTP2GO
  */
 
 import nodemailer from 'nodemailer';
+import { ENV } from '../_core/env';
 
 /**
  * إرسال بريد إلكتروني
@@ -15,20 +16,26 @@ export async function sendEmail(options: {
   from?: string;
 }): Promise<boolean> {
   try {
-    // إنشاء transporter (يمكن تخصيصه حسب خدمة البريد المستخدمة)
+    // التحقق من وجود إعدادات SMTP
+    if (!ENV.smtpUser || !ENV.smtpPass) {
+      console.error('[Email] SMTP credentials not configured');
+      return false;
+    }
+
+    // إنشاء transporter مع SMTP2GO
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
+      host: ENV.smtpHost,
+      port: ENV.smtpPort,
+      secure: false, // SMTP2GO uses STARTTLS on port 2525
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: ENV.smtpUser,
+        pass: ENV.smtpPass,
       },
     });
 
     // إرسال البريد
     const info = await transporter.sendMail({
-      from: options.from || process.env.SMTP_FROM || 'noreply@sari.ai',
+      from: options.from || ENV.smtpFrom,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -40,4 +47,11 @@ export async function sendEmail(options: {
     console.error('[Email] Error sending email:', error);
     return false;
   }
+}
+
+/**
+ * التحقق من تكوين SMTP
+ */
+export function isSMTPConfigured(): boolean {
+  return !!(ENV.smtpUser && ENV.smtpPass);
 }

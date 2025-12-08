@@ -1,84 +1,131 @@
 import nodemailer from 'nodemailer';
 import { Invoice } from '../../drizzle/schema';
 import { getMerchantById, getUserById } from '../db';
+import { ENV } from '../_core/env';
 
 /**
- * Send invoice email to merchant
- * Note: This is a simplified version. In production, you should:
- * 1. Use a proper email service (SendGrid, AWS SES, etc.)
- * 2. Store SMTP credentials in environment variables
- * 3. Add email templates
+ * إرسال فاتورة عبر البريد الإلكتروني
  */
 export async function sendInvoiceEmail(invoice: Invoice): Promise<boolean> {
   try {
-    // Get merchant data
+    // التحقق من إعدادات SMTP
+    if (!ENV.smtpUser || !ENV.smtpPass) {
+      console.error('[Invoice Email] SMTP credentials not configured');
+      return false;
+    }
+
+    // الحصول على بيانات التاجر
     const merchant = await getMerchantById(invoice.merchantId);
     if (!merchant) {
       console.error('[Invoice Email] Merchant not found');
       return false;
     }
 
-    // Get user email
+    // الحصول على بريد المستخدم
     const user = await getUserById(merchant.userId);
     if (!user || !user.email) {
       console.error('[Invoice Email] User email not found');
       return false;
     }
 
-    // Create transporter (using Gmail as example)
-    // In production, use environment variables for credentials
+    // إنشاء transporter مع SMTP2GO
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      host: ENV.smtpHost,
+      port: ENV.smtpPort,
+      secure: false, // SMTP2GO uses STARTTLS on port 2525
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: ENV.smtpUser,
+        pass: ENV.smtpPass,
       },
     });
 
-    // Email content
+    // محتوى البريد
     const mailOptions = {
-      from: process.env.SMTP_FROM || '"Sari" <noreply@sari.com>',
+      from: ENV.smtpFrom,
       to: user.email,
-      subject: `Invoice ${invoice.invoiceNumber} - Sari`,
+      subject: `فاتورة ${invoice.invoiceNumber} - ساري`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Invoice / فاتورة</h2>
-          <p>Dear ${merchant.businessName},</p>
-          <p>عزيزنا ${merchant.businessName}،</p>
-          
-          <p>Thank you for your payment. Please find your invoice attached.</p>
-          <p>شكراً لك على الدفع. يرجى الاطلاع على الفاتورة المرفقة.</p>
-          
-          <div style="background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><strong>Invoice Number / رقم الفاتورة:</strong> ${invoice.invoiceNumber}</p>
-            <p style="margin: 5px 0;"><strong>Amount / المبلغ:</strong> ${(invoice.amount / 100).toFixed(2)} ${invoice.currency}</p>
-            <p style="margin: 5px 0;"><strong>Status / الحالة:</strong> ${invoice.status}</p>
-            <p style="margin: 5px 0;"><strong>Date / التاريخ:</strong> ${new Date(invoice.createdAt).toLocaleDateString()}</p>
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
+          <div style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">ساري</h1>
+            <p style="color: white; margin: 10px 0 0 0; font-size: 14px;">مساعد المبيعات الذكي</p>
           </div>
           
-          ${invoice.pdfUrl ? `
-          <p>
-            <a href="${invoice.pdfUrl}" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Download Invoice / تحميل الفاتورة
-            </a>
-          </p>
-          ` : ''}
+          <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+            <h2 style="color: #333; margin-top: 0;">مرحباً ${merchant.businessName}،</h2>
+            
+            <p style="color: #555; line-height: 1.6;">
+              شكراً لك على الدفع! نحن سعداء بخدمتك. يرجى الاطلاع على تفاصيل الفاتورة أدناه.
+            </p>
+            
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 25px 0; border-right: 4px solid #00d25e;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-weight: 600;">رقم الفاتورة:</td>
+                  <td style="padding: 8px 0; color: #333; text-align: left;">${invoice.invoiceNumber}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-weight: 600;">المبلغ:</td>
+                  <td style="padding: 8px 0; color: #00d25e; font-size: 20px; font-weight: bold; text-align: left;">
+                    ${(invoice.amount / 100).toFixed(2)} ${invoice.currency}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-weight: 600;">الحالة:</td>
+                  <td style="padding: 8px 0; text-align: left;">
+                    <span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">
+                      ${invoice.status === 'paid' ? 'مدفوعة' : invoice.status}
+                    </span>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666; font-weight: 600;">التاريخ:</td>
+                  <td style="padding: 8px 0; color: #333; text-align: left;">
+                    ${new Date(invoice.createdAt).toLocaleDateString('ar-SA')}
+                  </td>
+                </tr>
+              </table>
+            </div>
+            
+            ${invoice.pdfUrl ? `
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${invoice.pdfUrl}" 
+                 style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); 
+                        color: white; 
+                        padding: 14px 32px; 
+                        text-decoration: none; 
+                        border-radius: 6px; 
+                        display: inline-block;
+                        font-weight: 600;
+                        box-shadow: 0 4px 6px rgba(0, 210, 94, 0.3);">
+                📄 تحميل الفاتورة
+              </a>
+            </div>
+            ` : ''}
+            
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+              <p style="color: #666; font-size: 13px; margin: 5px 0;">
+                إذا كان لديك أي استفسار، لا تتردد في التواصل معنا.
+              </p>
+              <p style="color: #999; font-size: 12px; margin: 15px 0 0 0;">
+                هذا بريد إلكتروني تلقائي. يرجى عدم الرد عليه مباشرة.
+              </p>
+            </div>
+          </div>
           
-          <p style="color: #666; font-size: 12px; margin-top: 30px;">
-            This is an automated email. Please do not reply.<br>
-            هذا بريد إلكتروني تلقائي. يرجى عدم الرد.
-          </p>
-          
-          <p style="color: #666; font-size: 12px;">
-            Sari - AI Sales Agent for WhatsApp
-          </p>
+          <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+            <p style="color: #666; font-size: 12px; margin: 0;">
+              © ${new Date().getFullYear()} ساري - مساعد المبيعات الذكي على الواتساب
+            </p>
+            <p style="color: #999; font-size: 11px; margin: 5px 0 0 0;">
+              <a href="https://sary.live" style="color: #00d25e; text-decoration: none;">sary.live</a>
+            </p>
+          </div>
         </div>
       `,
     };
 
-    // Send email
+    // إرسال البريد
     const info = await transporter.sendMail(mailOptions);
     console.log('[Invoice Email] Email sent:', info.messageId);
     return true;
@@ -89,8 +136,8 @@ export async function sendInvoiceEmail(invoice: Invoice): Promise<boolean> {
 }
 
 /**
- * Check if SMTP is configured
+ * التحقق من تكوين SMTP
  */
 export function isSMTPConfigured(): boolean {
-  return !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+  return !!(ENV.smtpUser && ENV.smtpPass);
 }

@@ -64,6 +64,7 @@ import WhatsAppRequests from "./pages/admin/WhatsAppRequests";
 import WhatsAppRequestsPage from "./pages/admin/WhatsAppRequestsPage";
 import PaymentGateways from "./pages/admin/PaymentGateways";
 import AdminCampaigns from "./pages/admin/Campaigns";
+import SMTPSettings from "./pages/admin/SMTPSettings";
 
 function Router() {
   return (
@@ -358,6 +359,12 @@ function Router() {
       <Route path="/admin/whatsapp-requests">
         <DashboardLayout>
           <WhatsAppRequestsPage />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/smtp-settings">
+        <DashboardLayout>
+          <SMTPSettings />
         </DashboardLayout>
       </Route>
       

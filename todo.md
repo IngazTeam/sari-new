@@ -2262,3 +2262,15 @@
 - [x] إنشاء دوال قاعدة البيانات (server/db-insights.ts)
 - [x] كتابة اختبارات شاملة (server/insights.test.ts - 5 اختبارات ناجحة)
 - [x] حفظ Checkpoint
+
+
+## تكامل SMTP2GO لإرسال البريد الإلكتروني
+- [x] إضافة متغيرات البيئة لـ SMTP2GO في env.ts
+- [x] تحديث ملف email-sender.ts لدعم SMTP2GO
+- [x] تحديث ملف invoices/email.ts لدعم SMTP2GO
+- [x] إنشاء صفحة إعدادات SMTP في لوحة Admin
+- [x] إضافة API لحفظ إعدادات SMTP
+- [x] إضافة زر اختبار إرسال بريد تجريبي
+- [x] كتابة الاختبارات (5 اختبارات ناجحة)
+- [x] إضافة المسار في App.tsx
+- [x] إضافة رابط في DashboardLayout

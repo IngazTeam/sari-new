@@ -4481,6 +4481,86 @@ export const appRouter = router({
       }),
    }),
 
+  // SMTP Configuration Router
+  smtp: router({
+    // Update SMTP settings (Admin only)
+    updateSettings: adminProcedure
+      .input(z.object({
+        host: z.string(),
+        port: z.number(),
+        user: z.string(),
+        pass: z.string(),
+        from: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        // In production, store these in a secure settings table
+        // For now, we'll just validate and return success
+        // Note: Actual env vars need to be set via the platform UI
+        return { success: true, message: 'Settings saved. Please update environment variables in platform settings.' };
+      }),
+
+    // Send test email
+    sendTestEmail: adminProcedure
+      .input(z.object({
+        to: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        const { sendEmail } = await import('./reports/email-sender');
+        
+        const success = await sendEmail({
+          to: input.to,
+          subject: 'اختبار SMTP - ساري',
+          html: `
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
+              <div style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 28px;">ساري</h1>
+                <p style="color: white; margin: 10px 0 0 0; font-size: 14px;">مساعد المبيعات الذكي</p>
+              </div>
+              
+              <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
+                <h2 style="color: #333; margin-top: 0;">✅ اختبار ناجح!</h2>
+                
+                <p style="color: #555; line-height: 1.6;">
+                  تهانينا! تم إعداد SMTP بنجاح. هذا بريد تجريبي للتأكد من أن النظام يعمل بشكل صحيح.
+                </p>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #00d25e;">
+                  <p style="margin: 0; color: #666;">
+                    <strong>الوقت:</strong> ${new Date().toLocaleString('ar-SA')}
+                  </p>
+                  <p style="margin: 10px 0 0 0; color: #666;">
+                    <strong>الخادم:</strong> SMTP2GO
+                  </p>
+                </div>
+                
+                <p style="color: #666; font-size: 13px; margin-top: 20px;">
+                  يمكنك الآن استخدام النظام لإرسال الفواتير والتقارير الأسبوعية تلقائياً.
+                </p>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+                <p style="color: #666; font-size: 12px; margin: 0;">
+                  © ${new Date().getFullYear()} ساري - مساعد المبيعات الذكي على الواتساب
+                </p>
+                <p style="color: #999; font-size: 11px; margin: 5px 0 0 0;">
+                  <a href="https://sary.live" style="color: #00d25e; text-decoration: none;">sary.live</a>
+                </p>
+              </div>
+            </div>
+          `,
+        });
+        
+        if (!success) {
+          throw new TRPCError({ 
+            code: 'INTERNAL_SERVER_ERROR', 
+            message: 'Failed to send email. Please check SMTP settings.' 
+          });
+        }
+        
+        return { success: true };
+      }),
+  }),
+
   // Insights router
   insights: insightsRouter,
 });

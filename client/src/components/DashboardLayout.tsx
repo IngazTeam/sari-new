@@ -87,6 +87,7 @@ const getAdminMenuItems = (t: any) => [
   { icon: Smartphone, label: t('sidebar.admin.whatsappRequests'), path: "/admin/whatsapp-requests" },
   { icon: CreditCard, label: t('sidebar.admin.paymentGateways'), path: "/admin/payment-gateways" },
   { icon: Settings, label: t('sidebar.admin.settings'), path: "/admin/settings" },
+  { icon: MessageSquare, label: 'إعدادات SMTP', path: "/admin/smtp-settings" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
