@@ -642,44 +642,78 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign already sent or in progress' });
         }
 
-        // Update status to sending
-        await db.updateCampaign(input.id, { status: 'sending' });
-
-        // Parse recipients from targetAudience (assuming JSON array of phone numbers)
-        let recipients: string[] = [];
-        try {
-          if (campaign.targetAudience) {
-            recipients = JSON.parse(campaign.targetAudience);
-          }
-        } catch (error) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid target audience format' });
+        // Get primary WhatsApp instance
+        const instance = await db.getPrimaryWhatsAppInstance(merchant.id);
+        if (!instance || instance.status !== 'active') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active WhatsApp instance found. Please connect WhatsApp first.' });
         }
+
+        // Get all customers from conversations
+        const conversations = await db.getConversationsByMerchantId(merchant.id);
+        const recipients = conversations
+          .filter(c => c.customerPhone)
+          .map(c => c.customerPhone);
 
         if (recipients.length === 0) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No recipients found' });
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No customers found to send campaign' });
         }
 
+        // Update status to sending and set total recipients
+        await db.updateCampaign(input.id, { 
+          status: 'sending',
+          totalRecipients: recipients.length,
+        });
+
         // Send campaign in background
-        const whatsapp = await import('./whatsapp');
-        whatsapp.sendCampaign(
-          recipients,
-          campaign.message,
-          campaign.imageUrl || undefined
+        const axios = await import('axios');
+        const instancePrefix = instance.instanceId.substring(0, 4);
+        const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${instance.instanceId}`;
+
+        // Send messages asynchronously
+        Promise.all(
+          recipients.map(async (phone) => {
+            try {
+              // Send message
+              if (campaign.imageUrl) {
+                await axios.default.post(`${baseURL}/sendFileByUrl/${instance.token}`, {
+                  chatId: `${phone}@c.us`,
+                  urlFile: campaign.imageUrl,
+                  fileName: 'campaign.jpg',
+                  caption: campaign.message,
+                });
+              } else {
+                await axios.default.post(`${baseURL}/sendMessage/${instance.token}`, {
+                  chatId: `${phone}@c.us`,
+                  message: campaign.message,
+                });
+              }
+              return { phone, success: true };
+            } catch (error: any) {
+              console.error(`Failed to send to ${phone}:`, error.message);
+              return { phone, success: false, error: error.message };
+            }
+          })
         ).then(async (results) => {
           // Count successes
-          const successCount = results.filter((r: any) => r.success).length;
+          const successCount = results.filter(r => r.success).length;
           
           // Update campaign status
           await db.updateCampaign(input.id, {
             status: 'completed',
             sentCount: successCount,
           });
+
+          console.log(`Campaign ${input.id} completed: ${successCount}/${recipients.length} sent`);
         }).catch(async (error) => {
           console.error('Error sending campaign:', error);
           await db.updateCampaign(input.id, { status: 'failed' });
         });
 
-        return { success: true, message: 'Campaign is being sent' };
+        return { 
+          success: true, 
+          message: 'Campaign is being sent',
+          totalRecipients: recipients.length,
+        };
       }),
 
 
@@ -1197,6 +1231,93 @@ export const appRouter = router({
         });
 
         return response.data;
+      }),
+
+    // Save WhatsApp instance
+    saveInstance: protectedProcedure
+      .input(
+        z.object({
+          instanceId: z.string(),
+          token: z.string(),
+          phoneNumber: z.string().optional(),
+          expiresAt: z.string().optional(), // ISO date string
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Check if instance already exists
+        const existing = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
+        if (existing && existing.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Instance ID already in use' });
+        }
+
+        if (existing) {
+          // Update existing instance
+          await db.updateWhatsAppInstance(existing.id, {
+            token: input.token,
+            phoneNumber: input.phoneNumber,
+            status: 'active',
+            connectedAt: new Date(),
+            expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+          });
+          return { success: true, instanceId: existing.id };
+        } else {
+          // Create new instance
+          const instance = await db.createWhatsAppInstance({
+            merchantId: merchant.id,
+            instanceId: input.instanceId,
+            token: input.token,
+            phoneNumber: input.phoneNumber,
+            status: 'active',
+            isPrimary: true, // First instance is primary
+            connectedAt: new Date(),
+            expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+          });
+          return { success: true, instanceId: instance?.id };
+        }
+      }),
+
+    // Get primary WhatsApp instance
+    getPrimaryInstance: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getPrimaryWhatsAppInstance(merchant.id);
+    }),
+
+    // Get all WhatsApp instances
+    listInstances: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getWhatsAppInstancesByMerchantId(merchant.id);
+    }),
+
+    // Delete WhatsApp instance
+    deleteInstance: protectedProcedure
+      .input(z.object({ instanceId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Verify ownership
+        const instance = await db.getWhatsAppInstanceById(input.instanceId);
+        if (!instance || instance.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
+        }
+
+        await db.deleteWhatsAppInstance(input.instanceId);
+        return { success: true };
       }),
   }),
 

@@ -1501,4 +1501,24 @@
 - [x] تغيير ترتيب المعاملات: من `/waInstance{id}/{token}/method` إلى `/waInstance{id}/method/{token}`
 - [x] تحديث جميع API calls (testConnection، sendMessage، sendImage)
 - [x] اختبار - لا توجد أخطاء TypeScript
+- [x] حفظ checkpoint (07443c4f)
+
+## حفظ بيانات WhatsApp في قاعدة البيانات
+- [x] اكتشاف: جدول `whatsappInstances` موجود بالفعل في schema!
+- [x] دوال db.ts موجودة (createWhatsAppInstance, getPrimaryWhatsAppInstance, إلخ)
+- [x] إضافة APIs في routers.ts (saveInstance, getPrimaryInstance, listInstances, deleteInstance)
+- [x] تحديث صفحة WhatsAppTest لحفظ واستخدام البيانات المحفوظة (زر حفظ، حذف، تحميل تلقائي)
+- [ ] تحديث testConnection/sendMessage/sendImage لاستخدام primary instance تلقائياً
+
+## ربط WhatsApp بالحملات
+- [x] اكتشاف: campaigns.send API موجود بالفعل!
+- [x] تحديث campaigns.send لاستخدام primary WhatsApp instance
+- [x] جلب العملاء تلقائياً من conversations
+- [x] إرسال رسائل جماعية (نص + صورة)
+- [x] تحديث حالة الحملة بعد الإرسال
+- [ ] اختبار إرسال حملة
+
+## الاختبار والتسليم
+- [x] اختبار - لا توجد أخطاء TypeScript
+- [x] فحص حالة المشروع - كل شيء يعمل
 - [ ] حفظ checkpoint
