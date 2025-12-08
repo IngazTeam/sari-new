@@ -1411,3 +1411,13 @@
 ### المرحلة 4: حفظ وتسليم
 - [x] حفظ checkpoint نهائي
 - [x] تحديث todo.md
+
+## إصلاح مشاكل RTL في لوحات التحكم
+- [x] فحص DashboardLayout وتحديد المشاكل
+- [x] إصلاح RTL في Sidebar (تغيير side من left إلى right)
+- [x] إصلاح RTL في Header (محاذاة العناصر)
+- [x] إصلاح اتجاه الأيقونات (إزالة scaleX من lucide icons)
+- [x] إضافة dir="rtl" إلى html tag
+- [x] اختبار لوحة التاجر
+- [x] اختبار لوحة الأدمن
+- [x] حفظ checkpoint

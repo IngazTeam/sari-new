@@ -208,9 +208,7 @@
 }
 
 /* Icon positioning for RTL */
-[dir="rtl"] .lucide {
-  transform: scaleX(-1);
-}
+/* Icons should stay as-is in RTL, only directional arrows/chevrons need flipping */
 
 [dir="rtl"] .lucide-chevron-right {
   transform: scaleX(-1);
