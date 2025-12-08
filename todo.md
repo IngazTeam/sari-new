@@ -1421,3 +1421,13 @@
 - [x] اختبار لوحة التاجر
 - [x] اختبار لوحة الأدمن
 - [x] حفظ checkpoint
+
+## ربط Green API لإرسال رسائل WhatsApp التجريبية
+- [x] فحص تكامل Green API الموجود (server/whatsapp.ts)
+- [x] إضافة GREEN_API_INSTANCE_ID و GREEN_API_TOKEN للبيئة
+- [x] إنشاء صفحة /merchant/whatsapp-test لاختبار الإرسال
+- [x] إضافة APIs (تجريبية): testConnection, sendTestMessage, sendTestImage
+- [x] ربط الصفحة في App.tsx
+- [x] تحديد رقم الجوال الافتراضي: 966501898700
+- [x] اختبار الواجهة (تعمل بشكل صحيح)
+- [x] حفظ checkpoint

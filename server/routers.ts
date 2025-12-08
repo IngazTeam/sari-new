@@ -1070,6 +1070,50 @@ export const appRouter = router({
         const whatsapp = await import('./whatsapp');
         return await whatsapp.sendImageMessage(input.phoneNumber, input.imageUrl, input.caption);
       }),
+
+    // Test APIs for WhatsApp
+    testConnection: protectedProcedure.mutation(async () => {
+      try {
+        const whatsapp = await import('./whatsapp');
+        const status = await whatsapp.getConnectionStatus();
+        return {
+          success: status.isConnected,
+          status: status.status,
+          phoneNumber: status.phoneNumber,
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          status: 'error',
+          error: error.message,
+        };
+      }
+    }),
+
+    sendTestMessage: protectedProcedure
+      .input(
+        z.object({
+          phoneNumber: z.string(),
+          message: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const whatsapp = await import('./whatsapp');
+        return await whatsapp.sendTextMessage(input.phoneNumber, input.message);
+      }),
+
+    sendTestImage: protectedProcedure
+      .input(
+        z.object({
+          phoneNumber: z.string(),
+          imageUrl: z.string(),
+          caption: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const whatsapp = await import('./whatsapp');
+        return await whatsapp.sendImageMessage(input.phoneNumber, input.imageUrl, input.caption);
+      }),
   }),
 
   // Conversations

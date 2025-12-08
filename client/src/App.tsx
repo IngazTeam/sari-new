@@ -40,6 +40,7 @@ import Orders from "./pages/merchant/Orders";
 import WhatsAppInstancesPage from "./pages/merchant/WhatsAppInstancesPage";
 import WhatsAppSetupWizard from "./pages/merchant/WhatsAppSetupWizard";
 import OrderNotificationsSettings from "./pages/merchant/OrderNotificationsSettings";
+import WhatsAppTest from "./pages/merchant/WhatsAppTest";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -179,6 +180,12 @@ function Router() {
       <Route path="/merchant/whatsapp-setup">
         <DashboardLayout>
           <WhatsAppSetupWizard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/whatsapp-test">
+        <DashboardLayout>
+          <WhatsAppTest />
         </DashboardLayout>
       </Route>
       
