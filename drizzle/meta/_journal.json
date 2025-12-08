@@ -155,6 +155,13 @@
       "when": 1765186397584,
       "tag": "0021_tired_loki",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "5",
+      "when": 1765191619744,
+      "tag": "0022_hot_zaladane",
+      "breakpoints": true
     }
   ]
 }

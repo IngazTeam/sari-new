@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, date } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -98,8 +98,109 @@ export const whatsappConnections = mysqlTable("whatsappConnections", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
-export type WhatsappConnection = typeof whatsappConnections.$inferSelect;
-export type InsertWhatsappConnection = typeof whatsappConnections.$inferInsert;
+export type WhatsAppConnection = typeof whatsappConnections.$inferSelect;
+export type InsertWhatsAppConnection = typeof whatsappConnections.$inferInsert;
+
+/**
+ * Test Conversations (محادثات الاختبار) - for tracking test conversations in Test Sari page
+ */
+export const testConversations = mysqlTable("testConversations", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  endedAt: timestamp("endedAt"),
+  messageCount: int("messageCount").default(0).notNull(),
+  hasDeal: boolean("hasDeal").default(false).notNull(),
+  dealValue: int("dealValue"), // in SAR
+  dealMarkedAt: timestamp("dealMarkedAt"),
+  satisfactionRating: int("satisfactionRating"), // 1-5 stars (CSAT)
+  npsScore: int("npsScore"), // 0-10 (NPS)
+  wasCompleted: boolean("wasCompleted").default(true).notNull(), // Did user complete the conversation?
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TestConversation = typeof testConversations.$inferSelect;
+export type InsertTestConversation = typeof testConversations.$inferInsert;
+
+/**
+ * Test Messages (رسائل الاختبار) - individual messages in test conversations
+ */
+export const testMessages = mysqlTable("testMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull(),
+  sender: mysqlEnum("sender", ["user", "sari"]).notNull(),
+  content: text("content").notNull(),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+  responseTime: int("responseTime"), // in milliseconds (for Sari's responses)
+  rating: mysqlEnum("rating", ["positive", "negative"]), // 👍/👎
+  ratedAt: timestamp("ratedAt"),
+  productsRecommended: text("productsRecommended"), // JSON array of product IDs
+  wasClicked: boolean("wasClicked").default(false).notNull(), // Did user click on recommended products?
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TestMessage = typeof testMessages.$inferSelect;
+export type InsertTestMessage = typeof testMessages.$inferInsert;
+
+/**
+ * Test Deals (الاتفاقات) - successful conversions in test conversations
+ */
+export const testDeals = mysqlTable("testDeals", {
+  id: int("id").autoincrement().primaryKey(),
+  conversationId: int("conversationId").notNull().unique(),
+  merchantId: int("merchantId").notNull(),
+  dealValue: int("dealValue").notNull(), // in SAR
+  timeToConversion: int("timeToConversion"), // in seconds
+  messageCount: int("messageCount").notNull(), // How many messages until deal?
+  markedAt: timestamp("markedAt").defaultNow().notNull(),
+  wasCompleted: boolean("wasCompleted").default(false).notNull(), // Did it turn into actual order?
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TestDeal = typeof testDeals.$inferSelect;
+export type InsertTestDeal = typeof testDeals.$inferInsert;
+
+/**
+ * Test Metrics Daily (المقاييس اليومية) - aggregated daily metrics
+ */
+export const testMetricsDaily = mysqlTable("testMetricsDaily", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(),
+  date: date("date").notNull(),
+  
+  // Conversion metrics
+  totalConversations: int("totalConversations").default(0).notNull(),
+  totalDeals: int("totalDeals").default(0).notNull(),
+  conversionRate: int("conversionRate").default(0).notNull(), // percentage * 100
+  totalRevenue: int("totalRevenue").default(0).notNull(), // in SAR
+  avgDealValue: int("avgDealValue").default(0).notNull(), // in SAR
+  
+  // Time metrics
+  avgResponseTime: int("avgResponseTime").default(0).notNull(), // in milliseconds
+  avgConversationLength: int("avgConversationLength").default(0).notNull(), // message count
+  avgTimeToConversion: int("avgTimeToConversion").default(0).notNull(), // in seconds
+  
+  // Quality metrics
+  totalMessages: int("totalMessages").default(0).notNull(),
+  positiveRatings: int("positiveRatings").default(0).notNull(),
+  negativeRatings: int("negativeRatings").default(0).notNull(),
+  satisfactionRate: int("satisfactionRate").default(0).notNull(), // percentage * 100
+  completedConversations: int("completedConversations").default(0).notNull(),
+  engagementRate: int("engagementRate").default(0).notNull(), // percentage * 100
+  
+  // Growth metrics
+  returningUsers: int("returningUsers").default(0).notNull(),
+  productClicks: int("productClicks").default(0).notNull(),
+  completedOrders: int("completedOrders").default(0).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TestMetricsDaily = typeof testMetricsDaily.$inferSelect;
+export type InsertTestMetricsDaily = typeof testMetricsDaily.$inferInsert;
 
 /**
  * Products (المنتجات)

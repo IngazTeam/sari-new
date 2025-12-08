@@ -15,8 +15,8 @@ import {
   Subscription,
   InsertSubscription,
   whatsappConnections,
-  WhatsappConnection,
-  InsertWhatsappConnection,
+  WhatsAppConnection,
+  InsertWhatsAppConnection,
   whatsappConnectionRequests,
   WhatsAppConnectionRequest,
   InsertWhatsAppConnectionRequest,
@@ -422,8 +422,8 @@ export async function incrementSubscriptionUsage(
 // ============================================
 
 export async function createWhatsappConnection(
-  connection: InsertWhatsappConnection
-): Promise<WhatsappConnection | undefined> {
+  connection: InsertWhatsAppConnection
+): Promise<WhatsAppConnection | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
@@ -433,7 +433,7 @@ export async function createWhatsappConnection(
   return getWhatsappConnectionById(insertedId);
 }
 
-export async function getWhatsappConnectionById(id: number): Promise<WhatsappConnection | undefined> {
+export async function getWhatsappConnectionById(id: number): Promise<WhatsAppConnection | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
@@ -441,7 +441,7 @@ export async function getWhatsappConnectionById(id: number): Promise<WhatsappCon
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getWhatsappConnectionByMerchantId(merchantId: number): Promise<WhatsappConnection | undefined> {
+export async function getWhatsappConnectionByMerchantId(merchantId: number): Promise<WhatsAppConnection | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
@@ -454,7 +454,7 @@ export async function getWhatsappConnectionByMerchantId(merchantId: number): Pro
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateWhatsappConnection(id: number, data: Partial<InsertWhatsappConnection>): Promise<void> {
+export async function updateWhatsappConnection(id: number, data: Partial<InsertWhatsAppConnection>): Promise<void> {
   const db = await getDb();
   if (!db) return;
 

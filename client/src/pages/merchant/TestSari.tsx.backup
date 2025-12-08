@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { Bot, Send, RotateCcw, User, Loader2, Sparkles, ThumbsUp, ThumbsDown, TrendingUp, BarChart3, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Tooltip as RechartsTooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line, Tooltip as RechartsTooltip } from "recharts";
 
 interface Message {
   id: string;
@@ -143,10 +143,6 @@ export default function TestSari() {
           timestamp: new Date(),
         },
       ]);
-      setHasDeal(false);
-      setDealValue("");
-      setRatings({ positive: 0, negative: 0 });
-      setRatingHistory([]);
       toast.success("تم إعادة تعيين المحادثة");
     },
   });
@@ -176,6 +172,10 @@ export default function TestSari() {
 
   const handleReset = () => {
     resetMutation.mutate();
+    setHasDeal(false);
+    setDealValue("");
+    setRatings({ positive: 0, negative: 0 });
+    setRatingHistory([]);
   };
 
   const handleMarkAsDeal = () => {
@@ -295,6 +295,13 @@ export default function TestSari() {
     );
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -310,60 +317,54 @@ export default function TestSari() {
             <p className="text-muted-foreground mt-2">
               جرّب المحادثة مع ساري قبل ربط WhatsApp الحقيقي
             </p>
-            {hasDeal && (
-              <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
-                <CheckCircle2 className="h-4 w-4" />
-                تم الاتفاق - {dealValue} ريال
-              </div>
-            )}
           </div>
           <div className="flex gap-2">
-            <Dialog open={showDealDialog} onOpenChange={setShowDealDialog}>
-              <DialogTrigger asChild>
-                <Button
-                  variant={hasDeal ? "default" : "outline"}
-                  disabled={hasDeal}
-                  className={hasDeal ? "bg-green-600 hover:bg-green-700" : ""}
-                >
-                  <CheckCircle2 className="h-4 w-4 ml-2" />
-                  {hasDeal ? "تم الاتفاق ✅" : "تم الاتفاق"}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>تسجيل اتفاق ناجح</DialogTitle>
-                  <DialogDescription>
-                    أدخل قيمة الصفقة لتتبع معدل التحويل والإيرادات
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="dealValue">قيمة الصفقة (ريال)</Label>
-                    <Input
-                      id="dealValue"
-                      type="number"
-                      placeholder="مثال: 250"
-                      value={dealValue}
-                      onChange={(e) => setDealValue(e.target.value)}
-                      min="0"
-                      step="0.01"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowDealDialog(false)}>
-                    إلغاء
-                  </Button>
-                  <Button onClick={handleMarkAsDeal}>تأكيد</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                <Dialog open={showDealDialog} onOpenChange={setShowDealDialog}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant={hasDeal ? "default" : "outline"}
+                      disabled={hasDeal}
+                      className={hasDeal ? "bg-green-600 hover:bg-green-700" : ""}
+                    >
+                      <CheckCircle2 className="h-4 w-4 ml-2" />
+                      {hasDeal ? "تم الاتفاق ✅" : "تم الاتفاق"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>تسجيل اتفاق ناجح</DialogTitle>
+                      <DialogDescription>
+                        أدخل قيمة الصفقة لتتبع معدل التحويل والإيرادات
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="dealValue">قيمة الصفقة (ريال)</Label>
+                        <Input
+                          id="dealValue"
+                          type="number"
+                          placeholder="مثال: 250"
+                          value={dealValue}
+                          onChange={(e) => setDealValue(e.target.value)}
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowDealDialog(false)}>
+                        إلغاء
+                      </Button>
+                      <Button onClick={handleMarkAsDeal}>تأكيد</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
 
-            <Button onClick={handleReset} variant="outline" disabled={resetMutation.isPending}>
-              <RotateCcw className="h-4 w-4 ml-2" />
-              إعادة تعيين
-            </Button>
-          </div>
+                <Button onClick={handleReset} variant="outline" disabled={resetMutation.isPending}>
+                  <RotateCcw className="h-4 w-4 ml-2" />
+                  إعادة تعيين
+                </Button>
+              </div>
         </div>
 
         <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg">
@@ -403,134 +404,155 @@ export default function TestSari() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold">ساري AI</h3>
-              <p className="text-xs text-muted-foreground">مساعدك الذكي للمبيعات</p>
+              <CardTitle className="text-lg">ساري - المساعد الذكي</CardTitle>
+              <CardDescription>
+                {isTyping ? "يكتب..." : "متصل"}
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
 
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex gap-3 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {message.role === "assistant" && (
+        <CardContent className="flex-1 p-0 overflow-hidden">
+          <ScrollArea className="h-full p-4" ref={scrollRef}>
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex gap-3 ${
+                    message.role === "user" ? "flex-row-reverse" : ""
+                  }`}
+                >
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10">
-                      <Bot className="h-4 w-4 text-primary" />
+                    <AvatarFallback
+                      className={
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }
+                    >
+                      {message.role === "user" ? (
+                        <User className="h-4 w-4" />
+                      ) : (
+                        <Bot className="h-4 w-4" />
+                      )}
                     </AvatarFallback>
                   </Avatar>
-                )}
-                <div className="flex flex-col gap-1 max-w-[80%]">
+
                   <div
-                    className={`rounded-lg px-4 py-2 ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                    className={`flex flex-col gap-1 max-w-[70%] ${
+                      message.role === "user" ? "items-end" : ""
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">
-                      {message.timestamp.toLocaleTimeString("ar-SA", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    {message.role === "assistant" && message.id !== "welcome" && (
-                      <TooltipProvider>
-                        <div className="flex gap-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 w-6 p-0 ${
-                                  message.rating === "positive"
-                                    ? "text-green-600 bg-green-100 dark:bg-green-900/30"
-                                    : "text-muted-foreground hover:text-green-600"
-                                }`}
-                                onClick={() => handleRating(message.id, "positive")}
-                              >
-                                <ThumbsUp className="h-3 w-3" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>رد مفيد</p>
-                            </TooltipContent>
-                          </Tooltip>
-
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={`h-6 w-6 p-0 ${
-                                  message.rating === "negative"
-                                    ? "text-red-600 bg-red-100 dark:bg-red-900/30"
-                                    : "text-muted-foreground hover:text-red-600"
-                                }`}
-                                onClick={() => handleRating(message.id, "negative")}
-                              >
-                                <ThumbsDown className="h-3 w-3" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>رد غير مفيد</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TooltipProvider>
-                    )}
+                    <div
+                      className={`rounded-lg px-4 py-2 ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 px-2">
+                      <span className="text-xs text-muted-foreground">
+                        {message.timestamp.toLocaleTimeString("ar-SA", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                      {message.role === "assistant" && message.id !== "welcome" && (
+                        <TooltipProvider>
+                          <div className="flex gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`h-6 w-6 p-0 ${
+                                    message.rating === "positive"
+                                      ? "text-green-600 hover:text-green-700"
+                                      : "text-muted-foreground hover:text-green-600"
+                                  }`}
+                                  onClick={() => handleRating(message.id, "positive")}
+                                >
+                                  <ThumbsUp className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>رد مفيد</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`h-6 w-6 p-0 ${
+                                    message.rating === "negative"
+                                      ? "text-red-600 hover:text-red-700"
+                                      : "text-muted-foreground hover:text-red-600"
+                                  }`}
+                                  onClick={() => handleRating(message.id, "negative")}
+                                >
+                                  <ThumbsDown className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>رد غير مفيد</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </div>
                 </div>
-                {message.role === "user" && (
+              ))}
+
+              {isTyping && (
+                <div className="flex gap-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary/10">
-                      <User className="h-4 w-4 text-primary" />
+                    <AvatarFallback className="bg-muted">
+                      <Bot className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
-                )}
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary/10">
-                    <Bot className="h-4 w-4 text-primary" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="bg-muted rounded-lg px-4 py-2">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce" />
-                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.2s]" />
-                    <div className="w-2 h-2 bg-primary/60 rounded-full animate-bounce [animation-delay:0.4s]" />
+                  <div className="bg-muted rounded-lg px-4 py-2">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                      <div
+                        className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"
+                        style={{ animationDelay: "0.4s" }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
 
         <div className="border-t p-4">
           <div className="flex gap-2">
             <Input
+              placeholder="اكتب رسالتك هنا..."
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder="اكتب رسالتك هنا..."
-              disabled={sendMessageMutation.isPending}
+              onKeyPress={handleKeyPress}
+              disabled={sendMessageMutation.isPending || isTyping}
               className="flex-1"
             />
             <Button
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || sendMessageMutation.isPending}
+              disabled={
+                !inputMessage.trim() ||
+                sendMessageMutation.isPending ||
+                isTyping
+              }
             >
               {sendMessageMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -539,6 +561,9 @@ export default function TestSari() {
               )}
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            هذه محادثة تجريبية - لن يتم حفظها في قاعدة البيانات
+          </p>
         </div>
       </Card>
 
