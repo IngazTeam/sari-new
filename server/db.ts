@@ -74,6 +74,9 @@ import {
   referrals,
   Referral,
   InsertReferral,
+  rewards,
+  Reward,
+  InsertReward,
   abandonedCarts,
   AbandonedCart,
   InsertAbandonedCart,
@@ -3278,4 +3281,194 @@ export async function updateScheduledMessageLastSent(id: number) {
     .where(eq(scheduledMessages.id, id));
   
   return true;
+}
+
+
+// ============================================
+// Rewards Functions
+// ============================================
+
+/**
+ * Create a new reward
+ */
+export async function createReward(data: InsertReward): Promise<Reward | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(rewards).values(data);
+  const id = Number(result[0].insertId);
+  
+  const newReward = await db.select().from(rewards).where(eq(rewards.id, id)).limit(1);
+  return newReward[0];
+}
+
+/**
+ * Get reward by ID
+ */
+export async function getRewardById(id: number): Promise<Reward | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(rewards).where(eq(rewards.id, id)).limit(1);
+  return result[0];
+}
+
+/**
+ * Get all rewards for a merchant
+ */
+export async function getRewardsByMerchantId(merchantId: number): Promise<Reward[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(rewards)
+    .where(eq(rewards.merchantId, merchantId))
+    .orderBy(desc(rewards.createdAt));
+}
+
+/**
+ * Get pending rewards for a merchant
+ */
+export async function getPendingRewardsByMerchantId(merchantId: number): Promise<Reward[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(rewards)
+    .where(and(
+      eq(rewards.merchantId, merchantId),
+      eq(rewards.status, 'pending')
+    ))
+    .orderBy(desc(rewards.createdAt));
+}
+
+/**
+ * Claim a reward
+ */
+export async function claimReward(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(rewards).set({
+    status: 'claimed',
+    claimedAt: new Date(),
+    updatedAt: new Date()
+  }).where(eq(rewards.id, id));
+}
+
+/**
+ * Expire old rewards (90 days)
+ */
+export async function expireOldRewards(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const now = new Date();
+  
+  await db.update(rewards).set({
+    status: 'expired',
+    updatedAt: new Date()
+  }).where(and(
+    eq(rewards.status, 'pending'),
+    lt(rewards.expiresAt, now)
+  ));
+}
+
+/**
+ * Get referral code by merchant ID
+ */
+export async function getReferralCodeByMerchantId(merchantId: number): Promise<ReferralCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(referralCodes)
+    .where(eq(referralCodes.merchantId, merchantId))
+    .limit(1);
+  
+  return result[0];
+}
+
+/**
+ * Generate a unique referral code for a merchant
+ */
+export async function generateReferralCode(merchantId: number, referrerName: string, referrerPhone: string): Promise<ReferralCode | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  // Check if merchant already has a code
+  const existing = await getReferralCodeByMerchantId(merchantId);
+  if (existing) return existing;
+
+  // Generate unique code (REF + random 8 digits)
+  let code = '';
+  let isUnique = false;
+  
+  while (!isUnique) {
+    code = 'REF' + Math.floor(10000000 + Math.random() * 90000000);
+    const check = await getReferralCodeByCode(code);
+    if (!check) isUnique = true;
+  }
+
+  return createReferralCode({
+    merchantId,
+    code,
+    referrerPhone,
+    referrerName,
+    referralCount: 0,
+    rewardGiven: false,
+    isActive: true,
+  });
+}
+
+/**
+ * Get referral statistics for a merchant
+ */
+export async function getReferralStats(merchantId: number) {
+  const db = await getDb();
+  if (!db) return {
+    totalReferrals: 0,
+    completedReferrals: 0,
+    pendingReferrals: 0,
+    totalRewards: 0,
+    pendingRewards: 0,
+    claimedRewards: 0,
+  };
+
+  const referralCode = await getReferralCodeByMerchantId(merchantId);
+  if (!referralCode) return {
+    totalReferrals: 0,
+    completedReferrals: 0,
+    pendingReferrals: 0,
+    totalRewards: 0,
+    pendingRewards: 0,
+    claimedRewards: 0,
+  };
+
+  const allReferrals = await getReferralsByCodeId(referralCode.id);
+  const completedReferrals = allReferrals.filter(r => r.orderCompleted);
+  const pendingReferrals = allReferrals.filter(r => !r.orderCompleted);
+
+  const allRewards = await getRewardsByMerchantId(merchantId);
+  const pendingRewards = allRewards.filter(r => r.status === 'pending');
+  const claimedRewards = allRewards.filter(r => r.status === 'claimed');
+
+  return {
+    totalReferrals: allReferrals.length,
+    completedReferrals: completedReferrals.length,
+    pendingReferrals: pendingReferrals.length,
+    totalRewards: allRewards.length,
+    pendingRewards: pendingRewards.length,
+    claimedRewards: claimedRewards.length,
+  };
+}
+
+/**
+ * Get referrals with details for a merchant
+ */
+export async function getReferralsWithDetails(merchantId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const referralCode = await getReferralCodeByMerchantId(merchantId);
+  if (!referralCode) return [];
+
+  return getReferralsByCodeId(referralCode.id);
 }

@@ -2162,84 +2162,146 @@ export const appRouter = router({
       }),
   }),
 
-  // Referrals Management
+  // Referrals & Rewards Management
   referrals: router({
-    // List all referral codes
-    list: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await db.getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+    // Get my referral code (auto-generate if doesn't exist)
+    getMyCode: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      // Try to get existing code
+      let code = await db.getReferralCodeByMerchantId(merchant.id);
+      
+      // Generate new code if doesn't exist
+      if (!code) {
+        code = await db.generateReferralCode(
+          merchant.id,
+          merchant.businessName,
+          merchant.phone || ''
+        );
+      }
+
+      return code;
+    }),
+
+    // Get my referrals list
+    getMyReferrals: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getReferralsWithDetails(merchant.id);
+    }),
+
+    // Get my rewards
+    getMyRewards: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getRewardsByMerchantId(merchant.id);
+    }),
+
+    // Get referral statistics
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getReferralStats(merchant.id);
+    }),
+
+    // Apply referral code during signup
+    applyReferralCode: publicProcedure
+      .input(z.object({
+        code: z.string(),
+        referredMerchantId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        // Get referral code
+        const referralCode = await db.getReferralCodeByCode(input.code);
+        if (!referralCode || !referralCode.isActive) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'كود الإحالة غير صحيح' });
         }
 
-        // Get all referral codes for this merchant
-        const db_instance = await db.getDb();
-        if (!db_instance) return [];
+        // Get referred merchant info
+        const referredMerchant = await db.getMerchantById(input.referredMerchantId);
+        if (!referredMerchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
 
-        const { referralCodes } = await import('../drizzle/schema.js');
-        const { eq } = await import('drizzle-orm');
-        
-        return await db_instance.select().from(referralCodes).where(eq(referralCodes.merchantId, input.merchantId));
+        // Create referral record
+        const referral = await db.createReferral({
+          referralCodeId: referralCode.id,
+          referredPhone: referredMerchant.phone || '',
+          referredName: referredMerchant.businessName,
+          orderCompleted: false,
+        });
+
+        if (!referral) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل تسجيل الإحالة' });
+        }
+
+        // Increment referral count
+        await db.incrementReferralCount(referralCode.id);
+
+        // Grant reward to referrer (90 days expiry)
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 90);
+
+        await db.createReward({
+          merchantId: referralCode.merchantId,
+          referralId: referral.id,
+          rewardType: 'discount_10', // Default: 10% discount
+          status: 'pending',
+          expiresAt,
+          description: `خصم 10% على الاشتراك القادم لإحالة ${referredMerchant.businessName}`,
+        });
+
+        // Notify referrer
+        const { notifyOwner } = await import('./_core/notification');
+        const referrer = await db.getMerchantById(referralCode.merchantId);
+        if (referrer) {
+          await notifyOwner({
+            title: 'إحالة جديدة!',
+            content: `${referrer.businessName} حصل على إحالة جديدة من ${referredMerchant.businessName}`,
+          });
+        }
+
+        return { success: true, message: 'تم تطبيق كود الإحالة بنجاح' };
       }),
 
-    // Get statistics
-    getStats: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await db.getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
+    // Claim a reward
+    claimReward: protectedProcedure
+      .input(z.object({ rewardId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const reward = await db.getRewardById(input.rewardId);
+        if (!reward || reward.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const db_instance = await db.getDb();
-        if (!db_instance) return { totalReferrals: 0, successfulReferrals: 0, rewardsGiven: 0 };
-
-        const { referralCodes, referrals } = await import('../drizzle/schema.js');
-        const { eq, and } = await import('drizzle-orm');
-        
-        const codes = await db_instance.select().from(referralCodes).where(eq(referralCodes.merchantId, input.merchantId));
-        const totalReferrals = codes.reduce((sum, c) => sum + c.referralCount, 0);
-        const rewardsGiven = codes.filter(c => c.rewardGiven).length;
-
-        // Count successful referrals (completed orders)
-        let successfulReferrals = 0;
-        for (const code of codes) {
-          const codeReferrals = await db_instance.select().from(referrals).where(
-            and(
-              eq(referrals.referralCodeId, code.id),
-              eq(referrals.orderCompleted, true)
-            )
-          );
-          successfulReferrals += codeReferrals.length;
+        if (reward.status !== 'pending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'المكافأة غير متاحة' });
         }
 
-        return {
-          totalReferrals,
-          successfulReferrals,
-          rewardsGiven,
-        };
-      }),
-
-    // Get top referrers
-    getTopReferrers: protectedProcedure
-      .input(z.object({ merchantId: z.number(), limit: z.number().default(5) }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await db.getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        // Check if expired
+        if (new Date() > new Date(reward.expiresAt)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'المكافأة منتهية الصلاحية' });
         }
 
-        const db_instance = await db.getDb();
-        if (!db_instance) return [];
+        await db.claimReward(input.rewardId);
 
-        const { referralCodes } = await import('../drizzle/schema.js');
-        const { eq, desc } = await import('drizzle-orm');
-        
-        return await db_instance.select().from(referralCodes)
-          .where(eq(referralCodes.merchantId, input.merchantId))
-          .orderBy(desc(referralCodes.referralCount))
-          .limit(input.limit);
+        return { success: true, message: 'تم استخدام المكافأة بنجاح' };
       }),
   }),
 

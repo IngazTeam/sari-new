@@ -33,10 +33,7 @@ export default function OverviewAnalytics() {
     endDate: dateRange.end,
   });
 
-  const { data: referralStats, isLoading: loadingReferrals } = trpc.referrals.getStats.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 }
-  );
+  const { data: referralStats, isLoading: loadingReferrals } = trpc.referrals.getStats.useQuery();
 
   const { data: orderStats, isLoading: loadingOrders } = trpc.orders.getStats.useQuery(
     { merchantId },
@@ -57,7 +54,7 @@ export default function OverviewAnalytics() {
   const averageRating = 0;
   const totalReviews = 0;
   const totalReferrals = referralStats?.totalReferrals || 0;
-  const successfulReferrals = referralStats?.successfulReferrals || 0;
+  const successfulReferrals = referralStats?.completedReferrals || 0;
 
   return (
     <div className="space-y-6">

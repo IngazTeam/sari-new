@@ -580,6 +580,29 @@ export type Referral = typeof referrals.$inferSelect;
 export type InsertReferral = typeof referrals.$inferInsert;
 
 /**
+ * Rewards (المكافآت) - Track rewards earned from referrals
+ */
+export const rewards = mysqlTable("rewards", {
+  id: int("id").autoincrement().primaryKey(),
+  merchantId: int("merchantId").notNull(), // Merchant who earned the reward
+  referralId: int("referralId").notNull(), // FK to referrals
+  rewardType: mysqlEnum("rewardType", [
+    "discount_10",      // 10% discount on next subscription
+    "free_month",       // 1 free month added to subscription
+    "analytics_upgrade" // Advanced analytics for 1 month
+  ]).notNull(),
+  status: mysqlEnum("status", ["pending", "claimed", "expired"]).default("pending").notNull(),
+  claimedAt: timestamp("claimedAt"),
+  expiresAt: timestamp("expiresAt").notNull(), // Rewards expire after 90 days
+  description: text("description"), // Description of the reward
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Reward = typeof rewards.$inferSelect;
+export type InsertReward = typeof rewards.$inferInsert;
+
+/**
  * Abandoned Carts (السلات المهجورة)
  */
 export const abandonedCarts = mysqlTable("abandoned_carts", {

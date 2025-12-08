@@ -2044,4 +2044,57 @@
 ### 5. الاختبار
 - [x] اختبار تغيير العملة (6 اختبارات ناجحة)
 - [x] اختبار عرض الأسعار
+- [x] حفظ checkpoint (7a6637c3)
+
+
+## نظام الإحالة والمكافآت (Referral & Rewards System)
+
+### 1. قاعدة البيانات
+- [x] فحص جداول referral_codes و referrals الموجودة
+- [x] إضافة جدول rewards لتتبع المكافآت
+- [x] تحديث schema إذا لزم الأمر
+- [x] تطبيق migration
+
+### 2. Backend APIs
+- [x] إضافة دوال قاعدة البيانات في db.ts
+  - [x] generateReferralCode
+  - [x] getReferralCodeByMerchantId
+  - [x] getReferralsByMerchantId (getReferralsWithDetails)
+  - [x] createReferral
+  - [x] getRewardsByMerchantId
+  - [x] createReward
+  - [x] getReferralStats
+- [x] إضافة APIs في routers.ts
+  - [x] referrals.getMyCode (الحصول على رمز الإحالة)
+  - [x] referrals.getMyReferrals (قائمة الإحالات)
+  - [x] referrals.getMyRewards (قائمة المكافآت)
+  - [x] referrals.getStats (إحصائيات الإحالات)
+  - [x] referrals.applyReferralCode (تطبيق رمز الإحالة عند التسجيل)
+  - [x] referrals.claimReward (استخدام المكافأة)
+
+### 3. صفحة الإحالات (/merchant/referrals)
+- [x] إنشاء صفحة Referrals.tsx
+- [x] قسم عرض رمز الإحالة والرابط
+- [x] زر نسخ الرابط
+- [x] قسم الإحصائيات (عدد الإحالات، المكافآت المكتسبة)
+- [x] جدول الإحالات الناجحة
+- [x] جدول المكافآت المكتسبة
+- [x] إضافة المسار في App.tsx
+- [x] إضافة رابط في DashboardLayout (موجود مسبقاً)
+
+### 4. نظام المكافآت التلقائي
+- [x] إنشاء دالة grantReward (مدمجة في createReward)
+- [x] أنواع المكافآت:
+  - [x] خصم 10% على الاشتراك القادم
+  - [x] شهر مجاني إضافي
+  - [x] تحليلات متقدمة لمدة شهر
+- [x] ربط النظام مع applyReferralCode API
+- [x] إرسال إشعار للمُحيل عند نجاح الإحالة
+
+### 5. الاختبارات
+- [x] كتابة اختبارات referrals.test.ts
+- [x] اختبار توليد رمز الإحالة
+- [x] اختبار تطبيق رمز الإحالة
+- [x] اختبار منح المكافآت
+- [x] اختبار الإحصائيات (12 اختبار ناجح)
 - [ ] حفظ checkpoint

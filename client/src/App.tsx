@@ -25,7 +25,7 @@ import WhatsApp from "./pages/merchant/WhatsApp";
 import SallaIntegration from "./pages/SallaIntegration";
 import ChatOrders from "./pages/ChatOrders";
 import DiscountCodes from "./pages/DiscountCodes";
-import Referrals from "./pages/Referrals";
+import Referrals from "./pages/merchant/Referrals";
 import MerchantSettings from "./pages/merchant/Settings";
 import Reports from "./pages/merchant/Reports";
 import Subscriptions from "./pages/merchant/Subscriptions";
