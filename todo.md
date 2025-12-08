@@ -2350,3 +2350,49 @@
 - [x] كتابة اختبارات Rate Limiting (10 اختبارات)
 - [x] اختبار السيناريوهات المختلفة
 - [x] حفظ Checkpoint (fe4e98dd)
+
+
+## تحسين الموقع بناءً على wati.io
+
+### Navbar Dropdown Menus
+- [x] إضافة قائمة "الحلول" المنسدلة (Solutions) مع قسمين: Teams و Industries
+- [x] إضافة قائمة "المنتج" المنسدلة (Product) مع قسم Features
+- [x] إضافة قائمة "الموارد" المنسدلة (Resources)
+
+### New Pages - Solutions
+- [x] صفحة "للمبيعات" (/solutions/sales)
+- [x] صفحة "للتسويق" (/solutions/marketing)
+- [x] صفحة "للدعم الفني" (/solutions/support)
+
+### New Pages - Product Features
+- [x] صفحة "الذكاء الاصطناعي" (/product/ai-agent)
+- [ ] صفحة "روبوت الدردشة" (/product/chatbot)
+- [ ] صفحة "التكامل مع WhatsApp" (/product/whatsapp)
+- [ ] صفحة "البث الجماعي" (/product/broadcasts)
+- [ ] صفحة "صندوق الوارد الجماعي" (/product/team-inbox)
+
+### New Pages - Resources
+- [ ] صفحة "المدونة" (/resources/blog)
+- [ ] صفحة "مركز المساعدة" (/resources/help-center)
+- [ ] صفحة "قصص النجاح" (/resources/success-stories)
+- [ ] صفحة "الوثائق" (/resources/documentation)
+
+### New Pages - Company
+- [x] صفحة "من نحن" (/company/about)
+- [ ] صفحة "اتصل بنا" (/company/contact)
+- [ ] صفحة "الشروط والأحكام" (/company/terms)
+- [ ] صفحة "سياسة الخصوصية" (/company/privacy)
+
+### Footer Updates
+- [x] إعادة هيكلة Footer مع أقسام متعددة
+- [x] إضافة قسم "الحلول" (Solutions)
+- [x] إضافة قسم "المنتج" (Product)
+- [x] إضافة قسم "الموارد" (Resources)
+- [x] إضافة قسم "الشركة" (Company)
+- [x] إضافة قسم "الدعم" (Support)
+- [x] إضافة روابط وسائل التواصل الاجتماعي
+
+### Components
+- [x] إنشاء مكون NavigationDropdown قابل لإعادة الاستخدام
+- [x] تحديث مكون Navbar الحالي بالقوائم المنسدلة
+- [x] تحديث مكون Footer الحالي بالأقسام الجديدة

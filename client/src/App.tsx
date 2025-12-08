@@ -13,6 +13,11 @@ import ResetPassword from "./pages/ResetPassword";
 import ProductsPage from "./pages/Products";
 import PricingPage from "./pages/Pricing";
 import SupportPage from "./pages/Support";
+import SolutionsSales from "./pages/SolutionsSales";
+import SolutionsMarketing from "./pages/SolutionsMarketing";
+import SolutionsSupport from "./pages/SolutionsSupport";
+import ProductAI from "./pages/ProductAI";
+import CompanyAbout from "./pages/CompanyAbout";
 
 // Merchant pages
 import MerchantDashboard from "./pages/merchant/Dashboard";
@@ -79,6 +84,11 @@ function Router() {
       <Route path="/products" component={ProductsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/support" component={SupportPage} />
+      <Route path="/solutions/sales" component={SolutionsSales} />
+      <Route path="/solutions/marketing" component={SolutionsMarketing} />
+      <Route path="/solutions/support" component={SolutionsSupport} />
+      <Route path="/product/ai-agent" component={ProductAI} />
+      <Route path="/company/about" component={CompanyAbout} />
       
       {/* Merchant Routes */}
       <Route path="/merchant/dashboard">
