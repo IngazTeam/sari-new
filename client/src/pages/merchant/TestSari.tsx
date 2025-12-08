@@ -8,8 +8,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Bot, Send, RotateCcw, User, Loader2, Sparkles, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Bot, Send, RotateCcw, User, Loader2, Sparkles, ThumbsUp, ThumbsDown, TrendingUp, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
+import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 
 interface Message {
   id: string;
@@ -464,34 +465,132 @@ export default function TestSari() {
         </div>
       </Card>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="col-span-1 lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-sm">📊 إحصائيات التقييم</CardTitle>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              <CardTitle>إحصائيات التقييم</CardTitle>
+            </div>
+            <CardDescription>
+              تحليل شامل لتقييمات ردود ساري AI
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">إيجابي 👍</span>
-                <span className="text-lg font-bold text-green-600">{ratings.positive}</span>
+            {ratings.positive + ratings.negative === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <BarChart3 className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">لا توجد تقييمات بعد</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  ابدأ بتقييم ردود ساري باستخدام أزرار 👍/👎 لرؤية الإحصائيات هنا
+                </p>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">سلبي 👎</span>
-                <span className="text-lg font-bold text-red-600">{ratings.negative}</span>
-              </div>
-              <div className="pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">نسبة الرضا</span>
-                  <span className="text-sm font-semibold">
-                    {ratings.positive + ratings.negative === 0
-                      ? "0%"
-                      : `${Math.round(
-                          (ratings.positive / (ratings.positive + ratings.negative)) * 100
-                        )}%`}
-                  </span>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Stats Summary */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-900">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                        <ThumbsUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">تقييمات إيجابية</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {ratings.positive}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-900">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                        <ThumbsDown className="h-5 w-5 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">تقييمات سلبية</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                          {ratings.negative}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-primary/10 rounded-full">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">نسبة الرضا</p>
+                        <p className="text-2xl font-bold text-primary">
+                          {Math.round(
+                            (ratings.positive / (ratings.positive + ratings.negative)) * 100
+                          )}
+                          %
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Charts */}
+                <div className="space-y-4">
+                  {/* Pie Chart */}
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: "إيجابي", value: ratings.positive, color: "#22c55e" },
+                            { name: "سلبي", value: ratings.negative, color: "#ef4444" },
+                          ]}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) =>
+                            `${name}: ${(percent * 100).toFixed(0)}%`
+                          }
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {[
+                            { name: "إيجابي", value: ratings.positive, color: "#22c55e" },
+                            { name: "سلبي", value: ratings.negative, color: "#ef4444" },
+                          ].map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Bar Chart */}
+                  <div className="h-[150px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={[
+                          { name: "إيجابي", value: ratings.positive },
+                          { name: "سلبي", value: ratings.negative },
+                        ]}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                          <Cell fill="#22c55e" />
+                          <Cell fill="#ef4444" />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </CardContent>
         </Card>
 
@@ -502,17 +601,6 @@ export default function TestSari() {
           <CardContent>
             <p className="text-sm text-muted-foreground">
               جرّب أن تسأل ساري عن منتجاتك: "عندك عطور؟" أو "كم سعر الساعة؟"
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">🎯 الميزات</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              ساري يفهم اللهجة السعودية ويبحث في منتجاتك تلقائياً
             </p>
           </CardContent>
         </Card>
