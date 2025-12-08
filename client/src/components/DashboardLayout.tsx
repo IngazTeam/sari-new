@@ -42,7 +42,9 @@ import {
   PartyPopper,
   Bell,
   Bot,
-  Calendar
+  Calendar,
+  Sparkles,
+  Zap
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -73,6 +75,8 @@ const getMerchantMenuItems = (t: any) => [
   { icon: Store, label: t('sidebar.merchant.salla'), path: "/merchant/salla" },
   { icon: Bot, label: t('sidebar.merchant.botSettings'), path: "/merchant/bot-settings" },
   { icon: Calendar, label: t('sidebar.merchant.scheduledMessages'), path: "/merchant/scheduled-messages" },
+  { icon: Sparkles, label: 'إعدادات شخصية ساري', path: "/merchant/sari-personality" },
+  { icon: Zap, label: 'الردود السريعة', path: "/merchant/quick-responses" },
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings" },
 ];
 

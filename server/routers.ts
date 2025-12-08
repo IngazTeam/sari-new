@@ -4067,6 +4067,160 @@ export const appRouter = router({
         return await db.toggleScheduledMessage(input.id, merchant.id, input.isActive);
       }),
   }),
+
+  // Sari Personality Settings
+  personality: router({
+    // Get personality settings
+    get: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getOrCreatePersonalitySettings(merchant.id);
+    }),
+
+    // Update personality settings
+    update: protectedProcedure
+      .input(z.object({
+        tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic']).optional(),
+        style: z.enum(['saudi_dialect', 'formal_arabic', 'english', 'bilingual']).optional(),
+        emojiUsage: z.enum(['none', 'minimal', 'moderate', 'frequent']).optional(),
+        customInstructions: z.string().optional(),
+        brandVoice: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        return await db.updateSariPersonalitySettings(merchant.id, input);
+      }),
+  }),
+
+  // Quick Responses
+  quickResponses: router({
+    // List all quick responses
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      return await db.getQuickResponses(merchant.id);
+    }),
+
+    // Create quick response
+    create: protectedProcedure
+      .input(z.object({
+        trigger: z.string().min(1),
+        response: z.string().min(1),
+        keywords: z.string().optional(),
+        priority: z.number().min(1).max(10).optional(),
+        category: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        return await db.createQuickResponse({
+          ...input,
+          merchantId: merchant.id,
+        });
+      }),
+
+    // Update quick response
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        trigger: z.string().min(1).optional(),
+        response: z.string().min(1).optional(),
+        keywords: z.string().optional(),
+        priority: z.number().min(1).max(10).optional(),
+        category: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const { id, ...data } = input;
+        return await db.updateQuickResponse(id, data);
+      }),
+
+    // Delete quick response
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        await db.deleteQuickResponse(input.id);
+        return { success: true };
+      }),
+
+    // Get statistics
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
+      const responses = await db.getQuickResponses(merchant.id);
+      return {
+        total: responses.length,
+        active: responses.filter(r => r.isActive).length,
+        inactive: responses.filter(r => !r.isActive).length,
+      };
+    }),
+  }),
+
+  // Sentiment Analysis
+  sentiment: router({
+    // Get sentiment statistics
+    getStats: protectedProcedure
+      .input(z.object({
+        days: z.number().min(1).max(365).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        return await db.getMerchantSentimentStats(merchant.id, input.days || 30);
+      }),
+
+    // Get sentiment distribution
+    getDistribution: protectedProcedure
+      .input(z.object({
+        days: z.number().min(1).max(365).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const stats = await db.getMerchantSentimentStats(merchant.id, input.days || 30);
+        return {
+          positive: stats.positive,
+          negative: stats.negative,
+          neutral: stats.neutral,
+          angry: stats.angry,
+          happy: stats.happy,
+          sad: stats.sad,
+          frustrated: stats.frustrated,
+        };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
