@@ -134,6 +134,20 @@
       "when": 1765157405245,
       "tag": "0018_late_star_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1765162101318,
+      "tag": "0019_clever_punisher",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1765162472302,
+      "tag": "0020_brief_white_queen",
+      "breakpoints": true
     }
   ]
 }

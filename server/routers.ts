@@ -671,7 +671,10 @@ export const appRouter = router({
 
         // Send messages asynchronously
         Promise.all(
-          recipients.map(async (phone) => {
+          recipients.map(async (phone, index) => {
+            // Find conversation for this phone
+            const conversation = conversations.find(c => c.customerPhone === phone);
+            
             try {
               // Send message
               if (campaign.imageUrl) {
@@ -687,9 +690,33 @@ export const appRouter = router({
                   message: campaign.message,
                 });
               }
+              
+              // Log success
+              await db.createCampaignLog({
+                campaignId: input.id,
+                customerId: conversation?.id || null,
+                customerPhone: phone,
+                customerName: conversation?.customerName || null,
+                status: 'success',
+                errorMessage: null,
+                sentAt: new Date(),
+              });
+              
               return { phone, success: true };
             } catch (error: any) {
               console.error(`Failed to send to ${phone}:`, error.message);
+              
+              // Log failure
+              await db.createCampaignLog({
+                campaignId: input.id,
+                customerId: conversation?.id || null,
+                customerPhone: phone,
+                customerName: conversation?.customerName || null,
+                status: 'failed',
+                errorMessage: error.message || 'Unknown error',
+                sentAt: new Date(),
+              });
+              
               return { phone, success: false, error: error.message };
             }
           })
@@ -794,6 +821,98 @@ export const appRouter = router({
           delivered: data.delivered,
           read: data.read,
         }));
+      }),
+
+    // Get campaign report with logs
+    getReport: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const campaign = await db.getCampaignById(input.id);
+        if (!campaign) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
+        }
+
+        // Check ownership
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+
+        // Get logs with stats
+        const { logs, stats } = await db.getCampaignLogsWithStats(input.id);
+
+        return {
+          campaign,
+          logs,
+          stats,
+        };
+      }),
+
+    // Filter customers for targeting
+    filterCustomers: protectedProcedure
+      .input(z.object({
+        lastActivityDays: z.number().optional(), // 7, 30, 90
+        purchaseCountMin: z.number().optional(), // 0, 1, 5
+        purchaseCountMax: z.number().optional(),
+        productIds: z.array(z.number()).optional(), // Filter by purchased products
+      }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Get all conversations for this merchant
+        const conversations = await db.getConversationsByMerchantId(merchant.id);
+        
+        // Apply filters
+        let filtered = conversations;
+
+        // Filter by last activity
+        if (input.lastActivityDays) {
+          const cutoffDate = new Date();
+          cutoffDate.setDate(cutoffDate.getDate() - input.lastActivityDays);
+          filtered = filtered.filter(c => 
+            c.lastActivityAt && new Date(c.lastActivityAt) >= cutoffDate
+          );
+        }
+
+        // Filter by purchase count
+        if (input.purchaseCountMin !== undefined) {
+          filtered = filtered.filter(c => c.purchaseCount >= input.purchaseCountMin!);
+        }
+        if (input.purchaseCountMax !== undefined) {
+          filtered = filtered.filter(c => c.purchaseCount <= input.purchaseCountMax!);
+        }
+
+        // Filter by purchased products
+        if (input.productIds && input.productIds.length > 0) {
+          // Get orders for these customers
+          const customerPhones = filtered.map(c => c.customerPhone);
+          const orders = await db.getOrdersByMerchantId(merchant.id);
+          
+          // Filter orders by customer phone and product IDs
+          const matchingPhones = new Set<string>();
+          for (const order of orders) {
+            if (customerPhones.includes(order.customerPhone)) {
+              // Check if order contains any of the specified products
+              const orderItems = JSON.parse(order.items || '[]');
+              const hasProduct = orderItems.some((item: any) => 
+                input.productIds!.includes(item.productId)
+              );
+              if (hasProduct) {
+                matchingPhones.add(order.customerPhone);
+              }
+            }
+          }
+          
+          filtered = filtered.filter(c => matchingPhones.has(c.customerPhone));
+        }
+
+        return {
+          customers: filtered,
+          count: filtered.length,
+        };
       }),
   }),
 

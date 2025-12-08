@@ -32,6 +32,9 @@ import {
   campaigns,
   Campaign,
   InsertCampaign,
+  campaignLogs,
+  CampaignLog,
+  InsertCampaignLog,
   supportTickets,
   SupportTicket,
   InsertSupportTicket,
@@ -688,6 +691,78 @@ export async function updateCampaign(id: number, data: Partial<InsertCampaign>):
   if (!db) return;
 
   await db.update(campaigns).set(data).where(eq(campaigns.id, id));
+}
+
+// ============================================
+// Campaign Logs Management
+// ============================================
+
+/**
+ * Create a campaign log entry
+ */
+export async function createCampaignLog(log: InsertCampaignLog): Promise<CampaignLog | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(campaignLogs).values(log);
+  const insertedId = Number(result[0].insertId);
+
+  return getCampaignLogById(insertedId);
+}
+
+/**
+ * Get campaign log by ID
+ */
+export async function getCampaignLogById(id: number): Promise<CampaignLog | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(campaignLogs).where(eq(campaignLogs.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Get all logs for a specific campaign
+ */
+export async function getCampaignLogsByCampaignId(campaignId: number): Promise<CampaignLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(campaignLogs)
+    .where(eq(campaignLogs.campaignId, campaignId))
+    .orderBy(desc(campaignLogs.sentAt));
+}
+
+/**
+ * Get campaign logs with statistics
+ */
+export async function getCampaignLogsWithStats(campaignId: number) {
+  const db = await getDb();
+  if (!db) return { logs: [], stats: { total: 0, success: 0, failed: 0, pending: 0, successRate: 0 } };
+
+  const logs = await getCampaignLogsByCampaignId(campaignId);
+  
+  const stats = {
+    total: logs.length,
+    success: logs.filter(log => log.status === 'success').length,
+    failed: logs.filter(log => log.status === 'failed').length,
+    pending: logs.filter(log => log.status === 'pending').length,
+    successRate: logs.length > 0 ? Math.round((logs.filter(log => log.status === 'success').length / logs.length) * 100) : 0
+  };
+
+  return { logs, stats };
+}
+
+/**
+ * Update campaign log status
+ */
+export async function updateCampaignLog(id: number, data: Partial<InsertCampaignLog>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(campaignLogs).set(data).where(eq(campaignLogs.id, id));
 }
 
 // ============================================

@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { ArrowRight, Send, Image as ImageIcon } from 'lucide-react';
+import { ArrowRight, Send, Image as ImageIcon, Users, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 import { useTranslation } from 'react-i18next';
 export default function NewCampaign() {
@@ -20,6 +22,18 @@ export default function NewCampaign() {
     imageUrl: '',
     scheduledAt: '',
   });
+
+  const [filters, setFilters] = useState({
+    lastActivityDays: undefined as number | undefined,
+    purchaseCountMin: undefined as number | undefined,
+    purchaseCountMax: undefined as number | undefined,
+  });
+
+  // Get filtered customers count
+  const { data: filteredData } = trpc.campaigns.filterCustomers.useQuery(
+    filters,
+    { enabled: Object.values(filters).some(v => v !== undefined) }
+  );
 
   const createMutation = trpc.campaigns.create.useMutation({
     onSuccess: () => {
@@ -134,6 +148,114 @@ export default function NewCampaign() {
                 أضف رابط صورة لإرفاقها مع الرسالة
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Customer Targeting */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              استهداف العملاء
+            </CardTitle>
+            <CardDescription>
+              حدد فئة العملاء المستهدفين (اختياري)
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Last Activity Filter */}
+            <div className="space-y-2">
+              <Label>آخر نشاط</Label>
+              <Select
+                value={filters.lastActivityDays?.toString() || 'all'}
+                onValueChange={(value) => 
+                  setFilters({ ...filters, lastActivityDays: value === 'all' ? undefined : parseInt(value) })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="جميع العملاء" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع العملاء</SelectItem>
+                  <SelectItem value="7">نشط خلال 7 أيام</SelectItem>
+                  <SelectItem value="30">نشط خلال 30 يوم</SelectItem>
+                  <SelectItem value="90">نشط خلال 90 يوم</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                استهدف العملاء حسب آخر تفاعل
+              </p>
+            </div>
+
+            {/* Purchase Count Filter */}
+            <div className="space-y-2">
+              <Label>عدد المشتريات</Label>
+              <Select
+                value={
+                  filters.purchaseCountMin === 0 && filters.purchaseCountMax === 0 ? '0' :
+                  filters.purchaseCountMin === 1 && filters.purchaseCountMax === 5 ? '1-5' :
+                  filters.purchaseCountMin === 5 ? '5+' :
+                  'all'
+                }
+                onValueChange={(value) => {
+                  if (value === 'all') {
+                    setFilters({ ...filters, purchaseCountMin: undefined, purchaseCountMax: undefined });
+                  } else if (value === '0') {
+                    setFilters({ ...filters, purchaseCountMin: 0, purchaseCountMax: 0 });
+                  } else if (value === '1-5') {
+                    setFilters({ ...filters, purchaseCountMin: 1, purchaseCountMax: 5 });
+                  } else if (value === '5+') {
+                    setFilters({ ...filters, purchaseCountMin: 5, purchaseCountMax: undefined });
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="جميع العملاء" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع العملاء</SelectItem>
+                  <SelectItem value="0">لم يشتري بعد (0)</SelectItem>
+                  <SelectItem value="1-5">1-5 مشتريات</SelectItem>
+                  <SelectItem value="5+">5+ مشتريات</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                استهدف العملاء حسب عدد مشترياتهم
+              </p>
+            </div>
+
+            {/* Filtered Count */}
+            {filteredData && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-900">
+                      عدد العملاء المستهدفين
+                    </p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {filteredData.count} عميل
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Clear Filters */}
+            {Object.values(filters).some(v => v !== undefined) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFilters({
+                  lastActivityDays: undefined,
+                  purchaseCountMin: undefined,
+                  purchaseCountMax: undefined,
+                })}
+              >
+                إعادة تعيين الفلاتر
+              </Button>
+            )}
           </CardContent>
         </Card>
 

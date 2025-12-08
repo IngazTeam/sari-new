@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Pencil, Trash2, Send } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Send, FileText } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 
@@ -172,9 +172,21 @@ export default function Campaigns() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setLocation(`/merchant/campaigns/${campaign.id}`)}
+                          title="عرض التفاصيل"
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
+                        
+                        {campaign.status === 'completed' && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setLocation(`/merchant/campaigns/${campaign.id}/report`)}
+                            title="عرض التقرير"
+                          >
+                            <FileText className="w-4 h-4 text-blue-600" />
+                          </Button>
+                        )}
                         
                         {campaign.status === 'draft' && (
                           <>

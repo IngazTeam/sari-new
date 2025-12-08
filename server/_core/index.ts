@@ -13,6 +13,7 @@ import { startOrderTrackingJob } from "../jobs/order-tracking";
 import { startAbandonedCartJob } from "../jobs/abandoned-cart";
 import { runOccasionCampaignsCron } from "../jobs/occasion-campaigns";
 import { startReviewRequestJob } from "../jobs/review-request";
+import { startScheduledCampaignsJob } from "../jobs/scheduled-campaigns";
 import cron from "node-cron";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -80,6 +81,9 @@ async function startServer() {
     
     // Initialize Review Request cron job (runs daily at 10:00 AM)
     startReviewRequestJob();
+    
+    // Initialize Scheduled Campaigns cron job (runs every minute)
+    startScheduledCampaignsJob();
     
     // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
     cron.schedule('0 9 * * *', async () => {

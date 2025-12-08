@@ -1532,4 +1532,39 @@
 - [x] إصلاح Conversations.tsx (نقل early return بعد جميع hooks)
 - [x] اختبار Products - ✅ تعمل بنجاح!
 - [x] اختبار Conversations - ✅ تعمل بنجاح!
-- [ ] حفظ checkpoint
+- [x] حفظ checkpoint (b0854466)
+
+## ميزات الحملات المتقدمة
+
+### 1. جدولة الحملات التلقائية
+- [ ] تحديث schema: إضافة حقل scheduledAt في campaigns
+- [ ] تطبيق Migration (pnpm db:pu## ميزات الحملات المتقدمة
+
+### 1. جدولة الحملات التلقائية
+- [x] تحديث schema: إضافة حقل scheduledAt في campaigns (موجود بالفعل)
+- [x] إنشاء cron job لفحص الحملات المجدولة كل دقيقة (server/jobs/scheduled-campaigns.ts)
+- [x] تحديث API campaigns.create لدعم الجدولة (موجود بالفعل)
+- [x] تحديث صفحة إنشاء الحملة: إضافة date/time picker (موجود بالفعل)
+- [x] إضافة cron job إلى server/_core/index.ts
+
+### 2. تقارير الحملات التفصيلية
+- [x] إنشاء جدول campaign_logs (campaignId, customerId, status, error, sentAt)
+- [x] تطبيق Migration (pnpm db:push)
+- [x] إضافة دوال campaign_logs في db.ts
+- [x] تحديث campaigns.send لحفظ نتائج كل إرسال
+- [x] إنشاء API campaigns.getReport(campaignId)
+- [x] إنشاء صفحة /merchant/campaigns/:id/report
+- [x] عرض قائمة العملاء مع حالة الإرسال (نجاح/فشل/أسباب)
+- [x] إضافة إحصائيات (Stats Cards)
+- [x] إضافة زر تصدير CSV
+- [x] إضافة زر التقرير في صفحة Campaigns
+
+### 3. تصفية العملاء المتقدمة
+- [x] إضافة حقول في conversations: purchaseCount, totalSpent (lastActivityAt موجود)
+- [x] تطبيق Migration (pnpm db:push)
+- [x] إنشاء API campaigns.filterCustomers(criteria)
+- [x] تحديث صفحة إنشاء الحملة: إضافة فلاتر العملاء
+- [x] فلتر حسب آخر نشاط (7، 30، 90 يوم)
+- [x] فلتر حسب عدد المشتريات (0، 1-5، 5+)
+- [x] فلتر حسب المنتجات المشتراة (في API)
+- [x] عرض عدد العملاء المستهدفين قبل الإرسال

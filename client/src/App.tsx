@@ -17,6 +17,7 @@ import MerchantDashboard from "./pages/merchant/Dashboard";
 import Campaigns from "./pages/merchant/Campaigns";
 import NewCampaign from "./pages/merchant/NewCampaign";
 import CampaignDetails from "./pages/merchant/CampaignDetails";
+import CampaignReport from "./pages/merchant/CampaignReport";
 import Products from "./pages/merchant/Products";
 import UploadProducts from "./pages/merchant/UploadProducts";
 import Conversations from "./pages/merchant/Conversations";
@@ -85,6 +86,12 @@ function Router() {
       <Route path="/merchant/campaigns/:id">
         <DashboardLayout>
           <CampaignDetails />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/campaigns/:id/report">
+        <DashboardLayout>
+          <CampaignReport />
         </DashboardLayout>
       </Route>
       

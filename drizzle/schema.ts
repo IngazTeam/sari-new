@@ -135,6 +135,8 @@ export const conversations = mysqlTable("conversations", {
   status: mysqlEnum("status", ["active", "closed", "archived"]).default("active").notNull(),
   lastMessageAt: timestamp("lastMessageAt").defaultNow().notNull(),
   lastActivityAt: timestamp("lastActivityAt").defaultNow().notNull(), // For "افتقدناك" automation
+  purchaseCount: int("purchaseCount").default(0).notNull(), // Number of purchases
+  totalSpent: int("totalSpent").default(0).notNull(), // Total amount spent (in SAR)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -181,6 +183,24 @@ export const campaigns = mysqlTable("campaigns", {
 
 export type Campaign = typeof campaigns.$inferSelect;
 export type InsertCampaign = typeof campaigns.$inferInsert;
+
+/**
+ * Campaign Logs (سجل إرسال الحملات) - Track individual message delivery status
+ */
+export const campaignLogs = mysqlTable("campaignLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  campaignId: int("campaignId").notNull(),
+  customerId: int("customerId"), // Reference to conversations.id (optional)
+  customerPhone: varchar("customerPhone", { length: 20 }).notNull(),
+  customerName: varchar("customerName", { length: 255 }),
+  status: mysqlEnum("status", ["success", "failed", "pending"]).default("pending").notNull(),
+  errorMessage: text("errorMessage"), // Error details if failed
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CampaignLog = typeof campaignLogs.$inferSelect;
+export type InsertCampaignLog = typeof campaignLogs.$inferInsert;
 
 /**
  * Support Tickets (تذاكر الدعم)
