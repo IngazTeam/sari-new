@@ -1081,8 +1081,10 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         const axios = await import('axios');
-        // Green API format: https://api.green-api.com/waInstance{instanceId}/{token}/method
-        const url = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}/getStateInstance`;
+        // Green API format: https://{instancePrefix}.api.greenapi.com/waInstance{instanceId}/method/{token}
+        // Extract first 4 digits from instanceId for subdomain
+        const instancePrefix = input.instanceId.substring(0, 4);
+        const url = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}/getStateInstance/${input.token}`;
         
         // Request details for debugging
         const requestDetails = {
@@ -1159,9 +1161,11 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         const axios = await import('axios');
-        const baseURL = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}`;
+        // Extract first 4 digits from instanceId for subdomain
+        const instancePrefix = input.instanceId.substring(0, 4);
+        const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
         
-        const response = await axios.default.post(`${baseURL}/sendMessage`, {
+        const response = await axios.default.post(`${baseURL}/sendMessage/${input.token}`, {
           chatId: `${input.phoneNumber}@c.us`,
           message: input.message,
         });
@@ -1181,9 +1185,11 @@ export const appRouter = router({
       )
       .mutation(async ({ input }) => {
         const axios = await import('axios');
-        const baseURL = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}`;
+        // Extract first 4 digits from instanceId for subdomain
+        const instancePrefix = input.instanceId.substring(0, 4);
+        const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
         
-        const response = await axios.default.post(`${baseURL}/sendFileByUrl`, {
+        const response = await axios.default.post(`${baseURL}/sendFileByUrl/${input.token}`, {
           chatId: `${input.phoneNumber}@c.us`,
           urlFile: input.imageUrl,
           fileName: 'image.jpg',

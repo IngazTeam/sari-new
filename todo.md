@@ -1494,4 +1494,11 @@
 - [x] تغيير الطريقة: إرجاع Debug Info في response بدلاً من TRPCError.cause
 - [x] إصلاح عرض Debug Info في Frontend
 - [x] اختبار مع Instance ID و Token حقيقيين - يعمل بنجاح!
+- [x] حفظ checkpoint (368b8e09)
+
+## إصلاح تركيب Green API URL
+- [x] تغيير domain من `api.green-api.com` إلى `{instancePrefix}.api.greenapi.com`
+- [x] تغيير ترتيب المعاملات: من `/waInstance{id}/{token}/method` إلى `/waInstance{id}/method/{token}`
+- [x] تحديث جميع API calls (testConnection، sendMessage، sendImage)
+- [x] اختبار - لا توجد أخطاء TypeScript
 - [ ] حفظ checkpoint
