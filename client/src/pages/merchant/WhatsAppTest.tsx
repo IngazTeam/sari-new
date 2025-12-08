@@ -25,6 +25,7 @@ export default function WhatsAppTest() {
     success: boolean;
     status: string;
     phoneNumber?: string;
+    error?: string;
   } | null>(null);
 
   const sendMessageMutation = trpc.whatsapp.sendTestMessage.useMutation({
@@ -235,6 +236,11 @@ export default function WhatsAppTest() {
                       <p>
                         <strong>الحالة:</strong> {connectionStatus.status}
                       </p>
+                      {connectionStatus.error && (
+                        <p className="text-red-600 dark:text-red-400 mt-2">
+                          <strong>تفاصيل الخطأ:</strong> {connectionStatus.error}
+                        </p>
+                      )}
                       {connectionStatus.phoneNumber && (
                         <p className="flex items-center gap-2">
                           <Phone className="h-4 w-4" />
