@@ -26,6 +26,7 @@ export default function WhatsAppTest() {
     status: string;
     phoneNumber?: string;
     error?: string;
+    debug?: any;
   } | null>(null);
 
   const sendMessageMutation = trpc.whatsapp.sendTestMessage.useMutation({
@@ -55,11 +56,15 @@ export default function WhatsAppTest() {
         toast.error(`فشل الاتصال ❌\nالحالة: ${data.status}`);
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('[WhatsApp Test] Error:', error);
+      const errorDetails = error.data?.cause || {};
       toast.error(`خطأ في الاتصال: ${error.message}`);
       setConnectionStatus({
         success: false,
         status: 'error',
+        error: error.message,
+        debug: errorDetails,
       });
     },
   });
@@ -253,6 +258,47 @@ export default function WhatsAppTest() {
                       <p className="text-xs text-muted-foreground mt-2">
                         يمكنك الآن إرسال رسائل تجريبية ✨
                       </p>
+                    )}
+                    {connectionStatus.debug && (
+                      <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded border">
+                        <p className="font-bold text-sm mb-2">🔍 Debug Info (للإرسال لدعم Green API):</p>
+                        <div className="space-y-1 text-xs font-mono">
+                          <p><strong>URL:</strong> {connectionStatus.debug.url}</p>
+                          <p><strong>Method:</strong> {connectionStatus.debug.method}</p>
+                          {connectionStatus.debug.responseStatus && (
+                            <p><strong>Response Status:</strong> {connectionStatus.debug.responseStatus}</p>
+                          )}
+                          {connectionStatus.debug.responseStatusText && (
+                            <p><strong>Response Status Text:</strong> {connectionStatus.debug.responseStatusText}</p>
+                          )}
+                          {connectionStatus.debug.errorCode && (
+                            <p><strong>Error Code:</strong> {connectionStatus.debug.errorCode}</p>
+                          )}
+                          {connectionStatus.debug.errorMessage && (
+                            <p><strong>Error Message:</strong> {connectionStatus.debug.errorMessage}</p>
+                          )}
+                          {connectionStatus.debug.responseData && (
+                            <div>
+                              <p><strong>Response Data:</strong></p>
+                              <pre className="mt-1 p-2 bg-white dark:bg-gray-900 rounded text-[10px] overflow-x-auto max-h-40">
+                                {JSON.stringify(connectionStatus.debug.responseData, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-3 w-full"
+                          onClick={() => {
+                            const debugText = JSON.stringify(connectionStatus.debug, null, 2);
+                            navigator.clipboard.writeText(debugText);
+                            toast.success('تم نسخ Debug Info إلى الحافظة!');
+                          }}
+                        >
+                          📋 نسخ Debug Info
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>

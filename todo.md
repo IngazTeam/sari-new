@@ -1477,3 +1477,14 @@
 - [x] ربط الصفحة في App.tsx
 - [x] اختبار الصفحات
 - [x] حفظ checkpoint
+
+## إضافة Logging مفصل لـ Green API
+- [x] إضافة عرض URL الكامل في صفحة WhatsApp Test
+- [x] إضافة عرض Request Method في صفحة WhatsApp Test
+- [x] إضافة عرض Response الكامل من Green API
+- [x] إضافة عرض Error Details (رسالة الخطأ، status code، response data)
+- [x] إضافة زر نسخ Debug Info للحافظة
+- [x] إضافة logging في server (console.log)
+- [x] إضافة debug info في API response
+- [x] اختبار الـ logging (لا توجد أخطاء TypeScript)
+- [ ] حفظ checkpoint

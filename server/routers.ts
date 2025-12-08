@@ -1080,13 +1080,22 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        try {
-          const axios = await import('axios');
-          // Green API format: https://api.green-api.com/waInstance{instanceId}/{token}/method
-          const url = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}/getStateInstance`;
-          
-          console.log('[Green API Test] Attempting connection to instance:', input.instanceId);
+        const axios = await import('axios');
+        // Green API format: https://api.green-api.com/waInstance{instanceId}/{token}/method
+        const url = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}/getStateInstance`;
+        
+        // Request details for debugging
+        const requestDetails = {
+          url,
+          method: 'GET',
+          instanceId: input.instanceId,
+          tokenPreview: input.token.substring(0, 10) + '...',
+          timestamp: new Date().toISOString(),
+        };
+        
+        console.log('[Green API Test] Request Details:', JSON.stringify(requestDetails, null, 2));
 
+        try {
           const response = await axios.default.get(url, {
             timeout: 15000,
           });
@@ -1098,14 +1107,27 @@ export const appRouter = router({
             success: isConnected,
             status: response.data.stateInstance || 'unknown',
             phoneNumber: response.data.phoneNumber,
+            // Debug info
+            debug: {
+              url,
+              method: 'GET',
+              responseStatus: response.status,
+              responseData: response.data,
+            },
           };
         } catch (error: any) {
-          console.error('[Green API Test] Error:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-          });
+          const errorDetails = {
+            url,
+            method: 'GET',
+            errorMessage: error.message,
+            errorCode: error.code,
+            responseStatus: error.response?.status,
+            responseStatusText: error.response?.statusText,
+            responseData: error.response?.data,
+            timestamp: new Date().toISOString(),
+          };
+          
+          console.error('[Green API Test] Error Details:', JSON.stringify(errorDetails, null, 2));
           
           let errorMessage = 'فشل الاتصال';
           if (error.response?.status === 401 || error.response?.status === 403) {
@@ -1116,11 +1138,11 @@ export const appRouter = router({
             errorMessage = 'انتهى وقت الاتصال';
           }
           
-          return {
-            success: false,
-            status: 'error',
-            error: error.response?.data?.message || errorMessage,
-          };
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: errorMessage,
+            cause: errorDetails,
+          });
         }
       }),
 
