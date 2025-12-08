@@ -2309,3 +2309,16 @@
 - [x] إضافة Cron Jobs للإشعارات الدورية
 - [x] ربط رسالة الترحيب مع API التسجيل
 - [x] كتابة الاختبارات (17 اختبار ناجح)
+
+## نظام إعادة تعيين كلمة المرور (Password Reset)
+- [x] إنشاء جدول password_reset_tokens في Schema
+- [x] تطبيق Migration (0030_big_bushwacker.sql)
+- [x] إنشاء دوال قاعدة البيانات (7 دوال)
+- [x] إنشاء قالب البريد الإلكتروني (HTML + Text)
+- [x] إضافة APIs (requestPasswordReset, resetPassword, validateResetToken)
+- [x] إنشاء صفحة /forgot-password
+- [x] إنشاء صفحة /reset-password/:token
+- [x] إضافة رابط "نسيت كلمة المرور؟" في صفحة Login
+- [x] إضافة المسارات في App.tsx
+- [x] كتابة الاختبارات الشاملة (10 اختبارات ناجحة)
+- [ ] حفظ Checkpoint

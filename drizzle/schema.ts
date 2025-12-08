@@ -1058,3 +1058,20 @@ export const abTestResults = mysqlTable('ab_test_results', {
 
 export type ABTestResult = typeof abTestResults.$inferSelect;
 export type InsertABTestResult = typeof abTestResults.$inferInsert;
+
+/**
+ * Password Reset Tokens - رموز إعادة تعيين كلمة المرور
+ */
+export const passwordResetTokens = mysqlTable('password_reset_tokens', {
+  id: int('id').primaryKey().autoincrement(),
+  userId: int('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email: varchar('email', { length: 320 }).notNull(),
+  token: varchar('token', { length: 255 }).notNull().unique(), // Unique token (UUID or random string)
+  expiresAt: timestamp('expires_at').notNull(), // Token expiry time (usually 1 hour)
+  used: boolean('used').default(false).notNull(), // Has this token been used?
+  usedAt: timestamp('used_at'), // When was it used?
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;

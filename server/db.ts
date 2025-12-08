@@ -129,6 +129,9 @@ import {
   abTestResults,
   ABTestResult,
   InsertABTestResult,
+  passwordResetTokens,
+  PasswordResetToken,
+  InsertPasswordResetToken,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -4244,4 +4247,104 @@ export async function resumeABTest(testId: number) {
       updatedAt: new Date(),
     })
     .where(eq(abTestResults.id, testId));
+}
+
+// ============================================
+// Password Reset Token Management
+// ============================================
+
+/**
+ * إنشاء رمز إعادة تعيين كلمة المرور
+ */
+export async function createPasswordResetToken(data: {
+  userId: number;
+  email: string;
+  token: string;
+  expiresAt: Date;
+}): Promise<PasswordResetToken | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const [result] = await db.insert(passwordResetTokens).values(data);
+  return await getPasswordResetTokenById(Number(result.insertId));
+}
+
+/**
+ * الحصول على رمز إعادة تعيين بواسطة ID
+ */
+export async function getPasswordResetTokenById(id: number): Promise<PasswordResetToken | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const [token] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.id, id));
+  return token;
+}
+
+/**
+ * الحصول على رمز إعادة تعيين بواسطة Token
+ */
+export async function getPasswordResetTokenByToken(token: string): Promise<PasswordResetToken | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const [resetToken] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+  return resetToken;
+}
+
+/**
+ * التحقق من صلاحية رمز إعادة التعيين
+ * @returns { valid: boolean, reason?: string, token?: PasswordResetToken }
+ */
+export async function validatePasswordResetToken(token: string): Promise<{
+  valid: boolean;
+  reason?: string;
+  token?: PasswordResetToken;
+}> {
+  const resetToken = await getPasswordResetTokenByToken(token);
+
+  if (!resetToken) {
+    return { valid: false, reason: 'invalid_token' };
+  }
+
+  if (resetToken.used) {
+    return { valid: false, reason: 'token_already_used' };
+  }
+
+  if (new Date() > new Date(resetToken.expiresAt)) {
+    return { valid: false, reason: 'token_expired' };
+  }
+
+  return { valid: true, token: resetToken };
+}
+
+/**
+ * تحديث رمز إعادة التعيين كمستخدم
+ */
+export async function markPasswordResetTokenAsUsed(tokenId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(passwordResetTokens)
+    .set({ used: true, usedAt: new Date() })
+    .where(eq(passwordResetTokens.id, tokenId));
+}
+
+/**
+ * حذف جميع رموز إعادة التعيين للمستخدم (للتنظيف)
+ */
+export async function deletePasswordResetTokensByUserId(userId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
+}
+
+/**
+ * حذف الرموز المنتهية الصلاحية (للتنظيف الدوري)
+ */
+export async function deleteExpiredPasswordResetTokens(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, new Date()));
 }

@@ -183,6 +183,114 @@ export const appRouter = router({
         await db.updateUser(ctx.user.id, input);
         return { success: true };
       }),
+    
+    // Request password reset
+    requestPasswordReset: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        const user = await db.getUserByEmail(input.email);
+        
+        // Don't reveal if user exists or not (security best practice)
+        if (!user) {
+          return { success: true, message: 'If an account exists with this email, a password reset link has been sent.' };
+        }
+        
+        // Generate unique token
+        const token = `${Date.now()}_${Math.random().toString(36).substring(2)}_${Math.random().toString(36).substring(2)}`;
+        
+        // Token expires in 1 hour
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+        
+        // Create reset token in database
+        await db.createPasswordResetToken({
+          userId: user.id,
+          email: user.email!,
+          token,
+          expiresAt,
+        });
+        
+        // Send email with reset link
+        try {
+          const { sendEmail } = await import('./reports/email-sender');
+          const { getPasswordResetEmailTemplate } = await import('./email/templates/passwordReset');
+          
+          const resetLink = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/reset-password/${token}`;
+          
+          const emailTemplate = getPasswordResetEmailTemplate({
+            userName: user.name || 'المستخدم',
+            resetLink,
+            expiryHours: 1,
+          });
+          
+          await sendEmail({
+            to: user.email!,
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+          });
+        } catch (error) {
+          console.error('[Password Reset] Failed to send email:', error);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to send reset email' });
+        }
+        
+        return { success: true, message: 'If an account exists with this email, a password reset link has been sent.' };
+      }),
+    
+    // Validate reset token
+    validateResetToken: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const validation = await db.validatePasswordResetToken(input.token);
+        
+        if (!validation.valid) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: validation.reason === 'invalid_token' ? 'Invalid reset token' :
+                     validation.reason === 'token_already_used' ? 'This reset link has already been used' :
+                     validation.reason === 'token_expired' ? 'This reset link has expired' :
+                     'Invalid reset token'
+          });
+        }
+        
+        return { valid: true };
+      }),
+    
+    // Reset password with token
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ input }) => {
+        const validation = await db.validatePasswordResetToken(input.token);
+        
+        if (!validation.valid || !validation.token) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: validation.reason === 'invalid_token' ? 'Invalid reset token' :
+                     validation.reason === 'token_already_used' ? 'This reset link has already been used' :
+                     validation.reason === 'token_expired' ? 'This reset link has expired' :
+                     'Invalid reset token'
+          });
+        }
+        
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+        
+        // Update user password
+        await db.updateUser(validation.token.userId, { password: hashedPassword });
+        
+        // Mark token as used
+        await db.markPasswordResetTokenAsUsed(validation.token.id);
+        
+        // Delete all other reset tokens for this user (cleanup)
+        await db.deletePasswordResetTokensByUserId(validation.token.userId);
+        
+        return { success: true, message: 'Password has been reset successfully' };
+      }),
   }),
 
   // Merchant Management

@@ -8,6 +8,8 @@ import DashboardLayout from "./components/DashboardLayout";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import ProductsPage from "./pages/Products";
 import PricingPage from "./pages/Pricing";
 import SupportPage from "./pages/Support";
@@ -72,6 +74,8 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={SignUp} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/products" component={ProductsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/support" component={SupportPage} />
