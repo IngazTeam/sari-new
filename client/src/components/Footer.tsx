@@ -13,12 +13,7 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Bot className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl text-primary">
-                ساري
-              </span>
+              <img src="/sari-logo.png" alt="ساري" className="h-10 w-auto" />
             </div>
             <p className="text-sm text-muted-foreground">
               {t('footer.description')}
