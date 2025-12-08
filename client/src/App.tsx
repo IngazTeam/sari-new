@@ -46,6 +46,7 @@ import WhatsAppTest from "./pages/merchant/WhatsAppTest";
 import Reviews from "./pages/merchant/Reviews";
 import TestSari from "./pages/merchant/TestSari";
 import MetricsDashboard from "./pages/merchant/MetricsDashboard";
+import WhatsAppWebhookSetup from "./pages/merchant/WhatsAppWebhookSetup";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -209,6 +210,12 @@ function Router() {
       <Route path="/merchant/metrics-dashboard">
         <DashboardLayout>
           <MetricsDashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/whatsapp-webhook-setup">
+        <DashboardLayout>
+          <WhatsAppWebhookSetup />
         </DashboardLayout>
       </Route>
       
