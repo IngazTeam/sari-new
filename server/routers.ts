@@ -1071,48 +1071,80 @@ export const appRouter = router({
         return await whatsapp.sendImageMessage(input.phoneNumber, input.imageUrl, input.caption);
       }),
 
-    // Test APIs for WhatsApp
-    testConnection: protectedProcedure.mutation(async () => {
-      try {
-        const whatsapp = await import('./whatsapp');
-        const status = await whatsapp.getConnectionStatus();
-        return {
-          success: status.isConnected,
-          status: status.status,
-          phoneNumber: status.phoneNumber,
-        };
-      } catch (error: any) {
-        return {
-          success: false,
-          status: 'error',
-          error: error.message,
-        };
-      }
-    }),
+    // Test APIs for WhatsApp (with custom credentials)
+    testConnection: protectedProcedure
+      .input(
+        z.object({
+          instanceId: z.string(),
+          token: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        try {
+          const axios = await import('axios');
+          const baseURL = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}`;
+          const response = await axios.default.get(`${baseURL}/getStateInstance`, {
+            timeout: 10000,
+          });
+
+          const isConnected = response.data.stateInstance === 'authorized';
+          return {
+            success: isConnected,
+            status: response.data.stateInstance,
+            phoneNumber: isConnected ? response.data.phoneNumber : undefined,
+          };
+        } catch (error: any) {
+          return {
+            success: false,
+            status: 'error',
+            error: error.message,
+          };
+        }
+      }),
 
     sendTestMessage: protectedProcedure
       .input(
         z.object({
+          instanceId: z.string(),
+          token: z.string(),
           phoneNumber: z.string(),
           message: z.string(),
         })
       )
       .mutation(async ({ input }) => {
-        const whatsapp = await import('./whatsapp');
-        return await whatsapp.sendTextMessage(input.phoneNumber, input.message);
+        const axios = await import('axios');
+        const baseURL = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}`;
+        
+        const response = await axios.default.post(`${baseURL}/sendMessage`, {
+          chatId: `${input.phoneNumber}@c.us`,
+          message: input.message,
+        });
+
+        return response.data;
       }),
 
     sendTestImage: protectedProcedure
       .input(
         z.object({
+          instanceId: z.string(),
+          token: z.string(),
           phoneNumber: z.string(),
           imageUrl: z.string(),
           caption: z.string().optional(),
         })
       )
       .mutation(async ({ input }) => {
-        const whatsapp = await import('./whatsapp');
-        return await whatsapp.sendImageMessage(input.phoneNumber, input.imageUrl, input.caption);
+        const axios = await import('axios');
+        const baseURL = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}`;
+        
+        const response = await axios.default.post(`${baseURL}/sendFileByUrl`, {
+          chatId: `${input.phoneNumber}@c.us`,
+          urlFile: input.imageUrl,
+          fileName: 'image.jpg',
+          caption: input.caption || '',
+        });
+
+        return response.data;
       }),
   }),
 

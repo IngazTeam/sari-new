@@ -6,13 +6,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Send, Image as ImageIcon, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Send, Image as ImageIcon, CheckCircle2, XCircle, Phone } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function WhatsAppTest() {
+  // Green API Credentials
+  const [instanceId, setInstanceId] = useState("");
+  const [apiToken, setApiToken] = useState("");
+  
+  // Message fields
   const [phoneNumber, setPhoneNumber] = useState("966501898700");
   const [message, setMessage] = useState("مرحباً! هذه رسالة تجريبية من ساري 🎉");
   const [imageUrl, setImageUrl] = useState("");
   const [imageCaption, setImageCaption] = useState("");
+
+  // Connection status
+  const [connectionStatus, setConnectionStatus] = useState<{
+    success: boolean;
+    status: string;
+    phoneNumber?: string;
+  } | null>(null);
 
   const sendMessageMutation = trpc.whatsapp.sendTestMessage.useMutation({
     onSuccess: () => {
@@ -34,6 +47,7 @@ export default function WhatsAppTest() {
 
   const testConnectionMutation = trpc.whatsapp.testConnection.useMutation({
     onSuccess: (data) => {
+      setConnectionStatus(data);
       if (data.success) {
         toast.success(`الاتصال ناجح! ✅\nالحالة: ${data.status}`);
       } else {
@@ -42,10 +56,34 @@ export default function WhatsAppTest() {
     },
     onError: (error) => {
       toast.error(`خطأ في الاتصال: ${error.message}`);
+      setConnectionStatus({
+        success: false,
+        status: 'error',
+      });
     },
   });
 
+  const handleTestConnection = () => {
+    if (!instanceId.trim()) {
+      toast.error("يرجى إدخال Instance ID");
+      return;
+    }
+    if (!apiToken.trim()) {
+      toast.error("يرجى إدخال API Token");
+      return;
+    }
+
+    testConnectionMutation.mutate({
+      instanceId: instanceId.trim(),
+      token: apiToken.trim(),
+    });
+  };
+
   const handleSendMessage = () => {
+    if (!instanceId.trim() || !apiToken.trim()) {
+      toast.error("يرجى إدخال بيانات Green API أولاً");
+      return;
+    }
     if (!phoneNumber.trim()) {
       toast.error("يرجى إدخال رقم الجوال");
       return;
@@ -56,12 +94,18 @@ export default function WhatsAppTest() {
     }
 
     sendMessageMutation.mutate({
+      instanceId: instanceId.trim(),
+      token: apiToken.trim(),
       phoneNumber: phoneNumber.trim(),
       message: message.trim(),
     });
   };
 
   const handleSendImage = () => {
+    if (!instanceId.trim() || !apiToken.trim()) {
+      toast.error("يرجى إدخال بيانات Green API أولاً");
+      return;
+    }
     if (!phoneNumber.trim()) {
       toast.error("يرجى إدخال رقم الجوال");
       return;
@@ -72,14 +116,12 @@ export default function WhatsAppTest() {
     }
 
     sendImageMutation.mutate({
+      instanceId: instanceId.trim(),
+      token: apiToken.trim(),
       phoneNumber: phoneNumber.trim(),
       imageUrl: imageUrl.trim(),
       caption: imageCaption.trim() || undefined,
     });
-  };
-
-  const handleTestConnection = () => {
-    testConnectionMutation.mutate();
   };
 
   return (
@@ -92,6 +134,60 @@ export default function WhatsAppTest() {
       </div>
 
       <div className="grid gap-6">
+        {/* Green API Credentials Card */}
+        <Card className="border-2 border-primary/20">
+          <CardHeader>
+            <CardTitle>بيانات Green API</CardTitle>
+            <CardDescription>
+              أدخل Instance ID و Token من حسابك في Green API
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="instanceId">Instance ID</Label>
+              <Input
+                id="instanceId"
+                placeholder="1101234567"
+                value={instanceId}
+                onChange={(e) => setInstanceId(e.target.value)}
+                dir="ltr"
+                className="text-left font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                رقم Instance من لوحة تحكم Green API
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="apiToken">API Token</Label>
+              <Input
+                id="apiToken"
+                type="password"
+                placeholder="••••••••••••••••••••"
+                value={apiToken}
+                onChange={(e) => setApiToken(e.target.value)}
+                dir="ltr"
+                className="text-left font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Token الخاص بـ Instance (سيتم إخفاؤه)
+              </p>
+            </div>
+
+            <Alert>
+              <AlertDescription className="text-sm">
+                <strong>كيف تحصل على البيانات؟</strong>
+                <br />
+                1. سجل دخول إلى <a href="https://console.green-api.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">console.green-api.com</a>
+                <br />
+                2. اختر Instance أو أنشئ واحد جديد
+                <br />
+                3. انسخ Instance ID و API Token
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+
         {/* Test Connection Card */}
         <Card>
           <CardHeader>
@@ -100,10 +196,10 @@ export default function WhatsAppTest() {
               تحقق من اتصال Green API والحالة الحالية
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <Button
               onClick={handleTestConnection}
-              disabled={testConnectionMutation.isPending}
+              disabled={testConnectionMutation.isPending || !instanceId || !apiToken}
               className="w-full"
             >
               {testConnectionMutation.isPending ? (
@@ -119,28 +215,37 @@ export default function WhatsAppTest() {
               )}
             </Button>
 
-            {testConnectionMutation.data && (
-              <div className={`mt-4 p-4 rounded-lg border ${
-                testConnectionMutation.data.success 
-                  ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800' 
-                  : 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800'
+            {connectionStatus && (
+              <div className={`p-4 rounded-lg border-2 ${
+                connectionStatus.success 
+                  ? 'bg-green-50 border-green-500 dark:bg-green-950 dark:border-green-700' 
+                  : 'bg-red-50 border-red-500 dark:bg-red-950 dark:border-red-700'
               }`}>
-                <div className="flex items-center gap-2">
-                  {testConnectionMutation.data.success ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                <div className="flex items-start gap-3">
+                  {connectionStatus.success ? (
+                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                   ) : (
-                    <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <XCircle className="h-6 w-6 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                   )}
-                  <div>
-                    <p className="font-semibold">
-                      {testConnectionMutation.data.success ? 'الاتصال ناجح' : 'فشل الاتصال'}
+                  <div className="flex-1 space-y-2">
+                    <p className="font-bold text-lg">
+                      {connectionStatus.success ? '✅ الاتصال ناجح' : '❌ فشل الاتصال'}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      الحالة: {testConnectionMutation.data.status}
-                    </p>
-                    {testConnectionMutation.data.phoneNumber && (
-                      <p className="text-sm text-muted-foreground">
-                        رقم الواتساب: {testConnectionMutation.data.phoneNumber}
+                    <div className="space-y-1 text-sm">
+                      <p>
+                        <strong>الحالة:</strong> {connectionStatus.status}
+                      </p>
+                      {connectionStatus.phoneNumber && (
+                        <p className="flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          <strong>رقم الواتساب المتصل:</strong>
+                          <span className="font-mono text-base">{connectionStatus.phoneNumber}</span>
+                        </p>
+                      )}
+                    </div>
+                    {connectionStatus.success && (
+                      <p className="text-xs text-muted-foreground mt-2">
+                        يمكنك الآن إرسال رسائل تجريبية ✨
                       </p>
                     )}
                   </div>
@@ -167,7 +272,7 @@ export default function WhatsAppTest() {
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 dir="ltr"
-                className="text-left"
+                className="text-left font-mono text-lg"
               />
               <p className="text-xs text-muted-foreground">
                 مثال: 966501234567 (بدون + أو 00)
@@ -187,7 +292,7 @@ export default function WhatsAppTest() {
 
             <Button
               onClick={handleSendMessage}
-              disabled={sendMessageMutation.isPending}
+              disabled={sendMessageMutation.isPending || !instanceId || !apiToken}
               className="w-full"
             >
               {sendMessageMutation.isPending ? (
@@ -242,7 +347,7 @@ export default function WhatsAppTest() {
 
             <Button
               onClick={handleSendImage}
-              disabled={sendImageMutation.isPending}
+              disabled={sendImageMutation.isPending || !instanceId || !apiToken}
               className="w-full"
               variant="secondary"
             >
@@ -272,6 +377,7 @@ export default function WhatsAppTest() {
             <p>• مثال للسعودية: 966501234567</p>
             <p>• الصور يجب أن تكون روابط مباشرة (https://...)</p>
             <p>• قد يستغرق الإرسال بضع ثوانٍ</p>
+            <p>• رقم الواتساب الافتراضي: <strong className="font-mono">966501898700</strong></p>
           </CardContent>
         </Card>
       </div>
