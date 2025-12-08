@@ -17,7 +17,9 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
-  Info
+  Info,
+  Sparkles,
+  Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -110,6 +112,54 @@ export default function BotSettings() {
     );
   }
 
+  // Templates
+  const templates = [
+    {
+      id: 'formal',
+      name: 'رسمي',
+      description: 'أسلوب رسمي ومحترف للشركات',
+      icon: '💼',
+      settings: {
+        welcomeMessage: 'مرحباً بكم في متجرنا. نحن هنا لخدمتكم ومساعدتكم في اختيار أفضل المنتجات. كيف يمكنني مساعدتكم اليوم؟',
+        outOfHoursMessage: 'نشكركم على تواصلكم. نحن حالياً خارج أوقات العمل الرسمية. سنقوم بالرد عليكم في أقرب وقت ممكن.',
+        tone: 'professional' as const,
+        responseDelay: 3,
+      },
+    },
+    {
+      id: 'friendly',
+      name: 'ودود',
+      description: 'أسلوب ودي ومريح للتواصل',
+      icon: '😊',
+      settings: {
+        welcomeMessage: 'هلا وغلا! 👋 أهلين فيك عندنا. أنا ساري ومستعد أساعدك في أي شي تحتاجه. كيف أقدر أخدمك اليوم؟',
+        outOfHoursMessage: 'يعطيك العافية على التواصل! 🙏 الحين أحنا مقفلين، بس باكر بنرد عليك على طول. شكراً على صبرك!',
+        tone: 'friendly' as const,
+        responseDelay: 2,
+      },
+    },
+    {
+      id: 'modern',
+      name: 'عصري',
+      description: 'أسلوب عصري ومباشر',
+      icon: '⚡',
+      settings: {
+        welcomeMessage: 'مرحباً! أنا ساري، مساعدك الذكي. جاهز لمساعدتك في إيجاد ما تبحث عنه بسرعة وسهولة. وش تحتاج؟',
+        outOfHoursMessage: 'شكراً على رسالتك! حالياً خارج ساعات الدوام. بنرجع لك بأقرب وقت.',
+        tone: 'casual' as const,
+        responseDelay: 1,
+      },
+    },
+  ];
+
+  const applyTemplate = (template: typeof templates[0]) => {
+    setFormData({
+      ...formData,
+      ...template.settings,
+    });
+    toast.success(`تم تطبيق القالب "${template.name}" بنجاح`);
+  };
+
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
@@ -118,6 +168,44 @@ export default function BotSettings() {
           تخصيص سلوك ساري AI للرد التلقائي على رسائل WhatsApp
         </p>
       </div>
+
+      {/* Templates Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            القوالب الجاهزة
+          </CardTitle>
+          <CardDescription>
+            اختر قالباً جاهزاً لتطبيق الإعدادات بضغطة واحدة
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-3 gap-4">
+            {templates.map((template) => (
+              <Card key={template.id} className="border-2 hover:border-primary/50 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="text-3xl mb-2">{template.icon}</div>
+                  <CardTitle className="text-lg">{template.name}</CardTitle>
+                  <CardDescription className="text-sm">
+                    {template.description}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => applyTemplate(template)}
+                  >
+                    تطبيق
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Status Alert */}
       {shouldRespond && (
@@ -364,6 +452,98 @@ export default function BotSettings() {
                 <p className="text-sm text-muted-foreground">
                   عدد الأحرف (50-500)
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Preview Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              معاينة مباشرة
+            </CardTitle>
+            <CardDescription>
+              شاهد كيف ستبدو ردود ساري بناءً على الإعدادات الحالية
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 rounded-lg p-6 space-y-4">
+              {/* WhatsApp-style messages */}
+              <div className="space-y-3">
+                {/* Customer message */}
+                <div className="flex justify-start">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
+                    <p className="text-sm">مرحبا، أريد الاستفسار عن منتجاتكم</p>
+                    <span className="text-xs text-muted-foreground">10:30 ص</span>
+                  </div>
+                </div>
+
+                {/* Sari welcome message */}
+                <div className="flex justify-end">
+                  <div className="bg-green-500 text-white rounded-lg rounded-tr-none px-4 py-2 max-w-[80%] shadow-sm">
+                    <div className="flex items-start gap-2 mb-1">
+                      <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium mb-1">ساري</p>
+                        <p className="text-sm whitespace-pre-wrap">
+                          {formData.welcomeMessage || 'مرحباً بك! كيف يمكنني مساعدتك اليوم؟'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs opacity-90">10:30 ص</span>
+                  </div>
+                </div>
+
+                {/* Separator */}
+                <div className="flex items-center gap-2 py-2">
+                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
+                  <span className="text-xs text-muted-foreground">خارج ساعات العمل</span>
+                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
+                </div>
+
+                {/* Customer message after hours */}
+                <div className="flex justify-start">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
+                    <p className="text-sm">هل يمكنني الطلب الآن؟</p>
+                    <span className="text-xs text-muted-foreground">11:30 م</span>
+                  </div>
+                </div>
+
+                {/* Sari out of hours message */}
+                <div className="flex justify-end">
+                  <div className="bg-green-500 text-white rounded-lg rounded-tr-none px-4 py-2 max-w-[80%] shadow-sm">
+                    <div className="flex items-start gap-2 mb-1">
+                      <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium mb-1">ساري</p>
+                        <p className="text-sm whitespace-pre-wrap">
+                          {formData.outOfHoursMessage || 'نحن حالياً خارج ساعات العمل. سنرد عليك قريباً.'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs opacity-90">11:30 م</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Settings summary */}
+              <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 mt-4">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">النبرة:</span>
+                    <Badge variant="outline" className="mr-2">
+                      {formData.tone === 'professional' ? 'رسمي' : formData.tone === 'friendly' ? 'ودود' : 'عصري'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">تأخير الرد:</span>
+                    <Badge variant="outline" className="mr-2">
+                      {formData.responseDelay} ثانية
+                    </Badge>
+                  </div>
+                </div>
               </div>
             </div>
           </CardContent>
