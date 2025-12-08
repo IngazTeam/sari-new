@@ -1441,3 +1441,11 @@
 - [x] عرض رقم الواتساب الافتراضي: 966501898700
 - [x] اختبار الصفحة
 - [x] حفظ checkpoint
+
+## إصلاح مشكلة Green API Connection
+- [x] فحص testConnection API في routers.ts
+- [x] إصلاح URL format (إزالة Authorization header)
+- [x] استخدام الصيغة الصحيحة: /waInstance{id}/{token}/method
+- [x] إضافة error logging مفصل
+- [x] تحسين error messages (عربي)
+- [x] حفظ checkpoint

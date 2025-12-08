@@ -1082,22 +1082,44 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         try {
           const axios = await import('axios');
-          const baseURL = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}`;
-          const response = await axios.default.get(`${baseURL}/getStateInstance`, {
-            timeout: 10000,
+          // Green API format: https://api.green-api.com/waInstance{instanceId}/{token}/method
+          const url = `https://api.green-api.com/waInstance${input.instanceId}/${input.token}/getStateInstance`;
+          
+          console.log('[Green API Test] Attempting connection to instance:', input.instanceId);
+
+          const response = await axios.default.get(url, {
+            timeout: 15000,
           });
+
+          console.log('[Green API Test] Response:', response.data);
 
           const isConnected = response.data.stateInstance === 'authorized';
           return {
             success: isConnected,
-            status: response.data.stateInstance,
-            phoneNumber: isConnected ? response.data.phoneNumber : undefined,
+            status: response.data.stateInstance || 'unknown',
+            phoneNumber: response.data.phoneNumber,
           };
         } catch (error: any) {
+          console.error('[Green API Test] Error:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+          });
+          
+          let errorMessage = 'فشل الاتصال';
+          if (error.response?.status === 401 || error.response?.status === 403) {
+            errorMessage = 'Instance ID أو Token غير صحيح';
+          } else if (error.response?.status === 404) {
+            errorMessage = 'Instance غير موجود';
+          } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+            errorMessage = 'انتهى وقت الاتصال';
+          }
+          
           return {
             success: false,
             status: 'error',
-            error: error.message,
+            error: error.response?.data?.message || errorMessage,
           };
         }
       }),
