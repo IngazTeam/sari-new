@@ -953,3 +953,108 @@ export const sentimentAnalysis = mysqlTable('sentiment_analysis', {
 
 export type SentimentAnalysis = typeof sentimentAnalysis.$inferSelect;
 export type InsertSentimentAnalysis = typeof sentimentAnalysis.$inferInsert;
+
+/**
+ * Keyword Analysis - تحليل الكلمات المفتاحية والأسئلة المتكررة
+ */
+export const keywordAnalysis = mysqlTable('keyword_analysis', {
+  id: int('id').primaryKey().autoincrement(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  
+  // Keyword data
+  keyword: varchar('keyword', { length: 255 }).notNull(), // الكلمة أو العبارة المفتاحية
+  category: mysqlEnum('category', ['product', 'price', 'shipping', 'complaint', 'question', 'other']).notNull(),
+  frequency: int('frequency').default(1).notNull(), // عدد مرات التكرار
+  
+  // Context
+  sampleMessages: text('sample_messages'), // JSON array of sample messages
+  suggestedResponse: text('suggested_response'), // الرد المقترح
+  
+  // Status
+  status: mysqlEnum('status', ['new', 'reviewed', 'response_created', 'ignored']).default('new').notNull(),
+  
+  // Timestamps
+  firstSeenAt: timestamp('first_seen_at').defaultNow().notNull(),
+  lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
+  reviewedAt: timestamp('reviewed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+});
+
+export type KeywordAnalysis = typeof keywordAnalysis.$inferSelect;
+export type InsertKeywordAnalysis = typeof keywordAnalysis.$inferInsert;
+
+/**
+ * Weekly Sentiment Reports - تقارير المشاعر الأسبوعية
+ */
+export const weeklySentimentReports = mysqlTable('weekly_sentiment_reports', {
+  id: int('id').primaryKey().autoincrement(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  
+  // Report period
+  weekStartDate: timestamp('week_start_date').notNull(), // بداية الأسبوع (الأحد)
+  weekEndDate: timestamp('week_end_date').notNull(), // نهاية الأسبوع (السبت)
+  
+  // Statistics
+  totalConversations: int('total_conversations').default(0).notNull(),
+  positiveCount: int('positive_count').default(0).notNull(),
+  negativeCount: int('negative_count').default(0).notNull(),
+  neutralCount: int('neutral_count').default(0).notNull(),
+  
+  // Percentages
+  positivePercentage: int('positive_percentage').default(0).notNull(), // 0-100
+  negativePercentage: int('negative_percentage').default(0).notNull(), // 0-100
+  satisfactionScore: int('satisfaction_score').default(0).notNull(), // 0-100
+  
+  // Insights
+  topKeywords: text('top_keywords'), // JSON array of top keywords
+  topComplaints: text('top_complaints'), // JSON array of top complaints
+  recommendations: text('recommendations'), // JSON array of AI recommendations
+  
+  // Email
+  emailSent: boolean('email_sent').default(false).notNull(),
+  emailSentAt: timestamp('email_sent_at'),
+  
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type WeeklySentimentReport = typeof weeklySentimentReports.$inferSelect;
+export type InsertWeeklySentimentReport = typeof weeklySentimentReports.$inferInsert;
+
+/**
+ * AB Test Results - نتائج اختبار A/B للردود السريعة
+ */
+export const abTestResults = mysqlTable('ab_test_results', {
+  id: int('id').primaryKey().autoincrement(),
+  merchantId: int('merchant_id').notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  
+  // Test info
+  testName: varchar('test_name', { length: 255 }).notNull(),
+  keyword: varchar('keyword', { length: 255 }).notNull(), // الكلمة المفتاحية المستهدفة
+  
+  // Variant A
+  variantAId: int('variant_a_id').references(() => quickResponses.id, { onDelete: 'cascade' }),
+  variantAText: text('variant_a_text').notNull(),
+  variantAUsageCount: int('variant_a_usage_count').default(0).notNull(),
+  variantASuccessCount: int('variant_a_success_count').default(0).notNull(), // عدد المحادثات الناجحة
+  
+  // Variant B
+  variantBId: int('variant_b_id').references(() => quickResponses.id, { onDelete: 'cascade' }),
+  variantBText: text('variant_b_text').notNull(),
+  variantBUsageCount: int('variant_b_usage_count').default(0).notNull(),
+  variantBSuccessCount: int('variant_b_success_count').default(0).notNull(),
+  
+  // Test status
+  status: mysqlEnum('status', ['running', 'completed', 'paused']).default('running').notNull(),
+  winner: mysqlEnum('winner', ['variant_a', 'variant_b', 'no_winner']),
+  confidenceLevel: int('confidence_level').default(0).notNull(), // 0-100
+  
+  // Timestamps
+  startedAt: timestamp('started_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().onUpdateNow().notNull(),
+});
+
+export type ABTestResult = typeof abTestResults.$inferSelect;
+export type InsertABTestResult = typeof abTestResults.$inferInsert;

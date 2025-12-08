@@ -120,6 +120,15 @@ import {
   sentimentAnalysis,
   SentimentAnalysis,
   InsertSentimentAnalysis,
+  keywordAnalysis,
+  KeywordAnalysis,
+  InsertKeywordAnalysis,
+  weeklySentimentReports,
+  WeeklySentimentReport,
+  InsertWeeklySentimentReport,
+  abTestResults,
+  ABTestResult,
+  InsertABTestResult,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -3830,4 +3839,408 @@ export async function getMerchantSentimentStats(merchantId: number, days: number
   stats.averageConfidence = Math.round(totalConfidence / sentiments.length);
 
   return stats;
+}
+
+// ============================================
+// Keyword Analysis Functions
+// ============================================
+
+/**
+ * إنشاء أو تحديث تحليل كلمة مفتاحية
+ */
+export async function upsertKeywordAnalysis(data: {
+  merchantId: number;
+  keyword: string;
+  category: 'product' | 'price' | 'shipping' | 'complaint' | 'question' | 'other';
+  sampleMessage: string;
+  suggestedResponse?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  // البحث عن كلمة مفتاحية موجودة
+  const existing = await db.select().from(keywordAnalysis)
+    .where(
+      and(
+        eq(keywordAnalysis.merchantId, data.merchantId),
+        eq(keywordAnalysis.keyword, data.keyword)
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    // تحديث الموجودة
+    const current = existing[0];
+    const currentSamples = current.sampleMessages ? JSON.parse(current.sampleMessages) : [];
+    const updatedSamples = [...currentSamples, data.sampleMessage].slice(-5); // آخر 5 رسائل فقط
+
+    await db.update(keywordAnalysis)
+      .set({
+        frequency: current.frequency + 1,
+        sampleMessages: JSON.stringify(updatedSamples),
+        lastSeenAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(keywordAnalysis.id, current.id));
+
+    return current.id;
+  } else {
+    // إنشاء جديدة
+    const result = await db.insert(keywordAnalysis).values({
+      merchantId: data.merchantId,
+      keyword: data.keyword,
+      category: data.category,
+      frequency: 1,
+      sampleMessages: JSON.stringify([data.sampleMessage]),
+      suggestedResponse: data.suggestedResponse,
+      status: 'new',
+      firstSeenAt: new Date(),
+      lastSeenAt: new Date(),
+    });
+
+    return Number(result[0].insertId);
+  }
+}
+
+/**
+ * الحصول على إحصائيات الكلمات المفتاحية للتاجر
+ */
+export async function getKeywordStats(merchantId: number, options?: {
+  category?: string;
+  status?: string;
+  minFrequency?: number;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  let query = db.select().from(keywordAnalysis)
+    .where(eq(keywordAnalysis.merchantId, merchantId));
+
+  if (options?.category) {
+    query = query.where(eq(keywordAnalysis.category, options.category as any));
+  }
+
+  if (options?.status) {
+    query = query.where(eq(keywordAnalysis.status, options.status as any));
+  }
+
+  if (options?.minFrequency) {
+    query = query.where(gte(keywordAnalysis.frequency, options.minFrequency));
+  }
+
+  query = query.orderBy(desc(keywordAnalysis.frequency));
+
+  if (options?.limit) {
+    query = query.limit(options.limit);
+  }
+
+  return await query;
+}
+
+/**
+ * الحصول على الكلمات المفتاحية الجديدة التي تحتاج مراجعة
+ */
+export async function getNewKeywords(merchantId: number, limit: number = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(keywordAnalysis)
+    .where(
+      and(
+        eq(keywordAnalysis.merchantId, merchantId),
+        eq(keywordAnalysis.status, 'new')
+      )
+    )
+    .orderBy(desc(keywordAnalysis.frequency))
+    .limit(limit);
+}
+
+/**
+ * تحديث حالة الكلمة المفتاحية
+ */
+export async function updateKeywordStatus(
+  keywordId: number,
+  status: 'new' | 'reviewed' | 'response_created' | 'ignored'
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.update(keywordAnalysis)
+    .set({
+      status,
+      reviewedAt: status !== 'new' ? new Date() : undefined,
+      updatedAt: new Date(),
+    })
+    .where(eq(keywordAnalysis.id, keywordId));
+}
+
+/**
+ * حذف كلمة مفتاحية
+ */
+export async function deleteKeywordAnalysis(keywordId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.delete(keywordAnalysis).where(eq(keywordAnalysis.id, keywordId));
+}
+
+// ============================================
+// Weekly Sentiment Reports Functions
+// ============================================
+
+/**
+ * إنشاء تقرير أسبوعي جديد
+ */
+export async function createWeeklySentimentReport(data: {
+  merchantId: number;
+  weekStartDate: Date;
+  weekEndDate: Date;
+  totalConversations: number;
+  positiveCount: number;
+  negativeCount: number;
+  neutralCount: number;
+  topKeywords: string[];
+  topComplaints: string[];
+  recommendations: string[];
+}) {
+  const total = data.totalConversations;
+  const positivePercentage = total > 0 ? Math.round((data.positiveCount / total) * 100) : 0;
+  const negativePercentage = total > 0 ? Math.round((data.negativeCount / total) * 100) : 0;
+  const satisfactionScore = total > 0 ? Math.round(((data.positiveCount - data.negativeCount) / total) * 50 + 50) : 50;
+
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  const result = await db.insert(weeklySentimentReports).values({
+    merchantId: data.merchantId,
+    weekStartDate: data.weekStartDate,
+    weekEndDate: data.weekEndDate,
+    totalConversations: data.totalConversations,
+    positiveCount: data.positiveCount,
+    negativeCount: data.negativeCount,
+    neutralCount: data.neutralCount,
+    positivePercentage,
+    negativePercentage,
+    satisfactionScore,
+    topKeywords: JSON.stringify(data.topKeywords),
+    topComplaints: JSON.stringify(data.topComplaints),
+    recommendations: JSON.stringify(data.recommendations),
+    emailSent: false,
+  });
+
+  return Number(result[0].insertId);
+}
+
+/**
+ * الحصول على تقارير التاجر
+ */
+export async function getWeeklySentimentReports(merchantId: number, limit: number = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  return await db.select().from(weeklySentimentReports)
+    .where(eq(weeklySentimentReports.merchantId, merchantId))
+    .orderBy(desc(weeklySentimentReports.weekStartDate))
+    .limit(limit);
+}
+
+/**
+ * الحصول على تقرير معين
+ */
+export async function getWeeklySentimentReportById(reportId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const results = await db.select().from(weeklySentimentReports)
+    .where(eq(weeklySentimentReports.id, reportId))
+    .limit(1);
+  
+  return results[0] || null;
+}
+
+/**
+ * تحديث حالة إرسال البريد
+ */
+export async function markReportEmailSent(reportId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.update(weeklySentimentReports)
+    .set({
+      emailSent: true,
+      emailSentAt: new Date(),
+    })
+    .where(eq(weeklySentimentReports.id, reportId));
+}
+
+// ============================================
+// A/B Testing Functions
+// ============================================
+
+/**
+ * إنشاء اختبار A/B جديد
+ */
+export async function createABTest(data: {
+  merchantId: number;
+  testName: string;
+  keyword: string;
+  variantAId?: number;
+  variantAText: string;
+  variantBId?: number;
+  variantBText: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  const result = await db.insert(abTestResults).values({
+    merchantId: data.merchantId,
+    testName: data.testName,
+    keyword: data.keyword,
+    variantAId: data.variantAId,
+    variantAText: data.variantAText,
+    variantBId: data.variantBId,
+    variantBText: data.variantBText,
+    status: 'running',
+    startedAt: new Date(),
+  });
+
+  return Number(result[0].insertId);
+}
+
+/**
+ * الحصول على اختبارات A/B للتاجر
+ */
+export async function getABTests(merchantId: number, status?: 'running' | 'completed' | 'paused') {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const query = db.select().from(abTestResults)
+    .where(
+      status 
+        ? and(eq(abTestResults.merchantId, merchantId), eq(abTestResults.status, status))
+        : eq(abTestResults.merchantId, merchantId)
+    )
+    .orderBy(desc(abTestResults.startedAt));
+
+  return await query;
+}
+
+/**
+ * الحصول على اختبار A/B معين
+ */
+export async function getABTestById(testId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const results = await db.select().from(abTestResults)
+    .where(eq(abTestResults.id, testId))
+    .limit(1);
+  
+  return results[0] || null;
+}
+
+/**
+ * الحصول على اختبار A/B نشط للكلمة المفتاحية
+ */
+export async function getActiveABTestForKeyword(merchantId: number, keyword: string) {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const results = await db.select().from(abTestResults)
+    .where(
+      and(
+        eq(abTestResults.merchantId, merchantId),
+        eq(abTestResults.keyword, keyword),
+        eq(abTestResults.status, 'running')
+      )
+    )
+    .limit(1);
+  
+  return results[0] || null;
+}
+
+/**
+ * تسجيل استخدام نسخة من الاختبار
+ */
+export async function trackABTestUsage(
+  testId: number,
+  variant: 'A' | 'B',
+  wasSuccessful: boolean
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  const test = await getABTestById(testId);
+  if (!test) return;
+
+  if (variant === 'A') {
+    await db.update(abTestResults)
+      .set({
+        variantAUsageCount: test.variantAUsageCount + 1,
+        variantASuccessCount: wasSuccessful ? test.variantASuccessCount + 1 : test.variantASuccessCount,
+        updatedAt: new Date(),
+      })
+      .where(eq(abTestResults.id, testId));
+  } else {
+    await db.update(abTestResults)
+      .set({
+        variantBUsageCount: test.variantBUsageCount + 1,
+        variantBSuccessCount: wasSuccessful ? test.variantBSuccessCount + 1 : test.variantBSuccessCount,
+        updatedAt: new Date(),
+      })
+      .where(eq(abTestResults.id, testId));
+  }
+}
+
+/**
+ * إعلان الفائز في اختبار A/B
+ */
+export async function declareABTestWinner(
+  testId: number,
+  winner: 'variant_a' | 'variant_b' | 'no_winner',
+  confidenceLevel: number
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.update(abTestResults)
+    .set({
+      status: 'completed',
+      winner,
+      confidenceLevel,
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(abTestResults.id, testId));
+}
+
+/**
+ * إيقاف مؤقت لاختبار A/B
+ */
+export async function pauseABTest(testId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.update(abTestResults)
+    .set({
+      status: 'paused',
+      updatedAt: new Date(),
+    })
+    .where(eq(abTestResults.id, testId));
+}
+
+/**
+ * استئناف اختبار A/B
+ */
+export async function resumeABTest(testId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+  
+  await db.update(abTestResults)
+    .set({
+      status: 'running',
+      updatedAt: new Date(),
+    })
+    .where(eq(abTestResults.id, testId));
 }

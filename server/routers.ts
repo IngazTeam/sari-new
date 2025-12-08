@@ -4221,6 +4221,264 @@ export const appRouter = router({
         };
       }),
   }),
+
+  // ============================================
+  // Keyword Analysis APIs
+  // ============================================
+  keywords: router({
+    // Get keyword statistics
+    getStats: protectedProcedure
+      .input(z.object({
+        category: z.enum(['product', 'price', 'shipping', 'complaint', 'question', 'other']).optional(),
+        status: z.enum(['new', 'reviewed', 'response_created', 'ignored']).optional(),
+        minFrequency: z.number().optional(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        return await db.getKeywordStats(merchant.id, input);
+      }),
+
+    // Get new keywords that need review
+    getNew: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        return await db.getNewKeywords(merchant.id, input.limit || 20);
+      }),
+
+    // Get suggested responses based on frequent questions
+    getSuggested: protectedProcedure
+      .query(async ({ ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Get top keywords
+        const keywords = await db.getKeywordStats(merchant.id, {
+          status: 'new',
+          minFrequency: 3,
+          limit: 10,
+        });
+
+        if (keywords.length === 0) {
+          return [];
+        }
+
+        // Import AI function
+        const { suggestQuickResponses } = await import('./ai/keyword-analysis');
+
+        // Convert to format expected by AI
+        const frequentQuestions = keywords.map((k: any) => ({
+          question: k.keyword,
+          frequency: k.frequency,
+          category: k.category,
+        }));
+
+        // Get suggestions
+        const suggestions = await suggestQuickResponses(frequentQuestions, {
+          businessName: merchant.businessName,
+        });
+
+        return suggestions;
+      }),
+
+    // Update keyword status
+    updateStatus: protectedProcedure
+      .input(z.object({
+        keywordId: z.number(),
+        status: z.enum(['new', 'reviewed', 'response_created', 'ignored']),
+      }))
+      .mutation(async ({ input }) => {
+        await db.updateKeywordStatus(input.keywordId, input.status);
+        return { success: true };
+      }),
+
+    // Delete keyword
+    delete: protectedProcedure
+      .input(z.object({
+        keywordId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.deleteKeywordAnalysis(input.keywordId);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================
+  // Weekly Sentiment Reports APIs
+  // ============================================
+  weeklyReports: router({
+    // Get merchant's weekly reports
+    list: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        return await db.getWeeklySentimentReports(merchant.id, input.limit || 10);
+      }),
+
+    // Get specific report
+    getById: protectedProcedure
+      .input(z.object({
+        reportId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getWeeklySentimentReportById(input.reportId);
+      }),
+
+    // Generate test report (for current week)
+    generateTest: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Import report generator
+        const { generateWeeklyReport } = await import('./reports/sentiment-weekly');
+
+        // Generate report for current week
+        const reportId = await generateWeeklyReport(merchant.id);
+
+        return { reportId, success: true };
+      }),
+  }),
+
+  // ============================================
+  // A/B Testing APIs
+  // ============================================
+  abTests: router({
+    // Create new A/B test
+    create: protectedProcedure
+      .input(z.object({
+        testName: z.string(),
+        keyword: z.string(),
+        variantAText: z.string(),
+        variantBText: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Check if there's already an active test for this keyword
+        const existing = await db.getActiveABTestForKeyword(merchant.id, input.keyword);
+        if (existing) {
+          throw new TRPCError({ 
+            code: 'BAD_REQUEST', 
+            message: 'There is already an active A/B test for this keyword' 
+          });
+        }
+
+        const testId = await db.createABTest({
+          merchantId: merchant.id,
+          testName: input.testName,
+          keyword: input.keyword,
+          variantAText: input.variantAText,
+          variantBText: input.variantBText,
+        });
+
+        return { testId, success: true };
+      }),
+
+    // Get all tests
+    list: protectedProcedure
+      .input(z.object({
+        status: z.enum(['running', 'completed', 'paused']).optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        return await db.getABTests(merchant.id, input.status);
+      }),
+
+    // Get specific test
+    getById: protectedProcedure
+      .input(z.object({
+        testId: z.number(),
+      }))
+      .query(async ({ input }) => {
+        return await db.getABTestById(input.testId);
+      }),
+
+    // Declare winner
+    declareWinner: protectedProcedure
+      .input(z.object({
+        testId: z.number(),
+        winner: z.enum(['variant_a', 'variant_b', 'no_winner']),
+      }))
+      .mutation(async ({ input }) => {
+        const test = await db.getABTestById(input.testId);
+        if (!test) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Test not found' });
+        }
+
+        // Calculate confidence level based on sample size and difference
+        const totalA = test.variantAUsageCount;
+        const totalB = test.variantBUsageCount;
+        const successRateA = totalA > 0 ? (test.variantASuccessCount / totalA) * 100 : 0;
+        const successRateB = totalB > 0 ? (test.variantBSuccessCount / totalB) * 100 : 0;
+        const difference = Math.abs(successRateA - successRateB);
+        const sampleSize = totalA + totalB;
+
+        // Simple confidence calculation
+        let confidence = 0;
+        if (sampleSize >= 100 && difference >= 10) {
+          confidence = 95;
+        } else if (sampleSize >= 50 && difference >= 15) {
+          confidence = 90;
+        } else if (sampleSize >= 30 && difference >= 20) {
+          confidence = 80;
+        } else {
+          confidence = 50;
+        }
+
+        await db.declareABTestWinner(input.testId, input.winner, confidence);
+
+        return { success: true, confidence };
+      }),
+
+    // Pause test
+    pause: protectedProcedure
+      .input(z.object({
+        testId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.pauseABTest(input.testId);
+        return { success: true };
+      }),
+
+    // Resume test
+    resume: protectedProcedure
+      .input(z.object({
+        testId: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        await db.resumeABTest(input.testId);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

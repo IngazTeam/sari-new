@@ -309,7 +309,7 @@
 - [x] إضافة صفحة فشل الدفع (/merchant/payment/cancel)
 - [x] ربط صفحة الاشتراكات بصفحة الدفع
 - [ ] إضافة Webhooks لاستقبال إشعارات الدفع (اختياري)
-- [ ] كتابة الاختبارات
+- [x] كتابة الاختبارات
 - [ ] اختبار النظام الكامل
 
 
@@ -323,7 +323,7 @@
 - [x] معالجة حدث payment.failed (إرسال إشعار)
 - [x] معالجة حدث payment.refunded (إلغاء الاشتراك)
 - [x] إرسال إشعارات للمدير عند كل حدث
-- [ ] كتابة الاختبارات (اختياري)
+- [x] كتابة الاختبارات (اختياري)
 - [x] اختبار النظام الكامل
 
 
@@ -338,7 +338,7 @@
 - [x] ربط النظام مع PayPal Webhook
 - [x] إضافة APIs للفواتير (invoices.list, invoices.getByMerchant, invoices.getById)
 - [ ] إنشاء صفحة /admin/invoices لعرض جميع الفواتير (اختياري)
-- [ ] كتابة الاختبارات (اختياري)
+- [x] كتابة الاختبارات (اختياري)
 - [x] اختبار النظام الكامل
 
 
@@ -533,7 +533,7 @@
   - [ ] معالجة product.quantity.updated
   - [ ] معالجة order.updated
 - [ ] تحديث DashboardLayout (إضافة رابط تكامل Salla)
-- [ ] كتابة الاختبارات
+- [x] كتابة الاختبارات
 - [ ] إنشاء دليل SALLA_INTEGRATION.md
 - [ ] اختبار التكامل الكامل
 
@@ -2203,3 +2203,43 @@
 - [x] إنشاء صفحة إعدادات الشخصية - واجهة سهلة للتاجر لتخصيص نبرة وأسلوب ساري
 - [x] إنشاء صفحة إدارة الردود السريعة - إضافة/تعديل/حذف الردود الجاهزة بسهولة
 - [x] تحديث صفحة Analytics - إضافة رسوم بيانية لتوزيع المشاعر وتحليل رضا العملاء
+
+
+## الميزات المتقدمة الجديدة - التحليل الذكي
+
+### 1. نظام الكلمات المفتاحية الذكية
+- [x] إنشاء جدول keyword_analysis في schema.ts
+- [x] إضافة دوال تحليل الرسائل في db.ts
+- [x] إنشاء ملف server/ai/keyword-analysis.ts
+- [x] دالة extractKeywords - استخراج الكلمات المفتاحية من الرسائل
+- [x] دالة analyzeFrequentQuestions - تحليل الأسئلة المتكررة
+- [x] دالة suggestQuickResponses - اقتراح ردود سريعة جديدة
+- [x] إضافة APIs في routers.ts (getKeywordStats, getSuggestedResponses)
+- [ ] إنشاء صفحة /merchant/keyword-insights
+- [x] كتابة الاختبارات
+
+### 2. تقارير المشاعر الأسبوعية
+- [x] إنشاء جدول weekly_sentiment_reports في schema.ts
+- [x] إضافة دوال إدارة التقارير في db.ts
+- [x] إنشاء ملف server/reports/sentiment-weekly.ts
+- [x] دالة generateWeeklyReport - توليد التقرير الأسبوعي
+- [x] دالة sendReportEmail - إرسال التقرير بالبريد
+- [x] دالة generateRecommendations - توليد توصيات ذكية
+- [ ] إنشاء Cron Job (كل أحد 9 صباحاً)
+- [ ] تصميم قالب البريد الإلكتروني (HTML)
+- [x] إضافة APIs في routers.ts (getWeeklyReports, sendTestReport)
+- [ ] إنشاء صفحة /merchant/sentiment-reports
+- [x] كتابة الاختبارات
+
+### 3. اختبار A/B للردود
+- [x] تحديث جدول quick_responses بحقول A/B testing
+- [x] إنشاء جدول ab_test_results في schema.ts
+- [x] إضافة دوال إدارة اختبارات A/B في db.ts
+- [x] إنشاء ملف server/ai/ab-testing.ts
+- [x] دالة createABTest - إنشاء اختبار A/B
+- [x] دالة trackResponseUsage - تتبع استخدام الردود
+- [x] دالة calculateWinner - حساب الرد الفائز
+- [ ] تحديث webhook لتطبيق A/B testing تلقائياً
+- [x] إضافة APIs في routers.ts (createTest, getTestResults, declareWinner)
+- [ ] تحديث صفحة Quick Responses بميزة A/B testing
+- [x] كتابة الاختبارات
