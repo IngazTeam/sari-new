@@ -136,6 +136,15 @@ export const appRouter = router({
           status: 'pending',
         });
         
+        // Send welcome email
+        try {
+          const { sendWelcomeEmail } = await import('./notifications/email-notifications');
+          await sendWelcomeEmail(input.email, input.businessName, input.name);
+        } catch (error) {
+          console.error('[Signup] Failed to send welcome email:', error);
+          // Don't fail signup if email fails
+        }
+        
         // Create session token
         const sessionToken = await sdk.createSessionToken(user.openId, {
           name: user.name || '',

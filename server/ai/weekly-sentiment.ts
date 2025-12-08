@@ -4,7 +4,7 @@
 
 import * as db from '../db';
 import { analyzeSentiment } from './sentiment-analysis';
-// import { sendEmail } from '../email'; // سيتم تفعيله لاحقاً
+import { sendEmail } from '../reports/email-sender';
 
 interface WeeklySentimentReport {
   merchantId: number;
@@ -159,47 +159,211 @@ async function sendWeeklyReportEmail(
   businessName: string,
   report: WeeklySentimentReport
 ) {
-  const subject = `📊 التقرير الأسبوعي لـ ${businessName}`;
+  const subject = `📊 التقرير الأسبوعي لـ ${businessName} - ساري`;
   
   const html = `
-    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h1 style="color: #22c55e;">التقرير الأسبوعي للمشاعر</h1>
-      <p>من ${report.weekStartDate.toLocaleDateString('ar-SA')} إلى ${report.weekEndDate.toLocaleDateString('ar-SA')}</p>
-      
-      <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h2>📈 الإحصائيات</h2>
-        <ul style="list-style: none; padding: 0;">
-          <li>✅ إجمالي المحادثات: <strong>${report.totalConversations}</strong></li>
-          <li>😊 إيجابي: <strong>${report.positiveCount}</strong> (${report.positivePercentage.toFixed(1)}%)</li>
-          <li>😐 محايد: <strong>${report.neutralCount}</strong> (${report.neutralPercentage.toFixed(1)}%)</li>
-          <li>😞 سلبي: <strong>${report.negativeCount}</strong> (${report.negativePercentage.toFixed(1)}%)</li>
-        </ul>
-      </div>
-      
-      <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h2>🔑 الكلمات المفتاحية الأكثر تكراراً</h2>
-        <ol>
-          ${report.topKeywords.slice(0, 5).map(k => `<li><strong>${k.keyword}</strong>: ${k.count} مرة</li>`).join('')}
-        </ol>
-      </div>
-      
-      ${report.improvementSuggestions.length > 0 ? `
-        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h2>💡 اقتراحات التحسين</h2>
-          <ul>
-            ${report.improvementSuggestions.map(s => `<li>${s}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-      
-      <p style="color: #6b7280; font-size: 12px; margin-top: 40px;">
-        هذا تقرير تلقائي من نظام ساري. للمزيد من التفاصيل، قم بزيارة لوحة التحكم.
-      </p>
-    </div>
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>التقرير الأسبوعي</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+              
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); padding: 40px 30px; text-align: center;">
+                  <div style="background-color: white; width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z" fill="#00d25e" stroke="#00a84d" stroke-width="2"/>
+                      <text x="50" y="65" font-size="45" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">S</text>
+                    </svg>
+                  </div>
+                  <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">📊 التقرير الأسبوعي</h1>
+                  <p style="color: rgba(255,255,255,0.95); margin: 10px 0 0 0; font-size: 14px;">
+                    من ${report.weekStartDate.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long' })} إلى ${report.weekEndDate.toLocaleDateString('ar-SA', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Main Content -->
+              <tr>
+                <td style="padding: 40px 30px;">
+                  <h2 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 22px;">مرحباً ${businessName}،</h2>
+                  <p style="color: #4a4a4a; line-height: 1.8; font-size: 15px; margin: 0 0 30px 0;">
+                    إليك ملخص أداء محادثاتك خلال الأسبوع الماضي. نحن هنا لمساعدتك في تحسين تجربة عملائك! 🚀
+                  </p>
+                  
+                  <!-- Stats Cards -->
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 25px;">
+                    <tr>
+                      <td width="48%" style="background: linear-gradient(135deg, #f0fdf9 0%, #e6fcf5 100%); padding: 20px; border-radius: 10px; border: 2px solid #00d25e;">
+                        <p style="color: #00a84d; font-size: 13px; font-weight: 600; margin: 0 0 8px 0;">إجمالي المحادثات</p>
+                        <p style="color: #1a1a1a; font-size: 32px; font-weight: 700; margin: 0;">${report.totalConversations}</p>
+                      </td>
+                      <td width="4%"></td>
+                      <td width="48%" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 20px; border-radius: 10px; border: 2px solid #0ea5e9;">
+                        <p style="color: #0284c7; font-size: 13px; font-weight: 600; margin: 0 0 8px 0;">معدل الرضا</p>
+                        <p style="color: #1a1a1a; font-size: 32px; font-weight: 700; margin: 0;">${report.positivePercentage.toFixed(0)}%</p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Sentiment Analysis -->
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background: #f8f9fa; border-radius: 10px; padding: 25px; margin-bottom: 25px;">
+                    <tr>
+                      <td>
+                        <h3 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">📈 تحليل المشاعر</h3>
+                        <table width="100%" cellpadding="8" cellspacing="0">
+                          <tr>
+                            <td style="color: #4a4a4a; font-size: 14px; padding: 8px 0;">😊 إيجابي</td>
+                            <td style="text-align: left; padding: 8px 0;">
+                              <span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;">
+                                ${report.positiveCount} (${report.positivePercentage.toFixed(1)}%)
+                              </span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="color: #4a4a4a; font-size: 14px; padding: 8px 0;">😐 محايد</td>
+                            <td style="text-align: left; padding: 8px 0;">
+                              <span style="background: #fff3cd; color: #856404; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;">
+                                ${report.neutralCount} (${report.neutralPercentage.toFixed(1)}%)
+                              </span>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="color: #4a4a4a; font-size: 14px; padding: 8px 0;">😞 سلبي</td>
+                            <td style="text-align: left; padding: 8px 0;">
+                              <span style="background: #f8d7da; color: #721c24; padding: 4px 12px; border-radius: 12px; font-size: 13px; font-weight: 600;">
+                                ${report.negativeCount} (${report.negativePercentage.toFixed(1)}%)
+                              </span>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Top Keywords -->
+                  ${report.topKeywords.length > 0 ? `
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background: #f8f9fa; border-radius: 10px; padding: 25px; margin-bottom: 25px;">
+                    <tr>
+                      <td>
+                        <h3 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 18px; font-weight: 600;">🔑 الكلمات الأكثر تكراراً</h3>
+                        <table width="100%" cellpadding="6" cellspacing="0">
+                          ${report.topKeywords.slice(0, 5).map((k, i) => `
+                            <tr>
+                              <td style="color: #00d25e; font-weight: 700; font-size: 16px; width: 30px;">${i + 1}.</td>
+                              <td style="color: #1a1a1a; font-size: 14px; font-weight: 600;">${k.keyword}</td>
+                              <td style="text-align: left;">
+                                <span style="background: #e9ecef; color: #495057; padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 600;">
+                                  ${k.count} مرة
+                                </span>
+                              </td>
+                            </tr>
+                          `).join('')}
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  ` : ''}
+                  
+                  <!-- Improvement Suggestions -->
+                  ${report.improvementSuggestions.length > 0 ? `
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border-radius: 10px; padding: 25px; margin-bottom: 25px; border: 2px solid #fbbf24;">
+                    <tr>
+                      <td>
+                        <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 18px; font-weight: 600;">💡 اقتراحات التحسين</h3>
+                        <ul style="margin: 0; padding: 0 0 0 25px; color: #78350f; line-height: 1.8;">
+                          ${report.improvementSuggestions.map(s => `<li style="margin-bottom: 8px; font-size: 14px;">${s}</li>`).join('')}
+                        </ul>
+                      </td>
+                    </tr>
+                  </table>
+                  ` : ''}
+                  
+                  <!-- CTA Button -->
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                    <tr>
+                      <td align="center">
+                        <a href="https://sary.live/merchant/insights" 
+                           style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); 
+                                  color: white; 
+                                  padding: 16px 40px; 
+                                  text-decoration: none; 
+                                  border-radius: 8px; 
+                                  display: inline-block;
+                                  font-weight: 700;
+                                  font-size: 15px;
+                                  box-shadow: 0 6px 16px rgba(0, 210, 94, 0.35);">
+                          📊 عرض التقرير الكامل
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e8e8e8;">
+                    <tr>
+                      <td>
+                        <p style="color: #888; font-size: 13px; margin: 0; line-height: 1.5;">
+                          ⚠️ هذا تقرير تلقائي يُرسل كل أسبوع. يرجى عدم الرد عليه مباشرة.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 30px; text-align: center; border-top: 1px solid #dee2e6;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                      <td align="center">
+                        <a href="https://wa.me/966500000000" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                          <span style="background: #25D366; color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">📱</span>
+                        </a>
+                        <a href="https://twitter.com/sari_ai" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                          <span style="background: #1DA1F2; color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">🐦</span>
+                        </a>
+                        <a href="https://instagram.com/sari_ai" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                          <span style="background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">📷</span>
+                        </a>
+                        <a href="mailto:support@sary.live" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                          <span style="background: #EA4335; color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">✉️</span>
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="color: #6c757d; font-size: 13px; margin: 0 0 8px 0; font-weight: 600;">
+                    © ${new Date().getFullYear()} ساري - مساعد المبيعات الذكي على الواتساب
+                  </p>
+                  <p style="margin: 8px 0 0 0;">
+                    <a href="https://sary.live" style="color: #00d25e; text-decoration: none; font-weight: 700; font-size: 14px;">sary.live</a>
+                  </p>
+                  <p style="color: #adb5bd; font-size: 11px; margin: 12px 0 0 0;">
+                    المملكة العربية السعودية 🇸🇦 | الرياض
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `;
 
-  // TODO: إرسال البريد الإلكتروني
-  console.log('[Weekly Report] Email would be sent to:', email);
-  console.log('[Weekly Report] Subject:', subject);
-  // await sendEmail({ to: email, subject, html });
+  // إرسال البريد الإلكتروني
+  try {
+    await sendEmail({ to: email, subject, html });
+    console.log('[Weekly Report] Email sent successfully to:', email);
+  } catch (error) {
+    console.error('[Weekly Report] Failed to send email:', error);
+  }
 }

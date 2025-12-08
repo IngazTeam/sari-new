@@ -29,90 +29,173 @@ export async function sendInvoiceEmail(invoice: Invoice): Promise<boolean> {
 
     // محتوى البريد HTML
     const htmlContent = `
-      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
-        <div style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">ساري</h1>
-          <p style="color: white; margin: 10px 0 0 0; font-size: 14px;">مساعد المبيعات الذكي</p>
-        </div>
-        
-        <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
-          <h2 style="color: #333; margin-top: 0;">مرحباً ${merchant.businessName}،</h2>
-          
-          <p style="color: #555; line-height: 1.6;">
-            شكراً لك على الدفع! نحن سعداء بخدمتك. يرجى الاطلاع على تفاصيل الفاتورة أدناه.
-          </p>
-          
-          <div style="background: #f8f9fa; padding: 25px; border-radius: 8px; margin: 25px 0; border-right: 4px solid #00d25e;">
-            <table style="width: 100%; border-collapse: collapse;">
-              <tr>
-                <td style="padding: 8px 0; color: #666; font-weight: 600;">رقم الفاتورة:</td>
-                <td style="padding: 8px 0; color: #333; text-align: left;">${invoice.invoiceNumber}</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #666; font-weight: 600;">المبلغ:</td>
-                <td style="padding: 8px 0; color: #00d25e; font-size: 20px; font-weight: bold; text-align: left;">
-                  ${(invoice.amount / 100).toFixed(2)} ${invoice.currency}
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #666; font-weight: 600;">الحالة:</td>
-                <td style="padding: 8px 0; text-align: left;">
-                  <span style="background: #d4edda; color: #155724; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-                    ${invoice.status === 'paid' ? 'مدفوعة' : invoice.status}
-                  </span>
-                </td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 0; color: #666; font-weight: 600;">التاريخ:</td>
-                <td style="padding: 8px 0; color: #333; text-align: left;">
-                  ${new Date(invoice.createdAt).toLocaleDateString('ar-SA')}
-                </td>
-              </tr>
-            </table>
-          </div>
-          
-          ${invoice.pdfUrl ? `
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${invoice.pdfUrl}" 
-               style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); 
-                      color: white; 
-                      padding: 14px 32px; 
-                      text-decoration: none; 
-                      border-radius: 6px; 
-                      display: inline-block;
-                      font-weight: 600;
-                      box-shadow: 0 4px 6px rgba(0, 210, 94, 0.3);">
-              📄 تحميل الفاتورة
-            </a>
-          </div>
-          ` : ''}
-          
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
-            <p style="color: #666; font-size: 13px; margin: 5px 0;">
-              إذا كان لديك أي استفسار، لا تتردد في التواصل معنا.
-            </p>
-            <p style="color: #999; font-size: 12px; margin: 15px 0 0 0;">
-              هذا بريد إلكتروني تلقائي. يرجى عدم الرد عليه مباشرة.
-            </p>
-          </div>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
-          <p style="color: #666; font-size: 12px; margin: 0;">
-            © ${new Date().getFullYear()} ساري - مساعد المبيعات الذكي على الواتساب
-          </p>
-          <p style="color: #999; font-size: 11px; margin: 5px 0 0 0;">
-            <a href="https://sary.live" style="color: #00d25e; text-decoration: none;">sary.live</a>
-          </p>
-        </div>
-      </div>
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>فاتورة ${invoice.invoiceNumber}</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                
+                <!-- Header with Logo -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); padding: 40px 30px; text-align: center;">
+                    <div style="background-color: white; width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                      <svg width="50" height="50" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M50 10 L90 30 L90 70 L50 90 L10 70 L10 30 Z" fill="#00d25e" stroke="#00a84d" stroke-width="2"/>
+                        <text x="50" y="65" font-size="45" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">S</text>
+                      </svg>
+                    </div>
+                    <h1 style="color: white; margin: 0; font-size: 32px; font-weight: 700; letter-spacing: 1px;">ساري</h1>
+                    <p style="color: rgba(255,255,255,0.95); margin: 10px 0 0 0; font-size: 15px; font-weight: 500;">مساعد المبيعات الذكي على الواتساب</p>
+                  </td>
+                </tr>
+                
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding: 40px 30px;">
+                    <h2 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">مرحباً ${merchant.businessName}،</h2>
+                    
+                    <p style="color: #4a4a4a; line-height: 1.8; font-size: 15px; margin: 0 0 30px 0;">
+                      شكراً لك على ثقتك بنا! 🎉 تم استلام دفعتك بنجاح. نحن سعداء بخدمتك ومساعدتك في تطوير مبيعاتك.
+                    </p>
+                    
+                    <!-- Invoice Details Card -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f8fffe 0%, #f0fdf9 100%); border-radius: 12px; overflow: hidden; border: 2px solid #00d25e; margin: 0 0 30px 0;">
+                      <tr>
+                        <td style="padding: 25px;">
+                          <table width="100%" cellpadding="8" cellspacing="0">
+                            <tr>
+                              <td style="color: #4a4a4a; font-weight: 600; font-size: 14px; width: 40%;">رقم الفاتورة:</td>
+                              <td style="color: #1a1a1a; text-align: left; font-size: 14px; font-weight: 500;">${invoice.invoiceNumber}</td>
+                            </tr>
+                            <tr>
+                              <td style="color: #4a4a4a; font-weight: 600; font-size: 14px; padding-top: 12px;">المبلغ المدفوع:</td>
+                              <td style="text-align: left; padding-top: 12px;">
+                                <span style="color: #00d25e; font-size: 26px; font-weight: 700;">
+                                  ${(invoice.amount / 100).toFixed(2)}
+                                </span>
+                                <span style="color: #00a84d; font-size: 18px; font-weight: 600; margin-right: 5px;">
+                                  ${invoice.currency}
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="color: #4a4a4a; font-weight: 600; font-size: 14px; padding-top: 12px;">الحالة:</td>
+                              <td style="text-align: left; padding-top: 12px;">
+                                <span style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); color: #155724; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; display: inline-block; border: 1px solid #b1dfbb;">
+                                  ✓ ${invoice.status === 'paid' ? 'مدفوعة' : invoice.status}
+                                </span>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td style="color: #4a4a4a; font-weight: 600; font-size: 14px; padding-top: 12px;">تاريخ الدفع:</td>
+                              <td style="color: #1a1a1a; text-align: left; font-size: 14px; font-weight: 500; padding-top: 12px;">
+                                ${new Date(invoice.createdAt).toLocaleDateString('ar-SA', { 
+                                  weekday: 'long', 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    ${invoice.pdfUrl ? `
+                    <!-- Download Button -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                      <tr>
+                        <td align="center">
+                          <a href="${invoice.pdfUrl}" 
+                             style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); 
+                                    color: white; 
+                                    padding: 16px 40px; 
+                                    text-decoration: none; 
+                                    border-radius: 8px; 
+                                    display: inline-block;
+                                    font-weight: 700;
+                                    font-size: 15px;
+                                    box-shadow: 0 6px 16px rgba(0, 210, 94, 0.35);
+                                    transition: all 0.3s ease;">
+                            📄 تحميل الفاتورة PDF
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    ` : ''}
+                    
+                    <!-- Support Section -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 40px; padding-top: 25px; border-top: 2px solid #e8e8e8;">
+                      <tr>
+                        <td>
+                          <p style="color: #4a4a4a; font-size: 14px; margin: 0 0 10px 0; line-height: 1.6;">
+                            💬 <strong>هل لديك استفسار؟</strong> فريق الدعم جاهز لمساعدتك على مدار الساعة.
+                          </p>
+                          <p style="color: #888; font-size: 13px; margin: 15px 0 0 0; line-height: 1.5;">
+                            ⚠️ هذا بريد إلكتروني تلقائي. يرجى عدم الرد عليه مباشرة.
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 30px; text-align: center; border-top: 1px solid #dee2e6;">
+                    <!-- Social Links -->
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                      <tr>
+                        <td align="center">
+                          <a href="https://wa.me/966500000000" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                            <span style="background: #25D366; color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">📱</span>
+                          </a>
+                          <a href="https://twitter.com/sari_ai" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                            <span style="background: #1DA1F2; color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">🐦</span>
+                          </a>
+                          <a href="https://instagram.com/sari_ai" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                            <span style="background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">📷</span>
+                          </a>
+                          <a href="mailto:support@sary.live" style="display: inline-block; margin: 0 8px; text-decoration: none;">
+                            <span style="background: #EA4335; color: white; width: 36px; height: 36px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">✉️</span>
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                    
+                    <p style="color: #6c757d; font-size: 13px; margin: 0 0 8px 0; font-weight: 600;">
+                      © ${new Date().getFullYear()} ساري - مساعد المبيعات الذكي على الواتساب
+                    </p>
+                    <p style="margin: 8px 0 0 0;">
+                      <a href="https://sary.live" style="color: #00d25e; text-decoration: none; font-weight: 700; font-size: 14px;">sary.live</a>
+                    </p>
+                    <p style="color: #adb5bd; font-size: 11px; margin: 12px 0 0 0; line-height: 1.5;">
+                      المملكة العربية السعودية 🇸🇦 | الرياض
+                    </p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     // إعداد البيانات للإرسال
     const payload = {
       sender: ENV.smtpFrom,
       to: [user.email],
-      subject: `فاتورة ${invoice.invoiceNumber} - ساري`,
+      subject: `✅ فاتورة ${invoice.invoiceNumber} - ساري`,
       html_body: htmlContent,
     };
 
