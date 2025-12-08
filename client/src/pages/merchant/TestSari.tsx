@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bot, Send, RotateCcw, User, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bot, Send, RotateCcw, User, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -15,6 +16,74 @@ interface Message {
   content: string;
   timestamp: Date;
 }
+
+interface Scenario {
+  id: string;
+  title: string;
+  description: string;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
+}
+
+const EXAMPLE_SCENARIOS: Scenario[] = [
+  {
+    id: "price-inquiry",
+    title: "استفسار عن سعر",
+    description: "عميل يسأل عن سعر منتج معين",
+    messages: [
+      { role: "user", content: "مرحباً، كم سعر الساعة الذكية؟" },
+    ],
+  },
+  {
+    id: "product-search",
+    title: "البحث عن منتج",
+    description: "عميل يبحث عن نوع معين من المنتجات",
+    messages: [
+      { role: "user", content: "عندك عطور رجالية؟" },
+    ],
+  },
+  {
+    id: "order-inquiry",
+    title: "استفسار عن الطلب",
+    description: "عميل يسأل عن التوصيل والدفع",
+    messages: [
+      { role: "user", content: "كيف أطلب؟ وكم يستغرق التوصيل؟" },
+    ],
+  },
+  {
+    id: "greeting",
+    title: "ترحيب وتعريف",
+    description: "عميل جديد يريد التعرف على المتجر",
+    messages: [
+      { role: "user", content: "السلام عليكم، أول مرة أتعامل معكم" },
+    ],
+  },
+  {
+    id: "recommendations",
+    title: "طلب توصيات",
+    description: "عميل يطلب اقتراحات لهدية",
+    messages: [
+      { role: "user", content: "أبغى هدية لصديقي، شو تقترح؟" },
+    ],
+  },
+  {
+    id: "complaint",
+    title: "شكوى أو استفسار",
+    description: "عميل لديه مشكلة أو سؤال",
+    messages: [
+      { role: "user", content: "المنتج اللي طلبته ما وصل، شو السالفة؟" },
+    ],
+  },
+  {
+    id: "multi-turn",
+    title: "محادثة متعددة",
+    description: "محادثة طويلة مع عدة أسئلة",
+    messages: [
+      { role: "user", content: "مرحباً" },
+      { role: "assistant", content: "أهلاً وسهلاً! أنا ساري، مساعدك الشخصي 😊 كيف أقدر أساعدك اليوم؟" },
+      { role: "user", content: "عندك ساعات ذكية؟" },
+    ],
+  },
+];
 
 export default function TestSari() {
   const { t } = useTranslation();
@@ -89,6 +158,40 @@ export default function TestSari() {
     resetMutation.mutate();
   };
 
+  const handleApplyScenario = (scenarioId: string) => {
+    const scenario = EXAMPLE_SCENARIOS.find((s) => s.id === scenarioId);
+    if (!scenario) return;
+
+    // Reset conversation first
+    const welcomeMessage: Message = {
+      id: "welcome",
+      role: "assistant",
+      content: "مرحباً! أنا ساري، مساعدك الذكي. جرّب أن تسألني عن منتجاتك أو أي شيء تحتاجه! 👋",
+      timestamp: new Date(),
+    };
+
+    const scenarioMessages: Message[] = scenario.messages.map((msg, index) => ({
+      id: `scenario-${index}-${Date.now()}`,
+      role: msg.role,
+      content: msg.content,
+      timestamp: new Date(Date.now() + index * 1000),
+    }));
+
+    setMessages([welcomeMessage, ...scenarioMessages]);
+
+    // If last message is from user, send it to get AI response
+    const lastMessage = scenario.messages[scenario.messages.length - 1];
+    if (lastMessage.role === "user") {
+      setIsTyping(true);
+      sendMessageMutation.mutate({
+        message: lastMessage.content,
+        conversationHistory: scenario.messages.slice(0, -1),
+      });
+    }
+
+    toast.success(`تم تطبيق سيناريو: ${scenario.title}`);
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -104,21 +207,50 @@ export default function TestSari() {
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">اختبار ساري AI</h1>
-          <p className="text-muted-foreground mt-2">
-            جرّب المحادثة مع ساري قبل ربط WhatsApp الحقيقي
-          </p>
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold">اختبار ساري AI</h1>
+            <p className="text-muted-foreground mt-2">
+              جرّب المحادثة مع ساري قبل ربط WhatsApp الحقيقي
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleReset}
+            disabled={resetMutation.isPending}
+          >
+            <RotateCcw className="h-4 w-4 ml-2" />
+            إعادة تعيين
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleReset}
-          disabled={resetMutation.isPending}
-        >
-          <RotateCcw className="h-4 w-4 ml-2" />
-          إعادة تعيين
-        </Button>
+
+        <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <div className="flex-1">
+            <p className="text-sm font-medium">جرّب أمثلة جاهزة</p>
+            <p className="text-xs text-muted-foreground">
+              اختر سيناريو محادثة لتجربة ساري بسرعة
+            </p>
+          </div>
+          <Select onValueChange={handleApplyScenario}>
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="اختر سيناريو..." />
+            </SelectTrigger>
+            <SelectContent>
+              {EXAMPLE_SCENARIOS.map((scenario) => (
+                <SelectItem key={scenario.id} value={scenario.id}>
+                  <div className="flex flex-col">
+                    <span className="font-medium">{scenario.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {scenario.description}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card className="h-[600px] flex flex-col">
