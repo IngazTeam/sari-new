@@ -119,19 +119,6 @@ export default function Login() {
             </Link>
           </div>
 
-          <div className="mt-6 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-semibold mb-2 text-center">حسابات تجريبية:</p>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">👑 المدير:</span>
-                <code className="bg-background px-2 py-1 rounded">admin@sari.sa / admin123</code>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="font-medium">🏪 التاجر:</span>
-                <code className="bg-background px-2 py-1 rounded">merchant@sari.sa / merchant123</code>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
