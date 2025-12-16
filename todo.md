@@ -2521,3 +2521,87 @@
 - [x] إضافة سيناريو: طلب فاتورة لطلب سابق
 - [x] إضافة سيناريو: شكوى وحلها
 - [x] تحسين عرض الأمثلة في الواجهة (قسم أساسي ومتقدم)
+
+
+## صفحة تجربة ساري - العروض المحدودة الوقت والـ A/B Testing
+- [x] إضافة جدول limited_time_offers في قاعدة البيانات
+- [x] إضافة جدول signup_prompt_variants والـ signup_prompt_test_results
+- [x] إنشاء نظام العروض المحدودة الوقت مع عداد تنازلي
+- [x] تطوير نظام A/B Testing للنافذة المنبثقة
+- [x] إنشاء SignupPromptDialogEnhanced مع العروض والـ A/B Testing
+- [x] إضافة APIs للعروض والـ A/B Testing في routers-offers.ts
+- [x] إنشاء AdminABTestDashboard لمراقبة النتائج
+- [x] إنشاء TrySariEnhanced مع الميزات الجديدة
+- [x] كتابة توثيق شامل للميزات الجديدة
+
+
+---
+
+## نظام SEO الشامل (مرحلة جديدة)
+
+### المرحلة 1: تصميم قاعدة البيانات والبنية التحتية
+- [ ] إنشاء جداول SEO في schema.ts:
+  - [ ] seo_pages (معرّف الصفحة، العنوان، الوصف، الكلمات المفتاحية)
+  - [ ] seo_meta_tags (Meta Tags مخصصة لكل صفحة)
+  - [ ] seo_open_graph (Open Graph للمشاركة على السوشيال)
+  - [ ] seo_twitter_cards (Twitter Cards)
+  - [ ] seo_structured_data (JSON-LD Structured Data)
+  - [ ] seo_tracking_codes (Google Analytics, GTM, Pixels)
+  - [ ] seo_analytics (بيانات التحليلات المخزنة)
+  - [ ] seo_keywords_analysis (تحليل الكلمات المفتاحية)
+  - [ ] seo_backlinks (تتبع الروابط الخارجية)
+  - [ ] seo_performance_alerts (التنبيهات)
+  - [ ] seo_recommendations (الاقتراحات الذكية)
+- [ ] إنشاء دوال قاعدة البيانات في db.ts
+
+### المرحلة 2: تطوير APIs والدوال الأساسية
+- [ ] إنشاء ملف server/seo/meta-tags.ts
+- [ ] إنشاء ملف server/seo/open-graph.ts
+- [ ] إنشاء ملف server/seo/structured-data.ts
+- [ ] إنشاء ملف server/seo/sitemap.ts
+- [ ] إنشاء ملف server/seo/analytics-integration.ts
+- [ ] إنشاء ملف server/seo/keyword-analysis.ts
+- [ ] إنشاء ملف server/seo/backlinks-tracker.ts
+- [ ] إنشاء ملف server/seo/recommendations.ts
+- [ ] إضافة APIs في server/routers-seo.ts
+
+### المرحلة 3: بناء لوحة تحكم SEO للـ Admin
+- [ ] صفحة /admin/seo/pages-management
+- [ ] صفحة /admin/seo/meta-tags-editor
+- [ ] صفحة /admin/seo/open-graph-editor
+- [ ] صفحة /admin/seo/structured-data-editor
+- [ ] صفحة /admin/seo/tracking-codes
+- [ ] صفحة /admin/seo/sitemap-management
+- [ ] صفحة /admin/seo/robots-txt-editor
+
+### المرحلة 4: إنشاء صفحة الإحصائيات والتقارير
+- [ ] صفحة /admin/seo/analytics-dashboard
+- [ ] صفحة /admin/seo/reports
+- [ ] صفحة /admin/seo/keywords-analysis
+- [ ] صفحة /admin/seo/backlinks-tracker
+- [ ] صفحة /admin/seo/page-speed-insights
+- [ ] صفحة /admin/seo/performance-comparison
+
+### المرحلة 5: تطبيق SEO على جميع الصفحات
+- [ ] تحديث Home.tsx مع Meta Tags و Structured Data
+- [ ] تحديث Products.tsx
+- [ ] تحديث Pricing.tsx
+- [ ] تحديث Support.tsx
+- [ ] تحديث جميع صفحات Solutions
+- [ ] تحديث جميع صفحات Product
+- [ ] تحديث صفحات Company
+- [ ] تحديث صفحات Resources
+- [ ] إنشاء Dynamic Meta Tags Component
+
+### المرحلة 6: نظام التنبيهات والاقتراحات الذكية
+- [ ] نظام التنبيهات عند انخفاض الأداء
+- [ ] Cron Job للتحقق من الأداء يومياً
+- [ ] نظام الاقتراحات التلقائية
+- [ ] تحليل الكلمات المفتاحية المنافسة
+- [ ] تنبيهات البريد الإلكتروني
+
+### المرحلة 7: الاختبارات والتحسينات النهائية
+- [ ] كتابة اختبارات شاملة
+- [ ] تحسين الأداء
+- [ ] توثيق شامل
+- [ ] اختبار على جميع الصفحات

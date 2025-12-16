@@ -3,6 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { insightsRouter } from "./routers-insights";
+import { offersRouter } from "./routers-offers";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -4966,5 +4967,10 @@ export const appRouter = router({
 
   // Insights router
   insights: insightsRouter,
+  
+  // Offers and AB Testing
+  offers: offersRouter.offers,
+  signupPrompt: offersRouter.signupPrompt,
+  
 });
 export type AppRouter = typeof appRouter;

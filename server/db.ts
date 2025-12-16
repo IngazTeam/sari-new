@@ -138,6 +138,15 @@ import {
   trySariAnalytics,
   TrySariAnalytics,
   InsertTrySariAnalytics,
+  limitedTimeOffers,
+  LimitedTimeOffer,
+  InsertLimitedTimeOffer,
+  signupPromptVariants,
+  SignupPromptVariant,
+  InsertSignupPromptVariant,
+  signupPromptTestResults,
+  SignupPromptTestResult,
+  InsertSignupPromptTestResult,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -4707,5 +4716,195 @@ export async function getTrySariDailyData(days: number = 30) {
   } catch (error) {
     console.error("[DB] Error getting daily data:", error);
     return [];
+  }
+}
+
+
+/**
+ * Limited Time Offers - دوال إدارة العروض المحدودة الوقت
+ */
+
+export async function createLimitedTimeOffer(data: InsertLimitedTimeOffer): Promise<LimitedTimeOffer | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db.insert(limitedTimeOffers).values(data);
+    return await db.query.limitedTimeOffers.findFirst() as LimitedTimeOffer | null;
+  } catch (error) {
+    console.error("[DB] Error creating limited time offer:", error);
+    return null;
+  }
+}
+
+export async function getActiveLimitedTimeOffers(): Promise<LimitedTimeOffer[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db
+      .select()
+      .from(limitedTimeOffers)
+      .where(eq(limitedTimeOffers.isActive, true));
+  } catch (error) {
+    console.error("[DB] Error getting active offers:", error);
+    return [];
+  }
+}
+
+export async function updateLimitedTimeOffer(id: number, data: Partial<InsertLimitedTimeOffer>): Promise<LimitedTimeOffer | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    await db.update(limitedTimeOffers).set(data).where(eq(limitedTimeOffers.id, id));
+    return await db.query.limitedTimeOffers.findFirst({
+      where: eq(limitedTimeOffers.id, id),
+    }) as LimitedTimeOffer | null;
+  } catch (error) {
+    console.error("[DB] Error updating offer:", error);
+    return null;
+  }
+}
+
+/**
+ * Signup Prompt Variants - دوال إدارة متغيرات النافذة المنبثقة
+ */
+
+export async function createSignupPromptVariant(data: InsertSignupPromptVariant): Promise<SignupPromptVariant | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    await db.insert(signupPromptVariants).values(data);
+    return await db.query.signupPromptVariants.findFirst({
+      where: eq(signupPromptVariants.variantId, data.variantId),
+    }) as SignupPromptVariant | null;
+  } catch (error) {
+    console.error("[DB] Error creating variant:", error);
+    return null;
+  }
+}
+
+export async function getActiveSignupPromptVariants(): Promise<SignupPromptVariant[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db
+      .select()
+      .from(signupPromptVariants)
+      .where(eq(signupPromptVariants.isActive, true));
+  } catch (error) {
+    console.error("[DB] Error getting variants:", error);
+    return [];
+  }
+}
+
+export async function getRandomSignupPromptVariant(): Promise<SignupPromptVariant | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const variants = await getActiveSignupPromptVariants();
+    if (variants.length === 0) return null;
+    return variants[Math.floor(Math.random() * variants.length)];
+  } catch (error) {
+    console.error("[DB] Error getting random variant:", error);
+    return null;
+  }
+}
+
+export async function updateSignupPromptVariant(id: number, data: Partial<InsertSignupPromptVariant>): Promise<SignupPromptVariant | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    await db.update(signupPromptVariants).set(data).where(eq(signupPromptVariants.id, id));
+    return await db.query.signupPromptVariants.findFirst({
+      where: eq(signupPromptVariants.id, id),
+    }) as SignupPromptVariant | null;
+  } catch (error) {
+    console.error("[DB] Error updating variant:", error);
+    return null;
+  }
+}
+
+/**
+ * Signup Prompt Test Results - دوال تتبع نتائج الاختبار
+ */
+
+export async function recordSignupPromptTestResult(data: InsertSignupPromptTestResult): Promise<SignupPromptTestResult | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    await db.insert(signupPromptTestResults).values(data);
+    return await db.query.signupPromptTestResults.findFirst({
+      where: and(
+        eq(signupPromptTestResults.sessionId, data.sessionId),
+        eq(signupPromptTestResults.variantId, data.variantId),
+      ),
+    }) as SignupPromptTestResult | null;
+  } catch (error) {
+    console.error("[DB] Error recording test result:", error);
+    return null;
+  }
+}
+
+export async function updateSignupPromptTestResult(id: number, data: Partial<InsertSignupPromptTestResult>): Promise<SignupPromptTestResult | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    await db.update(signupPromptTestResults).set(data).where(eq(signupPromptTestResults.id, id));
+    return await db.query.signupPromptTestResults.findFirst({
+      where: eq(signupPromptTestResults.id, id),
+    }) as SignupPromptTestResult | null;
+  } catch (error) {
+    console.error("[DB] Error updating test result:", error);
+    return null;
+  }
+}
+
+export async function getSignupPromptTestStats(days: number = 30) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const results = await db
+      .select()
+      .from(signupPromptTestResults)
+      .where(gte(signupPromptTestResults.createdAt, startDate));
+
+    // Group by variant
+    const stats: Record<string, {
+      variant: string;
+      shown: number;
+      clicked: number;
+      converted: number;
+      clickRate: number;
+      conversionRate: number;
+    }> = {};
+
+    results.forEach(r => {
+      if (!stats[r.variantId]) {
+        stats[r.variantId] = {
+          variant: r.variantId,
+          shown: 0,
+          clicked: 0,
+          converted: 0,
+          clickRate: 0,
+          conversionRate: 0,
+        };
+      }
+      if (r.shown) stats[r.variantId].shown += 1;
+      if (r.clicked) stats[r.variantId].clicked += 1;
+      if (r.converted) stats[r.variantId].converted += 1;
+    });
+
+    // Calculate rates
+    Object.values(stats).forEach(s => {
+      s.clickRate = s.shown > 0 ? Math.round((s.clicked / s.shown) * 100) : 0;
+      s.conversionRate = s.shown > 0 ? Math.round((s.converted / s.shown) * 100) : 0;
+    });
+
+    return Object.values(stats);
+  } catch (error) {
+    console.error("[DB] Error getting test stats:", error);
+    return null;
   }
 }
