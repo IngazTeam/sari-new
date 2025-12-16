@@ -147,6 +147,30 @@ import {
   signupPromptTestResults,
   SignupPromptTestResult,
   InsertSignupPromptTestResult,
+  seoPages,
+  SeoPage,
+  InsertSeoPage,
+  seoKeywords,
+  SeoKeyword,
+  InsertSeoKeyword,
+  seoRankings,
+  SeoRanking,
+  InsertSeoRanking,
+  seoBacklinks,
+  SeoBacklink,
+  InsertSeoBacklink,
+  seoPerformanceAlerts,
+  SeoPerformanceAlert,
+  InsertSeoPerformanceAlert,
+  seoRecommendations,
+  SeoRecommendation,
+  InsertSeoRecommendation,
+  seoSitemaps,
+  SeoSitemap,
+  InsertSeoSitemap,
+  emailVerificationTokens,
+  EmailVerificationToken,
+  InsertEmailVerificationToken,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -4907,4 +4931,48 @@ export async function getSignupPromptTestStats(days: number = 30) {
     console.error("[DB] Error getting test stats:", error);
     return null;
   }
+}
+
+// ============================================
+// Email Verification
+// ============================================
+
+export async function createEmailVerificationToken(data: InsertEmailVerificationToken) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(emailVerificationTokens).values(data);
+}
+
+export async function getEmailVerificationToken(token: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.query.emailVerificationTokens.findFirst({
+    where: eq(emailVerificationTokens.token, token),
+  });
+}
+
+export async function markEmailVerificationTokenAsUsed(tokenId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(emailVerificationTokens)
+    .set({ 
+      isUsed: 1, 
+      usedAt: new Date().toISOString() 
+    })
+    .where(eq(emailVerificationTokens.id, tokenId));
+}
+
+export async function deleteExpiredVerificationTokens() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(emailVerificationTokens)
+    .where(lt(emailVerificationTokens.expiresAt, new Date().toISOString()));
+}
+
+export async function updateUserEmailVerified(userId: number, email: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(users)
+    .set({ email, emailVerified: 1 })
+    .where(eq(users.id, userId));
 }

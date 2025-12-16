@@ -1,5 +1,5 @@
 import { mysqlTable, mysqlSchema, AnyMySqlColumn, foreignKey, int, varchar, text, mysqlEnum, timestamp, index, date, tinyint } from "drizzle-orm/mysql-core"
-import { sql } from "drizzle-orm"
+import { sql, InferSelectType, InferInsertType } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
 	id: int().autoincrement().notNull(),
@@ -951,4 +951,97 @@ export const seoSitemaps = mysqlTable("seo_sitemaps", {
 	isActive: tinyint("is_active").default(1).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+	});
+
+export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
+	id: int().autoincrement().notNull(),
+	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	email: varchar({ length: 255 }).notNull(),
+	token: varchar({ length: 255 }).notNull().unique(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	isUsed: tinyint("is_used").default(0).notNull(),
+	usedAt: timestamp("used_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
+
+	// Type definitions
+export type User = InferSelectType<typeof users>;
+export type InsertUser = InferInsertType<typeof users>;
+export type Merchant = InferSelectType<typeof merchants>;
+export type InsertMerchant = InferInsertType<typeof merchants>;
+export type Plan = InferSelectType<typeof plans>;
+export type InsertPlan = InferInsertType<typeof plans>;
+export type Subscription = InferSelectType<typeof subscriptions>;
+export type InsertSubscription = InferInsertType<typeof subscriptions>;
+export type WhatsAppConnection = InferSelectType<typeof whatsappConnections>;
+export type InsertWhatsAppConnection = InferInsertType<typeof whatsappConnections>;
+export type WhatsAppConnectionRequest = InferSelectType<typeof whatsappConnectionRequests>;
+export type InsertWhatsAppConnectionRequest = InferInsertType<typeof whatsappConnectionRequests>;
+export type Product = InferSelectType<typeof products>;
+export type InsertProduct = InferInsertType<typeof products>;
+export type Conversation = InferSelectType<typeof conversations>;
+export type InsertConversation = InferInsertType<typeof conversations>;
+export type Message = InferSelectType<typeof messages>;
+export type InsertMessage = InferInsertType<typeof messages>;
+export type Campaign = InferSelectType<typeof campaigns>;
+export type InsertCampaign = InferInsertType<typeof campaigns>;
+export type CampaignLog = InferSelectType<typeof campaignLogs>;
+export type InsertCampaignLog = InferInsertType<typeof campaignLogs>;
+export type SupportTicket = InferSelectType<typeof supportTickets>;
+export type InsertSupportTicket = InferInsertType<typeof supportTickets>;
+export type Analytics = InferSelectType<typeof analytics>;
+export type InsertAnalytics = InferInsertType<typeof analytics>;
+export type Notification = InferSelectType<typeof notifications>;
+export type InsertNotification = InferInsertType<typeof notifications>;
+export type Payment = InferSelectType<typeof payments>;
+export type InsertPayment = InferInsertType<typeof payments>;
+export type PlanChangeLog = InferSelectType<typeof planChangeLogs>;
+export type InsertPlanChangeLog = InferInsertType<typeof planChangeLogs>;
+export type PaymentGateway = InferSelectType<typeof paymentGateways>;
+export type InsertPaymentGateway = InferInsertType<typeof paymentGateways>;
+export type Invoice = InferSelectType<typeof invoices>;
+export type InsertInvoice = InferInsertType<typeof invoices>;
+export type SallaConnection = InferSelectType<typeof sallaConnections>;
+export type InsertSallaConnection = InferInsertType<typeof sallaConnections>;
+export type SyncLog = InferSelectType<typeof syncLogs>;
+export type InsertSyncLog = InferInsertType<typeof syncLogs>;
+export type Order = InferSelectType<typeof orders>;
+export type InsertOrder = InferInsertType<typeof orders>;
+export type DiscountCode = InferSelectType<typeof discountCodes>;
+export type InsertDiscountCode = InferInsertType<typeof discountCodes>;
+export type ReferralCode = InferSelectType<typeof referralCodes>;
+export type InsertReferralCode = InferInsertType<typeof referralCodes>;
+export type Referral = InferSelectType<typeof referrals>;
+export type InsertReferral = InferInsertType<typeof referrals>;
+export type Reward = InferSelectType<typeof rewards>;
+export type InsertReward = InferInsertType<typeof rewards>;
+export type AbandonedCart = InferSelectType<typeof abandonedCarts>;
+export type InsertAbandonedCart = InferInsertType<typeof abandonedCarts>;
+export type AutomationRule = InferSelectType<typeof automationRules>;
+export type InsertAutomationRule = InferInsertType<typeof automationRules>;
+export type CustomerReview = InferSelectType<typeof customerReviews>;
+export type InsertCustomerReview = InferInsertType<typeof customerReviews>;
+export type OrderTrackingLog = InferSelectType<typeof orderTrackingLogs>;
+export type InsertOrderTrackingLog = InferInsertType<typeof orderTrackingLogs>;
+export type OccasionCampaign = InferSelectType<typeof occasionCampaigns>;
+export type InsertOccasionCampaign = InferInsertType<typeof occasionCampaigns>;
+export type WhatsAppInstance = InferSelectType<typeof whatsappInstances>;
+export type InsertWhatsAppInstance = InferInsertType<typeof whatsappInstances>;
+export type WhatsAppRequest = InferSelectType<typeof whatsappRequests>;
+export type InsertWhatsAppRequest = InferInsertType<typeof whatsappRequests>;
+export type SeoPage = InferSelectType<typeof seoPages>;
+export type InsertSeoPage = InferInsertType<typeof seoPages>;
+export type SeoKeyword = InferSelectType<typeof seoKeywords>;
+export type InsertSeoKeyword = InferInsertType<typeof seoKeywords>;
+export type SeoRanking = InferSelectType<typeof seoRankings>;
+export type InsertSeoRanking = InferInsertType<typeof seoRankings>;
+export type SeoBacklink = InferSelectType<typeof seoBacklinks>;
+export type InsertSeoBacklink = InferInsertType<typeof seoBacklinks>;
+export type SeoPerformanceAlert = InferSelectType<typeof seoPerformanceAlerts>;
+export type InsertSeoPerformanceAlert = InferInsertType<typeof seoPerformanceAlerts>;
+export type SeoRecommendation = InferSelectType<typeof seoRecommendations>;
+export type InsertSeoRecommendation = InferInsertType<typeof seoRecommendations>;
+export type SeoSitemap = InferSelectType<typeof seoSitemaps>;
+export type InsertSeoSitemap = InferInsertType<typeof seoSitemaps>;
+export type EmailVerificationToken = InferSelectType<typeof emailVerificationTokens>;
+export type InsertEmailVerificationToken = InferInsertType<typeof emailVerificationTokens>;

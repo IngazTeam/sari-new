@@ -2605,3 +2605,50 @@
 - [ ] تحسين الأداء
 - [ ] توثيق شامل
 - [ ] اختبار على جميع الصفحات
+
+
+---
+
+## المرحلة الجديدة: SEO و Authentication
+
+### Phase 1: إصلاح TypeScript Errors
+- [x] فحص وإصلاح schema analyses table (264 أخطاء)
+- [x] تحديث insert statements
+- [x] التحقق من عدم وجود أخطاء TypeScript
+
+### Phase 2: API Integration للتوصيات
+- [x] ربط AdminRecommendations مع seoRecommendationsRouter API
+- [x] تحميل البيانات الحقيقية بدلاً من الوهمية
+- [x] إضافة loading states و error handling
+
+### Phase 3: Recommendations Analytics Dashboard
+- [x] بناء صفحة تحليلات التوصيات
+- [x] عرض أفضل التوصيات حسب التحسن والـ ROI
+- [x] رسوم بيانية تفاعلية
+
+### Phase 4: Email Verification
+- [x] إضافة جدول email_verification_tokens
+- [x] إنشاء API للتحقق من البريد
+- [x] صفحة التحقق من البريد
+- [x] إرسال بريد التحقق تلقائياً
+
+### Phase 5: Google Login
+- [ ] إضافة Google OAuth integration
+- [ ] تحديث صفحة Login
+- [ ] معالجة المستخدمين الجدد من Google
+
+### Phase 6: تحميل البيانات الحقيقية
+- [ ] ربط SEO pages بـ APIs الحقيقية
+- [ ] ربط Meta Tags بـ APIs
+- [ ] ربط Open Graph بـ APIs
+- [ ] ربط Tracking codes بـ APIs
+
+### Phase 7: رسوم بيانية متقدمة
+- [ ] رسوم بيانية لأداء SEO
+- [ ] رسوم بيانية للكلمات المفتاحية
+- [ ] رسوم بيانية للزيارات
+
+### Phase 8: تصدير Sitemap XML
+- [ ] إضافة API لتصدير Sitemap
+- [ ] إضافة robots.txt
+- [ ] جدولة التحديث التلقائي

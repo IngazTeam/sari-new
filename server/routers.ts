@@ -94,6 +94,49 @@ export const appRouter = router({
           },
         };
       }),
+
+  // Email Verification
+  emailVerification: router({
+    sendVerificationEmail: publicProcedure
+      .input(z.object({ email: z.string().email(), userId: z.number() }))
+      .mutation(async ({ input }) => {
+        const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        
+        await db.createEmailVerificationToken({
+          userId: input.userId,
+          email: input.email,
+          token,
+          expiresAt,
+        });
+        
+        // In production, send email here
+        return { token, expiresAt };
+      }),
+    
+    verifyEmail: publicProcedure
+      .input(z.object({ token: z.string() }))
+      .mutation(async ({ input }) => {
+        const verificationToken = await db.getEmailVerificationToken(input.token);
+        
+        if (!verificationToken) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Token not found' });
+        }
+        
+        if (verificationToken.isUsed) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token already used' });
+        }
+        
+        if (new Date(verificationToken.expiresAt) < new Date()) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token expired' });
+        }
+        
+        await db.markEmailVerificationTokenAsUsed(verificationToken.id);
+        await db.updateUserEmailVerified(verificationToken.userId, verificationToken.email);
+        
+        return { success: true };
+      }),
+  }),
     
     // Sign up with email and password
     signup: publicProcedure
@@ -5108,6 +5151,34 @@ export const appRouter = router({
       .input(z.object({ type: z.string().optional() }))
       .query(async ({ input }) => {
         return await seoDb.getSitemaps(input.type);
+      }),
+    
+    // Recommendations
+    getRecommendations: adminProcedure
+      .input(z.object({ pageId: z.number().optional() }))
+      .query(async ({ input }) => {
+        if (input.pageId) {
+          return await seoDb.getRecommendationsByPageId(input.pageId);
+        }
+        return await seoDb.getPendingRecommendations();
+      }),
+    
+    getAllRecommendations: adminProcedure
+      .query(async () => {
+        return await seoDb.getPendingRecommendations();
+      }),
+    
+    updateRecommendation: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(['pending', 'in_progress', 'completed', 'dismissed']).optional(),
+        completedAt: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const updateData: any = {};
+        if (input.status) updateData.status = input.status;
+        if (input.completedAt) updateData.completedAt = input.completedAt;
+        return await seoDb.updateRecommendation(input.id, updateData);
       }),
   }),
   

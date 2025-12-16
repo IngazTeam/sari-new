@@ -8,6 +8,13 @@
       "when": 1765922690557,
       "tag": "0000_curved_lucky_pierre",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1765926941398,
+      "tag": "0001_sloppy_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

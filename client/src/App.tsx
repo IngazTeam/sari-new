@@ -88,6 +88,8 @@ import SeoTracking from "./pages/admin/SeoTracking";
 import SeoAnalytics from "./pages/admin/SeoAnalytics";
 import SeoKeywords from "./pages/admin/SeoKeywords";
 import SeoBacklinks from "./pages/admin/SeoBacklinks";
+import AdminRecommendations from "./pages/admin/AdminRecommendations";
+import RecommendationsAnalytics from "./pages/admin/RecommendationsAnalytics";
 
 function Router() {
   return (
@@ -457,6 +459,18 @@ function Router() {
       <Route path="/admin/seo/backlinks">
         <DashboardLayout>
           <SeoBacklinks />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/seo/recommendations">
+        <DashboardLayout>
+          <AdminRecommendations />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/seo/recommendations/analytics">
+        <DashboardLayout>
+          <RecommendationsAnalytics />
         </DashboardLayout>
       </Route>
       
