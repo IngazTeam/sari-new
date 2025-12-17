@@ -108,7 +108,7 @@ export function getPasswordResetEmailTemplate(data: PasswordResetEmailData): {
               
               <!-- Social Links -->
               <div style="margin-top: 20px;">
-                <a href="https://sari.manus.space" style="color: #3b82f6; text-decoration: none; font-size: 13px; margin: 0 10px;">
+                <a href="https://sary.live" style="color: #3b82f6; text-decoration: none; font-size: 13px; margin: 0 10px;">
                   🌐 الموقع الإلكتروني
                 </a>
                 <span style="color: #d1d5db;">|</span>
@@ -149,7 +149,7 @@ ${resetLink}
 وكيل المبيعات الذكي عبر الواتساب
 
 ---
-الموقع الإلكتروني: https://sari.manus.space
+الموقع الإلكتروني: https://sary.live
 الدعم الفني: support@sari.com
 
 © ${new Date().getFullYear()} ساري. جميع الحقوق محفوظة.

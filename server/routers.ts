@@ -78,8 +78,9 @@ export const appRouter = router({
         await db.updateUserLastSignedIn(user.id);
         
         // Create session token using SDK
-        const sessionToken = await sdk.createSessionToken(user.openId, {
+        const sessionToken = await sdk.createSessionToken(String(user.id), {
           name: user.name || '',
+          email: user.email || '',
           expiresInMs: ONE_YEAR_MS,
         });
         
@@ -194,8 +195,9 @@ export const appRouter = router({
         }
         
         // Create session token
-        const sessionToken = await sdk.createSessionToken(user.openId, {
+        const sessionToken = await sdk.createSessionToken(String(user.id), {
           name: user.name || '',
+          email: user.email || '',
           expiresInMs: ONE_YEAR_MS,
         });
         
@@ -1428,7 +1430,7 @@ export const appRouter = router({
         try {
           const { setWebhookUrl } = await import('./whatsapp');
           // Get the base URL from environment or use default
-          const baseUrl = process.env.VITE_APP_URL || 'https://sari.manus.space';
+          const baseUrl = process.env.VITE_APP_URL || 'https://sary.live';
           const webhookUrl = `${baseUrl}/api/webhooks/greenapi`;
           
           const webhookResult = await setWebhookUrl(

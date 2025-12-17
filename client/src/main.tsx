@@ -4,9 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import App from "./App";
-import { getLoginUrl } from "./const";
 import "./index.css";
 import "./lib/i18n";
 
@@ -20,7 +18,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  window.location.href = getLoginUrl();
+  window.location.href = "/login";
 };
 
 queryClient.getQueryCache().subscribe(event => {
@@ -54,14 +52,10 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
-
 createRoot(document.getElementById("root")!).render(
-  <GoogleOAuthProvider clientId={googleClientId}>
-    <trpc.Provider client={trpcClient} queryClient={queryClient}>
-      <QueryClientProvider client={queryClient}>
-        <App />
-      </QueryClientProvider>
-    </trpc.Provider>
-  </GoogleOAuthProvider>
+  <trpc.Provider client={trpcClient} queryClient={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <App />
+    </QueryClientProvider>
+  </trpc.Provider>
 );

@@ -10,7 +10,7 @@ function createMerchantContext(): TrpcContext {
     openId: "test-merchant",
     email: "merchant@example.com",
     name: "Test Merchant",
-    loginMethod: "manus",
+    loginMethod: "email",
     role: "user",
     createdAt: new Date(),
     updatedAt: new Date(),

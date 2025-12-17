@@ -7,8 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { trpc } from "@/lib/trpc";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
-import { GoogleLoginButton } from "@/components/GoogleLoginButton";
-import { Separator } from "@/components/ui/separator";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -113,14 +111,6 @@ export default function Login() {
               )}
             </Button>
           </form>
-
-          <div className="mt-6">
-            <Separator className="my-4" />
-            <div className="text-center text-sm text-muted-foreground mb-4">
-              أو سجل الدخول باستخدام
-            </div>
-            <GoogleLoginButton />
-          </div>
 
           <div className="mt-4 text-center text-sm text-muted-foreground">
             لا تملك حساباً؟{' '}
