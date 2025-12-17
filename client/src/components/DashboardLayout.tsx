@@ -56,7 +56,8 @@ import {
   Sparkles,
   Zap,
   Search,
-  Key
+  Key,
+  Database
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -89,6 +90,7 @@ const getMerchantMenuItems = (t: any) => [
   { icon: Calendar, label: t('sidebar.merchant.scheduledMessages'), path: "/merchant/scheduled-messages" },
   { icon: Sparkles, label: 'إعدادات شخصية ساري', path: "/merchant/sari-personality" },
   { icon: Zap, label: 'الردود السريعة', path: "/merchant/quick-responses" },
+  { icon: BarChart3, label: 'التحليلات المتقدمة', path: "/merchant/advanced-analytics" },
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings" },
 ];
 
@@ -101,6 +103,7 @@ const getAdminMenuItems = (t: any) => [
   { icon: Settings, label: t('sidebar.admin.settings'), path: "/admin/settings" },
   { icon: MessageSquare, label: 'إعدادات SMTP', path: "/admin/smtp-settings" },
   { icon: Zap, label: 'إعدادات Google OAuth', path: "/admin/google-oauth" },
+  { icon: Database, label: 'مزامنة البيانات', path: "/admin/data-sync" },
   { icon: BarChart3, label: 'SEO - لوحة التحكم', path: "/admin/seo/dashboard" },
   { icon: Package, label: 'SEO - الصفحات', path: "/admin/seo/pages" },
   { icon: MessageSquare, label: 'SEO - Meta Tags', path: "/admin/seo/meta-tags" },

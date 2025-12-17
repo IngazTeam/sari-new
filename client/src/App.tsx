@@ -69,6 +69,7 @@ import ScheduledMessages from "./pages/merchant/ScheduledMessages";
 import SariPersonality from "./pages/merchant/SariPersonality";
 import QuickResponses from "./pages/merchant/QuickResponses";
 import InsightsDashboard from "./pages/merchant/InsightsDashboard";
+import AdvancedAnalytics from "./pages/merchant/AdvancedAnalytics";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -91,6 +92,7 @@ import SeoBacklinks from "./pages/admin/SeoBacklinks";
 import AdminRecommendations from "./pages/admin/AdminRecommendations";
 import RecommendationsAnalytics from "./pages/admin/RecommendationsAnalytics";
 import AdminGoogleOAuth from "./pages/AdminGoogleOAuth";
+import AdminDataSync from "./pages/AdminDataSync";
 
 function Router() {
   return (
@@ -315,6 +317,12 @@ function Router() {
         </DashboardLayout>
       </Route>
       
+      <Route path="/merchant/advanced-analytics">
+        <DashboardLayout>
+          <AdvancedAnalytics />
+        </DashboardLayout>
+      </Route>
+      
       <Route path="/merchant/reviews">
         <DashboardLayout>
           <Reviews />
@@ -417,6 +425,12 @@ function Router() {
       <Route path="/admin/google-oauth">
         <DashboardLayout>
           <AdminGoogleOAuth />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/data-sync">
+        <DashboardLayout>
+          <AdminDataSync />
         </DashboardLayout>
       </Route>
       

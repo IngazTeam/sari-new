@@ -4976,3 +4976,30 @@ export async function updateUserEmailVerified(userId: number, email: string) {
     .set({ email, emailVerified: 1 })
     .where(eq(users.id, userId));
 }
+
+
+// Green API Sync Helper Functions
+export async function getMessageByExternalId(externalId: string): Promise<Message | undefined> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.query.messages.findFirst({
+    where: eq(messages.externalId, externalId),
+  });
+}
+
+export async function updateConversationLastMessage(conversationId: number, lastMessageAt: Date): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(conversations)
+    .set({ lastMessageAt })
+    .where(eq(conversations.id, conversationId));
+}
+
+export async function getSyncLog(merchantId: string) {
+  // This can be extended to store sync logs in database
+  return {
+    merchantId,
+    lastSync: new Date(),
+    status: "idle",
+  };
+}

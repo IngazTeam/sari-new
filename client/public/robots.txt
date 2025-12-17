@@ -1,0 +1,76 @@
+# Robots.txt for Sari - AI Sales Agent for WhatsApp
+# This file controls how search engines crawl and index the website
+
+# Default rules for all bots
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /pricing
+Allow: /solutions
+Allow: /resources
+Allow: /company
+
+# Disallow private/admin areas
+Disallow: /admin/
+Disallow: /merchant/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /*.json
+Disallow: /*.xml
+Disallow: /private/
+Disallow: /temp/
+Disallow: /cache/
+
+# Disallow specific file types
+Disallow: /*.pdf$
+Disallow: /*.doc$
+Disallow: /*.docx$
+Disallow: /*.xls$
+Disallow: /*.xlsx$
+
+# Disallow query parameters that create duplicate content
+Disallow: /*?*sort=
+Disallow: /*?*filter=
+Disallow: /*?*page=
+Disallow: /*?*utm_
+
+# Google-specific rules
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing-specific rules
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemap location
+Sitemap: https://sari.manus.space/sitemap.xml
+Sitemap: https://sari.manus.space/sitemap-products.xml
+Sitemap: https://sari.manus.space/sitemap-blog.xml
+
+# Crawl delay and request rate
+# Default crawl delay (in seconds)
+Crawl-delay: 1
+Request-rate: 1/10s
+
+# Allow crawling of important static assets
+User-agent: *
+Allow: /images/
+Allow: /css/
+Allow: /js/
+Allow: /fonts/
+Allow: /icons/

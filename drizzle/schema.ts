@@ -225,12 +225,15 @@ export const messages = mysqlTable("messages", {
 	id: int().autoincrement().notNull(),
 	conversationId: int().notNull(),
 	direction: mysqlEnum(['incoming','outgoing']).notNull(),
-	messageType: mysqlEnum(['text','voice','image']).default('text').notNull(),
+	messageType: mysqlEnum(['text','voice','image','document']).default('text').notNull(),
 	content: text().notNull(),
 	voiceUrl: varchar({ length: 500 }),
 	imageUrl: varchar({ length: 500 }),
+	mediaUrl: varchar({ length: 500 }),
 	isProcessed: tinyint().default(0).notNull(),
-	aiResponse: text(),
+	aiwResponse: text(),
+	isFromCustomer: tinyint().default(0).notNull(),
+	externalId: varchar({ length: 255 }),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
 

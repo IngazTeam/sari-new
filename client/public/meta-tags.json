@@ -1,0 +1,83 @@
+{
+  "default": {
+    "title": "Sari - AI Sales Agent for WhatsApp",
+    "description": "Automate your sales conversations on WhatsApp with AI. Increase sales, improve customer engagement, and save time with Sari's intelligent chatbot.",
+    "keywords": "WhatsApp sales, AI chatbot, sales automation, customer engagement, WhatsApp marketing",
+    "og:title": "Sari - AI Sales Agent for WhatsApp",
+    "og:description": "Automate your sales conversations on WhatsApp with AI",
+    "og:image": "https://sari.manus.space/og-image.png",
+    "og:url": "https://sari.manus.space",
+    "og:type": "website",
+    "twitter:card": "summary_large_image",
+    "twitter:title": "Sari - AI Sales Agent for WhatsApp",
+    "twitter:description": "Automate your sales conversations on WhatsApp with AI",
+    "twitter:image": "https://sari.manus.space/og-image.png",
+    "canonical": "https://sari.manus.space"
+  },
+  "pages": {
+    "/products": {
+      "title": "Products - Sari",
+      "description": "Explore Sari's AI-powered products for sales, marketing, and customer support on WhatsApp",
+      "keywords": "WhatsApp products, AI sales tools, marketing automation, customer support",
+      "og:title": "Products - Sari",
+      "og:description": "Explore Sari's AI-powered products",
+      "og:url": "https://sari.manus.space/products"
+    },
+    "/pricing": {
+      "title": "Pricing - Sari",
+      "description": "Simple, transparent pricing for Sari's AI sales automation. Choose the plan that fits your business",
+      "keywords": "WhatsApp pricing, AI chatbot cost, sales automation pricing",
+      "og:title": "Pricing - Sari",
+      "og:description": "Simple, transparent pricing for Sari's AI sales automation",
+      "og:url": "https://sari.manus.space/pricing"
+    },
+    "/solutions/sales": {
+      "title": "Sales Solutions - Sari",
+      "description": "Automate your sales process with Sari's AI-powered WhatsApp sales agent",
+      "keywords": "WhatsApp sales, sales automation, AI sales agent, sales chatbot",
+      "og:title": "Sales Solutions - Sari",
+      "og:description": "Automate your sales process with Sari's AI-powered WhatsApp sales agent",
+      "og:url": "https://sari.manus.space/solutions/sales"
+    },
+    "/solutions/marketing": {
+      "title": "Marketing Solutions - Sari",
+      "description": "Boost your marketing campaigns with Sari's AI-powered WhatsApp marketing automation",
+      "keywords": "WhatsApp marketing, marketing automation, customer engagement, campaign automation",
+      "og:title": "Marketing Solutions - Sari",
+      "og:description": "Boost your marketing campaigns with Sari's AI-powered WhatsApp marketing automation",
+      "og:url": "https://sari.manus.space/solutions/marketing"
+    },
+    "/solutions/support": {
+      "title": "Support Solutions - Sari",
+      "description": "Provide excellent customer support on WhatsApp with Sari's AI-powered support agent",
+      "keywords": "WhatsApp support, customer service, support automation, AI support",
+      "og:title": "Support Solutions - Sari",
+      "og:description": "Provide excellent customer support on WhatsApp with Sari's AI-powered support agent",
+      "og:url": "https://sari.manus.space/solutions/support"
+    },
+    "/resources/blog": {
+      "title": "Blog - Sari",
+      "description": "Read articles and tips about WhatsApp sales, AI chatbots, and customer engagement",
+      "keywords": "WhatsApp blog, sales tips, AI chatbot guide, customer engagement",
+      "og:title": "Blog - Sari",
+      "og:description": "Read articles and tips about WhatsApp sales and AI chatbots",
+      "og:url": "https://sari.manus.space/resources/blog"
+    },
+    "/company/about": {
+      "title": "About Sari",
+      "description": "Learn about Sari, the AI sales agent for WhatsApp. Our mission, team, and vision",
+      "keywords": "about Sari, company information, AI sales automation",
+      "og:title": "About Sari",
+      "og:description": "Learn about Sari, the AI sales agent for WhatsApp",
+      "og:url": "https://sari.manus.space/company/about"
+    },
+    "/company/contact": {
+      "title": "Contact Sari",
+      "description": "Get in touch with Sari's team. We're here to help you with any questions",
+      "keywords": "contact Sari, customer support, sales inquiry",
+      "og:title": "Contact Sari",
+      "og:description": "Get in touch with Sari's team",
+      "og:url": "https://sari.manus.space/company/contact"
+    }
+  }
+}

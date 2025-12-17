@@ -49,6 +49,57 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Webhook endpoints
   app.use("/api/webhooks", webhookRoutes);
+  
+  // Sitemap routes
+  app.get('/sitemap.xml', async (req, res) => {
+    try {
+      const { generateSitemapIndex } = await import('../sitemap-generator');
+      const sitemap = await generateSitemapIndex();
+      res.header('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (error) {
+      console.error('Error generating sitemap index:', error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+  
+  app.get('/sitemap-pages.xml', async (req, res) => {
+    try {
+      const { generatePagesSitemap } = await import('../sitemap-generator');
+      const sitemap = await generatePagesSitemap();
+      res.header('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (error) {
+      console.error('Error generating pages sitemap:', error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+  
+  app.get('/sitemap-blog.xml', async (req, res) => {
+    try {
+      const { generateBlogSitemap } = await import('../sitemap-generator');
+      const sitemap = await generateBlogSitemap();
+      res.header('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (error) {
+      console.error('Error generating blog sitemap:', error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+  
+  app.get('/sitemap-products.xml', async (req, res) => {
+    try {
+      const { generateProductsSitemap } = await import('../sitemap-generator');
+      const sitemap = await generateProductsSitemap();
+      res.header('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (error) {
+      console.error('Error generating products sitemap:', error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+  
+  // robots.txt is served from client/public/robots.txt via static files
   // tRPC API
   app.use(
     "/api/trpc",

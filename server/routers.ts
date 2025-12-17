@@ -5,6 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { insightsRouter } from "./routers-insights";
 import { offersRouter } from "./routers-offers";
 import { googleAuthRouter } from "./routers-google-auth";
+import { syncGreenAPIData } from "./data-sync/green-api-sync";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -448,6 +449,37 @@ export const appRouter = router({
       .input(z.object({ merchantId: z.number() }))
       .query(async ({ input }) => {
         return await db.getCampaignsByMerchantId(input.merchantId);
+      }),
+
+    // Sync Green API data (Admin only)
+    syncGreenAPIData: adminProcedure
+      .input(z.object({
+        merchantId: z.number(),
+        instanceId: z.string(),
+        token: z.string(),
+        syncChats: z.boolean().default(true),
+        syncMessages: z.boolean().default(true),
+        limit: z.number().default(100),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const result = await syncGreenAPIData(
+            input.merchantId.toString(),
+            input.instanceId,
+            input.token,
+            {
+              syncChats: input.syncChats,
+              syncMessages: input.syncMessages,
+              limit: input.limit,
+            }
+          );
+          return result;
+        } catch (error) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `Failed to sync Green API data: ${error}`,
+          });
+        }
       }),
 
     // Get current plan for merchant
