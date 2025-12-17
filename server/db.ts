@@ -2,6 +2,7 @@ import {
   eq, and, desc, gte, lte, lt, gt, sql
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import "../drizzle/relations";
 import {
   InsertUser,
   users,

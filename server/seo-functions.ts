@@ -38,31 +38,24 @@ export async function createSeoPage(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  if (!db) throw new Error("Database not available");
-  return db.insert(seoPages).values(data);
+  return db.insert(seoPages).values(data as any);
 }
 
 export async function getSeoPages() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  if (!db) return [];
-  return db.query.seoPages.findMany({
-    orderBy: desc(seoPages.createdAt),
-  });
+  return db.select().from(seoPages).orderBy(desc(seoPages.createdAt));
 }
 
 export async function getSeoPageBySlug(slug: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  if (!db) return null;
-  return db.query.seoPages.findFirst({
-    where: eq(seoPages.pageSlug, slug),
-  });
+  const result = await db.select().from(seoPages).where(eq(seoPages.pageSlug, slug));
+  return result[0] || null;
 }
 
 export async function updateSeoPage(pageId: number, data: any) {
   const db = await getDb();
-  if (!db) throw new Error("Database not available");
   if (!db) throw new Error("Database not available");
   return db.update(seoPages).set(data).where(eq(seoPages.id, pageId));
 }
@@ -85,9 +78,7 @@ export async function createMetaTag(data: {
 export async function getMetaTagsByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoMetaTags.findMany({
-    where: eq(seoMetaTags.pageId, pageId),
-  });
+  return db.select().from(seoMetaTags).where(eq(seoMetaTags.pageId, pageId));
 }
 
 // ============================================
@@ -113,9 +104,8 @@ export async function createOpenGraph(data: {
 export async function getOpenGraphByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoOpenGraph.findFirst({
-    where: eq(seoOpenGraph.pageId, pageId),
-  });
+  const result = await db.select().from(seoOpenGraph).where(eq(seoOpenGraph.pageId, pageId));
+  return result[0] || null;
 }
 
 // ============================================
@@ -140,9 +130,8 @@ export async function createTwitterCard(data: {
 export async function getTwitterCardByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoTwitterCards.findFirst({
-    where: eq(seoTwitterCards.pageId, pageId),
-  });
+  const result = await db.select().from(seoTwitterCards).where(eq(seoTwitterCards.pageId, pageId));
+  return result[0] || null;
 }
 
 // ============================================
@@ -163,9 +152,7 @@ export async function createStructuredData(data: {
 export async function getStructuredDataByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoStructuredData.findMany({
-    where: eq(seoStructuredData.pageId, pageId),
-  });
+  return db.select().from(seoStructuredData).where(eq(seoStructuredData.pageId, pageId));
 }
 
 // ============================================
@@ -181,18 +168,16 @@ export async function createTrackingCode(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(seoTrackingCodes).values(data);
+  return db.insert(seoTrackingCodes).values(data as any);
 }
 
 export async function getTrackingCodes(pageId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (pageId) {
-    return db.query.seoTrackingCodes.findMany({
-      where: eq(seoTrackingCodes.pageId, pageId),
-    });
+    return db.select().from(seoTrackingCodes).where(eq(seoTrackingCodes.pageId, pageId));
   }
-  return db.query.seoTrackingCodes.findMany();
+  return db.select().from(seoTrackingCodes);
 }
 
 // ============================================
@@ -214,7 +199,7 @@ export async function createAnalyticsRecord(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(seoAnalytics).values(data);
+  return db.insert(seoAnalytics).values(data as any);
 }
 
 export async function getAnalyticsByPageId(pageId: number, days?: number) {
@@ -223,18 +208,14 @@ export async function getAnalyticsByPageId(pageId: number, days?: number) {
   if (days) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
-    return db.query.seoAnalytics.findMany({
-      where: and(
+    return db.select().from(seoAnalytics).where(
+      and(
         eq(seoAnalytics.pageId, pageId),
         gte(seoAnalytics.date, startDate.toISOString())
-      ),
-      orderBy: desc(seoAnalytics.date),
-    });
+      )
+    ).orderBy(desc(seoAnalytics.date));
   }
-  return db.query.seoAnalytics.findMany({
-    where: eq(seoAnalytics.pageId, pageId),
-    orderBy: desc(seoAnalytics.date),
-  });
+  return db.select().from(seoAnalytics).where(eq(seoAnalytics.pageId, pageId)).orderBy(desc(seoAnalytics.date));
 }
 
 // ============================================
@@ -259,10 +240,7 @@ export async function createKeywordAnalysis(data: {
 export async function getKeywordsByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoKeywordsAnalysis.findMany({
-    where: eq(seoKeywordsAnalysis.pageId, pageId),
-    orderBy: desc(seoKeywordsAnalysis.searchVolume),
-  });
+  return db.select().from(seoKeywordsAnalysis).where(eq(seoKeywordsAnalysis.pageId, pageId)).orderBy(desc(seoKeywordsAnalysis.searchVolume));
 }
 
 // ============================================
@@ -281,27 +259,24 @@ export async function createBacklink(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(seoBacklinks).values(data);
+  return db.insert(seoBacklinks).values(data as any);
 }
 
 export async function getBacklinksByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoBacklinks.findMany({
-    where: eq(seoBacklinks.pageId, pageId),
-    orderBy: desc(seoBacklinks.domainAuthority),
-  });
+  return db.select().from(seoBacklinks).where(eq(seoBacklinks.pageId, pageId)).orderBy(desc(seoBacklinks.domainAuthority));
 }
 
 export async function getActiveBacklinks(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoBacklinks.findMany({
-    where: and(
+  return db.select().from(seoBacklinks).where(
+    and(
       eq(seoBacklinks.pageId, pageId),
       eq(seoBacklinks.status, "active")
-    ),
-  });
+    )
+  );
 }
 
 // ============================================
@@ -320,32 +295,27 @@ export async function createAlert(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(seoPerformanceAlerts).values(data);
+  return db.insert(seoPerformanceAlerts).values(data as any);
 }
 
 export async function getAlertsByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoPerformanceAlerts.findMany({
-    where: eq(seoPerformanceAlerts.pageId, pageId),
-    orderBy: desc(seoPerformanceAlerts.createdAt),
-  });
+  return db.select().from(seoPerformanceAlerts).where(eq(seoPerformanceAlerts.pageId, pageId)).orderBy(desc(seoPerformanceAlerts.createdAt));
 }
 
 export async function getUnresolvedAlerts(pageId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (pageId) {
-    return db.query.seoPerformanceAlerts.findMany({
-      where: and(
+    return db.select().from(seoPerformanceAlerts).where(
+      and(
         eq(seoPerformanceAlerts.pageId, pageId),
         eq(seoPerformanceAlerts.isResolved, 0)
-      ),
-    });
+      )
+    );
   }
-  return db.query.seoPerformanceAlerts.findMany({
-    where: eq(seoPerformanceAlerts.isResolved, 0),
-  });
+  return db.select().from(seoPerformanceAlerts).where(eq(seoPerformanceAlerts.isResolved, 0));
 }
 
 export async function resolveAlert(alertId: number) {
@@ -373,32 +343,27 @@ export async function createRecommendation(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(seoRecommendations).values(data);
+  return db.insert(seoRecommendations).values(data as any);
 }
 
 export async function getRecommendationsByPageId(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.query.seoRecommendations.findMany({
-    where: eq(seoRecommendations.pageId, pageId),
-    orderBy: desc(seoRecommendations.priority),
-  });
+  return db.select().from(seoRecommendations).where(eq(seoRecommendations.pageId, pageId)).orderBy(desc(seoRecommendations.priority));
 }
 
 export async function getPendingRecommendations(pageId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (pageId) {
-    return db.query.seoRecommendations.findMany({
-      where: and(
+    return db.select().from(seoRecommendations).where(
+      and(
         eq(seoRecommendations.pageId, pageId),
         eq(seoRecommendations.status, "pending")
-      ),
-    });
+      )
+    );
   }
-  return db.query.seoRecommendations.findMany({
-    where: eq(seoRecommendations.status, "pending"),
-  });
+  return db.select().from(seoRecommendations).where(eq(seoRecommendations.status, "pending"));
 }
 
 export async function updateRecommendation(recId: number, data: any) {
@@ -419,18 +384,16 @@ export async function createSitemap(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.insert(seoSitemaps).values(data);
+  return db.insert(seoSitemaps).values(data as any);
 }
 
 export async function getSitemaps(type?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   if (type) {
-    return db.query.seoSitemaps.findMany({
-      where: eq(seoSitemaps.sitemapType, type as any),
-    });
+    return db.select().from(seoSitemaps).where(eq(seoSitemaps.sitemapType, type as any));
   }
-  return db.query.seoSitemaps.findMany();
+  return db.select().from(seoSitemaps);
 }
 
 // ============================================
@@ -441,9 +404,8 @@ export async function getSeoPageFullData(pageId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const page = await db.query.seoPages.findFirst({
-    where: eq(seoPages.id, pageId),
-  });
+  const pages = await db.select().from(seoPages).where(eq(seoPages.id, pageId));
+  const page = pages[0];
 
   if (!page) return null;
 
@@ -476,7 +438,7 @@ export async function getSeoPageDashboard() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const pages = await db.query.seoPages.findMany();
+  const pages = await db.select().from(seoPages);
   const allAlerts = await getUnresolvedAlerts();
   const allRecommendations = await getPendingRecommendations();
 

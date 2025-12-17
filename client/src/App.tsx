@@ -93,6 +93,7 @@ import AdminRecommendations from "./pages/admin/AdminRecommendations";
 import RecommendationsAnalytics from "./pages/admin/RecommendationsAnalytics";
 import AdminGoogleOAuth from "./pages/AdminGoogleOAuth";
 import AdminDataSync from "./pages/AdminDataSync";
+import GlobalSeoSettings from "./pages/admin/GlobalSeoSettings";
 
 function Router() {
   return (
@@ -492,6 +493,12 @@ function Router() {
       <Route path="/admin/seo/recommendations/analytics">
         <DashboardLayout>
           <RecommendationsAnalytics />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/admin/seo/global-settings">
+        <DashboardLayout>
+          <GlobalSeoSettings />
         </DashboardLayout>
       </Route>
       

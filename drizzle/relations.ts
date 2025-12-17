@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { merchants, abTestResults, quickResponses, botSettings, keywordAnalysis, notificationTemplates, orders, orderNotifications, users, passwordResetTokens, sariPersonalitySettings, scheduledMessages, messages, sentimentAnalysis, conversations, weeklySentimentReports, whatsappInstances, whatsappRequests } from "./schema";
+import { merchants, abTestResults, quickResponses, botSettings, keywordAnalysis, notificationTemplates, orders, orderNotifications, users, passwordResetTokens, sariPersonalitySettings, scheduledMessages, messages, sentimentAnalysis, conversations, weeklySentimentReports, whatsappInstances, whatsappRequests, seoPages, seoMetaTags, seoOpenGraph, seoTwitterCards, seoStructuredData, seoTrackingCodes, seoAnalytics, seoKeywordsAnalysis, seoBacklinks, seoPerformanceAlerts, seoRecommendations, seoSitemaps } from "./schema";
 
 export const abTestResultsRelations = relations(abTestResults, ({one}) => ({
 	merchant: one(merchants, {
@@ -143,5 +143,89 @@ export const whatsappRequestsRelations = relations(whatsappRequests, ({one}) => 
 	merchant: one(merchants, {
 		fields: [whatsappRequests.merchantId],
 		references: [merchants.id]
+	})
+}));
+
+// SEO Relations
+export const seoPagesRelations = relations(seoPages, ({many}) => ({
+	metaTags: many(seoMetaTags),
+	openGraph: many(seoOpenGraph),
+	twitterCards: many(seoTwitterCards),
+	structuredData: many(seoStructuredData),
+	trackingCodes: many(seoTrackingCodes),
+	analytics: many(seoAnalytics),
+	keywordsAnalysis: many(seoKeywordsAnalysis),
+	backlinks: many(seoBacklinks),
+	performanceAlerts: many(seoPerformanceAlerts),
+	recommendations: many(seoRecommendations),
+}));
+
+export const seoMetaTagsRelations = relations(seoMetaTags, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoMetaTags.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoOpenGraphRelations = relations(seoOpenGraph, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoOpenGraph.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoTwitterCardsRelations = relations(seoTwitterCards, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoTwitterCards.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoStructuredDataRelations = relations(seoStructuredData, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoStructuredData.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoTrackingCodesRelations = relations(seoTrackingCodes, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoTrackingCodes.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoAnalyticsRelations = relations(seoAnalytics, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoAnalytics.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoKeywordsAnalysisRelations = relations(seoKeywordsAnalysis, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoKeywordsAnalysis.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoBacklinksRelations = relations(seoBacklinks, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoBacklinks.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoPerformanceAlertsRelations = relations(seoPerformanceAlerts, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoPerformanceAlerts.pageId],
+		references: [seoPages.id]
+	}),
+}));
+
+export const seoRecommendationsRelations = relations(seoRecommendations, ({one}) => ({
+	page: one(seoPages, {
+		fields: [seoRecommendations.pageId],
+		references: [seoPages.id]
 	}),
 }));
