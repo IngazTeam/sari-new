@@ -2712,9 +2712,9 @@
 - الكود يعمل محلياً لكن لا يعمل على sary.live
 
 ### الحل:
-- [ ] إعادة هيكلة middleware ordering في server/_core/index.ts
-- [ ] فصل API routes قبل Vite middleware
-- [ ] اختبار الـ login محلياً
+- [x] إعادة هيكلة middleware ordering في server/_core/index.ts
+- [x] فصل API routes قبل Vite middleware
+- [x] اختبار الـ login محلياً
 - [ ] النشر على GitHub
 - [ ] إعادة تشغيل الخادم على Replit
 - [ ] اختبار على sary.live

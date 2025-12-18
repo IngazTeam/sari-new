@@ -21,7 +21,14 @@ export async function setupVite(app: Express, server: Server) {
     appType: "custom",
   });
 
-  app.use(vite.middlewares);
+  // Middleware filter: skip Vite for API and webhook routes
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/')) {
+      return next(); // Skip Vite for API/webhook routes
+    }
+    // Pass to Vite for all other routes (SPA)
+    return vite.middlewares(req, res, next);
+  });
   
   // Serve index.html for non-API routes
   app.use(async (req, res, next) => {
