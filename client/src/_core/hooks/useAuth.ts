@@ -14,7 +14,7 @@ export function useAuth(options?: UseAuthOptions) {
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -41,15 +41,28 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
+    // Try to get user from query first, then from localStorage
+    let user = meQuery.data;
+    if (!user) {
+      try {
+        const stored = localStorage.getItem('user-info');
+        if (stored) {
+          user = JSON.parse(stored);
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+    }
+    
     localStorage.setItem(
       "user-info",
-      JSON.stringify(meQuery.data)
+      JSON.stringify(user)
     );
     return {
-      user: meQuery.data ?? null,
+      user: user ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(meQuery.data),
+      isAuthenticated: Boolean(user),
     };
   }, [
     meQuery.data,

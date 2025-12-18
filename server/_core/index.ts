@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -7,6 +8,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import webhookRoutes from "../webhooks/routes";
+import authRoutes from "../auth-routes";
 import { initializeSallaCronJobs } from "../jobs/salla-sync";
 import { startOrderTrackingJob } from "../jobs/order-tracking";
 import { startAbandonedCartJob } from "../jobs/abandoned-cart";
@@ -44,7 +46,12 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-
+  // Parse cookies
+  app.use(cookieParser());
+  
+  // Auth endpoints
+  app.use("/api/auth", authRoutes);
+  
   // Webhook endpoints
   app.use("/api/webhooks", webhookRoutes);
   
@@ -106,12 +113,15 @@ async function startServer() {
       createContext,
     })
   );
+  
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
+  
+
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);

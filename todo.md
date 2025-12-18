@@ -2700,3 +2700,21 @@
 - [x] إضافة Schema.org Structured Data
 - [x] تحسين SEO Meta Tags
 - [x] اختبار الـ Sitemap والـ robots.txt
+
+
+---
+
+## 🔴 CRITICAL: Authentication System Fix (Dec 18, 2025)
+
+### المشكلة:
+- Vite middleware يلتقط جميع requests بما فيها API requests
+- `/api/auth/login` يرجع HTML/JS بدلاً من JSON
+- الكود يعمل محلياً لكن لا يعمل على sary.live
+
+### الحل:
+- [ ] إعادة هيكلة middleware ordering في server/_core/index.ts
+- [ ] فصل API routes قبل Vite middleware
+- [ ] اختبار الـ login محلياً
+- [ ] النشر على GitHub
+- [ ] إعادة تشغيل الخادم على Replit
+- [ ] اختبار على sary.live

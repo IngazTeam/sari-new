@@ -53,7 +53,7 @@ export const appRouter = router({
   system: systemRouter,
   
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: protectedProcedure.query(opts => opts.ctx.user),
     
     // Login with email and password
     login: publicProcedure
@@ -62,7 +62,9 @@ export const appRouter = router({
         password: z.string().min(6),
       }))
       .mutation(async ({ input, ctx }) => {
+        console.log('🔵 [AUTH] Login attempt:', input.email);
         const user = await db.getUserByEmail(input.email);
+        console.log('🔵 [AUTH] User found:', user?.email);
         
         if (!user || !user.password) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
@@ -85,10 +87,25 @@ export const appRouter = router({
         });
         
         const cookieOptions = getSessionCookieOptions(ctx.req);
+        
+        // Set cookie using both methods to ensure it works
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
         
+        // Also set via header as backup
+        const securePart = cookieOptions.secure ? '; Secure' : '';
+        const cookieString = `${COOKIE_NAME}=${sessionToken}; Path=${cookieOptions.path}; HttpOnly; SameSite=${cookieOptions.sameSite}${securePart}; Max-Age=${Math.floor(ONE_YEAR_MS / 1000)}`;
+        const existingCookies = ctx.res.getHeader('Set-Cookie');
+        if (existingCookies) {
+          const cookieArray = Array.isArray(existingCookies) ? existingCookies : [String(existingCookies)];
+          ctx.res.setHeader('Set-Cookie', [...cookieArray, cookieString] as string[]);
+        } else {
+          ctx.res.setHeader('Set-Cookie', cookieString);
+        }
+        
+        console.log('🟢 [AUTH] Login successful for:', user.email);
         return {
           success: true,
+          token: sessionToken,
           user: {
             id: user.id,
             name: user.name,

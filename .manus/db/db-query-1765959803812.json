@@ -1,0 +1,22 @@
+{
+  "query": "SELECT * FROM users WHERE email = 'admin@sari.sa';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT * FROM users WHERE email = 'admin@sari.sa';",
+  "rows": [
+    {
+      "id": "360028",
+      "openId": "demo-admin-1765067323451",
+      "name": "مدير النظام",
+      "email": "admin@sari.sa",
+      "loginMethod": "email",
+      "role": "admin",
+      "createdAt": "2025-12-07 00:28:44",
+      "updatedAt": "2025-12-17 08:22:08",
+      "lastSignedIn": "2025-12-17 08:22:08",
+      "password": "$2b$10$ezRYhGES3Zu2v/U34J9Jae9uJpewMX8puuaFwWmYzcQZbpfw2kBry"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\temail\tloginMethod\trole\tcreatedAt\tupdatedAt\tlastSignedIn\tpassword\n360028\tdemo-admin-1765067323451\tمدير النظام\tadmin@sari.sa\temail\tadmin\t2025-12-07 00:28:44\t2025-12-17 08:22:08\t2025-12-17 08:22:08\t$2b$10$ezRYhGES3Zu2v/U34J9Jae9uJpewMX8puuaFwWmYzcQZbpfw2kBry\n",
+  "stderr": "",
+  "execution_time_ms": 1509
+}

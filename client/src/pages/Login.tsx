@@ -1,37 +1,72 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { trpc } from "@/lib/trpc";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@sari.sa");
+  const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: (data) => {
-      // Redirect based on role
-      if (data.user.role === 'admin') {
-        setLocation('/admin/dashboard');
-      } else {
-        setLocation('/merchant/dashboard');
-      }
-    },
-    onError: (err) => {
-      setError(err.message || 'فشل تسجيل الدخول');
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    loginMutation.mutate({ email, password });
+    setIsLoading(true);
+
+    try {
+      console.log('🔵 Starting login with:', { email, password });
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'فشل تسجيل الدخول');
+      }
+
+      const data = await response.json();
+      console.log('🟢 Login successful:', data);
+
+      // Store token
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+        console.log('🟢 Token saved to localStorage');
+      }
+
+      // Store user info
+      if (data.user) {
+        localStorage.setItem('user-info', JSON.stringify(data.user));
+        console.log('🟢 User info saved to localStorage');
+      }
+
+      // Redirect
+      setTimeout(() => {
+        if (data.user.role === 'admin') {
+          console.log('🟢 Redirecting to admin dashboard');
+          setLocation('/admin/dashboard');
+        } else {
+          console.log('🟢 Redirecting to merchant dashboard');
+          setLocation('/merchant/dashboard');
+        }
+      }, 500);
+    } catch (err: any) {
+      console.error('🔴 Login error:', err);
+      setError(err?.message || 'فشل تسجيل الدخول');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -58,7 +93,6 @@ export default function Login() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
             <div className="space-y-2">
               <Label htmlFor="email">البريد الإلكتروني</Label>
               <Input
@@ -68,20 +102,17 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={loginMutation.isPending}
+                disabled={isLoading}
                 dir="ltr"
                 className="text-left"
               />
             </div>
-
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">كلمة المرور</Label>
-                <Link href="/forgot-password">
-                  <span className="text-xs text-primary hover:underline cursor-pointer">
-                    نسيت كلمة المرور؟
-                  </span>
-                </Link>
+                <a href="/forgot-password" className="text-sm text-primary hover:underline">
+                  نسيت كلمة المرور؟
+                </a>
               </div>
               <Input
                 id="password"
@@ -90,35 +121,26 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={loginMutation.isPending}
-                dir="ltr"
-                className="text-left"
+                disabled={isLoading}
               />
             </div>
-
             <Button
               type="submit"
               className="w-full"
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
             >
-              {loginMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  جاري تسجيل الدخول...
-                </>
-              ) : (
-                "تسجيل الدخول"
+              {isLoading && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
+              تسجيل الدخول
             </Button>
           </form>
-
-          <div className="mt-4 text-center text-sm text-muted-foreground">
-            لا تملك حساباً؟{' '}
-            <Link href="/signup" className="text-primary hover:underline font-medium">
+          <div className="mt-4 text-center text-sm">
+            <span className="text-muted-foreground">لا تملك حساباً؟ </span>
+            <a href="/register" className="text-primary hover:underline font-medium">
               سجل الآن
-            </Link>
+            </a>
           </div>
-
         </CardContent>
       </Card>
     </div>
