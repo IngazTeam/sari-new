@@ -1,0 +1,28 @@
+{
+  "query": "SHOW CREATE TABLE messages;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SHOW CREATE TABLE messages;",
+  "rows": [
+    {
+      "Table": "messages",
+      "Create Table": "CREATE TABLE `messages` ("
+    }
+  ],
+  "messages": [
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,",
+    "  `conversationId` int(11) NOT NULL,",
+    "  `direction` enum('incoming','outgoing') NOT NULL,",
+    "  `messageType` enum('text','voice','image') NOT NULL DEFAULT 'text',",
+    "  `content` text NOT NULL,",
+    "  `voiceUrl` varchar(500) DEFAULT NULL,",
+    "  `imageUrl` varchar(500) DEFAULT NULL,",
+    "  `mediaUrl` varchar(500) DEFAULT NULL,",
+    "  `isProcessed` tinyint(1) NOT NULL DEFAULT '0',",
+    "  `aiResponse` text DEFAULT NULL,",
+    "  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=330001"
+  ],
+  "stdout": "Table\tCreate Table\nmessages\tCREATE TABLE `messages` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `conversationId` int(11) NOT NULL,\n  `direction` enum('incoming','outgoing') NOT NULL,\n  `messageType` enum('text','voice','image') NOT NULL DEFAULT 'text',\n  `content` text NOT NULL,\n  `voiceUrl` varchar(500) DEFAULT NULL,\n  `imageUrl` varchar(500) DEFAULT NULL,\n  `mediaUrl` varchar(500) DEFAULT NULL,\n  `isProcessed` tinyint(1) NOT NULL DEFAULT '0',\n  `aiResponse` text DEFAULT NULL,\n  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=330001\n",
+  "stderr": "",
+  "execution_time_ms": 1579
+}

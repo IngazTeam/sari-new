@@ -4,7 +4,7 @@
  */
 
 import * as db from '../db';
-import { sendTextMessage } from '../whatsapp';
+import { sendTextMessage, sendMessageWithCredentials } from '../whatsapp';
 import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
 import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
@@ -270,12 +270,15 @@ async function processVoiceMessageWebhook(params: {
 }
 
 /**
- * Send response with typing simulation
+ * Send response with typing simulation using merchant's WhatsApp instance
  */
 async function sendResponseWithDelay(params: {
   customerPhone: string;
   message: string;
   delayMs?: number;
+  instanceId?: string;
+  token?: string;
+  apiUrl?: string;
 }): Promise<void> {
   try {
     // Random delay to simulate typing (1-3 seconds)
@@ -284,11 +287,33 @@ async function sendResponseWithDelay(params: {
     console.log(`[Webhook] Waiting ${delay}ms before sending response...`);
     await new Promise(resolve => setTimeout(resolve, delay));
     
-    // Send message
+    // Send message using merchant's credentials if provided
     console.log('[Webhook] Sending response to:', params.customerPhone);
-    await sendTextMessage(params.customerPhone, params.message);
     
-    console.log('[Webhook] Response sent successfully');
+    let result;
+    if (params.instanceId && params.token) {
+      // Use merchant's WhatsApp instance credentials
+      const apiUrl = params.apiUrl || 'https://api.green-api.com';
+      console.log(`[Webhook] Using merchant instance: ${params.instanceId}`);
+      result = await sendMessageWithCredentials(
+        params.instanceId,
+        params.token,
+        apiUrl,
+        params.customerPhone,
+        params.message
+      );
+    } else {
+      // Fallback to env credentials
+      console.log('[Webhook] Using env credentials (fallback)');
+      result = await sendTextMessage(params.customerPhone, params.message);
+    }
+    
+    if (!result.success) {
+      console.error('[Webhook] Failed to send message:', result.error);
+      throw new Error(result.error || 'Failed to send message');
+    }
+    
+    console.log('[Webhook] Response sent successfully, messageId:', result.messageId);
   } catch (error: any) {
     console.error('[Webhook] Error sending response:', error);
     throw error;
@@ -356,6 +381,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             customerPhone: extractPhoneNumber(payload.senderData.chatId),
             message: settings.outOfHoursMessage,
             delayMs: 1000,
+            instanceId: instance.instanceId,
+            token: instance.token,
+            apiUrl: instance.apiUrl || undefined,
           });
         }
       }
@@ -419,11 +447,14 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       });
     }
     
-    // Send response with custom delay from settings
+    // Send response with custom delay from settings using merchant's WhatsApp instance
     await sendResponseWithDelay({
       customerPhone,
       message: response,
       delayMs: (botSettings.responseDelay ?? 2) * 1000,
+      instanceId: instance.instanceId,
+      token: instance.token,
+      apiUrl: instance.apiUrl || undefined,
     });
     
     console.log('[Webhook] Message processed successfully');

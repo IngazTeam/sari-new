@@ -1,0 +1,31 @@
+{
+  "query": "SELECT id, conversationId, direction, content, createdAt FROM messages ORDER BY id DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT id, conversationId, direction, content, createdAt FROM messages ORDER BY id DESC LIMIT 3;",
+  "rows": [
+    {
+      "id": "300022",
+      "conversationId": "210007",
+      "direction": "outgoing",
+      "content": "هلا فيك محمد! 😊 إذا تحتاج أي مساعدة أو عندك استفسار، قول لي وأنا بخدمك. وش تبي تعرف أو تشوف اليوم؟ 🌟",
+      "createdAt": "2025-12-18 12:53:58"
+    },
+    {
+      "id": "300021",
+      "conversationId": "210007",
+      "direction": "incoming",
+      "content": "هلا",
+      "createdAt": "2025-12-18 12:53:54"
+    },
+    {
+      "id": "300020",
+      "conversationId": "210007",
+      "direction": "outgoing",
+      "content": "إذا كان عندك أي سؤال أو تحتاج مساعدة، لا تتردد! أنا هنا عشانك. 😊",
+      "createdAt": "2025-12-18 12:53:40"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tconversationId\tdirection\tcontent\tcreatedAt\n300022\t210007\toutgoing\tهلا فيك محمد! 😊 إذا تحتاج أي مساعدة أو عندك استفسار، قول لي وأنا بخدمك. وش تبي تعرف أو تشوف اليوم؟ 🌟\t2025-12-18 12:53:58\n300021\t210007\tincoming\tهلا\t2025-12-18 12:53:54\n300020\t210007\toutgoing\tإذا كان عندك أي سؤال أو تحتاج مساعدة، لا تتردد! أنا هنا عشانك. 😊\t2025-12-18 12:53:40\n",
+  "stderr": "",
+  "execution_time_ms": 1532
+}

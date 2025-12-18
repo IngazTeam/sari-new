@@ -1,0 +1,41 @@
+{
+  "query": "SELECT id, conversationId, direction, content, createdAt FROM messages ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT id, conversationId, direction, content, createdAt FROM messages ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "300016",
+      "conversationId": "210007",
+      "direction": "outgoing",
+      "content": "هلا فيك محمد! 😊 كيف أقدر أساعدك اليوم؟ إذا عندك أي استفسار أو شي تحتاجه، أنا هنا عشانك!",
+      "createdAt": "2025-12-18 12:49:15"
+    },
+    {
+      "id": "300015",
+      "conversationId": "210007",
+      "direction": "incoming",
+      "content": "هلا",
+      "createdAt": "2025-12-18 12:49:06"
+    },
+    {
+      "id": "300014",
+      "conversationId": "210007",
+      "direction": "outgoing",
+      "content": "هلا وغلا محمد! 😊 إذا عندك أي استفسار أو خدمة تحتاجها من المركز الدولي للتدريب الصحي، قول لي وأنا بخدمك. 🌟",
+      "createdAt": "2025-12-18 12:48:59"
+    },
+    {
+      "id": "300013",
+      "conversationId": "210007",
+      "direction": "incoming",
+      "content": "هلا",
+      "createdAt": "2025-12-18 12:48:54"
+    }
+  ],
+  "messages": [
+    "300012\t210007\toutgoing\tهلا والله! 😄",
+    "كيف أقدر أساعدك اليوم؟ عندك أي استفسار أو خدمة تحتاجها؟ تفضل وقل لي!\t2025-12-18 12:48:51"
+  ],
+  "stdout": "id\tconversationId\tdirection\tcontent\tcreatedAt\n300016\t210007\toutgoing\tهلا فيك محمد! 😊 كيف أقدر أساعدك اليوم؟ إذا عندك أي استفسار أو شي تحتاجه، أنا هنا عشانك!\t2025-12-18 12:49:15\n300015\t210007\tincoming\tهلا\t2025-12-18 12:49:06\n300014\t210007\toutgoing\tهلا وغلا محمد! 😊 إذا عندك أي استفسار أو خدمة تحتاجها من المركز الدولي للتدريب الصحي، قول لي وأنا بخدمك. 🌟\t2025-12-18 12:48:59\n300013\t210007\tincoming\tهلا\t2025-12-18 12:48:54\n300012\t210007\toutgoing\tهلا والله! 😄\n\nكيف أقدر أساعدك اليوم؟ عندك أي استفسار أو خدمة تحتاجها؟ تفضل وقل لي!\t2025-12-18 12:48:51\n",
+  "stderr": "",
+  "execution_time_ms": 1568
+}

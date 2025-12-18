@@ -2746,3 +2746,5 @@
 - [ ] فحص سجل الأخطاء في الخادم
 - [ ] اختبار الاتصال مع Green API
 - [ ] إصلاح المشكلة واختبار الرد
+
+- [ ] Fix sendTextMessage to use merchant's WhatsApp instance from database instead of env variables

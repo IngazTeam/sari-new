@@ -1,0 +1,15 @@
+{
+  "query": "SELECT instance_id, token, api_url FROM whatsapp_instances WHERE instance_id = '7105411382';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT instance_id, token, api_url FROM whatsapp_instances WHERE instance_id = '7105411382';",
+  "rows": [
+    {
+      "instance_id": "7105411382",
+      "token": "2506820417ad40e5b54e87a2d90ecd5fded9857835624479b9",
+      "api_url": "https://api.green-api.com"
+    }
+  ],
+  "messages": [],
+  "stdout": "instance_id\ttoken\tapi_url\n7105411382\t2506820417ad40e5b54e87a2d90ecd5fded9857835624479b9\thttps://api.green-api.com\n",
+  "stderr": "",
+  "execution_time_ms": 1619
+}
