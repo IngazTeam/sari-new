@@ -118,7 +118,6 @@ _إذا كنت بحاجة لإلغاء أو تعديل الموعد، يرجى �
     }
 
     await sendTextMessage(
-      appointment.merchantId,
       appointment.customerPhone,
       message
     );

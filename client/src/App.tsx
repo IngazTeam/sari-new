@@ -102,6 +102,7 @@ import RecommendationsAnalytics from "./pages/admin/RecommendationsAnalytics";
 import AdminGoogleOAuth from "./pages/AdminGoogleOAuth";
 import AdminDataSync from "./pages/AdminDataSync";
 import GlobalSeoSettings from "./pages/admin/GlobalSeoSettings";
+import GoogleOAuthSettings from "./pages/admin/GoogleOAuthSettings";
 
 function Router() {
   return (
@@ -445,6 +446,12 @@ function Router() {
       <Route path="/admin/payment-gateways">
         <DashboardLayout>
           <PaymentGateways />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/admin/google-oauth">
+        <DashboardLayout>
+          <GoogleOAuthSettings />
         </DashboardLayout>
       </Route>
 

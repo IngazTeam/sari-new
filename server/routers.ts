@@ -2297,6 +2297,16 @@ export const appRouter = router({
               result.paymentUrl || ''
             );
 
+        // Auto-sync to Google Sheets if enabled
+        try {
+          const { syncOrderToSheets } = await import('./sheetsSync');
+          await syncOrderToSheets(result.orderId);
+          console.log(`[Auto-Sync] Order ${result.orderId} synced to Google Sheets`);
+        } catch (error) {
+          console.error('[Auto-Sync] Failed to sync order to Google Sheets:', error);
+          // Don't throw error - just log it
+        }
+
         return {
           success: true,
           orderId: result.orderId,
@@ -5841,5 +5851,39 @@ export const appRouter = router({
   googleAuth: googleAuthRouter,
   
   sheets: sheetsRouter,
+  
+  // Google OAuth Settings (Super Admin only)
+  googleOAuthSettings: router({
+    // Get Google OAuth settings
+    get: adminProcedure.query(async () => {
+      const settings = await db.getGoogleOAuthSettings();
+      return { settings };
+    }),
+    
+    // Update Google OAuth settings
+    update: adminProcedure
+      .input(z.object({
+        clientId: z.string().min(1),
+        clientSecret: z.string().min(1),
+        isEnabled: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const settings = await db.upsertGoogleOAuthSettings({
+          clientId: input.clientId,
+          clientSecret: input.clientSecret,
+          isEnabled: input.isEnabled ? 1 : 0,
+        });
+        
+        return { success: true, settings };
+      }),
+    
+    // Toggle enabled status
+    toggleEnabled: adminProcedure
+      .input(z.object({ isEnabled: z.boolean() }))
+      .mutation(async ({ input }) => {
+        const settings = await db.toggleGoogleOAuthEnabled(input.isEnabled);
+        return { success: true, settings };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

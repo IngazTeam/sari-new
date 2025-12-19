@@ -5502,3 +5502,73 @@ export async function getAllMerchantsWithCalendar() {
   
   return results;
 }
+
+// ==================== Google OAuth Settings ====================
+
+// Get Google OAuth settings
+export async function getGoogleOAuthSettings() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const results = await db.select()
+    .from(googleOAuthSettings)
+    .limit(1);
+  
+  return results[0] || null;
+}
+
+// Create or update Google OAuth settings
+export async function upsertGoogleOAuthSettings(data: {
+  clientId: string;
+  clientSecret: string;
+  isEnabled?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getGoogleOAuthSettings();
+  
+  if (existing) {
+    await db.update(googleOAuthSettings)
+      .set({
+        clientId: data.clientId,
+        clientSecret: data.clientSecret,
+        isEnabled: data.isEnabled ?? existing.isEnabled,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(googleOAuthSettings.id, existing.id));
+    
+    return { ...existing, ...data };
+  } else {
+    const [result] = await db.insert(googleOAuthSettings)
+      .values({
+        clientId: data.clientId,
+        clientSecret: data.clientSecret,
+        isEnabled: data.isEnabled ?? 1,
+      });
+    
+    return {
+      id: result.insertId,
+      ...data,
+      isEnabled: data.isEnabled ?? 1,
+    };
+  }
+}
+
+// Toggle Google OAuth enabled status
+export async function toggleGoogleOAuthEnabled(isEnabled: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const existing = await getGoogleOAuthSettings();
+  if (!existing) throw new Error("Google OAuth settings not found");
+  
+  await db.update(googleOAuthSettings)
+    .set({
+      isEnabled: isEnabled ? 1 : 0,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(eq(googleOAuthSettings.id, existing.id));
+  
+  return { ...existing, isEnabled: isEnabled ? 1 : 0 };
+}

@@ -12,23 +12,27 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 /**
  * إنشاء OAuth2 client
  */
-function createOAuth2Client(): OAuth2Client {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  const redirectUri = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/api/oauth/google/sheets/callback`;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Google OAuth credentials not configured');
+async function createOAuth2Client(): Promise<OAuth2Client> {
+  // قراءة Credentials من قاعدة البيانات
+  const settings = await db.getGoogleOAuthSettings();
+  
+  if (!settings || !settings.clientId || !settings.clientSecret) {
+    throw new Error('Google OAuth credentials not configured in admin settings');
+  }
+  
+  if (settings.isEnabled !== 1) {
+    throw new Error('Google OAuth is currently disabled');
   }
 
-  return new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  const redirectUri = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/api/oauth/google/sheets/callback`;
+  return new google.auth.OAuth2(settings.clientId, settings.clientSecret, redirectUri);
 }
 
 /**
  * الحصول على رابط التفويض
  */
-export function getAuthorizationUrl(merchantId: number): string {
-  const oauth2Client = createOAuth2Client();
+export async function getAuthorizationUrl(merchantId: number): Promise<string> {
+  const oauth2Client = await createOAuth2Client();
   
   const authUrl = oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -48,7 +52,7 @@ export async function handleOAuthCallback(
   merchantId: number
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const oauth2Client = createOAuth2Client();
+    const oauth2Client = await createOAuth2Client();
     
     // تبديل الكود بـ tokens
     const { tokens } = await oauth2Client.getToken(code);
@@ -102,7 +106,7 @@ async function getAuthenticatedClient(merchantId: number): Promise<OAuth2Client 
       return null;
     }
 
-    const oauth2Client = createOAuth2Client();
+    const oauth2Client = await createOAuth2Client();
     const credentials = JSON.parse(integration.credentials);
     oauth2Client.setCredentials(credentials);
 
@@ -213,7 +217,7 @@ export async function addSheet(
 
     return {
       success: true,
-      sheetId,
+      sheetId: sheetId ?? undefined,
       message: 'تم إضافة Sheet بنجاح',
     };
   } catch (error: any) {

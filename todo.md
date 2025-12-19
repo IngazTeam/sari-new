@@ -256,3 +256,34 @@
 
 ### Checkpoint
 - [ ] حفظ checkpoint بعد إكمال المرحلة 2
+
+---
+
+## 🔧 المرحلة 3: إصلاح TypeScript وتفعيل Auto-Sync
+
+### إصلاح TypeScript Errors
+- [x] فحص أخطاء TypeScript في ملفات Google Sheets
+- [x] إصلاح type definitions فيgoogleSheets.ts
+- [x] إصلاح type definitions فيsheetsSync.ts
+- [x] إصلاح type definitions فيsheetsReports.ts
+- [x] التأكد من تشغيل السيرفر بدون أخطاء
+
+### Google OAuth Setup
+- [x] إضافة جدول google_oauth_settings في قاعدة البيانات
+- [x] إضافة APIs فيrouters.ts لإدارة Google OAuth
+- [x] إضافة صفحة Google OAuth Settings في Super Admin
+- [ ] تحديث googleSheets.ts لقراءة Credentials من قاعدة البيانات
+- [ ] تحديث googleCalendar.ts لقراءة Credentials من قاعدة البيانات
+
+### تفعيل Auto-Sync للطلبات
+- [x] ربط syncOrderToSheets مع webhook إنشاء الطلب
+- [x] ربط syncOrderToSheets مع API createOrder
+- [x] إضافة error handling للمزامنة الفاشلة (try-catch)
+- [ ] اختبار المزامنة التلقائية
+
+### Testing & Documentation
+- [ ] اختبار OAuth flow كامل
+- [ ] اختبار المزامنة التلقائية
+- [ ] اختبار التقارير التلقائية
+- [ ] كتابة دليل استخدام شامل
+- [ ] حفظ checkpoint نهائي

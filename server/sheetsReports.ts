@@ -338,7 +338,7 @@ ${Object.entries(data.ordersByStatus).map(([status, count]) => `• ${translateO
 
     // إرسال الرسالة عبر WhatsApp
     const { sendTextMessage } = await import('./whatsapp');
-    await sendTextMessage(merchantId, merchant.phone, reportMessage);
+    await sendTextMessage(merchant.phone, reportMessage);
 
     return {
       success: true,
