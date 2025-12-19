@@ -5,6 +5,7 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   tapSecretKey: process.env.TAP_SECRET_KEY ?? "",
+  tapPublicKey: process.env.TAP_PUBLIC_KEY ?? "",
   openaiApiKey: process.env.OPENAI_API_KEY ?? "",
   // SMTP2GO API Configuration
   smtp2goApiKey: process.env.SMTP2GO_API_KEY ?? "",

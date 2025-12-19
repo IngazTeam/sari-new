@@ -86,6 +86,8 @@ import SheetsSettings from "./pages/SheetsSettings";
 import SheetsExport from "./pages/SheetsExport";
 import SheetsReports from "./pages/SheetsReports";
 import SheetsInventory from "./pages/SheetsInventory";
+import Payments from "./pages/merchant/Payments";
+import PaymentLinks from "./pages/merchant/PaymentLinks";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -446,6 +448,14 @@ function Router() {
       
       <Route path="/merchant/sheets/inventory">
         <SheetsInventory />
+      </Route>
+      
+      <Route path="/merchant/payments">
+        <DashboardLayout><Payments /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/payment-links">
+        <DashboardLayout><PaymentLinks /></DashboardLayout>
       </Route>
       
       <Route path="/merchant/reports">
