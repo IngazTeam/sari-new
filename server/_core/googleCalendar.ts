@@ -5,6 +5,7 @@
 
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
+import { getGoogleOAuthSettings } from '../db';
 
 // OAuth2 Configuration
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
@@ -12,13 +13,26 @@ const REDIRECT_URI = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 'http://localho
 
 /**
  * Create OAuth2 client
+ * Reads credentials from database instead of environment variables
  */
-export function createOAuth2Client(): OAuth2Client {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+export async function createOAuth2Client(): Promise<OAuth2Client> {
+  // Try to get credentials from database first
+  const settings = await getGoogleOAuthSettings();
+  
+  let clientId: string | undefined;
+  let clientSecret: string | undefined;
+  
+  if (settings && settings.enabled) {
+    clientId = settings.clientId;
+    clientSecret = settings.clientSecret;
+  } else {
+    // Fallback to environment variables
+    clientId = process.env.GOOGLE_CLIENT_ID;
+    clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  }
 
   if (!clientId || !clientSecret) {
-    throw new Error('Google OAuth credentials not configured');
+    throw new Error('Google OAuth credentials not configured. Please add them in Admin > Google OAuth Settings');
   }
 
   return new google.auth.OAuth2(
@@ -31,8 +45,8 @@ export function createOAuth2Client(): OAuth2Client {
 /**
  * Generate authorization URL
  */
-export function getAuthUrl(state?: string): string {
-  const oauth2Client = createOAuth2Client();
+export async function getAuthUrl(state?: string): Promise<string> {
+  const oauth2Client = await createOAuth2Client();
   
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
@@ -46,7 +60,7 @@ export function getAuthUrl(state?: string): string {
  * Exchange authorization code for tokens
  */
 export async function getTokensFromCode(code: string) {
-  const oauth2Client = createOAuth2Client();
+  const oauth2Client = await createOAuth2Client();
   const { tokens } = await oauth2Client.getToken(code);
   return tokens;
 }
@@ -54,8 +68,8 @@ export async function getTokensFromCode(code: string) {
 /**
  * Create calendar client with credentials
  */
-export function createCalendarClient(credentials: any) {
-  const oauth2Client = createOAuth2Client();
+export async function createCalendarClient(credentials: any) {
+  const oauth2Client = await createOAuth2Client();
   oauth2Client.setCredentials(credentials);
   return google.calendar({ version: 'v3', auth: oauth2Client });
 }
@@ -64,7 +78,7 @@ export function createCalendarClient(credentials: any) {
  * List all calendars for the authenticated user
  */
 export async function listCalendars(credentials: any) {
-  const calendar = createCalendarClient(credentials);
+  const calendar = await createCalendarClient(credentials);
   const response = await calendar.calendarList.list();
   return response.data.items || [];
 }
@@ -80,7 +94,7 @@ export async function getAvailableSlots(
   workingHours: { start: string; end: string },
   bufferMinutes: number = 0
 ): Promise<string[]> {
-  const calendar = createCalendarClient(credentials);
+  const calendar = await createCalendarClient(credentials);
 
   // Set time range for the day
   const startOfDay = new Date(date);
@@ -160,7 +174,7 @@ export async function createCalendarEvent(
     };
   }
 ) {
-  const calendar = createCalendarClient(credentials);
+  const calendar = await createCalendarClient(credentials);
 
   const event = {
     summary: eventData.summary,
@@ -205,7 +219,7 @@ export async function updateCalendarEvent(
     end?: Date;
   }
 ) {
-  const calendar = createCalendarClient(credentials);
+  const calendar = await createCalendarClient(credentials);
 
   const event: any = {};
   
@@ -241,7 +255,7 @@ export async function deleteCalendarEvent(
   calendarId: string,
   eventId: string
 ) {
-  const calendar = createCalendarClient(credentials);
+  const calendar = await createCalendarClient(credentials);
 
   await calendar.events.delete({
     calendarId: calendarId,
@@ -259,7 +273,7 @@ export async function getCalendarEvent(
   calendarId: string,
   eventId: string
 ) {
-  const calendar = createCalendarClient(credentials);
+  const calendar = await createCalendarClient(credentials);
 
   const response = await calendar.events.get({
     calendarId: calendarId,

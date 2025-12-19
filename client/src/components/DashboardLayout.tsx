@@ -91,6 +91,7 @@ const getMerchantMenuItems = (t: any) => [
   { icon: Sparkles, label: 'إعدادات شخصية ساري', path: "/merchant/sari-personality" },
   { icon: Zap, label: 'الردود السريعة', path: "/merchant/quick-responses" },
   { icon: BarChart3, label: 'التحليلات المتقدمة', path: "/merchant/advanced-analytics" },
+  { icon: Database, label: 'مزامنة البيانات', path: "/merchant/data-sync" },
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings" },
 ];
 

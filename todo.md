@@ -272,8 +272,9 @@
 - [x] إضافة جدول google_oauth_settings في قاعدة البيانات
 - [x] إضافة APIs فيrouters.ts لإدارة Google OAuth
 - [x] إضافة صفحة Google OAuth Settings في Super Admin
-- [ ] تحديث googleSheets.ts لقراءة Credentials من قاعدة البيانات
-- [ ] تحديث googleCalendar.ts لقراءة Credentials من قاعدة البيانات
+- [x] تحديث googleSheets.ts لقراءة Credentials من قاعدة البيانات
+- [x] تحديث googleCalendar.ts لقراءة Credentials من قاعدة البيانات
+- [x] إضافة صفحة تتبع المزامنة للتاجر (/merchant/data-sync)
 
 ### تفعيل Auto-Sync للطلبات
 - [x] ربط syncOrderToSheets مع webhook إنشاء الطلب

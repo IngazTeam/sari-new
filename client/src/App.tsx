@@ -70,6 +70,7 @@ import SariPersonality from "./pages/merchant/SariPersonality";
 import QuickResponses from "./pages/merchant/QuickResponses";
 import InsightsDashboard from "./pages/merchant/InsightsDashboard";
 import AdvancedAnalytics from "./pages/merchant/AdvancedAnalytics";
+import DataSync from "./pages/merchant/DataSync";
 import SetupWizard from "./pages/SetupWizard";
 import CalendarSettings from "./pages/CalendarSettings";
 import CalendarPage from "./pages/CalendarPage";
@@ -331,6 +332,12 @@ function Router() {
       <Route path="/merchant/advanced-analytics">
         <DashboardLayout>
           <AdvancedAnalytics />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/data-sync">
+        <DashboardLayout>
+          <DataSync />
         </DashboardLayout>
       </Route>
       
