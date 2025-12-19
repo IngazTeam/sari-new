@@ -1897,8 +1897,8 @@ export const appRouter = router({
       }),
   }),
 
-  // Payments Router
-  payments: router({ createSession: protectedProcedure
+  // Subscription Payments Router
+  subscriptionPayments: router({ createSession: protectedProcedure
       .input(z.object({
         planId: z.number(),
         gateway: z.enum(['tap', 'paypal']),
@@ -6819,6 +6819,33 @@ export const appRouter = router({
         }
         await dbPayments.disablePaymentLink(input.id);
         return { success: true };
+      }),
+    
+    // Webhook handler for Tap Payments
+    handleWebhook: publicProcedure
+      .input(z.object({
+        payload: z.any(),
+        signature: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const tapWebhook = await import('./webhooks/tap-webhook');
+        
+        // التحقق من التوقيع (إذا كان موجوداً)
+        if (input.signature && process.env.TAP_WEBHOOK_SECRET) {
+          const isValid = tapWebhook.verifyTapSignature(
+            JSON.stringify(input.payload),
+            input.signature,
+            process.env.TAP_WEBHOOK_SECRET
+          );
+          
+          if (!isValid) {
+            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid webhook signature' });
+          }
+        }
+        
+        // معالجة الـ webhook
+        const result = await tapWebhook.processTapWebhook(input.payload);
+        return result;
       }),
   }),
 });

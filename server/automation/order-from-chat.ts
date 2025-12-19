@@ -12,6 +12,9 @@
 import { invokeLLM } from '../_core/llm';
 import { SallaIntegration } from '../integrations/salla';
 import * as db from '../db';
+import * as dbPayments from '../db_payments';
+// import { createPaymentLink } from '../_core/tapPayments';
+// import { sendWhatsAppMessage } from '../greenapi-wrapper';
 import { 
   extractDiscountCodeFromMessage, 
   validateDiscountCode,
@@ -261,9 +264,62 @@ export async function createOrderFromChat(
       throw new Error('Failed to save order in database');
     }
 
+    // إنشاء رابط دفع Tap
+    let tapPaymentUrl: string | null = null;
+    try {
+      // TODO: إعادة تفعيل بعد إصلاح createPaymentLink
+      /*
+      const paymentLink = await createPaymentLink({
+        merchantId,
+        amount: finalAmount,
+        currency: 'SAR',
+        customerName,
+        customerPhone,
+        description: `طلب رقم ${order.orderNumber}`,
+        metadata: {
+          orderId: order.id.toString(),
+          orderNumber: order.orderNumber || '',
+          type: 'order'
+        }
+      });
+
+      if (paymentLink && paymentLink.url) {
+        tapPaymentUrl = paymentLink.url;
+        
+        // حفظ رابط الدفع في قاعدة البيانات
+        await dbPayments.createPaymentLink({
+          merchantId,
+          orderId: order.id,
+          amount: finalAmount,
+          currency: 'SAR',
+          tapChargeId: paymentLink.id,
+          paymentUrl: paymentLink.url,
+          status: 'active',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 ساعة
+        });
+
+        // إرسال رابط الدفع عبر واتساب
+        const merchant = await db.getMerchantById(merchantId);
+        if (merchant) {
+          const paymentMessage = generatePaymentLinkMessage(
+            order.orderNumber || '',
+            finalAmount,
+            tapPaymentUrl
+          );
+          
+          // TODO: إرسال رسالة الدفع عبر واتساب
+          console.log('[OrderFromChat] Payment link created:', paymentLink.paymentUrl);
+        }
+      }
+      */
+    } catch (error) {
+      console.error('[OrderFromChat] Error creating Tap payment link:', error);
+      // نستمر حتى لو فشل إنشاء رابط Tap، سنستخدم رابط Salla
+    }
+
     return {
       orderId: order.id,
-      paymentUrl: sallaOrder.paymentUrl || null,
+      paymentUrl: tapPaymentUrl || sallaOrder.paymentUrl || null,
       orderNumber: order.orderNumber,
       discountInfo
     };
@@ -309,6 +365,29 @@ ${itemsList}${discountSection}
 ${paymentUrl}
 
 📱 سنرسل لك تحديثات عن حالة طلبك عبر الواتساب
+
+شكراً لثقتك بنا! 🌟`;
+}
+
+/**
+ * Generate payment link message for WhatsApp
+ */
+export function generatePaymentLinkMessage(
+  orderNumber: string,
+  amount: number,
+  paymentUrl: string
+): string {
+  return `💳 *رابط الدفع جاهز!*
+
+📦 *رقم الطلب:* ${orderNumber}
+💰 *المبلغ:* ${amount} ريال
+
+🔒 *لإتمام الدفع بشكل آمن:*
+${paymentUrl}
+
+✅ الدفع مؤمن بالكامل عبر Tap Payments
+⏰ الرابط صالح لمدة 24 ساعة
+📱 ستصلك رسالة تأكيد فور إتمام الدفع
 
 شكراً لثقتك بنا! 🌟`;
 }

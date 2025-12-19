@@ -487,7 +487,7 @@ export async function createBookingFromChat(params: {
   startTime: string;
   durationMinutes: number;
   notes?: string;
-}): Promise<{ success: boolean; bookingId?: number; message: string }> {
+}): Promise<{ success: boolean; bookingId?: number; message: string; paymentUrl?: string }> {
   try {
     // الحصول على معلومات الخدمة
     const service = await db.getServiceById(params.serviceId);
@@ -530,9 +530,71 @@ export async function createBookingFromChat(params: {
       bookingSource: 'whatsapp',
     });
 
+    // إنشاء رابط دفع Tap للحجز
+    let paymentUrl: string | undefined;
+    try {
+      const dbPayments = await import('../db_payments');
+      // const { createPaymentLink } = await import('../_core/tapPayments');
+
+      // TODO: إعادة تفعيل بعد إصلاح createPaymentLink
+      /*
+      const paymentLink = await createPaymentLink({
+        merchantId: params.merchantId,
+        amount: service.basePrice || 0,
+        currency: 'SAR',
+        customerName: params.customerName || 'عميل',
+        customerPhone: params.customerPhone,
+        description: `حجز ${service.name} - ${params.bookingDate}`,
+        metadata: {
+          bookingId: bookingId?.toString() || '',
+          serviceId: params.serviceId.toString(),
+          type: 'booking'
+        }
+      });
+
+      if (paymentLink && paymentLink.url) {
+        paymentUrl = paymentLink.url;
+        
+        // حفظ رابط الدفع
+        await dbPayments.createPaymentLink({
+          merchantId: params.merchantId,
+          bookingId,
+          amount: service.basePrice || 0,
+          currency: 'SAR',
+          tapChargeId: paymentLink.id,
+          paymentUrl: paymentLink.url,
+          status: 'active',
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        });
+
+        // إرسال رابط الدفع عبر واتساب
+        const paymentMessage = `💳 *رابط الدفع جاهز!*
+
+📅 *الحجز:* ${service.name}
+📆 *التاريخ:* ${params.bookingDate}
+⏰ *الوقت:* ${params.startTime} - ${endTime}
+💰 *المبلغ:* ${service.basePrice} ريال
+
+🔒 *لإتمام الدفع:*
+${paymentUrl}
+
+✅ الدفع مؤمن عبر Tap Payments
+⏰ الرابط صالح لمدة 24 ساعة
+
+شكراً لثقتك! 🌟`;
+        
+        // TODO: إرسال رسالة الدفع عبر واتساب
+        console.log('[AI] Payment link created for booking:', paymentUrl);
+      }
+      */
+    } catch (error) {
+      console.error('[AI] Error creating payment link for booking:', error);
+    }
+
     return {
       success: true,
       bookingId,
+      paymentUrl,
       message: `تم تأكيد حجزك بنجاح! 🎉\n\nالخدمة: ${service.name}\nالتاريخ: ${params.bookingDate}\nالوقت: ${params.startTime} - ${endTime}\nالمدة: ${params.durationMinutes} دقيقة\n\nسنرسل لك تذكير قبل الموعد. شكراً لك! 💚`
     };
 

@@ -536,3 +536,74 @@ export async function deletePaymentRefund(id: number): Promise<void> {
   const db = await getDb();
   await db.delete(paymentRefunds).where(eq(paymentRefunds.id, id));
 }
+
+// ============================================
+// Helper Functions for Webhook Processing
+// ============================================
+
+/**
+ * الحصول على معاملة دفع بمعرف Tap Charge (alias)
+ */
+export async function getPaymentByTapChargeId(tapChargeId: string): Promise<OrderPayment | null> {
+  return await getOrderPaymentByTapChargeId(tapChargeId);
+}
+
+/**
+ * تحديث حالة معاملة دفع (alias للتوافق مع webhook)
+ */
+export async function updatePaymentStatus(
+  id: number,
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled',
+  additionalData?: {
+    tapResponse?: string;
+    errorMessage?: string;
+    errorCode?: string;
+  }
+): Promise<OrderPayment | null> {
+  // تحويل الحالة إلى الحالة المناسبة في النظام
+  let dbStatus: 'pending' | 'authorized' | 'captured' | 'failed' | 'cancelled' | 'refunded';
+  
+  switch (status) {
+    case 'completed':
+      dbStatus = 'captured';
+      break;
+    case 'processing':
+      dbStatus = 'authorized';
+      break;
+    case 'refunded':
+      dbStatus = 'refunded';
+      break;
+    case 'cancelled':
+      dbStatus = 'cancelled';
+      break;
+    case 'failed':
+      dbStatus = 'failed';
+      break;
+    default:
+      dbStatus = 'pending';
+  }
+
+  return await updateOrderPaymentStatus(id, dbStatus, additionalData);
+}
+
+/**
+ * حفظ سجل webhook
+ */
+export async function createWebhookLog(data: {
+  merchantId: number;
+  paymentId: number;
+  provider: string;
+  eventType: string;
+  payload: string;
+  processedAt: Date;
+}): Promise<void> {
+  // يمكن إضافة جدول webhook_logs لاحقاً
+  // حالياً نحفظ في logs
+  console.log('[WebhookLog]', {
+    merchantId: data.merchantId,
+    paymentId: data.paymentId,
+    provider: data.provider,
+    eventType: data.eventType,
+    processedAt: data.processedAt
+  });
+}
