@@ -5,6 +5,7 @@ import { insightsRouter } from "./routers-insights";
 import { offersRouter } from "./routers-offers";
 import { googleAuthRouter } from "./routers-google-auth";
 import { sheetsRouter } from "./routers-sheets";
+import { loyaltyRouter } from "./routers-loyalty";
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
@@ -5851,6 +5852,8 @@ export const appRouter = router({
   googleAuth: googleAuthRouter,
   
   sheets: sheetsRouter,
+  
+  loyalty: loyaltyRouter,
   
   // ============================================
   // Services Management

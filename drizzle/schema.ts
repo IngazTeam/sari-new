@@ -1468,3 +1468,137 @@ export type PaymentLink = InferSelectModel<typeof paymentLinks>;
 export type NewPaymentLink = InferInsertModel<typeof paymentLinks>;
 export type PaymentRefund = InferSelectModel<typeof paymentRefunds>;
 export type NewPaymentRefund = InferInsertModel<typeof paymentRefunds>;
+
+// ==================== Loyalty System Tables ====================
+
+export const loyaltySettings = mysqlTable("loyalty_settings", {
+	id: int().autoincrement().notNull(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	isEnabled: tinyint("is_enabled").default(1).notNull(),
+	pointsPerCurrency: int("points_per_currency").default(1).notNull(), // كم نقطة لكل 1 ريال
+	currencyPerPoint: int("currency_per_point").default(10).notNull(), // كم ريال لكل 1 نقطة عند الاستبدال
+	enableReferralBonus: tinyint("enable_referral_bonus").default(1).notNull(),
+	referralBonusPoints: int("referral_bonus_points").default(50).notNull(),
+	enableReviewBonus: tinyint("enable_review_bonus").default(1).notNull(),
+	reviewBonusPoints: int("review_bonus_points").default(10).notNull(),
+	enableBirthdayBonus: tinyint("enable_birthday_bonus").default(0).notNull(),
+	birthdayBonusPoints: int("birthday_bonus_points").default(20).notNull(),
+	pointsExpiryDays: int("points_expiry_days").default(365).notNull(), // مدة صلاحية النقاط بالأيام (0 = لا تنتهي)
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("loyalty_settings_merchant_id_unique").on(table.merchantId),
+]);
+
+export const loyaltyTiers = mysqlTable("loyalty_tiers", {
+	id: int().autoincrement().notNull(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	name: varchar({ length: 100 }).notNull(), // برونزي، فضي، ذهبي
+	nameAr: varchar("name_ar", { length: 100 }).notNull(),
+	minPoints: int("min_points").notNull(), // الحد الأدنى من النقاط للوصول لهذا المستوى
+	discountPercentage: int("discount_percentage").default(0).notNull(), // نسبة الخصم لهذا المستوى
+	freeShipping: tinyint("free_shipping").default(0).notNull(),
+	priority: int().default(0).notNull(), // أولوية في الخدمة
+	color: varchar({ length: 20 }).default('#CD7F32').notNull(), // لون المستوى
+	icon: varchar({ length: 50 }).default('🥉').notNull(),
+	benefits: text(), // JSON للمزايا الإضافية
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const loyaltyPoints = mysqlTable("loyalty_points", {
+	id: int().autoincrement().notNull(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	customerName: varchar("customer_name", { length: 255 }),
+	totalPoints: int("total_points").default(0).notNull(), // إجمالي النقاط الحالية
+	lifetimePoints: int("lifetime_points").default(0).notNull(), // إجمالي النقاط التي حصل عليها على الإطلاق
+	currentTierId: int("current_tier_id").references(() => loyaltyTiers.id),
+	lastPointsEarnedAt: timestamp("last_points_earned_at", { mode: 'string' }),
+	lastPointsRedeemedAt: timestamp("last_points_redeemed_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("loyalty_points_merchant_customer_unique").on(table.merchantId, table.customerPhone),
+]);
+
+export const loyaltyTransactions = mysqlTable("loyalty_transactions", {
+	id: int().autoincrement().notNull(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	type: mysqlEnum(['earn','redeem','expire','adjustment']).notNull(),
+	points: int().notNull(), // موجب للكسب، سالب للاستبدال/الانتهاء
+	reason: varchar({ length: 255 }).notNull(), // سبب الحركة
+	reasonAr: varchar("reason_ar", { length: 255 }).notNull(),
+	orderId: int("order_id").references(() => orders.id, { onDelete: "set null" }),
+	rewardId: int("reward_id").references(() => loyaltyRewards.id, { onDelete: "set null" }),
+	redemptionId: int("redemption_id").references(() => loyaltyRedemptions.id, { onDelete: "set null" }),
+	balanceBefore: int("balance_before").notNull(),
+	balanceAfter: int("balance_after").notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }), // تاريخ انتهاء النقاط
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+},
+(table) => [
+	index("loyalty_transactions_customer_idx").on(table.merchantId, table.customerPhone),
+	index("loyalty_transactions_order_idx").on(table.orderId),
+]);
+
+export const loyaltyRewards = mysqlTable("loyalty_rewards", {
+	id: int().autoincrement().notNull(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	title: varchar({ length: 255 }).notNull(),
+	titleAr: varchar("title_ar", { length: 255 }).notNull(),
+	description: text(),
+	descriptionAr: text("description_ar"),
+	type: mysqlEnum(['discount','free_product','free_shipping','gift']).notNull(),
+	pointsCost: int("points_cost").notNull(), // كم نقطة مطلوبة للحصول على المكافأة
+	discountAmount: int("discount_amount"), // قيمة الخصم (بالريال أو نسبة مئوية)
+	discountType: mysqlEnum(['fixed','percentage']), // نوع الخصم
+	productId: int("product_id").references(() => products.id, { onDelete: "set null" }), // للمنتج المجاني
+	maxRedemptions: int("max_redemptions"), // الحد الأقصى لعدد مرات الاستبدال (null = غير محدود)
+	currentRedemptions: int("current_redemptions").default(0).notNull(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	validFrom: timestamp("valid_from", { mode: 'string' }),
+	validUntil: timestamp("valid_until", { mode: 'string' }),
+	imageUrl: varchar("image_url", { length: 500 }),
+	termsAndConditions: text("terms_and_conditions"),
+	termsAndConditionsAr: text("terms_and_conditions_ar"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const loyaltyRedemptions = mysqlTable("loyalty_redemptions", {
+	id: int().autoincrement().notNull(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	customerName: varchar("customer_name", { length: 255 }),
+	rewardId: int("reward_id").notNull().references(() => loyaltyRewards.id, { onDelete: "cascade" }),
+	pointsSpent: int("points_spent").notNull(),
+	status: mysqlEnum(['pending','approved','used','cancelled','expired']).default('pending').notNull(),
+	orderId: int("order_id").references(() => orders.id, { onDelete: "set null" }), // الطلب الذي استخدمت فيه المكافأة
+	usedAt: timestamp("used_at", { mode: 'string' }),
+	expiresAt: timestamp("expires_at", { mode: 'string' }), // تاريخ انتهاء صلاحية المكافأة المستبدلة
+	notes: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("loyalty_redemptions_customer_idx").on(table.merchantId, table.customerPhone),
+	index("loyalty_redemptions_reward_idx").on(table.rewardId),
+]);
+
+// Type exports for Loyalty System
+export type LoyaltySettings = InferSelectModel<typeof loyaltySettings>;
+export type InsertLoyaltySettings = InferInsertModel<typeof loyaltySettings>;
+export type LoyaltyTier = InferSelectModel<typeof loyaltyTiers>;
+export type InsertLoyaltyTier = InferInsertModel<typeof loyaltyTiers>;
+export type LoyaltyPoints = InferSelectModel<typeof loyaltyPoints>;
+export type InsertLoyaltyPoints = InferInsertModel<typeof loyaltyPoints>;
+export type LoyaltyTransaction = InferSelectModel<typeof loyaltyTransactions>;
+export type InsertLoyaltyTransaction = InferInsertModel<typeof loyaltyTransactions>;
+export type LoyaltyReward = InferSelectModel<typeof loyaltyRewards>;
+export type InsertLoyaltyReward = InferInsertModel<typeof loyaltyRewards>;
+export type LoyaltyRedemption = InferSelectModel<typeof loyaltyRedemptions>;
+export type InsertLoyaltyRedemption = InferInsertModel<typeof loyaltyRedemptions>;

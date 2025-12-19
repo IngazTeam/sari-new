@@ -7,6 +7,7 @@ import { callGPT4, ChatMessage } from './openai';
 import * as db from '../db';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
+import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 
 /**
  * Build dynamic system prompt based on personality settings
@@ -390,7 +391,21 @@ export async function chatWithSari(params: {
     // Get personality settings
     const personalitySettings = await db.getOrCreatePersonalitySettings(params.merchantId);
 
-    // Check for quick response match first
+    // Check for loyalty commands first
+    const messageLower = params.message.toLowerCase().trim();
+    
+    // أوامر نظام الولاء
+    if (messageLower.includes('نقاط') || messageLower.includes('رصيد') || messageLower.includes('points') || messageLower.includes('loyalty')) {
+      const loyaltyInfo = await getCustomerLoyaltyInfo(params.merchantId, params.customerPhone);
+      return loyaltyInfo;
+    }
+    
+    if (messageLower.includes('مكافآت') || messageLower.includes('جوائز') || messageLower.includes('rewards') || messageLower.includes('استبدال')) {
+      const rewardsInfo = await getAvailableRewardsInfo(params.merchantId, params.customerPhone);
+      return rewardsInfo;
+    }
+    
+    // Check for quick response match
     const quickResponse = await db.findMatchingQuickResponse(params.merchantId, params.message);
     if (quickResponse) {
       return quickResponse.response;

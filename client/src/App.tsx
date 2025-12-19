@@ -89,6 +89,11 @@ import SheetsInventory from "./pages/SheetsInventory";
 import Payments from "./pages/merchant/Payments";
 import PaymentLinks from "./pages/merchant/PaymentLinks";
 import PaymentDetails from "./pages/PaymentDetails";
+import LoyaltySettings from "./pages/LoyaltySettings";
+import LoyaltyTiers from "./pages/LoyaltyTiers";
+import LoyaltyRewards from "./pages/LoyaltyRewards";
+import LoyaltyCustomers from "./pages/LoyaltyCustomers";
+import CustomerLoyalty from "./pages/CustomerLoyalty";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -461,6 +466,28 @@ function Router() {
       
       <Route path="/merchant/payment-links">
         <DashboardLayout><PaymentLinks /></DashboardLayout>
+      </Route>
+      
+      {/* Loyalty System Routes */}
+      <Route path="/merchant/loyalty/settings">
+        <DashboardLayout><LoyaltySettings /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/loyalty/tiers">
+        <DashboardLayout><LoyaltyTiers /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/loyalty/rewards">
+        <DashboardLayout><LoyaltyRewards /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/loyalty/customers">
+        <DashboardLayout><LoyaltyCustomers /></DashboardLayout>
+      </Route>
+      
+      {/* Customer Loyalty Page (Public) */}
+      <Route path="/customer/loyalty/:customerPhone">
+        <CustomerLoyalty />
       </Route>
       
       <Route path="/merchant/reports">
