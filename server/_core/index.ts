@@ -20,6 +20,7 @@ import { startUsageAlertsCron } from "../jobs/usage-alerts";
 import { startSubscriptionExpiryCron } from "../jobs/subscription-expiry-alerts";
 import { startAllPolling } from "../polling";
 import { startCronJobs } from "../cronJobs";
+import { startAllSheetsCronJobs } from "../sheetsCronJobs";
 import cron from "node-cron";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -160,6 +161,9 @@ async function startServer() {
     
     // Initialize Appointment Reminders cron job (runs every hour)
     startCronJobs();
+    
+    // Initialize Google Sheets Reports cron jobs (daily/weekly/monthly)
+    startAllSheetsCronJobs();
     
     // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
     cron.schedule('0 9 * * *', async () => {
