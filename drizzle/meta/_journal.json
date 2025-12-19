@@ -29,6 +29,13 @@
       "when": 1766126599751,
       "tag": "0003_material_master_mold",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1766134621404,
+      "tag": "0004_complex_golden_guardian",
+      "breakpoints": true
     }
   ]
 }

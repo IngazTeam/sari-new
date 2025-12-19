@@ -5852,6 +5852,364 @@ export const appRouter = router({
   
   sheets: sheetsRouter,
   
+  // ============================================
+  // Services Management
+  // ============================================
+  services: router({
+    // Create service
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        category: z.string().optional(),
+        categoryId: z.number().optional(),
+        priceType: z.enum(['fixed', 'variable', 'custom']),
+        basePrice: z.number().optional(),
+        minPrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+        durationMinutes: z.number(),
+        bufferTimeMinutes: z.number().optional(),
+        requiresAppointment: z.boolean().optional(),
+        maxBookingsPerDay: z.number().optional(),
+        advanceBookingDays: z.number().optional(),
+        staffIds: z.array(z.number()).optional(),
+        displayOrder: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const serviceId = await db.createService({
+          merchantId: merchant.id,
+          name: input.name,
+          description: input.description,
+          category: input.category,
+          categoryId: input.categoryId,
+          priceType: input.priceType,
+          basePrice: input.basePrice,
+          minPrice: input.minPrice,
+          maxPrice: input.maxPrice,
+          durationMinutes: input.durationMinutes,
+          bufferTimeMinutes: input.bufferTimeMinutes || 0,
+          requiresAppointment: input.requiresAppointment ? 1 : 0,
+          maxBookingsPerDay: input.maxBookingsPerDay,
+          advanceBookingDays: input.advanceBookingDays || 30,
+          staffIds: input.staffIds ? JSON.stringify(input.staffIds) : undefined,
+          displayOrder: input.displayOrder || 0,
+          isActive: 1,
+        });
+        
+        return { success: true, serviceId };
+      }),
+    
+    // List services
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      
+      const services = await db.getServicesByMerchant(merchant.id);
+      return { services };
+    }),
+    
+    // Get service by ID
+    getById: protectedProcedure
+      .input(z.object({ serviceId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const service = await db.getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        }
+        
+        return { service };
+      }),
+    
+    // Update service
+    update: protectedProcedure
+      .input(z.object({
+        serviceId: z.number(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        category: z.string().optional(),
+        categoryId: z.number().optional(),
+        priceType: z.enum(['fixed', 'variable', 'custom']).optional(),
+        basePrice: z.number().optional(),
+        minPrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+        durationMinutes: z.number().optional(),
+        bufferTimeMinutes: z.number().optional(),
+        requiresAppointment: z.boolean().optional(),
+        maxBookingsPerDay: z.number().optional(),
+        advanceBookingDays: z.number().optional(),
+        staffIds: z.array(z.number()).optional(),
+        displayOrder: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const service = await db.getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        }
+        
+        const updateData: any = {};
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.category !== undefined) updateData.category = input.category;
+        if (input.categoryId !== undefined) updateData.categoryId = input.categoryId;
+        if (input.priceType !== undefined) updateData.priceType = input.priceType;
+        if (input.basePrice !== undefined) updateData.basePrice = input.basePrice;
+        if (input.minPrice !== undefined) updateData.minPrice = input.minPrice;
+        if (input.maxPrice !== undefined) updateData.maxPrice = input.maxPrice;
+        if (input.durationMinutes !== undefined) updateData.durationMinutes = input.durationMinutes;
+        if (input.bufferTimeMinutes !== undefined) updateData.bufferTimeMinutes = input.bufferTimeMinutes;
+        if (input.requiresAppointment !== undefined) updateData.requiresAppointment = input.requiresAppointment ? 1 : 0;
+        if (input.maxBookingsPerDay !== undefined) updateData.maxBookingsPerDay = input.maxBookingsPerDay;
+        if (input.advanceBookingDays !== undefined) updateData.advanceBookingDays = input.advanceBookingDays;
+        if (input.staffIds !== undefined) updateData.staffIds = JSON.stringify(input.staffIds);
+        if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
+        if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
+        
+        await db.updateService(input.serviceId, updateData);
+        
+        return { success: true };
+      }),
+    
+    // Delete service
+    delete: protectedProcedure
+      .input(z.object({ serviceId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const service = await db.getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        }
+        
+        await db.deleteService(input.serviceId);
+        
+        return { success: true };
+      }),
+    
+    // Get services by category
+    getByCategory: protectedProcedure
+      .input(z.object({ categoryId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const services = await db.getServicesByCategory(input.categoryId);
+        return { services };
+      }),
+  }),
+  
+  // ============================================
+  // Service Categories Management
+  // ============================================
+  serviceCategories: router({
+    // Create category
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        nameEn: z.string().optional(),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const categoryId = await db.createServiceCategory({
+          merchantId: merchant.id,
+          name: input.name,
+          nameEn: input.nameEn,
+          description: input.description,
+          icon: input.icon,
+          color: input.color,
+          displayOrder: input.displayOrder || 0,
+        });
+        
+        return { success: true, categoryId };
+      }),
+    
+    // List categories
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      
+      const categories = await db.getServiceCategoriesByMerchant(merchant.id);
+      return { categories };
+    }),
+    
+    // Update category
+    update: protectedProcedure
+      .input(z.object({
+        categoryId: z.number(),
+        name: z.string().optional(),
+        nameEn: z.string().optional(),
+        description: z.string().optional(),
+        icon: z.string().optional(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const category = await db.getServiceCategoryById(input.categoryId);
+        if (!category || category.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Category not found' });
+        }
+        
+        const updateData: any = {};
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.nameEn !== undefined) updateData.nameEn = input.nameEn;
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.icon !== undefined) updateData.icon = input.icon;
+        if (input.color !== undefined) updateData.color = input.color;
+        if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
+        if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
+        
+        await db.updateServiceCategory(input.categoryId, updateData);
+        
+        return { success: true };
+      }),
+    
+    // Delete category
+    delete: protectedProcedure
+      .input(z.object({ categoryId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const category = await db.getServiceCategoryById(input.categoryId);
+        if (!category || category.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Category not found' });
+        }
+        
+        await db.deleteServiceCategory(input.categoryId);
+        
+        return { success: true };
+      }),
+  }),
+  
+  // ============================================
+  // Service Packages Management
+  // ============================================
+  servicePackages: router({
+    // Create package
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        description: z.string().optional(),
+        serviceIds: z.array(z.number()),
+        originalPrice: z.number(),
+        packagePrice: z.number(),
+        discountPercentage: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const packageId = await db.createServicePackage({
+          merchantId: merchant.id,
+          name: input.name,
+          description: input.description,
+          serviceIds: JSON.stringify(input.serviceIds),
+          originalPrice: input.originalPrice,
+          packagePrice: input.packagePrice,
+          discountPercentage: input.discountPercentage,
+          isActive: 1,
+        });
+        
+        return { success: true, packageId };
+      }),
+    
+    // List packages
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      
+      const packages = await db.getServicePackagesByMerchant(merchant.id);
+      return { packages };
+    }),
+    
+    // Get package by ID
+    getById: protectedProcedure
+      .input(z.object({ packageId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const pkg = await db.getServicePackageById(input.packageId);
+        if (!pkg || pkg.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
+        }
+        
+        return { package: pkg };
+      }),
+    
+    // Update package
+    update: protectedProcedure
+      .input(z.object({
+        packageId: z.number(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        serviceIds: z.array(z.number()).optional(),
+        originalPrice: z.number().optional(),
+        packagePrice: z.number().optional(),
+        discountPercentage: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const pkg = await db.getServicePackageById(input.packageId);
+        if (!pkg || pkg.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
+        }
+        
+        const updateData: any = {};
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.description !== undefined) updateData.description = input.description;
+        if (input.serviceIds !== undefined) updateData.serviceIds = JSON.stringify(input.serviceIds);
+        if (input.originalPrice !== undefined) updateData.originalPrice = input.originalPrice;
+        if (input.packagePrice !== undefined) updateData.packagePrice = input.packagePrice;
+        if (input.discountPercentage !== undefined) updateData.discountPercentage = input.discountPercentage;
+        if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
+        
+        await db.updateServicePackage(input.packageId, updateData);
+        
+        return { success: true };
+      }),
+    
+    // Delete package
+    delete: protectedProcedure
+      .input(z.object({ packageId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const pkg = await db.getServicePackageById(input.packageId);
+        if (!pkg || pkg.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
+        }
+        
+        await db.deleteServicePackage(input.packageId);
+        
+        return { success: true };
+      }),
+  }),
+  
   // Google OAuth Settings (Super Admin only)
   googleOAuthSettings: router({
     // Get Google OAuth settings

@@ -1007,6 +1007,7 @@ export const services = mysqlTable("services", {
 	name: varchar({ length: 255 }).notNull(),
 	description: text(),
 	category: varchar({ length: 100 }),
+	categoryId: int("category_id").references(() => serviceCategories.id, { onDelete: "set null" }),
 	// Pricing
 	priceType: mysqlEnum("price_type", ['fixed','variable','custom']).default('fixed').notNull(),
 	basePrice: int("base_price"), // in cents
@@ -1024,6 +1025,20 @@ export const services = mysqlTable("services", {
 	// Status
 	isActive: tinyint("is_active").default(1).notNull(),
 	displayOrder: int("display_order").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const serviceCategories = mysqlTable("service_categories", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	name: varchar({ length: 255 }).notNull(),
+	nameEn: varchar("name_en", { length: 255 }),
+	description: text(),
+	icon: varchar({ length: 100 }), // emoji or icon name
+	color: varchar({ length: 20 }), // hex color
+	displayOrder: int("display_order").default(0).notNull(),
+	isActive: tinyint("is_active").default(1).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
@@ -1048,10 +1063,15 @@ export const staffMembers = mysqlTable("staff_members", {
 	phone: varchar({ length: 20 }),
 	email: varchar({ length: 255 }),
 	role: varchar({ length: 100 }),
+	specialization: varchar({ length: 255 }), // التخصص
 	workingHours: text("working_hours"), // JSON object
 	isActive: tinyint("is_active").default(1).notNull(),
 	googleCalendarId: varchar("google_calendar_id", { length: 255 }),
+	serviceIds: text("service_ids"), // JSON array of service IDs
+	avatar: varchar({ length: 500 }), // صورة الموظف
+	bio: text(), // نبذة عن الموظف
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
 export const appointments = mysqlTable("appointments", {

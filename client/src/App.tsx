@@ -76,6 +76,10 @@ import SetupWizard from "./pages/SetupWizard";
 import CalendarSettings from "./pages/CalendarSettings";
 import CalendarPage from "./pages/CalendarPage";
 import StaffManagement from "./pages/StaffManagement";
+import ServicesManagement from "./pages/merchant/ServicesManagement";
+import ServiceForm from "./pages/merchant/ServiceForm";
+import ServiceCategories from "./pages/merchant/ServiceCategories";
+import ServicePackages from "./pages/merchant/ServicePackages";
 import SheetsSettings from "./pages/SheetsSettings";
 import SheetsExport from "./pages/SheetsExport";
 import SheetsReports from "./pages/SheetsReports";
@@ -381,6 +385,36 @@ function Router() {
       <Route path="/merchant/staff">
         <DashboardLayout>
           <StaffManagement />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/services">
+        <DashboardLayout>
+          <ServicesManagement />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/services/new">
+        <DashboardLayout>
+          <ServiceForm />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/services/:id/edit">
+        <DashboardLayout>
+          <ServiceForm />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/service-categories">
+        <DashboardLayout>
+          <ServiceCategories />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/service-packages">
+        <DashboardLayout>
+          <ServicePackages />
         </DashboardLayout>
       </Route>
       

@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `staff_members` \nADD COLUMN `specialization` varchar(255) NULL,\nADD COLUMN `service_ids` text NULL,\nADD COLUMN `avatar` varchar(500) NULL,\nADD COLUMN `bio` text NULL,\nADD COLUMN `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute ALTER TABLE `staff_members` \nADD COLUMN `specialization` varchar(255) NULL,\nADD COLUMN `service_ids` text NULL,\nADD COLUMN `avatar` varchar(500) NULL,\nADD COLUMN `bio` text NULL,\nADD COLUMN `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3163
+}

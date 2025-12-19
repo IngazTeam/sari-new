@@ -328,3 +328,40 @@
 - [x] إضافة قسم ROI مع 3 مؤشرات رئيسية
 - [x] إضافة المسار في App.tsx
 - [x] تصميم احترافي مع بطاقات تفاعلية
+
+
+---
+
+## 💼 المرحلة 3: نظام إدارة الخدمات المتقدم ✅
+
+### قاعدة البيانات ✅
+- [x] تحديث جدول services بحقول جديدة (categoryId)
+- [x] إضافة جدول service_categories
+- [x] تحديث جدول staff_members بحقول إضافية (specialization, serviceIds, avatar, bio)
+
+### Backend APIs ✅
+- [x] services.create - إنشاء خدمة جديدة
+- [x] services.list - عرض جميع الخدمات
+- [x] services.getById - تفاصيل خدمة
+- [x] services.update - تحديث خدمة
+- [x] services.delete - حذف خدمة
+- [x] services.getByCategory - خدمات حسب التصنيف
+- [x] serviceCategories.create - إنشاء تصنيف
+- [x] serviceCategories.list - عرض التصنيفات
+- [x] serviceCategories.update - تحديث تصنيف
+- [x] serviceCategories.delete - حذف تصنيف
+- [x] servicePackages.create - إنشاء حزمة
+- [x] servicePackages.list - عرض الحزم
+- [x] servicePackages.getById - تفاصيل حزمة
+- [x] servicePackages.update - تحديث حزمة
+- [x] servicePackages.delete - حذف حزمة
+- [x] دوال قاعدة البيانات (20+ دالة جديدة)
+
+### Frontend Pages ✅
+- [x] صفحة إدارة الخدمات (/merchant/services)
+- [x] صفحة إنشاء/تعديل خدمة (/merchant/services/new, /merchant/services/:id/edit)
+- [x] صفحة إدارة التصنيفات (/merchant/service-categories)
+- [x] صفحة إدارة الحزم (/merchant/service-packages)
+- [x] إضافة routes في App.tsx
+- [ ] صفحة إدارة الموظفين المتقدمة (موجودة بالفعل)
+- [ ] تحديث Setup Wizard بنظام الخدمات الجديد (مستقبلاً)

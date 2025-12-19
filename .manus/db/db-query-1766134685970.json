@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `service_categories` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `merchant_id` int NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `name_en` varchar(255),\n  `description` text,\n  `icon` varchar(100),\n  `color` varchar(20),\n  `display_order` int NOT NULL DEFAULT 0,\n  `is_active` tinyint NOT NULL DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `service_categories` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `merchant_id` int NOT NULL,\n  `name` varchar(255) NOT NULL,\n  `name_en` varchar(255),\n  `description` text,\n  `icon` varchar(100),\n  `color` varchar(20),\n  `display_order` int NOT NULL DEFAULT 0,\n  `is_active` tinyint NOT NULL DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1800
+}

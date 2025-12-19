@@ -107,6 +107,7 @@ import {
   servicePackages,
   ServicePackage,
   InsertServicePackage,
+  serviceCategories,
   staffMembers,
   StaffMember,
   InsertStaffMember,
@@ -5571,4 +5572,169 @@ export async function toggleGoogleOAuthEnabled(isEnabled: boolean) {
     .where(eq(googleOAuthSettings.id, existing.id));
   
   return { ...existing, isEnabled: isEnabled ? 1 : 0 };
+}
+
+
+// ============================================
+// Service Categories Functions
+// ============================================
+
+export async function createServiceCategory(category: {
+  merchantId: number;
+  name: string;
+  nameEn?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  displayOrder?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(serviceCategories).values(category);
+  return result[0].insertId;
+}
+
+export async function getServiceCategoriesByMerchant(merchantId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(serviceCategories)
+    .where(and(
+      eq(serviceCategories.merchantId, merchantId),
+      eq(serviceCategories.isActive, 1)
+    ))
+    .orderBy(serviceCategories.displayOrder, serviceCategories.name);
+}
+
+export async function getServiceCategoryById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const results = await db.select().from(serviceCategories).where(eq(serviceCategories.id, id));
+  return results[0];
+}
+
+export async function updateServiceCategory(id: number, data: {
+  name?: string;
+  nameEn?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  displayOrder?: number;
+  isActive?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(serviceCategories).set(data).where(eq(serviceCategories.id, id));
+}
+
+export async function deleteServiceCategory(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(serviceCategories).set({ isActive: 0 }).where(eq(serviceCategories.id, id));
+}
+
+export async function getServicesByCategory(categoryId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(services)
+    .where(and(
+      eq(services.categoryId, categoryId),
+      eq(services.isActive, 1)
+    ))
+    .orderBy(services.displayOrder, services.name);
+}
+
+// ============================================
+// Enhanced Staff Functions
+// ============================================
+
+export async function updateStaffMember(id: number, data: {
+  name?: string;
+  phone?: string;
+  email?: string;
+  role?: string;
+  specialization?: string;
+  workingHours?: string;
+  serviceIds?: string;
+  avatar?: string;
+  bio?: string;
+  isActive?: number;
+  googleCalendarId?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(staffMembers).set(data).where(eq(staffMembers.id, id));
+}
+
+export async function assignServicesToStaff(staffId: number, serviceIds: number[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(staffMembers)
+    .set({ serviceIds: JSON.stringify(serviceIds) })
+    .where(eq(staffMembers.id, staffId));
+}
+
+export async function getStaffByService(serviceId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const allStaff = await db.select().from(staffMembers)
+    .where(eq(staffMembers.isActive, 1));
+  
+  return allStaff.filter(staff => {
+    if (!staff.serviceIds) return false;
+    try {
+      const ids = JSON.parse(staff.serviceIds);
+      return ids.includes(serviceId);
+    } catch {
+      return false;
+    }
+  });
+}
+
+// ============================================
+// Enhanced Service Package Functions
+// ============================================
+
+export async function getServicePackageById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const results = await db.select().from(servicePackages).where(eq(servicePackages.id, id));
+  return results[0];
+}
+
+export async function updateServicePackage(id: number, data: {
+  name?: string;
+  description?: string;
+  serviceIds?: string;
+  originalPrice?: number;
+  packagePrice?: number;
+  discountPercentage?: number;
+  isActive?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(servicePackages).set(data).where(eq(servicePackages.id, id));
+}
+
+export async function deleteServicePackage(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(servicePackages).set({ isActive: 0 }).where(eq(servicePackages.id, id));
+}
+
+export async function getPackageServices(packageId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const pkg = await getServicePackageById(packageId);
+  if (!pkg || !pkg.serviceIds) return [];
+  
+  try {
+    const serviceIds = JSON.parse(pkg.serviceIds);
+    return await db.select().from(services)
+      .where(and(
+        sql`${services.id} IN (${serviceIds.join(',')})`,
+        eq(services.isActive, 1)
+      ));
+  } catch {
+    return [];
+  }
 }
