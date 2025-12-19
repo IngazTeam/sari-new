@@ -5451,3 +5451,54 @@ export async function getAppointmentStats(merchantId: number, startDate?: string
   
   return stats;
 }
+
+// Get appointments for reminder within time range
+export async function getAppointmentsForReminder(
+  merchantId: number,
+  startTime: Date,
+  endTime: Date
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const startStr = formatDateForDB(startTime);
+  const endStr = formatDateForDB(endTime);
+  
+  // البحث عن المواعيد التي تبدأ في النطاق الزمني المحدد
+  const results = await db.select({
+    id: appointments.id,
+    merchantId: appointments.merchantId,
+    customerName: appointments.customerName,
+    customerPhone: appointments.customerPhone,
+    serviceName: appointments.serviceName,
+    staffName: appointments.staffName,
+    startTime: appointments.startTime,
+    reminder24hSent: appointments.reminder24hSent,
+    reminder1hSent: appointments.reminder1hSent,
+  })
+  .from(appointments)
+  .where(and(
+    eq(appointments.merchantId, merchantId),
+    eq(appointments.status, 'confirmed'),
+    gte(appointments.startTime, startStr),
+    lt(appointments.startTime, endStr)
+  ));
+  
+  return results;
+}
+
+// Get all merchants with Google Calendar integration
+export async function getAllMerchantsWithCalendar() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const results = await db.select({
+    id: merchants.id,
+    businessName: merchants.businessName,
+  })
+  .from(merchants)
+  .innerJoin(googleIntegrations, eq(merchants.id, googleIntegrations.merchantId))
+  .where(eq(googleIntegrations.isActive, 1));
+  
+  return results;
+}

@@ -71,6 +71,9 @@ import QuickResponses from "./pages/merchant/QuickResponses";
 import InsightsDashboard from "./pages/merchant/InsightsDashboard";
 import AdvancedAnalytics from "./pages/merchant/AdvancedAnalytics";
 import SetupWizard from "./pages/SetupWizard";
+import CalendarSettings from "./pages/CalendarSettings";
+import CalendarPage from "./pages/CalendarPage";
+import StaffManagement from "./pages/StaffManagement";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -341,6 +344,24 @@ function Router() {
       <Route path="/merchant/settings">
         <DashboardLayout>
           <MerchantSettings />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/calendar/settings">
+        <DashboardLayout>
+          <CalendarSettings />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/calendar">
+        <DashboardLayout>
+          <CalendarPage />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/staff">
+        <DashboardLayout>
+          <StaffManagement />
         </DashboardLayout>
       </Route>
       

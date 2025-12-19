@@ -9,6 +9,7 @@ import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
 import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
 import { selectABTestVariant, recordABTestResult } from '../ai/ab-testing';
+import { isAppointmentRequest, handleAppointmentRequest } from '../appointmentBot';
 import {
   hasReachedConversationLimit,
   hasReachedMessageLimit,
@@ -173,14 +174,28 @@ async function processTextMessage(params: {
       aiwResponse: null,
     });
     
-    // Get AI response from Sari
-    const response = await chatWithSari({
-      merchantId: params.merchantId,
-      customerPhone: params.customerPhone,
-      customerName: params.customerName,
-      message: params.messageText,
-      conversationId: params.conversationId,
-    });
+    // التحقق من طلبات حجز المواعيد أولاً
+    const isAppointment = await isAppointmentRequest(params.messageText);
+    let response: string;
+    
+    if (isAppointment) {
+      console.log('[Webhook] Detected appointment request');
+      response = await handleAppointmentRequest(
+        params.merchantId,
+        params.customerPhone,
+        params.customerName || 'عميل',
+        params.messageText
+      );
+    } else {
+      // Get AI response from Sari
+      response = await chatWithSari({
+        merchantId: params.merchantId,
+        customerPhone: params.customerPhone,
+        customerName: params.customerName,
+        message: params.messageText,
+        conversationId: params.conversationId,
+      });
+    }
     
     console.log('[Webhook] Sari response:', response);
     
