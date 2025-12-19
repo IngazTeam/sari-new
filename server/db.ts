@@ -5096,78 +5096,6 @@ export async function getServicePackagesByMerchant(merchantId: number) {
     ));
 }
 
-// Staff Members
-export async function createStaffMember(staff: InsertStaffMember) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(staffMembers).values(staff);
-  return result[0].insertId;
-}
-
-export async function getStaffMembersByMerchant(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return await db.select().from(staffMembers)
-    .where(and(
-      eq(staffMembers.merchantId, merchantId),
-      eq(staffMembers.isActive, 1)
-    ));
-}
-
-export async function getStaffMemberById(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const results = await db.select().from(staffMembers).where(eq(staffMembers.id, id));
-  return results[0];
-}
-
-export async function updateStaffMember(id: number, data: Partial<InsertStaffMember>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(staffMembers).set(data).where(eq(staffMembers.id, id));
-}
-
-// Appointments
-export async function createAppointment(appointment: InsertAppointment) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const result = await db.insert(appointments).values(appointment);
-  return result[0].insertId;
-}
-
-export async function getAppointmentsByMerchant(merchantId: number, status?: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const conditions = [eq(appointments.merchantId, merchantId)];
-  if (status) {
-    conditions.push(eq(appointments.status, status as any));
-  }
-  return await db.select().from(appointments)
-    .where(and(...conditions))
-    .orderBy(desc(appointments.appointmentDate));
-}
-
-export async function getAppointmentById(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const results = await db.select().from(appointments).where(eq(appointments.id, id));
-  return results[0];
-}
-
-export async function updateAppointment(id: number, data: Partial<InsertAppointment>) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(appointments).set(data).where(eq(appointments.id, id));
-}
-
-export async function cancelAppointment(id: number, reason: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  await db.update(appointments)
-    .set({ status: 'cancelled', cancellationReason: reason })
-    .where(eq(appointments.id, id));
-}
-
 // Service Reviews
 export async function createServiceReview(review: InsertServiceReview) {
   const db = await getDb();
@@ -5266,4 +5194,260 @@ export async function deleteGoogleIntegration(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.delete(googleIntegrations).where(eq(googleIntegrations.id, id));
+}
+
+
+
+// ==================== Appointments ====================
+
+export async function createAppointment(appointment: InsertAppointment) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(appointments).values(appointment);
+  return result[0].insertId;
+}
+
+export async function getAppointmentById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const results = await db.select().from(appointments)
+    .where(eq(appointments.id, id));
+  return results[0];
+}
+
+export async function getAppointmentsByMerchant(merchantId: number, status?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let query = db.select().from(appointments)
+    .where(eq(appointments.merchantId, merchantId));
+  
+  if (status) {
+    query = query.where(eq(appointments.status, status as any));
+  }
+  
+  return await query.orderBy(desc(appointments.appointmentDate));
+}
+
+export async function getAppointmentsByCustomer(merchantId: number, customerPhone: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(appointments)
+    .where(and(
+      eq(appointments.merchantId, merchantId),
+      eq(appointments.customerPhone, customerPhone)
+    ))
+    .orderBy(desc(appointments.appointmentDate));
+}
+
+export async function getAppointmentsByStaff(staffId: number, startDate?: string, endDate?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let conditions = [eq(appointments.staffId, staffId)];
+  
+  if (startDate) {
+    conditions.push(gte(appointments.appointmentDate, startDate));
+  }
+  
+  if (endDate) {
+    conditions.push(lte(appointments.appointmentDate, endDate));
+  }
+  
+  return await db.select().from(appointments)
+    .where(and(...conditions))
+    .orderBy(appointments.appointmentDate, appointments.startTime);
+}
+
+export async function getAppointmentsByService(serviceId: number, startDate?: string, endDate?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let conditions = [eq(appointments.serviceId, serviceId)];
+  
+  if (startDate) {
+    conditions.push(gte(appointments.appointmentDate, startDate));
+  }
+  
+  if (endDate) {
+    conditions.push(lte(appointments.appointmentDate, endDate));
+  }
+  
+  return await db.select().from(appointments)
+    .where(and(...conditions))
+    .orderBy(appointments.appointmentDate, appointments.startTime);
+}
+
+export async function getAppointmentsByDate(merchantId: number, date: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return await db.select().from(appointments)
+    .where(and(
+      eq(appointments.merchantId, merchantId),
+      eq(appointments.appointmentDate, date)
+    ))
+    .orderBy(appointments.startTime);
+}
+
+export async function updateAppointment(id: number, data: Partial<InsertAppointment>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(appointments).set(data).where(eq(appointments.id, id));
+}
+
+export async function cancelAppointment(id: number, reason?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(appointments)
+    .set({ 
+      status: 'cancelled',
+      cancellationReason: reason 
+    })
+    .where(eq(appointments.id, id));
+}
+
+export async function completeAppointment(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(appointments)
+    .set({ status: 'completed' })
+    .where(eq(appointments.id, id));
+}
+
+export async function markNoShow(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(appointments)
+    .set({ status: 'no_show' })
+    .where(eq(appointments.id, id));
+}
+
+export async function getUpcomingAppointments(merchantId: number, limit: number = 10) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  
+  return await db.select().from(appointments)
+    .where(and(
+      eq(appointments.merchantId, merchantId),
+      gte(appointments.appointmentDate, now),
+      eq(appointments.status, 'confirmed')
+    ))
+    .orderBy(appointments.appointmentDate, appointments.startTime)
+    .limit(limit);
+}
+
+export async function getAppointmentsNeedingReminder(type: '24h' | '1h') {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const now = new Date();
+  const targetTime = new Date();
+  
+  if (type === '24h') {
+    targetTime.setHours(targetTime.getHours() + 24);
+  } else {
+    targetTime.setHours(targetTime.getHours() + 1);
+  }
+  
+  const targetTimeStr = targetTime.toISOString().slice(0, 19).replace('T', ' ');
+  const reminderField = type === '24h' ? appointments.reminder24hSent : appointments.reminder1hSent;
+  
+  return await db.select().from(appointments)
+    .where(and(
+      eq(appointments.status, 'confirmed'),
+      lte(appointments.appointmentDate, targetTimeStr),
+      eq(reminderField, 0)
+    ))
+    .orderBy(appointments.appointmentDate, appointments.startTime);
+}
+
+export async function markReminderSent(id: number, type: '24h' | '1h') {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateData = type === '24h' 
+    ? { reminder24hSent: 1 } 
+    : { reminder1hSent: 1 };
+  
+  await db.update(appointments)
+    .set(updateData)
+    .where(eq(appointments.id, id));
+}
+
+// Check for conflicting appointments
+export async function checkAppointmentConflict(
+  merchantId: number,
+  date: string,
+  startTime: string,
+  endTime: string,
+  staffId?: number,
+  excludeAppointmentId?: number
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let conditions = [
+    eq(appointments.merchantId, merchantId),
+    eq(appointments.appointmentDate, date),
+    ne(appointments.status, 'cancelled'),
+  ];
+  
+  if (staffId) {
+    conditions.push(eq(appointments.staffId, staffId));
+  }
+  
+  if (excludeAppointmentId) {
+    conditions.push(ne(appointments.id, excludeAppointmentId));
+  }
+  
+  const existingAppointments = await db.select().from(appointments)
+    .where(and(...conditions));
+  
+  // Check for time overlap
+  for (const apt of existingAppointments) {
+    const aptStart = apt.startTime;
+    const aptEnd = apt.endTime;
+    
+    // Check if there's any overlap
+    if (
+      (startTime >= aptStart && startTime < aptEnd) ||
+      (endTime > aptStart && endTime <= aptEnd) ||
+      (startTime <= aptStart && endTime >= aptEnd)
+    ) {
+      return true; // Conflict found
+    }
+  }
+  
+  return false; // No conflict
+}
+
+// Get appointment statistics
+export async function getAppointmentStats(merchantId: number, startDate?: string, endDate?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  let conditions = [eq(appointments.merchantId, merchantId)];
+  
+  if (startDate) {
+    conditions.push(gte(appointments.appointmentDate, startDate));
+  }
+  
+  if (endDate) {
+    conditions.push(lte(appointments.appointmentDate, endDate));
+  }
+  
+  const allAppointments = await db.select().from(appointments)
+    .where(and(...conditions));
+  
+  const stats = {
+    total: allAppointments.length,
+    confirmed: allAppointments.filter(a => a.status === 'confirmed').length,
+    completed: allAppointments.filter(a => a.status === 'completed').length,
+    cancelled: allAppointments.filter(a => a.status === 'cancelled').length,
+    noShow: allAppointments.filter(a => a.status === 'no_show').length,
+    pending: allAppointments.filter(a => a.status === 'pending').length,
+  };
+  
+  return stats;
 }

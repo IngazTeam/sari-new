@@ -5396,6 +5396,447 @@ export const appRouter = router({
     }),
   }),
   
+  // Google Calendar Integration
+  calendar: router({
+    // Get authorization URL
+    getAuthUrl: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      
+      const { getAuthUrl } = await import('./_core/googleCalendar');
+      const authUrl = getAuthUrl(merchant.id.toString());
+      
+      return { authUrl };
+    }),
+    
+    // Handle OAuth callback (called from backend route)
+    handleCallback: protectedProcedure
+      .input(z.object({
+        code: z.string(),
+        calendarId: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const { getTokensFromCode } = await import('./_core/googleCalendar');
+        const tokens = await getTokensFromCode(input.code);
+        
+        // Save integration
+        const existing = await db.getGoogleIntegration(merchant.id, 'calendar');
+        
+        if (existing) {
+          await db.updateGoogleIntegration(existing.id, {
+            credentials: JSON.stringify(tokens),
+            calendarId: input.calendarId || existing.calendarId,
+            isActive: 1,
+          });
+        } else {
+          await db.createGoogleIntegration({
+            merchantId: merchant.id,
+            integrationType: 'calendar',
+            credentials: JSON.stringify(tokens),
+            calendarId: input.calendarId || 'primary',
+            isActive: 1,
+          });
+        }
+        
+        return { success: true };
+      }),
+    
+    // Get available time slots
+    getAvailableSlots: protectedProcedure
+      .input(z.object({
+        serviceId: z.number(),
+        date: z.string(), // YYYY-MM-DD
+        staffId: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        // Get service details
+        const service = await db.getServiceById(input.serviceId);
+        if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        
+        // Get Google Calendar integration
+        const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+        if (!integration || !integration.isActive) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Google Calendar not connected' });
+        }
+        
+        const credentials = JSON.parse(integration.credentials || '{}');
+        const { getAvailableSlots, validateAndRefreshCredentials } = await import('./_core/googleCalendar');
+        
+        // Validate and refresh credentials if needed
+        const validCredentials = await validateAndRefreshCredentials(credentials);
+        
+        // Update credentials if refreshed
+        if (JSON.stringify(validCredentials) !== JSON.stringify(credentials)) {
+          await db.updateGoogleIntegration(integration.id, {
+            credentials: JSON.stringify(validCredentials),
+          });
+        }
+        
+        // Get working hours from merchant or staff
+        let workingHours = { start: '09:00', end: '17:00' };
+        
+        if (input.staffId) {
+          const staff = await db.getStaffMemberById(input.staffId);
+          if (staff && staff.workingHours) {
+            const staffHours = JSON.parse(staff.workingHours);
+            const dayName = new Date(input.date).toLocaleDateString('en-US', { weekday: 'lowercase' });
+            if (staffHours[dayName]) {
+              workingHours = staffHours[dayName];
+            }
+          }
+        } else if (merchant.workingHours) {
+          const merchantHours = JSON.parse(merchant.workingHours);
+          const dayName = new Date(input.date).toLocaleDateString('en-US', { weekday: 'lowercase' });
+          if (merchantHours[dayName]) {
+            workingHours = merchantHours[dayName];
+          }
+        }
+        
+        // Get available slots
+        const slots = await getAvailableSlots(
+          validCredentials,
+          integration.calendarId || 'primary',
+          new Date(input.date),
+          service.durationMinutes,
+          workingHours,
+          service.bufferTimeMinutes
+        );
+        
+        return { slots };
+      }),
+    
+    // Book appointment
+    bookAppointment: protectedProcedure
+      .input(z.object({
+        serviceId: z.number(),
+        customerPhone: z.string(),
+        customerName: z.string(),
+        appointmentDate: z.string(), // YYYY-MM-DD
+        startTime: z.string(), // HH:MM
+        staffId: z.number().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        // Get service details
+        const service = await db.getServiceById(input.serviceId);
+        if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        
+        // Calculate end time
+        const [startHour, startMinute] = input.startTime.split(':').map(Number);
+        const endDate = new Date(input.appointmentDate);
+        endDate.setHours(startHour, startMinute + service.durationMinutes, 0, 0);
+        const endTime = endDate.toTimeString().substring(0, 5);
+        
+        // Check for conflicts
+        const hasConflict = await db.checkAppointmentConflict(
+          merchant.id,
+          input.appointmentDate,
+          input.startTime,
+          endTime,
+          input.staffId
+        );
+        
+        if (hasConflict) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'This time slot is already booked' });
+        }
+        
+        // Get Google Calendar integration
+        const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+        let googleEventId: string | undefined;
+        
+        if (integration && integration.isActive) {
+          const credentials = JSON.parse(integration.credentials || '{}');
+          const { createCalendarEvent, validateAndRefreshCredentials } = await import('./_core/googleCalendar');
+          
+          // Validate and refresh credentials if needed
+          const validCredentials = await validateAndRefreshCredentials(credentials);
+          
+          // Create calendar event
+          const startDateTime = new Date(`${input.appointmentDate}T${input.startTime}:00`);
+          const endDateTime = new Date(startDateTime.getTime() + service.durationMinutes * 60000);
+          
+          try {
+            const event = await createCalendarEvent(
+              validCredentials,
+              integration.calendarId || 'primary',
+              {
+                summary: `${service.name} - ${input.customerName}`,
+                description: `Customer: ${input.customerName}\nPhone: ${input.customerPhone}\nService: ${service.name}${input.notes ? `\nNotes: ${input.notes}` : ''}`,
+                start: startDateTime,
+                end: endDateTime,
+              }
+            );
+            
+            googleEventId = event.id;
+          } catch (error) {
+            console.error('Failed to create calendar event:', error);
+            // Continue without calendar event
+          }
+        }
+        
+        // Create appointment in database
+        const appointmentId = await db.createAppointment({
+          merchantId: merchant.id,
+          customerPhone: input.customerPhone,
+          customerName: input.customerName,
+          serviceId: input.serviceId,
+          staffId: input.staffId,
+          appointmentDate: input.appointmentDate,
+          startTime: input.startTime,
+          endTime: endTime,
+          status: 'confirmed',
+          googleEventId: googleEventId,
+          notes: input.notes,
+        });
+        
+        return { success: true, appointmentId };
+      }),
+    
+    // Cancel appointment
+    cancelAppointment: protectedProcedure
+      .input(z.object({
+        appointmentId: z.number(),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        // Get appointment
+        const appointment = await db.getAppointmentById(input.appointmentId);
+        if (!appointment) throw new TRPCError({ code: 'NOT_FOUND', message: 'Appointment not found' });
+        
+        // Verify ownership
+        if (appointment.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
+        }
+        
+        // Delete from Google Calendar if exists
+        if (appointment.googleEventId) {
+          const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+          if (integration && integration.isActive) {
+            const credentials = JSON.parse(integration.credentials || '{}');
+            const { deleteCalendarEvent, validateAndRefreshCredentials } = await import('./_core/googleCalendar');
+            
+            try {
+              const validCredentials = await validateAndRefreshCredentials(credentials);
+              await deleteCalendarEvent(
+                validCredentials,
+                integration.calendarId || 'primary',
+                appointment.googleEventId
+              );
+            } catch (error) {
+              console.error('Failed to delete calendar event:', error);
+              // Continue with cancellation
+            }
+          }
+        }
+        
+        // Cancel appointment in database
+        await db.cancelAppointment(input.appointmentId, input.reason);
+        
+        return { success: true };
+      }),
+    
+    // List appointments
+    listAppointments: protectedProcedure
+      .input(z.object({
+        status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const appointments = await db.getAppointmentsByMerchant(merchant.id, input.status);
+        
+        // Filter by date range if provided
+        let filtered = appointments;
+        if (input.startDate) {
+          filtered = filtered.filter(a => a.appointmentDate >= input.startDate!);
+        }
+        if (input.endDate) {
+          filtered = filtered.filter(a => a.appointmentDate <= input.endDate!);
+        }
+        
+        return { appointments: filtered };
+      }),
+    
+    // Get appointment statistics
+    getStats: protectedProcedure
+      .input(z.object({
+        startDate: z.string().optional(),
+        endDate: z.string().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const stats = await db.getAppointmentStats(merchant.id, input.startDate, input.endDate);
+        
+        return stats;
+      }),
+    
+    // Disconnect Google Calendar
+    disconnect: protectedProcedure.mutation(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      
+      const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+      if (integration) {
+        await db.deleteGoogleIntegration(integration.id);
+      }
+      
+      return { success: true };
+    }),
+    
+    // Get integration status
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      
+      const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+      
+      return {
+        connected: !!integration && integration.isActive === 1,
+        calendarId: integration?.calendarId,
+        lastSync: integration?.lastSync,
+      };
+    }),
+  }),
+  
+  // Staff Members Management
+  staff: router({
+    // Create staff member
+    create: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        phone: z.string().optional(),
+        email: z.string().email().optional(),
+        role: z.string().optional(),
+        workingHours: z.record(z.object({
+          start: z.string(),
+          end: z.string(),
+        })).optional(),
+        googleCalendarId: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const staffId = await db.createStaffMember({
+          merchantId: merchant.id,
+          name: input.name,
+          phone: input.phone,
+          email: input.email,
+          role: input.role,
+          workingHours: input.workingHours ? JSON.stringify(input.workingHours) : undefined,
+          googleCalendarId: input.googleCalendarId,
+          isActive: 1,
+        });
+        
+        return { success: true, staffId };
+      }),
+    
+    // List staff members
+    list: protectedProcedure
+      .input(z.object({
+        activeOnly: z.boolean().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const staff = input.activeOnly 
+          ? await db.getActiveStaffByMerchant(merchant.id)
+          : await db.getStaffMembersByMerchant(merchant.id);
+        
+        return { staff };
+      }),
+    
+    // Get staff member by ID
+    getById: protectedProcedure
+      .input(z.object({ staffId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        const staff = await db.getStaffMemberById(input.staffId);
+        if (!staff || staff.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
+        }
+        
+        return { staff };
+      }),
+    
+    // Update staff member
+    update: protectedProcedure
+      .input(z.object({
+        staffId: z.number(),
+        name: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().email().optional(),
+        role: z.string().optional(),
+        workingHours: z.record(z.object({
+          start: z.string(),
+          end: z.string(),
+        })).optional(),
+        googleCalendarId: z.string().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        // Verify ownership
+        const staff = await db.getStaffMemberById(input.staffId);
+        if (!staff || staff.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
+        }
+        
+        const updateData: any = {};
+        if (input.name !== undefined) updateData.name = input.name;
+        if (input.phone !== undefined) updateData.phone = input.phone;
+        if (input.email !== undefined) updateData.email = input.email;
+        if (input.role !== undefined) updateData.role = input.role;
+        if (input.workingHours !== undefined) updateData.workingHours = JSON.stringify(input.workingHours);
+        if (input.googleCalendarId !== undefined) updateData.googleCalendarId = input.googleCalendarId;
+        if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
+        
+        await db.updateStaffMember(input.staffId, updateData);
+        
+        return { success: true };
+      }),
+    
+    // Delete staff member
+    delete: protectedProcedure
+      .input(z.object({ staffId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        
+        // Verify ownership
+        const staff = await db.getStaffMemberById(input.staffId);
+        if (!staff || staff.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
+        }
+        
+        await db.deleteStaffMember(input.staffId);
+        
+        return { success: true };
+      }),
+  }),
+  
   googleAuth: googleAuthRouter,
 });
 export type AppRouter = typeof appRouter;
