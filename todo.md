@@ -757,3 +757,5 @@
 
 ### Checkpoint
 - [ ] حفظ checkpoint بعد إكمال نظام الولاء
+
+- [x] إصلاح خطأ النشر: Cannot find package 'vite' imported from /workspace/dist/index.js
