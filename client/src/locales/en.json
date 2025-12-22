@@ -297,7 +297,8 @@
     "conversations": {
       "msg1": "Recording uploaded successfully",
       "msg2": "Failed to upload recording",
-      "msg3": "Recording cancelled"
+      "msg3": "Recording cancelled",
+      "sendFailed": "Failed to send message. Please try again."
     },
     "discounts": {
       "msg1": "Discount code created successfully",

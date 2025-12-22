@@ -768,3 +768,20 @@
 - [ ] حفظ checkpoint بعد إكمال نظام الولاء
 
 - [x] إصلاح خطأ النشر: Cannot find package 'vite' imported from /workspace/dist/index.js
+
+---
+
+## 🔧 إصلاح خطأ toast.conversations.sendFailed
+
+### المشكلة
+- [ ] إضافة مفتاح الترجمة المفقود "sendFailed" في ملفات اللغة (ar.json, en.json)
+- [ ] الخطأ يظهر في صفحة /merchant/test-sari عند محاولة إرسال رسالة
+
+### الإصلاح
+- [x] إضافة "sendFailed" في toast.conversations في ar.json
+- [x] إضافة "sendFailed" في toast.conversations في en.json
+- [x] اختبار الصفحة للتأكد من عمل الرسالة
+
+### Checkpoint
+- [ ] حفظ checkpoint بعد الإصلاح
+- [ ] دفع التغييرات إلى GitHub
