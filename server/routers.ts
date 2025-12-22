@@ -61,40 +61,60 @@ export const appRouter = router({
       .input(z.object({
         email: z.string().email(),
         password: z.string().min(6),
+        rememberMe: z.boolean().optional().default(false),
       }))
       .mutation(async ({ input, ctx }) => {
         console.log('🔵 [AUTH] Login attempt:', input.email);
         const user = await db.getUserByEmail(input.email);
         console.log('🔵 [AUTH] User found:', user?.email);
         
-        if (!user || !user.password) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
+        // Check if user exists
+        if (!user) {
+          throw new TRPCError({ 
+            code: 'UNAUTHORIZED', 
+            message: 'البريد الإلكتروني غير مسجل في النظام' 
+          });
         }
         
+        // Check if user has password (not OAuth user)
+        if (!user.password) {
+          throw new TRPCError({ 
+            code: 'UNAUTHORIZED', 
+            message: 'هذا الحساب مسجل عبر OAuth. يرجى تسجيل الدخول باستخدام الطريقة الأصلية' 
+          });
+        }
+        
+        // Verify password
         const isValidPassword = await bcrypt.compare(input.password, user.password);
         
         if (!isValidPassword) {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
+          throw new TRPCError({ 
+            code: 'UNAUTHORIZED', 
+            message: 'كلمة المرور غير صحيحة' 
+          });
         }
         
         // Update last signed in
         await db.updateUserLastSignedIn(user.id);
         
+        // Determine session duration based on "Remember Me"
+        const sessionDuration = input.rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000; // 30 days or 1 day
+        
         // Create session token using SDK
         const sessionToken = await createSessionToken(String(user.id), {
           name: user.name || '',
           email: user.email || '',
-          expiresInMs: ONE_YEAR_MS,
+          expiresInMs: sessionDuration,
         });
         
         const cookieOptions = getSessionCookieOptions(ctx.req);
         
         // Set cookie using both methods to ensure it works
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: sessionDuration });
         
         // Also set via header as backup
         const securePart = cookieOptions.secure ? '; Secure' : '';
-        const cookieString = `${COOKIE_NAME}=${sessionToken}; Path=${cookieOptions.path}; HttpOnly; SameSite=${cookieOptions.sameSite}${securePart}; Max-Age=${Math.floor(ONE_YEAR_MS / 1000)}`;
+        const cookieString = `${COOKIE_NAME}=${sessionToken}; Path=${cookieOptions.path}; HttpOnly; SameSite=${cookieOptions.sameSite}${securePart}; Max-Age=${Math.floor(sessionDuration / 1000)}`;
         const existingCookies = ctx.res.getHeader('Set-Cookie');
         if (existingCookies) {
           const cookieArray = Array.isArray(existingCookies) ? existingCookies : [String(existingCookies)];
