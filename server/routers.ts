@@ -4379,13 +4379,21 @@ export const appRouter = router({
     // Create test conversation
     createConversation: protectedProcedure
       .mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
+        try {
+          const merchant = await db.getMerchantByUserId(ctx.user.id);
+          if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+          }
 
-        const conversationId = await db.createTestConversation(merchant.id);
-        return { conversationId };
+          const conversationId = await db.createTestConversation(merchant.id);
+          return { conversationId };
+        } catch (error) {
+          console.error('[createConversation] Error:', error);
+          throw new TRPCError({ 
+            code: 'INTERNAL_SERVER_ERROR', 
+            message: error instanceof Error ? error.message : 'Failed to create conversation'
+          });
+        }
       }),
   }),
 
