@@ -9,8 +9,8 @@ import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("admin@sari.sa");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
