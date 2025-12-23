@@ -149,30 +149,36 @@ export default function Home() {
 
   const pricingPlans = [
     {
-      name: t('home.pricingPlans.free.name'),
-      price: t('home.pricingPlans.free.price'),
-      period: t('home.pricingPlans.free.period'),
-      description: t('home.pricingPlans.free.description'),
-      features: t('home.pricingPlans.free.features', { returnObjects: true }) as string[],
-      cta: t('home.pricingPlans.free.cta'),
+      name: t('home.pricing.starter.name'),
+      price: t('home.pricing.starter.price'),
+      period: '',
+      description: t('home.pricing.starter.description'),
+      features: (Array.isArray(t('home.pricing.starter.features', { returnObjects: true })) 
+        ? t('home.pricing.starter.features', { returnObjects: true }) 
+        : []) as string[],
+      cta: t('home.pricing.starter.cta'),
       popular: false,
     },
     {
-      name: t('home.pricingPlans.professional.name'),
-      price: t('home.pricingPlans.professional.price'),
-      period: t('home.pricingPlans.professional.period'),
-      description: t('home.pricingPlans.professional.description'),
-      features: t('home.pricingPlans.professional.features', { returnObjects: true }) as string[],
-      cta: t('home.pricingPlans.professional.cta'),
+      name: t('home.pricing.professional.name'),
+      price: t('home.pricing.professional.price'),
+      period: t('home.pricing.professional.period'),
+      description: t('home.pricing.professional.description'),
+      features: (Array.isArray(t('home.pricing.professional.features', { returnObjects: true })) 
+        ? t('home.pricing.professional.features', { returnObjects: true }) 
+        : []) as string[],
+      cta: t('home.pricing.professional.cta'),
       popular: true,
     },
     {
-      name: t('home.pricingPlans.advanced.name'),
-      price: t('home.pricingPlans.advanced.price'),
-      period: t('home.pricingPlans.advanced.period'),
-      description: t('home.pricingPlans.advanced.description'),
-      features: t('home.pricingPlans.advanced.features', { returnObjects: true }) as string[],
-      cta: t('home.pricingPlans.advanced.cta'),
+      name: t('home.pricing.enterprise.name'),
+      price: t('home.pricing.enterprise.price'),
+      period: '',
+      description: t('home.pricing.enterprise.description'),
+      features: (Array.isArray(t('home.pricing.enterprise.features', { returnObjects: true })) 
+        ? t('home.pricing.enterprise.features', { returnObjects: true }) 
+        : []) as string[],
+      cta: t('home.pricing.enterprise.cta'),
       popular: false,
     },
   ];
@@ -193,14 +199,6 @@ export default function Home() {
     {
       question: t('home.faqs.q4.question'),
       answer: t('home.faqs.q4.answer'),
-    },
-    {
-      question: t('home.faqs.q5.question'),
-      answer: t('home.faqs.q5.answer'),
-    },
-    {
-      question: t('home.faqs.q6.question'),
-      answer: t('home.faqs.q6.answer'),
     },
   ];
 
@@ -397,10 +395,10 @@ export default function Home() {
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              {t('home.pricingPlans.title')}
+              {t('home.pricing.title')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              {t('home.pricingPlans.subtitle')}
+              {t('home.pricing.subtitle')}
             </p>
           </div>
 
@@ -416,7 +414,7 @@ export default function Home() {
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-semibold">
-                    {t('home.pricingPlans.professional.popular')}
+                    {t('home.pricing.professional.popular')}
                   </div>
                 )}
                 <CardContent className="p-6 space-y-6">
