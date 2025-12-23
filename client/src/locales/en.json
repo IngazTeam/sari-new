@@ -12,8 +12,9 @@
       "badge": "AI-Powered",
       "title": "Sari",
       "subtitle": "AI Sales Assistant on WhatsApp",
-      "description": "Automate your customer service and boost your sales using AI. Sari responds to your customers in Saudi dialect 24/7.",
-      "cta": "Try Free Now",
+      "description": "Manage your sales with voice messages: just record your order, address, product, and quantity, and let Sari handle the rest. Understands Saudi dialect and converts voice to complete order automatically.",
+      "cta": "Try Sari Now",
+      "startFree": "Start Free Now",
       "watchPrices": "View Pricing"
     },
     "chat": {
@@ -98,9 +99,181 @@
       }
     },
     "cta": {
-      "title": "Ready to Get Started?",
-      "description": "Join hundreds of merchants using Sari to boost their sales",
-      "button": "Try Free Now"
+      "title": "Ready to Increase Your Sales?",
+      "description": "Join thousands of merchants using Sari to improve customer service and increase sales",
+      "button": "Start Free Now",
+      "contact": "Contact Us"
+    },
+    "features": {
+      "voiceOrder": {
+        "title": "Voice Message Orders",
+        "description": "Your customers order with their voice only: product, quantity, and address - Sari handles the rest"
+      },
+      "smartReply": {
+        "title": "Smart Auto-Reply",
+        "description": "Sari responds to your customers' inquiries in Saudi dialect 24/7"
+      },
+      "autoOrders": {
+        "title": "Automatic Orders",
+        "description": "Convert conversations to complete orders with payment link automatically"
+      },
+      "abandonedCarts": {
+        "title": "Abandoned Carts",
+        "description": "Automatic reminders for customers who didn't complete their orders to increase conversion rate"
+      },
+      "invoices": {
+        "title": "WhatsApp Invoices",
+        "description": "Send professional invoices directly via WhatsApp with payment link"
+      },
+      "tracking": {
+        "title": "Order Tracking",
+        "description": "Automatic updates for customers about their order status from confirmation to delivery"
+      },
+      "gifts": {
+        "title": "Gifts & Greetings",
+        "description": "Automatic messages to customers on occasions and holidays with special offers"
+      },
+      "notifications": {
+        "title": "Smart Notifications",
+        "description": "Instant alerts for merchant when new orders or important inquiries arrive"
+      },
+      "analytics": {
+        "title": "Reports & Analytics",
+        "description": "Detailed reports on sales and conversations to improve your store performance"
+      },
+      "sales": {
+        "title": "Increase Sales",
+        "description": "Convert inquiries to sales with higher conversion rate"
+      },
+      "available": {
+        "title": "Available 24/7",
+        "description": "Serve your customers anytime even outside business hours"
+      },
+      "secure": {
+        "title": "Safe & Reliable",
+        "description": "Complete protection for your customers' data and conversations"
+      }
+    },
+    "steps": {
+      "title": "How to Get Started?",
+      "subtitle": "4 simple steps to start selling with Sari",
+      "step1": {
+        "title": "Register Your Account",
+        "description": "Create a free account in less than a minute"
+      },
+      "step2": {
+        "title": "Connect WhatsApp",
+        "description": "Connect your store's WhatsApp number easily via QR Code"
+      },
+      "step3": {
+        "title": "Add Your Products",
+        "description": "Add your products and prices for Sari to recognize"
+      },
+      "step4": {
+        "title": "Start Selling",
+        "description": "Let Sari handle your customers and increase your sales"
+      }
+    },
+    "testimonials": {
+      "title": "What Our Merchants Say",
+      "subtitle": "Success stories from merchants using Sari",
+      "testimonial1": {
+        "name": "Ahmed Al-Malki",
+        "role": "Electronics Store Owner",
+        "content": "Sari changed the way I deal with customers. Now I can focus on developing the store while Sari handles inquiries."
+      },
+      "testimonial2": {
+        "name": "Fatima Al-Otaibi",
+        "role": "Fashion Store Owner",
+        "content": "My sales increased 40% after using Sari. Customers love the quick and professional response."
+      },
+      "testimonial3": {
+        "name": "Mohammed Al-Qahtani",
+        "role": "Perfume Store Owner",
+        "content": "Best investment I made for my store. Sari speaks natural Saudi dialect and understands customer needs."
+      }
+    },
+    "stats": {
+      "merchants": "Active Merchants",
+      "conversations": "Conversations/Month",
+      "satisfaction": "Customer Satisfaction",
+      "support": "Continuous Support"
+    },
+    "pricingPlans": {
+      "title": "Pricing Plans",
+      "subtitle": "Choose the right plan for your business",
+      "free": {
+        "name": "Free",
+        "price": "0",
+        "period": "monthly",
+        "description": "For trial and getting started",
+        "features": [
+          "100 conversations/month",
+          "Smart auto-reply",
+          "Basic dashboard",
+          "Email support"
+        ],
+        "cta": "Start Free"
+      },
+      "professional": {
+        "name": "Professional",
+        "price": "299",
+        "period": "SAR/month",
+        "description": "For medium stores",
+        "features": [
+          "1,000 conversations/month",
+          "Smart auto-reply",
+          "Automatic orders",
+          "Reports & analytics",
+          "Payment integration",
+          "Priority support"
+        ],
+        "cta": "Subscribe Now",
+        "popular": "Most Popular"
+      },
+      "advanced": {
+        "name": "Advanced",
+        "price": "599",
+        "period": "SAR/month",
+        "description": "For large stores",
+        "features": [
+          "Unlimited conversations",
+          "All professional features",
+          "Marketing campaigns",
+          "Google Sheets integration",
+          "Google Calendar integration",
+          "Dedicated 24/7 support"
+        ],
+        "cta": "Subscribe Now"
+      }
+    },
+    "faqs": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about Sari",
+      "q1": {
+        "question": "What is Sari?",
+        "answer": "Sari is a smart sales assistant that works on WhatsApp, automatically responds to your customers' inquiries and converts conversations to complete orders."
+      },
+      "q2": {
+        "question": "How does Sari work?",
+        "answer": "After connecting your store's WhatsApp number, Sari receives messages and responds automatically using artificial intelligence, and can create orders and send payment links."
+      },
+      "q3": {
+        "question": "Does Sari support Arabic?",
+        "answer": "Yes, Sari is designed specifically for the Saudi market and speaks naturally in Saudi dialect."
+      },
+      "q4": {
+        "question": "Can I try Sari for free?",
+        "answer": "Yes, we offer a free plan that allows you 100 conversations per month to try the service."
+      },
+      "q5": {
+        "question": "How do I pay?",
+        "answer": "You can pay monthly or annually via credit cards, Apple Pay, or Mada."
+      },
+      "q6": {
+        "question": "Can I cancel subscription anytime?",
+        "answer": "Yes, you can cancel subscription anytime without any additional fees."
+      }
     }
   },
   "dashboard": {

@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LiveChatDemo from '@/components/LiveChatDemo';
 import LiveStats from '@/components/LiveStats';
+import { useTranslation } from 'react-i18next';
 import {
   Bot,
   MessageSquare,
@@ -30,193 +31,176 @@ import {
 } from 'lucide-react';
 
 export default function Home() {
+  const { t } = useTranslation();
+  
   const features = [
     {
       icon: Mic,
-      title: 'طلب بالرسالة الصوتية',
-      description: 'عملاؤك يطلبون بصوتهم فقط: المنتج، العدد، والعنوان - وساري يتولى الباقي',
+      title: t('home.features.voiceOrder.title'),
+      description: t('home.features.voiceOrder.description'),
     },
     {
       icon: Bot,
-      title: 'رد آلي ذكي',
-      description: 'يرد "ساري" على استفسارات عملائك باللهجة السعودية على مدار الساعة',
+      title: t('home.features.smartReply.title'),
+      description: t('home.features.smartReply.description'),
     },
     {
       icon: ShoppingCart,
-      title: 'طلبات تلقائية',
-      description: 'تحويل المحادثات إلى طلبات مكتملة مع رابط الدفع تلقائياً',
+      title: t('home.features.autoOrders.title'),
+      description: t('home.features.autoOrders.description'),
     },
     {
       icon: ShoppingBag,
-      title: 'السلال المهجورة',
-      description: 'تذكير تلقائي للعملاء الذين لم يكملوا طلباتهم لزيادة نسبة التحويل',
+      title: t('home.features.abandonedCarts.title'),
+      description: t('home.features.abandonedCarts.description'),
     },
     {
       icon: FileText,
-      title: 'الفواتير بالواتساب',
-      description: 'إرسال فواتير احترافية مباشرة عبر الواتساب مع رابط الدفع',
+      title: t('home.features.invoices.title'),
+      description: t('home.features.invoices.description'),
     },
     {
       icon: Package,
-      title: 'تتبع الطلبات',
-      description: 'تحديثات تلقائية للعملاء عن حالة طلباتهم من التأكيد حتى التوصيل',
+      title: t('home.features.tracking.title'),
+      description: t('home.features.tracking.description'),
     },
     {
       icon: Gift,
-      title: 'الهدايا والتهنئة',
-      description: 'رسائل تلقائية للعملاء في المناسبات والأعياد مع عروض خاصة',
+      title: t('home.features.gifts.title'),
+      description: t('home.features.gifts.description'),
     },
     {
       icon: Bell,
-      title: 'إشعارات ذكية',
-      description: 'تنبيهات فورية للتاجر عند وصول طلبات جديدة أو استفسارات مهمة',
+      title: t('home.features.notifications.title'),
+      description: t('home.features.notifications.description'),
     },
     {
       icon: BarChart3,
-      title: 'تقارير وتحليلات',
-      description: 'تقارير تفصيلية عن المبيعات والمحادثات لتحسين أداء متجرك',
+      title: t('home.features.analytics.title'),
+      description: t('home.features.analytics.description'),
     },
     {
       icon: TrendingUp,
-      title: 'زيادة المبيعات',
-      description: 'حول الاستفسارات إلى مبيعات بنسبة تحويل أعلى',
+      title: t('home.features.sales.title'),
+      description: t('home.features.sales.description'),
     },
     {
       icon: Clock,
-      title: 'متاح 24/7',
-      description: 'خدمة عملائك في أي وقت حتى خارج ساعات العمل',
+      title: t('home.features.available.title'),
+      description: t('home.features.available.description'),
     },
     {
       icon: Shield,
-      title: 'آمن وموثوق',
-      description: 'حماية كاملة لبيانات عملائك ومحادثاتهم',
+      title: t('home.features.secure.title'),
+      description: t('home.features.secure.description'),
     },
   ];
 
   const steps = [
     {
       number: '1',
-      title: 'سجل حسابك',
-      description: 'أنشئ حساباً مجانياً في أقل من دقيقة',
+      title: t('home.steps.step1.title'),
+      description: t('home.steps.step1.description'),
     },
     {
       number: '2',
-      title: 'اربط الواتساب',
-      description: 'اربط رقم واتساب متجرك بسهولة عبر QR Code',
+      title: t('home.steps.step2.title'),
+      description: t('home.steps.step2.description'),
     },
     {
       number: '3',
-      title: 'أضف منتجاتك',
-      description: 'أضف منتجاتك وأسعارك ليتعرف عليها "ساري"',
+      title: t('home.steps.step3.title'),
+      description: t('home.steps.step3.description'),
     },
     {
       number: '4',
-      title: 'ابدأ البيع',
-      description: 'دع "ساري" يتعامل مع عملائك ويزيد مبيعاتك',
+      title: t('home.steps.step4.title'),
+      description: t('home.steps.step4.description'),
     },
   ];
 
   const testimonials = [
     {
-      name: 'أحمد المالكي',
-      role: 'صاحب متجر إلكترونيات',
-      content: 'ساري غيّر طريقة تعاملي مع العملاء. الآن أستطيع التركيز على تطوير المتجر بينما ساري يتعامل مع الاستفسارات.',
+      name: t('home.testimonials.testimonial1.name'),
+      role: t('home.testimonials.testimonial1.role'),
+      content: t('home.testimonials.testimonial1.content'),
       rating: 5,
     },
     {
-      name: 'فاطمة العتيبي',
-      role: 'صاحبة متجر أزياء',
-      content: 'زادت مبيعاتي 40% بعد استخدام ساري. العملاء يحبون الرد السريع والمحترف.',
+      name: t('home.testimonials.testimonial2.name'),
+      role: t('home.testimonials.testimonial2.role'),
+      content: t('home.testimonials.testimonial2.content'),
       rating: 5,
     },
     {
-      name: 'محمد القحطاني',
-      role: 'صاحب متجر عطور',
-      content: 'أفضل استثمار قمت به لمتجري. ساري يتحدث بلهجة سعودية طبيعية ويفهم احتياجات العملاء.',
+      name: t('home.testimonials.testimonial3.name'),
+      role: t('home.testimonials.testimonial3.role'),
+      content: t('home.testimonials.testimonial3.content'),
       rating: 5,
     },
   ];
 
   const stats = [
-    { value: '10,000+', label: 'تاجر نشط' },
-    { value: '500,000+', label: 'محادثة شهرياً' },
-    { value: '95%', label: 'رضا العملاء' },
-    { value: '24/7', label: 'دعم متواصل' },
+    { value: '10,000+', label: t('home.stats.merchants') },
+    { value: '500,000+', label: t('home.stats.conversations') },
+    { value: '95%', label: t('home.stats.satisfaction') },
+    { value: '24/7', label: t('home.stats.support') },
   ];
 
   const pricingPlans = [
     {
-      name: 'المجاني',
-      price: '0',
-      period: 'شهرياً',
-      description: 'للتجربة والبدء',
-      features: [
-        '100 محادثة شهرياً',
-        'رد آلي ذكي',
-        'لوحة تحكم أساسية',
-        'دعم فني عبر البريد',
-      ],
-      cta: 'ابدأ مجاناً',
+      name: t('home.pricingPlans.free.name'),
+      price: t('home.pricingPlans.free.price'),
+      period: t('home.pricingPlans.free.period'),
+      description: t('home.pricingPlans.free.description'),
+      features: t('home.pricingPlans.free.features', { returnObjects: true }) as string[],
+      cta: t('home.pricingPlans.free.cta'),
       popular: false,
     },
     {
-      name: 'الاحترافي',
-      price: '299',
-      period: 'شهرياً',
-      description: 'للمتاجر المتوسطة',
-      features: [
-        '1,000 محادثة شهرياً',
-        'رد آلي ذكي',
-        'طلبات تلقائية',
-        'تقارير وتحليلات',
-        'تكامل مع الدفع',
-        'دعم فني أولوية',
-      ],
-      cta: 'اشترك الآن',
+      name: t('home.pricingPlans.professional.name'),
+      price: t('home.pricingPlans.professional.price'),
+      period: t('home.pricingPlans.professional.period'),
+      description: t('home.pricingPlans.professional.description'),
+      features: t('home.pricingPlans.professional.features', { returnObjects: true }) as string[],
+      cta: t('home.pricingPlans.professional.cta'),
       popular: true,
     },
     {
-      name: 'المتقدم',
-      price: '599',
-      period: 'شهرياً',
-      description: 'للمتاجر الكبيرة',
-      features: [
-        'محادثات غير محدودة',
-        'جميع ميزات الاحترافي',
-        'حملات تسويقية',
-        'تكامل مع Google Sheets',
-        'تكامل مع Google Calendar',
-        'دعم فني مخصص 24/7',
-      ],
-      cta: 'اشترك الآن',
+      name: t('home.pricingPlans.advanced.name'),
+      price: t('home.pricingPlans.advanced.price'),
+      period: t('home.pricingPlans.advanced.period'),
+      description: t('home.pricingPlans.advanced.description'),
+      features: t('home.pricingPlans.advanced.features', { returnObjects: true }) as string[],
+      cta: t('home.pricingPlans.advanced.cta'),
       popular: false,
     },
   ];
 
   const faqs = [
     {
-      question: 'ما هو ساري؟',
-      answer: 'ساري هو مساعد مبيعات ذكي يعمل على واتساب، يرد على استفسارات عملائك تلقائياً ويحول المحادثات إلى طلبات مكتملة.',
+      question: t('home.faqs.q1.question'),
+      answer: t('home.faqs.q1.answer'),
     },
     {
-      question: 'كيف يعمل ساري؟',
-      answer: 'بعد ربط رقم واتساب متجرك، يستقبل ساري الرسائل ويرد عليها تلقائياً باستخدام الذكاء الاصطناعي، ويمكنه إنشاء طلبات وإرسال روابط الدفع.',
+      question: t('home.faqs.q2.question'),
+      answer: t('home.faqs.q2.answer'),
     },
     {
-      question: 'هل يدعم ساري اللغة العربية؟',
-      answer: 'نعم، ساري مصمم خصيصاً للسوق السعودي ويتحدث باللهجة السعودية بشكل طبيعي.',
+      question: t('home.faqs.q3.question'),
+      answer: t('home.faqs.q3.answer'),
     },
     {
-      question: 'هل يمكنني تجربة ساري مجاناً؟',
-      answer: 'نعم، نوفر خطة مجانية تتيح لك 100 محادثة شهرياً لتجربة الخدمة.',
+      question: t('home.faqs.q4.question'),
+      answer: t('home.faqs.q4.answer'),
     },
     {
-      question: 'كيف يتم الدفع؟',
-      answer: 'يمكنك الدفع شهرياً أو سنوياً عبر بطاقات الائتمان أو Apple Pay أو مدى.',
+      question: t('home.faqs.q5.question'),
+      answer: t('home.faqs.q5.answer'),
     },
     {
-      question: 'هل يمكنني إلغاء الاشتراك في أي وقت؟',
-      answer: 'نعم، يمكنك إلغاء الاشتراك في أي وقت دون أي رسوم إضافية.',
+      question: t('home.faqs.q6.question'),
+      answer: t('home.faqs.q6.answer'),
     },
   ];
 
@@ -232,28 +216,26 @@ export default function Home() {
             <div className="space-y-8 animate-fade-in">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary text-sm font-medium">
                 <Sparkles className="w-4 h-4" />
-                <span>مدعوم بالذكاء الاصطناعي</span>
+                <span>{t('home.hero.badge')}</span>
               </div>
               
               <h1 className="text-4xl md:text-6xl font-bold leading-tight">
                 <span className="text-primary">
-                  ساري
+                  {t('home.hero.title')}
                 </span>
                 <br />
-                مساعد المبيعات الذكي
-                <br />
-                على الواتساب
+                {t('home.hero.subtitle')}
               </h1>
               
               <p className="text-xl text-muted-foreground leading-relaxed">
-                أدر مبيعاتك بالمحادثات الصوتية: فقط سجل بصوتك طلبك والعنوان والمنتج والعدد واترك الباقي على ساري. يفهم اللهجة السعودية ويحول الصوت لطلب كامل تلقائياً.
+                {t('home.hero.description')}
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/try-sari">
                   <a>
                     <Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-lg h-14 px-8 shadow-lg hover:shadow-xl transition-all">
-                      جرب ساري الآن
+                      {t('home.hero.cta')}
                       <Sparkles className="mr-2 w-5 h-5" />
                     </Button>
                   </a>
@@ -261,7 +243,7 @@ export default function Home() {
                 <Link href="/login">
                   <a>
                     <Button size="lg" className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-lg h-14 px-8 shadow-lg hover:shadow-xl transition-all">
-                      ابدأ الآن مجاناً
+                      {t('home.hero.startFree')}
                       <ArrowRight className="mr-2 w-5 h-5" />
                     </Button>
                   </a>
@@ -269,7 +251,7 @@ export default function Home() {
                 <Link href="/pricing">
                   <a>
                     <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8">
-                      شاهد الأسعار
+                      {t('home.hero.watchPrices')}
                     </Button>
                   </a>
                 </Link>
@@ -293,8 +275,8 @@ export default function Home() {
                     <Bot className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <div className="font-semibold text-white">ساري</div>
-                    <div className="text-sm text-white/80">مساعد المبيعات الذكي</div>
+                    <div className="font-semibold text-white">{t('home.hero.title')}</div>
+                    <div className="text-sm text-white/80">{t('home.chat.subtitle')}</div>
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
@@ -415,10 +397,10 @@ export default function Home() {
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              خطط الأسعار
+              {t('home.pricingPlans.title')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              اختر الخطة المناسبة لحجم متجرك
+              {t('home.pricingPlans.subtitle')}
             </p>
           </div>
 
@@ -434,7 +416,7 @@ export default function Home() {
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-semibold">
-                    الأكثر شعبية
+                    {t('home.pricingPlans.professional.popular')}
                   </div>
                 )}
                 <CardContent className="p-6 space-y-6">
@@ -484,10 +466,10 @@ export default function Home() {
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              ماذا يقول عملاؤنا؟
+              {t('home.testimonials.title')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              آراء التجار الذين استخدموا ساري
+              {t('home.testimonials.subtitle')}
             </p>
           </div>
 
@@ -586,10 +568,10 @@ export default function Home() {
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              الأسئلة الشائعة
+              {t('home.faqs.title')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              إجابات على أكثر الأسئلة شيوعاً
+              {t('home.faqs.subtitle')}
             </p>
           </div>
 
@@ -617,16 +599,16 @@ export default function Home() {
       <section className="py-20 bg-primary text-white">
         <div className="container text-center space-y-8">
           <h2 className="text-3xl md:text-5xl font-bold">
-            جاهز لزيادة مبيعاتك؟
+            {t('home.cta.title')}
           </h2>
           <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            انضم إلى آلاف التجار الذين يستخدمون ساري لتحسين خدمة العملاء وزيادة المبيعات
+            {t('home.cta.description')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
               <a>
                 <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg h-14 px-8 shadow-lg hover:shadow-xl">
-                  ابدأ الآن مجاناً
+                  {t('home.cta.button')}
                   <ArrowRight className="mr-2 w-5 h-5" />
                 </Button>
               </a>
@@ -634,7 +616,7 @@ export default function Home() {
             <Link href="/support">
               <a>
                 <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8 bg-transparent border-white text-white hover:bg-white/10">
-                  تواصل معنا
+                  {t('home.cta.contact')}
                 </Button>
               </a>
             </Link>
