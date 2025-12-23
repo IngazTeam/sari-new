@@ -1,3 +1,4 @@
+import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -8,13 +9,13 @@ type UseAuthOptions = {
 };
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = "/login" } =
+  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
     options ?? {};
   const utils = trpc.useUtils();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   const logoutMutation = trpc.auth.logout.useMutation({
@@ -41,28 +42,15 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    // Try to get user from query first, then from localStorage
-    let user = meQuery.data;
-    if (!user) {
-      try {
-        const stored = localStorage.getItem('user-info');
-        if (stored) {
-          user = JSON.parse(stored);
-        }
-      } catch (e) {
-        // Ignore parse errors
-      }
-    }
-    
     localStorage.setItem(
-      "user-info",
-      JSON.stringify(user)
+      "manus-runtime-user-info",
+      JSON.stringify(meQuery.data)
     );
     return {
-      user: user ?? null,
+      user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
-      isAuthenticated: Boolean(user),
+      isAuthenticated: Boolean(meQuery.data),
     };
   }, [
     meQuery.data,

@@ -1,9 +1,0 @@
-{
-  "query": "SELECT m.*, c.customerPhone, c.customerName \nFROM messages m\nJOIN conversations c ON m.conversationId = c.id\nWHERE c.customerPhone = '9660112975254'\nORDER BY m.createdAt DESC\nLIMIT 10;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT m.*, c.customerPhone, c.customerName \nFROM messages m\nJOIN conversations c ON m.conversationId = c.id\nWHERE c.customerPhone = '9660112975254'\nORDER BY m.createdAt DESC\nLIMIT 10;",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1509
-}

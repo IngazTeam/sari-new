@@ -5,8 +5,8 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import { getLoginUrl } from "./const";
 import "./index.css";
-import "./lib/i18n";
 
 const queryClient = new QueryClient();
 
@@ -17,18 +17,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
-  
-  // Don't redirect if we have a token in localStorage (user just logged in)
-  const hasToken = localStorage.getItem('auth_token');
-  if (hasToken) {
-    console.log('[Auth] Token exists in localStorage, skipping redirect');
-    return;
-  }
 
-  // Don't redirect if already on login page
-  if (window.location.pathname === '/login') return;
-
-  window.location.href = "/login";
+  window.location.href = getLoginUrl();
 };
 
 queryClient.getQueryCache().subscribe(event => {
@@ -53,17 +43,9 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
-        const token = localStorage.getItem('auth_token');
-        const headers = new Headers(init?.headers || {});
-        
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-        
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
-          headers,
         });
       },
     }),

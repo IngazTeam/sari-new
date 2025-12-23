@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `business_templates` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `business_type` enum('store','services','both') NOT NULL,\n  `template_name` varchar(255) NOT NULL,\n  `icon` varchar(50),\n  `services` text,\n  `products` text,\n  `working_hours` text,\n  `bot_personality` text,\n  `settings` text,\n  `description` text,\n  `suitable_for` text,\n  `is_active` tinyint NOT NULL DEFAULT 1,\n  `usage_count` int NOT NULL DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `business_templates` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `business_type` enum('store','services','both') NOT NULL,\n  `template_name` varchar(255) NOT NULL,\n  `icon` varchar(50),\n  `services` text,\n  `products` text,\n  `working_hours` text,\n  `bot_personality` text,\n  `settings` text,\n  `description` text,\n  `suitable_for` text,\n  `is_active` tinyint NOT NULL DEFAULT 1,\n  `usage_count` int NOT NULL DEFAULT 0,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1835
-}

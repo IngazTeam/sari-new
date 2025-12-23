@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO messages (conversationId, direction, messageType, content, voiceUrl, isProcessed, aiwResponse) VALUES (210008, 'incoming', 'text', 'test', NULL, 0, NULL);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute INSERT INTO messages (conversationId, direction, messageType, content, voiceUrl, isProcessed, aiwResponse) VALUES (210008, 'incoming', 'text', 'test', NULL, 0, NULL);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1671
-}
