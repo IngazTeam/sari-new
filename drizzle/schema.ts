@@ -1240,6 +1240,69 @@ export const googleIntegrations = mysqlTable("google_integrations", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
+// ============================================
+// Zid Integration Tables
+// ============================================
+
+export const zidSettings = mysqlTable("zid_settings", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// OAuth Credentials
+	clientId: varchar("client_id", { length: 255 }),
+	clientSecret: text("client_secret"), // encrypted
+	accessToken: text("access_token"), // encrypted
+	managerToken: text("manager_token"), // encrypted (X-Manager-Token)
+	refreshToken: text("refresh_token"), // encrypted
+	
+	// Store Info
+	storeId: varchar("store_id", { length: 255 }),
+	storeName: varchar("store_name", { length: 255 }),
+	storeUrl: varchar("store_url", { length: 500 }),
+	
+	// Settings
+	isActive: tinyint("is_active").default(1).notNull(),
+	autoSyncProducts: tinyint("auto_sync_products").default(1).notNull(),
+	autoSyncOrders: tinyint("auto_sync_orders").default(1).notNull(),
+	autoSyncCustomers: tinyint("auto_sync_customers").default(0).notNull(),
+	
+	// Sync Status
+	lastProductSync: timestamp("last_product_sync", { mode: 'string' }),
+	lastOrderSync: timestamp("last_order_sync", { mode: 'string' }),
+	lastCustomerSync: timestamp("last_customer_sync", { mode: 'string' }),
+	
+	// Token Expiry
+	tokenExpiresAt: timestamp("token_expires_at", { mode: 'string' }),
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const zidSyncLogs = mysqlTable("zid_sync_logs", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// Sync Info
+	syncType: mysqlEnum("sync_type", ['products','orders','customers','inventory']).notNull(),
+	status: mysqlEnum(['pending','in_progress','completed','failed']).default('pending').notNull(),
+	
+	// Statistics
+	totalItems: int("total_items").default(0).notNull(),
+	processedItems: int("processed_items").default(0).notNull(),
+	successCount: int("success_count").default(0).notNull(),
+	failedCount: int("failed_count").default(0).notNull(),
+	
+	// Details
+	errorMessage: text("error_message"),
+	syncDetails: text("sync_details"), // JSON
+	
+	// Timing
+	startedAt: timestamp("started_at", { mode: 'string' }),
+	completedAt: timestamp("completed_at", { mode: 'string' }),
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+});
+
 	// Type definitions
 export type User = InferSelectModel<typeof users>;
 export type InsertUser = InferInsertModel<typeof users>;
@@ -1345,6 +1408,10 @@ export type SetupWizardProgress = InferSelectModel<typeof setupWizardProgress>;
 export type InsertSetupWizardProgress = InferInsertModel<typeof setupWizardProgress>;
 export type GoogleIntegration = InferSelectModel<typeof googleIntegrations>;
 export type InsertGoogleIntegration = InferInsertModel<typeof googleIntegrations>;
+export type ZidSettings = InferSelectModel<typeof zidSettings>;
+export type InsertZidSettings = InferInsertModel<typeof zidSettings>;
+export type ZidSyncLog = InferSelectModel<typeof zidSyncLogs>;
+export type InsertZidSyncLog = InferInsertModel<typeof zidSyncLogs>;
 export type PlatformIntegration = InferSelectModel<typeof platformIntegrations>;
 export type InsertPlatformIntegration = InferInsertModel<typeof platformIntegrations>;
 

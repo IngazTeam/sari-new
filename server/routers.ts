@@ -7120,5 +7120,312 @@ export const appRouter = router({
 
   // Smart Website Analysis
   analysis: require('./routers/analysis').analysisRouter,
+
+  // Zid Integration
+  zid: router({
+    // Get Zid connection status
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
+      const dbZid = await import('./db_zid');
+      const settings = await dbZid.getZidSettings(ctx.user.id);
+      
+      if (!settings) {
+        return { connected: false };
+      }
+
+      return {
+        connected: settings.isActive === 1,
+        storeName: settings.storeName,
+        storeUrl: settings.storeUrl,
+        autoSyncProducts: settings.autoSyncProducts === 1,
+        autoSyncOrders: settings.autoSyncOrders === 1,
+        autoSyncCustomers: settings.autoSyncCustomers === 1,
+        lastProductSync: settings.lastProductSync,
+        lastOrderSync: settings.lastOrderSync,
+        lastCustomerSync: settings.lastCustomerSync,
+      };
+    }),
+
+    // Get authorization URL
+    getAuthUrl: protectedProcedure
+      .input(z.object({
+        clientId: z.string(),
+        redirectUri: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const { ZidClient } = await import('./integrations/zid/zidClient');
+        const client = new ZidClient({
+          clientId: input.clientId,
+          clientSecret: '', // Will be provided in callback
+          redirectUri: input.redirectUri,
+        });
+
+        return { authUrl: client.getAuthorizationUrl() };
+      }),
+
+    // Handle OAuth callback
+    handleCallback: protectedProcedure
+      .input(z.object({
+        code: z.string(),
+        clientId: z.string(),
+        clientSecret: z.string(),
+        redirectUri: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        try {
+          const { ZidClient } = await import('./integrations/zid/zidClient');
+          const dbZid = await import('./db_zid');
+
+          const client = new ZidClient({
+            clientId: input.clientId,
+            clientSecret: input.clientSecret,
+            redirectUri: input.redirectUri,
+          });
+
+          // Exchange code for tokens
+          const tokens = await client.exchangeCodeForToken(input.code);
+
+          // Calculate token expiry (1 year from now)
+          const expiresAt = new Date();
+          expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+          // Check if settings exist
+          const existingSettings = await dbZid.getZidSettings(ctx.user.id);
+
+          if (existingSettings) {
+            // Update existing settings
+            await dbZid.updateZidSettings(ctx.user.id, {
+              clientId: input.clientId,
+              clientSecret: input.clientSecret,
+              accessToken: tokens.access_token,
+              managerToken: tokens.Authorization,
+              refreshToken: tokens.refresh_token,
+              tokenExpiresAt: expiresAt.toISOString(),
+              isActive: 1,
+            });
+          } else {
+            // Create new settings
+            await dbZid.createZidSettings({
+              merchantId: ctx.user.id,
+              clientId: input.clientId,
+              clientSecret: input.clientSecret,
+              accessToken: tokens.access_token,
+              managerToken: tokens.Authorization,
+              refreshToken: tokens.refresh_token,
+              tokenExpiresAt: expiresAt.toISOString(),
+              isActive: 1,
+            });
+          }
+
+          return { success: true, message: 'تم ربط Zid بنجاح!' };
+        } catch (error: any) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error.message || 'فشل في ربط Zid',
+          });
+        }
+      }),
+
+    // Disconnect Zid
+    disconnect: protectedProcedure.mutation(async ({ ctx }) => {
+      const dbZid = await import('./db_zid');
+      await dbZid.deleteZidSettings(ctx.user.id);
+      return { success: true, message: 'تم فصل Zid بنجاح' };
+    }),
+
+    // Update auto-sync settings
+    updateAutoSync: protectedProcedure
+      .input(z.object({
+        autoSyncProducts: z.boolean().optional(),
+        autoSyncOrders: z.boolean().optional(),
+        autoSyncCustomers: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const dbZid = await import('./db_zid');
+        await dbZid.updateAutoSyncSettings(ctx.user.id, input);
+        return { success: true, message: 'تم تحديث إعدادات المزامنة' };
+      }),
+
+    // Sync products from Zid
+    syncProducts: protectedProcedure.mutation(async ({ ctx }) => {
+      try {
+        const dbZid = await import('./db_zid');
+        const { ZidClient } = await import('./integrations/zid/zidClient');
+
+        const settings = await dbZid.getZidSettings(ctx.user.id);
+        if (!settings || !settings.accessToken) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط Zid أولاً' });
+        }
+
+        // Create sync log
+        const syncLog = await dbZid.createZidSyncLog({
+          merchantId: ctx.user.id,
+          syncType: 'products',
+          status: 'in_progress',
+        });
+
+        try {
+          const client = new ZidClient({
+            clientId: settings.clientId!,
+            clientSecret: settings.clientSecret!,
+            redirectUri: '',
+            accessToken: settings.accessToken,
+            managerToken: settings.managerToken || undefined,
+          });
+
+          // Fetch products from Zid
+          const { products, pagination } = await client.getProducts();
+
+          // Update sync log
+          await dbZid.updateSyncStats(syncLog.id, {
+            processedItems: products.length,
+            successCount: products.length,
+            failedCount: 0,
+          });
+
+          await dbZid.updateSyncStatus(syncLog.id, 'completed');
+          await dbZid.updateLastSync(ctx.user.id, 'products');
+
+          return {
+            success: true,
+            message: `تم مزامنة ${products.length} منتج بنجاح`,
+            productsCount: products.length,
+          };
+        } catch (error: any) {
+          await dbZid.updateSyncStatus(syncLog.id, 'failed', error.message);
+          throw error;
+        }
+      } catch (error: any) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'فشل في مزامنة المنتجات',
+        });
+      }
+    }),
+
+    // Sync orders from Zid
+    syncOrders: protectedProcedure.mutation(async ({ ctx }) => {
+      try {
+        const dbZid = await import('./db_zid');
+        const { ZidClient } = await import('./integrations/zid/zidClient');
+
+        const settings = await dbZid.getZidSettings(ctx.user.id);
+        if (!settings || !settings.accessToken) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط Zid أولاً' });
+        }
+
+        const syncLog = await dbZid.createZidSyncLog({
+          merchantId: ctx.user.id,
+          syncType: 'orders',
+          status: 'in_progress',
+        });
+
+        try {
+          const client = new ZidClient({
+            clientId: settings.clientId!,
+            clientSecret: settings.clientSecret!,
+            redirectUri: '',
+            accessToken: settings.accessToken,
+            managerToken: settings.managerToken || undefined,
+          });
+
+          const { orders, pagination } = await client.getOrders();
+
+          await dbZid.updateSyncStats(syncLog.id, {
+            processedItems: orders.length,
+            successCount: orders.length,
+            failedCount: 0,
+          });
+
+          await dbZid.updateSyncStatus(syncLog.id, 'completed');
+          await dbZid.updateLastSync(ctx.user.id, 'orders');
+
+          return {
+            success: true,
+            message: `تم مزامنة ${orders.length} طلب بنجاح`,
+            ordersCount: orders.length,
+          };
+        } catch (error: any) {
+          await dbZid.updateSyncStatus(syncLog.id, 'failed', error.message);
+          throw error;
+        }
+      } catch (error: any) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'فشل في مزامنة الطلبات',
+        });
+      }
+    }),
+
+    // Sync customers from Zid
+    syncCustomers: protectedProcedure.mutation(async ({ ctx }) => {
+      try {
+        const dbZid = await import('./db_zid');
+        const { ZidClient } = await import('./integrations/zid/zidClient');
+
+        const settings = await dbZid.getZidSettings(ctx.user.id);
+        if (!settings || !settings.accessToken) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط Zid أولاً' });
+        }
+
+        const syncLog = await dbZid.createZidSyncLog({
+          merchantId: ctx.user.id,
+          syncType: 'customers',
+          status: 'in_progress',
+        });
+
+        try {
+          const client = new ZidClient({
+            clientId: settings.clientId!,
+            clientSecret: settings.clientSecret!,
+            redirectUri: '',
+            accessToken: settings.accessToken,
+            managerToken: settings.managerToken || undefined,
+          });
+
+          const { customers, pagination } = await client.getCustomers();
+
+          await dbZid.updateSyncStats(syncLog.id, {
+            processedItems: customers.length,
+            successCount: customers.length,
+            failedCount: 0,
+          });
+
+          await dbZid.updateSyncStatus(syncLog.id, 'completed');
+          await dbZid.updateLastSync(ctx.user.id, 'customers');
+
+          return {
+            success: true,
+            message: `تم مزامنة ${customers.length} عميل بنجاح`,
+            customersCount: customers.length,
+          };
+        } catch (error: any) {
+          await dbZid.updateSyncStatus(syncLog.id, 'failed', error.message);
+          throw error;
+        }
+      } catch (error: any) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: error.message || 'فشل في مزامنة العملاء',
+        });
+      }
+    }),
+
+    // Get sync logs
+    getSyncLogs: protectedProcedure
+      .input(z.object({
+        syncType: z.enum(['products', 'orders', 'customers', 'inventory']).optional(),
+        limit: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const dbZid = await import('./db_zid');
+        return await dbZid.getZidSyncLogs(ctx.user.id, input.syncType, input.limit);
+      }),
+
+    // Get sync statistics
+    getSyncStats: protectedProcedure.query(async ({ ctx }) => {
+      const dbZid = await import('./db_zid');
+      return await dbZid.getZidSyncStats(ctx.user.id);
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;

@@ -74,6 +74,10 @@ import AdvancedAnalyticsDashboard from "./pages/merchant/AdvancedAnalyticsDashbo
 import DataSync from "./pages/merchant/DataSync";
 import PerformanceMetrics from "./pages/merchant/PerformanceMetrics";
 import ZidIntegration from "./pages/merchant/ZidIntegration";
+import ZidSettings from "./pages/ZidSettings";
+import ZidCallback from "./pages/ZidCallback";
+import ZidProducts from "./pages/ZidProducts";
+import ZidSyncLogs from "./pages/ZidSyncLogs";
 import CalendlyIntegration from "./pages/merchant/CalendlyIntegration";
 import SetupWizard from "./pages/SetupWizard";
 import CalendarSettings from "./pages/CalendarSettings";
@@ -215,6 +219,28 @@ function Router() {
       <Route path="/merchant/integrations/zid">
         <DashboardLayout>
           <ZidIntegration />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/zid/settings">
+        <DashboardLayout>
+          <ZidSettings />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/zid/callback">
+        <ZidCallback />
+      </Route>
+      
+      <Route path="/merchant/zid/products">
+        <DashboardLayout>
+          <ZidProducts />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/zid/sync-logs">
+        <DashboardLayout>
+          <ZidSyncLogs />
         </DashboardLayout>
       </Route>
       
