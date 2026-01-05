@@ -205,14 +205,7 @@ const getAdminMenuItems = (t: any) => [
   { icon: MessageSquare, label: 'إعدادات SMTP', path: "/admin/smtp-settings" },
   { icon: Zap, label: 'إعدادات Google OAuth', path: "/admin/google-oauth" },
   { icon: Database, label: 'مزامنة البيانات', path: "/admin/data-sync" },
-  { icon: BarChart3, label: 'SEO - لوحة التحكم', path: "/admin/seo/dashboard" },
-  { icon: Package, label: 'SEO - الصفحات', path: "/admin/seo/pages" },
-  { icon: MessageSquare, label: 'SEO - Meta Tags', path: "/admin/seo/meta-tags" },
-  { icon: Sparkles, label: 'SEO - Open Graph', path: "/admin/seo/open-graph" },
-  { icon: Zap, label: 'SEO - رموز التتبع', path: "/admin/seo/tracking" },
-  { icon: BarChart3, label: 'SEO - الإحصائيات', path: "/admin/seo/analytics" },
-  { icon: Package, label: 'SEO - الكلمات المفتاحية', path: "/admin/seo/keywords" },
-  { icon: Smartphone, label: 'SEO - الروابط الخارجية', path: "/admin/seo/backlinks" },
+  { icon: BarChart3, label: 'إدارة SEO', path: "/admin/seo" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
