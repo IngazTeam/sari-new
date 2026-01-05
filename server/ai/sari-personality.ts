@@ -8,6 +8,15 @@ import * as db from '../db';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
+import { 
+  isZidOrderRequest, 
+  parseZidOrderMessage, 
+  createZidOrderFromChat, 
+  generateZidOrderConfirmationMessage,
+  isOrderConfirmation,
+  isOrderRejection 
+} from '../automation/zid-order-from-chat';
+import dbZid from '../db_zid';
 
 /**
  * Build dynamic system prompt based on personality settings
@@ -409,6 +418,114 @@ export async function chatWithSari(params: {
     const quickResponse = await db.findMatchingQuickResponse(params.merchantId, params.message);
     if (quickResponse) {
       return quickResponse.response;
+    }
+
+    // التحقق من طلبات الشراء عبر Zid
+    const isZidConnected = await dbZid.isZidConnected(params.merchantId);
+    if (isZidConnected) {
+      // التحقق من طلب شراء جديد
+      const isOrderReq = await isZidOrderRequest(params.message);
+      if (isOrderReq) {
+        // تحليل الطلب
+        const parsedOrder = await parseZidOrderMessage(params.message, params.merchantId);
+        if (parsedOrder && parsedOrder.products.length > 0) {
+          // حفظ الطلب المؤقت في السياق (يمكن استخدام Redis أو قاعدة بيانات)
+          // للتبسيط، سنقوم بإنشاء الطلب مباشرة وإرسال رسالة تأكيد
+          const zidProducts = await db.getZidProducts(params.merchantId);
+          
+          // تجميع تفاصيل المنتجات
+          const orderItems: Array<{ name: string; quantity: number; price: number; sku: string }> = [];
+          let totalAmount = 0;
+          
+          for (const product of parsedOrder.products) {
+            const zidProduct = zidProducts.find(p => 
+              p.zidProductId === product.zidProductId || 
+              p.zidSku === product.sku
+            );
+            if (zidProduct) {
+              const price = zidProduct.price || 0;
+              orderItems.push({
+                name: zidProduct.nameAr || zidProduct.nameEn || 'منتج',
+                quantity: product.quantity,
+                price,
+                sku: zidProduct.zidSku || zidProduct.zidProductId
+              });
+              totalAmount += price * product.quantity;
+            }
+          }
+          
+          if (orderItems.length > 0) {
+            // إنشاء رسالة تأكيد الطلب
+            const itemsList = orderItems.map(item => 
+              `• ${item.name} × ${item.quantity} = ${item.price * item.quantity} ريال`
+            ).join('\n');
+            
+            return `تمام! فهمت طلبك 📝
+
+*المنتجات:*
+${itemsList}
+
+💰 *الإجمالي:* ${totalAmount} ريال
+
+هل تبغى أكمل الطلب؟ رد ب~"نعم" للتأكيد أو "لا" للإلغاء 😊`;
+          }
+        }
+      }
+      
+      // التحقق من تأكيد الطلب
+      if (isOrderConfirmation(params.message)) {
+        // البحث عن آخر طلب مؤقت في المحادثة
+        if (previousMessages.length > 0) {
+          const lastBotMessage = previousMessages.filter(m => m.role === 'assistant').pop();
+          if (lastBotMessage?.content.includes('هل تبغى أكمل الطلب')) {
+            // استخراج المنتجات من الرسالة السابقة وإنشاء الطلب
+            // للتبسيط، نعيد تحليل آخر رسالة من العميل
+            const lastUserMessage = previousMessages.filter(m => m.role === 'user').slice(-2)[0];
+            if (lastUserMessage) {
+              const parsedOrder = await parseZidOrderMessage(lastUserMessage.content, params.merchantId);
+              if (parsedOrder && parsedOrder.products.length > 0) {
+                // إنشاء الطلب في Zid
+                const result = await createZidOrderFromChat(
+                  params.merchantId,
+                  params.customerPhone,
+                  params.customerName || 'عميل',
+                  parsedOrder
+                );
+                
+                if (result.success && result.orderUrl) {
+                  return `✅ *تم إنشاء طلبك بنجاح!*
+
+📦 *رقم الطلب:* ${result.orderCode}
+💰 *الإجمالي:* ${result.totalAmount} ريال
+
+🔗 *لإتمام الدفع:*
+${result.orderUrl}
+
+📱 سنرسل لك تحديثات عن حالة طلبك عبر الواتساب
+
+شكراً لثقتك بنا! 🌟`;
+                } else {
+                  return `عذراً، حصل خطأ في إنشاء الطلب 😔
+${result.message}
+
+ممكن تحاول مرة ثانية أو تتواصل مع الدعم؟`;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // التحقق من رفض الطلب
+      if (isOrderRejection(params.message)) {
+        if (previousMessages.length > 0) {
+          const lastBotMessage = previousMessages.filter(m => m.role === 'assistant').pop();
+          if (lastBotMessage?.content.includes('هل تبغى أكمل الطلب')) {
+            return `تمام، لا مشكلة! 😊
+إذا احتجت أي شي ثاني، أنا موجود 👋`;
+          }
+        }
+      }
     }
 
     // Analyze sentiment
