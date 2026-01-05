@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS webhook_security_logs (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  merchant_id INT,\n  platform VARCHAR(50) NOT NULL,\n  ip_address VARCHAR(45),\n  signature_valid BOOLEAN,\n  request_path VARCHAR(255),\n  request_method VARCHAR(10),\n  error_message TEXT,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS webhook_security_logs (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  merchant_id INT,\n  platform VARCHAR(50) NOT NULL,\n  ip_address VARCHAR(45),\n  signature_valid BOOLEAN,\n  request_path VARCHAR(255),\n  request_method VARCHAR(10),\n  error_message TEXT,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1525
+}

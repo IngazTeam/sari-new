@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS integration_errors (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  merchant_id INT NOT NULL,\n  platform VARCHAR(50) NOT NULL,\n  error_type VARCHAR(100) NOT NULL,\n  error_message TEXT,\n  error_details TEXT,\n  resolved BOOLEAN DEFAULT FALSE,\n  resolved_at TIMESTAMP NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS integration_errors (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  merchant_id INT NOT NULL,\n  platform VARCHAR(50) NOT NULL,\n  error_type VARCHAR(100) NOT NULL,\n  error_message TEXT,\n  error_details TEXT,\n  resolved BOOLEAN DEFAULT FALSE,\n  resolved_at TIMESTAMP NULL,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1492
+}

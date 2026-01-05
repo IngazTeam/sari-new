@@ -10,6 +10,7 @@ import { loyaltyRouter } from "./routers-loyalty";
 import { aiSuggestionsRouter } from "./routers-ai-suggestions";
 import { zidRouter } from "./integrations/zid";
 import { calendlyRouter } from "./integrations/calendly";
+import { notificationsRouter } from "./routers-notifications";
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
@@ -5865,6 +5866,9 @@ export const appRouter = router({
   // Platform Integrations
   zid: zidRouter,
   calendly: calendlyRouter,
+  
+  // Advanced Notifications & Reports
+  advancedNotifications: notificationsRouter,
   
   // ============================================
   // Services Management

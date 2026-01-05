@@ -98,6 +98,10 @@ import LoyaltyTiers from "./pages/LoyaltyTiers";
 import LoyaltyRewards from "./pages/LoyaltyRewards";
 import LoyaltyCustomers from "./pages/LoyaltyCustomers";
 import CustomerLoyalty from "./pages/CustomerLoyalty";
+import IntegrationsDashboard from "./pages/IntegrationsDashboard";
+import NotificationSettings from "./pages/NotificationSettings";
+import ScheduledReports from "./pages/ScheduledReports";
+import WhatsAppAutoNotifications from "./pages/WhatsAppAutoNotifications";
 
 // Admin pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -514,6 +518,22 @@ function Router() {
       {/* Customer Loyalty Page (Public) */}
       <Route path="/customer/loyalty/:customerPhone">
         <CustomerLoyalty />
+      </Route>
+      
+      <Route path="/merchant/integrations-dashboard">
+        <DashboardLayout><IntegrationsDashboard /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/notification-settings">
+        <DashboardLayout><NotificationSettings /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/scheduled-reports">
+        <DashboardLayout><ScheduledReports /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/whatsapp-auto-notifications">
+        <DashboardLayout><WhatsAppAutoNotifications /></DashboardLayout>
       </Route>
       
       <Route path="/merchant/reports">
