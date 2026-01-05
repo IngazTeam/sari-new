@@ -1,0 +1,17 @@
+{
+  "query": "SELECT id, merchantId, instanceId, apiToken, status FROM whatsapp_connection_requests WHERE instanceId = '7105411382' LIMIT 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute SELECT id, merchantId, instanceId, apiToken, status FROM whatsapp_connection_requests WHERE instanceId = '7105411382' LIMIT 1;",
+  "rows": [
+    {
+      "id": "210001",
+      "merchantId": "150001",
+      "instanceId": "7105411382",
+      "apiToken": "2506820417ad40e5b54e87a2d90ecd5fded9857835624479b9",
+      "status": "connected"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tmerchantId\tinstanceId\tapiToken\tstatus\n210001\t150001\t7105411382\t2506820417ad40e5b54e87a2d90ecd5fded9857835624479b9\tconnected\n",
+  "stderr": "",
+  "execution_time_ms": 1560
+}

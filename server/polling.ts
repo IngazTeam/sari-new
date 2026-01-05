@@ -49,6 +49,19 @@ export async function startPolling(merchantId: number): Promise<{ success: boole
 
     const apiUrl = 'https://api.green-api.com';
 
+    // Clear webhook URL before starting polling (required for polling to work)
+    console.log(`[Polling] Clearing webhook URL for merchant ${merchantId} to enable polling mode...`);
+    const clearResult = await whatsapp.clearWebhookUrl(connection.instanceId, connection.apiToken, apiUrl);
+    
+    if (!clearResult.success) {
+      console.warn(`[Polling] Warning: Failed to clear webhook URL for merchant ${merchantId}: ${clearResult.error}`);
+      // Continue anyway - the webhook might already be cleared or the API might have issues
+    } else {
+      console.log(`[Polling] Webhook URL cleared successfully for merchant ${merchantId}`);
+      // Wait a moment for Green API to process the settings change
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+
     // Start polling interval
     const interval = setInterval(async () => {
       await pollMessages(merchantId, connection.instanceId!, connection.apiToken!, apiUrl);
@@ -417,4 +430,91 @@ export function getPollingStatus(): { merchantId: number; active: boolean }[] {
     merchantId,
     active: true,
   }));
+}
+
+
+/**
+ * Restart polling for a specific merchant
+ * This will stop the current polling, clear webhook URL, and start fresh
+ */
+export async function restartPolling(merchantId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`[Polling] Restarting polling for merchant ${merchantId}...`);
+    
+    // Stop current polling if active
+    stopPolling(merchantId);
+    
+    // Wait a moment
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Start polling (this will clear webhook URL)
+    return await startPolling(merchantId);
+  } catch (error: any) {
+    console.error(`[Polling] Error restarting polling for merchant ${merchantId}:`, error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Restart all polling
+ * This will stop all current polling, clear webhook URLs, and start fresh
+ */
+export async function restartAllPolling(): Promise<void> {
+  try {
+    console.log('[Polling] Restarting all polling...');
+    
+    // Stop all current polling
+    stopAllPolling();
+    
+    // Wait a moment
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Start all polling (this will clear webhook URLs)
+    await startAllPolling();
+  } catch (error) {
+    console.error('[Polling] Error restarting all polling:', error);
+  }
+}
+
+/**
+ * Force clear webhook and restart polling for a merchant
+ * Use this when webhook is blocking polling
+ */
+export async function forceClearAndRestartPolling(merchantId: number): Promise<{ success: boolean; error?: string }> {
+  try {
+    console.log(`[Polling] Force clearing webhook and restarting polling for merchant ${merchantId}...`);
+    
+    // Get merchant's WhatsApp connection
+    const connection = await db.getWhatsAppConnectionRequestByMerchantId(merchantId);
+    if (!connection || connection.status !== 'connected') {
+      return { success: false, error: 'WhatsApp not connected' };
+    }
+
+    if (!connection.instanceId || !connection.apiToken) {
+      return { success: false, error: 'Missing Green API credentials' };
+    }
+
+    // Stop current polling
+    stopPolling(merchantId);
+
+    // Force clear webhook URL
+    const apiUrl = 'https://api.green-api.com';
+    console.log(`[Polling] Force clearing webhook URL for instance ${connection.instanceId}...`);
+    
+    const clearResult = await whatsapp.clearWebhookUrl(connection.instanceId, connection.apiToken, apiUrl);
+    
+    if (clearResult.success) {
+      console.log(`[Polling] Webhook URL cleared successfully. Waiting for Green API to process...`);
+      // Wait longer for Green API to process the settings change
+      await new Promise(resolve => setTimeout(resolve, 60000)); // Wait 60 seconds as recommended by Green API
+    } else {
+      console.warn(`[Polling] Warning: Failed to clear webhook URL: ${clearResult.error}`);
+    }
+
+    // Start polling
+    return await startPolling(merchantId);
+  } catch (error: any) {
+    console.error(`[Polling] Error in forceClearAndRestartPolling for merchant ${merchantId}:`, error);
+    return { success: false, error: error.message };
+  }
 }

@@ -609,3 +609,61 @@ export async function sendMessageWithCredentials(
     };
   }
 }
+
+
+/**
+ * Clear Webhook URL to enable polling mode
+ * This is required for free Green API accounts that don't support webhooks
+ * 
+ * Documentation: https://green-api.com/en/docs/api/account/SetSettings/
+ */
+export async function clearWebhookUrl(
+  instanceId: string,
+  apiToken: string,
+  apiUrl: string = 'https://api.green-api.com'
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Extract first 4 digits from instanceId for subdomain (Green API format)
+    const instancePrefix = instanceId.substring(0, 4);
+    const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${instanceId}`;
+    
+    console.log(`[WhatsApp] Clearing webhook URL for instance ${instanceId}...`);
+    
+    // Clear webhook settings using setSettings endpoint
+    const response = await axios.post(`${baseURL}/setSettings/${apiToken}`, {
+      webhookUrl: '',
+      webhookUrlToken: '',
+      outgoingWebhook: 'no',
+      outgoingMessageWebhook: 'no',
+      outgoingAPIMessageWebhook: 'no',
+      incomingWebhook: 'no',
+      deviceWebhook: 'no',
+      statusInstanceWebhook: 'no',
+      stateWebhook: 'no',
+    });
+
+    console.log('[WhatsApp] Clear webhook response:', response.data);
+
+    if (response.data && response.data.saveSettings === true) {
+      console.log(`[WhatsApp] Webhook URL cleared successfully for instance ${instanceId}`);
+      return { success: true };
+    }
+
+    // Even if saveSettings is not explicitly true, check if the request succeeded
+    if (response.status === 200) {
+      console.log(`[WhatsApp] Webhook URL cleared (status 200) for instance ${instanceId}`);
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: 'Failed to clear webhook URL - unexpected response',
+    };
+  } catch (error: any) {
+    console.error('[WhatsApp] Error clearing webhook URL:', error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+}
