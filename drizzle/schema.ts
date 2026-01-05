@@ -1980,3 +1980,137 @@ export type DiscoveredPage = InferSelectModel<typeof discoveredPages>;
 export type NewDiscoveredPage = InferInsertModel<typeof discoveredPages>;
 export type ExtractedFaq = InferSelectModel<typeof extractedFaqs>;
 export type NewExtractedFaq = InferInsertModel<typeof extractedFaqs>;
+
+// ==================== Zid Integration Tables ====================
+
+export const zidProducts = mysqlTable("zid_products", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// Zid Product Info
+	zidProductId: varchar("zid_product_id", { length: 255 }).notNull(),
+	zidSku: varchar("zid_sku", { length: 255 }),
+	
+	// Product Details
+	nameAr: varchar("name_ar", { length: 500 }),
+	nameEn: varchar("name_en", { length: 500 }),
+	descriptionAr: text("description_ar"),
+	descriptionEn: text("description_en"),
+	
+	// Pricing
+	price: decimal({ precision: 10, scale: 2 }).notNull(),
+	salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
+	currency: varchar({ length: 3 }).default('SAR').notNull(),
+	
+	// Inventory
+	quantity: int().default(0).notNull(),
+	isInStock: tinyint("is_in_stock").default(1).notNull(),
+	
+	// Images
+	mainImage: varchar("main_image", { length: 1000 }),
+	images: text(), // JSON array of image URLs
+	
+	// Categories
+	categoryId: varchar("category_id", { length: 255 }),
+	categoryName: varchar("category_name", { length: 255 }),
+	
+	// Status
+	isActive: tinyint("is_active").default(1).notNull(),
+	isPublished: tinyint("is_published").default(1).notNull(),
+	
+	// Linked to Sari Product
+	sariProductId: int("sari_product_id").references(() => products.id, { onDelete: "set null" }),
+	
+	// Sync Info
+	lastSyncedAt: timestamp("last_synced_at", { mode: 'string' }),
+	zidData: text("zid_data"), // Full JSON response from Zid API
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("zid_products_merchant_id_idx").on(table.merchantId),
+	index("zid_products_zid_product_id_idx").on(table.zidProductId),
+	index("zid_products_sari_product_id_idx").on(table.sariProductId),
+]);
+
+export const zidOrders = mysqlTable("zid_orders", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// Zid Order Info
+	zidOrderId: varchar("zid_order_id", { length: 255 }).notNull(),
+	zidOrderNumber: varchar("zid_order_number", { length: 255 }),
+	
+	// Customer Info
+	customerName: varchar("customer_name", { length: 255 }),
+	customerEmail: varchar("customer_email", { length: 255 }),
+	customerPhone: varchar("customer_phone", { length: 50 }),
+	
+	// Order Details
+	totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+	currency: varchar({ length: 3 }).default('SAR').notNull(),
+	status: mysqlEnum(['pending','processing','completed','cancelled','refunded']).default('pending').notNull(),
+	paymentStatus: mysqlEnum("payment_status", ['pending','paid','failed','refunded']).default('pending').notNull(),
+	
+	// Items
+	items: text().notNull(), // JSON array of order items
+	
+	// Shipping
+	shippingAddress: text("shipping_address"), // JSON
+	shippingMethod: varchar("shipping_method", { length: 255 }),
+	shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }),
+	
+	// Linked to Sari Order
+	sariOrderId: int("sari_order_id").references(() => orders.id, { onDelete: "set null" }),
+	
+	// Dates
+	orderDate: timestamp("order_date", { mode: 'string' }),
+	lastSyncedAt: timestamp("last_synced_at", { mode: 'string' }),
+	zidData: text("zid_data"), // Full JSON response from Zid API
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("zid_orders_merchant_id_idx").on(table.merchantId),
+	index("zid_orders_zid_order_id_idx").on(table.zidOrderId),
+	index("zid_orders_sari_order_id_idx").on(table.sariOrderId),
+	index("zid_orders_customer_phone_idx").on(table.customerPhone),
+]);
+
+export const zidWebhooks = mysqlTable("zid_webhooks", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// Webhook Info
+	webhookId: varchar("webhook_id", { length: 255 }),
+	eventType: varchar("event_type", { length: 100 }).notNull(), // order.created, product.updated, etc.
+	
+	// Payload
+	payload: text().notNull(), // Full JSON payload
+	
+	// Processing
+	status: mysqlEnum(['pending','processed','failed']).default('pending').notNull(),
+	processedAt: timestamp("processed_at", { mode: 'string' }),
+	errorMessage: text("error_message"),
+	
+	// Metadata
+	ipAddress: varchar("ip_address", { length: 50 }),
+	userAgent: varchar("user_agent", { length: 500 }),
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+},
+(table) => [
+	index("zid_webhooks_merchant_id_idx").on(table.merchantId),
+	index("zid_webhooks_event_type_idx").on(table.eventType),
+	index("zid_webhooks_status_idx").on(table.status),
+]);
+
+// Type exports for Zid tables
+export type ZidProduct = InferSelectModel<typeof zidProducts>;
+export type NewZidProduct = InferInsertModel<typeof zidProducts>;
+export type ZidOrder = InferSelectModel<typeof zidOrders>;
+export type NewZidOrder = InferInsertModel<typeof zidOrders>;
+export type ZidWebhook = InferSelectModel<typeof zidWebhooks>;
+export type NewZidWebhook = InferInsertModel<typeof zidWebhooks>;

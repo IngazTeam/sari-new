@@ -209,6 +209,11 @@ import {
   competitorProducts,
   discoveredPages,
   extractedFaqs,
+  zidSettings,
+  zidProducts,
+  zidOrders,
+  zidWebhooks,
+  zidSyncLogs,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -7924,5 +7929,476 @@ export async function getAnalysisStats(merchantId: number): Promise<{
     totalFaqs: faqs.length,
     pagesByType,
     faqsByCategory,
+  };
+}
+
+// ==================== Zid Integration Database Functions ====================
+
+/**
+ * Get Zid settings for merchant
+ */
+export async function getZidSettings(merchantId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(zidSettings)
+    .where(eq(zidSettings.merchantId, merchantId))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Create or update Zid settings
+ */
+export async function upsertZidSettings(merchantId: number, settings: any) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const existing = await getZidSettings(merchantId);
+
+  if (existing) {
+    await db
+      .update(zidSettings)
+      .set({
+        ...settings,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(zidSettings.id, existing.id));
+    
+    return { ...existing, ...settings };
+  } else {
+    const result = await db
+      .insert(zidSettings)
+      .values({
+        merchantId,
+        ...settings,
+      });
+    
+    return { id: Number(result[0].insertId), merchantId, ...settings };
+  }
+}
+
+/**
+ * Save Zid product to database
+ */
+export async function saveZidProduct(merchantId: number, productData: any) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Check if product exists
+  const existing = await db
+    .select()
+    .from(zidProducts)
+    .where(
+      and(
+        eq(zidProducts.merchantId, merchantId),
+        eq(zidProducts.zidProductId, productData.zidProductId)
+      )
+    )
+    .limit(1);
+
+  if (existing[0]) {
+    await db
+      .update(zidProducts)
+      .set({
+        ...productData,
+        lastSyncedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(zidProducts.id, existing[0].id));
+    
+    return { ...existing[0], ...productData };
+  } else {
+    const result = await db
+      .insert(zidProducts)
+      .values({
+        merchantId,
+        ...productData,
+        lastSyncedAt: new Date().toISOString(),
+      });
+    
+    return { id: Number(result[0].insertId), merchantId, ...productData };
+  }
+}
+
+/**
+ * Get all Zid products for merchant
+ */
+export async function getZidProducts(merchantId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(zidProducts)
+    .where(eq(zidProducts.merchantId, merchantId))
+    .orderBy(desc(zidProducts.createdAt));
+}
+
+/**
+ * Get Zid product by ID
+ */
+export async function getZidProductById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(zidProducts)
+    .where(eq(zidProducts.id, id))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Get Zid product by Zid product ID
+ */
+export async function getZidProductByZidId(merchantId: number, zidProductId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(zidProducts)
+    .where(
+      and(
+        eq(zidProducts.merchantId, merchantId),
+        eq(zidProducts.zidProductId, zidProductId)
+      )
+    )
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Link Zid product to Sari product
+ */
+export async function linkZidProductToSariProduct(
+  zidProductId: number,
+  sariProductId: number
+) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(zidProducts)
+    .set({ sariProductId })
+    .where(eq(zidProducts.id, zidProductId));
+}
+
+/**
+ * Save Zid order to database
+ */
+export async function saveZidOrder(merchantId: number, orderData: any) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Check if order exists
+  const existing = await db
+    .select()
+    .from(zidOrders)
+    .where(
+      and(
+        eq(zidOrders.merchantId, merchantId),
+        eq(zidOrders.zidOrderId, orderData.zidOrderId)
+      )
+    )
+    .limit(1);
+
+  if (existing[0]) {
+    await db
+      .update(zidOrders)
+      .set({
+        ...orderData,
+        lastSyncedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(zidOrders.id, existing[0].id));
+    
+    return { ...existing[0], ...orderData };
+  } else {
+    const result = await db
+      .insert(zidOrders)
+      .values({
+        merchantId,
+        ...orderData,
+        lastSyncedAt: new Date().toISOString(),
+      });
+    
+    return { id: Number(result[0].insertId), merchantId, ...orderData };
+  }
+}
+
+/**
+ * Get all Zid orders for merchant
+ */
+export async function getZidOrders(merchantId: number, filters?: {
+  status?: string;
+  customerPhone?: string;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db
+    .select()
+    .from(zidOrders)
+    .where(eq(zidOrders.merchantId, merchantId));
+
+  if (filters?.status) {
+    query = query.where(eq(zidOrders.status, filters.status as any));
+  }
+
+  if (filters?.customerPhone) {
+    query = query.where(eq(zidOrders.customerPhone, filters.customerPhone));
+  }
+
+  query = query.orderBy(desc(zidOrders.createdAt));
+
+  if (filters?.limit) {
+    query = query.limit(filters.limit);
+  }
+
+  return await query;
+}
+
+/**
+ * Get Zid order by ID
+ */
+export async function getZidOrderById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(zidOrders)
+    .where(eq(zidOrders.id, id))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Get Zid order by Zid order ID
+ */
+export async function getZidOrderByZidId(merchantId: number, zidOrderId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(zidOrders)
+    .where(
+      and(
+        eq(zidOrders.merchantId, merchantId),
+        eq(zidOrders.zidOrderId, zidOrderId)
+      )
+    )
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Link Zid order to Sari order
+ */
+export async function linkZidOrderToSariOrder(
+  zidOrderId: number,
+  sariOrderId: number
+) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(zidOrders)
+    .set({ sariOrderId })
+    .where(eq(zidOrders.id, zidOrderId));
+}
+
+/**
+ * Save Zid webhook event
+ */
+export async function saveZidWebhook(merchantId: number, webhookData: {
+  webhookId?: string;
+  eventType: string;
+  payload: string;
+  status?: 'pending' | 'processed' | 'failed';
+  ipAddress?: string;
+  userAgent?: string;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .insert(zidWebhooks)
+    .values({
+      merchantId,
+      ...webhookData,
+      status: webhookData.status || 'pending',
+    });
+
+  return { id: Number(result[0].insertId), merchantId, ...webhookData };
+}
+
+/**
+ * Update Zid webhook status
+ */
+export async function updateZidWebhookStatus(
+  webhookId: number,
+  status: 'pending' | 'processed' | 'failed',
+  errorMessage?: string
+) {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(zidWebhooks)
+    .set({
+      status,
+      errorMessage,
+      processedAt: new Date().toISOString(),
+    })
+    .where(eq(zidWebhooks.id, webhookId));
+}
+
+/**
+ * Get Zid webhooks for merchant
+ */
+export async function getZidWebhooks(merchantId: number, filters?: {
+  eventType?: string;
+  status?: string;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+
+  let query = db
+    .select()
+    .from(zidWebhooks)
+    .where(eq(zidWebhooks.merchantId, merchantId));
+
+  if (filters?.eventType) {
+    query = query.where(eq(zidWebhooks.eventType, filters.eventType));
+  }
+
+  if (filters?.status) {
+    query = query.where(eq(zidWebhooks.status, filters.status as any));
+  }
+
+  query = query.orderBy(desc(zidWebhooks.createdAt));
+
+  if (filters?.limit) {
+    query = query.limit(filters.limit);
+  }
+
+  return await query;
+}
+
+/**
+ * Create Zid sync log
+ */
+export async function createZidSyncLog(merchantId: number, syncData: {
+  syncType: 'products' | 'orders' | 'customers' | 'inventory';
+  totalItems?: number;
+}) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .insert(zidSyncLogs)
+    .values({
+      merchantId,
+      syncType: syncData.syncType,
+      status: 'in_progress',
+      totalItems: syncData.totalItems || 0,
+      processedItems: 0,
+      successCount: 0,
+      failedCount: 0,
+      startedAt: new Date().toISOString(),
+    });
+
+  return { id: Number(result[0].insertId), merchantId, ...syncData };
+}
+
+/**
+ * Update Zid sync log
+ */
+export async function updateZidSyncLog(
+  syncLogId: number,
+  updates: {
+    status?: 'pending' | 'in_progress' | 'completed' | 'failed';
+    processedItems?: number;
+    successCount?: number;
+    failedCount?: number;
+    errorMessage?: string;
+    syncDetails?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) return;
+
+  const updateData: any = { ...updates };
+  
+  if (updates.status === 'completed' || updates.status === 'failed') {
+    updateData.completedAt = new Date().toISOString();
+  }
+
+  await db
+    .update(zidSyncLogs)
+    .set(updateData)
+    .where(eq(zidSyncLogs.id, syncLogId));
+}
+
+/**
+ * Get Zid sync logs for merchant
+ */
+export async function getZidSyncLogs(merchantId: number, limit: number = 20) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(zidSyncLogs)
+    .where(eq(zidSyncLogs.merchantId, merchantId))
+    .orderBy(desc(zidSyncLogs.createdAt))
+    .limit(limit);
+}
+
+/**
+ * Get Zid integration stats
+ */
+export async function getZidIntegrationStats(merchantId: number) {
+  const db = await getDb();
+  if (!db) {
+    return {
+      totalProducts: 0,
+      totalOrders: 0,
+      totalWebhooks: 0,
+      lastSync: null,
+    };
+  }
+
+  const [productsCount, ordersCount, webhooksCount, lastSyncLog] = await Promise.all([
+    db.select().from(zidProducts).where(eq(zidProducts.merchantId, merchantId)),
+    db.select().from(zidOrders).where(eq(zidOrders.merchantId, merchantId)),
+    db.select().from(zidWebhooks).where(eq(zidWebhooks.merchantId, merchantId)),
+    db
+      .select()
+      .from(zidSyncLogs)
+      .where(eq(zidSyncLogs.merchantId, merchantId))
+      .orderBy(desc(zidSyncLogs.createdAt))
+      .limit(1),
+  ]);
+
+  return {
+    totalProducts: productsCount.length,
+    totalOrders: ordersCount.length,
+    totalWebhooks: webhooksCount.length,
+    lastSync: lastSyncLog[0]?.createdAt || null,
   };
 }

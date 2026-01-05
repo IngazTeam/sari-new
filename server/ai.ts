@@ -90,6 +90,9 @@ interface ProductInfo {
   price: number;
   stock: number | null;
   category: string | null;
+  imageUrl?: string | null;
+  source?: string;
+  zidProductId?: string;
 }
 
 interface OrderInfo {
@@ -177,16 +180,36 @@ function formatOrdersInfo(orders: OrderInfo[]): string {
  * البحث في المنتجات بناءً على استفسار العميل
  */
 async function searchProducts(merchantId: number, query: string): Promise<ProductInfo[]> {
-  const products = await db.getProductsByMerchantId(merchantId);
+  // البحث في منتجات ساري العادية
+  const sariProducts = await db.getProductsByMerchantId(merchantId);
   
-  if (!products || products.length === 0) {
+  // البحث في منتجات Zid المستوردة
+  const zidProducts = await db.getZidProducts(merchantId);
+  
+  // دمج المنتجات من المصدرين
+  const allProducts = [
+    ...(sariProducts || []),
+    ...zidProducts.map((zp: any) => ({
+      id: zp.id,
+      name: zp.nameAr || zp.nameEn || 'منتج بدون اسم',
+      description: zp.descriptionAr || zp.descriptionEn,
+      price: Math.round(parseFloat(zp.price) * 100), // Convert to cents
+      stock: zp.quantity,
+      category: zp.categoryName,
+      imageUrl: zp.mainImage,
+      source: 'zid',
+      zidProductId: zp.zidProductId,
+    }))
+  ];
+  
+  if (!allProducts || allProducts.length === 0) {
     return [];
   }
 
   // بحث بسيط في الاسم والوصف والفئة
   const searchTerms = query.toLowerCase().split(' ');
   
-  const matchedProducts = products.filter((product: any) => {
+  const matchedProducts = allProducts.filter((product: any) => {
     const searchText = `${product.name} ${product.description || ''} ${product.category || ''}`.toLowerCase();
     return searchTerms.some(term => searchText.includes(term));
   });
@@ -199,6 +222,9 @@ async function searchProducts(merchantId: number, query: string): Promise<Produc
     price: p.price,
     stock: p.stock,
     category: p.category,
+    imageUrl: p.imageUrl,
+    source: p.source || 'sari',
+    zidProductId: p.zidProductId,
   }));
 }
 

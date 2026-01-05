@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `zid_webhooks` (\n\t`id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n\t`merchant_id` int NOT NULL,\n\t`webhook_id` varchar(255),\n\t`event_type` varchar(100) NOT NULL,\n\t`payload` text NOT NULL,\n\t`status` enum('pending','processed','failed') NOT NULL DEFAULT 'pending',\n\t`processed_at` timestamp,\n\t`error_message` text,\n\t`ip_address` varchar(50),\n\t`user_agent` varchar(500),\n\t`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n\tFOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE,\n\tINDEX `zid_webhooks_merchant_id_idx` (`merchant_id`),\n\tINDEX `zid_webhooks_event_type_idx` (`event_type`),\n\tINDEX `zid_webhooks_status_idx` (`status`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `zid_webhooks` (\n\t`id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n\t`merchant_id` int NOT NULL,\n\t`webhook_id` varchar(255),\n\t`event_type` varchar(100) NOT NULL,\n\t`payload` text NOT NULL,\n\t`status` enum('pending','processed','failed') NOT NULL DEFAULT 'pending',\n\t`processed_at` timestamp,\n\t`error_message` text,\n\t`ip_address` varchar(50),\n\t`user_agent` varchar(500),\n\t`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n\tFOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE,\n\tINDEX `zid_webhooks_merchant_id_idx` (`merchant_id`),\n\tINDEX `zid_webhooks_event_type_idx` (`event_type`),\n\tINDEX `zid_webhooks_status_idx` (`status`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1722
+}

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { protectedProcedure, router } from '../_core/trpc';
+import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
 import * as db from '../db';
 
@@ -209,7 +209,32 @@ export const zidRouter = router({
           : null,
       };
     }),
+
+  // Handle Zid webhook
+  handleWebhook: publicProcedure
+    .input(z.object({
+      merchantId: z.number(),
+      payload: z.any(),
+      signature: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { processZidWebhook } = await import('../webhooks/zid-webhook');
+      
+      // Get Zid settings to retrieve webhook secret
+      const dbZid = await import('../db_zid');
+      const settings = await dbZid.getZidSettings(input.merchantId);
+      
+      const result = await processZidWebhook(
+        input.payload,
+        input.merchantId,
+        input.signature,
+        settings?.clientSecret || undefined
+      );
+      
+      return result;
+    }),
 });
+
 
 // Webhook handler for Zid events
 export async function handleZidWebhook(merchantId: number, event: string, payload: any) {
