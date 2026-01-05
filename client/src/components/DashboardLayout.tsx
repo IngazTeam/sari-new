@@ -124,6 +124,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Package, label: t('sidebar.merchant.products'), path: "/merchant/products", group: 'sales' },
   { icon: ShoppingCart, label: t('sidebar.merchant.chatOrders'), path: "/merchant/chat-orders", group: 'sales' },
   { icon: FileText, label: 'الطلبات', path: "/merchant/orders", group: 'sales' },
+  { icon: Users, label: 'إدارة العملاء', path: "/merchant/customers", group: 'sales' },
   { icon: Ticket, label: t('sidebar.merchant.discounts'), path: "/merchant/discounts", group: 'sales' },
   { icon: ShoppingBag, label: t('sidebar.merchant.abandonedCarts'), path: "/merchant/abandoned-carts", group: 'sales' },
   { icon: Star, label: 'التقييمات', path: "/merchant/reviews", group: 'sales' },
