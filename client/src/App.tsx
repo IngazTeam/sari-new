@@ -835,7 +835,20 @@ function Router() {
         </DashboardLayout>
       </Route>
       
+      {/* Alias routes for packages and addons */}
+      <Route path="/admin/packages">
+        <DashboardLayout>
+          <SubscriptionPlansAdmin />
+        </DashboardLayout>
+      </Route>
+      
       <Route path="/admin/subscription-addons">
+        <DashboardLayout>
+          <SubscriptionAddonsAdmin />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/addons">
         <DashboardLayout>
           <SubscriptionAddonsAdmin />
         </DashboardLayout>
