@@ -222,6 +222,48 @@ export default function Navbar() {
                 <span className="ml-2">🇬🇧</span>
                 English
               </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => changeLanguage('fr')}
+                className={currentLang === 'fr' ? 'bg-accent' : ''}
+              >
+                <span className="ml-2">🇫🇷</span>
+                Français
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => changeLanguage('de')}
+                className={currentLang === 'de' ? 'bg-accent' : ''}
+              >
+                <span className="ml-2">🇩🇪</span>
+                Deutsch
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => changeLanguage('es')}
+                className={currentLang === 'es' ? 'bg-accent' : ''}
+              >
+                <span className="ml-2">🇪🇸</span>
+                Español
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => changeLanguage('zh')}
+                className={currentLang === 'zh' ? 'bg-accent' : ''}
+              >
+                <span className="ml-2">🇨🇳</span>
+                中文
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => changeLanguage('tr')}
+                className={currentLang === 'tr' ? 'bg-accent' : ''}
+              >
+                <span className="ml-2">🇹🇷</span>
+                Türkçe
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => changeLanguage('it')}
+                className={currentLang === 'it' ? 'bg-accent' : ''}
+              >
+                <span className="ml-2">🇮🇹</span>
+                Italiano
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
