@@ -1000,5 +1000,35 @@
     "reject": "Are you sure you want to reject this?",
     "refund": "Are you sure you want to refund this payment?",
     "deleteAccount": "Are you sure you want to delete your account? This action cannot be undone."
+  },
+  "bot": {
+    "welcome": "Hello! I'm Sari, your smart sales assistant. How can I help you today?",
+    "noProducts": "Unfortunately, no products are currently available.",
+    "noOrders": "No previous orders found.",
+    "errorProcessing": "Sorry, an error occurred while processing your message. Please try again.",
+    "errorTemporary": "Sorry, a temporary error occurred. Please try again or contact support.",
+    "outOfHours": "Thank you for reaching out! We are currently outside business hours. We will respond as soon as possible.",
+    "orderStatus": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "processing": "Processing",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled"
+    },
+    "orderDetails": "Order #{{orderId}} - {{status}}{{tracking}}\nAmount: {{amount}} - Date: {{date}}",
+    "productDetails": "• {{name}} - {{price}} {{stock}}{{description}}",
+    "storeInfo": "Store Information:\nStore Name: {{businessName}}\nContact: {{phone}}"
+  },
+  "dashboard": {
+    "totalOrders": "Total Orders",
+    "totalRevenue": "Total Revenue",
+    "averageOrderValue": "Average Order Value",
+    "completedOrders": "Completed Orders",
+    "averageRating": "Average Rating",
+    "last30Days": "Last 30 Days",
+    "averageOrder": "Average Order",
+    "successfulOrders": "Successful Orders",
+    "reviews": "review"
   }
 }

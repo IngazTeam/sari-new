@@ -999,5 +999,35 @@
     "reject": "هل أنت متأكد أنك تريد رفض هذا؟",
     "refund": "هل أنت متأكد أنك تريد استرداد هذا الدفع؟",
     "deleteAccount": "هل أنت متأكد أنك تريد حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه."
+  },
+  "bot": {
+    "welcome": "أهلاً بك! أنا ساري، مساعد المبيعات الذكي. كيف يمكنني مساعدتك اليوم؟",
+    "noProducts": "للأسف لا توجد منتجات متاحة حالياً.",
+    "noOrders": "لا توجد طلبات سابقة.",
+    "errorProcessing": "عذراً، حدث خطأ في معالجة رسالتك. يرجى المحاولة مرة أخرى.",
+    "errorTemporary": "عذراً، حدث خطأ مؤقت. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+    "outOfHours": "شكراً لتواصلك! نحن حالياً خارج أوقات العمل. سنرد عليك في أقرب وقت ممكن.",
+    "orderStatus": {
+      "pending": "قيد الانتظار",
+      "paid": "مدفوع",
+      "processing": "قيد التجهيز",
+      "shipped": "تم الشحن",
+      "delivered": "تم التوصيل",
+      "cancelled": "ملغي"
+    },
+    "orderDetails": "طلب رقم {{orderId}} - {{status}}{{tracking}}\nالمبلغ: {{amount}} - التاريخ: {{date}}",
+    "productDetails": "• {{name}} - {{price}} {{stock}}{{description}}",
+    "storeInfo": "معلومات المتجر:\nاسم المتجر: {{businessName}}\nرقم التواصل: {{phone}}"
+  },
+  "dashboard": {
+    "totalOrders": "إجمالي الطلبات",
+    "totalRevenue": "إجمالي الإيرادات",
+    "averageOrderValue": "متوسط قيمة الطلب",
+    "completedOrders": "الطلبات المكتملة",
+    "averageRating": "متوسط التقييم",
+    "last30Days": "آخر 30 يوم",
+    "averageOrder": "متوسط الطلب",
+    "successfulOrders": "طلبات ناجحة",
+    "reviews": "تقييم"
   }
 }

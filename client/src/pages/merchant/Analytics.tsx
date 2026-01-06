@@ -8,8 +8,11 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
+import { useCurrency } from '@/contexts/CurrencyContext';
+
 export default function Analytics() {
   const { t } = useTranslation();
+  const { formatCurrency } = useCurrency();
 
   const [dateRange] = useState<{ start?: string; end?: string }>({});
   const [isExporting, setIsExporting] = useState(false);
@@ -566,7 +569,7 @@ export default function Analytics() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{product.productName}</p>
                     <p className="text-sm text-muted-foreground">
-                      {product.price} ريال
+                      {formatCurrency(product.price)}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

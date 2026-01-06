@@ -196,6 +196,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   
   // الإعدادات
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings", group: 'settings' },
+  { icon: Languages, label: 'إعدادات اللغة', path: "/merchant/language-settings", group: 'settings' },
   { icon: BellRing, label: 'إعدادات الإشعارات', path: "/merchant/notification-settings", group: 'settings' },
 ];
 

@@ -27,9 +27,11 @@ import {
   Calendar,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrency } from "@/contexts/CurrencyContext";
 
 export default function Reports() {
   const { toast } = useToast();
+  const { formatCurrency } = useCurrency();
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
 
   // Fetch reports data
@@ -41,13 +43,6 @@ export default function Reports() {
 
   const { data: conversationsReport, isLoading: loadingConversations } =
     trpc.reports.getConversationsReport.useQuery({ period });
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("ar-SA", {
-      style: "currency",
-      currency: "SAR",
-    }).format(price);
-  };
 
   const handleExportReport = (reportType: string) => {
     toast({
@@ -115,7 +110,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {formatPrice(salesReport?.totalRevenue || 0)}
+                      {formatCurrency(salesReport?.totalRevenue || 0)}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       {salesReport?.growth > 0 ? "+" : ""}
@@ -150,7 +145,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {formatPrice(salesReport?.averageOrderValue || 0)}
+                      {formatCurrency(salesReport?.averageOrderValue || 0)}
                     </div>
                     <p className="text-xs text-muted-foreground">
                       لكل طلب
@@ -199,7 +194,7 @@ export default function Reports() {
                             </p>
                           </div>
                           <p className="font-bold">
-                            {formatPrice(product.revenue)}
+                            {formatCurrency(product.revenue)}
                           </p>
                         </div>
                       ))}
@@ -326,7 +321,7 @@ export default function Reports() {
                               </p>
                             </div>
                             <p className="font-bold">
-                              {formatPrice(customer.totalSpent)}
+                              {formatCurrency(customer.totalSpent)}
                             </p>
                           </div>
                         )

@@ -8,9 +8,11 @@ import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, Us
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 export default function MerchantDashboard() {
   const { t } = useTranslation();
+  const { formatCurrency } = useCurrency();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getCurrent.useQuery();
   const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery();
@@ -49,51 +51,51 @@ export default function MerchantDashboard() {
   // Main stats with growth indicators
   const mainStats = [
     {
-      title: 'إجمالي الطلبات',
+      title: t('dashboard.totalOrders'),
       value: dashboardStats?.totalOrders || 0,
       growth: comparisonStats?.growth.orders || 0,
       icon: Package,
-      description: 'آخر 30 يوم',
+      description: t('dashboard.last30Days'),
       color: 'text-primary',
       bgColor: 'bg-primary/10',
       link: '/merchant/orders',
     },
     {
-      title: 'إجمالي الإيرادات',
-      value: `${dashboardStats?.totalRevenue || 0} ريال`,
+      title: t('dashboard.totalRevenue'),
+      value: formatCurrency(dashboardStats?.totalRevenue || 0),
       growth: comparisonStats?.growth.revenue || 0,
       icon: TrendingUp,
-      description: 'آخر 30 يوم',
+      description: t('dashboard.last30Days'),
       color: 'text-green-600',
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       link: '/merchant/reports',
     },
     {
-      title: 'متوسط قيمة الطلب',
-      value: `${dashboardStats?.averageOrderValue || 0} ريال`,
+      title: t('dashboard.averageOrderValue'),
+      value: formatCurrency(dashboardStats?.averageOrderValue || 0),
       growth: 0,
       icon: MessageSquare,
-      description: 'متوسط الطلب',
+      description: t('dashboard.averageOrder'),
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       link: '/merchant/analytics',
     },
     {
-      title: 'الطلبات المكتملة',
+      title: t('dashboard.completedOrders'),
       value: dashboardStats?.completedOrders || 0,
       growth: comparisonStats?.growth.completed || 0,
       icon: CheckCircle2,
-      description: 'طلبات ناجحة',
+      description: t('dashboard.successfulOrders'),
       color: 'text-orange-600',
       bgColor: 'bg-orange-50 dark:bg-orange-900/20',
       link: '/merchant/orders',
     },
     {
-      title: 'متوسط التقييم',
+      title: t('dashboard.averageRating'),
       value: reviewStats ? `${reviewStats.averageRating.toFixed(1)} ⭐` : '0.0 ⭐',
       growth: 0,
       icon: Star,
-      description: `${reviewStats?.totalReviews || 0} تقييم`,
+      description: `${reviewStats?.totalReviews || 0} ${t('dashboard.reviews')}`,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
       link: '/merchant/reviews',
