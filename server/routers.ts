@@ -729,6 +729,7 @@ export const appRouter = router({
         name: z.string().min(1),
         description: z.string().optional(),
         price: z.number().positive(),
+        currency: z.enum(['SAR', 'USD']).optional(),
         imageUrl: z.string().url().optional(),
         stock: z.number().int().min(0).optional(),
       }))
@@ -739,6 +740,7 @@ export const appRouter = router({
         const productId = await db.createProduct({
           merchantId: merchant.id,
           ...input,
+          currency: input.currency || merchant.currency || 'SAR',
         });
         return { success: true, productId };
       }),
@@ -750,6 +752,7 @@ export const appRouter = router({
         name: z.string().min(1).optional(),
         description: z.string().optional(),
         price: z.number().positive().optional(),
+        currency: z.enum(['SAR', 'USD']).optional(),
         imageUrl: z.string().url().optional(),
         stock: z.number().int().min(0).optional(),
       }))

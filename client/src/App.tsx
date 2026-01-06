@@ -109,6 +109,7 @@ import LoyaltyCustomers from "./pages/LoyaltyCustomers";
 import CustomerLoyalty from "./pages/CustomerLoyalty";
 import IntegrationsDashboard from "./pages/IntegrationsDashboard";
 import NotificationSettings from "./pages/NotificationSettings";
+import CurrencySettings from "./pages/CurrencySettings";
 import PushNotificationsSettings from "./pages/merchant/PushNotificationsSettings";
 import ScheduledReports from "./pages/ScheduledReports";
 import WhatsAppAutoNotifications from "./pages/WhatsAppAutoNotifications";
@@ -592,6 +593,10 @@ function Router() {
       
       <Route path="/merchant/notification-settings">
         <DashboardLayout><NotificationSettings /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/currency-settings">
+        <DashboardLayout><CurrencySettings /></DashboardLayout>
       </Route>
       
       <Route path="/merchant/push-notifications">
