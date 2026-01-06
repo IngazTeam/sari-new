@@ -350,6 +350,92 @@ export async function getUserByEmail(email: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+// Trial Period Management
+export async function activateUserTrial(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const trialStartDate = new Date();
+  const trialEndDate = new Date();
+  trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days trial
+
+  await db.update(users)
+    .set({
+      trialStartDate: trialStartDate.toISOString(),
+      trialEndDate: trialEndDate.toISOString(),
+      isTrialActive: 1,
+    })
+    .where(eq(users.id, userId));
+
+  return true;
+}
+
+export async function deactivateUserTrial(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db.update(users)
+    .set({
+      isTrialActive: 0,
+    })
+    .where(eq(users.id, userId));
+
+  return true;
+}
+
+export async function updateWhatsAppConnectionStatus(userId: number, connected: boolean): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  await db.update(users)
+    .set({
+      whatsappConnected: connected ? 1 : 0,
+    })
+    .where(eq(users.id, userId));
+
+  return true;
+}
+
+export async function getUsersWithExpiringTrial(daysUntilExpiry: number): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() + daysUntilExpiry);
+
+  // Get users whose trial expires within the specified days
+  const result = await db.select()
+    .from(users)
+    .where(
+      and(
+        eq(users.isTrialActive, 1),
+        lte(users.trialEndDate, targetDate.toISOString()),
+        gte(users.trialEndDate, now.toISOString())
+      )
+    );
+
+  return result;
+}
+
+export async function getUsersWithExpiredTrial(): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+
+  const result = await db.select()
+    .from(users)
+    .where(
+      and(
+        eq(users.isTrialActive, 1),
+        lt(users.trialEndDate, now.toISOString())
+      )
+    );
+
+  return result;
+}
+
 export async function updateUserLastSignedIn(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;

@@ -553,15 +553,34 @@ export const merchantSubscriptionRouter = router({
     return { daysRemaining };
   }),
 
-  // Check subscription status
+  // Check subscription status (including trial)
   checkStatus: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
+    // Check if user has active trial
+    const user = await db.getUserById(ctx.user.id);
+    if (user && user.isTrialActive === 1 && user.trialEndDate) {
+      const now = new Date();
+      const trialEnd = new Date(user.trialEndDate);
+      if (now <= trialEnd) {
+        return { 
+          isActive: true, 
+          reason: 'الفترة التجريبية نشطة',
+          isTrial: true 
+        };
+      }
+    }
+
+    // Check regular subscription
     const isActive = await db.checkMerchantSubscriptionStatus(merchant.id);
-    return { isActive };
+    return { 
+      isActive,
+      reason: isActive ? 'اشتراك نشط' : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
+      isTrial: false
+    };
   }),
 });
 

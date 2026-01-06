@@ -214,6 +214,9 @@ export const appRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create user' });
         }
         
+        // Activate trial period (7 days)
+        await db.activateUserTrial(user.id);
+        
         // Create merchant profile automatically
         await db.createMerchant({
           userId: user.id,
@@ -222,10 +225,20 @@ export const appRouter = router({
           status: 'pending',
         });
         
-        // Send welcome email
+        // Send welcome email with trial information
         try {
-          const { sendWelcomeEmail } = await import('./notifications/email-notifications');
-          await sendWelcomeEmail(input.email, input.businessName, input.name);
+          const { sendWelcomeEmail } = await import('./_core/email');
+          const trialEndDate = new Date();
+          trialEndDate.setDate(trialEndDate.getDate() + 7);
+          await sendWelcomeEmail({
+            name: input.name,
+            email: input.email,
+            trialEndDate: trialEndDate.toLocaleDateString('ar-SA', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            }),
+          });
         } catch (error) {
           console.error('[Signup] Failed to send welcome email:', error);
           // Don't fail signup if email fails
@@ -8449,5 +8462,82 @@ export const appRouter = router({
   
   // Smart Notifications
   smartNotifications: smartNotificationsRouter,
+  
+  // Email Notifications
+  email: router({
+    sendWelcome: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        email: z.string().email(),
+        trialEndDate: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { sendWelcomeEmail } = await import('./_core/email');
+        const success = await sendWelcomeEmail(input);
+        return { success };
+      }),
+    
+    sendSubscriptionConfirmation: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        email: z.string().email(),
+        planName: z.string(),
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { sendSubscriptionConfirmationEmail } = await import('./_core/email');
+        const success = await sendSubscriptionConfirmationEmail(input);
+        return { success };
+      }),
+    
+    sendTrialExpiry: protectedProcedure
+      .input(z.object({
+        name: z.string(),
+        email: z.string().email(),
+        daysRemaining: z.number(),
+      }))
+      .mutation(async ({ input }) => {
+        const { sendTrialExpiryEmail } = await import('./_core/email');
+        const success = await sendTrialExpiryEmail(input);
+        return { success };
+      }),
+  }),
+  
+  // Trial Management
+  trial: router({
+    getStatus: protectedProcedure.query(async ({ ctx }) => {
+      const user = await db.getUserById(ctx.user.id);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      return {
+        isTrialActive: user.isTrialActive === 1,
+        trialStartDate: user.trialStartDate,
+        trialEndDate: user.trialEndDate,
+        whatsappConnected: user.whatsappConnected === 1,
+      };
+    }),
+    
+    checkExpiry: protectedProcedure.query(async ({ ctx }) => {
+      const user = await db.getUserById(ctx.user.id);
+      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      
+      if (user.isTrialActive === 1 && user.trialEndDate) {
+        const now = new Date();
+        const endDate = new Date(user.trialEndDate);
+        const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        return {
+          isExpired: daysRemaining <= 0,
+          daysRemaining: Math.max(0, daysRemaining),
+        };
+      }
+      
+      return {
+        isExpired: false,
+        daysRemaining: 0,
+      };
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;

@@ -583,7 +583,7 @@ export const subscriptions = mysqlTable("subscriptions", {
 	id: int().autoincrement().notNull(),
 	merchantId: int().notNull(),
 	planId: int().notNull(),
-	status: mysqlEnum(['active','expired','cancelled','pending']).default('pending').notNull(),
+	status: mysqlEnum(['active','expired','cancelled','pending','trial']).default('pending').notNull(),
 	conversationsUsed: int().default(0).notNull(),
 	voiceMessagesUsed: int().default(0).notNull(),
 	startDate: timestamp({ mode: 'string' }).notNull(),
@@ -711,6 +711,11 @@ export const users = mysqlTable("users", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	password: varchar({ length: 255 }),
+	// Trial period fields
+	trialStartDate: timestamp('trial_start_date', { mode: 'string' }),
+	trialEndDate: timestamp('trial_end_date', { mode: 'string' }),
+	isTrialActive: tinyint('is_trial_active').default(0).notNull(),
+	whatsappConnected: tinyint('whatsapp_connected').default(0).notNull(),
 },
 (table) => [
 	index("users_openId_unique").on(table.openId),

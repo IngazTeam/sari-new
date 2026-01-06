@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE users \nADD COLUMN trial_start_date timestamp NULL,\nADD COLUMN trial_end_date timestamp NULL,\nADD COLUMN is_trial_active tinyint NOT NULL DEFAULT 0,\nADD COLUMN whatsapp_connected tinyint NOT NULL DEFAULT 0;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute ALTER TABLE users \nADD COLUMN trial_start_date timestamp NULL,\nADD COLUMN trial_end_date timestamp NULL,\nADD COLUMN is_trial_active tinyint NOT NULL DEFAULT 0,\nADD COLUMN whatsapp_connected tinyint NOT NULL DEFAULT 0;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2911
+}

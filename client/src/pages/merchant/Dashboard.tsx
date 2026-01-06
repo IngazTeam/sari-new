@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity } from 'lucide-react';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
+import { TrialBanner } from '@/components/TrialBanner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { useCurrency } from '@/contexts/CurrencyContext';
 
@@ -38,6 +39,9 @@ export default function MerchantDashboard() {
       setShowOnboarding(true);
     }
   }, [onboardingStatus]);
+
+  // Show trial banner if trial is active
+  const { data: trialStatus } = trpc.trial.getStatus.useQuery();
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
@@ -143,6 +147,8 @@ export default function MerchantDashboard() {
       )}
       
       <div className="space-y-8">
+        {/* Trial Banner */}
+        <TrialBanner />
         {/* Header with Welcome Message */}
         <div className="flex items-center justify-between">
           <div>
