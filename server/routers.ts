@@ -247,6 +247,108 @@ export const appRouter = router({
         success: true,
       } as const;
     }),
+
+    // Request password reset
+    requestPasswordReset: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        const user = await db.getUserByEmail(input.email);
+        
+        if (!user) {
+          // Don't reveal if email exists for security
+          return { success: true, message: 'إذا كان البريد الإلكتروني موجوداً، سيتم إرسال رابط إعادة التعيين' };
+        }
+
+        // Generate secure token
+        const token = Math.random().toString(36).substring(2, 15) + 
+                      Math.random().toString(36).substring(2, 15) + 
+                      Date.now().toString(36);
+        
+        // Token expires in 24 hours
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        
+        // Delete any existing tokens for this user
+        await db.deletePasswordResetTokensByUserId(user.id);
+        
+        // Create new token
+        await db.createPasswordResetToken({
+          userId: user.id,
+          email: user.email!,
+          token,
+          expiresAt,
+          used: 0,
+        });
+        
+        // Send reset email
+        try {
+          const { sendPasswordResetEmail } = await import('./notifications/email-notifications');
+          const resetLink = `${process.env.VITE_FRONTEND_URL || 'https://sari.sa'}/reset-password?token=${token}`;
+          await sendPasswordResetEmail(user.email!, user.name || 'المستخدم', resetLink);
+        } catch (error) {
+          console.error('[Password Reset] Failed to send email:', error);
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إرسال البريد الإلكتروني' });
+        }
+        
+        return { success: true, message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني' };
+      }),
+
+    // Verify reset token
+    verifyResetToken: publicProcedure
+      .input(z.object({
+        token: z.string(),
+      }))
+      .query(async ({ input }) => {
+        const resetToken = await db.getPasswordResetTokenByToken(input.token);
+        
+        if (!resetToken) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'الرمز غير صحيح' });
+        }
+        
+        if (resetToken.used) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم استخدام هذا الرمز بالفعل' });
+        }
+        
+        if (new Date(resetToken.expiresAt) < new Date()) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'انتهت صلاحية الرمز' });
+        }
+        
+        return { valid: true, email: resetToken.email };
+      }),
+
+    // Reset password
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string(),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ input }) => {
+        const resetToken = await db.getPasswordResetTokenByToken(input.token);
+        
+        if (!resetToken) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'الرمز غير صحيح' });
+        }
+        
+        if (resetToken.used) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم استخدام هذا الرمز بالفعل' });
+        }
+        
+        if (new Date(resetToken.expiresAt) < new Date()) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'انتهت صلاحية الرمز' });
+        }
+        
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+        
+        // Update user password
+        await db.updateUserPassword(resetToken.userId, hashedPassword);
+        
+        // Mark token as used
+        await db.markPasswordResetTokenAsUsed(resetToken.id);
+        
+        return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
+      }),
     
     // Update user profile
     updateProfile: protectedProcedure

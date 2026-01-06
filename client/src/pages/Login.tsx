@@ -18,13 +18,11 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // تحميل بيانات "تذكرني" عند تحميل الصفحة
+  // تحميل بيانات "تذكرني" عند تحميل الصفحة (البريد فقط - بدون كلمة المرور لأسباب أمنية)
   useEffect(() => {
     const savedEmail = localStorage.getItem('sari_remember_email');
-    const savedPassword = localStorage.getItem('sari_remember_password');
-    if (savedEmail && savedPassword) {
+    if (savedEmail) {
       setEmail(savedEmail);
-      setPassword(savedPassword);
       setRememberMe(true);
     }
   }, []);
@@ -67,16 +65,17 @@ export default function Login() {
       const data = await response.json();
       console.log('🟢 Login successful:', data);
 
-      // حفظ أو حذف بيانات "تذكرني"
+      // حفظ أو حذف بيانات "تذكرني" (البريد فقط - بدون كلمة المرور لأسباب أمنية)
       if (rememberMe) {
         localStorage.setItem('sari_remember_email', email);
-        localStorage.setItem('sari_remember_password', password);
-        console.log('🟢 Remember me data saved');
+        console.log('🟢 Remember me email saved (password NOT saved for security)');
       } else {
         localStorage.removeItem('sari_remember_email');
-        localStorage.removeItem('sari_remember_password');
         console.log('🟢 Remember me data cleared');
       }
+      
+      // تأكد من عدم حفظ كلمة المرور أبداً
+      localStorage.removeItem('sari_remember_password');
 
       // Store token
       if (data.token) {
@@ -144,7 +143,7 @@ export default function Login() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@sari.sa"
+                placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

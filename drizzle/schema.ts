@@ -707,6 +707,8 @@ export const users = mysqlTable("users", {
 	index("users_openId_unique").on(table.openId),
 ]);
 
+
+
 export const weeklySentimentReports = mysqlTable("weekly_sentiment_reports", {
 	id: int().autoincrement().notNull(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
@@ -803,6 +805,11 @@ export const whatsappRequests = mysqlTable("whatsapp_requests", {
 
 // ============================================
 // SEO System Tables
+// ============================================
+
+
+// ============================================
+// Password Reset System
 // ============================================
 
 export const seoPages = mysqlTable("seo_pages", {

@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowRight, Lock, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function ResetPassword() {
   const [, params] = useRoute('/reset-password/:token');
@@ -20,7 +22,7 @@ export default function ResetPassword() {
   const [validationError, setValidationError] = useState('');
 
   // Validate token on mount
-  const { data: tokenValidation, isLoading: isValidating, error: tokenError } = trpc.auth.validateResetToken.useQuery(
+  const { data: tokenValidation, isLoading: isValidating, error: tokenError } = trpc.auth.verifyResetToken.useQuery(
     { token },
     { enabled: !!token, retry: false }
   );
@@ -56,7 +58,9 @@ export default function ResetPassword() {
   // Success screen
   if (resetSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
         <Card className="w-full max-w-md shadow-xl border-blue-100">
           <CardHeader className="text-center space-y-4 pb-8">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -83,6 +87,8 @@ export default function ResetPassword() {
             </Link>
           </CardContent>
         </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
@@ -90,20 +96,26 @@ export default function ResetPassword() {
   // Loading or error states
   if (isValidating) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
         <Card className="w-full max-w-md shadow-xl border-blue-100">
           <CardContent className="py-12 text-center">
             <div className="animate-spin text-4xl mb-4">⏳</div>
             <p className="text-gray-600">جاري التحقق من الرابط...</p>
           </CardContent>
         </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   if (tokenError || !token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
         <Card className="w-full max-w-md shadow-xl border-red-100">
           <CardHeader className="text-center space-y-4 pb-8">
             <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
@@ -138,13 +150,17 @@ export default function ResetPassword() {
             </div>
           </CardContent>
         </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   // Reset password form
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-blue-100">
         <CardHeader className="text-center space-y-2 pb-8">
           <CardTitle className="text-3xl font-bold text-gray-900">إعادة تعيين كلمة المرور</CardTitle>
@@ -244,6 +260,8 @@ export default function ResetPassword() {
           </form>
         </CardContent>
       </Card>
+      </div>
+      <Footer />
     </div>
   );
 }

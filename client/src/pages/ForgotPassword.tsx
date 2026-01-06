@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowRight, Mail, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -65,7 +67,9 @@ export default function ForgotPassword() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
         <Card className="w-full max-w-md shadow-xl border-blue-100">
           <CardHeader className="text-center space-y-4 pb-8">
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
@@ -112,12 +116,16 @@ export default function ForgotPassword() {
             </div>
           </CardContent>
         </Card>
+        </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-blue-100">
         <CardHeader className="text-center space-y-2 pb-8">
           <CardTitle className="text-3xl font-bold text-gray-900">نسيت كلمة المرور؟</CardTitle>
@@ -209,6 +217,8 @@ export default function ForgotPassword() {
           </form>
         </CardContent>
       </Card>
+      </div>
+      <Footer />
     </div>
   );
 }
