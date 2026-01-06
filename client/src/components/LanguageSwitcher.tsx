@@ -40,10 +40,11 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
 
   const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
 
-  const handleLanguageChange = (langCode: string) => {
+  const handleLanguageChange = async (langCode: string) => {
     const selectedLang = languages.find(lang => lang.code === langCode);
     if (selectedLang) {
-      i18n.changeLanguage(langCode);
+      // تغيير اللغة بشكل غير متزامن
+      await i18n.changeLanguage(langCode);
       
       // تحديث اتجاه الصفحة
       document.documentElement.dir = selectedLang.dir;
@@ -51,6 +52,9 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
       
       // حفظ اللغة في localStorage
       localStorage.setItem('i18nextLng', langCode);
+      
+      // إعادة تحميل الصفحة لضمان تطبيق التغييرات على جميع المكونات
+      window.location.reload();
     }
     setIsOpen(false);
   };
