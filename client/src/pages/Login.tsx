@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const [email, setEmail] = useState("admin@sari.sa");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,7 +72,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
@@ -143,6 +147,8 @@ export default function Login() {
           </div>
         </CardContent>
       </Card>
+      </div>
+      <Footer />
     </div>
   );
 }
