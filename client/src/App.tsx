@@ -138,6 +138,7 @@ import GlobalSeoSettings from "./pages/admin/GlobalSeoSettings";
 import GoogleOAuthSettings from "./pages/admin/GoogleOAuthSettings";
 import AdminABTestDashboard from "./pages/AdminABTestDashboard";
 import PlatformIntegrations from "./pages/PlatformIntegrations";
+import NotificationDashboard from "./pages/super-admin/NotificationDashboard";
 
 function Router() {
   return (
@@ -760,6 +761,12 @@ function Router() {
       <Route path="/admin/ab-test-dashboard">
         <DashboardLayout>
           <AdminABTestDashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/notifications">
+        <DashboardLayout>
+          <NotificationDashboard />
         </DashboardLayout>
       </Route>
       

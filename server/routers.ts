@@ -13,6 +13,7 @@ import { calendlyRouter } from "./integrations/calendly";
 import { websiteAnalysisRouter } from "./routers-website-analysis";
 import { analysisRouter } from "./routers/analysis";
 import { notificationsRouter } from "./routers-notifications";
+import { notificationManagementRouter } from "./routers-notification-management";
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
@@ -5956,6 +5957,9 @@ export const appRouter = router({
   
   // Advanced Notifications & Reports
   advancedNotifications: notificationsRouter,
+  
+  // Notification Management (Super Admin)
+  notificationManagement: notificationManagementRouter,
   
   // ============================================
   // Services Management
