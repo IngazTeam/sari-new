@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `smtp_settings` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `host` varchar(255) NOT NULL,\n  `port` int NOT NULL DEFAULT 587,\n  `username` varchar(255) NOT NULL,\n  `password` text NOT NULL,\n  `from_email` varchar(255) NOT NULL,\n  `from_name` varchar(255) NOT NULL DEFAULT 'ساري',\n  `is_active` boolean NOT NULL DEFAULT true,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `smtp_settings` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `host` varchar(255) NOT NULL,\n  `port` int NOT NULL DEFAULT 587,\n  `username` varchar(255) NOT NULL,\n  `password` text NOT NULL,\n  `from_email` varchar(255) NOT NULL,\n  `from_name` varchar(255) NOT NULL DEFAULT 'ساري',\n  `is_active` boolean NOT NULL DEFAULT true,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1965
+}

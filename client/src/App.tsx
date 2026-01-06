@@ -109,6 +109,7 @@ import LoyaltyCustomers from "./pages/LoyaltyCustomers";
 import CustomerLoyalty from "./pages/CustomerLoyalty";
 import IntegrationsDashboard from "./pages/IntegrationsDashboard";
 import NotificationSettings from "./pages/NotificationSettings";
+import PushNotificationsSettings from "./pages/merchant/PushNotificationsSettings";
 import ScheduledReports from "./pages/ScheduledReports";
 import WhatsAppAutoNotifications from "./pages/WhatsAppAutoNotifications";
 import CustomersManagement from "./pages/CustomersManagement";
@@ -127,7 +128,7 @@ import WhatsAppRequests from "./pages/admin/WhatsAppRequests";
 import WhatsAppRequestsPage from "./pages/admin/WhatsAppRequestsPage";
 import PaymentGateways from "./pages/admin/PaymentGateways";
 import AdminCampaigns from "./pages/admin/Campaigns";
-import SMTPSettings from "./pages/admin/SMTPSettings";
+import SMTPSettings from "./pages/superadmin/SmtpSettings";
 import SeoUnified from "./pages/admin/SeoUnified";
 import AdminRecommendations from "./pages/admin/AdminRecommendations";
 import RecommendationsAnalytics from "./pages/admin/RecommendationsAnalytics";
@@ -588,6 +589,10 @@ function Router() {
       
       <Route path="/merchant/notification-settings">
         <DashboardLayout><NotificationSettings /></DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/push-notifications">
+        <DashboardLayout><PushNotificationsSettings /></DashboardLayout>
       </Route>
       
       <Route path="/merchant/scheduled-reports">

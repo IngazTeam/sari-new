@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `push_notification_logs` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `merchant_id` int NOT NULL,\n  `subscription_id` int,\n  `title` varchar(255) NOT NULL,\n  `body` text NOT NULL,\n  `url` varchar(500),\n  `status` varchar(50) NOT NULL DEFAULT 'pending',\n  `error` text,\n  `sent_at` timestamp,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE,\n  FOREIGN KEY (`subscription_id`) REFERENCES `push_subscriptions`(`id`) ON DELETE SET NULL\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `push_notification_logs` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `merchant_id` int NOT NULL,\n  `subscription_id` int,\n  `title` varchar(255) NOT NULL,\n  `body` text NOT NULL,\n  `url` varchar(500),\n  `status` varchar(50) NOT NULL DEFAULT 'pending',\n  `error` text,\n  `sent_at` timestamp,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE,\n  FOREIGN KEY (`subscription_id`) REFERENCES `push_subscriptions`(`id`) ON DELETE SET NULL\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1506
+}

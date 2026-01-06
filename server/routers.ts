@@ -361,13 +361,12 @@ export const appRouter = router({
         return { success: true };
       }),
     
-    // Request password reset
-    requestPasswordReset: publicProcedure
+    // Check rate limiting first for password reset
+    checkResetRateLimit: publicProcedure
       .input(z.object({
         email: z.string().email(),
       }))
-      .mutation(async ({ input }) => {
-        // Check rate limiting first
+      .query(async ({ input }) => {
         const rateLimitCheck = await db.canRequestReset(input.email);
         
         if (!rateLimitCheck.allowed) {
@@ -458,39 +457,7 @@ export const appRouter = router({
         return { valid: true };
       }),
     
-    // Reset password with token
-    resetPassword: publicProcedure
-      .input(z.object({
-        token: z.string(),
-        newPassword: z.string().min(6),
-      }))
-      .mutation(async ({ input }) => {
-        const validation = await db.validatePasswordResetToken(input.token);
-        
-        if (!validation.valid || !validation.token) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: validation.reason === 'invalid_token' ? 'Invalid reset token' :
-                     validation.reason === 'token_already_used' ? 'This reset link has already been used' :
-                     validation.reason === 'token_expired' ? 'This reset link has expired' :
-                     'Invalid reset token'
-          });
-        }
-        
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(input.newPassword, 10);
-        
-        // Update user password
-        await db.updateUser(validation.token.userId, { password: hashedPassword });
-        
-        // Mark token as used
-        await db.markPasswordResetTokenAsUsed(validation.token.id);
-        
-        // Delete all other reset tokens for this user (cleanup)
-        await db.deletePasswordResetTokensByUserId(validation.token.userId);
-        
-        return { success: true, message: 'Password has been reset successfully' };
-      }),
+
   }),
 
   // Merchant Management
@@ -5095,83 +5062,6 @@ export const appRouter = router({
       }),
    }),
 
-  // SMTP Configuration Router
-  smtp: router({
-    // Update SMTP2GO API settings (Admin only)
-    updateSettings: adminProcedure
-      .input(z.object({
-        apiKey: z.string(),
-        from: z.string().email(),
-      }))
-      .mutation(async ({ input }) => {
-        // In production, store these in a secure settings table
-        // For now, we'll just validate and return success
-        // Note: Actual env vars need to be set via the platform UI
-        return { success: true, message: 'Settings saved. Please update SMTP2GO_API_KEY and SMTP_FROM in platform settings.' };
-      }),
-
-    // Send test email
-    sendTestEmail: adminProcedure
-      .input(z.object({
-        to: z.string().email(),
-      }))
-      .mutation(async ({ input }) => {
-        const { sendEmail } = await import('./reports/email-sender');
-        
-        const success = await sendEmail({
-          to: input.to,
-          subject: 'اختبار SMTP - ساري',
-          html: `
-            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; direction: rtl;">
-              <div style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                <h1 style="color: white; margin: 0; font-size: 28px;">ساري</h1>
-                <p style="color: white; margin: 10px 0 0 0; font-size: 14px;">مساعد المبيعات الذكي</p>
-              </div>
-              
-              <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none;">
-                <h2 style="color: #333; margin-top: 0;">✅ اختبار ناجح!</h2>
-                
-                <p style="color: #555; line-height: 1.6;">
-                  تهانينا! تم إعداد SMTP بنجاح. هذا بريد تجريبي للتأكد من أن النظام يعمل بشكل صحيح.
-                </p>
-                
-                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #00d25e;">
-                  <p style="margin: 0; color: #666;">
-                    <strong>الوقت:</strong> ${new Date().toLocaleString('ar-SA')}
-                  </p>
-                  <p style="margin: 10px 0 0 0; color: #666;">
-                    <strong>الخادم:</strong> SMTP2GO
-                  </p>
-                </div>
-                
-                <p style="color: #666; font-size: 13px; margin-top: 20px;">
-                  يمكنك الآن استخدام النظام لإرسال الفواتير والتقارير الأسبوعية تلقائياً.
-                </p>
-              </div>
-              
-              <div style="background: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
-                <p style="color: #666; font-size: 12px; margin: 0;">
-                  © ${new Date().getFullYear()} ساري - مساعد المبيعات الذكي على الواتساب
-                </p>
-                <p style="color: #999; font-size: 11px; margin: 5px 0 0 0;">
-                  <a href="https://sary.live" style="color: #00d25e; text-decoration: none;">sary.live</a>
-                </p>
-              </div>
-            </div>
-          `,
-        });
-        
-        if (!success) {
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: 'Failed to send email. Please check SMTP settings.' 
-          });
-        }
-        
-        return { success: true };
-      }),
-  }),
-
   // Try Sari Analytics (Admin only)
   trySariAnalytics: router({
     // Get analytics stats
@@ -7625,6 +7515,205 @@ export const appRouter = router({
       const { getAllConnectedPlatforms } = await import('./integrations/platform-checker');
       const merchantId = ctx.user.merchantId || ctx.user.id;
       return await getAllConnectedPlatforms(merchantId);
+    }),
+  }),
+
+  // Push Notifications Management
+  push: router({
+    // Get VAPID public key
+    getVapidPublicKey: publicProcedure.query(async () => {
+      const { getVapidPublicKey } = await import('./_core/pushNotifications');
+      return { publicKey: getVapidPublicKey() };
+    }),
+
+    // Subscribe to push notifications
+    subscribe: protectedProcedure
+      .input(
+        z.object({
+          endpoint: z.string(),
+          p256dh: z.string(),
+          auth: z.string(),
+          userAgent: z.string().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        const { createPushSubscription } = await import('./db_push');
+        await createPushSubscription({
+          merchantId: merchant.id,
+          endpoint: input.endpoint,
+          p256dh: input.p256dh,
+          auth: input.auth,
+          userAgent: input.userAgent,
+        });
+        return { success: true };
+      }),
+
+    // Unsubscribe from push notifications
+    unsubscribe: protectedProcedure
+      .input(
+        z.object({
+          endpoint: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        const { getActivePushSubscriptions, deactivatePushSubscription } = await import('./db_push');
+        const subscriptions = await getActivePushSubscriptions(merchant.id);
+        const subscription = subscriptions.find((s) => s.endpoint === input.endpoint);
+        if (subscription) {
+          await deactivatePushSubscription(subscription.id);
+        }
+        return { success: true };
+      }),
+
+    // Send test notification
+    sendTest: protectedProcedure.mutation(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+      const { sendPushNotification } = await import('./_core/pushNotifications');
+      const result = await sendPushNotification(merchant.id, {
+        title: 'اختبار الإشعارات - ساري',
+        body: 'هذا إشعار تجريبي للتحقق من عمل الإشعارات الفورية',
+        url: '/merchant/dashboard',
+      });
+      return result;
+    }),
+
+    // Get notification logs
+    getLogs: protectedProcedure
+      .input(
+        z.object({
+          limit: z.number().default(50),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        const { getPushNotificationLogs } = await import('./db_push');
+        return await getPushNotificationLogs(merchant.id, input.limit);
+      }),
+
+    // Get notification stats
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+      const { getPushNotificationStats } = await import('./db_push');
+      return await getPushNotificationStats(merchant.id);
+    }),
+  }),
+
+  // SMTP Email Management (Admin only)
+  smtp: router({
+    // Get SMTP settings
+    getSettings: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+      }
+      const { getSmtpSettings } = await import('./db_smtp');
+      const settings = await getSmtpSettings();
+      if (!settings) return null;
+      // Don't send password to frontend
+      return {
+        ...settings,
+        password: undefined,
+      };
+    }),
+
+    // Update SMTP settings
+    updateSettings: protectedProcedure
+      .input(
+        z.object({
+          host: z.string(),
+          port: z.number(),
+          username: z.string(),
+          password: z.string().optional(),
+          fromEmail: z.string().email(),
+          fromName: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        const { upsertSmtpSettings } = await import('./db_smtp');
+        await upsertSmtpSettings(input);
+        return { success: true };
+      }),
+
+    // Test SMTP connection
+    testConnection: protectedProcedure
+      .input(
+        z.object({
+          email: z.string().email(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        const { testSmtpConnection } = await import('./_core/smtpEmail');
+        const { createEmailLog, updateEmailLogStatus } = await import('./db_smtp');
+        
+        // Create log entry
+        const [logResult] = await createEmailLog({
+          toEmail: input.email,
+          subject: 'اختبار SMTP - ساري',
+          body: 'رسالة تجريبية للتحقق من إعدادات SMTP',
+          status: 'pending',
+        });
+        
+        try {
+          await testSmtpConnection(input.email);
+          await updateEmailLogStatus(logResult.insertId, 'sent');
+          return { success: true };
+        } catch (error) {
+          await updateEmailLogStatus(
+            logResult.insertId,
+            'failed',
+            error instanceof Error ? error.message : 'Unknown error'
+          );
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to send test email',
+          });
+        }
+      }),
+
+    // Get email logs
+    getEmailLogs: protectedProcedure
+      .input(
+        z.object({
+          limit: z.number().default(50),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+        const { getEmailLogs } = await import('./db_smtp');
+        return await getEmailLogs(input.limit);
+      }),
+
+    // Get email stats
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+      }
+      const { getEmailStats } = await import('./db_smtp');
+      return await getEmailStats();
     }),
   }),
 });
