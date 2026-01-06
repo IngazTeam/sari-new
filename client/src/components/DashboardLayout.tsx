@@ -206,6 +206,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: CreditCard, label: 'إعدادات الدفع', path: "/merchant/payment-settings", group: 'payments' },
   { icon: CreditCard, label: t('sidebar.merchant.subscriptions'), path: "/merchant/subscriptions", group: 'payments' },
   { icon: Wallet, label: 'مدفوعات الاشتراك', path: "/merchant/merchant-payments", group: 'payments' },
+  { icon: Award, label: 'اشتراكي', path: "/merchant/my-subscription", group: 'payments' },
   
   // الإعدادات
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings", group: 'settings' },
@@ -218,6 +219,8 @@ const getAdminMenuItems = (t: any) => [
   { icon: Users, label: t('sidebar.admin.merchants'), path: "/admin/merchants" },
   { icon: Megaphone, label: t('sidebar.admin.campaigns'), path: "/admin/campaigns" },
   { icon: Smartphone, label: t('sidebar.admin.whatsappRequests'), path: "/admin/whatsapp-requests" },
+  { icon: Award, label: 'الباقات', path: "/admin/packages" },
+  { icon: Gift, label: 'الخدمات الإضافية', path: "/admin/addons" },
   { icon: CreditCard, label: t('sidebar.admin.paymentGateways'), path: "/admin/payment-gateways" },
   { icon: Settings, label: t('sidebar.admin.settings'), path: "/admin/settings" },
   { icon: MessageSquare, label: 'إعدادات SMTP', path: "/admin/smtp-settings" },

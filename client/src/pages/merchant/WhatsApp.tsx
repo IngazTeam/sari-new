@@ -28,6 +28,7 @@ import { Loader2, CheckCircle2, XCircle, Clock, Smartphone, Send, RefreshCcw, Qr
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
+import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
 // Popular country codes
 const COUNTRY_CODES = [
@@ -43,7 +44,7 @@ const COUNTRY_CODES = [
   { code: '+213', name: 'الجزائر', flag: '🇩🇿' },
 ];
 
-export default function WhatsAppConnection() {
+function WhatsAppConnectionContent() {
   const { t } = useTranslation();
 
   const [countryCode, setCountryCode] = useState('+966');
@@ -525,5 +526,16 @@ export default function WhatsAppConnection() {
         </Dialog>
       </div>
     </div>
+  );
+}
+
+export default function WhatsAppConnection() {
+  return (
+    <SubscriptionGuard 
+      feature="ربط الواتساب"
+      fallbackMessage="يتطلب ربط الواتساب اشتراكاً نشطاً في إحدى باقاتنا"
+    >
+      <WhatsAppConnectionContent />
+    </SubscriptionGuard>
   );
 }

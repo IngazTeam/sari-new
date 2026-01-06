@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO packages (name_ar, name_en, description_ar, description_en, price, billing_cycle, customer_limit, message_limit, features, is_active, sort_order, created_at) VALUES ('الباقة الأساسية', 'Basic Plan', 'باقة مثالية للمشاريع الصغيرة والمتاجر الناشئة', 'Perfect for small businesses and startups', 99, 'monthly', 100, 1000, '{\"whatsapp_integration\":true,\"ai_responses\":true,\"basic_analytics\":true,\"product_management\":true,\"order_management\":true,\"customer_support\":\"email\",\"custom_branding\":false,\"advanced_analytics\":false,\"api_access\":false,\"priority_support\":false}', 1, 1, datetime('now'));",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute INSERT INTO packages (name_ar, name_en, description_ar, description_en, price, billing_cycle, customer_limit, message_limit, features, is_active, sort_order, created_at) VALUES ('الباقة الأساسية', 'Basic Plan', 'باقة مثالية للمشاريع الصغيرة والمتاجر الناشئة', 'Perfect for small businesses and startups', 99, 'monthly', 100, 1000, '{\"whatsapp_integration\":true,\"ai_responses\":true,\"basic_analytics\":true,\"product_management\":true,\"order_management\":true,\"customer_support\":\"email\",\"custom_branding\":false,\"advanced_analytics\":false,\"api_access\":false,\"priority_support\":false}', 1, 1, datetime('now'));",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 648 near \"('now'))\""
+  ]
+}
