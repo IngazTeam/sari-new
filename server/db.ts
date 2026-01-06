@@ -673,6 +673,18 @@ export async function createConversation(conversation: InsertConversation): Prom
   const db = await getDb();
   if (!db) return undefined;
 
+  // Check if conversation already exists for this customer
+  const existingConversation = await getConversationByMerchantAndPhone(
+    conversation.merchantId,
+    conversation.customerPhone
+  );
+
+  // If new customer, check subscription limits
+  if (!existingConversation) {
+    const { checkCustomerLimit } = await import('./helpers/subscriptionGuard');
+    await checkCustomerLimit(conversation.merchantId, conversation.customerPhone);
+  }
+
   const result = await db.insert(conversations).values(conversation);
   const insertedId = Number(result[0].insertId);
 
