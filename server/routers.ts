@@ -8298,5 +8298,134 @@ export const appRouter = router({
   payment: paymentRouter,
   tapSettings: tapSettingsRouter,
   adminSubscriptions: adminSubscriptionsRouter,
+  
+  // Discount Coupons
+  coupons: router({
+    list: adminProcedure.query(async () => {
+      return await db.getAllDiscountCoupons();
+    }),
+    
+    create: adminProcedure
+      .input(z.object({
+        code: z.string(),
+        description: z.string().optional(),
+        discountType: z.enum(['percentage', 'fixed']),
+        discountValue: z.number(),
+        minPurchaseAmount: z.number().optional(),
+        maxDiscountAmount: z.number().optional(),
+        validFrom: z.date(),
+        validUntil: z.date(),
+        maxUsageCount: z.number().optional(),
+        maxUsagePerMerchant: z.number(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const id = await db.createDiscountCoupon({
+          ...input,
+          createdBy: ctx.user.id,
+        });
+        return { id };
+      }),
+    
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        description: z.string().optional(),
+        discountType: z.enum(['percentage', 'fixed']).optional(),
+        discountValue: z.number().optional(),
+        minPurchaseAmount: z.number().optional(),
+        maxDiscountAmount: z.number().optional(),
+        validFrom: z.date().optional(),
+        validUntil: z.date().optional(),
+        maxUsageCount: z.number().optional(),
+        maxUsagePerMerchant: z.number().optional(),
+        isActive: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await db.updateDiscountCoupon(id, data);
+        return { success: true };
+      }),
+    
+    deactivate: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.deactivateDiscountCoupon(input.id);
+        return { success: true };
+      }),
+    
+    validate: protectedProcedure
+      .input(z.object({ code: z.string(), planId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
+        
+        const coupon = await db.getDiscountCouponByCode(input.code);
+        if (!coupon) throw new TRPCError({ code: 'NOT_FOUND', message: 'الكوبون غير موجود' });
+        
+        // Check if active
+        if (!coupon.isActive) throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون غير نشط' });
+        
+        // Check dates
+        const now = new Date();
+        if (new Date(coupon.validFrom) > now) throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون لم يبدأ بعد' });
+        if (new Date(coupon.validUntil) < now) throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون منتهي' });
+        
+        // Check usage limits
+        if (coupon.maxUsageCount && coupon.currentUsageCount >= coupon.maxUsageCount) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون مستنفذ' });
+        }
+        
+        // Check merchant usage
+        const merchantUsage = await db.getCouponUsageCountByMerchant(coupon.id, merchant.id);
+        if (merchantUsage >= coupon.maxUsagePerMerchant) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لقد استخدمت هذا الكوبون من قبل' });
+        }
+        
+        return coupon;
+      }),
+  }),
+  
+  // Usage & Statistics
+  usage: router({
+    getCurrentUsage: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
+      
+      const usage = await db.getMerchantCurrentUsage(merchant.id);
+      if (!usage) throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد بيانات استخدام' });
+      
+      return usage;
+    }),
+    
+    getUsageHistory: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
+      
+      return await db.getMerchantUsageHistory(merchant.id);
+    }),
+  }),
+  
+  // Subscription Reports (Admin)
+  subscriptionReports: router({
+    getOverview: adminProcedure.query(async () => {
+      return await db.getSubscriptionOverview();
+    }),
+    
+    getConversionRate: adminProcedure.query(async () => {
+      return await db.getSubscriptionConversionRate();
+    }),
+    
+    getCancellations: adminProcedure.query(async () => {
+      return await db.getCancellationStats();
+    }),
+    
+    getMonthlyRevenue: adminProcedure.query(async () => {
+      return await db.getMonthlyRevenueStats();
+    }),
+    
+    getDistributionByPlan: adminProcedure.query(async () => {
+      return await db.getSubscriptionDistributionByPlan();
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;

@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `coupon_usage_log` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `coupon_id` int NOT NULL,\n  `merchant_id` int NOT NULL,\n  `subscription_id` int,\n  `plan_id` int,\n  `original_price` decimal(10, 2) NOT NULL,\n  `discount_amount` decimal(10, 2) NOT NULL,\n  `final_price` decimal(10, 2) NOT NULL,\n  `used_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX `coupon_usage_log_coupon_id_idx` (`coupon_id`),\n  INDEX `coupon_usage_log_merchant_id_idx` (`merchant_id`),\n  INDEX `coupon_usage_log_used_at_idx` (`used_at`),\n  FOREIGN KEY (`coupon_id`) REFERENCES `discount_coupons`(`id`) ON DELETE CASCADE,\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE,\n  FOREIGN KEY (`plan_id`) REFERENCES `subscription_plans`(`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `coupon_usage_log` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `coupon_id` int NOT NULL,\n  `merchant_id` int NOT NULL,\n  `subscription_id` int,\n  `plan_id` int,\n  `original_price` decimal(10, 2) NOT NULL,\n  `discount_amount` decimal(10, 2) NOT NULL,\n  `final_price` decimal(10, 2) NOT NULL,\n  `used_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX `coupon_usage_log_coupon_id_idx` (`coupon_id`),\n  INDEX `coupon_usage_log_merchant_id_idx` (`merchant_id`),\n  INDEX `coupon_usage_log_used_at_idx` (`used_at`),\n  FOREIGN KEY (`coupon_id`) REFERENCES `discount_coupons`(`id`) ON DELETE CASCADE,\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE,\n  FOREIGN KEY (`plan_id`) REFERENCES `subscription_plans`(`id`)\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1750
+}

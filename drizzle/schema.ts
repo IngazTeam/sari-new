@@ -2383,3 +2383,4 @@ export * from "./schema_smtp";
 export * from "./schema_push";
 export * from "./schema_notifications";
 export * from "./schema_subscriptions";
+export * from "./schema_coupons";

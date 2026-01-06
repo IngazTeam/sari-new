@@ -142,6 +142,7 @@ import TapSettings from "./pages/admin/TapSettings";
 import SubscriptionPlansMerchant from "./pages/merchant/SubscriptionPlans";
 import MySubscription from "./pages/merchant/MySubscription";
 import ComparePlans from "./pages/ComparePlans";
+import UsageDashboard from "./pages/merchant/UsageDashboard";
 import GlobalSeoSettings from "./pages/admin/GlobalSeoSettings";
 import GoogleOAuthSettings from "./pages/admin/GoogleOAuthSettings";
 import AdminABTestDashboard from "./pages/AdminABTestDashboard";
@@ -639,6 +640,12 @@ function Router() {
       <Route path="/merchant/usage">
         <DashboardLayout>
           <Usage />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/usage-dashboard">
+        <DashboardLayout>
+          <UsageDashboard />
         </DashboardLayout>
       </Route>
       

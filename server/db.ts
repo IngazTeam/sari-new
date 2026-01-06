@@ -9296,3 +9296,597 @@ export async function deleteOldNotificationRecords(daysOld: number = 30) {
     .delete(schema.notificationRecords)
     .where(lt(schema.notificationRecords.sentAt, cutoffDate.toISOString()));
 }
+
+// ============================================
+// Discount Coupons Functions
+// ============================================
+
+/**
+ * Create discount coupon
+ */
+export async function createDiscountCoupon(data: {
+  code: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minPurchaseAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom: Date;
+  validUntil: Date;
+  maxUsageCount?: number;
+  maxUsagePerMerchant?: number;
+  applicablePlanIds?: number[];
+  createdBy?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const result = await db.insert(schema.discountCoupons).values({
+    code: data.code,
+    description: data.description || null,
+    discountType: data.discountType,
+    discountValue: data.discountValue.toString(),
+    minPurchaseAmount: data.minPurchaseAmount?.toString() || null,
+    maxDiscountAmount: data.maxDiscountAmount?.toString() || null,
+    validFrom: data.validFrom.toISOString(),
+    validUntil: data.validUntil.toISOString(),
+    maxUsageCount: data.maxUsageCount || null,
+    currentUsageCount: 0,
+    maxUsagePerMerchant: data.maxUsagePerMerchant || 1,
+    applicablePlanIds: data.applicablePlanIds ? JSON.stringify(data.applicablePlanIds) : null,
+    isActive: 1,
+    createdBy: data.createdBy || null,
+  });
+
+  return Number(result[0].insertId);
+}
+
+/**
+ * Get all discount coupons
+ */
+export async function getAllDiscountCoupons() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(schema.discountCoupons).orderBy(desc(schema.discountCoupons.createdAt));
+}
+
+/**
+ * Get active discount coupons
+ */
+export async function getActiveDiscountCoupons() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = new Date();
+  return await db
+    .select()
+    .from(schema.discountCoupons)
+    .where(
+      and(
+        eq(schema.discountCoupons.isActive, 1),
+        lte(schema.discountCoupons.validFrom, now.toISOString()),
+        gte(schema.discountCoupons.validUntil, now.toISOString())
+      )
+    );
+}
+
+/**
+ * Get discount coupon by code
+ */
+export async function getDiscountCouponByCode(code: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(schema.discountCoupons)
+    .where(eq(schema.discountCoupons.code, code))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Get discount coupon by ID
+ */
+export async function getDiscountCouponById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(schema.discountCoupons)
+    .where(eq(schema.discountCoupons.id, id))
+    .limit(1);
+
+  return result[0] || null;
+}
+
+/**
+ * Update discount coupon
+ */
+export async function updateDiscountCoupon(id: number, data: Partial<{
+  description: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  minPurchaseAmount: number;
+  maxDiscountAmount: number;
+  validFrom: Date;
+  validUntil: Date;
+  maxUsageCount: number;
+  maxUsagePerMerchant: number;
+  applicablePlanIds: number[];
+  isActive: number;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const updateData: any = {};
+  if (data.description !== undefined) updateData.description = data.description;
+  if (data.discountType !== undefined) updateData.discountType = data.discountType;
+  if (data.discountValue !== undefined) updateData.discountValue = data.discountValue.toString();
+  if (data.minPurchaseAmount !== undefined) updateData.minPurchaseAmount = data.minPurchaseAmount.toString();
+  if (data.maxDiscountAmount !== undefined) updateData.maxDiscountAmount = data.maxDiscountAmount.toString();
+  if (data.validFrom !== undefined) updateData.validFrom = data.validFrom.toISOString();
+  if (data.validUntil !== undefined) updateData.validUntil = data.validUntil.toISOString();
+  if (data.maxUsageCount !== undefined) updateData.maxUsageCount = data.maxUsageCount;
+  if (data.maxUsagePerMerchant !== undefined) updateData.maxUsagePerMerchant = data.maxUsagePerMerchant;
+  if (data.applicablePlanIds !== undefined) updateData.applicablePlanIds = JSON.stringify(data.applicablePlanIds);
+  if (data.isActive !== undefined) updateData.isActive = data.isActive;
+
+  await db.update(schema.discountCoupons).set(updateData).where(eq(schema.discountCoupons.id, id));
+}
+
+/**
+ * Deactivate discount coupon
+ */
+export async function deactivateDiscountCoupon(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  await db.update(schema.discountCoupons).set({ isActive: 0 }).where(eq(schema.discountCoupons.id, id));
+}
+
+/**
+ * Increment coupon usage count
+ */
+export async function incrementCouponUsage(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  await db
+    .update(schema.discountCoupons)
+    .set({ currentUsageCount: sql`${schema.discountCoupons.currentUsageCount} + 1` })
+    .where(eq(schema.discountCoupons.id, id));
+}
+
+/**
+ * Get coupon usage count by merchant
+ */
+export async function getCouponUsageCountByMerchant(couponId: number, merchantId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.couponUsageLog)
+    .where(
+      and(
+        eq(schema.couponUsageLog.couponId, couponId),
+        eq(schema.couponUsageLog.merchantId, merchantId)
+      )
+    );
+
+  return Number(result[0]?.count || 0);
+}
+
+/**
+ * Log coupon usage
+ */
+export async function logCouponUsage(data: {
+  couponId: number;
+  merchantId: number;
+  subscriptionId?: number;
+  planId?: number;
+  originalPrice: number;
+  discountAmount: number;
+  finalPrice: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const result = await db.insert(schema.couponUsageLog).values({
+    couponId: data.couponId,
+    merchantId: data.merchantId,
+    subscriptionId: data.subscriptionId || null,
+    planId: data.planId || null,
+    originalPrice: data.originalPrice.toString(),
+    discountAmount: data.discountAmount.toString(),
+    finalPrice: data.finalPrice.toString(),
+  });
+
+  return Number(result[0].insertId);
+}
+
+/**
+ * Get coupon usage statistics
+ */
+export async function getCouponUsageStats(couponId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select({
+      totalUsage: sql<number>`count(*)`,
+      totalRevenue: sql<number>`sum(${schema.couponUsageLog.finalPrice})`,
+      totalDiscount: sql<number>`sum(${schema.couponUsageLog.discountAmount})`,
+    })
+    .from(schema.couponUsageLog)
+    .where(eq(schema.couponUsageLog.couponId, couponId));
+
+  return result[0] || null;
+}
+
+/**
+ * Get all coupon usage logs
+ */
+export async function getAllCouponUsageLogs() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(schema.couponUsageLog)
+    .orderBy(desc(schema.couponUsageLog.usedAt));
+}
+
+/**
+ * Get coupon usage logs by coupon ID
+ */
+export async function getCouponUsageLogsByCoupon(couponId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(schema.couponUsageLog)
+    .where(eq(schema.couponUsageLog.couponId, couponId))
+    .orderBy(desc(schema.couponUsageLog.usedAt));
+}
+
+// ============================================
+// Usage Statistics Functions
+// ============================================
+
+/**
+ * Get current usage for a merchant
+ */
+export async function getMerchantCurrentUsage(merchantId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Get subscription and plan
+  const subscription = await getMerchantCurrentSubscription(merchantId);
+  if (!subscription) return null;
+
+  const plan = await getSubscriptionPlanById(subscription.planId);
+  if (!plan) return null;
+
+  // Get current counts
+  const customerCount = await getCustomerCountByMerchant(merchantId);
+  const whatsappNumbers = await getWhatsAppInstancesByMerchantId(merchantId);
+  const products = await getProductsByMerchantId(merchantId);
+  
+  // Get campaigns this month
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  
+  const campaigns = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.campaigns)
+    .where(
+      and(
+        eq(schema.campaigns.merchantId, merchantId),
+        gte(schema.campaigns.createdAt, startOfMonth.toISOString())
+      )
+    );
+
+  const campaignCount = Number(campaigns[0]?.count || 0);
+
+  // Get AI messages this month (approximate from messages table)
+  const messages = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.messages)
+    .where(
+      and(
+        eq(schema.messages.merchantId, merchantId),
+        eq(schema.messages.direction, 'outgoing'),
+        gte(schema.messages.timestamp, startOfMonth.toISOString())
+      )
+    );
+
+  const aiMessageCount = Number(messages[0]?.count || 0);
+
+  return {
+    customers: {
+      current: customerCount,
+      max: plan.maxCustomers,
+      percentage: (customerCount / plan.maxCustomers) * 100,
+    },
+    whatsappNumbers: {
+      current: whatsappNumbers.length,
+      max: plan.maxWhatsAppNumbers,
+      percentage: (whatsappNumbers.length / plan.maxWhatsAppNumbers) * 100,
+    },
+    products: {
+      current: products.length,
+      max: plan.maxProducts,
+      percentage: (products.length / plan.maxProducts) * 100,
+    },
+    campaigns: {
+      current: campaignCount,
+      max: plan.maxCampaignsPerMonth,
+      percentage: (campaignCount / plan.maxCampaignsPerMonth) * 100,
+    },
+    aiMessages: {
+      current: aiMessageCount,
+      max: plan.aiMessagesPerMonth,
+      percentage: (aiMessageCount / plan.aiMessagesPerMonth) * 100,
+    },
+    plan: {
+      id: plan.id,
+      name: plan.name,
+      billingCycle: plan.billingCycle,
+    },
+  };
+}
+
+/**
+ * Get usage history for a merchant (last 6 months)
+ */
+export async function getMerchantUsageHistory(merchantId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const history = [];
+  const now = new Date();
+
+  for (let i = 5; i >= 0; i--) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const nextMonthDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+    // Get campaigns for this month
+    const campaigns = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.campaigns)
+      .where(
+        and(
+          eq(schema.campaigns.merchantId, merchantId),
+          gte(schema.campaigns.createdAt, monthDate.toISOString()),
+          lt(schema.campaigns.createdAt, nextMonthDate.toISOString())
+        )
+      );
+
+    // Get messages for this month
+    const messages = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.messages)
+      .where(
+        and(
+          eq(schema.messages.merchantId, merchantId),
+          eq(schema.messages.direction, 'outgoing'),
+          gte(schema.messages.timestamp, monthDate.toISOString()),
+          lt(schema.messages.timestamp, nextMonthDate.toISOString())
+        )
+      );
+
+    history.push({
+      month: monthDate.toISOString().substring(0, 7), // YYYY-MM
+      campaigns: Number(campaigns[0]?.count || 0),
+      messages: Number(messages[0]?.count || 0),
+    });
+  }
+
+  return history;
+}
+
+// ============================================
+// Subscription Reports Functions (Admin)
+// ============================================
+
+/**
+ * Get subscription overview statistics
+ */
+export async function getSubscriptionOverview() {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Total subscriptions
+  const totalSubs = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.subscriptions);
+
+  // Active subscriptions
+  const activeSubs = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.status, 'active'));
+
+  // Trial subscriptions
+  const trialSubs = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.status, 'trial'));
+
+  // Expired subscriptions
+  const expiredSubs = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.status, 'expired'));
+
+  // Total revenue (from payment transactions)
+  const revenue = await db
+    .select({ total: sql<number>`sum(${schema.paymentTransactions.amount})` })
+    .from(schema.paymentTransactions)
+    .where(eq(schema.paymentTransactions.status, 'completed'));
+
+  return {
+    total: Number(totalSubs[0]?.count || 0),
+    active: Number(activeSubs[0]?.count || 0),
+    trial: Number(trialSubs[0]?.count || 0),
+    expired: Number(expiredSubs[0]?.count || 0),
+    totalRevenue: Number(revenue[0]?.total || 0),
+  };
+}
+
+/**
+ * Get subscription conversion rate (trial to paid)
+ */
+export async function getSubscriptionConversionRate() {
+  const db = await getDb();
+  if (!db) return { rate: 0, trialCount: 0, convertedCount: 0 };
+
+  // Count merchants who started with trial
+  const trialMerchants = await db
+    .select({ merchantId: schema.subscriptions.merchantId })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.status, 'trial'))
+    .groupBy(schema.subscriptions.merchantId);
+
+  // Count merchants who converted to paid
+  const convertedMerchants = await db
+    .select({ merchantId: schema.subscriptions.merchantId })
+    .from(schema.subscriptions)
+    .where(
+      and(
+        eq(schema.subscriptions.status, 'active'),
+        sql`EXISTS (
+          SELECT 1 FROM ${schema.subscriptions} s2 
+          WHERE s2.merchant_id = ${schema.subscriptions.merchantId} 
+          AND s2.status = 'trial'
+        )`
+      )
+    )
+    .groupBy(schema.subscriptions.merchantId);
+
+  const trialCount = trialMerchants.length;
+  const convertedCount = convertedMerchants.length;
+  const rate = trialCount > 0 ? (convertedCount / trialCount) * 100 : 0;
+
+  return { rate, trialCount, convertedCount };
+}
+
+/**
+ * Get upgrade/downgrade statistics
+ */
+export async function getUpgradeDowngradeStats() {
+  const db = await getDb();
+  if (!db) return { upgrades: 0, downgrades: 0 };
+
+  // This would require tracking plan changes in a separate table
+  // For now, return placeholder
+  return { upgrades: 0, downgrades: 0 };
+}
+
+/**
+ * Get cancellation statistics
+ */
+export async function getCancellationStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, thisMonth: 0, reasons: [] };
+
+  // Total cancelled
+  const total = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.status, 'cancelled'));
+
+  // This month cancelled
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const thisMonth = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(schema.subscriptions)
+    .where(
+      and(
+        eq(schema.subscriptions.status, 'cancelled'),
+        gte(schema.subscriptions.updatedAt, startOfMonth.toISOString())
+      )
+    );
+
+  return {
+    total: Number(total[0]?.count || 0),
+    thisMonth: Number(thisMonth[0]?.count || 0),
+    reasons: [], // Would need a cancellation_reasons table
+  };
+}
+
+/**
+ * Get monthly revenue statistics (last 12 months)
+ */
+export async function getMonthlyRevenueStats() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const revenue = [];
+  const now = new Date();
+
+  for (let i = 11; i >= 0; i--) {
+    const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const nextMonthDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+    const monthRevenue = await db
+      .select({ total: sql<number>`sum(${schema.paymentTransactions.amount})` })
+      .from(schema.paymentTransactions)
+      .where(
+        and(
+          eq(schema.paymentTransactions.status, 'completed'),
+          gte(schema.paymentTransactions.createdAt, monthDate.toISOString()),
+          lt(schema.paymentTransactions.createdAt, nextMonthDate.toISOString())
+        )
+      );
+
+    revenue.push({
+      month: monthDate.toISOString().substring(0, 7), // YYYY-MM
+      revenue: Number(monthRevenue[0]?.total || 0),
+    });
+  }
+
+  return revenue;
+}
+
+/**
+ * Get subscription distribution by plan
+ */
+export async function getSubscriptionDistributionByPlan() {
+  const db = await getDb();
+  if (!db) return [];
+
+  const distribution = await db
+    .select({
+      planId: schema.subscriptions.planId,
+      count: sql<number>`count(*)`,
+    })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.status, 'active'))
+    .groupBy(schema.subscriptions.planId);
+
+  // Get plan names
+  const result = [];
+  for (const item of distribution) {
+    const plan = await getSubscriptionPlanById(item.planId);
+    if (plan) {
+      result.push({
+        planId: item.planId,
+        planName: plan.name,
+        count: Number(item.count),
+      });
+    }
+  }
+
+  return result;
+}
