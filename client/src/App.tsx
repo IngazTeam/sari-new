@@ -42,7 +42,7 @@ import ChatOrders from "./pages/ChatOrders";
 import DiscountCodes from "./pages/DiscountCodes";
 import Referrals from "./pages/merchant/Referrals";
 import MerchantSettings from "./pages/merchant/Settings";
-import Reports from "./pages/merchant/Reports";
+import Reports from "./pages/Reports";
 import Subscriptions from "./pages/merchant/Subscriptions";
 import Usage from "./pages/merchant/Usage";
 import Checkout from "./pages/merchant/Checkout";
@@ -53,7 +53,7 @@ import OccasionCampaignsPage from "./pages/merchant/OccasionCampaignsPage";
 import AnalyticsDashboard from "./pages/merchant/AnalyticsDashboard";
 import Analytics from "./pages/merchant/Analytics";
 import OverviewAnalytics from "./pages/merchant/OverviewAnalytics";
-import Orders from "./pages/merchant/Orders";
+import Orders from "./pages/Orders";
 import WhatsAppInstancesPage from "./pages/merchant/WhatsAppInstancesPage";
 import WhatsAppSetupWizard from "./pages/merchant/WhatsAppSetupWizard";
 import OrderNotificationsSettings from "./pages/merchant/OrderNotificationsSettings";
@@ -112,6 +112,7 @@ import NotificationSettings from "./pages/NotificationSettings";
 import ScheduledReports from "./pages/ScheduledReports";
 import WhatsAppAutoNotifications from "./pages/WhatsAppAutoNotifications";
 import CustomersManagement from "./pages/CustomersManagement";
+import Customers from "./pages/Customers";
 import CustomerDetails from "./pages/CustomerDetails";
 import WebsiteAnalysis from "./pages/WebsiteAnalysis";
 import CompetitorAnalysis from "./pages/CompetitorAnalysis";
@@ -626,7 +627,7 @@ function Router() {
       
       <Route path="/merchant/customers">
         <DashboardLayout>
-          <CustomersManagement />
+          <Customers />
         </DashboardLayout>
       </Route>
       
