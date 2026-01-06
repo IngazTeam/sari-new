@@ -139,6 +139,7 @@ import GoogleOAuthSettings from "./pages/admin/GoogleOAuthSettings";
 import AdminABTestDashboard from "./pages/AdminABTestDashboard";
 import PlatformIntegrations from "./pages/PlatformIntegrations";
 import NotificationDashboard from "./pages/super-admin/NotificationDashboard";
+import EmailTemplates from "./pages/admin/EmailTemplates";
 
 function Router() {
   return (
@@ -718,6 +719,12 @@ function Router() {
       <Route path="/admin/smtp-settings">
         <DashboardLayout>
           <SMTPSettings />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/email-templates">
+        <DashboardLayout>
+          <EmailTemplates />
         </DashboardLayout>
       </Route>
       

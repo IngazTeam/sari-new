@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `email_templates` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`name` varchar(100) NOT NULL,\n\t`display_name` varchar(255) NOT NULL,\n\t`subject` varchar(500) NOT NULL,\n\t`html_content` text NOT NULL,\n\t`text_content` text NOT NULL,\n\t`variables` text,\n\t`description` text,\n\t`is_custom` tinyint NOT NULL DEFAULT 0,\n\t`created_at` timestamp NOT NULL DEFAULT (now()),\n\t`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `email_templates_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `email_templates_name_unique` UNIQUE(`name`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `email_templates` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`name` varchar(100) NOT NULL,\n\t`display_name` varchar(255) NOT NULL,\n\t`subject` varchar(500) NOT NULL,\n\t`html_content` text NOT NULL,\n\t`text_content` text NOT NULL,\n\t`variables` text,\n\t`description` text,\n\t`is_custom` tinyint NOT NULL DEFAULT 0,\n\t`created_at` timestamp NOT NULL DEFAULT (now()),\n\t`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `email_templates_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `email_templates_name_unique` UNIQUE(`name`)\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1644
+}

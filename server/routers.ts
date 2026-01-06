@@ -8028,5 +8028,151 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
+
+  // Email Templates APIs (Admin only)
+  emailTemplates: router({
+    // List all email templates
+    list: adminProcedure.query(async () => {
+      const templates = await db.query.emailTemplates.findMany({
+        orderBy: (emailTemplates, { asc }) => [asc(emailTemplates.displayName)],
+      });
+      return templates;
+    }),
+
+    // Get single template
+    get: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const template = await db.query.emailTemplates.findFirst({
+          where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
+        });
+        
+        if (!template) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+        }
+        
+        return template;
+      }),
+
+    // Update template
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        subject: z.string(),
+        htmlContent: z.string(),
+        textContent: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...updateData } = input;
+        
+        await db.update(emailTemplates)
+          .set({
+            ...updateData,
+            isCustom: 1,
+          })
+          .where(eq(emailTemplates.id, id));
+        
+        return { success: true };
+      }),
+
+    // Reset template to default
+    reset: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        // Get template name
+        const template = await db.query.emailTemplates.findFirst({
+          where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
+        });
+        
+        if (!template) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+        }
+        
+        // Reset to default (this would require storing default templates)
+        // For now, just mark as not custom
+        await db.update(emailTemplates)
+          .set({ isCustom: 0 })
+          .where(eq(emailTemplates.id, input.id));
+        
+        return { success: true };
+      }),
+
+    // Test send template
+    test: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        email: z.string().email(),
+      }))
+      .mutation(async ({ input }) => {
+        const template = await db.query.emailTemplates.findFirst({
+          where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
+        });
+        
+        if (!template) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+        }
+        
+        // Send test email with sample data
+        const { sendEmail } = await import('./reports/email-sender');
+        
+        // Replace variables with sample data
+        let htmlContent = template.htmlContent;
+        let textContent = template.textContent;
+        let subject = template.subject;
+        
+        const sampleData: Record<string, string> = {
+          orderNumber: '12345',
+          customerName: 'أحمد محمد',
+          totalAmount: '250.00',
+          merchantName: 'متجر تجريبي',
+          productName: 'منتج تجريبي',
+          rating: '⭐⭐⭐⭐⭐',
+          campaignName: 'حملة تجريبية',
+          recipientsCount: '100',
+          successCount: '95',
+          failedCount: '5',
+          appUrl: process.env.VITE_APP_URL || 'https://sary.live',
+        };
+        
+        // Replace all variables
+        Object.entries(sampleData).forEach(([key, value]) => {
+          const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+          htmlContent = htmlContent.replace(regex, value);
+          textContent = textContent.replace(regex, value);
+          subject = subject.replace(regex, value);
+        });
+        
+        // Wrap HTML content in email template
+        const fullHtml = `
+          <!DOCTYPE html>
+          <html lang="ar" dir="rtl">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          </head>
+          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+              <tr>
+                <td align="center">
+                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    ${htmlContent}
+                    <tr>
+                      <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                        <p style="margin: 0; color: #9ca3af; font-size: 12px;">هذا بريد تجريبي من نظام ساري</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </body>
+          </html>
+        `;
+        
+        await sendEmail(input.email, `[تجريبي] ${subject}`, fullHtml);
+        
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

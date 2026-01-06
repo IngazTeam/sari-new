@@ -206,6 +206,7 @@ const getAdminMenuItems = (t: any) => [
   { icon: CreditCard, label: t('sidebar.admin.paymentGateways'), path: "/admin/payment-gateways" },
   { icon: Settings, label: t('sidebar.admin.settings'), path: "/admin/settings" },
   { icon: MessageSquare, label: 'إعدادات SMTP', path: "/admin/smtp-settings" },
+  { icon: FileText, label: 'قوالب الإيميلات', path: "/admin/email-templates" },
   { icon: Zap, label: 'إعدادات Google OAuth', path: "/admin/google-oauth" },
   { icon: Database, label: 'مزامنة البيانات', path: "/admin/data-sync" },
   { icon: BarChart3, label: 'إدارة SEO', path: "/admin/seo" },

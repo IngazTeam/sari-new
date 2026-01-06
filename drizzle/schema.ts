@@ -2330,6 +2330,27 @@ export type WooCommerceSyncLog = InferSelectModel<typeof woocommerceSyncLogs>;
 export type NewWooCommerceSyncLog = InferInsertModel<typeof woocommerceSyncLogs>;
 export type WooCommerceWebhook = InferSelectModel<typeof woocommerceWebhooks>;
 export type NewWooCommerceWebhook = InferInsertModel<typeof woocommerceWebhooks>;
+// Email Templates Table
+export const emailTemplates = mysqlTable("email_templates", {
+	id: int().autoincrement().notNull().primaryKey(),
+	name: varchar({ length: 100 }).notNull().unique(), // Template identifier (e.g., 'new_order', 'order_status_changed')
+	displayName: varchar("display_name", { length: 255 }).notNull(), // Human-readable name
+	subject: varchar({ length: 500 }).notNull(),
+	htmlContent: text("html_content").notNull(),
+	textContent: text("text_content").notNull(),
+	variables: text(), // JSON array of available variables
+	description: text(), // Template description
+	isCustom: tinyint("is_custom").default(0).notNull(), // 0 = default, 1 = custom
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("email_templates_name_idx").on(table.name),
+]);
+
+export type EmailTemplate = InferSelectModel<typeof emailTemplates>;
+export type NewEmailTemplate = InferInsertModel<typeof emailTemplates>;
+
 export * from "./schema_smtp";
 export * from "./schema_push";
 export * from "./schema_notifications";
