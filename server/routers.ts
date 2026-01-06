@@ -7530,5 +7530,11 @@ export const appRouter = router({
       return await dbZid.getZidSyncStats(ctx.user.id);
     }),
   }),
+
+  // WooCommerce Integration
+  woocommerce: (async () => {
+    const { woocommerceRouter } = await import('./woocommerce_router');
+    return woocommerceRouter;
+  })(),
 });
 export type AppRouter = typeof appRouter;

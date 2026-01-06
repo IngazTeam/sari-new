@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlSchema, AnyMySqlColumn, foreignKey, int, varchar, text, mysqlEnum, timestamp, index, date, tinyint, decimal, InferSelectModel, InferInsertModel } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, date, index, uniqueIndex, InferSelectModel, InferInsertModel } from "drizzle-orm/mysql-core"
 import { sql } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
@@ -2121,3 +2121,212 @@ export type ZidOrder = InferSelectModel<typeof zidOrders>;
 export type NewZidOrder = InferInsertModel<typeof zidOrders>;
 export type ZidWebhook = InferSelectModel<typeof zidWebhooks>;
 export type NewZidWebhook = InferInsertModel<typeof zidWebhooks>;
+
+// ==================== WooCommerce Integration Tables ====================
+
+export const woocommerceSettings = mysqlTable("woocommerce_settings", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// Connection Details
+	storeUrl: varchar("store_url", { length: 500 }).notNull(),
+	consumerKey: varchar("consumer_key", { length: 500 }).notNull(),
+	consumerSecret: varchar("consumer_secret", { length: 500 }).notNull(),
+	
+	// Status
+	isActive: tinyint("is_active").default(1).notNull(),
+	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
+	lastTestAt: timestamp("last_test_at", { mode: 'string' }),
+	connectionStatus: mysqlEnum(['connected','disconnected','error']).default('disconnected').notNull(),
+	
+	// Sync Settings
+	autoSyncProducts: tinyint("auto_sync_products").default(1).notNull(),
+	autoSyncOrders: tinyint("auto_sync_orders").default(1).notNull(),
+	autoSyncCustomers: tinyint("auto_sync_customers").default(0).notNull(),
+	syncInterval: int("sync_interval").default(60).notNull(), // minutes
+	
+	// Metadata
+	storeVersion: varchar("store_version", { length: 50 }),
+	storeName: varchar("store_name", { length: 255 }),
+	storeCurrency: varchar("store_currency", { length: 10 }),
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("woocommerce_settings_merchant_id_idx").on(table.merchantId),
+	uniqueIndex("woocommerce_settings_merchant_unique").on(table.merchantId),
+]);
+
+export const woocommerceProducts = mysqlTable("woocommerce_products", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	productId: int("product_id").references(() => products.id, { onDelete: "cascade" }), // Link to local product
+	
+	// WooCommerce IDs
+	wooProductId: int("woo_product_id").notNull(), // WooCommerce product ID
+	wooVariationId: int("woo_variation_id"), // For product variations
+	
+	// Product Info
+	name: varchar({ length: 500 }).notNull(),
+	slug: varchar({ length: 500 }).notNull(),
+	sku: varchar({ length: 255 }),
+	price: decimal({ precision: 10, scale: 2 }).notNull(),
+	regularPrice: decimal("regular_price", { precision: 10, scale: 2 }),
+	salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
+	
+	// Stock
+	stockStatus: mysqlEnum("stock_status", ['instock','outofstock','onbackorder']).default('instock').notNull(),
+	stockQuantity: int("stock_quantity"),
+	manageStock: tinyint("manage_stock").default(0).notNull(),
+	
+	// Details
+	description: text(),
+	shortDescription: text("short_description"),
+	imageUrl: varchar("image_url", { length: 1000 }),
+	categories: text(), // JSON array of category IDs
+	
+	// Sync
+	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }).defaultNow().notNull(),
+	syncStatus: mysqlEnum("sync_status", ['synced','pending','error']).default('synced').notNull(),
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("woocommerce_products_merchant_id_idx").on(table.merchantId),
+	index("woocommerce_products_product_id_idx").on(table.productId),
+	index("woocommerce_products_woo_product_id_idx").on(table.wooProductId),
+	uniqueIndex("woocommerce_products_merchant_woo_unique").on(table.merchantId, table.wooProductId),
+]);
+
+export const woocommerceOrders = mysqlTable("woocommerce_orders", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	orderId: int("order_id").references(() => orders.id, { onDelete: "cascade" }), // Link to local order
+	
+	// WooCommerce Order ID
+	wooOrderId: int("woo_order_id").notNull(),
+	
+	// Order Info
+	orderNumber: varchar("order_number", { length: 100 }).notNull(),
+	status: varchar({ length: 50 }).notNull(), // pending, processing, completed, etc.
+	currency: varchar({ length: 10 }).notNull(),
+	total: decimal({ precision: 10, scale: 2 }).notNull(),
+	subtotal: decimal({ precision: 10, scale: 2 }).notNull(),
+	totalTax: decimal("total_tax", { precision: 10, scale: 2 }),
+	shippingTotal: decimal("shipping_total", { precision: 10, scale: 2 }),
+	discountTotal: decimal("discount_total", { precision: 10, scale: 2 }),
+	
+	// Customer Info
+	customerEmail: varchar("customer_email", { length: 255 }),
+	customerPhone: varchar("customer_phone", { length: 50 }),
+	customerName: varchar("customer_name", { length: 255 }),
+	
+	// Billing
+	billingAddress: text("billing_address"), // JSON
+	shippingAddress: text("shipping_address"), // JSON
+	
+	// Items
+	lineItems: text("line_items").notNull(), // JSON array
+	
+	// Payment
+	paymentMethod: varchar("payment_method", { length: 100 }),
+	paymentMethodTitle: varchar("payment_method_title", { length: 255 }),
+	transactionId: varchar("transaction_id", { length: 255 }),
+	
+	// Dates
+	orderDate: timestamp("order_date", { mode: 'string' }).notNull(),
+	paidDate: timestamp("paid_date", { mode: 'string' }),
+	completedDate: timestamp("completed_date", { mode: 'string' }),
+	
+	// Sync
+	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }).defaultNow().notNull(),
+	syncStatus: mysqlEnum("sync_status", ['synced','pending','error']).default('synced').notNull(),
+	
+	// Metadata
+	customerNote: text("customer_note"),
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+(table) => [
+	index("woocommerce_orders_merchant_id_idx").on(table.merchantId),
+	index("woocommerce_orders_order_id_idx").on(table.orderId),
+	index("woocommerce_orders_woo_order_id_idx").on(table.wooOrderId),
+	index("woocommerce_orders_status_idx").on(table.status),
+	uniqueIndex("woocommerce_orders_merchant_woo_unique").on(table.merchantId, table.wooOrderId),
+]);
+
+export const woocommerceSyncLogs = mysqlTable("woocommerce_sync_logs", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// Sync Info
+	syncType: mysqlEnum("sync_type", ['products','orders','customers','manual']).notNull(),
+	direction: mysqlEnum(['import','export','bidirectional']).notNull(),
+	
+	// Results
+	status: mysqlEnum(['success','partial','failed']).notNull(),
+	itemsProcessed: int("items_processed").default(0).notNull(),
+	itemsSuccess: int("items_success").default(0).notNull(),
+	itemsFailed: int("items_failed").default(0).notNull(),
+	
+	// Details
+	errorMessage: text("error_message"),
+	details: text(), // JSON with more info
+	
+	// Timing
+	startedAt: timestamp("started_at", { mode: 'string' }).notNull(),
+	completedAt: timestamp("completed_at", { mode: 'string' }),
+	duration: int(), // seconds
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+},
+(table) => [
+	index("woocommerce_sync_logs_merchant_id_idx").on(table.merchantId),
+	index("woocommerce_sync_logs_sync_type_idx").on(table.syncType),
+	index("woocommerce_sync_logs_status_idx").on(table.status),
+]);
+
+export const woocommerceWebhooks = mysqlTable("woocommerce_webhooks", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	
+	// Webhook Info
+	webhookId: varchar("webhook_id", { length: 255 }),
+	eventType: varchar("event_type", { length: 100 }).notNull(), // order.created, product.updated, etc.
+	topic: varchar({ length: 100 }).notNull(), // order.created, product.updated, etc.
+	
+	// Payload
+	payload: text().notNull(), // Full JSON payload
+	
+	// Processing
+	status: mysqlEnum(['pending','processed','failed']).default('pending').notNull(),
+	processedAt: timestamp("processed_at", { mode: 'string' }),
+	errorMessage: text("error_message"),
+	
+	// Metadata
+	ipAddress: varchar("ip_address", { length: 50 }),
+	userAgent: varchar("user_agent", { length: 500 }),
+	signature: varchar({ length: 500 }), // For webhook verification
+	
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+},
+(table) => [
+	index("woocommerce_webhooks_merchant_id_idx").on(table.merchantId),
+	index("woocommerce_webhooks_event_type_idx").on(table.eventType),
+	index("woocommerce_webhooks_status_idx").on(table.status),
+]);
+
+// Type exports for WooCommerce tables
+export type WooCommerceSettings = InferSelectModel<typeof woocommerceSettings>;
+export type NewWooCommerceSettings = InferInsertModel<typeof woocommerceSettings>;
+export type WooCommerceProduct = InferSelectModel<typeof woocommerceProducts>;
+export type NewWooCommerceProduct = InferInsertModel<typeof woocommerceProducts>;
+export type WooCommerceOrder = InferSelectModel<typeof woocommerceOrders>;
+export type NewWooCommerceOrder = InferInsertModel<typeof woocommerceOrders>;
+export type WooCommerceSyncLog = InferSelectModel<typeof woocommerceSyncLogs>;
+export type NewWooCommerceSyncLog = InferInsertModel<typeof woocommerceSyncLogs>;
+export type WooCommerceWebhook = InferSelectModel<typeof woocommerceWebhooks>;
+export type NewWooCommerceWebhook = InferInsertModel<typeof woocommerceWebhooks>;

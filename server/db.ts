@@ -1,5 +1,5 @@
 import {
-  eq, and, desc, gte, lte, lt, gt, sql
+  eq, and, or, desc, gte, lte, lt, gt, sql, like
 } from "drizzle-orm";
 
 // Helper function to format Date for MySQL timestamp comparison
@@ -214,6 +214,16 @@ import {
   zidOrders,
   zidWebhooks,
   zidSyncLogs,
+  woocommerceSettings,
+  woocommerceProducts,
+  woocommerceOrders,
+  woocommerceSyncLogs,
+  woocommerceWebhooks,
+  NewWooCommerceSettings,
+  NewWooCommerceProduct,
+  NewWooCommerceOrder,
+  NewWooCommerceSyncLog,
+  NewWooCommerceWebhook,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -8405,4 +8415,215 @@ export async function getZidIntegrationStats(merchantId: number) {
     totalWebhooks: webhooksCount.length,
     lastSync: lastSyncLog[0]?.createdAt || null,
   };
+}
+
+// ==================== WooCommerce Functions ====================
+
+// WooCommerce Settings
+export async function getWooCommerceSettings(merchantId: number) {
+  return await db.select().from(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId)).limit(1).then(r => r[0] || null);
+}
+
+export async function createWooCommerceSettings(data: NewWooCommerceSettings) {
+  const [result] = await db.insert(woocommerceSettings).values(data);
+  return result.insertId;
+}
+
+export async function updateWooCommerceSettings(merchantId: number, data: Partial<NewWooCommerceSettings>) {
+  await db.update(woocommerceSettings).set(data).where(eq(woocommerceSettings.merchantId, merchantId));
+}
+
+export async function deleteWooCommerceSettings(merchantId: number) {
+  await db.delete(woocommerceSettings).where(eq(woocommerceSettings.merchantId, merchantId));
+}
+
+export async function updateWooCommerceConnectionStatus(merchantId: number, status: 'connected' | 'disconnected' | 'error', storeInfo?: { version?: string; name?: string; currency?: string }) {
+  const updateData: any = {
+    connectionStatus: status,
+    lastTestAt: new Date().toISOString(),
+  };
+  
+  if (storeInfo) {
+    if (storeInfo.version) updateData.storeVersion = storeInfo.version;
+    if (storeInfo.name) updateData.storeName = storeInfo.name;
+    if (storeInfo.currency) updateData.storeCurrency = storeInfo.currency;
+  }
+  
+  await db.update(woocommerceSettings).set(updateData).where(eq(woocommerceSettings.merchantId, merchantId));
+}
+
+// WooCommerce Products
+export async function getWooCommerceProducts(merchantId: number, limit: number = 50, offset: number = 0) {
+  return await db.select().from(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId)).limit(limit).offset(offset);
+}
+
+export async function getWooCommerceProductById(id: number) {
+  return await db.select().from(woocommerceProducts).where(eq(woocommerceProducts.id, id)).limit(1).then(r => r[0] || null);
+}
+
+export async function getWooCommerceProductByWooId(merchantId: number, wooProductId: number) {
+  return await db.select().from(woocommerceProducts)
+    .where(and(
+      eq(woocommerceProducts.merchantId, merchantId),
+      eq(woocommerceProducts.wooProductId, wooProductId)
+    ))
+    .limit(1)
+    .then(r => r[0] || null);
+}
+
+export async function createWooCommerceProduct(data: NewWooCommerceProduct) {
+  const [result] = await db.insert(woocommerceProducts).values(data);
+  return result.insertId;
+}
+
+export async function updateWooCommerceProduct(id: number, data: Partial<NewWooCommerceProduct>) {
+  await db.update(woocommerceProducts).set(data).where(eq(woocommerceProducts.id, id));
+}
+
+export async function deleteWooCommerceProduct(id: number) {
+  await db.delete(woocommerceProducts).where(eq(woocommerceProducts.id, id));
+}
+
+export async function deleteWooCommerceProductsByMerchant(merchantId: number) {
+  await db.delete(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
+}
+
+export async function searchWooCommerceProducts(merchantId: number, searchTerm: string, limit: number = 20) {
+  return await db.select().from(woocommerceProducts)
+    .where(and(
+      eq(woocommerceProducts.merchantId, merchantId),
+      or(
+        like(woocommerceProducts.name, `%${searchTerm}%`),
+        like(woocommerceProducts.sku, `%${searchTerm}%`)
+      )
+    ))
+    .limit(limit);
+}
+
+export async function getWooCommerceProductsStats(merchantId: number) {
+  const allProducts = await db.select().from(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
+  
+  return {
+    total: allProducts.length,
+    inStock: allProducts.filter(p => p.stockStatus === 'instock').length,
+    outOfStock: allProducts.filter(p => p.stockStatus === 'outofstock').length,
+    onBackorder: allProducts.filter(p => p.stockStatus === 'onbackorder').length,
+  };
+}
+
+// WooCommerce Orders
+export async function getWooCommerceOrders(merchantId: number, limit: number = 50, offset: number = 0) {
+  return await db.select().from(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId)).orderBy(desc(woocommerceOrders.orderDate)).limit(limit).offset(offset);
+}
+
+export async function getWooCommerceOrderById(id: number) {
+  return await db.select().from(woocommerceOrders).where(eq(woocommerceOrders.id, id)).limit(1).then(r => r[0] || null);
+}
+
+export async function getWooCommerceOrderByWooId(merchantId: number, wooOrderId: number) {
+  return await db.select().from(woocommerceOrders)
+    .where(and(
+      eq(woocommerceOrders.merchantId, merchantId),
+      eq(woocommerceOrders.wooOrderId, wooOrderId)
+    ))
+    .limit(1)
+    .then(r => r[0] || null);
+}
+
+export async function createWooCommerceOrder(data: NewWooCommerceOrder) {
+  const [result] = await db.insert(woocommerceOrders).values(data);
+  return result.insertId;
+}
+
+export async function updateWooCommerceOrder(id: number, data: Partial<NewWooCommerceOrder>) {
+  await db.update(woocommerceOrders).set(data).where(eq(woocommerceOrders.id, id));
+}
+
+export async function deleteWooCommerceOrder(id: number) {
+  await db.delete(woocommerceOrders).where(eq(woocommerceOrders.id, id));
+}
+
+export async function deleteWooCommerceOrdersByMerchant(merchantId: number) {
+  await db.delete(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
+}
+
+export async function getWooCommerceOrdersByStatus(merchantId: number, status: string, limit: number = 50) {
+  return await db.select().from(woocommerceOrders)
+    .where(and(
+      eq(woocommerceOrders.merchantId, merchantId),
+      eq(woocommerceOrders.status, status)
+    ))
+    .orderBy(desc(woocommerceOrders.orderDate))
+    .limit(limit);
+}
+
+export async function getWooCommerceOrdersStats(merchantId: number) {
+  const allOrders = await db.select().from(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
+  
+  const statusCounts: Record<string, number> = {};
+  let totalRevenue = 0;
+  
+  allOrders.forEach(order => {
+    statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
+    totalRevenue += parseFloat(order.total.toString());
+  });
+  
+  return {
+    total: allOrders.length,
+    statusCounts,
+    totalRevenue: totalRevenue.toFixed(2),
+  };
+}
+
+// WooCommerce Sync Logs
+export async function createWooCommerceSyncLog(data: NewWooCommerceSyncLog) {
+  const [result] = await db.insert(woocommerceSyncLogs).values(data);
+  return result.insertId;
+}
+
+export async function updateWooCommerceSyncLog(id: number, data: Partial<NewWooCommerceSyncLog>) {
+  await db.update(woocommerceSyncLogs).set(data).where(eq(woocommerceSyncLogs.id, id));
+}
+
+export async function getWooCommerceSyncLogs(merchantId: number, limit: number = 50) {
+  return await db.select().from(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.merchantId, merchantId)).orderBy(desc(woocommerceSyncLogs.createdAt)).limit(limit);
+}
+
+export async function getWooCommerceSyncLogById(id: number) {
+  return await db.select().from(woocommerceSyncLogs).where(eq(woocommerceSyncLogs.id, id)).limit(1).then(r => r[0] || null);
+}
+
+export async function getLatestWooCommerceSyncLog(merchantId: number, syncType: 'products' | 'orders' | 'customers' | 'manual') {
+  return await db.select().from(woocommerceSyncLogs)
+    .where(and(
+      eq(woocommerceSyncLogs.merchantId, merchantId),
+      eq(woocommerceSyncLogs.syncType, syncType)
+    ))
+    .orderBy(desc(woocommerceSyncLogs.createdAt))
+    .limit(1)
+    .then(r => r[0] || null);
+}
+
+// WooCommerce Webhooks
+export async function createWooCommerceWebhook(data: NewWooCommerceWebhook) {
+  const [result] = await db.insert(woocommerceWebhooks).values(data);
+  return result.insertId;
+}
+
+export async function updateWooCommerceWebhook(id: number, data: Partial<NewWooCommerceWebhook>) {
+  await db.update(woocommerceWebhooks).set(data).where(eq(woocommerceWebhooks.id, id));
+}
+
+export async function getWooCommerceWebhooks(merchantId: number, limit: number = 50) {
+  return await db.select().from(woocommerceWebhooks).where(eq(woocommerceWebhooks.merchantId, merchantId)).orderBy(desc(woocommerceWebhooks.createdAt)).limit(limit);
+}
+
+export async function getPendingWooCommerceWebhooks(merchantId: number, limit: number = 10) {
+  return await db.select().from(woocommerceWebhooks)
+    .where(and(
+      eq(woocommerceWebhooks.merchantId, merchantId),
+      eq(woocommerceWebhooks.status, 'pending')
+    ))
+    .orderBy(woocommerceWebhooks.createdAt)
+    .limit(limit);
 }
