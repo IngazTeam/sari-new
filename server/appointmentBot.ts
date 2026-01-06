@@ -316,6 +316,20 @@ ${staff ? `• الموظف: ${staff.name}` : ""}
 
 نتطلع لرؤيتك! 🌟`;
 
+    // إرسال إشعار بالموعد الجديد
+    try {
+      const { notifyNewAppointment } = await import('./_core/notificationService');
+      await notifyNewAppointment(
+        merchantId, 
+        appointment.id, 
+        customerName, 
+        service?.name || 'خدمة', 
+        appointmentDate
+      );
+    } catch (error) {
+      console.error('[Notification] Failed to send new appointment notification:', error);
+    }
+
     return {
       success: true,
       message,

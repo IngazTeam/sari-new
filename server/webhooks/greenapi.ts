@@ -174,6 +174,17 @@ async function processTextMessage(params: {
       aiwResponse: null,
     });
     
+    // إرسال إشعار بالرسالة الجديدة
+    try {
+      const { notifyNewMessage } = await import('../_core/notificationService');
+      const messagePreview = params.messageText.length > 50 
+        ? params.messageText.substring(0, 50) + '...' 
+        : params.messageText;
+      await notifyNewMessage(params.merchantId, params.customerName || 'عميل', messagePreview);
+    } catch (error) {
+      console.error('[Notification] Failed to send new message notification:', error);
+    }
+    
     // التحقق من طلبات حجز المواعيد أولاً
     const isAppointment = await isAppointmentRequest(params.messageText);
     let response: string;

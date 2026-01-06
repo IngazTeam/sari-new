@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
-import { Mail, Send, CheckCircle, AlertCircle, Loader2, Key, ExternalLink } from 'lucide-react';
+import { Mail, Send, CheckCircle, AlertCircle, Loader2, Key, ExternalLink, History, Clock } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function SMTPSettings() {
@@ -19,6 +21,12 @@ export default function SMTPSettings() {
   const [testEmail, setTestEmail] = useState('');
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  // Get email logs
+  const { data: emailLogs, isLoading: logsLoading, refetch: refetchLogs } = trpc.smtp.getEmailLogs.useQuery({ limit: 10 });
+  
+  // Get email stats
+  const { data: emailStats } = trpc.smtp.getStats.useQuery();
 
   const updateSettingsMutation = trpc.smtp.updateSettings.useMutation({
     onSuccess: () => {
@@ -36,6 +44,8 @@ export default function SMTPSettings() {
         message: 'تم إرسال البريد التجريبي بنجاح! تحقق من صندوق الوارد.',
       });
       toast.success('تم إرسال البريد التجريبي بنجاح');
+      // Refresh logs
+      setTimeout(() => refetchLogs(), 1000);
     },
     onError: (error: any) => {
       setTestResult({
@@ -268,6 +278,128 @@ export default function SMTPSettings() {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* بطاقة الإحصائيات */}
+      {emailStats && (
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">{emailStats.total}</div>
+                <div className="text-sm text-muted-foreground mt-1">إجمالي الرسائل</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{emailStats.sent}</div>
+                <div className="text-sm text-muted-foreground mt-1">تم إرسالها</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-red-600">{emailStats.failed}</div>
+                <div className="text-sm text-muted-foreground mt-1">فشلت</div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-yellow-600">{emailStats.pending}</div>
+                <div className="text-sm text-muted-foreground mt-1">قيد الإرسال</div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* سجل الرسائل المرسلة */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History className="h-5 w-5 text-primary" />
+              <CardTitle>سجل الرسائل المرسلة</CardTitle>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => refetchLogs()}>
+              تحديث
+            </Button>
+          </div>
+          <CardDescription>آخر 10 رسائل بريد إلكتروني تم إرسالها</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {logsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : emailLogs && emailLogs.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>المستلم</TableHead>
+                    <TableHead>الموضوع</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>التاريخ</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {emailLogs.map((log: any) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium">{log.recipient}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{log.subject}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {log.email_type === 'test' ? 'اختبار' : 
+                           log.email_type === 'notification' ? 'إشعار' :
+                           log.email_type === 'invoice' ? 'فاتورة' :
+                           log.email_type === 'report' ? 'تقرير' : log.email_type}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {log.status === 'sent' ? (
+                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                            <CheckCircle className="h-3 w-3 ml-1" />
+                            تم الإرسال
+                          </Badge>
+                        ) : log.status === 'failed' ? (
+                          <Badge variant="destructive">
+                            <AlertCircle className="h-3 w-3 ml-1" />
+                            فشل
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <Clock className="h-3 w-3 ml-1" />
+                            قيد الإرسال
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(log.created_at).toLocaleString('ar-SA', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              لا توجد رسائل مرسلة بعد
+            </div>
+          )}
         </CardContent>
       </Card>
 

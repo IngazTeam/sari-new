@@ -20,6 +20,12 @@ export const emailLogs = mysqlTable("email_logs", {
   body: text("body").notNull(),
   status: varchar("status", { length: 50 }).notNull().default("pending"), // pending, sent, failed
   error: text("error"),
+  
+  // معلومات إضافية
+  emailType: varchar("email_type", { length: 100 }), // notification, report, alert, etc.
+  merchantId: int("merchant_id"), // Optional: for tracking merchant-specific emails
+  metadata: text("metadata"), // JSON string with additional data
+  
   sentAt: timestamp("sent_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

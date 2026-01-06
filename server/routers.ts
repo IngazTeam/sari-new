@@ -1515,6 +1515,15 @@ export const appRouter = router({
         content: `التاجر ${merchant.businessName} قام بفك ربط رقم الواتساب: ${existingRequest.fullNumber}`,
       });
 
+      // إرسال إشعار للتاجر بفك الربط
+      try {
+        const { notifyWhatsAppDisconnect } = await import('./_core/notificationService');
+        await notifyWhatsAppDisconnect(merchant.id);
+        console.log(`[Notification] WhatsApp disconnect notification sent to merchant ${merchant.id}`);
+      } catch (error) {
+        console.error('[Notification] Failed to send WhatsApp disconnect notification:', error);
+      }
+
       return { success: true };
     }),
 
@@ -2424,6 +2433,16 @@ export const appRouter = router({
           console.log(`[Auto-Sync] Order ${result.orderId} synced to Google Sheets`);
         } catch (error) {
           console.error('[Auto-Sync] Failed to sync order to Google Sheets:', error);
+          // Don't throw error - just log it
+        }
+
+        // إرسال إشعار بالطلب الجديد
+        try {
+          const { notifyNewOrder } = await import('./_core/notificationService');
+          await notifyNewOrder(input.merchantId, result.orderId, order.totalAmount);
+          console.log(`[Notification] New order notification sent for order ${result.orderId}`);
+        } catch (error) {
+          console.error('[Notification] Failed to send new order notification:', error);
           // Don't throw error - just log it
         }
 
@@ -7778,6 +7797,232 @@ export const appRouter = router({
       const { getEmailStats } = await import('./db_smtp');
       return await getEmailStats();
     }),
+  }),
+
+  // Notification Management APIs (Super Admin)
+  notificationManagement: router({
+    // Get all notification logs
+    getAllLogs: adminProcedure
+      .input(z.object({
+        limit: z.number().default(50),
+        merchantId: z.number().optional(),
+        type: z.string().optional(),
+        status: z.enum(['pending', 'sent', 'failed']).optional(),
+      }))
+      .query(async ({ input }) => {
+        const dbConn = await db.getDb();
+        if (!dbConn) return [];
+
+        let query = dbConn.select().from(notificationLogs);
+        
+        const conditions = [];
+        if (input.merchantId) {
+          conditions.push(eq(notificationLogs.merchantId, input.merchantId));
+        }
+        if (input.type) {
+          conditions.push(eq(notificationLogs.type, input.type));
+        }
+        if (input.status) {
+          conditions.push(eq(notificationLogs.status, input.status));
+        }
+
+        if (conditions.length > 0) {
+          query = query.where(and(...conditions)) as any;
+        }
+
+        const logs = await query.orderBy(desc(notificationLogs.createdAt)).limit(input.limit);
+        return logs;
+      }),
+
+    // Get notification stats
+    getStats: adminProcedure.query(async () => {
+      const dbConn = await db.getDb();
+      if (!dbConn) return { total: 0, sent: 0, failed: 0, pending: 0 };
+
+      const logs = await dbConn.select().from(notificationLogs);
+      
+      return {
+        total: logs.length,
+        sent: logs.filter(l => l.status === 'sent').length,
+        failed: logs.filter(l => l.status === 'failed').length,
+        pending: logs.filter(l => l.status === 'pending').length,
+      };
+    }),
+
+    // Resend notification
+    resend: adminProcedure
+      .input(z.object({ logId: z.number() }))
+      .mutation(async ({ input }) => {
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database connection failed' });
+
+        const log = await dbConn.query.notificationLogs.findFirst({
+          where: eq(notificationLogs.id, input.logId),
+        });
+
+        if (!log) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Notification log not found' });
+        }
+
+        const { sendNotification } = await import('./_core/notificationService');
+        const success = await sendNotification({
+          merchantId: log.merchantId,
+          type: log.type as any,
+          title: log.title,
+          body: log.body,
+          url: log.url || undefined,
+          metadata: log.metadata ? JSON.parse(log.metadata) : undefined,
+        });
+
+        return { success };
+      }),
+
+    // Get global notification settings
+    getGlobalSettings: adminProcedure.query(async () => {
+      const dbConn = await db.getDb();
+      if (!dbConn) return null;
+
+      const settings = await dbConn.query.notificationSettings.findFirst();
+      return settings;
+    }),
+
+    // Update global notification settings
+    updateGlobalSettings: adminProcedure
+      .input(z.object({
+        newOrdersGlobalEnabled: z.boolean().optional(),
+        newMessagesGlobalEnabled: z.boolean().optional(),
+        appointmentsGlobalEnabled: z.boolean().optional(),
+        orderStatusGlobalEnabled: z.boolean().optional(),
+        missedMessagesGlobalEnabled: z.boolean().optional(),
+        whatsappDisconnectGlobalEnabled: z.boolean().optional(),
+        weeklyReportsGlobalEnabled: z.boolean().optional(),
+        weeklyReportDay: z.number().optional(),
+        weeklyReportTime: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database connection failed' });
+
+        const existing = await dbConn.query.notificationSettings.findFirst();
+
+        if (existing) {
+          await dbConn.update(notificationSettings)
+            .set(input)
+            .where(eq(notificationSettings.id, existing.id));
+        } else {
+          await dbConn.insert(notificationSettings).values(input);
+        }
+
+        return { success: true };
+      }),
+  }),
+
+  // Weekly Report API
+  weeklyReport: router({
+    // Send manual weekly report
+    sendManual: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const { sendManualWeeklyReport } = await import('./weeklyReportCron');
+        const success = await sendManualWeeklyReport(input.merchantId);
+
+        if (!success) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to send weekly report' });
+        }
+
+        return { success: true };
+      }),
+  }),
+
+  // Notification Preferences APIs
+  notificationPreferences: router({
+    // Get merchant's notification preferences
+    get: protectedProcedure
+      .input(z.object({ merchantId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const prefs = await db.query.notificationPreferences.findFirst({
+          where: (notificationPreferences, { eq }) => eq(notificationPreferences.merchantId, input.merchantId),
+        });
+
+        // Return default preferences if not found
+        if (!prefs) {
+          return {
+            merchantId: input.merchantId,
+            newOrdersEnabled: true,
+            newMessagesEnabled: true,
+            appointmentsEnabled: true,
+            orderStatusEnabled: true,
+            missedMessagesEnabled: true,
+            whatsappDisconnectEnabled: true,
+            preferredMethod: 'both' as const,
+            quietHoursEnabled: false,
+            quietHoursStart: '22:00',
+            quietHoursEnd: '08:00',
+            instantNotifications: true,
+            batchNotifications: false,
+            batchInterval: 30,
+          };
+        }
+
+        return prefs;
+      }),
+
+    // Update notification preferences
+    update: protectedProcedure
+      .input(z.object({
+        merchantId: z.number(),
+        newOrdersEnabled: z.boolean().optional(),
+        newMessagesEnabled: z.boolean().optional(),
+        appointmentsEnabled: z.boolean().optional(),
+        orderStatusEnabled: z.boolean().optional(),
+        missedMessagesEnabled: z.boolean().optional(),
+        whatsappDisconnectEnabled: z.boolean().optional(),
+        preferredMethod: z.enum(['push', 'email', 'both']).optional(),
+        quietHoursEnabled: z.boolean().optional(),
+        quietHoursStart: z.string().optional(),
+        quietHoursEnd: z.string().optional(),
+        instantNotifications: z.boolean().optional(),
+        batchNotifications: z.boolean().optional(),
+        batchInterval: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantById(input.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const { merchantId, ...updateData } = input;
+
+        // Check if preferences exist
+        const existing = await db.query.notificationPreferences.findFirst({
+          where: (notificationPreferences, { eq }) => eq(notificationPreferences.merchantId, merchantId),
+        });
+
+        if (existing) {
+          // Update existing preferences
+          await db.update(notificationPreferences)
+            .set(updateData)
+            .where(eq(notificationPreferences.merchantId, merchantId));
+        } else {
+          // Create new preferences
+          await db.insert(notificationPreferences).values({
+            merchantId,
+            ...updateData,
+          });
+        }
+
+        return { success: true };
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

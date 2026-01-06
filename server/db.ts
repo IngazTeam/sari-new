@@ -8635,3 +8635,6 @@ export async function getPendingWooCommerceWebhooks(merchantId: number, limit: n
     .orderBy(woocommerceWebhooks.createdAt)
     .limit(limit);
 }
+
+// Export db instance for direct access
+export { _db as db };

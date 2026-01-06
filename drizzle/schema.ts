@@ -2332,3 +2332,4 @@ export type WooCommerceWebhook = InferSelectModel<typeof woocommerceWebhooks>;
 export type NewWooCommerceWebhook = InferInsertModel<typeof woocommerceWebhooks>;
 export * from "./schema_smtp";
 export * from "./schema_push";
+export * from "./schema_notifications";
