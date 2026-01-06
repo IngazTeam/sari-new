@@ -4796,7 +4796,10 @@ export async function createLimitedTimeOffer(data: InsertLimitedTimeOffer): Prom
   if (!db) return null;
   try {
     const result = await db.insert(limitedTimeOffers).values(data);
-    return await db.query.limitedTimeOffers.findFirst() as LimitedTimeOffer | null;
+    const insertId = Number(result.insertId);
+    return await db.query.limitedTimeOffers.findFirst({
+      where: eq(limitedTimeOffers.id, insertId),
+    }) as LimitedTimeOffer | null;
   } catch (error) {
     console.error("[DB] Error creating limited time offer:", error);
     return null;
@@ -4839,9 +4842,10 @@ export async function createSignupPromptVariant(data: InsertSignupPromptVariant)
   const db = await getDb();
   if (!db) return null;
   try {
-    await db.insert(signupPromptVariants).values(data);
+    const result = await db.insert(signupPromptVariants).values(data);
+    const insertId = Number(result.insertId);
     return await db.query.signupPromptVariants.findFirst({
-      where: eq(signupPromptVariants.variantId, data.variantId),
+      where: eq(signupPromptVariants.id, insertId),
     }) as SignupPromptVariant | null;
   } catch (error) {
     console.error("[DB] Error creating variant:", error);
