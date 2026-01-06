@@ -143,6 +143,9 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Bot, label: t('sidebar.merchant.botSettings'), path: "/merchant/bot-settings", group: 'sari' },
   { icon: Sparkles, label: 'إعدادات شخصية ساري', path: "/merchant/sari-personality", group: 'sari' },
   { icon: Zap, label: 'الردود السريعة', path: "/merchant/quick-responses", group: 'sari' },
+  { icon: Sparkles, label: 'اقتراحات الذكاء الاصطناعي', path: "/merchant/ai-suggestions", group: 'sari' },
+  { icon: TrendingUp, label: 'تحليل المشاعر', path: "/merchant/sentiment-analysis", group: 'sari' },
+  { icon: Key, label: 'الكلمات المفتاحية', path: "/merchant/keywords", group: 'sari' },
   
   // واتساب
   { icon: Smartphone, label: t('sidebar.merchant.whatsapp'), path: "/merchant/whatsapp", group: 'whatsapp' },
@@ -150,6 +153,8 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Bell, label: t('sidebar.merchant.orderNotifications'), path: "/merchant/order-notifications", group: 'whatsapp' },
   { icon: Calendar, label: t('sidebar.merchant.scheduledMessages'), path: "/merchant/scheduled-messages", group: 'whatsapp' },
   { icon: BellRing, label: 'إشعارات واتساب التلقائية', path: "/merchant/whatsapp-auto-notifications", group: 'whatsapp' },
+  { icon: MessageCircle, label: 'تحليلات الرسائل', path: "/merchant/message-analytics", group: 'whatsapp' },
+  { icon: Activity, label: 'الرسائل الصوتية', path: "/merchant/voice-messages", group: 'whatsapp' },
   
   // المواعيد والخدمات
   { icon: CalendarDays, label: 'التقويم والمواعيد', path: "/merchant/calendar", group: 'calendar' },
@@ -159,6 +164,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: BookOpen, label: 'إدارة الحجوزات', path: "/merchant/bookings", group: 'calendar' },
   { icon: Package, label: 'تصنيفات الخدمات', path: "/merchant/service-categories", group: 'calendar' },
   { icon: Gift, label: 'باقات الخدمات', path: "/merchant/service-packages", group: 'calendar' },
+  { icon: Star, label: 'تقييمات الحجوزات', path: "/merchant/booking-reviews", group: 'calendar' },
   
   // التحليلات والتقارير
   { icon: BarChart3, label: t('sidebar.merchant.analytics'), path: "/merchant/analytics", group: 'analytics' },
@@ -168,6 +174,11 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: FileText, label: 'التقارير', path: "/merchant/reports", group: 'analytics' },
   { icon: Clock, label: 'التقارير المجدولة', path: "/merchant/scheduled-reports", group: 'analytics' },
   { icon: MessageCircle, label: 'استخدام الرسائل', path: "/merchant/usage", group: 'analytics' },
+  { icon: Search, label: 'تحليل الموقع', path: "/merchant/website-analysis", group: 'analytics' },
+  { icon: Activity, label: 'تحليلات متقدمة', path: "/merchant/analysis", group: 'analytics' },
+  { icon: FileText, label: 'التقارير الأسبوعية', path: "/merchant/weekly-reports", group: 'analytics' },
+  { icon: Zap, label: 'اختبارات A/B', path: "/merchant/ab-tests", group: 'analytics' },
+  { icon: TrendingUp, label: 'تحليلات تجربة ساري', path: "/merchant/try-sari-analytics", group: 'analytics' },
   
   // التكاملات
   { icon: Plug, label: 'لوحة التكاملات', path: "/merchant/integrations-dashboard", group: 'integrations' },
@@ -193,6 +204,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Link, label: 'روابط الدفع', path: "/merchant/payment-links", group: 'payments' },
   { icon: CreditCard, label: 'إعدادات الدفع', path: "/merchant/payment-settings", group: 'payments' },
   { icon: CreditCard, label: t('sidebar.merchant.subscriptions'), path: "/merchant/subscriptions", group: 'payments' },
+  { icon: Wallet, label: 'مدفوعات الاشتراك', path: "/merchant/merchant-payments", group: 'payments' },
   
   // الإعدادات
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings", group: 'settings' },
@@ -213,6 +225,9 @@ const getAdminMenuItems = (t: any) => [
   { icon: Zap, label: 'إعدادات Google OAuth', path: "/admin/google-oauth" },
   { icon: Database, label: 'مزامنة البيانات', path: "/admin/data-sync" },
   { icon: BarChart3, label: 'إدارة SEO', path: "/admin/seo" },
+  { icon: BellRing, label: 'تفضيلات الإشعارات', path: "/admin/notification-preferences" },
+  { icon: FileText, label: 'التقرير الأسبوعي', path: "/admin/weekly-report" },
+  { icon: Bell, label: 'إشعارات Push', path: "/admin/push-notifications" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

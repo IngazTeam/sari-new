@@ -226,7 +226,7 @@ export default function Navbar() {
           </DropdownMenu>
           
           <Link href="/login">
-            <Button variant="ghost">{t('nav.login')}</Button>
+            <Button variant="ghost">{t('auth.login')}</Button>
           </Link>
           <Link href="/signup">
             <Button className="bg-primary hover:bg-primary/90">
