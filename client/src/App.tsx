@@ -112,6 +112,7 @@ import IntegrationsDashboard from "./pages/IntegrationsDashboard";
 import NotificationSettings from "./pages/NotificationSettings";
 import CurrencySettings from "./pages/CurrencySettings";
 import PushNotificationsSettings from "./pages/merchant/PushNotificationsSettings";
+import NotificationsPage from "./pages/merchant/NotificationsPage";
 import ScheduledReports from "./pages/ScheduledReports";
 import WhatsAppAutoNotifications from "./pages/WhatsAppAutoNotifications";
 import CustomersManagement from "./pages/CustomersManagement";
@@ -150,6 +151,7 @@ import PlatformIntegrations from "./pages/PlatformIntegrations";
 import NotificationDashboard from "./pages/super-admin/NotificationDashboard";
 import EmailTemplates from "./pages/admin/EmailTemplates";
 import TemplateTranslations from "./pages/admin/TemplateTranslations";
+import SubscriptionReports from "./pages/admin/SubscriptionReports";
 
 function Router() {
   return (
@@ -474,6 +476,12 @@ function Router() {
       <Route path="/merchant/settings">
         <DashboardLayout>
           <MerchantSettings />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/merchant/notifications">
+        <DashboardLayout>
+          <NotificationsPage />
         </DashboardLayout>
       </Route>
       
@@ -842,6 +850,12 @@ function Router() {
       <Route path="/admin/notifications">
         <DashboardLayout>
           <NotificationDashboard />
+        </DashboardLayout>
+      </Route>
+      
+      <Route path="/admin/subscription-reports">
+        <DashboardLayout>
+          <SubscriptionReports />
         </DashboardLayout>
       </Route>
       

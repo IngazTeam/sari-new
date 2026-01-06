@@ -23,6 +23,7 @@ import {
 } from "./routers/subscriptions";
 import { notificationsRouter } from "./routers-notifications";
 import { notificationManagementRouter } from "./routers-notification-management";
+import { smartNotificationsRouter } from "./routers-smart-notifications";
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
@@ -8411,13 +8412,29 @@ export const appRouter = router({
       return await db.getSubscriptionOverview();
     }),
     
-    getConversionRate: adminProcedure.query(async () => {
-      return await db.getSubscriptionConversionRate();
-    }),
+    getConversionRate: adminProcedure
+      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getSubscriptionConversionRate(input?.period || 'month');
+      }),
     
-    getCancellations: adminProcedure.query(async () => {
-      return await db.getCancellationStats();
-    }),
+    getUpgradeDowngrade: adminProcedure
+      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getUpgradeDowngradeStats(input?.period || 'month');
+      }),
+    
+    getCancellations: adminProcedure
+      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getCancellationStats(input?.period || 'month');
+      }),
+    
+    getRevenue: adminProcedure
+      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getRevenueStats(input?.period || 'month');
+      }),
     
     getMonthlyRevenue: adminProcedure.query(async () => {
       return await db.getMonthlyRevenueStats();
@@ -8427,5 +8444,8 @@ export const appRouter = router({
       return await db.getSubscriptionDistributionByPlan();
     }),
   }),
+  
+  // Smart Notifications
+  smartNotifications: smartNotificationsRouter,
 });
 export type AppRouter = typeof appRouter;

@@ -2,7 +2,8 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CreditCard, Loader2, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -29,6 +30,54 @@ export default function Checkout() {
   });
 
   const [selectedGateway, setSelectedGateway] = useState<'tap' | 'paypal' | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+
+  const validateCouponMutation = trpc.coupon.validate.useMutation({
+    onSuccess: (data) => {
+      if (data.valid) {
+        setAppliedCoupon(data.coupon);
+        toast.success('تم تطبيق الكوبون بنجاح!');
+      } else {
+        toast.error(data.message || 'الكوبون غير صالح');
+      }
+      setIsValidatingCoupon(false);
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setIsValidatingCoupon(false);
+    },
+  });
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error('الرجاء إدخال رمز الكوبون');
+      return;
+    }
+    setIsValidatingCoupon(true);
+    await validateCouponMutation.mutateAsync({ code: couponCode });
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+  };
+
+  // Calculate discount
+  const basePrice = plan?.priceMonthly || 0;
+  const tax = basePrice * 0.15;
+  let discount = 0;
+  if (appliedCoupon) {
+    if (appliedCoupon.discountType === 'percentage') {
+      discount = basePrice * (appliedCoupon.discountValue / 100);
+    } else {
+      discount = appliedCoupon.discountValue;
+    }
+  }
+  const finalPrice = basePrice - discount;
+  const finalTax = finalPrice * 0.15;
+  const totalPrice = finalPrice + finalTax;
 
   if (planLoading) {
     return (
@@ -97,16 +146,83 @@ export default function Checkout() {
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span>السعر الشهري</span>
-                <span>{plan.priceMonthly} ريال</span>
+                <span>{basePrice.toFixed(2)} ريال</span>
               </div>
+              
+              {appliedCoupon && (
+                <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                  <span>الخصم ({appliedCoupon.code})</span>
+                  <span>-{discount.toFixed(2)} ريال</span>
+                </div>
+              )}
+              
+              {appliedCoupon && (
+                <div className="flex justify-between text-sm">
+                  <span>السعر بعد الخصم</span>
+                  <span>{finalPrice.toFixed(2)} ريال</span>
+                </div>
+              )}
+              
               <div className="flex justify-between text-sm">
                 <span>الضريبة (15%)</span>
-                <span>{(plan.priceMonthly * 0.15).toFixed(2)} ريال</span>
+                <span>{finalTax.toFixed(2)} ريال</span>
               </div>
+              
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>المجموع</span>
-                <span>{(plan.priceMonthly * 1.15).toFixed(2)} ريال</span>
+                <span className={appliedCoupon ? 'text-green-600 dark:text-green-400' : ''}>
+                  {totalPrice.toFixed(2)} ريال
+                </span>
               </div>
+              
+              {appliedCoupon && (
+                <div className="text-xs text-muted-foreground text-center">
+                  وفرت {discount.toFixed(2)} ريال!
+                </div>
+              )}
+            </div>
+
+            {/* Coupon Input */}
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-2">هل لديك كوبون خصم؟</p>
+              {!appliedCoupon ? (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="أدخل رمز الكوبون"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    disabled={isValidatingCoupon}
+                  />
+                  <Button
+                    onClick={handleApplyCoupon}
+                    disabled={isValidatingCoupon || !couponCode.trim()}
+                    variant="outline"
+                  >
+                    {isValidatingCoupon ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Tag className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 p-3 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
+                      {appliedCoupon.code}
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleRemoveCoupon}
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="bg-muted p-4 rounded-lg space-y-2">
@@ -191,7 +307,7 @@ export default function Checkout() {
                   جاري التحويل...
                 </>
               ) : (
-                `ادفع ${(plan.priceMonthly * 1.15).toFixed(2)} ريال`
+                `ادفع ${totalPrice.toFixed(2)} ريال`
               )}
             </Button>
 
