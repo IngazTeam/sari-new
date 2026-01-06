@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, MessageSquare, AlertCircle } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -13,8 +14,20 @@ export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  // تحميل بيانات "تذكرني" عند تحميل الصفحة
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('sari_remember_email');
+    const savedPassword = localStorage.getItem('sari_remember_password');
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail);
+      setPassword(savedPassword);
+      setRememberMe(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,11 +48,35 @@ export default function Login() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'فشل تسجيل الدخول');
+        // رسائل خطأ أكثر تفصيلاً
+        let errorMessage = 'فشل تسجيل الدخول';
+        if (response.status === 401) {
+          errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من بياناتك والمحاولة مرة أخرى.';
+        } else if (response.status === 404) {
+          errorMessage = 'الحساب غير موجود. يرجى التحقق من البريد الإلكتروني أو إنشاء حساب جديد.';
+        } else if (response.status === 429) {
+          errorMessage = 'تم تجاوز عدد محاولات تسجيل الدخول. يرجى المحاولة بعد قليل.';
+        } else if (response.status === 500) {
+          errorMessage = 'حدث خطأ في الخادم. يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني.';
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       console.log('🟢 Login successful:', data);
+
+      // حفظ أو حذف بيانات "تذكرني"
+      if (rememberMe) {
+        localStorage.setItem('sari_remember_email', email);
+        localStorage.setItem('sari_remember_password', password);
+        console.log('🟢 Remember me data saved');
+      } else {
+        localStorage.removeItem('sari_remember_email');
+        localStorage.removeItem('sari_remember_password');
+        console.log('🟢 Remember me data cleared');
+      }
 
       // Store token
       if (data.token) {
@@ -52,6 +89,11 @@ export default function Login() {
         localStorage.setItem('user-info', JSON.stringify(data.user));
         console.log('🟢 User info saved to localStorage');
       }
+
+      // حذف بيانات الدخول من الخانات
+      setEmail("");
+      setPassword("");
+      console.log('🟢 Form fields cleared');
 
       // Redirect
       setTimeout(() => {
@@ -127,6 +169,20 @@ export default function Login() {
                 required
                 disabled={isLoading}
               />
+            </div>
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                disabled={isLoading}
+              />
+              <Label
+                htmlFor="remember"
+                className="text-sm font-normal cursor-pointer"
+              >
+                تذكرني على هذا الجهاز
+              </Label>
             </div>
             <Button
               type="submit"
