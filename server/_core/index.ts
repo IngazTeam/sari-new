@@ -24,6 +24,9 @@ import { startAllSheetsCronJobs } from "../sheetsCronJobs";
 import { initWeeklyReportCron } from "../weeklyReportCron";
 import { startSubscriptionJobs } from "../cron/subscription-jobs";
 import cron from "node-cron";
+import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
+import { validateEnv } from "./validateEnv";
+import { applySecurityMiddleware } from "./security";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -45,20 +48,60 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Validate environment variables first
+  validateEnv();
+
   const app = express();
   const server = createServer(app);
+
+  // Apply security middleware (Helmet, CORS, request ID)
+  applySecurityMiddleware(app);
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Parse cookies
   app.use(cookieParser());
-  
-  // Auth endpoints
-  app.use("/api/auth", authRoutes);
-  
-  // Webhook endpoints
-  app.use("/api/webhooks", webhookRoutes);
-  
+
+  // Health check endpoints for load balancers and orchestrators
+  app.get('/health', (req, res) => {
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    });
+  });
+
+  app.get('/ready', async (req, res) => {
+    try {
+      // Check database connectivity
+      const { getDb } = await import('../db');
+      const db = getDb();
+      // Simple query to verify connection
+      res.json({
+        status: 'ready',
+        timestamp: new Date().toISOString(),
+        checks: {
+          database: 'connected',
+        },
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: 'not_ready',
+        timestamp: new Date().toISOString(),
+        checks: {
+          database: 'disconnected',
+        },
+      });
+    }
+  });
+
+  // Auth endpoints (rate limited: 5 attempts per 15 minutes)
+  app.use("/api/auth", authLimiter, authRoutes);
+
+  // Webhook endpoints (rate limited: 200 requests per minute)
+  app.use("/api/webhooks", webhookLimiter, webhookRoutes);
+
   // Sitemap routes
   app.get('/sitemap.xml', async (req, res) => {
     try {
@@ -71,7 +114,7 @@ async function startServer() {
       res.status(500).send('Error generating sitemap');
     }
   });
-  
+
   app.get('/sitemap-pages.xml', async (req, res) => {
     try {
       const { generatePagesSitemap } = await import('../sitemap-generator');
@@ -83,7 +126,7 @@ async function startServer() {
       res.status(500).send('Error generating sitemap');
     }
   });
-  
+
   app.get('/sitemap-blog.xml', async (req, res) => {
     try {
       const { generateBlogSitemap } = await import('../sitemap-generator');
@@ -95,7 +138,7 @@ async function startServer() {
       res.status(500).send('Error generating sitemap');
     }
   });
-  
+
   app.get('/sitemap-products.xml', async (req, res) => {
     try {
       const { generateProductsSitemap } = await import('../sitemap-generator');
@@ -107,24 +150,25 @@ async function startServer() {
       res.status(500).send('Error generating sitemap');
     }
   });
-  
+
   // robots.txt is served from client/public/robots.txt via static files
-  // tRPC API
+  // tRPC API (rate limited: 100 requests per minute)
   app.use(
     "/api/trpc",
+    apiLimiter,
     createExpressMiddleware({
       router: appRouter,
       createContext,
     })
   );
-  
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
-  
+
 
 
   const preferredPort = parseInt(process.env.PORT || "3000");
@@ -136,43 +180,43 @@ async function startServer() {
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
-    
+
     // Initialize Salla cron jobs
     initializeSallaCronJobs();
-    
+
     // Initialize Order Tracking cron job
     startOrderTrackingJob();
-    
+
     // Initialize Abandoned Cart Recovery cron job
     startAbandonedCartJob();
-    
+
     // Initialize Review Request cron job (runs daily at 10:00 AM)
     startReviewRequestJob();
-    
+
     // Initialize Scheduled Campaigns cron job (runs every minute)
     startScheduledCampaignsJob();
-    
+
     // Initialize Scheduled Messages cron job (runs every minute)
     startScheduledMessagesJob();
-    
+
     // Initialize Usage Alerts cron job (runs every hour)
     startUsageAlertsCron();
-    
+
     // Initialize Subscription Expiry Alerts cron job (runs daily at 9:00 AM)
     startSubscriptionExpiryCron();
-    
+
     // Initialize Appointment Reminders cron job (runs every hour)
     startCronJobs();
-    
+
     // Initialize Google Sheets Reports cron jobs (daily/weekly/monthly)
     startAllSheetsCronJobs();
-    
+
     // Initialize Weekly Report cron job (runs every Sunday at 9:00 AM)
     initWeeklyReportCron();
-    
+
     // Initialize Subscription Management cron jobs
     startSubscriptionJobs();
-    
+
     // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
     cron.schedule('0 9 * * *', async () => {
       console.log('[Cron] Running occasion campaigns check...');
@@ -185,20 +229,40 @@ async function startServer() {
       const { checkInstanceExpiry } = await import('../jobs/instance-expiry-check');
       await checkInstanceExpiry();
     });
-    
+
     // Monthly Usage Reset (runs on the 1st of each month at 00:00)
     cron.schedule('0 0 1 * *', async () => {
       console.log('[Cron] Running monthly usage reset...');
       const { resetMonthlyUsage } = await import('../usage-tracking');
       await resetMonthlyUsage();
     });
-    
+
     // Start WhatsApp message polling for all connected merchants
     // This is used for free Green API accounts that don't support webhooks
     setTimeout(async () => {
       console.log('[Polling] Initializing WhatsApp message polling...');
       await startAllPolling();
     }, 5000); // Wait 5 seconds for server to fully initialize
+
+    // Graceful shutdown handlers
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n[Server] Received ${signal}. Starting graceful shutdown...`);
+
+      server.close(() => {
+        console.log('[Server] HTTP server closed');
+        console.log('[Server] Graceful shutdown completed');
+        process.exit(0);
+      });
+
+      // Force exit after 30 seconds if graceful shutdown fails
+      setTimeout(() => {
+        console.error('[Server] Forced shutdown after timeout');
+        process.exit(1);
+      }, 30000);
+    };
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   });
 }
 

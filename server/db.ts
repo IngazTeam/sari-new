@@ -510,10 +510,10 @@ export async function updateMerchant(id: number, data: Partial<InsertMerchant>):
 export async function getOnboardingStatus(merchantId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   const merchant = await getMerchantById(merchantId);
   if (!merchant) throw new Error('Merchant not found');
-  
+
   return {
     completed: merchant.onboardingCompleted,
     currentStep: merchant.onboardingStep,
@@ -527,7 +527,7 @@ export async function getOnboardingStatus(merchantId: number) {
 export async function updateOnboardingStep(merchantId: number, step: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.update(merchants)
     .set({ onboardingStep: step })
     .where(eq(merchants.id, merchantId));
@@ -539,10 +539,10 @@ export async function updateOnboardingStep(merchantId: number, step: number): Pr
 export async function completeOnboarding(merchantId: number): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.update(merchants)
-    .set({ 
-      onboardingCompleted: true, 
+    .set({
+      onboardingCompleted: true,
       onboardingStep: 4,
       onboardingCompletedAt: new Date(),
     })
@@ -769,7 +769,7 @@ export async function createConversation(conversation: InsertConversation): Prom
   if (!existingConversation) {
     const { checkCustomerLimit } = await import('./helpers/subscriptionGuard');
     await checkCustomerLimit(conversation.merchantId, conversation.customerPhone);
-    
+
     // Check and notify if approaching limit (80%)
     const { checkAndNotifyLimits } = await import('./helpers/notificationHelper');
     await checkAndNotifyLimits(conversation.merchantId);
@@ -986,7 +986,7 @@ export async function getCampaignLogsWithStats(campaignId: number) {
   if (!db) return { logs: [], stats: { total: 0, success: 0, failed: 0, pending: 0, successRate: 0 } };
 
   const logs = await getCampaignLogsByCampaignId(campaignId);
-  
+
   const stats = {
     total: logs.length,
     success: logs.filter(log => log.status === 'success').length,
@@ -1137,7 +1137,7 @@ export async function getAnalyticsByMerchantId(
 export async function getNotificationsByUserId(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
   return await db
     .select()
     .from(notifications)
@@ -1149,54 +1149,54 @@ export async function getNotificationsByUserId(userId: number) {
 export async function getUnreadNotificationsCount(userId: number) {
   const db = await getDb();
   if (!db) return 0;
-  
+
   const result = await db
     .select()
     .from(notifications)
     .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
-  
+
   return result.length;
 }
 
 export async function markNotificationAsRead(notificationId: number, userId: number) {
   const db = await getDb();
   if (!db) return false;
-  
+
   await db
     .update(notifications)
     .set({ isRead: true })
     .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
-  
+
   return true;
 }
 
 export async function markAllNotificationsAsRead(userId: number) {
   const db = await getDb();
   if (!db) return false;
-  
+
   await db
     .update(notifications)
     .set({ isRead: true })
     .where(eq(notifications.userId, userId));
-  
+
   return true;
 }
 
 export async function deleteNotification(notificationId: number, userId: number) {
   const db = await getDb();
   if (!db) return false;
-  
+
   await db
     .delete(notifications)
     .where(and(eq(notifications.id, notificationId), eq(notifications.userId, userId)));
-  
+
   return true;
 }
 
 export async function createNotification(data: InsertNotification) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const result = await db.insert(notifications).values(data);
   return result;
 }
@@ -1206,26 +1206,26 @@ export async function createNotification(data: InsertNotification) {
 export async function getWhatsappConnectionByPhone(phoneNumber: string) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const result = await db
     .select()
     .from(whatsappConnections)
     .where(eq(whatsappConnections.phoneNumber, phoneNumber))
     .limit(1);
-  
+
   return result.length > 0 ? result[0] : null;
 }
 
 export async function getConversationByCustomerPhone(merchantId: number, customerPhone: string) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const result = await db
     .select()
     .from(conversations)
     .where(and(eq(conversations.merchantId, merchantId), eq(conversations.customerPhone, customerPhone)))
     .limit(1);
-  
+
   return result.length > 0 ? result[0] : null;
 }
 
@@ -1301,7 +1301,7 @@ export async function getWhatsAppConnectionRequestByMerchantId(merchantId: numbe
     .where(eq(whatsappConnectionRequests.merchantId, merchantId))
     .orderBy(desc(whatsappConnectionRequests.createdAt))
     .limit(1);
-  
+
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -1393,7 +1393,7 @@ export async function createOrUpdatePaymentGateway(gateway: InsertPaymentGateway
         updatedAt: new Date(),
       })
       .where(eq(paymentGateways.gateway, gateway.gateway));
-    
+
     return getPaymentGatewayByName(gateway.gateway);
   } else {
     // Create new gateway
@@ -1524,7 +1524,7 @@ export async function generateInvoiceNumber(): Promise<string> {
   // Get the latest invoice number for this year
   const year = new Date().getFullYear();
   const prefix = `INV-${year}-`;
-  
+
   const result = await db
     .select()
     .from(invoices)
@@ -1638,7 +1638,7 @@ export async function getProductBySallaId(merchantId: number, sallaProductId: st
       eq(products.sallaProductId, sallaProductId)
     )
   ).limit(1);
-  
+
   return result[0];
 }
 
@@ -1696,7 +1696,7 @@ export async function getOrderBySallaId(merchantId: number, sallaOrderId: string
       eq(orders.sallaOrderId, sallaOrderId)
     )
   ).limit(1);
-  
+
   return result[0];
 }
 
@@ -1749,7 +1749,7 @@ export async function createDiscountCode(data: InsertDiscountCode): Promise<Disc
 
   const result = await db.insert(discountCodes).values(data);
   const id = Number(result[0].insertId);
-  
+
   return getDiscountCodeById(id);
 }
 
@@ -1816,7 +1816,7 @@ export async function createReferralCode(data: InsertReferralCode): Promise<Refe
 
   const result = await db.insert(referralCodes).values(data);
   const id = Number(result[0].insertId);
-  
+
   return getReferralCodeById(id);
 }
 
@@ -1846,7 +1846,7 @@ export async function getReferralCodeByPhone(merchantId: number, phone: string):
       eq(referralCodes.referrerPhone, phone)
     )
   ).limit(1);
-  
+
   return result[0];
 }
 
@@ -1863,7 +1863,7 @@ export async function incrementReferralCount(id: number): Promise<number> {
     referralCount: newCount,
     updatedAt: new Date()
   }).where(eq(referralCodes.id, id));
-  
+
   return newCount;
 }
 
@@ -1887,7 +1887,7 @@ export async function createAbandonedCart(data: InsertAbandonedCart): Promise<Ab
 
   const result = await db.insert(abandonedCarts).values(data);
   const id = Number(result[0].insertId);
-  
+
   return getAbandonedCartById(id);
 }
 
@@ -1912,7 +1912,7 @@ export async function getPendingAbandonedCarts(): Promise<AbandonedCart[]> {
 
   // Get carts created more than 24 hours ago that haven't received reminder
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  
+
   return db.select().from(abandonedCarts).where(
     and(
       eq(abandonedCarts.reminderSent, false),
@@ -1954,7 +1954,7 @@ export async function createAutomationRule(data: InsertAutomationRule): Promise<
 
   const result = await db.insert(automationRules).values(data);
   const id = Number(result[0].insertId);
-  
+
   return getAutomationRuleById(id);
 }
 
@@ -1976,7 +1976,7 @@ export async function getAutomationRuleByType(merchantId: number, type: string):
       eq(automationRules.type, type as any)
     )
   ).limit(1);
-  
+
   return result[0];
 }
 
@@ -2007,7 +2007,7 @@ export async function createCustomerReview(data: InsertCustomerReview): Promise<
 
   const result = await db.insert(customerReviews).values(data);
   const id = Number(result[0].insertId);
-  
+
   return getCustomerReviewById(id);
 }
 
@@ -2066,7 +2066,7 @@ export async function getOrdersForReviewRequest(): Promise<Order[]> {
   // Get delivered orders from 3 days ago that haven't received review request
   const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
   const fourDaysAgo = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000);
-  
+
   return db.select().from(orders).where(
     and(
       eq(orders.status, 'delivered'),
@@ -2097,7 +2097,7 @@ export async function getInactiveConversations(days: number = 30): Promise<Conve
   if (!db) return [];
 
   const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  
+
   return db.select().from(conversations).where(
     and(
       eq(conversations.status, 'active'),
@@ -2161,7 +2161,7 @@ export async function createReferral(data: InsertReferral): Promise<Referral | u
 
   const result = await db.insert(referrals).values(data);
   const id = Number(result[0].insertId);
-  
+
   const newReferral = await db.select().from(referrals).where(eq(referrals.id, id)).limit(1);
   return newReferral[0];
 }
@@ -2176,7 +2176,7 @@ export async function getReferralByPhone(referralCodeId: number, phone: string):
       eq(referrals.referredPhone, phone)
     )
   ).limit(1);
-  
+
   return result[0];
 }
 
@@ -2370,7 +2370,7 @@ export async function getPrimaryWhatsAppInstance(merchantId: number): Promise<Wh
       eq(whatsappInstances.isPrimary, true),
       eq(whatsappInstances.status, 'active')
     ));
-  
+
   return instance;
 }
 
@@ -2383,7 +2383,7 @@ export async function getWhatsAppInstanceByInstanceId(instanceId: string): Promi
 
   const [instance] = await db.select().from(whatsappInstances)
     .where(eq(whatsappInstances.instanceId, instanceId));
-  
+
   return instance;
 }
 
@@ -3283,18 +3283,18 @@ export async function getMerchantTestDeals(merchantId: number) {
 export async function getBotSettings(merchantId: number): Promise<BotSettings> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  
+
   // Try to get existing settings
   const existing = await db
     .select()
     .from(botSettings)
     .where(eq(botSettings.merchantId, merchantId))
     .limit(1);
-  
+
   if (existing.length > 0) {
     return existing[0];
   }
-  
+
   // Create default settings
   const result = await db
     .insert(botSettings)
@@ -3312,14 +3312,14 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
       tone: 'friendly',
       language: 'ar',
     });
-  
+
   const insertId = Number(result[0].insertId);
   const newSettings = await db
     .select()
     .from(botSettings)
     .where(eq(botSettings.id, insertId))
     .limit(1);
-  
+
   return newSettings[0];
 }
 
@@ -3332,16 +3332,16 @@ export async function updateBotSettings(
 ): Promise<BotSettings> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  
+
   // Ensure settings exist first
   await getBotSettings(merchantId);
-  
+
   // Update
   await db
     .update(botSettings)
     .set(updates)
     .where(eq(botSettings.merchantId, merchantId));
-  
+
   // Return updated settings
   return getBotSettings(merchantId);
 }
@@ -3354,7 +3354,7 @@ export async function shouldBotRespond(merchantId: number): Promise<{
   reason?: string;
 }> {
   const settings = await getBotSettings(merchantId);
-  
+
   // Check if auto-reply is enabled
   if (!settings.autoReplyEnabled) {
     return {
@@ -3362,17 +3362,17 @@ export async function shouldBotRespond(merchantId: number): Promise<{
       reason: 'Auto-reply is disabled',
     };
   }
-  
+
   // If working hours not enabled, always respond
   if (!settings.workingHoursEnabled) {
     return { shouldRespond: true };
   }
-  
+
   // Check working hours
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, etc.
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  
+
   // Check if today is a working day
   const workingDays = settings.workingDays?.split(',').map(d => parseInt(d)) || [];
   if (!workingDays.includes(dayOfWeek)) {
@@ -3381,18 +3381,18 @@ export async function shouldBotRespond(merchantId: number): Promise<{
       reason: 'Outside working days',
     };
   }
-  
+
   // Check if current time is within working hours
   const start = settings.workingHoursStart || '09:00';
   const end = settings.workingHoursEnd || '18:00';
-  
+
   if (currentTime < start || currentTime >= end) {
     return {
       shouldRespond: false,
       reason: 'Outside working hours',
     };
   }
-  
+
   return { shouldRespond: true };
 }
 
@@ -3405,7 +3405,7 @@ export async function shouldBotRespond(merchantId: number): Promise<{
 export async function getScheduledMessages(merchantId: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
   const { scheduledMessages } = await import('../drizzle/schema');
   return await db.select().from(scheduledMessages).where(eq(scheduledMessages.merchantId, merchantId));
 }
@@ -3416,11 +3416,11 @@ export async function getScheduledMessages(merchantId: number) {
 export async function getScheduledMessageById(id: number, merchantId: number) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const { scheduledMessages } = await import('../drizzle/schema');
   const results = await db.select().from(scheduledMessages)
     .where(and(eq(scheduledMessages.id, id), eq(scheduledMessages.merchantId, merchantId)));
-  
+
   return results[0] || null;
 }
 
@@ -3437,10 +3437,10 @@ export async function createScheduledMessage(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  
+
   const { scheduledMessages } = await import('../drizzle/schema');
   const result = await db.insert(scheduledMessages).values(data);
-  
+
   const insertedId = Number(result[0].insertId);
   return await getScheduledMessageById(insertedId, data.merchantId);
 }
@@ -3461,12 +3461,12 @@ export async function updateScheduledMessage(
 ) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  
+
   const { scheduledMessages } = await import('../drizzle/schema');
   await db.update(scheduledMessages)
     .set(data)
     .where(and(eq(scheduledMessages.id, id), eq(scheduledMessages.merchantId, merchantId)));
-  
+
   return await getScheduledMessageById(id, merchantId);
 }
 
@@ -3476,11 +3476,11 @@ export async function updateScheduledMessage(
 export async function deleteScheduledMessage(id: number, merchantId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  
+
   const { scheduledMessages } = await import('../drizzle/schema');
   await db.delete(scheduledMessages)
     .where(and(eq(scheduledMessages.id, id), eq(scheduledMessages.merchantId, merchantId)));
-  
+
   return true;
 }
 
@@ -3497,12 +3497,12 @@ export async function toggleScheduledMessage(id: number, merchantId: number, isA
 export async function getScheduledMessagesToSend() {
   const db = await getDb();
   if (!db) return [];
-  
+
   const { scheduledMessages } = await import('../drizzle/schema');
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, etc.
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  
+
   // Get all active messages for today
   const results = await db.select().from(scheduledMessages)
     .where(and(
@@ -3510,7 +3510,7 @@ export async function getScheduledMessagesToSend() {
       eq(scheduledMessages.dayOfWeek, dayOfWeek),
       eq(scheduledMessages.time, currentTime)
     ));
-  
+
   return results;
 }
 
@@ -3520,12 +3520,12 @@ export async function getScheduledMessagesToSend() {
 export async function updateScheduledMessageLastSent(id: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-  
+
   const { scheduledMessages } = await import('../drizzle/schema');
   await db.update(scheduledMessages)
     .set({ lastSentAt: new Date() })
     .where(eq(scheduledMessages.id, id));
-  
+
   return true;
 }
 
@@ -3543,7 +3543,7 @@ export async function createReward(data: InsertReward): Promise<Reward | undefin
 
   const result = await db.insert(rewards).values(data);
   const id = Number(result[0].insertId);
-  
+
   const newReward = await db.select().from(rewards).where(eq(rewards.id, id)).limit(1);
   return newReward[0];
 }
@@ -3608,7 +3608,7 @@ export async function expireOldRewards(): Promise<void> {
   if (!db) return;
 
   const now = new Date();
-  
+
   await db.update(rewards).set({
     status: 'expired',
     updatedAt: new Date()
@@ -3628,7 +3628,7 @@ export async function getReferralCodeByMerchantId(merchantId: number): Promise<R
   const result = await db.select().from(referralCodes)
     .where(eq(referralCodes.merchantId, merchantId))
     .limit(1);
-  
+
   return result[0];
 }
 
@@ -3646,7 +3646,7 @@ export async function generateReferralCode(merchantId: number, referrerName: str
   // Generate unique code (REF + random 8 digits)
   let code = '';
   let isUnique = false;
-  
+
   while (!isUnique) {
     code = 'REF' + Math.floor(10000000 + Math.random() * 90000000);
     const check = await getReferralCodeByCode(code);
@@ -3733,7 +3733,7 @@ export async function getSariPersonalitySettings(merchantId: number): Promise<Sa
   const result = await db.select().from(sariPersonalitySettings)
     .where(eq(sariPersonalitySettings.merchantId, merchantId))
     .limit(1);
-  
+
   return result[0];
 }
 
@@ -3770,7 +3770,7 @@ export async function updateSariPersonalitySettings(
  */
 export async function getOrCreatePersonalitySettings(merchantId: number): Promise<SariPersonalitySetting> {
   let settings = await getSariPersonalitySettings(merchantId);
-  
+
   if (!settings) {
     settings = await createSariPersonalitySettings({
       merchantId,
@@ -3828,7 +3828,7 @@ export async function createQuickResponse(data: InsertQuickResponse): Promise<Qu
 
   const result = await db.insert(quickResponses).values(data);
   const id = result[0].insertId;
-  
+
   return getQuickResponseById(id);
 }
 
@@ -3842,7 +3842,7 @@ export async function getQuickResponseById(id: number): Promise<QuickResponse | 
   const result = await db.select().from(quickResponses)
     .where(eq(quickResponses.id, id))
     .limit(1);
-  
+
   return result[0];
 }
 
@@ -3882,7 +3882,7 @@ export async function incrementQuickResponseUse(id: number): Promise<void> {
   if (!db) return;
 
   await db.update(quickResponses)
-    .set({ 
+    .set({
       useCount: sql`${quickResponses.useCount} + 1`,
       lastUsedAt: new Date(),
       updatedAt: new Date(),
@@ -3898,7 +3898,7 @@ export async function findMatchingQuickResponse(
   message: string
 ): Promise<QuickResponse | null> {
   const responses = await getActiveQuickResponses(merchantId);
-  
+
   if (responses.length === 0) return null;
 
   const lowerMessage = message.toLowerCase().trim();
@@ -3916,10 +3916,10 @@ export async function findMatchingQuickResponse(
     if (response.keywords) {
       try {
         const keywords = JSON.parse(response.keywords) as string[];
-        const hasMatch = keywords.some(kw => 
+        const hasMatch = keywords.some(kw =>
           lowerMessage.includes(kw.toLowerCase())
         );
-        
+
         if (hasMatch) {
           await incrementQuickResponseUse(response.id);
           return response;
@@ -3946,7 +3946,7 @@ export async function createSentimentAnalysis(data: InsertSentimentAnalysis): Pr
 
   const result = await db.insert(sentimentAnalysis).values(data);
   const id = result[0].insertId;
-  
+
   return getSentimentAnalysisById(id);
 }
 
@@ -3960,7 +3960,7 @@ export async function getSentimentAnalysisById(id: number): Promise<SentimentAna
   const result = await db.select().from(sentimentAnalysis)
     .where(eq(sentimentAnalysis.id, id))
     .limit(1);
-  
+
   return result[0];
 }
 
@@ -3974,7 +3974,7 @@ export async function getSentimentByMessageId(messageId: number): Promise<Sentim
   const result = await db.select().from(sentimentAnalysis)
     .where(eq(sentimentAnalysis.messageId, messageId))
     .limit(1);
-  
+
   return result[0];
 }
 
@@ -4085,7 +4085,7 @@ export async function upsertKeywordAnalysis(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   // البحث عن كلمة مفتاحية موجودة
   const existing = await db.select().from(keywordAnalysis)
     .where(
@@ -4141,7 +4141,7 @@ export async function getKeywordStats(merchantId: number, options?: {
 }) {
   const db = await getDb();
   if (!db) return [];
-  
+
   const conditions = [eq(keywordAnalysis.merchantId, merchantId)];
 
   if (options?.category) {
@@ -4173,7 +4173,7 @@ export async function getKeywordStats(merchantId: number, options?: {
 export async function getNewKeywords(merchantId: number, limit: number = 20) {
   const db = await getDb();
   if (!db) return [];
-  
+
   return await db.select().from(keywordAnalysis)
     .where(
       and(
@@ -4194,7 +4194,7 @@ export async function updateKeywordStatus(
 ) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.update(keywordAnalysis)
     .set({
       status,
@@ -4210,7 +4210,7 @@ export async function updateKeywordStatus(
 export async function deleteKeywordAnalysis(keywordId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.delete(keywordAnalysis).where(eq(keywordAnalysis.id, keywordId));
 }
 
@@ -4240,7 +4240,7 @@ export async function createWeeklySentimentReport(data: {
 
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   const result = await db.insert(weeklySentimentReports).values({
     merchantId: data.merchantId,
     weekStartDate: data.weekStartDate,
@@ -4267,7 +4267,7 @@ export async function createWeeklySentimentReport(data: {
 export async function getWeeklySentimentReports(merchantId: number, limit: number = 10) {
   const db = await getDb();
   if (!db) return [];
-  
+
   return await db.select().from(weeklySentimentReports)
     .where(eq(weeklySentimentReports.merchantId, merchantId))
     .orderBy(desc(weeklySentimentReports.weekStartDate))
@@ -4280,11 +4280,11 @@ export async function getWeeklySentimentReports(merchantId: number, limit: numbe
 export async function getWeeklySentimentReportById(reportId: number) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const results = await db.select().from(weeklySentimentReports)
     .where(eq(weeklySentimentReports.id, reportId))
     .limit(1);
-  
+
   return results[0] || null;
 }
 
@@ -4294,7 +4294,7 @@ export async function getWeeklySentimentReportById(reportId: number) {
 export async function markReportEmailSent(reportId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.update(weeklySentimentReports)
     .set({
       emailSent: true,
@@ -4321,7 +4321,7 @@ export async function createABTest(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   const result = await db.insert(abTestResults).values({
     merchantId: data.merchantId,
     testName: data.testName,
@@ -4343,10 +4343,10 @@ export async function createABTest(data: {
 export async function getABTests(merchantId: number, status?: 'running' | 'completed' | 'paused') {
   const db = await getDb();
   if (!db) return [];
-  
+
   const query = db.select().from(abTestResults)
     .where(
-      status 
+      status
         ? and(eq(abTestResults.merchantId, merchantId), eq(abTestResults.status, status))
         : eq(abTestResults.merchantId, merchantId)
     )
@@ -4361,11 +4361,11 @@ export async function getABTests(merchantId: number, status?: 'running' | 'compl
 export async function getABTestById(testId: number) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const results = await db.select().from(abTestResults)
     .where(eq(abTestResults.id, testId))
     .limit(1);
-  
+
   return results[0] || null;
 }
 
@@ -4375,7 +4375,7 @@ export async function getABTestById(testId: number) {
 export async function getActiveABTestForKeyword(merchantId: number, keyword: string) {
   const db = await getDb();
   if (!db) return null;
-  
+
   const results = await db.select().from(abTestResults)
     .where(
       and(
@@ -4385,7 +4385,7 @@ export async function getActiveABTestForKeyword(merchantId: number, keyword: str
       )
     )
     .limit(1);
-  
+
   return results[0] || null;
 }
 
@@ -4399,7 +4399,7 @@ export async function trackABTestUsage(
 ) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   const test = await getABTestById(testId);
   if (!test) return;
 
@@ -4432,7 +4432,7 @@ export async function declareABTestWinner(
 ) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.update(abTestResults)
     .set({
       status: 'completed',
@@ -4450,7 +4450,7 @@ export async function declareABTestWinner(
 export async function pauseABTest(testId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.update(abTestResults)
     .set({
       status: 'paused',
@@ -4465,7 +4465,7 @@ export async function pauseABTest(testId: number) {
 export async function resumeABTest(testId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  
+
   await db.update(abTestResults)
     .set({
       status: 'running',
@@ -5132,9 +5132,9 @@ export async function markEmailVerificationTokenAsUsed(tokenId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return db.update(emailVerificationTokens)
-    .set({ 
-      isUsed: 1, 
-      usedAt: new Date().toISOString() 
+    .set({
+      isUsed: 1,
+      usedAt: new Date().toISOString()
     })
     .where(eq(emailVerificationTokens.id, tokenId));
 }
@@ -5328,7 +5328,7 @@ export async function completeSetupWizard(merchantId: number) {
   await db.update(setupWizardProgress)
     .set({ isCompleted: 1, completedAt: now })
     .where(eq(setupWizardProgress.merchantId, merchantId));
-  
+
   // Also update merchant table
   await db.update(merchants)
     .set({ setupCompleted: 1, setupCompletedAt: now })
@@ -5395,14 +5395,14 @@ export async function getAppointmentById(id: number) {
 export async function getAppointmentsByMerchant(merchantId: number, status?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let query = db.select().from(appointments)
     .where(eq(appointments.merchantId, merchantId));
-  
+
   if (status) {
     query = query.where(eq(appointments.status, status as any));
   }
-  
+
   return await query.orderBy(desc(appointments.appointmentDate));
 }
 
@@ -5420,17 +5420,17 @@ export async function getAppointmentsByCustomer(merchantId: number, customerPhon
 export async function getAppointmentsByStaff(staffId: number, startDate?: string, endDate?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let conditions = [eq(appointments.staffId, staffId)];
-  
+
   if (startDate) {
     conditions.push(gte(appointments.appointmentDate, startDate));
   }
-  
+
   if (endDate) {
     conditions.push(lte(appointments.appointmentDate, endDate));
   }
-  
+
   return await db.select().from(appointments)
     .where(and(...conditions))
     .orderBy(appointments.appointmentDate, appointments.startTime);
@@ -5439,17 +5439,17 @@ export async function getAppointmentsByStaff(staffId: number, startDate?: string
 export async function getAppointmentsByService(serviceId: number, startDate?: string, endDate?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let conditions = [eq(appointments.serviceId, serviceId)];
-  
+
   if (startDate) {
     conditions.push(gte(appointments.appointmentDate, startDate));
   }
-  
+
   if (endDate) {
     conditions.push(lte(appointments.appointmentDate, endDate));
   }
-  
+
   return await db.select().from(appointments)
     .where(and(...conditions))
     .orderBy(appointments.appointmentDate, appointments.startTime);
@@ -5476,9 +5476,9 @@ export async function cancelAppointment(id: number, reason?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(appointments)
-    .set({ 
+    .set({
       status: 'cancelled',
-      cancellationReason: reason 
+      cancellationReason: reason
     })
     .where(eq(appointments.id, id));
 }
@@ -5503,7 +5503,7 @@ export async function getUpcomingAppointments(merchantId: number, limit: number 
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  
+
   return await db.select().from(appointments)
     .where(and(
       eq(appointments.merchantId, merchantId),
@@ -5517,19 +5517,19 @@ export async function getUpcomingAppointments(merchantId: number, limit: number 
 export async function getAppointmentsNeedingReminder(type: '24h' | '1h') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const now = new Date();
   const targetTime = new Date();
-  
+
   if (type === '24h') {
     targetTime.setHours(targetTime.getHours() + 24);
   } else {
     targetTime.setHours(targetTime.getHours() + 1);
   }
-  
+
   const targetTimeStr = targetTime.toISOString().slice(0, 19).replace('T', ' ');
   const reminderField = type === '24h' ? appointments.reminder24hSent : appointments.reminder1hSent;
-  
+
   return await db.select().from(appointments)
     .where(and(
       eq(appointments.status, 'confirmed'),
@@ -5542,11 +5542,11 @@ export async function getAppointmentsNeedingReminder(type: '24h' | '1h') {
 export async function markReminderSent(id: number, type: '24h' | '1h') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const updateData = type === '24h' 
-    ? { reminder24hSent: 1 } 
+
+  const updateData = type === '24h'
+    ? { reminder24hSent: 1 }
     : { reminder1hSent: 1 };
-  
+
   await db.update(appointments)
     .set(updateData)
     .where(eq(appointments.id, id));
@@ -5563,29 +5563,29 @@ export async function checkAppointmentConflict(
 ): Promise<boolean> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let conditions = [
     eq(appointments.merchantId, merchantId),
     eq(appointments.appointmentDate, date),
     ne(appointments.status, 'cancelled'),
   ];
-  
+
   if (staffId) {
     conditions.push(eq(appointments.staffId, staffId));
   }
-  
+
   if (excludeAppointmentId) {
     conditions.push(ne(appointments.id, excludeAppointmentId));
   }
-  
+
   const existingAppointments = await db.select().from(appointments)
     .where(and(...conditions));
-  
+
   // Check for time overlap
   for (const apt of existingAppointments) {
     const aptStart = apt.startTime;
     const aptEnd = apt.endTime;
-    
+
     // Check if there's any overlap
     if (
       (startTime >= aptStart && startTime < aptEnd) ||
@@ -5595,7 +5595,7 @@ export async function checkAppointmentConflict(
       return true; // Conflict found
     }
   }
-  
+
   return false; // No conflict
 }
 
@@ -5603,20 +5603,20 @@ export async function checkAppointmentConflict(
 export async function getAppointmentStats(merchantId: number, startDate?: string, endDate?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let conditions = [eq(appointments.merchantId, merchantId)];
-  
+
   if (startDate) {
     conditions.push(gte(appointments.appointmentDate, startDate));
   }
-  
+
   if (endDate) {
     conditions.push(lte(appointments.appointmentDate, endDate));
   }
-  
+
   const allAppointments = await db.select().from(appointments)
     .where(and(...conditions));
-  
+
   const stats = {
     total: allAppointments.length,
     confirmed: allAppointments.filter(a => a.status === 'confirmed').length,
@@ -5625,7 +5625,7 @@ export async function getAppointmentStats(merchantId: number, startDate?: string
     noShow: allAppointments.filter(a => a.status === 'no_show').length,
     pending: allAppointments.filter(a => a.status === 'pending').length,
   };
-  
+
   return stats;
 }
 
@@ -5637,10 +5637,10 @@ export async function getAppointmentsForReminder(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const startStr = formatDateForDB(startTime);
   const endStr = formatDateForDB(endTime);
-  
+
   // البحث عن المواعيد التي تبدأ في النطاق الزمني المحدد
   const results = await db.select({
     id: appointments.id,
@@ -5653,14 +5653,14 @@ export async function getAppointmentsForReminder(
     reminder24hSent: appointments.reminder24hSent,
     reminder1hSent: appointments.reminder1hSent,
   })
-  .from(appointments)
-  .where(and(
-    eq(appointments.merchantId, merchantId),
-    eq(appointments.status, 'confirmed'),
-    gte(appointments.startTime, startStr),
-    lt(appointments.startTime, endStr)
-  ));
-  
+    .from(appointments)
+    .where(and(
+      eq(appointments.merchantId, merchantId),
+      eq(appointments.status, 'confirmed'),
+      gte(appointments.startTime, startStr),
+      lt(appointments.startTime, endStr)
+    ));
+
   return results;
 }
 
@@ -5668,15 +5668,15 @@ export async function getAppointmentsForReminder(
 export async function getAllMerchantsWithCalendar() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const results = await db.select({
     id: merchants.id,
     businessName: merchants.businessName,
   })
-  .from(merchants)
-  .innerJoin(googleIntegrations, eq(merchants.id, googleIntegrations.merchantId))
-  .where(eq(googleIntegrations.isActive, 1));
-  
+    .from(merchants)
+    .innerJoin(googleIntegrations, eq(merchants.id, googleIntegrations.merchantId))
+    .where(eq(googleIntegrations.isActive, 1));
+
   return results;
 }
 
@@ -5686,11 +5686,11 @@ export async function getAllMerchantsWithCalendar() {
 export async function getGoogleOAuthSettings() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const results = await db.select()
     .from(googleOAuthSettings)
     .limit(1);
-  
+
   return results[0] || null;
 }
 
@@ -5702,9 +5702,9 @@ export async function upsertGoogleOAuthSettings(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const existing = await getGoogleOAuthSettings();
-  
+
   if (existing) {
     await db.update(googleOAuthSettings)
       .set({
@@ -5714,7 +5714,7 @@ export async function upsertGoogleOAuthSettings(data: {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(googleOAuthSettings.id, existing.id));
-    
+
     return { ...existing, ...data };
   } else {
     const [result] = await db.insert(googleOAuthSettings)
@@ -5723,7 +5723,7 @@ export async function upsertGoogleOAuthSettings(data: {
         clientSecret: data.clientSecret,
         isEnabled: data.isEnabled ?? 1,
       });
-    
+
     return {
       id: result.insertId,
       ...data,
@@ -5736,17 +5736,17 @@ export async function upsertGoogleOAuthSettings(data: {
 export async function toggleGoogleOAuthEnabled(isEnabled: boolean) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const existing = await getGoogleOAuthSettings();
   if (!existing) throw new Error("Google OAuth settings not found");
-  
+
   await db.update(googleOAuthSettings)
     .set({
       isEnabled: isEnabled ? 1 : 0,
       updatedAt: new Date().toISOString(),
     })
     .where(eq(googleOAuthSettings.id, existing.id));
-  
+
   return { ...existing, isEnabled: isEnabled ? 1 : 0 };
 }
 
@@ -5854,7 +5854,7 @@ export async function getStaffByService(serviceId: number) {
   if (!db) throw new Error("Database not available");
   const allStaff = await db.select().from(staffMembers)
     .where(eq(staffMembers.isActive, 1));
-  
+
   return allStaff.filter(staff => {
     if (!staff.serviceIds) return false;
     try {
@@ -5902,7 +5902,7 @@ export async function getPackageServices(packageId: number) {
   if (!db) throw new Error("Database not available");
   const pkg = await getServicePackageById(packageId);
   if (!pkg || !pkg.serviceIds) return [];
-  
+
   try {
     const serviceIds = JSON.parse(pkg.serviceIds);
     return await db.select().from(services)
@@ -5939,7 +5939,7 @@ export async function createBooking(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(bookings).values({
     merchantId: data.merchantId,
     serviceId: data.serviceId,
@@ -5959,7 +5959,7 @@ export async function createBooking(data: {
     notes: data.notes,
     bookingSource: data.bookingSource || 'whatsapp',
   });
-  
+
   return result.insertId;
 }
 
@@ -5980,11 +5980,11 @@ export async function getBookingsByMerchant(merchantId: number, filters?: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let query = db.select().from(bookings).where(eq(bookings.merchantId, merchantId));
-  
+
   const conditions = [eq(bookings.merchantId, merchantId)];
-  
+
   if (filters?.status) {
     conditions.push(eq(bookings.status, filters.status as any));
   }
@@ -6000,12 +6000,12 @@ export async function getBookingsByMerchant(merchantId: number, filters?: {
   if (filters?.endDate) {
     conditions.push(sql`${bookings.bookingDate} <= ${filters.endDate}`);
   }
-  
+
   const results = await db.select().from(bookings)
     .where(and(...conditions))
     .orderBy(desc(bookings.bookingDate), desc(bookings.startTime))
     .limit(filters?.limit || 100);
-  
+
   return results;
 }
 
@@ -6016,9 +6016,9 @@ export async function getBookingsByService(serviceId: number, filters?: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const conditions = [eq(bookings.serviceId, serviceId)];
-  
+
   if (filters?.status) {
     conditions.push(eq(bookings.status, filters.status as any));
   }
@@ -6028,7 +6028,7 @@ export async function getBookingsByService(serviceId: number, filters?: {
   if (filters?.endDate) {
     conditions.push(sql`${bookings.bookingDate} <= ${filters.endDate}`);
   }
-  
+
   return await db.select().from(bookings)
     .where(and(...conditions))
     .orderBy(desc(bookings.bookingDate));
@@ -6059,9 +6059,9 @@ export async function updateBooking(id: number, data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const updateData: any = { ...data };
-  
+
   if (data.status === 'confirmed' && !updateData.confirmedAt) {
     updateData.confirmedAt = new Date().toISOString();
   }
@@ -6071,7 +6071,7 @@ export async function updateBooking(id: number, data: {
   if (data.status === 'cancelled' && !updateData.cancelledAt) {
     updateData.cancelledAt = new Date().toISOString();
   }
-  
+
   await db.update(bookings).set(updateData).where(eq(bookings.id, id));
 }
 
@@ -6088,9 +6088,9 @@ export async function getBookingStats(merchantId: number, filters?: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const conditions = [eq(bookings.merchantId, merchantId)];
-  
+
   if (filters?.startDate) {
     conditions.push(sql`${bookings.bookingDate} >= ${filters.startDate}`);
   }
@@ -6100,9 +6100,9 @@ export async function getBookingStats(merchantId: number, filters?: {
   if (filters?.serviceId) {
     conditions.push(eq(bookings.serviceId, filters.serviceId));
   }
-  
+
   const allBookings = await db.select().from(bookings).where(and(...conditions));
-  
+
   return {
     total: allBookings.length,
     pending: allBookings.filter(b => b.status === 'pending').length,
@@ -6127,7 +6127,7 @@ export async function checkBookingConflict(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const conditions = [
     eq(bookings.serviceId, serviceId),
     eq(bookings.bookingDate, bookingDate),
@@ -6136,15 +6136,15 @@ export async function checkBookingConflict(
       (${bookings.startTime} < ${endTime} AND ${bookings.endTime} > ${startTime})
     )`
   ];
-  
+
   if (staffId) {
     conditions.push(eq(bookings.staffId, staffId));
   }
-  
+
   if (excludeBookingId) {
     conditions.push(sql`${bookings.id} != ${excludeBookingId}`);
   }
-  
+
   const conflicts = await db.select().from(bookings).where(and(...conditions));
   return conflicts.length > 0;
 }
@@ -6152,7 +6152,7 @@ export async function checkBookingConflict(
 export async function markBookingReminderSent(bookingId: number, type: '24h' | '1h') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   if (type === '24h') {
     await db.update(bookings)
       .set({ reminder24hSent: 1 })
@@ -6167,12 +6167,12 @@ export async function markBookingReminderSent(bookingId: number, type: '24h' | '
 export async function getUpcomingBookingsForReminders(merchantId: number, hoursAhead: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const now = new Date();
   const targetTime = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000);
-  
+
   const reminderField = hoursAhead === 24 ? bookings.reminder24hSent : bookings.reminder1hSent;
-  
+
   return await db.select().from(bookings)
     .where(and(
       eq(bookings.merchantId, merchantId),
@@ -6198,7 +6198,7 @@ export async function createTimeSlot(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(bookingTimeSlots).values({
     merchantId: data.merchantId,
     serviceId: data.serviceId,
@@ -6211,7 +6211,7 @@ export async function createTimeSlot(data: {
     maxBookings: data.maxBookings || 1,
     currentBookings: 0,
   });
-  
+
   return result.insertId;
 }
 
@@ -6222,7 +6222,7 @@ export async function getAvailableTimeSlots(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const conditions = [
     eq(bookingTimeSlots.serviceId, serviceId),
     eq(bookingTimeSlots.slotDate, date),
@@ -6230,11 +6230,11 @@ export async function getAvailableTimeSlots(
     eq(bookingTimeSlots.isBlocked, 0),
     sql`${bookingTimeSlots.currentBookings} < ${bookingTimeSlots.maxBookings}`
   ];
-  
+
   if (staffId) {
     conditions.push(eq(bookingTimeSlots.staffId, staffId));
   }
-  
+
   return await db.select().from(bookingTimeSlots)
     .where(and(...conditions))
     .orderBy(bookingTimeSlots.startTime);
@@ -6292,7 +6292,7 @@ export async function createBookingReview(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const result = await db.insert(bookingReviews).values({
     merchantId: data.merchantId,
     bookingId: data.bookingId,
@@ -6308,7 +6308,7 @@ export async function createBookingReview(data: {
     isPublic: data.isPublic ?? 1,
     isVerified: 1,
   });
-  
+
   return result.insertId;
 }
 
@@ -6321,9 +6321,9 @@ export async function getBookingReviews(merchantId: number, filters?: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const conditions = [eq(bookingReviews.merchantId, merchantId)];
-  
+
   if (filters?.serviceId) {
     conditions.push(eq(bookingReviews.serviceId, filters.serviceId));
   }
@@ -6336,7 +6336,7 @@ export async function getBookingReviews(merchantId: number, filters?: {
   if (filters?.isPublic !== undefined) {
     conditions.push(eq(bookingReviews.isPublic, filters.isPublic));
   }
-  
+
   return await db.select().from(bookingReviews)
     .where(and(...conditions))
     .orderBy(desc(bookingReviews.createdAt))
@@ -6358,7 +6358,7 @@ export async function replyToReview(reviewId: number, reply: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(bookingReviews)
-    .set({ 
+    .set({
       merchantReply: reply,
       repliedAt: new Date().toISOString()
     })
@@ -6368,13 +6368,13 @@ export async function replyToReview(reviewId: number, reply: string) {
 export async function getServiceRatingStats(serviceId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const reviews = await db.select().from(bookingReviews)
     .where(and(
       eq(bookingReviews.serviceId, serviceId),
       eq(bookingReviews.isPublic, 1)
     ));
-  
+
   if (reviews.length === 0) {
     return {
       averageRating: 0,
@@ -6382,14 +6382,14 @@ export async function getServiceRatingStats(serviceId: number) {
       ratingDistribution: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 }
     };
   }
-  
+
   const totalRating = reviews.reduce((sum, r) => sum + r.overallRating, 0);
   const distribution = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-  
+
   reviews.forEach(r => {
     distribution[r.overallRating as keyof typeof distribution]++;
   });
-  
+
   return {
     averageRating: totalRating / reviews.length,
     totalReviews: reviews.length,
@@ -6499,11 +6499,11 @@ export async function getMerchantsWithTapEnabled(): Promise<MerchantPaymentSetti
  */
 export async function hasMerchantValidTapConfig(merchantId: number): Promise<boolean> {
   const settings = await getMerchantPaymentSettings(merchantId);
-  
+
   if (!settings) return false;
   if (!settings.tapEnabled) return false;
   if (!settings.tapPublicKey || !settings.tapSecretKey) return false;
-  
+
   return true;
 }
 
@@ -6725,7 +6725,7 @@ export async function upsertAppointmentFromCalendly(merchantId: number, calendly
   if (!db) return;
 
   const eventUri = calendlyEvent.uri || calendlyEvent.payload?.event?.uri;
-  
+
   // Check if appointment exists by external ID
   const existing = await db.select()
     .from(appointments)
@@ -6768,7 +6768,7 @@ export async function cancelAppointmentFromCalendly(merchantId: number, payload:
   if (!db) return;
 
   const eventUri = payload.payload?.event?.uri;
-  
+
   await db.update(appointments)
     .set({ status: 'cancelled' })
     .where(and(
@@ -6942,7 +6942,7 @@ export async function getCustomersByMerchant(merchantId: number): Promise<any[]>
     })
   );
 
-  return enrichedCustomers.sort((a, b) => 
+  return enrichedCustomers.sort((a, b) =>
     new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
   );
 }
@@ -7188,7 +7188,7 @@ export async function updateWebsiteAnalysis(
   if (!db) throw new Error('Database connection failed');
 
   const updateData: any = {};
-  
+
   if (data.title !== undefined) updateData.title = data.title;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.industry !== undefined) updateData.industry = data.industry;
@@ -7227,7 +7227,7 @@ export async function getWebsiteAnalysisById(id: number): Promise<any | null> {
   if (!db) return null;
 
   const result = await db.select().from(websiteAnalyses).where(eq(websiteAnalyses.id, id));
-  
+
   if (result.length === 0) return null;
 
   const analysis = result[0];
@@ -7490,7 +7490,7 @@ export async function updateCompetitorAnalysis(
   if (!db) throw new Error('Database connection failed');
 
   const updateData: any = {};
-  
+
   if (data.overallScore !== undefined) updateData.overallScore = data.overallScore;
   if (data.seoScore !== undefined) updateData.seoScore = data.seoScore;
   if (data.performanceScore !== undefined) updateData.performanceScore = data.performanceScore;
@@ -7522,7 +7522,7 @@ export async function getCompetitorAnalysisById(id: number): Promise<any | null>
   if (!db) return null;
 
   const result = await db.select().from(competitorAnalyses).where(eq(competitorAnalyses.id, id));
-  
+
   if (result.length === 0) return null;
 
   const competitor = result[0];
@@ -8101,7 +8101,7 @@ export async function upsertZidSettings(merchantId: number, settings: any) {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(zidSettings.id, existing.id));
-    
+
     return { ...existing, ...settings };
   } else {
     const result = await db
@@ -8110,7 +8110,7 @@ export async function upsertZidSettings(merchantId: number, settings: any) {
         merchantId,
         ...settings,
       });
-    
+
     return { id: Number(result[0].insertId), merchantId, ...settings };
   }
 }
@@ -8143,7 +8143,7 @@ export async function saveZidProduct(merchantId: number, productData: any) {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(zidProducts.id, existing[0].id));
-    
+
     return { ...existing[0], ...productData };
   } else {
     const result = await db
@@ -8153,7 +8153,7 @@ export async function saveZidProduct(merchantId: number, productData: any) {
         ...productData,
         lastSyncedAt: new Date().toISOString(),
       });
-    
+
     return { id: Number(result[0].insertId), merchantId, ...productData };
   }
 }
@@ -8253,7 +8253,7 @@ export async function saveZidOrder(merchantId: number, orderData: any) {
         updatedAt: new Date().toISOString(),
       })
       .where(eq(zidOrders.id, existing[0].id));
-    
+
     return { ...existing[0], ...orderData };
   } else {
     const result = await db
@@ -8263,7 +8263,7 @@ export async function saveZidOrder(merchantId: number, orderData: any) {
         ...orderData,
         lastSyncedAt: new Date().toISOString(),
       });
-    
+
     return { id: Number(result[0].insertId), merchantId, ...orderData };
   }
 }
@@ -8477,7 +8477,7 @@ export async function updateZidSyncLog(
   if (!db) return;
 
   const updateData: any = { ...updates };
-  
+
   if (updates.status === 'completed' || updates.status === 'failed') {
     updateData.completedAt = new Date().toISOString();
   }
@@ -8562,13 +8562,13 @@ export async function updateWooCommerceConnectionStatus(merchantId: number, stat
     connectionStatus: status,
     lastTestAt: new Date().toISOString(),
   };
-  
+
   if (storeInfo) {
     if (storeInfo.version) updateData.storeVersion = storeInfo.version;
     if (storeInfo.name) updateData.storeName = storeInfo.name;
     if (storeInfo.currency) updateData.storeCurrency = storeInfo.currency;
   }
-  
+
   await db.update(woocommerceSettings).set(updateData).where(eq(woocommerceSettings.merchantId, merchantId));
 }
 
@@ -8622,7 +8622,7 @@ export async function searchWooCommerceProducts(merchantId: number, searchTerm: 
 
 export async function getWooCommerceProductsStats(merchantId: number) {
   const allProducts = await db.select().from(woocommerceProducts).where(eq(woocommerceProducts.merchantId, merchantId));
-  
+
   return {
     total: allProducts.length,
     inStock: allProducts.filter(p => p.stockStatus === 'instock').length,
@@ -8679,15 +8679,15 @@ export async function getWooCommerceOrdersByStatus(merchantId: number, status: s
 
 export async function getWooCommerceOrdersStats(merchantId: number) {
   const allOrders = await db.select().from(woocommerceOrders).where(eq(woocommerceOrders.merchantId, merchantId));
-  
+
   const statusCounts: Record<string, number> = {};
   let totalRevenue = 0;
-  
+
   allOrders.forEach(order => {
     statusCounts[order.status] = (statusCounts[order.status] || 0) + 1;
     totalRevenue += parseFloat(order.total.toString());
   });
-  
+
   return {
     total: allOrders.length,
     statusCounts,
@@ -8802,13 +8802,13 @@ export async function getTemplateTranslation(templateId: number, language: 'ar' 
 export async function getBusinessTemplatesWithTranslations(language?: 'ar' | 'en') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const templates = await db.select().from(businessTemplates).where(eq(businessTemplates.isActive, 1));
-  
+
   const templatesWithTranslations = await Promise.all(
     templates.map(async (template) => {
       const translations = await getTemplateTranslationsByTemplateId(template.id);
-      
+
       // إذا كانت هناك لغة محددة، نستخدم الترجمة المناسبة
       if (language) {
         const translation = translations.find(t => t.language === language);
@@ -8823,26 +8823,26 @@ export async function getBusinessTemplatesWithTranslations(language?: 'ar' | 'en
           };
         }
       }
-      
+
       return {
         ...template,
         translations
       };
     })
   );
-  
+
   return templatesWithTranslations;
 }
 
 export async function getBusinessTemplateByIdWithTranslations(id: number, language?: 'ar' | 'en') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const template = await getBusinessTemplateById(id);
   if (!template) return null;
-  
+
   const translations = await getTemplateTranslationsByTemplateId(id);
-  
+
   // إذا كانت هناك لغة محددة، نستخدم الترجمة المناسبة
   if (language) {
     const translation = translations.find(t => t.language === language);
@@ -8857,7 +8857,7 @@ export async function getBusinessTemplateByIdWithTranslations(id: number, langua
       };
     }
   }
-  
+
   return {
     ...template,
     translations
@@ -8912,7 +8912,7 @@ export async function deleteSubscriptionPlan(id: number) {
 export async function reorderSubscriptionPlans(planIds: number[]) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   for (let i = 0; i < planIds.length; i++) {
     await db.update(subscriptionPlans)
       .set({ sortOrder: i })
@@ -9025,13 +9025,13 @@ export async function cancelMerchantSubscription(id: number, reason?: string) {
 export async function extendMerchantSubscription(id: number, days: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const subscription = await getMerchantSubscriptionById(id);
   if (!subscription) throw new Error("Subscription not found");
-  
+
   const currentEndDate = new Date(subscription.endDate);
   const newEndDate = new Date(currentEndDate.getTime() + days * 24 * 60 * 60 * 1000);
-  
+
   await db.update(merchantSubscriptions)
     .set({ endDate: newEndDate.toISOString() })
     .where(eq(merchantSubscriptions.id, id));
@@ -9054,10 +9054,10 @@ export async function getExpiredSubscriptions() {
 export async function getExpiringSubscriptions(daysBeforeExpiry: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const now = new Date();
   const targetDate = new Date(now.getTime() + daysBeforeExpiry * 24 * 60 * 60 * 1000);
-  
+
   return await db.select().from(merchantSubscriptions)
     .where(and(
       or(
@@ -9072,22 +9072,22 @@ export async function getExpiringSubscriptions(daysBeforeExpiry: number) {
 export async function getMerchantSubscriptionStats() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const totalSubscriptions = await db.select({ count: sql<number>`count(*)` })
     .from(merchantSubscriptions);
-  
+
   const activeSubscriptions = await db.select({ count: sql<number>`count(*)` })
     .from(merchantSubscriptions)
     .where(eq(merchantSubscriptions.status, 'active'));
-  
+
   const trialSubscriptions = await db.select({ count: sql<number>`count(*)` })
     .from(merchantSubscriptions)
     .where(eq(merchantSubscriptions.status, 'trial'));
-  
+
   const expiredSubscriptions = await db.select({ count: sql<number>`count(*)` })
     .from(merchantSubscriptions)
     .where(eq(merchantSubscriptions.status, 'expired'));
-  
+
   return {
     total: totalSubscriptions[0]?.count || 0,
     active: activeSubscriptions[0]?.count || 0,
@@ -9099,22 +9099,22 @@ export async function getMerchantSubscriptionStats() {
 export async function checkMerchantSubscriptionStatus(merchantId: number): Promise<boolean> {
   const subscription = await getMerchantCurrentSubscription(merchantId);
   if (!subscription) return false;
-  
+
   const now = new Date();
   const endDate = new Date(subscription.endDate);
-  
+
   return now <= endDate;
 }
 
 export async function getMerchantDaysRemaining(merchantId: number): Promise<number> {
   const subscription = await getMerchantCurrentSubscription(merchantId);
   if (!subscription) return 0;
-  
+
   const now = new Date();
   const endDate = new Date(subscription.endDate);
   const diff = endDate.getTime() - now.getTime();
   const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  
+
   return Math.max(0, days);
 }
 
@@ -9217,22 +9217,22 @@ export async function getPaymentTransactionByTapChargeId(tapChargeId: string) {
 export async function getPaymentStats() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const totalTransactions = await db.select({ count: sql<number>`count(*)` })
     .from(paymentTransactions);
-  
+
   const completedTransactions = await db.select({ count: sql<number>`count(*)` })
     .from(paymentTransactions)
     .where(eq(paymentTransactions.status, 'completed'));
-  
+
   const failedTransactions = await db.select({ count: sql<number>`count(*)` })
     .from(paymentTransactions)
     .where(eq(paymentTransactions.status, 'failed'));
-  
+
   const totalRevenue = await db.select({ sum: sql<number>`sum(amount)` })
     .from(paymentTransactions)
     .where(eq(paymentTransactions.status, 'completed'));
-  
+
   return {
     total: totalTransactions[0]?.count || 0,
     completed: completedTransactions[0]?.count || 0,
@@ -9244,7 +9244,7 @@ export async function getPaymentStats() {
 export async function getRevenueStats(startDate?: string, endDate?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   let query = db.select({
     date: sql<string>`DATE(created_at)`,
     revenue: sql<number>`sum(amount)`,
@@ -9252,14 +9252,14 @@ export async function getRevenueStats(startDate?: string, endDate?: string) {
   })
     .from(paymentTransactions)
     .where(eq(paymentTransactions.status, 'completed'));
-  
+
   if (startDate && endDate) {
     query = query.where(and(
       gte(paymentTransactions.createdAt, startDate),
       lte(paymentTransactions.createdAt, endDate)
     ));
   }
-  
+
   return await query.groupBy(sql`DATE(created_at)`).orderBy(sql`DATE(created_at)`);
 }
 
@@ -9377,7 +9377,7 @@ export async function getNotificationRecordsByMerchant(merchantId: number) {
 export async function deleteOldNotificationRecords(daysOld: number = 30) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-  
+
   await db
     .delete(schema.notificationRecords)
     .where(lt(schema.notificationRecords.sentAt, cutoffDate.toISOString()));
@@ -9663,12 +9663,12 @@ export async function getMerchantCurrentUsage(merchantId: number) {
   const customerCount = await getCustomerCountByMerchant(merchantId);
   const whatsappNumbers = await getWhatsAppInstancesByMerchantId(merchantId);
   const products = await getProductsByMerchantId(merchantId);
-  
+
   // Get campaigns this month
   const startOfMonth = new Date();
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
-  
+
   const campaigns = await db
     .select({ count: sql<number>`count(*)` })
     .from(schema.campaigns)
@@ -9976,3 +9976,122 @@ export async function getSubscriptionDistributionByPlan() {
 
   return result;
 }
+
+// ============================================
+// Invoice Management
+// ============================================
+
+/**
+ * Get all invoices with filtering
+ */
+export async function getAllInvoices(options?: {
+  status?: 'draft' | 'sent' | 'paid' | 'cancelled';
+  limit?: number;
+  offset?: number;
+}): Promise<Invoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const conditions = [];
+
+  if (options?.status) {
+    conditions.push(eq(invoices.status, options.status));
+  }
+
+  let query = db
+    .select()
+    .from(invoices)
+    .orderBy(desc(invoices.createdAt));
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as typeof query;
+  }
+
+  if (options?.limit) {
+    query = query.limit(options.limit) as typeof query;
+  }
+
+  if (options?.offset) {
+    query = query.offset(options.offset) as typeof query;
+  }
+
+  return await query;
+}
+
+/**
+ * Get invoice by ID
+ */
+export async function getInvoiceById(id: number): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Get invoices by merchant ID
+ */
+export async function getInvoicesByMerchantId(merchantId: number): Promise<Invoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.merchantId, merchantId))
+    .orderBy(desc(invoices.createdAt))
+    .limit(50);
+}
+
+/**
+ * Get invoice statistics
+ */
+export async function getInvoiceStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, paid: 0, pending: 0, cancelled: 0, totalAmount: 0, paidAmount: 0 };
+
+  const allInvoices = await db
+    .select({
+      status: invoices.status,
+      amount: invoices.amount,
+    })
+    .from(invoices);
+
+  const stats = {
+    total: allInvoices.length,
+    paid: allInvoices.filter(i => i.status === 'paid').length,
+    pending: allInvoices.filter(i => i.status === 'sent' || i.status === 'draft').length,
+    cancelled: allInvoices.filter(i => i.status === 'cancelled').length,
+    totalAmount: allInvoices.reduce((sum, i) => sum + (i.amount || 0), 0),
+    paidAmount: allInvoices
+      .filter(i => i.status === 'paid')
+      .reduce((sum, i) => sum + (i.amount || 0), 0),
+  };
+
+  return stats;
+}
+
+/**
+ * Update invoice
+ */
+export async function updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(invoices).set(data).where(eq(invoices.id, id));
+}
+
+/**
+ * Create invoice
+ */
+export async function createInvoice(invoice: InsertInvoice): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(invoices).values(invoice);
+  const insertedId = Number(result[0].insertId);
+
+  return getInvoiceById(insertedId);
+}
+

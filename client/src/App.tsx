@@ -63,6 +63,7 @@ import OrderNotificationsSettings from "./pages/merchant/OrderNotificationsSetti
 import WhatsAppTest from "./pages/merchant/WhatsAppTest";
 import GreenAPISetupGuide from "./pages/merchant/GreenAPISetupGuide";
 import Reviews from "./pages/merchant/Reviews";
+import BookingReviews from "./pages/merchant/BookingReviews";
 import TestSari from "./pages/merchant/TestSari";
 import MetricsDashboard from "./pages/merchant/MetricsDashboard";
 import SariPlayground from "./pages/SariPlayground";
@@ -154,6 +155,7 @@ import NotificationDashboard from "./pages/super-admin/NotificationDashboard";
 import EmailTemplates from "./pages/admin/EmailTemplates";
 import TemplateTranslations from "./pages/admin/TemplateTranslations";
 import SubscriptionReports from "./pages/admin/SubscriptionReports";
+import AdminInvoices from "./pages/admin/Invoices";
 
 function Router() {
   return (
@@ -183,253 +185,253 @@ function Router() {
       <Route path="/try-sari" component={TrySari} />
       <Route path="/try-sari-enhanced" component={TrySariEnhanced} />
       <Route path="/setup-wizard" component={SetupWizard} />
-      
+
       {/* Merchant Routes */}
       <Route path="/merchant/dashboard">
         <DashboardLayout>
           <MerchantDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/campaigns">
         <DashboardLayout>
           <Campaigns />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/campaigns/new">
         <DashboardLayout>
           <NewCampaign />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/campaigns/:id">
         <DashboardLayout>
           <CampaignDetails />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/campaigns/:id/report">
         <DashboardLayout>
           <CampaignReport />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/products">
         <DashboardLayout>
           <Products />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/products/upload">
         <DashboardLayout>
           <UploadProducts />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/conversations">
         <DashboardLayout>
           <Conversations />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/whatsapp">
         <DashboardLayout>
           <WhatsApp />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/salla">
         <DashboardLayout>
           <SallaIntegration />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/integrations/zid">
         <DashboardLayout>
           <ZidIntegration />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/zid/settings">
         <DashboardLayout>
           <ZidSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/zid/callback">
         <ZidCallback />
       </Route>
-      
+
       <Route path="/merchant/zid/products">
         <DashboardLayout>
           <ZidProducts />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/zid/sync-logs">
         <DashboardLayout>
           <ZidSyncLogs />
         </DashboardLayout>
       </Route>
-      
+
       {/* WooCommerce Routes */}
       <Route path="/merchant/woocommerce/settings">
         <DashboardLayout>
           <WooCommerceSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/woocommerce/products">
         <DashboardLayout>
           <WooCommerceProducts />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/woocommerce/orders">
         <DashboardLayout>
           <WooCommerceOrders />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/woocommerce/analytics">
         <DashboardLayout>
           <WooCommerceAnalytics />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/integrations/calendly">
         <DashboardLayout>
           <CalendlyIntegration />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/chat-orders">
         <DashboardLayout>
           <ChatOrders />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/discounts">
         <DashboardLayout>
           <DiscountCodes />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/referrals">
         <DashboardLayout>
           <Referrals />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/abandoned-carts">
         <DashboardLayout>
           <AbandonedCartsPage />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/occasion-campaigns">
         <DashboardLayout>
           <OccasionCampaignsPage />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/analytics">
         <DashboardLayout>
           <AnalyticsDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/message-analytics">
         <DashboardLayout>
           <Analytics />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/overview-analytics">
         <DashboardLayout>
           <OverviewAnalytics />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/orders">
         <DashboardLayout>
           <Orders />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/whatsapp-instances">
         <DashboardLayout>
           <WhatsAppInstancesPage />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/whatsapp-setup">
         <DashboardLayout>
           <WhatsAppSetupWizard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/whatsapp-test">
         <DashboardLayout>
           <WhatsAppTest />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/greenapi-setup">
         <DashboardLayout>
           <GreenAPISetupGuide />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/test-sari">
         <DashboardLayout>
           <TestSari />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/metrics-dashboard">
         <DashboardLayout>
           <MetricsDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/whatsapp-webhook-setup">
         <DashboardLayout>
           <WhatsAppWebhookSetup />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/bot-settings">
         <DashboardLayout>
           <BotSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/sari-playground">
         <DashboardLayout>
           <SariPlayground />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/sari-analytics">
         <DashboardLayout>
           <SariAnalytics />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/scheduled-messages">
         <DashboardLayout>
           <ScheduledMessages />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/sari-personality">
         <DashboardLayout>
           <SariPersonality />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/quick-responses">
         <DashboardLayout>
           <QuickResponses />
@@ -441,239 +443,245 @@ function Router() {
           <InsightsDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/advanced-analytics">
         <DashboardLayout>
           <AdvancedAnalytics />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/analytics-dashboard">
         <DashboardLayout>
           <AdvancedAnalyticsDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/performance-metrics">
         <DashboardLayout>
           <PerformanceMetrics />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/data-sync">
         <DashboardLayout>
           <DataSync />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/reviews">
         <DashboardLayout>
           <Reviews />
         </DashboardLayout>
       </Route>
-      
+
+      <Route path="/merchant/booking-reviews">
+        <DashboardLayout>
+          <BookingReviews />
+        </DashboardLayout>
+      </Route>
+
       <Route path="/merchant/order-notifications">
         <DashboardLayout>
           <OrderNotificationsSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/settings">
         <DashboardLayout>
           <MerchantSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/notifications">
         <DashboardLayout>
           <NotificationsPage />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/language-settings">
         <DashboardLayout>
           <LanguageSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/calendar/settings">
         <DashboardLayout>
           <CalendarSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/calendar">
         <DashboardLayout>
           <CalendarPage />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/staff">
         <DashboardLayout>
           <StaffManagement />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/services">
         <DashboardLayout>
           <ServicesManagement />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/services/new">
         <DashboardLayout>
           <ServiceForm />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/services/:id/edit">
         <DashboardLayout>
           <ServiceForm />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/services/:id">
         <DashboardLayout>
           <ServiceDetails />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/bookings">
         <DashboardLayout>
           <BookingsManagement />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/service-categories">
         <DashboardLayout>
           <ServiceCategories />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/service-packages">
         <DashboardLayout>
           <ServicePackages />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/sheets/settings">
         <SheetsSettings />
       </Route>
-      
+
       <Route path="/merchant/sheets/export">
         <SheetsExport />
       </Route>
-      
+
       <Route path="/merchant/sheets/reports">
         <SheetsReports />
       </Route>
-      
+
       <Route path="/merchant/sheets/inventory">
         <SheetsInventory />
       </Route>
-      
+
       <Route path="/merchant/payments">
         <DashboardLayout><Payments /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/payments/:id">
         <DashboardLayout><PaymentDetails /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/payment-links">
         <DashboardLayout><PaymentLinks /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/payment-settings">
         <DashboardLayout><PaymentSettings /></DashboardLayout>
       </Route>
-      
+
       {/* Loyalty System Routes */}
       <Route path="/merchant/loyalty/settings">
         <DashboardLayout><LoyaltySettings /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/loyalty/tiers">
         <DashboardLayout><LoyaltyTiers /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/loyalty/rewards">
         <DashboardLayout><LoyaltyRewards /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/loyalty/customers">
         <DashboardLayout><LoyaltyCustomers /></DashboardLayout>
       </Route>
-      
+
       {/* Customer Loyalty Page (Public) */}
       <Route path="/customer/loyalty/:customerPhone">
         <CustomerLoyalty />
       </Route>
-      
+
       <Route path="/merchant/integrations-dashboard">
         <DashboardLayout><IntegrationsDashboard /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/platform-integrations">
         <DashboardLayout><PlatformIntegrations /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/notification-settings">
         <DashboardLayout><NotificationSettings /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/currency-settings">
         <DashboardLayout><CurrencySettings /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/push-notifications">
         <DashboardLayout><PushNotificationsSettings /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/scheduled-reports">
         <DashboardLayout><ScheduledReports /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/whatsapp-auto-notifications">
         <DashboardLayout><WhatsAppAutoNotifications /></DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/reports">
         <DashboardLayout>
           <Reports />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/subscriptions">
         <DashboardLayout>
           <Subscriptions />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/usage">
         <DashboardLayout>
           <Usage />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/usage-dashboard">
         <DashboardLayout>
           <UsageDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/subscription/plans">
         <DashboardLayout>
           <SubscriptionPlansMerchant />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/subscription/compare">
         <DashboardLayout>
           <ComparePlans />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/subscription">
         <DashboardLayout>
           <MySubscription />
@@ -693,62 +701,62 @@ function Router() {
       <Route path="/merchant/payment/cancel">
         <PaymentCancel />
       </Route>
-      
+
       <Route path="/merchant/customers">
         <DashboardLayout>
           <Customers />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/website-analysis">
         <DashboardLayout>
           <WebsiteAnalysis />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/smart-analysis">
         <DashboardLayout>
           <SmartAnalysis />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/competitor-analysis">
         <DashboardLayout>
           <CompetitorAnalysis />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/merchant/customers/:phone">
         <DashboardLayout>
           <CustomerDetails />
         </DashboardLayout>
       </Route>
-      
+
       {/* Admin Routes */}
       <Route path="/admin/dashboard">
         <DashboardLayout>
           <AdminDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/campaigns">
         <DashboardLayout>
           <AdminCampaigns />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/merchants">
         <DashboardLayout>
           <MerchantsManagement />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/merchants/:id">
         <DashboardLayout>
           <MerchantDetails />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/payment-gateways">
         <DashboardLayout>
           <PaymentGateways />
@@ -766,56 +774,56 @@ function Router() {
           <AdminSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/whatsapp-requests">
         <DashboardLayout>
           <WhatsAppRequestsPage />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/smtp-settings">
         <DashboardLayout>
           <SMTPSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/email-templates">
         <DashboardLayout>
           <EmailTemplates />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/template-translations">
         <DashboardLayout>
           <TemplateTranslations />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/google-oauth">
         <DashboardLayout>
           <AdminGoogleOAuth />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/data-sync">
         <DashboardLayout>
           <AdminDataSync />
         </DashboardLayout>
       </Route>
-      
+
       {/* SEO Route - Unified */}
       <Route path="/admin/seo">
         <DashboardLayout>
           <SeoUnified />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/seo/recommendations">
         <DashboardLayout>
           <AdminRecommendations />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/seo/recommendations/analytics">
         <DashboardLayout>
           <RecommendationsAnalytics />
@@ -833,50 +841,56 @@ function Router() {
           <AdminABTestDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/subscription-plans">
         <DashboardLayout>
           <SubscriptionPlansAdmin />
         </DashboardLayout>
       </Route>
-      
+
       {/* Alias routes for packages and addons */}
       <Route path="/admin/packages">
         <DashboardLayout>
           <SubscriptionPlansAdmin />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/subscription-addons">
         <DashboardLayout>
           <SubscriptionAddonsAdmin />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/addons">
         <DashboardLayout>
           <SubscriptionAddonsAdmin />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/tap-settings">
         <DashboardLayout>
           <TapSettings />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/notifications">
         <DashboardLayout>
           <NotificationDashboard />
         </DashboardLayout>
       </Route>
-      
+
       <Route path="/admin/subscription-reports">
         <DashboardLayout>
           <SubscriptionReports />
         </DashboardLayout>
       </Route>
-      
+
+      <Route path="/admin/invoices">
+        <DashboardLayout>
+          <AdminInvoices />
+        </DashboardLayout>
+      </Route>
+
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
