@@ -26,6 +26,24 @@ import { notificationsRouter } from "./routers-notifications";
 import { notificationManagementRouter } from "./routers-notification-management";
 import { smartNotificationsRouter } from "./routers-smart-notifications";
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
+// New modular routers
+import { servicesRouter } from "./routers-services";
+import { serviceCategoriesRouter } from "./routers-service-categories";
+import { servicePackagesRouter } from "./routers-service-packages";
+import { bookingsRouter } from "./routers-bookings";
+import { bookingReviewsRouter } from "./routers-booking-reviews";
+import { googleOAuthSettingsRouter } from "./routers-google-oauth-settings";
+import { reportsRouter } from "./routers-reports";
+import { pushRouter } from "./routers-push";
+import { smtpRouter } from "./routers-smtp";
+import { couponsRouter } from "./routers-coupons";
+import { usageRouter } from "./routers-usage";
+import { trialRouter } from "./routers-trial";
+import { emailRouter } from "./routers-email";
+import { integrationsRouter } from "./routers-integrations";
+import { subscriptionReportsRouter } from "./routers-subscription-reports";
+import { weeklyReportRouter } from "./routers-weekly-report";
+import { templateTranslationsRouter } from "./routers-template-translations";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -49,21 +67,21 @@ export const appRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       return await db.getNotificationsByUserId(ctx.user.id);
     }),
-    
+
     unreadCount: protectedProcedure.query(async ({ ctx }) => {
       return await db.getUnreadNotificationsCount(ctx.user.id);
     }),
-    
+
     markAsRead: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
         return await db.markNotificationAsRead(input.id, ctx.user.id);
       }),
-    
+
     markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
       return await db.markAllNotificationsAsRead(ctx.user.id);
     }),
-    
+
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -71,10 +89,10 @@ export const appRouter = router({
       }),
   }),
   system: systemRouter,
-  
+
   auth: router({
     me: protectedProcedure.query(opts => opts.ctx.user),
-    
+
     // Login with email and password
     login: publicProcedure
       .input(z.object({
@@ -85,32 +103,32 @@ export const appRouter = router({
         console.log('🔵 [AUTH] Login attempt:', input.email);
         const user = await db.getUserByEmail(input.email);
         console.log('🔵 [AUTH] User found:', user?.email);
-        
+
         if (!user || !user.password) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
         }
-        
+
         const isValidPassword = await bcrypt.compare(input.password, user.password);
-        
+
         if (!isValidPassword) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
         }
-        
+
         // Update last signed in
         await db.updateUserLastSignedIn(user.id);
-        
+
         // Create session token using SDK
         const sessionToken = await createSessionToken(String(user.id), {
           name: user.name || '',
           email: user.email || '',
           expiresInMs: ONE_YEAR_MS,
         });
-        
+
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        
+
         // Set cookie using both methods to ensure it works
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-        
+
         // Also set via header as backup
         const securePart = cookieOptions.secure ? '; Secure' : '';
         const cookieString = `${COOKIE_NAME}=${sessionToken}; Path=${cookieOptions.path}; HttpOnly; SameSite=${cookieOptions.sameSite}${securePart}; Max-Age=${Math.floor(ONE_YEAR_MS / 1000)}`;
@@ -121,7 +139,7 @@ export const appRouter = router({
         } else {
           ctx.res.setHeader('Set-Cookie', cookieString);
         }
-        
+
         console.log('🟢 [AUTH] Login successful for:', user.email);
         return {
           success: true,
@@ -135,49 +153,49 @@ export const appRouter = router({
         };
       }),
 
-  // Email Verification
-  emailVerification: router({
-    sendVerificationEmail: publicProcedure
-      .input(z.object({ email: z.string().email(), userId: z.number() }))
-      .mutation(async ({ input }) => {
-        const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        
-        await db.createEmailVerificationToken({
-          userId: input.userId,
-          email: input.email,
-          token,
-          expiresAt,
-        });
-        
-        // In production, send email here
-        return { token, expiresAt };
-      }),
-    
-    verifyEmail: publicProcedure
-      .input(z.object({ token: z.string() }))
-      .mutation(async ({ input }) => {
-        const verificationToken = await db.getEmailVerificationToken(input.token);
-        
-        if (!verificationToken) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Token not found' });
-        }
-        
-        if (verificationToken.isUsed) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token already used' });
-        }
-        
-        if (new Date(verificationToken.expiresAt) < new Date()) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token expired' });
-        }
-        
-        await db.markEmailVerificationTokenAsUsed(verificationToken.id);
-        await db.updateUserEmailVerified(verificationToken.userId, verificationToken.email);
-        
-        return { success: true };
-      }),
-  }),
-    
+    // Email Verification
+    emailVerification: router({
+      sendVerificationEmail: publicProcedure
+        .input(z.object({ email: z.string().email(), userId: z.number() }))
+        .mutation(async ({ input }) => {
+          const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+          await db.createEmailVerificationToken({
+            userId: input.userId,
+            email: input.email,
+            token,
+            expiresAt,
+          });
+
+          // In production, send email here
+          return { token, expiresAt };
+        }),
+
+      verifyEmail: publicProcedure
+        .input(z.object({ token: z.string() }))
+        .mutation(async ({ input }) => {
+          const verificationToken = await db.getEmailVerificationToken(input.token);
+
+          if (!verificationToken) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Token not found' });
+          }
+
+          if (verificationToken.isUsed) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token already used' });
+          }
+
+          if (new Date(verificationToken.expiresAt) < new Date()) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token expired' });
+          }
+
+          await db.markEmailVerificationTokenAsUsed(verificationToken.id);
+          await db.updateUserEmailVerified(verificationToken.userId, verificationToken.email);
+
+          return { success: true };
+        }),
+    }),
+
     // Sign up with email and password
     signup: publicProcedure
       .input(z.object({
@@ -193,13 +211,13 @@ export const appRouter = router({
         if (existingUser) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Email already registered' });
         }
-        
+
         // Hash password
         const hashedPassword = await bcrypt.hash(input.password, 10);
-        
+
         // Generate unique openId for the user
         const openId = `local_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-        
+
         // Create user
         const user = await db.createUser({
           openId,
@@ -209,14 +227,14 @@ export const appRouter = router({
           loginMethod: 'email',
           role: 'user',
         });
-        
+
         if (!user) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create user' });
         }
-        
+
         // Activate trial period (7 days)
         await db.activateUserTrial(user.id);
-        
+
         // Create merchant profile automatically
         await db.createMerchant({
           userId: user.id,
@@ -224,7 +242,7 @@ export const appRouter = router({
           phone: input.phone || null,
           status: 'pending',
         });
-        
+
         // Send welcome email with trial information
         try {
           const { sendWelcomeEmail } = await import('./_core/email');
@@ -233,27 +251,27 @@ export const appRouter = router({
           await sendWelcomeEmail({
             name: input.name,
             email: input.email,
-            trialEndDate: trialEndDate.toLocaleDateString('ar-SA', { 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
+            trialEndDate: trialEndDate.toLocaleDateString('ar-SA', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
             }),
           });
         } catch (error) {
           console.error('[Signup] Failed to send welcome email:', error);
           // Don't fail signup if email fails
         }
-        
+
         // Create session token
         const sessionToken = await createSessionToken(String(user.id), {
           name: user.name || '',
           email: user.email || '',
           expiresInMs: ONE_YEAR_MS,
         });
-        
+
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
-        
+
         return {
           success: true,
           user: {
@@ -264,7 +282,7 @@ export const appRouter = router({
           },
         };
       }),
-    
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -280,23 +298,23 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const user = await db.getUserByEmail(input.email);
-        
+
         if (!user) {
           // Don't reveal if email exists for security
           return { success: true, message: 'إذا كان البريد الإلكتروني موجوداً، سيتم إرسال رابط إعادة التعيين' };
         }
 
         // Generate secure token
-        const token = Math.random().toString(36).substring(2, 15) + 
-                      Math.random().toString(36).substring(2, 15) + 
-                      Date.now().toString(36);
-        
+        const token = Math.random().toString(36).substring(2, 15) +
+          Math.random().toString(36).substring(2, 15) +
+          Date.now().toString(36);
+
         // Token expires in 24 hours
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-        
+
         // Delete any existing tokens for this user
         await db.deletePasswordResetTokensByUserId(user.id);
-        
+
         // Create new token
         await db.createPasswordResetToken({
           userId: user.id,
@@ -305,7 +323,7 @@ export const appRouter = router({
           expiresAt,
           used: 0,
         });
-        
+
         // Send reset email
         try {
           const { sendPasswordResetEmail } = await import('./notifications/email-notifications');
@@ -315,7 +333,7 @@ export const appRouter = router({
           console.error('[Password Reset] Failed to send email:', error);
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إرسال البريد الإلكتروني' });
         }
-        
+
         return { success: true, message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني' };
       }),
 
@@ -326,19 +344,19 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const resetToken = await db.getPasswordResetTokenByToken(input.token);
-        
+
         if (!resetToken) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'الرمز غير صحيح' });
         }
-        
+
         if (resetToken.used) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم استخدام هذا الرمز بالفعل' });
         }
-        
+
         if (new Date(resetToken.expiresAt) < new Date()) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'انتهت صلاحية الرمز' });
         }
-        
+
         return { valid: true, email: resetToken.email };
       }),
 
@@ -350,31 +368,31 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const resetToken = await db.getPasswordResetTokenByToken(input.token);
-        
+
         if (!resetToken) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'الرمز غير صحيح' });
         }
-        
+
         if (resetToken.used) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم استخدام هذا الرمز بالفعل' });
         }
-        
+
         if (new Date(resetToken.expiresAt) < new Date()) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'انتهت صلاحية الرمز' });
         }
-        
+
         // Hash new password
         const hashedPassword = await bcrypt.hash(input.newPassword, 10);
-        
+
         // Update user password
         await db.updateUserPassword(resetToken.userId, hashedPassword);
-        
+
         // Mark token as used
         await db.markPasswordResetTokenAsUsed(resetToken.id);
-        
+
         return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
       }),
-    
+
     // Update user profile
     updateProfile: protectedProcedure
       .input(z.object({
@@ -385,7 +403,7 @@ export const appRouter = router({
         await db.updateUser(ctx.user.id, input);
         return { success: true };
       }),
-    
+
     // Check rate limiting first for password reset
     checkResetRateLimit: publicProcedure
       .input(z.object({
@@ -393,16 +411,16 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const rateLimitCheck = await db.canRequestReset(input.email);
-        
+
         if (!rateLimitCheck.allowed) {
           const minutes = Math.floor(rateLimitCheck.remainingTime! / 60);
           const seconds = rateLimitCheck.remainingTime! % 60;
-          const timeString = minutes > 0 
+          const timeString = minutes > 0
             ? `${minutes} دقيقة و ${seconds} ثانية`
             : `${seconds} ثانية`;
-          
-          throw new TRPCError({ 
-            code: 'TOO_MANY_REQUESTS', 
+
+          throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
             message: `لقد تجاوزت الحد الأقصى للمحاولات (3 محاولات). يرجى الانتظار ${timeString} قبل المحاولة مرة أخرى.`,
             cause: {
               remainingTime: rateLimitCheck.remainingTime,
@@ -410,23 +428,23 @@ export const appRouter = router({
             }
           });
         }
-        
+
         // Track this attempt
         await db.trackResetAttempt({ email: input.email });
-        
+
         const user = await db.getUserByEmail(input.email);
-        
+
         // Don't reveal if user exists or not (security best practice)
         if (!user) {
           return { success: true, message: 'If an account exists with this email, a password reset link has been sent.' };
         }
-        
+
         // Generate unique token
         const token = `${Date.now()}_${Math.random().toString(36).substring(2)}_${Math.random().toString(36).substring(2)}`;
-        
+
         // Token expires in 1 hour
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-        
+
         // Create reset token in database
         await db.createPasswordResetToken({
           userId: user.id,
@@ -434,20 +452,20 @@ export const appRouter = router({
           token,
           expiresAt,
         });
-        
+
         // Send email with reset link
         try {
           const { sendEmail } = await import('./reports/email-sender');
           const { getPasswordResetEmailTemplate } = await import('./email/templates/passwordReset');
-          
+
           const resetLink = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/reset-password/${token}`;
-          
+
           const emailTemplate = getPasswordResetEmailTemplate({
             userName: user.name || 'المستخدم',
             resetLink,
             expiryHours: 1,
           });
-          
+
           await sendEmail({
             to: user.email!,
             subject: emailTemplate.subject,
@@ -457,10 +475,10 @@ export const appRouter = router({
           console.error('[Password Reset] Failed to send email:', error);
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to send reset email' });
         }
-        
+
         return { success: true, message: 'If an account exists with this email, a password reset link has been sent.' };
       }),
-    
+
     // Validate reset token
     validateResetToken: publicProcedure
       .input(z.object({
@@ -468,20 +486,20 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const validation = await db.validatePasswordResetToken(input.token);
-        
+
         if (!validation.valid) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
             message: validation.reason === 'invalid_token' ? 'Invalid reset token' :
-                     validation.reason === 'token_already_used' ? 'This reset link has already been used' :
-                     validation.reason === 'token_expired' ? 'This reset link has expired' :
-                     'Invalid reset token'
+              validation.reason === 'token_already_used' ? 'This reset link has already been used' :
+                validation.reason === 'token_expired' ? 'This reset link has expired' :
+                  'Invalid reset token'
           });
         }
-        
+
         return { valid: true };
       }),
-    
+
 
   }),
 
@@ -644,7 +662,7 @@ export const appRouter = router({
 
         // Get current subscription
         const currentSubscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
-        
+
         // If no current subscription, create new one
         if (!currentSubscription) {
           const startDate = new Date();
@@ -760,7 +778,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const productId = await db.createProduct({
           merchantId: merchant.id,
           ...input,
@@ -783,7 +801,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const { productId, ...updates } = input;
         await db.updateProduct(productId, updates);
         return { success: true };
@@ -795,7 +813,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         await db.deleteProduct(input.productId);
         return { success: true };
       }),
@@ -808,7 +826,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         // Parse CSV data
         const lines = input.csvData.split('\n').filter(line => line.trim());
         if (lines.length < 2) {
@@ -824,7 +842,7 @@ export const appRouter = router({
           try {
             const values = lines[i].split(',').map(v => v.trim());
             const product: any = {};
-            
+
             headers.forEach((header, index) => {
               if (values[index]) {
                 product[header] = values[index];
@@ -849,8 +867,8 @@ export const appRouter = router({
           }
         }
 
-        return { 
-          success: true, 
+        return {
+          success: true,
           imported: successCount,
           failed: errorCount,
           total: lines.length - 1
@@ -962,7 +980,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-      // Delete campaign
+    // Delete campaign
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
@@ -1019,7 +1037,7 @@ export const appRouter = router({
         }
 
         // Update status to sending and set total recipients
-        await db.updateCampaign(input.id, { 
+        await db.updateCampaign(input.id, {
           status: 'sending',
           totalRecipients: recipients.length,
         });
@@ -1034,7 +1052,7 @@ export const appRouter = router({
           recipients.map(async (phone, index) => {
             // Find conversation for this phone
             const conversation = conversations.find(c => c.customerPhone === phone);
-            
+
             try {
               // Send message
               if (campaign.imageUrl) {
@@ -1050,7 +1068,7 @@ export const appRouter = router({
                   message: campaign.message,
                 });
               }
-              
+
               // Log success
               await db.createCampaignLog({
                 campaignId: input.id,
@@ -1061,11 +1079,11 @@ export const appRouter = router({
                 errorMessage: null,
                 sentAt: new Date(),
               });
-              
+
               return { phone, success: true };
             } catch (error: any) {
               console.error(`Failed to send to ${phone}:`, error.message);
-              
+
               // Log failure
               await db.createCampaignLog({
                 campaignId: input.id,
@@ -1076,14 +1094,14 @@ export const appRouter = router({
                 errorMessage: error.message || 'Unknown error',
                 sentAt: new Date(),
               });
-              
+
               return { phone, success: false, error: error.message };
             }
           })
         ).then(async (results) => {
           // Count successes
           const successCount = results.filter(r => r.success).length;
-          
+
           // Update campaign status
           await db.updateCampaign(input.id, {
             status: 'completed',
@@ -1113,8 +1131,8 @@ export const appRouter = router({
           await db.updateCampaign(input.id, { status: 'failed' });
         });
 
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: 'Campaign is being sent',
           totalRecipients: recipients.length,
         };
@@ -1130,16 +1148,16 @@ export const appRouter = router({
       }
 
       const campaigns = await db.getCampaignsByMerchantId(merchant.id);
-      
+
       // Calculate statistics
       const totalCampaigns = campaigns.length;
       const completedCampaigns = campaigns.filter(c => c.status === 'completed');
       const totalSent = completedCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
       const totalRecipients = completedCampaigns.reduce((sum, c) => sum + (c.totalRecipients || 0), 0);
-      
+
       // Calculate delivery rate (assuming sentCount is successful deliveries)
       const deliveryRate = totalRecipients > 0 ? (totalSent / totalRecipients) * 100 : 0;
-      
+
       // For demo purposes, simulate read rate (in real app, track this from WhatsApp API)
       const readRate = deliveryRate > 0 ? deliveryRate * 0.75 : 0; // Assume 75% of delivered messages are read
 
@@ -1168,7 +1186,7 @@ export const appRouter = router({
 
         // Group campaigns by date
         const dateMap = new Map<string, { sent: number; delivered: number; read: number }>();
-        
+
         // Initialize last N days
         const today = new Date();
         for (let i = input.days - 1; i >= 0; i--) {
@@ -1241,7 +1259,7 @@ export const appRouter = router({
 
         // Get all conversations for this merchant
         const conversations = await db.getConversationsByMerchantId(merchant.id);
-        
+
         // Apply filters
         let filtered = conversations;
 
@@ -1249,7 +1267,7 @@ export const appRouter = router({
         if (input.lastActivityDays) {
           const cutoffDate = new Date();
           cutoffDate.setDate(cutoffDate.getDate() - input.lastActivityDays);
-          filtered = filtered.filter(c => 
+          filtered = filtered.filter(c =>
             c.lastActivityAt && new Date(c.lastActivityAt) >= cutoffDate
           );
         }
@@ -1267,14 +1285,14 @@ export const appRouter = router({
           // Get orders for these customers
           const customerPhones = filtered.map(c => c.customerPhone);
           const orders = await db.getOrdersByMerchantId(merchant.id);
-          
+
           // Filter orders by customer phone and product IDs
           const matchingPhones = new Set<string>();
           for (const order of orders) {
             if (customerPhones.includes(order.customerPhone)) {
               // Check if order contains any of the specified products
               const orderItems = JSON.parse(order.items || '[]');
-              const hasProduct = orderItems.some((item: any) => 
+              const hasProduct = orderItems.some((item: any) =>
                 input.productIds!.includes(item.productId)
               );
               if (hasProduct) {
@@ -1282,7 +1300,7 @@ export const appRouter = router({
               }
             }
           }
-          
+
           filtered = filtered.filter(c => matchingPhones.has(c.customerPhone));
         }
 
@@ -1336,20 +1354,20 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const { id, ...updateData } = input;
-        
+
         // Get old values before update
         const oldPlan = await db.getPlanById(id);
         if (!oldPlan) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
         }
-        
+
         // Update plan
         await db.updatePlan(id, updateData);
-        
+
         // Log changes
         const changedBy = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
         const changes: Array<{ field: string; oldValue: string; newValue: string }> = [];
-        
+
         if (updateData.priceMonthly !== undefined && updateData.priceMonthly !== oldPlan.priceMonthly) {
           changes.push({ field: 'priceMonthly', oldValue: oldPlan.priceMonthly.toString(), newValue: updateData.priceMonthly.toString() });
         }
@@ -1368,7 +1386,7 @@ export const appRouter = router({
         if (updateData.isActive !== undefined && updateData.isActive !== oldPlan.isActive) {
           changes.push({ field: 'isActive', oldValue: oldPlan.isActive.toString(), newValue: updateData.isActive.toString() });
         }
-        
+
         // Save change logs
         for (const change of changes) {
           await db.createPlanChangeLog({
@@ -1379,7 +1397,7 @@ export const appRouter = router({
             newValue: change.newValue,
           });
         }
-        
+
         return { success: true };
       }),
 
@@ -1405,21 +1423,21 @@ export const appRouter = router({
 
       return db.getActiveSubscriptionByMerchantId(merchant.id);
     }),
-    
+
     // Get usage statistics
     getUsage: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
-      
+
       const { getUsageStats } = await import('./usage-tracking');
       const stats = await getUsageStats(merchant.id);
-      
+
       if (!stats) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
       }
-      
+
       return stats;
     }),
 
@@ -1481,9 +1499,9 @@ export const appRouter = router({
         // Check if merchant has an active subscription
         const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
         if (!subscription) {
-          throw new TRPCError({ 
-            code: 'FORBIDDEN', 
-            message: 'يجب اختيار باقة اشتراك أولاً لربط رقم الواتساب' 
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'يجب اختيار باقة اشتراك أولاً لربط رقم الواتساب'
           });
         }
 
@@ -1604,14 +1622,14 @@ export const appRouter = router({
           // Get the base URL from environment or use default
           const baseUrl = process.env.VITE_APP_URL || 'https://sary.live';
           const webhookUrl = `${baseUrl}/api/webhooks/greenapi`;
-          
+
           const webhookResult = await setWebhookUrl(
             input.instanceId,
             input.apiToken,
             webhookUrl,
             input.apiUrl
           );
-          
+
           if (webhookResult.success) {
             console.log(`Webhook URL registered successfully for instance ${input.instanceId}: ${webhookUrl}`);
           } else {
@@ -1683,11 +1701,11 @@ export const appRouter = router({
         const instancePrefix = request.instanceId.substring(0, 4);
         const baseUrl = `https://${instancePrefix}.api.greenapi.com`;
         const url = `${baseUrl}/waInstance${request.instanceId}/qr/${request.apiToken}`;
-        
+
         console.log('[QR Code] Fetching from:', url);
-        
+
         const response = await axios.default.get(url, { timeout: 15000 });
-        
+
         if (response.data && response.data.type === 'qrCode') {
           return {
             success: true,
@@ -1736,9 +1754,9 @@ export const appRouter = router({
         const instancePrefix = request.instanceId.substring(0, 4);
         const baseUrl = `https://${instancePrefix}.api.greenapi.com`;
         const url = `${baseUrl}/waInstance${request.instanceId}/getStateInstance/${request.apiToken}`;
-        
+
         const response = await axios.default.get(url, { timeout: 10000 });
-        
+
         if (response.data && response.data.stateInstance === 'authorized') {
           // Update request status to connected if not already
           if (request.status !== 'connected') {
@@ -1819,7 +1837,7 @@ export const appRouter = router({
         // Extract first 4 digits from instanceId for subdomain
         const instancePrefix = input.instanceId.substring(0, 4);
         const url = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}/getStateInstance/${input.token}`;
-        
+
         // Request details for debugging
         const requestDetails = {
           url,
@@ -1828,7 +1846,7 @@ export const appRouter = router({
           tokenPreview: input.token.substring(0, 10) + '...',
           timestamp: new Date().toISOString(),
         };
-        
+
         console.log('[Green API Test] Request Details:', JSON.stringify(requestDetails, null, 2));
 
         try {
@@ -1862,9 +1880,9 @@ export const appRouter = router({
             responseData: error.response?.data,
             timestamp: new Date().toISOString(),
           };
-          
+
           console.error('[Green API Test] Error Details:', JSON.stringify(errorDetails, null, 2));
-          
+
           let errorMessage = 'فشل الاتصال';
           if (error.response?.status === 401 || error.response?.status === 403) {
             errorMessage = 'Instance ID أو Token غير صحيح';
@@ -1873,7 +1891,7 @@ export const appRouter = router({
           } else if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
             errorMessage = 'انتهى وقت الاتصال';
           }
-          
+
           // Return error with debug info instead of throwing
           return {
             success: false,
@@ -1898,7 +1916,7 @@ export const appRouter = router({
         // Extract first 4 digits from instanceId for subdomain
         const instancePrefix = input.instanceId.substring(0, 4);
         const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
-        
+
         const response = await axios.default.post(`${baseURL}/sendMessage/${input.token}`, {
           chatId: `${input.phoneNumber}@c.us`,
           message: input.message,
@@ -1922,7 +1940,7 @@ export const appRouter = router({
         // Extract first 4 digits from instanceId for subdomain
         const instancePrefix = input.instanceId.substring(0, 4);
         const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
-        
+
         const response = await axios.default.post(`${baseURL}/sendFileByUrl/${input.token}`, {
           chatId: `${input.phoneNumber}@c.us`,
           urlFile: input.imageUrl,
@@ -1951,7 +1969,7 @@ export const appRouter = router({
 
         // Check if instance already exists
         const existing = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
-        
+
         // If creating new instance, check WhatsApp number limit
         if (!existing) {
           const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
@@ -2059,7 +2077,8 @@ export const appRouter = router({
   }),
 
   // Subscription Payments Router
-  subscriptionPayments: router({ createSession: protectedProcedure
+  subscriptionPayments: router({
+    createSession: protectedProcedure
       .input(z.object({
         planId: z.number(),
         gateway: z.enum(['tap', 'paypal']),
@@ -2169,7 +2188,7 @@ export const appRouter = router({
         if (payment.paymentMethod === 'tap') {
           const { verifyTapPayment } = await import('./payment/tap');
           const result = await verifyTapPayment(input.transactionId);
-          
+
           if (result.success && result.status === 'CAPTURED') {
             // Update subscription status
             await db.updateSubscription(input.subscriptionId, { status: 'active' });
@@ -2181,7 +2200,7 @@ export const appRouter = router({
         } else if (payment.paymentMethod === 'paypal') {
           const { capturePayPalOrder } = await import('./payment/paypal');
           const result = await capturePayPalOrder(input.transactionId);
-          
+
           if (result.success && result.status === 'COMPLETED') {
             await db.updateSubscription(input.subscriptionId, { status: 'active' });
             await db.updateMerchant(merchant.id, { subscriptionId: input.subscriptionId });
@@ -2281,9 +2300,9 @@ export const appRouter = router({
         try {
           await validateNewPlatformConnection(input.merchantId, 'سلة');
         } catch (error: any) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: error.message 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message
           });
         }
 
@@ -2293,15 +2312,15 @@ export const appRouter = router({
         const testResult = await salla.testConnection();
 
         if (!testResult.success) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: 'فشل الاتصال بـ Salla. تأكد من صحة الرابط والـ Token' 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'فشل الاتصال بـ Salla. تأكد من صحة الرابط والـ Token'
           });
         }
 
         // Check if connection already exists
         const existing = await db.getSallaConnectionByMerchantId(input.merchantId);
-        
+
         if (existing) {
           // Update existing connection
           await db.updateSallaConnection(input.merchantId, {
@@ -2324,9 +2343,9 @@ export const appRouter = router({
           console.error('[Salla] Initial sync failed:', err);
         });
 
-        return { 
-          success: true, 
-          message: 'تم ربط المتجر بنجاح! جاري مزامنة المنتجات...' 
+        return {
+          success: true,
+          message: 'تم ربط المتجر بنجاح! جاري مزامنة المنتجات...'
         };
       }),
 
@@ -2346,7 +2365,7 @@ export const appRouter = router({
 
     // Manual sync
     syncNow: protectedProcedure
-      .input(z.object({ 
+      .input(z.object({
         merchantId: z.number(),
         syncType: z.enum(['full', 'stock']).default('stock'),
       }))
@@ -2369,21 +2388,21 @@ export const appRouter = router({
           let result;
           if (input.syncType === 'full') {
             result = await salla.fullSync();
-            return { 
-              success: true, 
-              message: `تمت مزامنة ${result.synced} منتج بنجاح` 
+            return {
+              success: true,
+              message: `تمت مزامنة ${result.synced} منتج بنجاح`
             };
           } else {
             result = await salla.syncStock();
-            return { 
-              success: true, 
-              message: `تم تحديث ${result.updated} منتج بنجاح` 
+            return {
+              success: true,
+              message: `تم تحديث ${result.updated} منتج بنجاح`
             };
           }
         } catch (error: any) {
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: error.message || 'فشلت المزامنة' 
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: error.message || 'فشلت المزامنة'
           });
         }
       }),
@@ -2424,9 +2443,9 @@ export const appRouter = router({
         // Parse order from message
         const parsedOrder = await parseOrderMessage(input.message, input.merchantId);
         if (!parsedOrder || parsedOrder.products.length === 0) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: 'لم نتمكن من فهم الطلب. يرجى توضيح المنتجات المطلوبة.' 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'لم نتمكن من فهم الطلب. يرجى توضيح المنتجات المطلوبة.'
           });
         }
 
@@ -2439,9 +2458,9 @@ export const appRouter = router({
         );
 
         if (!result) {
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: 'فشل إنشاء الطلب' 
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'فشل إنشاء الطلب'
           });
         }
 
@@ -2452,22 +2471,22 @@ export const appRouter = router({
         }
 
         const items = JSON.parse(order.items);
-        
+
         // Generate confirmation message
         const confirmationMessage = order.isGift
           ? generateGiftOrderConfirmationMessage(
-              order.orderNumber || '',
-              order.giftRecipientName || '',
-              items,
-              order.totalAmount,
-              result.paymentUrl || ''
-            )
+            order.orderNumber || '',
+            order.giftRecipientName || '',
+            items,
+            order.totalAmount,
+            result.paymentUrl || ''
+          )
           : generateOrderConfirmationMessage(
-              order.orderNumber || '',
-              items,
-              order.totalAmount,
-              result.paymentUrl || ''
-            );
+            order.orderNumber || '',
+            items,
+            order.totalAmount,
+            result.paymentUrl || ''
+          );
 
         // Auto-sync to Google Sheets if enabled
         try {
@@ -2586,7 +2605,7 @@ export const appRouter = router({
         }
 
         await db.cancelOrder(input.orderId, input.reason);
-        
+
         return { success: true, message: 'تم إلغاء الطلب' };
       }),
 
@@ -2610,7 +2629,7 @@ export const appRouter = router({
         }
 
         await db.updateOrderStatus(input.orderId, input.status, input.trackingNumber);
-        
+
         // Send notification to customer
         const { sendOrderNotification } = await import('./notifications/order-notifications');
         await sendOrderNotification(
@@ -2626,7 +2645,7 @@ export const appRouter = router({
             trackingNumber: input.trackingNumber,
           }
         );
-        
+
         return { success: true, message: 'تم تحديث حالة الطلب وإرسال الإشعار' };
       }),
   }),
@@ -2773,7 +2792,7 @@ export const appRouter = router({
 
       // Try to get existing code
       let code = await db.getReferralCodeByMerchantId(merchant.id);
-      
+
       // Generate new code if doesn't exist
       if (!code) {
         code = await db.generateReferralCode(
@@ -2872,7 +2891,7 @@ export const appRouter = router({
             title: 'إحالة جديدة!',
             content: `${referrer.businessName} حصل على إحالة جديدة من ${referredMerchant.businessName}`,
           });
-          
+
           // Email notification to admin
           try {
             const referredUser = await db.getUserById(referredMerchant.userId);
@@ -3457,7 +3476,7 @@ export const appRouter = router({
         try {
           const baseUrl = input.apiUrl || 'https://api.green-api.com';
           const url = `${baseUrl}/waInstance${input.instanceId}/getStateInstance/${input.token}`;
-          
+
           const response = await fetch(url);
           const data = await response.json();
 
@@ -3517,7 +3536,7 @@ export const appRouter = router({
         }
 
         const { expiring7Days, expiring3Days, expiring1Day, expired } = await db.getExpiringWhatsAppInstances();
-        
+
         // Filter by merchant
         const merchantExpiring7Days = expiring7Days.filter(i => i.merchantId === input.merchantId);
         const merchantExpiring3Days = expiring3Days.filter(i => i.merchantId === input.merchantId);
@@ -3693,7 +3712,7 @@ export const appRouter = router({
         try {
           const baseUrl = request.apiUrl || 'https://api.green-api.com';
           const url = `${baseUrl}/waInstance${request.instanceId}/qr/${request.token}`;
-          
+
           const response = await fetch(url);
           const data = await response.json();
 
@@ -3740,7 +3759,7 @@ export const appRouter = router({
         try {
           const baseUrl = request.apiUrl || 'https://api.green-api.com';
           const url = `${baseUrl}/waInstance${request.instanceId}/getStateInstance/${request.token}`;
-          
+
           const response = await fetch(url);
           const data = await response.json();
 
@@ -3750,7 +3769,7 @@ export const appRouter = router({
               // Check WhatsApp number limit before creating instance
               const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
               await checkWhatsAppNumberLimit(request.merchantId);
-              
+
               await db.createWhatsAppInstance({
                 merchantId: request.merchantId,
                 instanceId: request.instanceId,
@@ -3869,7 +3888,7 @@ export const appRouter = router({
         try {
           // تحويل base64 إلى Buffer
           const audioBuffer = Buffer.from(input.audioBase64, 'base64');
-          
+
           // التحقق من حجم الملف (16MB max)
           const sizeMB = audioBuffer.length / (1024 * 1024);
           if (sizeMB > 16) {
@@ -3884,7 +3903,7 @@ export const appRouter = router({
           const timestamp = Date.now();
           const randomStr = Math.random().toString(36).substring(7);
           const fileName = `voice-${ctx.user.id}-${timestamp}-${randomStr}.${extension}`;
-          
+
           // رفع الملف إلى S3
           const { storagePut } = await import('./storage');
           const { url } = await storagePut(
@@ -4301,7 +4320,7 @@ export const appRouter = router({
         }
 
         const { chatWithSari } = await import('./ai/sari-personality');
-        
+
         const response = await chatWithSari({
           merchantId: merchant.id,
           customerPhone: 'test', // For testing
@@ -4325,7 +4344,7 @@ export const appRouter = router({
         }
 
         const { searchProducts } = await import('./ai/product-intelligence');
-        
+
         const products = await searchProducts({
           merchantId: merchant.id,
           query: input.query,
@@ -4348,7 +4367,7 @@ export const appRouter = router({
         }
 
         const { suggestProducts } = await import('./ai/product-intelligence');
-        
+
         const result = await suggestProducts({
           merchantId: merchant.id,
           conversationContext: input.context,
@@ -4372,12 +4391,12 @@ export const appRouter = router({
 
         // Check voice processing limits
         const { hasReachedVoiceLimit, processVoiceMessage, incrementVoiceMessageUsage } = await import('./ai/voice-handler');
-        
+
         const limitReached = await hasReachedVoiceLimit(merchant.id);
         if (limitReached) {
-          throw new TRPCError({ 
-            code: 'FORBIDDEN', 
-            message: 'لقد وصلت لحد الرسائل الصوتية في باقتك. يرجى الترقية للاستمرار.' 
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'لقد وصلت لحد الرسائل الصوتية في باقتك. يرجى الترقية للاستمرار.'
           });
         }
 
@@ -4421,7 +4440,7 @@ export const appRouter = router({
         }
 
         const { generateWelcomeMessage } = await import('./ai/sari-personality');
-        
+
         const message = await generateWelcomeMessage({
           merchantId: merchant.id,
           customerName: input.customerName,
@@ -4445,7 +4464,7 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         // Use a demo merchant for public testing
         const demoMerchant = await db.getMerchantById(1);
-        
+
         if (!demoMerchant) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Demo merchant not configured' });
         }
@@ -4464,7 +4483,7 @@ export const appRouter = router({
         } else {
           // Increment message count
           await db.incrementTrySariMessageCount(input.sessionId);
-          
+
           // Update example if provided
           if (input.exampleUsed && !session.exampleUsed) {
             await db.upsertTrySariAnalytics({
@@ -4475,7 +4494,7 @@ export const appRouter = router({
         }
 
         const { chatWithSari } = await import('./ai/sari-personality');
-        
+
         const response = await chatWithSari({
           merchantId: demoMerchant.id,
           customerPhone: input.sessionId,
@@ -4485,7 +4504,7 @@ export const appRouter = router({
 
         return { response };
       }),
-    
+
     // Track signup prompt shown
     trackSignupPrompt: publicProcedure
       .input(z.object({
@@ -4495,7 +4514,7 @@ export const appRouter = router({
         await db.markSignupPromptShown(input.sessionId);
         return { success: true };
       }),
-    
+
     // Track conversion to signup
     trackConversion: publicProcedure
       .input(z.object({
@@ -4525,7 +4544,7 @@ export const appRouter = router({
         }
 
         const { chatWithSari } = await import('./ai/sari-personality');
-        
+
         const response = await chatWithSari({
           merchantId: merchant.id,
           customerPhone: 'test-playground',
@@ -4665,9 +4684,9 @@ export const appRouter = router({
       // Get WhatsApp connection
       const connection = await db.getWhatsappConnectionByMerchantId(merchant.id);
       if (!connection || connection.status !== 'connected') {
-        throw new TRPCError({ 
-          code: 'PRECONDITION_FAILED', 
-          message: 'يجب ربط حساب WhatsApp أولاً' 
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'يجب ربط حساب WhatsApp أولاً'
         });
       }
 
@@ -4682,9 +4701,9 @@ export const appRouter = router({
 
       // Send welcome message to merchant's phone
       if (!merchant.phone) {
-        throw new TRPCError({ 
-          code: 'PRECONDITION_FAILED', 
-          message: 'يجب إضافة رقم هاتف في الإعدادات' 
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'يجب إضافة رقم هاتف في الإعدادات'
         });
       }
 
@@ -4694,9 +4713,9 @@ export const appRouter = router({
       );
 
       if (!result.success) {
-        throw new TRPCError({ 
-          code: 'INTERNAL_SERVER_ERROR', 
-          message: `فشل إرسال الرسالة: ${result.error}` 
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: `فشل إرسال الرسالة: ${result.error}`
         });
       }
 
@@ -5097,9 +5116,9 @@ export const appRouter = router({
         // Check if there's already an active test for this keyword
         const existing = await db.getActiveABTestForKeyword(merchant.id, input.keyword);
         if (existing) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: 'There is already an active A/B test for this keyword' 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'There is already an active A/B test for this keyword'
           });
         }
 
@@ -5193,7 +5212,7 @@ export const appRouter = router({
         await db.resumeABTest(input.testId);
         return { success: true };
       }),
-   }),
+  }),
 
   // Try Sari Analytics (Admin only)
   trySariAnalytics: router({
@@ -5205,7 +5224,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getTrySariAnalyticsStats(input.days || 30);
       }),
-    
+
     // Get daily data for charts
     getDailyData: adminProcedure
       .input(z.object({
@@ -5221,35 +5240,35 @@ export const appRouter = router({
 
   // Performance Metrics
   performance: performanceRouter,
-  
+
   // Offers and AB Testing
   offers: offersRouter.offers,
   signupPrompt: offersRouter.signupPrompt,
-  
+
   // SEO Router
   seo: router({
     // Dashboard
     getDashboard: adminProcedure.query(async () => {
       return await seoDb.getSeoPageDashboard();
     }),
-    
+
     // Pages
     getPages: adminProcedure.query(async () => {
       return await seoDb.getSeoPages();
     }),
-    
+
     getPageBySlug: adminProcedure
       .input(z.object({ slug: z.string() }))
       .query(async ({ input }) => {
         return await seoDb.getSeoPageBySlug(input.slug);
       }),
-    
+
     getPageFullData: adminProcedure
       .input(z.object({ pageId: z.number() }))
       .query(async ({ input }) => {
         return await seoDb.getSeoPageFullData(input.pageId);
       }),
-    
+
     createPage: adminProcedure
       .input(z.object({
         pageSlug: z.string(),
@@ -5266,7 +5285,7 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await seoDb.createSeoPage(input);
       }),
-    
+
     updatePage: adminProcedure
       .input(z.object({
         pageId: z.number(),
@@ -5275,14 +5294,14 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await seoDb.updateSeoPage(input.pageId, input.data);
       }),
-    
+
     // Meta Tags
     getMetaTags: adminProcedure
       .input(z.object({ pageId: z.number() }))
       .query(async ({ input }) => {
         return await seoDb.getMetaTagsByPageId(input.pageId);
       }),
-    
+
     createMetaTag: adminProcedure
       .input(z.object({
         pageId: z.number(),
@@ -5293,14 +5312,14 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await seoDb.createMetaTag(input);
       }),
-    
+
     // Open Graph
     getOpenGraph: adminProcedure
       .input(z.object({ pageId: z.number() }))
       .query(async ({ input }) => {
         return await seoDb.getOpenGraphByPageId(input.pageId);
       }),
-    
+
     createOpenGraph: adminProcedure
       .input(z.object({
         pageId: z.number(),
@@ -5316,12 +5335,12 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await seoDb.createOpenGraph(input);
       }),
-    
+
     // Tracking Codes
     getTrackingCodes: adminProcedure.query(async () => {
       return await seoDb.getTrackingCodes();
     }),
-    
+
     createTrackingCode: adminProcedure
       .input(z.object({
         pageId: z.number().optional(),
@@ -5333,35 +5352,35 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         return await seoDb.createTrackingCode(input);
       }),
-    
+
     // Analytics
     getAnalytics: adminProcedure
       .input(z.object({ pageId: z.number() }))
       .query(async ({ input }) => {
         return await seoDb.getAnalyticsByPageId(input.pageId);
       }),
-    
+
     // Keywords
     getKeywords: adminProcedure
       .input(z.object({ pageId: z.number() }))
       .query(async ({ input }) => {
         return await seoDb.getKeywordsByPageId(input.pageId);
       }),
-    
+
     // Backlinks
     getBacklinks: adminProcedure
       .input(z.object({ pageId: z.number() }))
       .query(async ({ input }) => {
         return await seoDb.getBacklinksByPageId(input.pageId);
       }),
-    
+
     // Sitemaps
     getSitemaps: adminProcedure
       .input(z.object({ type: z.string().optional() }))
       .query(async ({ input }) => {
         return await seoDb.getSitemaps(input.type);
       }),
-    
+
     // Recommendations
     getRecommendations: adminProcedure
       .input(z.object({ pageId: z.number().optional() }))
@@ -5371,12 +5390,12 @@ export const appRouter = router({
         }
         return await seoDb.getPendingRecommendations();
       }),
-    
+
     getAllRecommendations: adminProcedure
       .query(async () => {
         return await seoDb.getPendingRecommendations();
       }),
-    
+
     updateRecommendation: adminProcedure
       .input(z.object({
         id: z.number(),
@@ -5390,14 +5409,14 @@ export const appRouter = router({
         return await seoDb.updateRecommendation(input.id, updateData);
       }),
   }),
-  
+
   // Setup Wizard APIs
   setupWizard: router({
     // Get wizard progress
     getProgress: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       let progress = await db.getSetupWizardProgress(merchant.id);
       if (!progress) {
         // Create initial progress
@@ -5412,7 +5431,7 @@ export const appRouter = router({
       }
       return progress;
     }),
-    
+
     // Save progress
     saveProgress: protectedProcedure
       .input(z.object({
@@ -5423,16 +5442,16 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         await db.updateSetupWizardProgress(merchant.id, {
           currentStep: input.currentStep,
           completedSteps: JSON.stringify(input.completedSteps),
           wizardData: JSON.stringify(input.wizardData),
         });
-        
+
         return { success: true };
       }),
-    
+
     // Complete setup
     completeSetup: protectedProcedure
       .input(z.object({
@@ -5450,7 +5469,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         // Update merchant
         await db.updateMerchant(merchant.id, {
           businessType: input.businessType,
@@ -5461,7 +5480,7 @@ export const appRouter = router({
           workingHoursType: input.workingHoursType,
           workingHours: input.workingHours ? JSON.stringify(input.workingHours) : undefined,
         });
-        
+
         // Update bot settings if provided
         if (input.botTone || input.botLanguage || input.welcomeMessage) {
           await db.updateBotSettings(merchant.id, {
@@ -5470,13 +5489,13 @@ export const appRouter = router({
             welcomeMessage: input.welcomeMessage,
           });
         }
-        
+
         // Mark setup as completed
         await db.completeSetupWizard(merchant.id);
-        
+
         return { success: true };
       }),
-    
+
     // Get templates
     getTemplates: publicProcedure
       .input(z.object({
@@ -5486,7 +5505,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await db.getBusinessTemplatesWithTranslations(input.language);
       }),
-    
+
     // Apply template
     applyTemplate: protectedProcedure
       .input(z.object({
@@ -5495,16 +5514,16 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const template = await db.getBusinessTemplateById(input.templateId);
         if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
-        
+
         // Parse template data
         const services = template.services ? JSON.parse(template.services) : [];
         const products = template.products ? JSON.parse(template.products) : [];
         const workingHours = template.working_hours ? JSON.parse(template.working_hours) : {};
         const botPersonality = template.bot_personality ? JSON.parse(template.bot_personality) : {};
-        
+
         // Apply services
         for (const service of services) {
           await db.createService({
@@ -5512,7 +5531,7 @@ export const appRouter = router({
             ...service,
           });
         }
-        
+
         // Apply products
         for (const product of products) {
           await db.createProduct({
@@ -5520,26 +5539,26 @@ export const appRouter = router({
             ...product,
           });
         }
-        
+
         // Update merchant working hours
         await db.updateMerchant(merchant.id, {
           workingHours: JSON.stringify(workingHours),
         });
-        
+
         // Update bot personality
         await db.updateBotSettings(merchant.id, botPersonality);
-        
+
         // Increment template usage
         await db.incrementTemplateUsage(input.templateId);
-        
+
         return { success: true };
       }),
-    
+
     // Reset wizard (allow merchant to restart setup)
     resetWizard: protectedProcedure.mutation(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       // Reset wizard progress to initial state
       await db.updateSetupWizardProgress(merchant.id, {
         currentStep: 1,
@@ -5547,24 +5566,24 @@ export const appRouter = router({
         wizardData: JSON.stringify({}),
         isCompleted: 0,
       });
-      
+
       return { success: true };
     }),
   }),
-  
+
   // Google Calendar Integration
   calendar: router({
     // Get authorization URL
     getAuthUrl: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       const { getAuthUrl } = await import('./_core/googleCalendar');
       const authUrl = getAuthUrl(merchant.id.toString());
-      
+
       return { authUrl };
     }),
-    
+
     // Handle OAuth callback (called from backend route)
     handleCallback: protectedProcedure
       .input(z.object({
@@ -5574,13 +5593,13 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const { getTokensFromCode } = await import('./_core/googleCalendar');
         const tokens = await getTokensFromCode(input.code);
-        
+
         // Save integration
         const existing = await db.getGoogleIntegration(merchant.id, 'calendar');
-        
+
         if (existing) {
           await db.updateGoogleIntegration(existing.id, {
             credentials: JSON.stringify(tokens),
@@ -5596,10 +5615,10 @@ export const appRouter = router({
             isActive: 1,
           });
         }
-        
+
         return { success: true };
       }),
-    
+
     // Get available time slots
     getAvailableSlots: protectedProcedure
       .input(z.object({
@@ -5610,33 +5629,33 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         // Get service details
         const service = await db.getServiceById(input.serviceId);
         if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
-        
+
         // Get Google Calendar integration
         const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
         if (!integration || !integration.isActive) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Google Calendar not connected' });
         }
-        
+
         const credentials = JSON.parse(integration.credentials || '{}');
         const { getAvailableSlots, validateAndRefreshCredentials } = await import('./_core/googleCalendar');
-        
+
         // Validate and refresh credentials if needed
         const validCredentials = await validateAndRefreshCredentials(credentials);
-        
+
         // Update credentials if refreshed
         if (JSON.stringify(validCredentials) !== JSON.stringify(credentials)) {
           await db.updateGoogleIntegration(integration.id, {
             credentials: JSON.stringify(validCredentials),
           });
         }
-        
+
         // Get working hours from merchant or staff
         let workingHours = { start: '09:00', end: '17:00' };
-        
+
         if (input.staffId) {
           const staff = await db.getStaffMemberById(input.staffId);
           if (staff && staff.workingHours) {
@@ -5653,7 +5672,7 @@ export const appRouter = router({
             workingHours = merchantHours[dayName];
           }
         }
-        
+
         // Get available slots
         const slots = await getAvailableSlots(
           validCredentials,
@@ -5663,10 +5682,10 @@ export const appRouter = router({
           workingHours,
           service.bufferTimeMinutes
         );
-        
+
         return { slots };
       }),
-    
+
     // Book appointment
     bookAppointment: protectedProcedure
       .input(z.object({
@@ -5681,17 +5700,17 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         // Get service details
         const service = await db.getServiceById(input.serviceId);
         if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
-        
+
         // Calculate end time
         const [startHour, startMinute] = input.startTime.split(':').map(Number);
         const endDate = new Date(input.appointmentDate);
         endDate.setHours(startHour, startMinute + service.durationMinutes, 0, 0);
         const endTime = endDate.toTimeString().substring(0, 5);
-        
+
         // Check for conflicts
         const hasConflict = await db.checkAppointmentConflict(
           merchant.id,
@@ -5700,26 +5719,26 @@ export const appRouter = router({
           endTime,
           input.staffId
         );
-        
+
         if (hasConflict) {
           throw new TRPCError({ code: 'CONFLICT', message: 'This time slot is already booked' });
         }
-        
+
         // Get Google Calendar integration
         const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
         let googleEventId: string | undefined;
-        
+
         if (integration && integration.isActive) {
           const credentials = JSON.parse(integration.credentials || '{}');
           const { createCalendarEvent, validateAndRefreshCredentials } = await import('./_core/googleCalendar');
-          
+
           // Validate and refresh credentials if needed
           const validCredentials = await validateAndRefreshCredentials(credentials);
-          
+
           // Create calendar event
           const startDateTime = new Date(`${input.appointmentDate}T${input.startTime}:00`);
           const endDateTime = new Date(startDateTime.getTime() + service.durationMinutes * 60000);
-          
+
           try {
             const event = await createCalendarEvent(
               validCredentials,
@@ -5731,14 +5750,14 @@ export const appRouter = router({
                 end: endDateTime,
               }
             );
-            
+
             googleEventId = event.id;
           } catch (error) {
             console.error('Failed to create calendar event:', error);
             // Continue without calendar event
           }
         }
-        
+
         // Create appointment in database
         const appointmentId = await db.createAppointment({
           merchantId: merchant.id,
@@ -5753,10 +5772,10 @@ export const appRouter = router({
           googleEventId: googleEventId,
           notes: input.notes,
         });
-        
+
         return { success: true, appointmentId };
       }),
-    
+
     // Cancel appointment
     cancelAppointment: protectedProcedure
       .input(z.object({
@@ -5766,23 +5785,23 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         // Get appointment
         const appointment = await db.getAppointmentById(input.appointmentId);
         if (!appointment) throw new TRPCError({ code: 'NOT_FOUND', message: 'Appointment not found' });
-        
+
         // Verify ownership
         if (appointment.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
         }
-        
+
         // Delete from Google Calendar if exists
         if (appointment.googleEventId) {
           const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
           if (integration && integration.isActive) {
             const credentials = JSON.parse(integration.credentials || '{}');
             const { deleteCalendarEvent, validateAndRefreshCredentials } = await import('./_core/googleCalendar');
-            
+
             try {
               const validCredentials = await validateAndRefreshCredentials(credentials);
               await deleteCalendarEvent(
@@ -5796,13 +5815,13 @@ export const appRouter = router({
             }
           }
         }
-        
+
         // Cancel appointment in database
         await db.cancelAppointment(input.appointmentId, input.reason);
-        
+
         return { success: true };
       }),
-    
+
     // List appointments
     listAppointments: protectedProcedure
       .input(z.object({
@@ -5813,9 +5832,9 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const appointments = await db.getAppointmentsByMerchant(merchant.id, input.status);
-        
+
         // Filter by date range if provided
         let filtered = appointments;
         if (input.startDate) {
@@ -5824,10 +5843,10 @@ export const appRouter = router({
         if (input.endDate) {
           filtered = filtered.filter(a => a.appointmentDate <= input.endDate!);
         }
-        
+
         return { appointments: filtered };
       }),
-    
+
     // Get appointment statistics
     getStats: protectedProcedure
       .input(z.object({
@@ -5837,32 +5856,32 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const stats = await db.getAppointmentStats(merchant.id, input.startDate, input.endDate);
-        
+
         return stats;
       }),
-    
+
     // Disconnect Google Calendar
     disconnect: protectedProcedure.mutation(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
       if (integration) {
         await db.deleteGoogleIntegration(integration.id);
       }
-      
+
       return { success: true };
     }),
-    
+
     // Get integration status
     getStatus: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
-      
+
       return {
         connected: !!integration && integration.isActive === 1,
         calendarId: integration?.calendarId,
@@ -5870,7 +5889,7 @@ export const appRouter = router({
       };
     }),
   }),
-  
+
   // Staff Members Management
   staff: router({
     // Create staff member
@@ -5889,7 +5908,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const staffId = await db.createStaffMember({
           merchantId: merchant.id,
           name: input.name,
@@ -5900,10 +5919,10 @@ export const appRouter = router({
           googleCalendarId: input.googleCalendarId,
           isActive: 1,
         });
-        
+
         return { success: true, staffId };
       }),
-    
+
     // List staff members
     list: protectedProcedure
       .input(z.object({
@@ -5912,29 +5931,29 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
-        const staff = input.activeOnly 
+
+        const staff = input.activeOnly
           ? await db.getActiveStaffByMerchant(merchant.id)
           : await db.getStaffMembersByMerchant(merchant.id);
-        
+
         return { staff };
       }),
-    
+
     // Get staff member by ID
     getById: protectedProcedure
       .input(z.object({ staffId: z.number() }))
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const staff = await db.getStaffMemberById(input.staffId);
         if (!staff || staff.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
         }
-        
+
         return { staff };
       }),
-    
+
     // Update staff member
     update: protectedProcedure
       .input(z.object({
@@ -5953,13 +5972,13 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         // Verify ownership
         const staff = await db.getStaffMemberById(input.staffId);
         if (!staff || staff.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
         }
-        
+
         const updateData: any = {};
         if (input.name !== undefined) updateData.name = input.name;
         if (input.phone !== undefined) updateData.phone = input.phone;
@@ -5968,47 +5987,47 @@ export const appRouter = router({
         if (input.workingHours !== undefined) updateData.workingHours = JSON.stringify(input.workingHours);
         if (input.googleCalendarId !== undefined) updateData.googleCalendarId = input.googleCalendarId;
         if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
-        
+
         await db.updateStaffMember(input.staffId, updateData);
-        
+
         return { success: true };
       }),
-    
+
     // Delete staff member
     delete: protectedProcedure
       .input(z.object({ staffId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         // Verify ownership
         const staff = await db.getStaffMemberById(input.staffId);
         if (!staff || staff.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
         }
-        
+
         await db.deleteStaffMember(input.staffId);
-        
+
         return { success: true };
       }),
   }),
-  
+
   googleAuth: googleAuthRouter,
-  
+
   sheets: sheetsRouter,
-  
+
   loyalty: loyaltyRouter,
-  
+
   // Platform Integrations
   zid: zidRouter,
   calendly: calendlyRouter,
-  
+
   // Advanced Notifications & Reports
   advancedNotifications: notificationsRouter,
-  
+
   // Notification Management (Super Admin)
   notificationManagement: notificationManagementRouter,
-  
+
   // ============================================
   // Services Management
   // ============================================
@@ -6035,7 +6054,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const serviceId = await db.createService({
           merchantId: merchant.id,
           name: input.name,
@@ -6055,48 +6074,48 @@ export const appRouter = router({
           displayOrder: input.displayOrder || 0,
           isActive: 1,
         });
-        
+
         return { success: true, serviceId };
       }),
-    
+
     // List services
     list: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       const services = await db.getServicesByMerchant(merchant.id);
       return { services };
     }),
-    
+
     // Get service by ID with booking stats
     getById: protectedProcedure
       .input(z.object({ serviceId: z.number() }))
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const service = await db.getServiceById(input.serviceId);
         if (!service || service.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
         }
-        
+
         // Get booking statistics
         const bookingStats = await db.getBookingStats(merchant.id, { serviceId: input.serviceId });
-        
+
         // Get recent bookings
         const recentBookings = await db.getBookingsByService(input.serviceId, { limit: 10 });
-        
+
         // Get rating stats
         const ratingStats = await db.getServiceRatingStats(input.serviceId);
-        
-        return { 
+
+        return {
           service,
           bookingStats,
           recentBookings,
           ratingStats
         };
       }),
-    
+
     // Update service
     update: protectedProcedure
       .input(z.object({
@@ -6121,12 +6140,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const service = await db.getServiceById(input.serviceId);
         if (!service || service.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
         }
-        
+
         const updateData: any = {};
         if (input.name !== undefined) updateData.name = input.name;
         if (input.description !== undefined) updateData.description = input.description;
@@ -6144,41 +6163,41 @@ export const appRouter = router({
         if (input.staffIds !== undefined) updateData.staffIds = JSON.stringify(input.staffIds);
         if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
         if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
-        
+
         await db.updateService(input.serviceId, updateData);
-        
+
         return { success: true };
       }),
-    
+
     // Delete service
     delete: protectedProcedure
       .input(z.object({ serviceId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const service = await db.getServiceById(input.serviceId);
         if (!service || service.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
         }
-        
+
         await db.deleteService(input.serviceId);
-        
+
         return { success: true };
       }),
-    
+
     // Get services by category
     getByCategory: protectedProcedure
       .input(z.object({ categoryId: z.number() }))
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const services = await db.getServicesByCategory(input.categoryId);
         return { services };
       }),
   }),
-  
+
   // ============================================
   // Service Categories Management
   // ============================================
@@ -6196,7 +6215,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const categoryId = await db.createServiceCategory({
           merchantId: merchant.id,
           name: input.name,
@@ -6206,19 +6225,19 @@ export const appRouter = router({
           color: input.color,
           displayOrder: input.displayOrder || 0,
         });
-        
+
         return { success: true, categoryId };
       }),
-    
+
     // List categories
     list: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       const categories = await db.getServiceCategoriesByMerchant(merchant.id);
       return { categories };
     }),
-    
+
     // Update category
     update: protectedProcedure
       .input(z.object({
@@ -6234,12 +6253,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const category = await db.getServiceCategoryById(input.categoryId);
         if (!category || category.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Category not found' });
         }
-        
+
         const updateData: any = {};
         if (input.name !== undefined) updateData.name = input.name;
         if (input.nameEn !== undefined) updateData.nameEn = input.nameEn;
@@ -6248,30 +6267,30 @@ export const appRouter = router({
         if (input.color !== undefined) updateData.color = input.color;
         if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
         if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
-        
+
         await db.updateServiceCategory(input.categoryId, updateData);
-        
+
         return { success: true };
       }),
-    
+
     // Delete category
     delete: protectedProcedure
       .input(z.object({ categoryId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const category = await db.getServiceCategoryById(input.categoryId);
         if (!category || category.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Category not found' });
         }
-        
+
         await db.deleteServiceCategory(input.categoryId);
-        
+
         return { success: true };
       }),
   }),
-  
+
   // ============================================
   // Service Packages Management
   // ============================================
@@ -6289,7 +6308,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const packageId = await db.createServicePackage({
           merchantId: merchant.id,
           name: input.name,
@@ -6300,34 +6319,34 @@ export const appRouter = router({
           discountPercentage: input.discountPercentage,
           isActive: 1,
         });
-        
+
         return { success: true, packageId };
       }),
-    
+
     // List packages
     list: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      
+
       const packages = await db.getServicePackagesByMerchant(merchant.id);
       return { packages };
     }),
-    
+
     // Get package by ID
     getById: protectedProcedure
       .input(z.object({ packageId: z.number() }))
       .query(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const pkg = await db.getServicePackageById(input.packageId);
         if (!pkg || pkg.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
         }
-        
+
         return { package: pkg };
       }),
-    
+
     // Update package
     update: protectedProcedure
       .input(z.object({
@@ -6343,12 +6362,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const pkg = await db.getServicePackageById(input.packageId);
         if (!pkg || pkg.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
         }
-        
+
         const updateData: any = {};
         if (input.name !== undefined) updateData.name = input.name;
         if (input.description !== undefined) updateData.description = input.description;
@@ -6357,30 +6376,30 @@ export const appRouter = router({
         if (input.packagePrice !== undefined) updateData.packagePrice = input.packagePrice;
         if (input.discountPercentage !== undefined) updateData.discountPercentage = input.discountPercentage;
         if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
-        
+
         await db.updateServicePackage(input.packageId, updateData);
-        
+
         return { success: true };
       }),
-    
+
     // Delete package
     delete: protectedProcedure
       .input(z.object({ packageId: z.number() }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        
+
         const pkg = await db.getServicePackageById(input.packageId);
         if (!pkg || pkg.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
         }
-        
+
         await db.deleteServicePackage(input.packageId);
-        
+
         return { success: true };
       }),
   }),
-  
+
   // Google OAuth Settings (Super Admin only)
   googleOAuthSettings: router({
     // Get Google OAuth settings
@@ -6388,7 +6407,7 @@ export const appRouter = router({
       const settings = await db.getGoogleOAuthSettings();
       return { settings };
     }),
-    
+
     // Update Google OAuth settings
     update: adminProcedure
       .input(z.object({
@@ -6402,10 +6421,10 @@ export const appRouter = router({
           clientSecret: input.clientSecret,
           isEnabled: input.isEnabled ? 1 : 0,
         });
-        
+
         return { success: true, settings };
       }),
-    
+
     // Toggle enabled status
     toggleEnabled: adminProcedure
       .input(z.object({ isEnabled: z.boolean() }))
@@ -6414,7 +6433,7 @@ export const appRouter = router({
         return { success: true, settings };
       }),
   }),
-  
+
   // ============================================
   // Bookings Management
   // ============================================
@@ -6442,7 +6461,7 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         // Check for conflicts
         const hasConflict = await db.checkBookingConflict(
           input.serviceId,
@@ -6451,22 +6470,22 @@ export const appRouter = router({
           input.startTime,
           input.endTime
         );
-        
+
         if (hasConflict) {
-          throw new TRPCError({ 
-            code: 'CONFLICT', 
-            message: 'This time slot is already booked' 
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'This time slot is already booked'
           });
         }
-        
+
         const bookingId = await db.createBooking({
           merchantId: merchant.id,
           ...input,
         });
-        
+
         return { success: true, bookingId };
       }),
-    
+
     // Get booking by ID
     getById: protectedProcedure
       .input(z.object({ bookingId: z.number() }))
@@ -6475,15 +6494,15 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const booking = await db.getBookingById(input.bookingId);
         if (!booking || booking.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
         }
-        
+
         return { booking };
       }),
-    
+
     // List bookings with filters
     list: protectedProcedure
       .input(z.object({
@@ -6499,11 +6518,11 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const bookings = await db.getBookingsByMerchant(merchant.id, input);
         return { bookings };
       }),
-    
+
     // Get bookings by service
     getByService: protectedProcedure
       .input(z.object({
@@ -6517,11 +6536,11 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const bookings = await db.getBookingsByService(input.serviceId, input);
         return { bookings };
       }),
-    
+
     // Get bookings by customer
     getByCustomer: protectedProcedure
       .input(z.object({ customerPhone: z.string() }))
@@ -6530,11 +6549,11 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const bookings = await db.getBookingsByCustomer(merchant.id, input.customerPhone);
         return { bookings };
       }),
-    
+
     // Update booking
     update: protectedProcedure
       .input(z.object({
@@ -6554,12 +6573,12 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const booking = await db.getBookingById(input.bookingId);
         if (!booking || booking.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
         }
-        
+
         // Check for conflicts if time is being changed
         if (input.bookingDate || input.startTime || input.endTime) {
           const hasConflict = await db.checkBookingConflict(
@@ -6570,21 +6589,21 @@ export const appRouter = router({
             input.endTime || booking.endTime,
             booking.id
           );
-          
+
           if (hasConflict) {
-            throw new TRPCError({ 
-              code: 'CONFLICT', 
-              message: 'This time slot is already booked' 
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message: 'This time slot is already booked'
             });
           }
         }
-        
+
         const { bookingId, ...updateData } = input;
         await db.updateBooking(bookingId, updateData);
-        
+
         return { success: true };
       }),
-    
+
     // Delete booking
     delete: protectedProcedure
       .input(z.object({ bookingId: z.number() }))
@@ -6593,16 +6612,16 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const booking = await db.getBookingById(input.bookingId);
         if (!booking || booking.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
         }
-        
+
         await db.deleteBooking(input.bookingId);
         return { success: true };
       }),
-    
+
     // Get booking statistics
     getStats: protectedProcedure
       .input(z.object({
@@ -6615,11 +6634,11 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const stats = await db.getBookingStats(merchant.id, input);
         return { stats };
       }),
-    
+
     // Check availability
     checkAvailability: protectedProcedure
       .input(z.object({
@@ -6637,10 +6656,10 @@ export const appRouter = router({
           input.startTime,
           input.endTime
         );
-        
+
         return { available: !hasConflict };
       }),
-    
+
     // Get available time slots
     getAvailableSlots: protectedProcedure
       .input(z.object({
@@ -6657,7 +6676,7 @@ export const appRouter = router({
         return { slots };
       }),
   }),
-  
+
   // ============================================
   // Booking Reviews
   // ============================================
@@ -6682,16 +6701,16 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const reviewId = await db.createBookingReview({
           merchantId: merchant.id,
           ...input,
           isPublic: input.isPublic ? 1 : 0,
         });
-        
+
         return { success: true, reviewId };
       }),
-    
+
     // List reviews
     list: protectedProcedure
       .input(z.object({
@@ -6706,14 +6725,14 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         const reviews = await db.getBookingReviews(merchant.id, {
           ...input,
           isPublic: input.isPublic !== undefined ? (input.isPublic ? 1 : 0) : undefined,
         });
         return { reviews };
       }),
-    
+
     // Get reviews by service
     getByService: protectedProcedure
       .input(z.object({ serviceId: z.number() }))
@@ -6721,7 +6740,7 @@ export const appRouter = router({
         const reviews = await db.getReviewsByService(input.serviceId);
         return { reviews };
       }),
-    
+
     // Reply to review
     reply: protectedProcedure
       .input(z.object({
@@ -6733,11 +6752,11 @@ export const appRouter = router({
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        
+
         await db.replyToReview(input.reviewId, input.reply);
         return { success: true };
       }),
-    
+
     // Get rating statistics
     getStats: protectedProcedure
       .input(z.object({ serviceId: z.number() }))
@@ -6768,12 +6787,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const dbPayments = await import('./db_payments');
         const tapPayments = await import('./_core/tapPayments');
-        
+
         const charge = await tapPayments.createCharge({
           ...input,
           webhookUrl: `${process.env.VITE_FRONTEND_FORGE_API_URL}/api/webhooks/tap`,
         });
-        
+
         const payment = await dbPayments.createOrderPayment({
           merchantId: ctx.merchant.id,
           orderId: input.orderId || null,
@@ -6790,7 +6809,7 @@ export const appRouter = router({
           metadata: input.metadata ? JSON.stringify(input.metadata) : null,
           expiresAt: new Date(Date.now() + charge.transaction.expiry.period * 60 * 60 * 1000).toISOString(),
         });
-        
+
         return {
           paymentId: payment?.id,
           chargeId: charge.id,
@@ -6798,13 +6817,13 @@ export const appRouter = router({
           expiresAt: charge.transaction.expiry,
         };
       }),
-    
+
     verifyPayment: protectedProcedure
       .input(z.object({ chargeId: z.string() }))
       .query(async ({ input }) => {
         const tapPayments = await import('./_core/tapPayments');
         const dbPayments = await import('./db_payments');
-        
+
         const verification = await tapPayments.verifyPayment(input.chargeId);
         const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
         if (payment) {
@@ -6812,7 +6831,7 @@ export const appRouter = router({
         }
         return verification;
       }),
-    
+
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
@@ -6823,7 +6842,7 @@ export const appRouter = router({
         }
         return payment;
       }),
-    
+
     list: protectedProcedure
       .input(z.object({
         status: z.string().optional(),
@@ -6838,7 +6857,7 @@ export const appRouter = router({
         if (input.endDate) filters.endDate = new Date(input.endDate);
         return await dbPayments.getOrderPaymentsByMerchant(ctx.merchant.id, filters);
       }),
-    
+
     getStats: protectedProcedure
       .input(z.object({
         startDate: z.string().optional(),
@@ -6850,7 +6869,7 @@ export const appRouter = router({
         const endDate = input.endDate ? new Date(input.endDate) : undefined;
         return await dbPayments.getPaymentStats(ctx.merchant.id, startDate, endDate);
       }),
-    
+
     createRefund: protectedProcedure
       .input(z.object({
         paymentId: z.number(),
@@ -6860,7 +6879,7 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const dbPayments = await import('./db_payments');
         const tapPayments = await import('./_core/tapPayments');
-        
+
         const payment = await dbPayments.getOrderPaymentById(input.paymentId);
         if (!payment || payment.merchantId !== ctx.merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
@@ -6868,14 +6887,14 @@ export const appRouter = router({
         if (!payment.tapChargeId) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payment has no Tap charge ID' });
         }
-        
+
         const refund = await tapPayments.createRefund({
           chargeId: payment.tapChargeId,
           amount: input.amount,
           currency: payment.currency,
           reason: input.reason,
         });
-        
+
         const dbRefund = await dbPayments.createPaymentRefund({
           paymentId: payment.id,
           merchantId: ctx.merchant.id,
@@ -6886,11 +6905,11 @@ export const appRouter = router({
           status: 'pending',
           processedBy: ctx.user.id,
         });
-        
+
         await dbPayments.updateOrderPaymentStatus(payment.id, 'refunded');
         return { refundId: dbRefund?.id, tapRefundId: refund.id, status: refund.status };
       }),
-    
+
     listRefunds: protectedProcedure
       .input(z.object({
         paymentId: z.number().optional(),
@@ -6904,7 +6923,7 @@ export const appRouter = router({
         }
         return await dbPayments.getPaymentRefundsByMerchant(ctx.merchant.id, { status: input.status, limit: input.limit });
       }),
-    
+
     createLink: protectedProcedure
       .input(z.object({
         title: z.string(),
@@ -6921,7 +6940,7 @@ export const appRouter = router({
         const dbPayments = await import('./db_payments');
         const linkId = `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const tapPaymentUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL}/pay/${linkId}`;
-        
+
         const link = await dbPayments.createPaymentLink({
           merchantId: ctx.merchant.id,
           linkId,
@@ -6940,10 +6959,10 @@ export const appRouter = router({
           orderId: input.orderId || null,
           bookingId: input.bookingId || null,
         });
-        
+
         return { linkId: link?.linkId, paymentUrl: tapPaymentUrl, link };
       }),
-    
+
     getLink: protectedProcedure
       .input(z.object({ linkId: z.string() }))
       .query(async ({ ctx, input }) => {
@@ -6954,7 +6973,7 @@ export const appRouter = router({
         }
         return link;
       }),
-    
+
     listLinks: protectedProcedure
       .input(z.object({
         status: z.string().optional(),
@@ -6965,7 +6984,7 @@ export const appRouter = router({
         const dbPayments = await import('./db_payments');
         return await dbPayments.getPaymentLinksByMerchant(ctx.merchant.id, { status: input.status, isActive: input.isActive, limit: input.limit });
       }),
-    
+
     disableLink: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -6977,7 +6996,7 @@ export const appRouter = router({
         await dbPayments.disablePaymentLink(input.id);
         return { success: true };
       }),
-    
+
     // Webhook handler for Tap Payments
     handleWebhook: publicProcedure
       .input(z.object({
@@ -6986,7 +7005,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const tapWebhook = await import('./webhooks/tap-webhook');
-        
+
         // التحقق من التوقيع (إذا كان موجوداً)
         if (input.signature && process.env.TAP_WEBHOOK_SECRET) {
           const isValid = tapWebhook.verifyTapSignature(
@@ -6994,12 +7013,12 @@ export const appRouter = router({
             input.signature,
             process.env.TAP_WEBHOOK_SECRET
           );
-          
+
           if (!isValid) {
             throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid webhook signature' });
           }
         }
-        
+
         // معالجة الـ webhook
         const result = await tapWebhook.processTapWebhook(input.payload);
         return result;
@@ -7014,9 +7033,9 @@ export const appRouter = router({
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
-      
+
       const settings = await db.getMerchantPaymentSettings(merchant.id);
-      
+
       // Return settings with masked secret key
       if (settings?.tapSecretKey) {
         return {
@@ -7024,7 +7043,7 @@ export const appRouter = router({
           tapSecretKey: settings.tapSecretKey.slice(0, 8) + '****' + settings.tapSecretKey.slice(-4),
         };
       }
-      
+
       return settings;
     }),
 
@@ -7066,7 +7085,7 @@ export const appRouter = router({
         }
 
         await db.upsertMerchantPaymentSettings(merchant.id, updateData);
-        
+
         return { success: true, message: 'تم حفظ الإعدادات بنجاح' };
       }),
 
@@ -7099,16 +7118,16 @@ export const appRouter = router({
           return { success: true, message: 'تم التحقق من الاتصال بنجاح' };
         } else {
           const error = await response.json().catch(() => ({}));
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: error.message || 'فشل التحقق من مفاتيح Tap' 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: error.message || 'فشل التحقق من مفاتيح Tap'
           });
         }
       } catch (error: any) {
         if (error instanceof TRPCError) throw error;
-        throw new TRPCError({ 
-          code: 'INTERNAL_SERVER_ERROR', 
-          message: 'حدث خطأ أثناء الاتصال بـ Tap' 
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'حدث خطأ أثناء الاتصال بـ Tap'
         });
       }
     }),
@@ -7137,7 +7156,7 @@ export const appRouter = router({
 
         try {
           const baseUrl = 'https://api.tap.company/v2';
-          
+
           // Create charge
           const chargeData = {
             amount: input.amount / 100, // Convert from halalas to SAR
@@ -7174,9 +7193,9 @@ export const appRouter = router({
           const result = await response.json();
 
           if (!response.ok) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: result.message || 'فشل إنشاء رابط الدفع' 
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: result.message || 'فشل إنشاء رابط الدفع'
             });
           }
 
@@ -7187,9 +7206,9 @@ export const appRouter = router({
           };
         } catch (error: any) {
           if (error instanceof TRPCError) throw error;
-          throw new TRPCError({ 
-            code: 'INTERNAL_SERVER_ERROR', 
-            message: 'حدث خطأ أثناء إنشاء رابط الدفع' 
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'حدث خطأ أثناء إنشاء رابط الدفع'
           });
         }
       }),
@@ -7265,7 +7284,7 @@ export const appRouter = router({
     getStatus: protectedProcedure.query(async ({ ctx }) => {
       const dbZid = await import('./db_zid');
       const settings = await dbZid.getZidSettings(ctx.user.id);
-      
+
       if (!settings) {
         return { connected: false };
       }
@@ -7315,9 +7334,9 @@ export const appRouter = router({
           try {
             await validateNewPlatformConnection(ctx.user.id, 'زد');
           } catch (error: any) {
-            throw new TRPCError({ 
-              code: 'BAD_REQUEST', 
-              message: error.message 
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: error.message
             });
           }
 
@@ -7800,7 +7819,7 @@ export const appRouter = router({
         }
         const { testSmtpConnection } = await import('./_core/smtpEmail');
         const { createEmailLog, updateEmailLogStatus } = await import('./db_smtp');
-        
+
         // Create log entry
         const [logResult] = await createEmailLog({
           toEmail: input.email,
@@ -7808,7 +7827,7 @@ export const appRouter = router({
           body: 'رسالة تجريبية للتحقق من إعدادات SMTP',
           status: 'pending',
         });
-        
+
         try {
           await testSmtpConnection(input.email);
           await updateEmailLogStatus(logResult.insertId, 'sent');
@@ -7866,7 +7885,7 @@ export const appRouter = router({
         if (!dbConn) return [];
 
         let query = dbConn.select().from(notificationLogs);
-        
+
         const conditions = [];
         if (input.merchantId) {
           conditions.push(eq(notificationLogs.merchantId, input.merchantId));
@@ -7892,7 +7911,7 @@ export const appRouter = router({
       if (!dbConn) return { total: 0, sent: 0, failed: 0, pending: 0 };
 
       const logs = await dbConn.select().from(notificationLogs);
-      
+
       return {
         total: logs.length,
         sent: logs.filter(l => l.status === 'sent').length,
@@ -8094,11 +8113,11 @@ export const appRouter = router({
         const template = await db.query.emailTemplates.findFirst({
           where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
         });
-        
+
         if (!template) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
         }
-        
+
         return template;
       }),
 
@@ -8112,14 +8131,14 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...updateData } = input;
-        
+
         await db.update(emailTemplates)
           .set({
             ...updateData,
             isCustom: 1,
           })
           .where(eq(emailTemplates.id, id));
-        
+
         return { success: true };
       }),
 
@@ -8131,17 +8150,17 @@ export const appRouter = router({
         const template = await db.query.emailTemplates.findFirst({
           where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
         });
-        
+
         if (!template) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
         }
-        
+
         // Reset to default (this would require storing default templates)
         // For now, just mark as not custom
         await db.update(emailTemplates)
           .set({ isCustom: 0 })
           .where(eq(emailTemplates.id, input.id));
-        
+
         return { success: true };
       }),
 
@@ -8155,19 +8174,19 @@ export const appRouter = router({
         const template = await db.query.emailTemplates.findFirst({
           where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
         });
-        
+
         if (!template) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
         }
-        
+
         // Send test email with sample data
         const { sendEmail } = await import('./reports/email-sender');
-        
+
         // Replace variables with sample data
         let htmlContent = template.htmlContent;
         let textContent = template.textContent;
         let subject = template.subject;
-        
+
         const sampleData: Record<string, string> = {
           orderNumber: '12345',
           customerName: 'أحمد محمد',
@@ -8181,7 +8200,7 @@ export const appRouter = router({
           failedCount: '5',
           appUrl: process.env.VITE_APP_URL || 'https://sary.live',
         };
-        
+
         // Replace all variables
         Object.entries(sampleData).forEach(([key, value]) => {
           const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
@@ -8189,7 +8208,7 @@ export const appRouter = router({
           textContent = textContent.replace(regex, value);
           subject = subject.replace(regex, value);
         });
-        
+
         // Wrap HTML content in email template
         const fullHtml = `
           <!DOCTYPE html>
@@ -8216,9 +8235,9 @@ export const appRouter = router({
           </body>
           </html>
         `;
-        
+
         await sendEmail(input.email, `[تجريبي] ${subject}`, fullHtml);
-        
+
         return { success: true };
       }),
   }),
@@ -8241,7 +8260,7 @@ export const appRouter = router({
         if (existing) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Translation already exists for this language' });
         }
-        
+
         const id = await db.createTemplateTranslation({
           templateId: input.templateId,
           language: input.language,
@@ -8250,7 +8269,7 @@ export const appRouter = router({
           suitableFor: input.suitableFor,
           botPersonality: input.botPersonality,
         });
-        
+
         return { id, success: true };
       }),
 
@@ -8288,7 +8307,7 @@ export const appRouter = router({
     getAllWithStatus: adminProcedure
       .query(async () => {
         const templates = await db.getAllBusinessTemplates();
-        
+
         const templatesWithStatus = await Promise.all(
           templates.map(async (template) => {
             const translations = await db.getTemplateTranslationsByTemplateId(template.id);
@@ -8300,7 +8319,7 @@ export const appRouter = router({
             };
           })
         );
-        
+
         return templatesWithStatus;
       }),
   }),
@@ -8314,13 +8333,13 @@ export const appRouter = router({
   tapSettings: tapSettingsRouter,
   adminSubscriptions: adminSubscriptionsRouter,
   subscriptionSignup: subscriptionSignupRouter,
-  
+
   // Discount Coupons
   coupons: router({
     list: adminProcedure.query(async () => {
       return await db.getAllDiscountCoupons();
     }),
-    
+
     create: adminProcedure
       .input(z.object({
         code: z.string(),
@@ -8341,7 +8360,7 @@ export const appRouter = router({
         });
         return { id };
       }),
-    
+
     update: adminProcedure
       .input(z.object({
         id: z.number(),
@@ -8361,108 +8380,108 @@ export const appRouter = router({
         await db.updateDiscountCoupon(id, data);
         return { success: true };
       }),
-    
+
     deactivate: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
         await db.deactivateDiscountCoupon(input.id);
         return { success: true };
       }),
-    
+
     validate: protectedProcedure
       .input(z.object({ code: z.string(), planId: z.number() }))
       .query(async ({ input, ctx }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-        
+
         const coupon = await db.getDiscountCouponByCode(input.code);
         if (!coupon) throw new TRPCError({ code: 'NOT_FOUND', message: 'الكوبون غير موجود' });
-        
+
         // Check if active
         if (!coupon.isActive) throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون غير نشط' });
-        
+
         // Check dates
         const now = new Date();
         if (new Date(coupon.validFrom) > now) throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون لم يبدأ بعد' });
         if (new Date(coupon.validUntil) < now) throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون منتهي' });
-        
+
         // Check usage limits
         if (coupon.maxUsageCount && coupon.currentUsageCount >= coupon.maxUsageCount) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون مستنفذ' });
         }
-        
+
         // Check merchant usage
         const merchantUsage = await db.getCouponUsageCountByMerchant(coupon.id, merchant.id);
         if (merchantUsage >= coupon.maxUsagePerMerchant) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'لقد استخدمت هذا الكوبون من قبل' });
         }
-        
+
         return coupon;
       }),
   }),
-  
+
   // Usage & Statistics
   usage: router({
     getCurrentUsage: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-      
+
       const usage = await db.getMerchantCurrentUsage(merchant.id);
       if (!usage) throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد بيانات استخدام' });
-      
+
       return usage;
     }),
-    
+
     getUsageHistory: protectedProcedure.query(async ({ ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-      
+
       return await db.getMerchantUsageHistory(merchant.id);
     }),
   }),
-  
+
   // Subscription Reports (Admin)
   subscriptionReports: router({
     getOverview: adminProcedure.query(async () => {
       return await db.getSubscriptionOverview();
     }),
-    
+
     getConversionRate: adminProcedure
       .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
       .query(async ({ input }) => {
         return await db.getSubscriptionConversionRate(input?.period || 'month');
       }),
-    
+
     getUpgradeDowngrade: adminProcedure
       .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
       .query(async ({ input }) => {
         return await db.getUpgradeDowngradeStats(input?.period || 'month');
       }),
-    
+
     getCancellations: adminProcedure
       .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
       .query(async ({ input }) => {
         return await db.getCancellationStats(input?.period || 'month');
       }),
-    
+
     getRevenue: adminProcedure
       .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
       .query(async ({ input }) => {
         return await db.getRevenueStats(input?.period || 'month');
       }),
-    
+
     getMonthlyRevenue: adminProcedure.query(async () => {
       return await db.getMonthlyRevenueStats();
     }),
-    
+
     getDistributionByPlan: adminProcedure.query(async () => {
       return await db.getSubscriptionDistributionByPlan();
     }),
   }),
-  
+
   // Smart Notifications
   smartNotifications: smartNotificationsRouter,
-  
+
   // Email Notifications
   email: router({
     sendWelcome: protectedProcedure
@@ -8476,7 +8495,7 @@ export const appRouter = router({
         const success = await sendWelcomeEmail(input);
         return { success };
       }),
-    
+
     sendSubscriptionConfirmation: protectedProcedure
       .input(z.object({
         name: z.string(),
@@ -8490,7 +8509,7 @@ export const appRouter = router({
         const success = await sendSubscriptionConfirmationEmail(input);
         return { success };
       }),
-    
+
     sendTrialExpiry: protectedProcedure
       .input(z.object({
         name: z.string(),
@@ -8503,13 +8522,13 @@ export const appRouter = router({
         return { success };
       }),
   }),
-  
+
   // Trial Management
   trial: router({
     getStatus: protectedProcedure.query(async ({ ctx }) => {
       const user = await db.getUserById(ctx.user.id);
       if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-      
+
       return {
         isTrialActive: user.isTrialActive === 1,
         trialStartDate: user.trialStartDate,
@@ -8517,22 +8536,22 @@ export const appRouter = router({
         whatsappConnected: user.whatsappConnected === 1,
       };
     }),
-    
+
     checkExpiry: protectedProcedure.query(async ({ ctx }) => {
       const user = await db.getUserById(ctx.user.id);
       if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-      
+
       if (user.isTrialActive === 1 && user.trialEndDate) {
         const now = new Date();
         const endDate = new Date(user.trialEndDate);
         const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        
+
         return {
           isExpired: daysRemaining <= 0,
           daysRemaining: Math.max(0, daysRemaining),
         };
       }
-      
+
       return {
         isExpired: false,
         daysRemaining: 0,
