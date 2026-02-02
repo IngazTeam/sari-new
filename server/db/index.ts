@@ -4,7 +4,10 @@
  */
 
 // Shared utilities
-export { getDb, closeDb, formatDateForDB } from "./_shared";
+export { getDb, formatDateForDB } from "./_shared";
 
 // Domain modules
 export * from "./products";
+export * from "./conversations";
+export * from "./whatsapp";
+export * from "./subscriptions";
