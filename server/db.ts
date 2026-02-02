@@ -9977,72 +9977,8 @@ export async function getSubscriptionDistributionByPlan() {
   return result;
 }
 
-// ============================================
-// Invoice Management
-// ============================================
-
-/**
- * Get all invoices with filtering
- */
-export async function getAllInvoices(options?: {
-  status?: 'draft' | 'sent' | 'paid' | 'cancelled';
-  limit?: number;
-  offset?: number;
-}): Promise<Invoice[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const conditions = [];
-
-  if (options?.status) {
-    conditions.push(eq(invoices.status, options.status));
-  }
-
-  let query = db
-    .select()
-    .from(invoices)
-    .orderBy(desc(invoices.createdAt));
-
-  if (conditions.length > 0) {
-    query = query.where(and(...conditions)) as typeof query;
-  }
-
-  if (options?.limit) {
-    query = query.limit(options.limit) as typeof query;
-  }
-
-  if (options?.offset) {
-    query = query.offset(options.offset) as typeof query;
-  }
-
-  return await query;
-}
-
-/**
- * Get invoice by ID
- */
-export async function getInvoiceById(id: number): Promise<Invoice | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
-}
-
-/**
- * Get invoices by merchant ID
- */
-export async function getInvoicesByMerchantId(merchantId: number): Promise<Invoice[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  return await db
-    .select()
-    .from(invoices)
-    .where(eq(invoices.merchantId, merchantId))
-    .orderBy(desc(invoices.createdAt))
-    .limit(50);
-}
+// Note: Invoice functions are defined earlier in this file (lines ~1483-1520)
+// The getInvoiceStats function below is additional functionality
 
 /**
  * Get invoice statistics
@@ -10070,28 +10006,5 @@ export async function getInvoiceStats() {
   };
 
   return stats;
-}
-
-/**
- * Update invoice
- */
-export async function updateInvoice(id: number, data: Partial<InsertInvoice>): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  await db.update(invoices).set(data).where(eq(invoices.id, id));
-}
-
-/**
- * Create invoice
- */
-export async function createInvoice(invoice: InsertInvoice): Promise<Invoice | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.insert(invoices).values(invoice);
-  const insertedId = Number(result[0].insertId);
-
-  return getInvoiceById(insertedId);
 }
 

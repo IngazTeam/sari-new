@@ -7278,17 +7278,19 @@ export const appRouter = router({
   // Smart Website Analysis
   analysis: analysisRouter,
 
-  // Zid Integration
+  // Zid Integration - Using imported modular router (see line 6022)
+  // The inline definition below is deprecated and commented out to fix duplicate key error
+  /*
   zid: router({
     // Get Zid connection status
     getStatus: protectedProcedure.query(async ({ ctx }) => {
       const dbZid = await import('./db_zid');
       const settings = await dbZid.getZidSettings(ctx.user.id);
-
+  
       if (!settings) {
         return { connected: false };
       }
-
+  
       return {
         connected: settings.isActive === 1,
         storeName: settings.storeName,
@@ -7301,7 +7303,7 @@ export const appRouter = router({
         lastCustomerSync: settings.lastCustomerSync,
       };
     }),
-
+  
     // Get authorization URL
     getAuthUrl: protectedProcedure
       .input(z.object({
@@ -7315,10 +7317,10 @@ export const appRouter = router({
           clientSecret: '', // Will be provided in callback
           redirectUri: input.redirectUri,
         });
-
+  
         return { authUrl: client.getAuthorizationUrl() };
       }),
-
+  
     // Handle OAuth callback
     handleCallback: protectedProcedure
       .input(z.object({
@@ -7339,26 +7341,26 @@ export const appRouter = router({
               message: error.message
             });
           }
-
+  
           const { ZidClient } = await import('./integrations/zid/zidClient');
           const dbZid = await import('./db_zid');
-
+  
           const client = new ZidClient({
             clientId: input.clientId,
             clientSecret: input.clientSecret,
             redirectUri: input.redirectUri,
           });
-
+  
           // Exchange code for tokens
           const tokens = await client.exchangeCodeForToken(input.code);
-
+  
           // Calculate token expiry (1 year from now)
           const expiresAt = new Date();
           expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
+  
           // Check if settings exist
           const existingSettings = await dbZid.getZidSettings(ctx.user.id);
-
+  
           if (existingSettings) {
             // Update existing settings
             await dbZid.updateZidSettings(ctx.user.id, {
@@ -7383,7 +7385,7 @@ export const appRouter = router({
               isActive: 1,
             });
           }
-
+  
           return { success: true, message: 'تم ربط Zid بنجاح!' };
         } catch (error: any) {
           throw new TRPCError({
@@ -7392,14 +7394,14 @@ export const appRouter = router({
           });
         }
       }),
-
+  
     // Disconnect Zid
     disconnect: protectedProcedure.mutation(async ({ ctx }) => {
       const dbZid = await import('./db_zid');
       await dbZid.deleteZidSettings(ctx.user.id);
       return { success: true, message: 'تم فصل Zid بنجاح' };
     }),
-
+  
     // Update auto-sync settings
     updateAutoSync: protectedProcedure
       .input(z.object({
@@ -7412,25 +7414,25 @@ export const appRouter = router({
         await dbZid.updateAutoSyncSettings(ctx.user.id, input);
         return { success: true, message: 'تم تحديث إعدادات المزامنة' };
       }),
-
+  
     // Sync products from Zid
     syncProducts: protectedProcedure.mutation(async ({ ctx }) => {
       try {
         const dbZid = await import('./db_zid');
         const { ZidClient } = await import('./integrations/zid/zidClient');
-
+  
         const settings = await dbZid.getZidSettings(ctx.user.id);
         if (!settings || !settings.accessToken) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط Zid أولاً' });
         }
-
+  
         // Create sync log
         const syncLog = await dbZid.createZidSyncLog({
           merchantId: ctx.user.id,
           syncType: 'products',
           status: 'in_progress',
         });
-
+  
         try {
           const client = new ZidClient({
             clientId: settings.clientId!,
@@ -7439,20 +7441,20 @@ export const appRouter = router({
             accessToken: settings.accessToken,
             managerToken: settings.managerToken || undefined,
           });
-
+  
           // Fetch products from Zid
           const { products, pagination } = await client.getProducts();
-
+  
           // Update sync log
           await dbZid.updateSyncStats(syncLog.id, {
             processedItems: products.length,
             successCount: products.length,
             failedCount: 0,
           });
-
+  
           await dbZid.updateSyncStatus(syncLog.id, 'completed');
           await dbZid.updateLastSync(ctx.user.id, 'products');
-
+  
           return {
             success: true,
             message: `تم مزامنة ${products.length} منتج بنجاح`,
@@ -7469,24 +7471,24 @@ export const appRouter = router({
         });
       }
     }),
-
+  
     // Sync orders from Zid
     syncOrders: protectedProcedure.mutation(async ({ ctx }) => {
       try {
         const dbZid = await import('./db_zid');
         const { ZidClient } = await import('./integrations/zid/zidClient');
-
+  
         const settings = await dbZid.getZidSettings(ctx.user.id);
         if (!settings || !settings.accessToken) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط Zid أولاً' });
         }
-
+  
         const syncLog = await dbZid.createZidSyncLog({
           merchantId: ctx.user.id,
           syncType: 'orders',
           status: 'in_progress',
         });
-
+  
         try {
           const client = new ZidClient({
             clientId: settings.clientId!,
@@ -7495,18 +7497,18 @@ export const appRouter = router({
             accessToken: settings.accessToken,
             managerToken: settings.managerToken || undefined,
           });
-
+  
           const { orders, pagination } = await client.getOrders();
-
+  
           await dbZid.updateSyncStats(syncLog.id, {
             processedItems: orders.length,
             successCount: orders.length,
             failedCount: 0,
           });
-
+  
           await dbZid.updateSyncStatus(syncLog.id, 'completed');
           await dbZid.updateLastSync(ctx.user.id, 'orders');
-
+  
           return {
             success: true,
             message: `تم مزامنة ${orders.length} طلب بنجاح`,
@@ -7523,24 +7525,24 @@ export const appRouter = router({
         });
       }
     }),
-
+  
     // Sync customers from Zid
     syncCustomers: protectedProcedure.mutation(async ({ ctx }) => {
       try {
         const dbZid = await import('./db_zid');
         const { ZidClient } = await import('./integrations/zid/zidClient');
-
+  
         const settings = await dbZid.getZidSettings(ctx.user.id);
         if (!settings || !settings.accessToken) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط Zid أولاً' });
         }
-
+  
         const syncLog = await dbZid.createZidSyncLog({
           merchantId: ctx.user.id,
           syncType: 'customers',
           status: 'in_progress',
         });
-
+  
         try {
           const client = new ZidClient({
             clientId: settings.clientId!,
@@ -7549,18 +7551,18 @@ export const appRouter = router({
             accessToken: settings.accessToken,
             managerToken: settings.managerToken || undefined,
           });
-
+  
           const { customers, pagination } = await client.getCustomers();
-
+  
           await dbZid.updateSyncStats(syncLog.id, {
             processedItems: customers.length,
             successCount: customers.length,
             failedCount: 0,
           });
-
+  
           await dbZid.updateSyncStatus(syncLog.id, 'completed');
           await dbZid.updateLastSync(ctx.user.id, 'customers');
-
+  
           return {
             success: true,
             message: `تم مزامنة ${customers.length} عميل بنجاح`,
@@ -7577,7 +7579,7 @@ export const appRouter = router({
         });
       }
     }),
-
+  
     // Get sync logs
     getSyncLogs: protectedProcedure
       .input(z.object({
@@ -7588,13 +7590,14 @@ export const appRouter = router({
         const dbZid = await import('./db_zid');
         return await dbZid.getZidSyncLogs(ctx.user.id, input.syncType, input.limit);
       }),
-
+  
     // Get sync statistics
     getSyncStats: protectedProcedure.query(async ({ ctx }) => {
       const dbZid = await import('./db_zid');
       return await dbZid.getZidSyncStats(ctx.user.id);
     }),
   }),
+  */ // End of deprecated zid inline router
 
   // WooCommerce Integration
   woocommerce: (async () => {
@@ -7870,7 +7873,9 @@ export const appRouter = router({
     }),
   }),
 
-  // Notification Management APIs (Super Admin)
+  // Notification Management APIs - Using imported modular router (see line 6029)
+  // The inline definition below is deprecated and commented out to fix duplicate key error
+  /*
   notificationManagement: router({
     // Get all notification logs
     getAllLogs: adminProcedure
@@ -7883,9 +7888,9 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const dbConn = await db.getDb();
         if (!dbConn) return [];
-
+  
         let query = dbConn.select().from(notificationLogs);
-
+  
         const conditions = [];
         if (input.merchantId) {
           conditions.push(eq(notificationLogs.merchantId, input.merchantId));
@@ -7896,22 +7901,22 @@ export const appRouter = router({
         if (input.status) {
           conditions.push(eq(notificationLogs.status, input.status));
         }
-
+  
         if (conditions.length > 0) {
           query = query.where(and(...conditions)) as any;
         }
-
+  
         const logs = await query.orderBy(desc(notificationLogs.createdAt)).limit(input.limit);
         return logs;
       }),
-
+  
     // Get notification stats
     getStats: adminProcedure.query(async () => {
       const dbConn = await db.getDb();
       if (!dbConn) return { total: 0, sent: 0, failed: 0, pending: 0 };
-
+  
       const logs = await dbConn.select().from(notificationLogs);
-
+  
       return {
         total: logs.length,
         sent: logs.filter(l => l.status === 'sent').length,
@@ -7919,22 +7924,22 @@ export const appRouter = router({
         pending: logs.filter(l => l.status === 'pending').length,
       };
     }),
-
+  
     // Resend notification
     resend: adminProcedure
       .input(z.object({ logId: z.number() }))
       .mutation(async ({ input }) => {
         const dbConn = await db.getDb();
         if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database connection failed' });
-
+  
         const log = await dbConn.query.notificationLogs.findFirst({
           where: eq(notificationLogs.id, input.logId),
         });
-
+  
         if (!log) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Notification log not found' });
         }
-
+  
         const { sendNotification } = await import('./_core/notificationService');
         const success = await sendNotification({
           merchantId: log.merchantId,
@@ -7944,19 +7949,19 @@ export const appRouter = router({
           url: log.url || undefined,
           metadata: log.metadata ? JSON.parse(log.metadata) : undefined,
         });
-
+  
         return { success };
       }),
-
+  
     // Get global notification settings
     getGlobalSettings: adminProcedure.query(async () => {
       const dbConn = await db.getDb();
       if (!dbConn) return null;
-
+  
       const settings = await dbConn.query.notificationSettings.findFirst();
       return settings;
     }),
-
+  
     // Update global notification settings
     updateGlobalSettings: adminProcedure
       .input(z.object({
@@ -7973,9 +7978,9 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const dbConn = await db.getDb();
         if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database connection failed' });
-
+  
         const existing = await dbConn.query.notificationSettings.findFirst();
-
+  
         if (existing) {
           await dbConn.update(notificationSettings)
             .set(input)
@@ -7983,10 +7988,11 @@ export const appRouter = router({
         } else {
           await dbConn.insert(notificationSettings).values(input);
         }
-
+  
         return { success: true };
       }),
   }),
+  */ // End of deprecated notificationManagement inline router
 
   // Weekly Report API
   weeklyReport: router({
@@ -8211,30 +8217,30 @@ export const appRouter = router({
 
         // Wrap HTML content in email template
         const fullHtml = `
-          <!DOCTYPE html>
-          <html lang="ar" dir="rtl">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
-            <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
-              <tr>
-                <td align="center">
-                  <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                    ${htmlContent}
-                    <tr>
-                      <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-                        <p style="margin: 0; color: #9ca3af; font-size: 12px;">هذا بريد تجريبي من نظام ساري</p>
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </body>
-          </html>
-        `;
+      <!DOCTYPE html>
+      <html lang="ar" dir="rtl">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                ${htmlContent}
+                <tr>
+                  <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                    <p style="margin: 0; color: #9ca3af; font-size: 12px;">هذا بريد تجريبي من نظام ساري</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
 
         await sendEmail(input.email, `[تجريبي] ${subject}`, fullHtml);
 

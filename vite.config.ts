@@ -1,72 +1,92 @@
-import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
-import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react";
-import fs from "node:fs";
-import path from "path";
+/**
+ * @fileoverview ملف تكوين Vite الرئيسي
+ * 
+ * هذا الملف يُحدد إعدادات Vite لبناء المشروع، بما في ذلك:
+ * - تكوين React plugin
+ * - تحسينات الأداء (Code Splitting)
+ * - إعدادات البناء للإنتاج
+ * 
+ * @packageDocumentation
+ */
+
 import { defineConfig } from "vite";
-import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
+import path from "path";
 
-
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime()];
-
+/**
+ * تكوين Vite للمشروع
+ * 
+ * @description يتضمن:
+ * - React plugin مع دعم JSX
+ * - Tailwind CSS plugin
+ * - Path aliases للاستيراد السهل
+ * - تحسينات الـ Rollup لتقسيم الكود
+ * 
+ * @example
+ * // استخدام الـ alias في الكود
+ * import { Button } from '@/components/ui/button';
+ */
 export default defineConfig({
-  plugins,
+  // Plugins المستخدمة
+  plugins: [
+    react(),           // دعم React 19 مع JSX Transform الجديد
+    tailwindcss(),     // Tailwind CSS 4 مباشرة في Vite
+  ],
+
+  // إعدادات الاستيراد
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
-      "@shared": path.resolve(import.meta.dirname, "shared"),
-      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+      "@db": path.resolve(import.meta.dirname, "db"),
     },
   },
-  envDir: path.resolve(import.meta.dirname),
+
+  // جذر المشروع (Frontend)
   root: path.resolve(import.meta.dirname, "client"),
-  publicDir: path.resolve(import.meta.dirname, "client", "public"),
+
+  // إعدادات البناء للإنتاج
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    // Code splitting and optimization
+
+    // تحسينات Rollup لتقسيم الكود
     rollupOptions: {
       output: {
-        // Manual chunk splitting for better caching
+        /**
+         * تقسيم الكود إلى chunks منفصلة
+         * 
+         * الفوائد:
+         * 1. تحميل أسرع - كل صفحة تحمّل الكود المطلوب فقط
+         * 2. Caching أفضل - المكتبات المشتركة تُخزّن مؤقتاً
+         * 3. تجربة مستخدم أفضل - التطبيق يظهر بسرعة
+         */
         manualChunks: {
-          // React and core libraries
+          // مكتبات React الأساسية
           'vendor-react': ['react', 'react-dom'],
-          // UI Components
-          'vendor-ui': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs', '@radix-ui/react-select', '@radix-ui/react-popover'],
-          // Charts and visualization
+
+          // مكتبات UI من Radix
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+          ],
+
+          // مكتبة الرسوم البيانية
           'vendor-charts': ['recharts'],
-          // Date utilities
+
+          // مكتبات النماذج
+          'vendor-forms': ['react-hook-form', 'zod'],
+
+          // مكتبة التواريخ
           'vendor-date': ['date-fns'],
-          // Form handling
-          'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
         },
-        // Chunk file naming
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]',
       },
     },
-    // Reduce chunk size warning threshold
-    chunkSizeWarningLimit: 500,
-    // Enable minification with esbuild (faster than terser)
-    minify: 'esbuild',
-    // Generate source maps for debugging
-    sourcemap: false,
-  },
-  server: {
-    host: true,
-    allowedHosts: [
-      ".manuspre.computer",
-      ".manus.computer",
-      ".manus-asia.computer",
-      ".manuscomputer.ai",
-      ".manusvm.computer",
-      "localhost",
-      "127.0.0.1",
-    ],
-    fs: {
-      strict: true,
-      deny: ["**/.*"],
-    },
+
+    // الحد الأدنى لحجم الـ chunk قبل التحذير
+    chunkSizeWarningLimit: 600,
   },
 });
