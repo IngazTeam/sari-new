@@ -162,6 +162,22 @@ async function startServer() {
     })
   );
 
+  // Global error handler for API routes - ensures JSON responses instead of HTML
+  // This MUST come before serveStatic/setupVite
+  app.use('/api', (err: any, req: any, res: any, next: any) => {
+    console.error('🔴 [API Error]', err);
+
+    // Always return JSON for API errors
+    res.setHeader('Content-Type', 'application/json');
+
+    const statusCode = err.status || err.statusCode || 500;
+    res.status(statusCode).json({
+      error: err.message || 'Internal server error',
+      code: err.code || 'INTERNAL_ERROR',
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+  });
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

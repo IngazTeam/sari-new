@@ -10,6 +10,10 @@ const router = Router();
 // Login endpoint
 router.post('/login', async (req, res) => {
   console.log('🔵 [AUTH ROUTE] Login endpoint called');
+
+  // Always set JSON content type
+  res.setHeader('Content-Type', 'application/json');
+
   try {
     const { email, password } = req.body;
 
@@ -19,7 +23,18 @@ router.post('/login', async (req, res) => {
 
     console.log('🔵 [AUTH] Login attempt:', email);
 
-    const user = await db.getUserByEmail(email);
+    // Check if database is available
+    let user;
+    try {
+      user = await db.getUserByEmail(email);
+    } catch (dbError) {
+      console.error('🔴 [AUTH] Database error:', dbError);
+      return res.status(503).json({
+        error: 'Database connection error. Please try again later.',
+        code: 'DB_CONNECTION_ERROR'
+      });
+    }
+
     console.log('🔵 [AUTH] User found:', user?.email);
 
     if (!user || !user.password) {
@@ -33,7 +48,12 @@ router.post('/login', async (req, res) => {
     }
 
     // Update last signed in
-    await db.updateUserLastSignedIn(user.id);
+    try {
+      await db.updateUserLastSignedIn(user.id);
+    } catch (updateError) {
+      console.warn('🟡 [AUTH] Failed to update last signed in:', updateError);
+      // Continue login even if this fails
+    }
 
     // Create session token using custom auth
     const sessionToken = await createSessionToken(String(user.id), {
@@ -58,9 +78,12 @@ router.post('/login', async (req, res) => {
         role: user.role,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('🔴 [AUTH] Login error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
