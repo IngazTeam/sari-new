@@ -152,12 +152,16 @@ export const bookingsRouter = router({
             }
 
             if (input.bookingDate || input.startTime || input.endTime) {
+                const bookingDateStr = input.bookingDate ||
+                    (booking.bookingDate instanceof Date
+                        ? booking.bookingDate.toISOString().split('T')[0]
+                        : String(booking.bookingDate));
                 const hasConflict = await db.checkBookingConflict(
                     booking.serviceId,
                     input.staffId || booking.staffId,
-                    input.bookingDate || booking.bookingDate,
-                    input.startTime || booking.startTime,
-                    input.endTime || booking.endTime,
+                    bookingDateStr,
+                    input.startTime || String(booking.startTime),
+                    input.endTime || String(booking.endTime),
                     booking.id
                 );
 
