@@ -162,8 +162,26 @@ async function startServer() {
     })
   );
 
-  // Global error handler for API routes - ensures JSON responses instead of HTML
+  // 404 handler for API routes - ensures unmatched API routes return JSON, not HTML
   // This MUST come before serveStatic/setupVite
+  app.use('/api', (req: any, res: any, next: any) => {
+    // If headers already sent or this is an error handler call, skip
+    if (res.headersSent) {
+      return next();
+    }
+
+    // This is a 404 for unmatched API routes
+    console.warn('🟡 [API 404]', req.method, req.path);
+    res.setHeader('Content-Type', 'application/json');
+    res.status(404).json({
+      error: 'API endpoint not found',
+      errorAr: 'نقطة النهاية غير موجودة',
+      code: 'NOT_FOUND',
+      path: req.originalUrl
+    });
+  });
+
+  // Global error handler for API routes - ensures JSON responses instead of HTML
   app.use('/api', (err: any, req: any, res: any, next: any) => {
     console.error('🔴 [API Error]', err);
 
@@ -173,6 +191,7 @@ async function startServer() {
     const statusCode = err.status || err.statusCode || 500;
     res.status(statusCode).json({
       error: err.message || 'Internal server error',
+      errorAr: 'حدث خطأ داخلي في الخادم',
       code: err.code || 'INTERNAL_ERROR',
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });

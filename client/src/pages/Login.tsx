@@ -70,10 +70,10 @@ export default function Login() {
           errorMessage = 'تم تجاوز عدد محاولات تسجيل الدخول. يرجى المحاولة بعد قليل.';
         } else if (response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504) {
           errorMessage = 'حدث خطأ في الخادم. يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني.';
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
         } else if (errorData.errorAr) {
           errorMessage = errorData.errorAr;
+        } else if (errorData.error) {
+          errorMessage = errorData.error;
         }
         throw new Error(errorMessage);
       }
