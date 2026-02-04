@@ -1,1 +1,0 @@
-ALTER TABLE `bot_settings` MODIFY COLUMN `language` enum('ar','en','fr','tr','es','it','both') NOT NULL DEFAULT 'ar';

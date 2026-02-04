@@ -2,20 +2,20 @@ import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal,
 import { sql } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	testName: varchar("test_name", { length: 255 }).notNull(),
 	keyword: varchar({ length: 255 }).notNull(),
-	variantAId: int("variant_a_id").references(() => quickResponses.id, { onDelete: "cascade" } ),
+	variantAId: int("variant_a_id").references(() => quickResponses.id, { onDelete: "cascade" }),
 	variantAText: text("variant_a_text").notNull(),
 	variantAUsageCount: int("variant_a_usage_count").default(0).notNull(),
 	variantASuccessCount: int("variant_a_success_count").default(0).notNull(),
-	variantBId: int("variant_b_id").references(() => quickResponses.id, { onDelete: "cascade" } ),
+	variantBId: int("variant_b_id").references(() => quickResponses.id, { onDelete: "cascade" }),
 	variantBText: text("variant_b_text").notNull(),
 	variantBUsageCount: int("variant_b_usage_count").default(0).notNull(),
 	variantBSuccessCount: int("variant_b_success_count").default(0).notNull(),
-	status: mysqlEnum(['running','completed','paused']).default('running').notNull(),
-	winner: mysqlEnum(['variant_a','variant_b','no_winner']),
+	status: mysqlEnum(['running', 'completed', 'paused']).default('running').notNull(),
+	winner: mysqlEnum(['variant_a', 'variant_b', 'no_winner']),
 	confidenceLevel: int("confidence_level").default(0).notNull(),
 	startedAt: timestamp("started_at", { mode: 'string' }).defaultNow().notNull(),
 	completedAt: timestamp("completed_at", { mode: 'string' }),
@@ -24,7 +24,7 @@ export const abTestResults = mysqlTable("ab_test_results", {
 });
 
 export const abandonedCarts = mysqlTable("abandoned_carts", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
@@ -39,7 +39,7 @@ export const abandonedCarts = mysqlTable("abandoned_carts", {
 });
 
 export const analytics = mysqlTable("analytics", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	date: timestamp({ mode: 'string' }).notNull(),
 	conversationsCount: int().default(0).notNull(),
@@ -50,9 +50,9 @@ export const analytics = mysqlTable("analytics", {
 });
 
 export const automationRules = mysqlTable("automation_rules", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
-	type: mysqlEnum(['abandoned_cart','review_request','order_tracking','gift_notification','holiday_greeting','winback']).notNull(),
+	type: mysqlEnum(['abandoned_cart', 'review_request', 'order_tracking', 'gift_notification', 'holiday_greeting', 'winback']).notNull(),
 	isEnabled: tinyint().default(1).notNull(),
 	settings: text(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
@@ -60,8 +60,8 @@ export const automationRules = mysqlTable("automation_rules", {
 });
 
 export const botSettings = mysqlTable("bot_settings", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	autoReplyEnabled: tinyint("auto_reply_enabled").default(1).notNull(),
 	workingHoursEnabled: tinyint("working_hours_enabled").default(0).notNull(),
 	workingHoursStart: varchar("working_hours_start", { length: 5 }).default('09:00'),
@@ -71,35 +71,35 @@ export const botSettings = mysqlTable("bot_settings", {
 	outOfHoursMessage: text("out_of_hours_message"),
 	responseDelay: int("response_delay").default(2),
 	maxResponseLength: int("max_response_length").default(200),
-	tone: mysqlEnum(['friendly','professional','casual']).default('friendly').notNull(),
-	language: mysqlEnum(['ar','en','fr','tr','es','it','both']).default('ar').notNull(),
+	tone: mysqlEnum(['friendly', 'professional', 'casual']).default('friendly').notNull(),
+	language: mysqlEnum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).default('ar').notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("bot_settings_merchant_id_unique").on(table.merchantId),
-]);
+	(table) => [
+		index("bot_settings_merchant_id_unique").on(table.merchantId),
+	]);
 
 export const campaignLogs = mysqlTable("campaignLogs", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	campaignId: int().notNull(),
 	customerId: int(),
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
-	status: mysqlEnum(['success','failed','pending']).default('pending').notNull(),
+	status: mysqlEnum(['success', 'failed', 'pending']).default('pending').notNull(),
 	errorMessage: text(),
 	sentAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 });
 
 export const campaigns = mysqlTable("campaigns", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	name: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
 	imageUrl: varchar({ length: 500 }),
 	targetAudience: text(),
-	status: mysqlEnum(['draft','scheduled','sending','completed','failed']).default('draft').notNull(),
+	status: mysqlEnum(['draft', 'scheduled', 'sending', 'completed', 'failed']).default('draft').notNull(),
 	scheduledAt: timestamp({ mode: 'string' }),
 	sentCount: int().default(0).notNull(),
 	totalRecipients: int().default(0).notNull(),
@@ -108,11 +108,11 @@ export const campaigns = mysqlTable("campaigns", {
 });
 
 export const conversations = mysqlTable("conversations", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
-	status: mysqlEnum(['active','closed','archived']).default('active').notNull(),
+	status: mysqlEnum(['active', 'closed', 'archived']).default('active').notNull(),
 	lastMessageAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
@@ -122,7 +122,7 @@ export const conversations = mysqlTable("conversations", {
 });
 
 export const customerReviews = mysqlTable("customer_reviews", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	orderId: int().notNull(),
 	customerPhone: varchar({ length: 20 }).notNull(),
@@ -138,10 +138,10 @@ export const customerReviews = mysqlTable("customer_reviews", {
 });
 
 export const discountCodes = mysqlTable("discount_codes", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	code: varchar({ length: 50 }).notNull(),
-	type: mysqlEnum(['percentage','fixed']).notNull(),
+	type: mysqlEnum(['percentage', 'fixed']).notNull(),
 	value: int().notNull(),
 	minOrderAmount: int().default(0),
 	maxUses: int(),
@@ -151,19 +151,19 @@ export const discountCodes = mysqlTable("discount_codes", {
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("discount_codes_code_unique").on(table.code),
-]);
+	(table) => [
+		index("discount_codes_code_unique").on(table.code),
+	]);
 
 export const invoices = mysqlTable("invoices", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	invoiceNumber: varchar("invoice_number", { length: 50 }).notNull(),
 	paymentId: int("payment_id").notNull(),
 	merchantId: int("merchant_id").notNull(),
 	subscriptionId: int("subscription_id"),
 	amount: int().notNull(),
 	currency: varchar({ length: 10 }).default('SAR').notNull(),
-	status: mysqlEnum(['draft','sent','paid','cancelled']).default('paid').notNull(),
+	status: mysqlEnum(['draft', 'sent', 'paid', 'cancelled']).default('paid').notNull(),
 	pdfPath: text("pdf_path"),
 	pdfUrl: text("pdf_url"),
 	emailSent: tinyint("email_sent").default(0).notNull(),
@@ -171,19 +171,19 @@ export const invoices = mysqlTable("invoices", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("invoices_invoice_number_unique").on(table.invoiceNumber),
-]);
+	(table) => [
+		index("invoices_invoice_number_unique").on(table.invoiceNumber),
+	]);
 
 export const keywordAnalysis = mysqlTable("keyword_analysis", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	keyword: varchar({ length: 255 }).notNull(),
-	category: mysqlEnum(['product','price','shipping','complaint','question','other']).notNull(),
+	category: mysqlEnum(['product', 'price', 'shipping', 'complaint', 'question', 'other']).notNull(),
 	frequency: int().default(1).notNull(),
 	sampleMessages: text("sample_messages"),
 	suggestedResponse: text("suggested_response"),
-	status: mysqlEnum(['new','reviewed','response_created','ignored']).default('new').notNull(),
+	status: mysqlEnum(['new', 'reviewed', 'response_created', 'ignored']).default('new').notNull(),
 	firstSeenAt: timestamp("first_seen_at", { mode: 'string' }).defaultNow().notNull(),
 	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }).defaultNow().notNull(),
 	reviewedAt: timestamp("reviewed_at", { mode: 'string' }),
@@ -192,7 +192,7 @@ export const keywordAnalysis = mysqlTable("keyword_analysis", {
 });
 
 export const limitedTimeOffers = mysqlTable("limited_time_offers", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	title: varchar({ length: 255 }).notNull(),
 	titleAr: varchar("title_ar", { length: 255 }).notNull(),
 	description: text().notNull(),
@@ -206,11 +206,11 @@ export const limitedTimeOffers = mysqlTable("limited_time_offers", {
 });
 
 export const merchants = mysqlTable("merchants", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	userId: int().notNull(),
 	businessName: varchar({ length: 255 }).notNull(),
 	phone: varchar({ length: 20 }),
-	status: mysqlEnum(['active','suspended','pending']).default('pending').notNull(),
+	status: mysqlEnum(['active', 'suspended', 'pending']).default('pending').notNull(),
 	subscriptionId: int(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
@@ -218,14 +218,14 @@ export const merchants = mysqlTable("merchants", {
 	onboardingCompleted: tinyint().default(0).notNull(),
 	onboardingStep: int().default(0).notNull(),
 	onboardingCompletedAt: timestamp({ mode: 'string' }),
-	currency: mysqlEnum(['SAR','USD']).default('SAR').notNull(),
+	currency: mysqlEnum(['SAR', 'USD']).default('SAR').notNull(),
 	// Setup Wizard fields
-	businessType: mysqlEnum(['store','services','both']),
+	businessType: mysqlEnum(['store', 'services', 'both']),
 	setupCompleted: tinyint().default(0).notNull(),
 	setupCompletedAt: timestamp({ mode: 'string' }),
 	address: varchar({ length: 500 }),
 	description: text(),
-	workingHoursType: mysqlEnum(['24_7','weekdays','custom']).default('weekdays'),
+	workingHoursType: mysqlEnum(['24_7', 'weekdays', 'custom']).default('weekdays'),
 	workingHours: text(), // JSON: {"saturday": {"start": "09:00", "end": "18:00"}}
 	// Smart Website Analysis fields
 	websiteUrl: varchar("website_url", { length: 500 }),
@@ -242,10 +242,10 @@ export const merchants = mysqlTable("merchants", {
 });
 
 export const messages = mysqlTable("messages", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	conversationId: int().notNull(),
-	direction: mysqlEnum(['incoming','outgoing']).notNull(),
-	messageType: mysqlEnum(['text','voice','image','document']).default('text').notNull(),
+	direction: mysqlEnum(['incoming', 'outgoing']).notNull(),
+	messageType: mysqlEnum(['text', 'voice', 'image', 'document']).default('text').notNull(),
 	content: text().notNull(),
 	voiceUrl: varchar({ length: 500 }),
 	imageUrl: varchar({ length: 500 }),
@@ -257,8 +257,8 @@ export const messages = mysqlTable("messages", {
 });
 
 export const notificationTemplates = mysqlTable("notification_templates", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	status: varchar({ length: 50 }).notNull(),
 	template: text().notNull(),
 	enabled: tinyint().default(1),
@@ -267,9 +267,9 @@ export const notificationTemplates = mysqlTable("notification_templates", {
 });
 
 export const notifications = mysqlTable("notifications", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	userId: int().notNull(),
-	type: mysqlEnum(['info','success','warning','error']).default('info').notNull(),
+	type: mysqlEnum(['info', 'success', 'warning', 'error']).default('info').notNull(),
 	title: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
 	link: varchar({ length: 500 }),
@@ -278,9 +278,9 @@ export const notifications = mysqlTable("notifications", {
 });
 
 export const occasionCampaigns = mysqlTable("occasion_campaigns", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
-	occasionType: mysqlEnum(['ramadan','eid_fitr','eid_adha','national_day','new_year','hijri_new_year']).notNull(),
+	occasionType: mysqlEnum(['ramadan', 'eid_fitr', 'eid_adha', 'national_day', 'new_year', 'hijri_new_year']).notNull(),
 	year: int().notNull(),
 	enabled: tinyint().default(1).notNull(),
 	discountCode: varchar({ length: 50 }),
@@ -288,15 +288,15 @@ export const occasionCampaigns = mysqlTable("occasion_campaigns", {
 	messageTemplate: text(),
 	sentAt: timestamp({ mode: 'string' }),
 	recipientCount: int().default(0).notNull(),
-	status: mysqlEnum(['pending','sent','failed']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'sent', 'failed']).default('pending').notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
 export const orderNotifications = mysqlTable("order_notifications", {
-	id: int().autoincrement().notNull(),
-	orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" } ),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	orderId: int("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
 	status: varchar({ length: 50 }).notNull(),
 	message: text().notNull(),
@@ -307,7 +307,7 @@ export const orderNotifications = mysqlTable("order_notifications", {
 });
 
 export const orderTrackingLogs = mysqlTable("order_tracking_logs", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	orderId: int().notNull(),
 	oldStatus: varchar({ length: 50 }).notNull(),
 	newStatus: varchar({ length: 50 }).notNull(),
@@ -319,7 +319,7 @@ export const orderTrackingLogs = mysqlTable("order_tracking_logs", {
 });
 
 export const orders = mysqlTable("orders", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	sallaOrderId: varchar({ length: 100 }),
 	orderNumber: varchar({ length: 100 }),
@@ -330,9 +330,9 @@ export const orders = mysqlTable("orders", {
 	city: varchar({ length: 100 }),
 	items: text().notNull(),
 	totalAmount: int().notNull(),
-	currency: mysqlEnum(['SAR','USD']).default('SAR').notNull(),
+	currency: mysqlEnum(['SAR', 'USD']).default('SAR').notNull(),
 	discountCode: varchar({ length: 50 }),
-	status: mysqlEnum(['pending','paid','processing','shipped','delivered','cancelled']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']).default('pending').notNull(),
 	paymentUrl: text(),
 	trackingNumber: varchar({ length: 100 }),
 	notes: text(),
@@ -346,7 +346,7 @@ export const orders = mysqlTable("orders", {
 });
 
 export const passwordResetAttempts = mysqlTable("password_reset_attempts", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	email: varchar({ length: 320 }).notNull(),
 	attemptedAt: timestamp("attempted_at", { mode: 'string' }).defaultNow().notNull(),
 	ipAddress: varchar("ip_address", { length: 45 }),
@@ -354,8 +354,8 @@ export const passwordResetAttempts = mysqlTable("password_reset_attempts", {
 });
 
 export const passwordResetTokens = mysqlTable("password_reset_tokens", {
-	id: int().autoincrement().notNull(),
-	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
 	email: varchar({ length: 320 }).notNull(),
 	token: varchar({ length: 255 }).notNull(),
 	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
@@ -363,13 +363,13 @@ export const passwordResetTokens = mysqlTable("password_reset_tokens", {
 	usedAt: timestamp("used_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
-(table) => [
-	index("password_reset_tokens_token_unique").on(table.token),
-]);
+	(table) => [
+		index("password_reset_tokens_token_unique").on(table.token),
+	]);
 
 export const paymentGateways = mysqlTable("payment_gateways", {
-	id: int().autoincrement().notNull(),
-	gateway: mysqlEnum(['tap','paypal']).notNull(),
+	id: int().autoincrement().primaryKey(),
+	gateway: mysqlEnum(['tap', 'paypal']).notNull(),
 	isEnabled: tinyint().default(0).notNull(),
 	publicKey: text(),
 	secretKey: text(),
@@ -378,26 +378,26 @@ export const paymentGateways = mysqlTable("payment_gateways", {
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("payment_gateways_gateway_unique").on(table.gateway),
-]);
+	(table) => [
+		index("payment_gateways_gateway_unique").on(table.gateway),
+	]);
 
 export const payments = mysqlTable("payments", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	subscriptionId: int().notNull(),
 	amount: int().notNull(),
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
-	paymentMethod: mysqlEnum(['tap','paypal','link']).notNull(),
+	paymentMethod: mysqlEnum(['tap', 'paypal', 'link']).notNull(),
 	transactionId: varchar({ length: 255 }),
-	status: mysqlEnum(['pending','completed','failed','refunded']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'completed', 'failed', 'refunded']).default('pending').notNull(),
 	paidAt: timestamp({ mode: 'string' }),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
 export const planChangeLogs = mysqlTable("planChangeLogs", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	planId: int().notNull(),
 	changedBy: int().notNull(),
 	fieldName: varchar({ length: 100 }).notNull(),
@@ -407,7 +407,7 @@ export const planChangeLogs = mysqlTable("planChangeLogs", {
 });
 
 export const plans = mysqlTable("plans", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	name: varchar({ length: 100 }).notNull(),
 	nameAr: varchar({ length: 100 }).notNull(),
 	priceMonthly: int().notNull(),
@@ -420,14 +420,14 @@ export const plans = mysqlTable("plans", {
 });
 
 export const products = mysqlTable("products", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	name: varchar({ length: 255 }).notNull(),
 	nameAr: varchar({ length: 255 }),
 	description: text(),
 	descriptionAr: text(),
 	price: int().notNull(),
-	currency: mysqlEnum(['SAR','USD']).default('SAR').notNull(),
+	currency: mysqlEnum(['SAR', 'USD']).default('SAR').notNull(),
 	imageUrl: varchar({ length: 500 }),
 	productUrl: varchar({ length: 500 }),
 	category: varchar({ length: 100 }),
@@ -440,8 +440,8 @@ export const products = mysqlTable("products", {
 });
 
 export const quickResponses = mysqlTable("quick_responses", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	trigger: varchar({ length: 255 }).notNull(),
 	keywords: text(),
 	response: text().notNull(),
@@ -454,7 +454,7 @@ export const quickResponses = mysqlTable("quick_responses", {
 });
 
 export const referralCodes = mysqlTable("referral_codes", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	code: varchar({ length: 50 }).notNull(),
 	referralCount: int().default(0).notNull(),
@@ -465,12 +465,12 @@ export const referralCodes = mysqlTable("referral_codes", {
 	referrerName: varchar({ length: 255 }).notNull(),
 	rewardGiven: tinyint().default(0).notNull(),
 },
-(table) => [
-	index("referral_codes_code_unique").on(table.code),
-]);
+	(table) => [
+		index("referral_codes_code_unique").on(table.code),
+	]);
 
 export const referrals = mysqlTable("referrals", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	referralCodeId: int().notNull(),
 	referredPhone: varchar({ length: 20 }).notNull(),
 	referredName: varchar({ length: 255 }).notNull(),
@@ -480,11 +480,11 @@ export const referrals = mysqlTable("referrals", {
 });
 
 export const rewards = mysqlTable("rewards", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	referralId: int().notNull(),
-	rewardType: mysqlEnum(['discount_10','free_month','analytics_upgrade']).notNull(),
-	status: mysqlEnum(['pending','claimed','expired']).default('pending').notNull(),
+	rewardType: mysqlEnum(['discount_10', 'free_month', 'analytics_upgrade']).notNull(),
+	status: mysqlEnum(['pending', 'claimed', 'expired']).default('pending').notNull(),
 	claimedAt: timestamp({ mode: 'string' }),
 	expiresAt: timestamp({ mode: 'string' }).notNull(),
 	description: text(),
@@ -493,43 +493,43 @@ export const rewards = mysqlTable("rewards", {
 });
 
 export const sallaConnections = mysqlTable("salla_connections", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	storeUrl: varchar({ length: 255 }).notNull(),
 	accessToken: text().notNull(),
-	syncStatus: mysqlEnum(['active','syncing','error','paused']).default('active').notNull(),
+	syncStatus: mysqlEnum(['active', 'syncing', 'error', 'paused']).default('active').notNull(),
 	lastSyncAt: timestamp({ mode: 'string' }),
 	syncErrors: text(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("salla_connections_merchantId_unique").on(table.merchantId),
-]);
+	(table) => [
+		index("salla_connections_merchantId_unique").on(table.merchantId),
+	]);
 
 export const sariPersonalitySettings = mysqlTable("sari_personality_settings", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
-	tone: mysqlEnum(['friendly','professional','casual','enthusiastic']).default('friendly').notNull(),
-	style: mysqlEnum(['saudi_dialect','formal_arabic','english','bilingual']).default('saudi_dialect').notNull(),
-	emojiUsage: mysqlEnum("emoji_usage", ['none','minimal','moderate','frequent']).default('moderate').notNull(),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	tone: mysqlEnum(['friendly', 'professional', 'casual', 'enthusiastic']).default('friendly').notNull(),
+	style: mysqlEnum(['saudi_dialect', 'formal_arabic', 'english', 'bilingual']).default('saudi_dialect').notNull(),
+	emojiUsage: mysqlEnum("emoji_usage", ['none', 'minimal', 'moderate', 'frequent']).default('moderate').notNull(),
 	customInstructions: text("custom_instructions"),
 	brandVoice: text("brand_voice"),
 	maxResponseLength: int("max_response_length").default(200).notNull(),
 	responseDelay: int("response_delay").default(2).notNull(),
 	customGreeting: text("custom_greeting"),
 	customFarewell: text("custom_farewell"),
-	recommendationStyle: mysqlEnum("recommendation_style", ['direct','consultative','enthusiastic']).default('consultative').notNull(),
+	recommendationStyle: mysqlEnum("recommendation_style", ['direct', 'consultative', 'enthusiastic']).default('consultative').notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("sari_personality_settings_merchant_id_unique").on(table.merchantId),
-]);
+	(table) => [
+		index("sari_personality_settings_merchant_id_unique").on(table.merchantId),
+	]);
 
 export const scheduledMessages = mysqlTable("scheduled_messages", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	title: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
 	dayOfWeek: int("day_of_week").notNull(),
@@ -541,10 +541,10 @@ export const scheduledMessages = mysqlTable("scheduled_messages", {
 });
 
 export const sentimentAnalysis = mysqlTable("sentiment_analysis", {
-	id: int().autoincrement().notNull(),
-	messageId: int("message_id").notNull().references(() => messages.id, { onDelete: "cascade" } ),
-	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" } ),
-	sentiment: mysqlEnum(['positive','negative','neutral','angry','happy','sad','frustrated']).notNull(),
+	id: int().autoincrement().primaryKey(),
+	messageId: int("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	sentiment: mysqlEnum(['positive', 'negative', 'neutral', 'angry', 'happy', 'sad', 'frustrated']).notNull(),
 	confidence: int().notNull(),
 	keywords: text(),
 	reasoning: text(),
@@ -552,7 +552,7 @@ export const sentimentAnalysis = mysqlTable("sentiment_analysis", {
 });
 
 export const signupPromptTestResults = mysqlTable("signup_prompt_test_results", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	sessionId: varchar("session_id", { length: 255 }).notNull(),
 	variantId: varchar("variant_id", { length: 50 }).notNull(),
 	shown: tinyint().default(0).notNull(),
@@ -563,7 +563,7 @@ export const signupPromptTestResults = mysqlTable("signup_prompt_test_results", 
 });
 
 export const signupPromptVariants = mysqlTable("signup_prompt_variants", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	variantId: varchar("variant_id", { length: 50 }).notNull(),
 	title: varchar({ length: 255 }).notNull(),
 	description: text().notNull(),
@@ -575,15 +575,15 @@ export const signupPromptVariants = mysqlTable("signup_prompt_variants", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("signup_prompt_variants_variant_id_unique").on(table.variantId),
-]);
+	(table) => [
+		index("signup_prompt_variants_variant_id_unique").on(table.variantId),
+	]);
 
 export const subscriptions = mysqlTable("subscriptions", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	planId: int().notNull(),
-	status: mysqlEnum(['active','expired','cancelled','pending','trial']).default('pending').notNull(),
+	status: mysqlEnum(['active', 'expired', 'cancelled', 'pending', 'trial']).default('pending').notNull(),
 	conversationsUsed: int().default(0).notNull(),
 	voiceMessagesUsed: int().default(0).notNull(),
 	startDate: timestamp({ mode: 'string' }).notNull(),
@@ -596,22 +596,22 @@ export const subscriptions = mysqlTable("subscriptions", {
 });
 
 export const supportTickets = mysqlTable("supportTickets", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	subject: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
-	status: mysqlEnum(['open','in_progress','resolved','closed']).default('open').notNull(),
-	priority: mysqlEnum(['low','medium','high','urgent']).default('medium').notNull(),
+	status: mysqlEnum(['open', 'in_progress', 'resolved', 'closed']).default('open').notNull(),
+	priority: mysqlEnum(['low', 'medium', 'high', 'urgent']).default('medium').notNull(),
 	adminResponse: text(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
 export const syncLogs = mysqlTable("sync_logs", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
-	syncType: mysqlEnum(['full_sync','stock_sync','single_product']).notNull(),
-	status: mysqlEnum(['success','failed','in_progress']).notNull(),
+	syncType: mysqlEnum(['full_sync', 'stock_sync', 'single_product']).notNull(),
+	status: mysqlEnum(['success', 'failed', 'in_progress']).notNull(),
 	itemsSynced: int().default(0).notNull(),
 	errors: text(),
 	startedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
@@ -619,7 +619,7 @@ export const syncLogs = mysqlTable("sync_logs", {
 });
 
 export const testConversations = mysqlTable("testConversations", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	startedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	endedAt: timestamp({ mode: 'string' }),
@@ -635,7 +635,7 @@ export const testConversations = mysqlTable("testConversations", {
 });
 
 export const testDeals = mysqlTable("testDeals", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	conversationId: int(),
 	merchantId: int().notNull(),
 	dealValue: int().notNull(),
@@ -648,13 +648,13 @@ export const testDeals = mysqlTable("testDeals", {
 });
 
 export const testMessages = mysqlTable("testMessages", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	conversationId: int().notNull(),
-	sender: mysqlEnum(['user','sari']).notNull(),
+	sender: mysqlEnum(['user', 'sari']).notNull(),
 	content: text().notNull(),
 	sentAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	responseTime: int(),
-	rating: mysqlEnum(['positive','negative']),
+	rating: mysqlEnum(['positive', 'negative']),
 	ratedAt: timestamp({ mode: 'string' }),
 	productsRecommended: text(),
 	wasClicked: tinyint().default(0).notNull(),
@@ -662,7 +662,7 @@ export const testMessages = mysqlTable("testMessages", {
 });
 
 export const testMetricsDaily = mysqlTable("testMetricsDaily", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	// you can use { mode: 'date' }, if you want to have Date as type for this column
 	date: date({ mode: 'string' }).notNull(),
@@ -688,7 +688,7 @@ export const testMetricsDaily = mysqlTable("testMetricsDaily", {
 });
 
 export const trySariAnalytics = mysqlTable("trySariAnalytics", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	sessionId: varchar({ length: 255 }).notNull(),
 	messageCount: int().default(0).notNull(),
 	exampleUsed: varchar({ length: 255 }),
@@ -701,12 +701,12 @@ export const trySariAnalytics = mysqlTable("trySariAnalytics", {
 });
 
 export const users = mysqlTable("users", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	openId: varchar({ length: 64 }).notNull(),
 	name: text(),
 	email: varchar({ length: 320 }),
 	loginMethod: varchar({ length: 64 }),
-	role: mysqlEnum(['user','admin']).default('user').notNull(),
+	role: mysqlEnum(['user', 'admin']).default('user').notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).defaultNow().notNull(),
@@ -717,15 +717,15 @@ export const users = mysqlTable("users", {
 	isTrialActive: tinyint('is_trial_active').default(0).notNull(),
 	whatsappConnected: tinyint('whatsapp_connected').default(0).notNull(),
 },
-(table) => [
-	index("users_openId_unique").on(table.openId),
-]);
+	(table) => [
+		index("users_openId_unique").on(table.openId),
+	]);
 
 
 
 export const weeklySentimentReports = mysqlTable("weekly_sentiment_reports", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	weekStartDate: timestamp("week_start_date", { mode: 'string' }).notNull(),
 	weekEndDate: timestamp("week_end_date", { mode: 'string' }).notNull(),
 	totalConversations: int("total_conversations").default(0).notNull(),
@@ -744,29 +744,29 @@ export const weeklySentimentReports = mysqlTable("weekly_sentiment_reports", {
 });
 
 export const whatsappConnections = mysqlTable("whatsappConnections", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	phoneNumber: varchar({ length: 20 }),
 	instanceId: varchar({ length: 255 }),
 	apiToken: varchar({ length: 255 }),
-	status: mysqlEnum(['connected','disconnected','pending','error']).default('pending').notNull(),
+	status: mysqlEnum(['connected', 'disconnected', 'pending', 'error']).default('pending').notNull(),
 	qrCode: text(),
 	lastConnected: timestamp({ mode: 'string' }),
 	errorMessage: text(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("whatsappConnections_merchantId_unique").on(table.merchantId),
-]);
+	(table) => [
+		index("whatsappConnections_merchantId_unique").on(table.merchantId),
+	]);
 
 export const whatsappConnectionRequests = mysqlTable("whatsapp_connection_requests", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull(),
 	countryCode: varchar({ length: 10 }).notNull(),
 	phoneNumber: varchar({ length: 20 }).notNull(),
 	fullNumber: varchar({ length: 30 }).notNull(),
-	status: mysqlEnum(['pending','approved','rejected','connected']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'approved', 'rejected', 'connected']).default('pending').notNull(),
 	rejectionReason: text(),
 	reviewedBy: int(),
 	reviewedAt: timestamp({ mode: 'string' }),
@@ -779,14 +779,14 @@ export const whatsappConnectionRequests = mysqlTable("whatsapp_connection_reques
 });
 
 export const whatsappInstances = mysqlTable("whatsapp_instances", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	instanceId: varchar("instance_id", { length: 255 }).notNull(),
 	token: text().notNull(),
 	apiUrl: varchar("api_url", { length: 255 }).default('https://api.green-api.com'),
 	phoneNumber: varchar("phone_number", { length: 20 }),
 	webhookUrl: text("webhook_url"),
-	status: mysqlEnum(['active','inactive','pending','expired']).default('pending').notNull(),
+	status: mysqlEnum(['active', 'inactive', 'pending', 'expired']).default('pending').notNull(),
 	isPrimary: tinyint("is_primary").default(0).notNull(),
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
 	connectedAt: timestamp("connected_at", { mode: 'string' }),
@@ -797,11 +797,11 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 });
 
 export const whatsappRequests = mysqlTable("whatsapp_requests", {
-	id: int().autoincrement().notNull(),
-	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" } ),
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	phoneNumber: varchar("phone_number", { length: 20 }),
 	businessName: varchar("business_name", { length: 255 }),
-	status: mysqlEnum(['pending','approved','rejected','completed']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'approved', 'rejected', 'completed']).default('pending').notNull(),
 	instanceId: varchar("instance_id", { length: 100 }),
 	token: text(),
 	apiUrl: varchar("api_url", { length: 255 }).default('https://api.green-api.com'),
@@ -827,7 +827,7 @@ export const whatsappRequests = mysqlTable("whatsapp_requests", {
 // ============================================
 
 export const seoPages = mysqlTable("seo_pages", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageSlug: varchar("page_slug", { length: 255 }).notNull().unique(),
 	pageTitle: varchar("page_title", { length: 255 }).notNull(),
 	pageDescription: text("page_description").notNull(),
@@ -836,14 +836,14 @@ export const seoPages = mysqlTable("seo_pages", {
 	canonicalUrl: varchar("canonical_url", { length: 500 }),
 	isIndexed: tinyint("is_indexed").default(1).notNull(),
 	isPriority: tinyint("is_priority").default(0).notNull(),
-	changeFrequency: mysqlEnum("change_frequency", ['always','hourly','daily','weekly','monthly','yearly','never']).default('weekly'),
+	changeFrequency: mysqlEnum("change_frequency", ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never']).default('weekly'),
 	priority: varchar({ length: 3 }).default('0.5'),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
 export const seoMetaTags = mysqlTable("seo_meta_tags", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
 	metaName: varchar("meta_name", { length: 100 }).notNull(),
 	metaContent: text("meta_content").notNull(),
@@ -853,7 +853,7 @@ export const seoMetaTags = mysqlTable("seo_meta_tags", {
 });
 
 export const seoOpenGraph = mysqlTable("seo_open_graph", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
 	ogTitle: varchar("og_title", { length: 255 }).notNull(),
 	ogDescription: text("og_description").notNull(),
@@ -868,7 +868,7 @@ export const seoOpenGraph = mysqlTable("seo_open_graph", {
 });
 
 export const seoTwitterCards = mysqlTable("seo_twitter_cards", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
 	twitterCardType: varchar("twitter_card_type", { length: 50 }).default('summary_large_image'),
 	twitterTitle: varchar("twitter_title", { length: 255 }).notNull(),
@@ -882,7 +882,7 @@ export const seoTwitterCards = mysqlTable("seo_twitter_cards", {
 });
 
 export const seoStructuredData = mysqlTable("seo_structured_data", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
 	schemaType: varchar("schema_type", { length: 100 }).notNull(),
 	schemaData: text("schema_data").notNull(),
@@ -892,9 +892,9 @@ export const seoStructuredData = mysqlTable("seo_structured_data", {
 });
 
 export const seoTrackingCodes = mysqlTable("seo_tracking_codes", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id"),
-	trackingType: mysqlEnum("tracking_type", ['google_analytics','google_tag_manager','facebook_pixel','snapchat_pixel','tiktok_pixel','custom']).notNull(),
+	trackingType: mysqlEnum("tracking_type", ['google_analytics', 'google_tag_manager', 'facebook_pixel', 'snapchat_pixel', 'tiktok_pixel', 'custom']).notNull(),
 	trackingId: varchar("tracking_id", { length: 255 }).notNull(),
 	trackingCode: text("tracking_code"),
 	isActive: tinyint("is_active").default(1).notNull(),
@@ -903,7 +903,7 @@ export const seoTrackingCodes = mysqlTable("seo_tracking_codes", {
 });
 
 export const seoAnalytics = mysqlTable("seo_analytics", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
 	date: timestamp({ mode: 'string' }).notNull(),
 	visitors: int().default(0).notNull(),
@@ -912,14 +912,14 @@ export const seoAnalytics = mysqlTable("seo_analytics", {
 	avgSessionDuration: varchar("avg_session_duration", { length: 20 }).default('0'),
 	conversions: int().default(0).notNull(),
 	conversionRate: varchar("conversion_rate", { length: 10 }).default('0'),
-	trafficSource: mysqlEnum("traffic_source", ['organic','direct','social','referral','paid','other']).default('organic'),
-	device: mysqlEnum(['desktop','mobile','tablet']).default('desktop'),
+	trafficSource: mysqlEnum("traffic_source", ['organic', 'direct', 'social', 'referral', 'paid', 'other']).default('organic'),
+	device: mysqlEnum(['desktop', 'mobile', 'tablet']).default('desktop'),
 	country: varchar({ length: 100 }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
 export const seoKeywordsAnalysis = mysqlTable("seo_keywords_analysis", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
 	keyword: varchar({ length: 255 }).notNull(),
 	searchVolume: int("search_volume").default(0).notNull(),
@@ -933,25 +933,25 @@ export const seoKeywordsAnalysis = mysqlTable("seo_keywords_analysis", {
 });
 
 export const seoBacklinks = mysqlTable("seo_backlinks", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
 	sourceUrl: varchar("source_url", { length: 500 }).notNull(),
 	sourceDomain: varchar("source_domain", { length: 255 }).notNull(),
 	anchorText: varchar("anchor_text", { length: 255 }),
-	linkType: mysqlEnum("link_type", ['dofollow','nofollow']).default('dofollow'),
+	linkType: mysqlEnum("link_type", ['dofollow', 'nofollow']).default('dofollow'),
 	domainAuthority: int("domain_authority").default(0),
 	spamScore: int("spam_score").default(0),
 	lastFound: timestamp("last_found", { mode: 'string' }).defaultNow().notNull(),
-	status: mysqlEnum(['active','lost','pending']).default('active').notNull(),
+	status: mysqlEnum(['active', 'lost', 'pending']).default('active').notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
 export const seoPerformanceAlerts = mysqlTable("seo_performance_alerts", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
-	alertType: mysqlEnum("alert_type", ['ranking_drop','traffic_drop','broken_link','slow_page','low_ctr','high_bounce_rate']).notNull(),
-	severity: mysqlEnum(['low','medium','high','critical']).default('medium').notNull(),
+	alertType: mysqlEnum("alert_type", ['ranking_drop', 'traffic_drop', 'broken_link', 'slow_page', 'low_ctr', 'high_bounce_rate']).notNull(),
+	severity: mysqlEnum(['low', 'medium', 'high', 'critical']).default('medium').notNull(),
 	message: text().notNull(),
 	metric: varchar({ length: 100 }),
 	previousValue: varchar("previous_value", { length: 100 }),
@@ -964,42 +964,42 @@ export const seoPerformanceAlerts = mysqlTable("seo_performance_alerts", {
 });
 
 export const seoRecommendations = mysqlTable("seo_recommendations", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	pageId: int("page_id").notNull().references(() => seoPages.id, { onDelete: "cascade" }),
-	recommendationType: mysqlEnum("recommendation_type", ['keyword_optimization','content_improvement','technical_seo','link_building','user_experience','performance']).notNull(),
+	recommendationType: mysqlEnum("recommendation_type", ['keyword_optimization', 'content_improvement', 'technical_seo', 'link_building', 'user_experience', 'performance']).notNull(),
 	title: varchar({ length: 255 }).notNull(),
 	description: text().notNull(),
-	priority: mysqlEnum(['low','medium','high','critical']).default('medium').notNull(),
+	priority: mysqlEnum(['low', 'medium', 'high', 'critical']).default('medium').notNull(),
 	estimatedImpact: varchar("estimated_impact", { length: 100 }),
-	implementationDifficulty: mysqlEnum("implementation_difficulty", ['easy','medium','hard']).default('medium'),
-	status: mysqlEnum(['pending','in_progress','completed','dismissed']).default('pending').notNull(),
+	implementationDifficulty: mysqlEnum("implementation_difficulty", ['easy', 'medium', 'hard']).default('medium'),
+	status: mysqlEnum(['pending', 'in_progress', 'completed', 'dismissed']).default('pending').notNull(),
 	completedAt: timestamp("completed_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
 
 export const seoSitemaps = mysqlTable("seo_sitemaps", {
-	id: int().autoincrement().notNull(),
-	sitemapType: mysqlEnum("sitemap_type", ['xml','image','video','news']).default('xml').notNull(),
+	id: int().autoincrement().primaryKey(),
+	sitemapType: mysqlEnum("sitemap_type", ['xml', 'image', 'video', 'news']).default('xml').notNull(),
 	url: varchar({ length: 500 }).notNull(),
 	lastModified: timestamp("last_modified", { mode: 'string' }).defaultNow().notNull(),
 	entryCount: int("entry_count").default(0).notNull(),
 	isActive: tinyint("is_active").default(1).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-	});
+});
 
-	export const googleOAuthSettings = mysqlTable("google_oauth_settings", {
-		id: int().autoincrement().notNull().primaryKey(),
-		clientId: varchar({ length: 500 }).notNull().unique(),
-		clientSecret: varchar({ length: 500 }).notNull(),
-		isEnabled: tinyint("is_enabled").default(1).notNull(),
-		createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-		updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-	});
+export const googleOAuthSettings = mysqlTable("google_oauth_settings", {
+	id: int().autoincrement().notNull().primaryKey(),
+	clientId: varchar({ length: 500 }).notNull().unique(),
+	clientSecret: varchar({ length: 500 }).notNull(),
+	isEnabled: tinyint("is_enabled").default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
 
-	export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
-	id: int().autoincrement().notNull(),
+export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
+	id: int().autoincrement().primaryKey(),
 	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
 	email: varchar({ length: 255 }).notNull(),
 	token: varchar({ length: 255 }).notNull().unique(),
@@ -1012,7 +1012,7 @@ export const seoSitemaps = mysqlTable("seo_sitemaps", {
 // Setup Wizard Tables
 export const businessTemplates = mysqlTable("business_templates", {
 	id: int().autoincrement().notNull().primaryKey(),
-	business_type: mysqlEnum('business_type', ['store','services','both']).notNull(),
+	business_type: mysqlEnum('business_type', ['store', 'services', 'both']).notNull(),
 	template_name: varchar("template_name", { length: 255 }).notNull(),
 	icon: varchar({ length: 50 }),
 	services: text(), // JSON array
@@ -1039,10 +1039,10 @@ export const templateTranslations = mysqlTable("template_translations", {
 	created_at: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updated_at: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("template_translations_template_id_idx").on(table.template_id),
-	index("template_translations_language_idx").on(table.language),
-]);
+	(table) => [
+		index("template_translations_template_id_idx").on(table.template_id),
+		index("template_translations_language_idx").on(table.language),
+	]);
 
 export const services = mysqlTable("services", {
 	id: int().autoincrement().notNull().primaryKey(),
@@ -1052,7 +1052,7 @@ export const services = mysqlTable("services", {
 	category: varchar({ length: 100 }),
 	categoryId: int("category_id").references(() => serviceCategories.id, { onDelete: "set null" }),
 	// Pricing
-	priceType: mysqlEnum("price_type", ['fixed','variable','custom']).default('fixed').notNull(),
+	priceType: mysqlEnum("price_type", ['fixed', 'variable', 'custom']).default('fixed').notNull(),
 	basePrice: int("base_price"), // in cents
 	minPrice: int("min_price"), // in cents
 	maxPrice: int("max_price"), // in cents
@@ -1127,7 +1127,7 @@ export const appointments = mysqlTable("appointments", {
 	appointmentDate: timestamp("appointment_date", { mode: 'string' }).notNull(),
 	startTime: varchar("start_time", { length: 5 }).notNull(), // HH:MM
 	endTime: varchar("end_time", { length: 5 }).notNull(), // HH:MM
-	status: mysqlEnum(['pending','confirmed','cancelled','completed','no_show']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).default('pending').notNull(),
 	googleEventId: varchar("google_event_id", { length: 255 }),
 	reminder24hSent: tinyint("reminder_24h_sent").default(0).notNull(),
 	reminder1hSent: tinyint("reminder_1h_sent").default(0).notNull(),
@@ -1166,8 +1166,8 @@ export const bookings = mysqlTable("bookings", {
 	endTime: varchar("end_time", { length: 5 }).notNull(), // HH:MM
 	durationMinutes: int("duration_minutes").notNull(),
 	// Status
-	status: mysqlEnum(['pending','confirmed','in_progress','completed','cancelled','no_show']).default('pending').notNull(),
-	paymentStatus: mysqlEnum("payment_status", ['unpaid','paid','refunded']).default('unpaid').notNull(),
+	status: mysqlEnum(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show']).default('pending').notNull(),
+	paymentStatus: mysqlEnum("payment_status", ['unpaid', 'paid', 'refunded']).default('unpaid').notNull(),
 	// Pricing
 	basePrice: int("base_price").notNull(), // in cents
 	discountAmount: int("discount_amount").default(0).notNull(),
@@ -1180,9 +1180,9 @@ export const bookings = mysqlTable("bookings", {
 	// Notes
 	notes: text(),
 	cancellationReason: text("cancellation_reason"),
-	cancelledBy: mysqlEnum("cancelled_by", ['customer','merchant','system']),
+	cancelledBy: mysqlEnum("cancelled_by", ['customer', 'merchant', 'system']),
 	// Source
-	bookingSource: mysqlEnum("booking_source", ['whatsapp','website','phone','walk_in']).default('whatsapp').notNull(),
+	bookingSource: mysqlEnum("booking_source", ['whatsapp', 'website', 'phone', 'walk_in']).default('whatsapp').notNull(),
 	// Timestamps
 	confirmedAt: timestamp("confirmed_at", { mode: 'string' }),
 	completedAt: timestamp("completed_at", { mode: 'string' }),
@@ -1268,7 +1268,7 @@ export const platformIntegrations = mysqlTable("platform_integrations", {
 export const googleIntegrations = mysqlTable("google_integrations", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	integrationType: mysqlEnum("integration_type", ['calendar','sheets']).notNull(),
+	integrationType: mysqlEnum("integration_type", ['calendar', 'sheets']).notNull(),
 	credentials: text(), // encrypted JSON
 	calendarId: varchar("calendar_id", { length: 255 }),
 	sheetId: varchar("sheet_id", { length: 255 }),
@@ -1285,33 +1285,33 @@ export const googleIntegrations = mysqlTable("google_integrations", {
 export const zidSettings = mysqlTable("zid_settings", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// OAuth Credentials
 	clientId: varchar("client_id", { length: 255 }),
 	clientSecret: text("client_secret"), // encrypted
 	accessToken: text("access_token"), // encrypted
 	managerToken: text("manager_token"), // encrypted (X-Manager-Token)
 	refreshToken: text("refresh_token"), // encrypted
-	
+
 	// Store Info
 	storeId: varchar("store_id", { length: 255 }),
 	storeName: varchar("store_name", { length: 255 }),
 	storeUrl: varchar("store_url", { length: 500 }),
-	
+
 	// Settings
 	isActive: tinyint("is_active").default(1).notNull(),
 	autoSyncProducts: tinyint("auto_sync_products").default(1).notNull(),
 	autoSyncOrders: tinyint("auto_sync_orders").default(1).notNull(),
 	autoSyncCustomers: tinyint("auto_sync_customers").default(0).notNull(),
-	
+
 	// Sync Status
 	lastProductSync: timestamp("last_product_sync", { mode: 'string' }),
 	lastOrderSync: timestamp("last_order_sync", { mode: 'string' }),
 	lastCustomerSync: timestamp("last_customer_sync", { mode: 'string' }),
-	
+
 	// Token Expiry
 	tokenExpiresAt: timestamp("token_expires_at", { mode: 'string' }),
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
@@ -1319,29 +1319,29 @@ export const zidSettings = mysqlTable("zid_settings", {
 export const zidSyncLogs = mysqlTable("zid_sync_logs", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Sync Info
-	syncType: mysqlEnum("sync_type", ['products','orders','customers','inventory']).notNull(),
-	status: mysqlEnum(['pending','in_progress','completed','failed']).default('pending').notNull(),
-	
+	syncType: mysqlEnum("sync_type", ['products', 'orders', 'customers', 'inventory']).notNull(),
+	status: mysqlEnum(['pending', 'in_progress', 'completed', 'failed']).default('pending').notNull(),
+
 	// Statistics
 	totalItems: int("total_items").default(0).notNull(),
 	processedItems: int("processed_items").default(0).notNull(),
 	successCount: int("success_count").default(0).notNull(),
 	failedCount: int("failed_count").default(0).notNull(),
-	
+
 	// Details
 	errorMessage: text("error_message"),
 	syncDetails: text("sync_details"), // JSON
-	
+
 	// Timing
 	startedAt: timestamp("started_at", { mode: 'string' }),
 	completedAt: timestamp("completed_at", { mode: 'string' }),
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
-	// Type definitions
+// Type definitions
 export type User = InferSelectModel<typeof users>;
 export type InsertUser = InferInsertModel<typeof users>;
 export type Merchant = InferSelectModel<typeof merchants>;
@@ -1463,133 +1463,133 @@ export type InsertPlatformIntegration = InferInsertModel<typeof platformIntegrat
 export const orderPayments = mysqlTable("order_payments", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// ربط مع الطلب أو الحجز
 	orderId: int("order_id").references(() => orders.id, { onDelete: "set null" }),
 	bookingId: int("booking_id").references(() => bookings.id, { onDelete: "set null" }),
-	
+
 	// معلومات العميل
 	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
 	customerName: varchar("customer_name", { length: 255 }),
 	customerEmail: varchar("customer_email", { length: 255 }),
-	
+
 	// معلومات الدفع
 	amount: int().notNull(), // بالهللات (cents)
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
-	
+
 	// Tap Payments Integration
 	tapChargeId: varchar("tap_charge_id", { length: 255 }), // معرف المعاملة من Tap
 	tapPaymentUrl: text("tap_payment_url"), // رابط الدفع
-	
+
 	// حالة الدفع
-	status: mysqlEnum(['pending','authorized','captured','failed','cancelled','refunded']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'authorized', 'captured', 'failed', 'cancelled', 'refunded']).default('pending').notNull(),
 	paymentMethod: varchar("payment_method", { length: 50 }), // card, knet, benefit, etc.
-	
+
 	// تفاصيل إضافية
 	description: text(),
 	metadata: text(), // JSON string للبيانات الإضافية
-	
+
 	// Timestamps
 	authorizedAt: timestamp("authorized_at", { mode: 'string' }),
 	capturedAt: timestamp("captured_at", { mode: 'string' }),
 	failedAt: timestamp("failed_at", { mode: 'string' }),
 	refundedAt: timestamp("refunded_at", { mode: 'string' }),
 	expiresAt: timestamp("expires_at", { mode: 'string' }),
-	
+
 	// Webhook & Error Handling
 	lastWebhookAt: timestamp("last_webhook_at", { mode: 'string' }),
 	errorMessage: text("error_message"),
 	errorCode: varchar("error_code", { length: 50 }),
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("order_payments_tap_charge_id_idx").on(table.tapChargeId),
-	index("order_payments_merchant_id_idx").on(table.merchantId),
-	index("order_payments_order_id_idx").on(table.orderId),
-	index("order_payments_booking_id_idx").on(table.bookingId),
-]);
+	(table) => [
+		index("order_payments_tap_charge_id_idx").on(table.tapChargeId),
+		index("order_payments_merchant_id_idx").on(table.merchantId),
+		index("order_payments_order_id_idx").on(table.orderId),
+		index("order_payments_booking_id_idx").on(table.bookingId),
+	]);
 
 // جدول روابط الدفع السريعة
 export const paymentLinks = mysqlTable("payment_links", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// معلومات الرابط
 	linkId: varchar("link_id", { length: 100 }).notNull(), // معرف فريد للرابط
 	title: varchar({ length: 255 }).notNull(),
 	description: text(),
-	
+
 	// معلومات المبلغ
 	amount: int().notNull(), // بالهللات
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
 	isFixedAmount: tinyint("is_fixed_amount").default(1).notNull(), // هل المبلغ ثابت أم متغير
 	minAmount: int("min_amount"), // الحد الأدنى للمبلغ المتغير
 	maxAmount: int("max_amount"), // الحد الأقصى للمبلغ المتغير
-	
+
 	// Tap Integration
 	tapPaymentUrl: text("tap_payment_url").notNull(),
 	tapChargeId: varchar("tap_charge_id", { length: 255 }),
-	
+
 	// إعدادات الرابط
 	maxUsageCount: int("max_usage_count"), // عدد مرات الاستخدام المسموح (null = غير محدود)
 	usageCount: int("usage_count").default(0).notNull(), // عدد مرات الاستخدام الفعلي
 	expiresAt: timestamp("expires_at", { mode: 'string' }), // تاريخ انتهاء الرابط
-	
+
 	// الحالة
-	status: mysqlEnum(['active','expired','disabled','completed']).default('active').notNull(),
+	status: mysqlEnum(['active', 'expired', 'disabled', 'completed']).default('active').notNull(),
 	isActive: tinyint("is_active").default(1).notNull(),
-	
+
 	// ربط مع الطلبات/الحجوزات
 	orderId: int("order_id").references(() => orders.id, { onDelete: "set null" }),
 	bookingId: int("booking_id").references(() => bookings.id, { onDelete: "set null" }),
-	
+
 	// إحصائيات
 	totalCollected: int("total_collected").default(0).notNull(), // إجمالي المبالغ المحصلة
 	successfulPayments: int("successful_payments").default(0).notNull(),
 	failedPayments: int("failed_payments").default(0).notNull(),
-	
+
 	// Metadata
 	metadata: text(), // JSON string
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("payment_links_link_id_unique").on(table.linkId),
-	index("payment_links_merchant_id_idx").on(table.merchantId),
-]);
+	(table) => [
+		index("payment_links_link_id_unique").on(table.linkId),
+		index("payment_links_merchant_id_idx").on(table.merchantId),
+	]);
 
 // جدول عمليات الاسترجاع
 export const paymentRefunds = mysqlTable("payment_refunds", {
 	id: int().autoincrement().notNull().primaryKey(),
 	paymentId: int("payment_id").notNull().references(() => orderPayments.id, { onDelete: "cascade" }),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// معلومات الاسترجاع
 	amount: int().notNull(), // المبلغ المسترجع
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
 	reason: text().notNull(),
-	
+
 	// Tap Integration
 	tapRefundId: varchar("tap_refund_id", { length: 255 }),
-	
+
 	// الحالة
-	status: mysqlEnum(['pending','completed','failed']).default('pending').notNull(),
-	
+	status: mysqlEnum(['pending', 'completed', 'failed']).default('pending').notNull(),
+
 	// تفاصيل
 	processedBy: int("processed_by"), // معرف المستخدم الذي قام بالاسترجاع
 	errorMessage: text("error_message"),
-	
+
 	completedAt: timestamp("completed_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("payment_refunds_payment_id_idx").on(table.paymentId),
-	index("payment_refunds_tap_refund_id_idx").on(table.tapRefundId),
-]);
+	(table) => [
+		index("payment_refunds_payment_id_idx").on(table.paymentId),
+		index("payment_refunds_tap_refund_id_idx").on(table.tapRefundId),
+	]);
 
 // Type exports
 export type OrderPayment = InferSelectModel<typeof orderPayments>;
@@ -1602,7 +1602,7 @@ export type NewPaymentRefund = InferInsertModel<typeof paymentRefunds>;
 // ==================== Loyalty System Tables ====================
 
 export const loyaltySettings = mysqlTable("loyalty_settings", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	isEnabled: tinyint("is_enabled").default(1).notNull(),
 	pointsPerCurrency: int("points_per_currency").default(1).notNull(), // كم نقطة لكل 1 ريال
@@ -1617,12 +1617,12 @@ export const loyaltySettings = mysqlTable("loyalty_settings", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("loyalty_settings_merchant_id_unique").on(table.merchantId),
-]);
+	(table) => [
+		index("loyalty_settings_merchant_id_unique").on(table.merchantId),
+	]);
 
 export const loyaltyTiers = mysqlTable("loyalty_tiers", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	name: varchar({ length: 100 }).notNull(), // برونزي، فضي، ذهبي
 	nameAr: varchar("name_ar", { length: 100 }).notNull(),
@@ -1638,7 +1638,7 @@ export const loyaltyTiers = mysqlTable("loyalty_tiers", {
 });
 
 export const loyaltyPoints = mysqlTable("loyalty_points", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
 	customerName: varchar("customer_name", { length: 255 }),
@@ -1650,15 +1650,15 @@ export const loyaltyPoints = mysqlTable("loyalty_points", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("loyalty_points_merchant_customer_unique").on(table.merchantId, table.customerPhone),
-]);
+	(table) => [
+		index("loyalty_points_merchant_customer_unique").on(table.merchantId, table.customerPhone),
+	]);
 
 export const loyaltyTransactions = mysqlTable("loyalty_transactions", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
-	type: mysqlEnum(['earn','redeem','expire','adjustment']).notNull(),
+	type: mysqlEnum(['earn', 'redeem', 'expire', 'adjustment']).notNull(),
 	points: int().notNull(), // موجب للكسب، سالب للاستبدال/الانتهاء
 	reason: varchar({ length: 255 }).notNull(), // سبب الحركة
 	reasonAr: varchar("reason_ar", { length: 255 }).notNull(),
@@ -1670,22 +1670,22 @@ export const loyaltyTransactions = mysqlTable("loyalty_transactions", {
 	expiresAt: timestamp("expires_at", { mode: 'string' }), // تاريخ انتهاء النقاط
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
-(table) => [
-	index("loyalty_transactions_customer_idx").on(table.merchantId, table.customerPhone),
-	index("loyalty_transactions_order_idx").on(table.orderId),
-]);
+	(table) => [
+		index("loyalty_transactions_customer_idx").on(table.merchantId, table.customerPhone),
+		index("loyalty_transactions_order_idx").on(table.orderId),
+	]);
 
 export const loyaltyRewards = mysqlTable("loyalty_rewards", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	title: varchar({ length: 255 }).notNull(),
 	titleAr: varchar("title_ar", { length: 255 }).notNull(),
 	description: text(),
 	descriptionAr: text("description_ar"),
-	type: mysqlEnum(['discount','free_product','free_shipping','gift']).notNull(),
+	type: mysqlEnum(['discount', 'free_product', 'free_shipping', 'gift']).notNull(),
 	pointsCost: int("points_cost").notNull(), // كم نقطة مطلوبة للحصول على المكافأة
 	discountAmount: int("discount_amount"), // قيمة الخصم (بالريال أو نسبة مئوية)
-	discountType: mysqlEnum(['fixed','percentage']), // نوع الخصم
+	discountType: mysqlEnum(['fixed', 'percentage']), // نوع الخصم
 	productId: int("product_id").references(() => products.id, { onDelete: "set null" }), // للمنتج المجاني
 	maxRedemptions: int("max_redemptions"), // الحد الأقصى لعدد مرات الاستبدال (null = غير محدود)
 	currentRedemptions: int("current_redemptions").default(0).notNull(),
@@ -1700,13 +1700,13 @@ export const loyaltyRewards = mysqlTable("loyalty_rewards", {
 });
 
 export const loyaltyRedemptions = mysqlTable("loyalty_redemptions", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
 	customerName: varchar("customer_name", { length: 255 }),
 	rewardId: int("reward_id").notNull().references(() => loyaltyRewards.id, { onDelete: "cascade" }),
 	pointsSpent: int("points_spent").notNull(),
-	status: mysqlEnum(['pending','approved','used','cancelled','expired']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'approved', 'used', 'cancelled', 'expired']).default('pending').notNull(),
 	orderId: int("order_id").references(() => orders.id, { onDelete: "set null" }), // الطلب الذي استخدمت فيه المكافأة
 	usedAt: timestamp("used_at", { mode: 'string' }),
 	expiresAt: timestamp("expires_at", { mode: 'string' }), // تاريخ انتهاء صلاحية المكافأة المستبدلة
@@ -1714,10 +1714,10 @@ export const loyaltyRedemptions = mysqlTable("loyalty_redemptions", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("loyalty_redemptions_customer_idx").on(table.merchantId, table.customerPhone),
-	index("loyalty_redemptions_reward_idx").on(table.rewardId),
-]);
+	(table) => [
+		index("loyalty_redemptions_customer_idx").on(table.merchantId, table.customerPhone),
+		index("loyalty_redemptions_reward_idx").on(table.rewardId),
+	]);
 
 // Type exports for Loyalty System
 export type LoyaltySettings = InferSelectModel<typeof loyaltySettings>;
@@ -1739,28 +1739,28 @@ export type InsertLoyaltyRedemption = InferInsertModel<typeof loyaltyRedemptions
 export const merchantPaymentSettings = mysqlTable("merchant_payment_settings", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }).unique(),
-	
+
 	// Tap Payment Settings
 	tapEnabled: tinyint("tap_enabled").default(0).notNull(),
 	tapPublicKey: text("tap_public_key"),
 	tapSecretKey: text("tap_secret_key"),
 	tapTestMode: tinyint("tap_test_mode").default(1).notNull(), // 1 = sandbox, 0 = live
-	
+
 	// Payment Preferences
 	autoSendPaymentLink: tinyint("auto_send_payment_link").default(1).notNull(), // إرسال رابط الدفع تلقائياً مع الطلبات
 	paymentLinkMessage: text("payment_link_message"), // رسالة مخصصة مع رابط الدفع
-	
+
 	// Currency Settings
 	defaultCurrency: varchar("default_currency", { length: 3 }).default('SAR').notNull(),
-	
+
 	// Webhook Settings
 	tapWebhookSecret: text("tap_webhook_secret"),
 	webhookUrl: text("webhook_url"), // URL لاستقبال تأكيدات الدفع
-	
+
 	// Status
 	isVerified: tinyint("is_verified").default(0).notNull(), // تم التحقق من صلاحية المفاتيح
 	lastVerifiedAt: timestamp("last_verified_at", { mode: 'string' }),
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
@@ -1774,87 +1774,87 @@ export type InsertMerchantPaymentSettings = InferInsertModel<typeof merchantPaym
 // ============================================
 
 export const websiteAnalyses = mysqlTable("website_analyses", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	url: varchar({ length: 500 }).notNull(),
 	title: varchar({ length: 500 }),
 	description: text(),
 	industry: varchar({ length: 100 }),
 	language: varchar({ length: 10 }),
-	
+
 	// SEO Analysis
 	seoScore: int("seo_score").default(0).notNull(),
 	seoIssues: text("seo_issues"), // JSON array
 	metaTags: text("meta_tags"), // JSON object
-	
+
 	// Performance Analysis
 	performanceScore: int("performance_score").default(0).notNull(),
 	loadTime: int("load_time"), // milliseconds
 	pageSize: int("page_size"), // bytes
-	
+
 	// UX Analysis
 	uxScore: int("ux_score").default(0).notNull(),
 	mobileOptimized: tinyint("mobile_optimized").default(0).notNull(),
 	hasContactInfo: tinyint("has_contact_info").default(0).notNull(),
 	hasWhatsapp: tinyint("has_whatsapp").default(0).notNull(),
-	
+
 	// Content Analysis
 	contentQuality: int("content_quality").default(0).notNull(),
 	wordCount: int("word_count").default(0).notNull(),
 	imageCount: int("image_count").default(0).notNull(),
 	videoCount: int("video_count").default(0).notNull(),
-	
+
 	// Overall Score
 	overallScore: int("overall_score").default(0).notNull(),
-	
+
 	// Status
 	status: mysqlEnum(['pending', 'analyzing', 'completed', 'failed']).default('pending').notNull(),
 	errorMessage: text("error_message"),
-	
+
 	// Timestamps
 	analyzedAt: timestamp("analyzed_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("website_analyses_merchant_id_idx").on(table.merchantId),
-	index("website_analyses_url_idx").on(table.url),
-]);
+	(table) => [
+		index("website_analyses_merchant_id_idx").on(table.merchantId),
+		index("website_analyses_url_idx").on(table.url),
+	]);
 
 export const websiteInsights = mysqlTable("website_insights", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	analysisId: int("analysis_id").notNull().references(() => websiteAnalyses.id, { onDelete: "cascade" }),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Insight Details
 	category: mysqlEnum(['seo', 'performance', 'ux', 'content', 'marketing', 'security']).notNull(),
 	type: mysqlEnum(['strength', 'weakness', 'opportunity', 'threat', 'recommendation']).notNull(),
 	priority: mysqlEnum(['low', 'medium', 'high', 'critical']).default('medium').notNull(),
-	
+
 	title: varchar({ length: 500 }).notNull(),
 	description: text().notNull(),
 	recommendation: text(),
 	impact: text(), // Expected impact of implementing the recommendation
-	
+
 	// AI Generated
 	aiGenerated: tinyint("ai_generated").default(1).notNull(),
 	confidence: int().default(0).notNull(), // 0-100
-	
+
 	// Timestamps
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("website_insights_analysis_id_idx").on(table.analysisId),
-	index("website_insights_merchant_id_idx").on(table.merchantId),
-	index("website_insights_category_idx").on(table.category),
-]);
+	(table) => [
+		index("website_insights_analysis_id_idx").on(table.analysisId),
+		index("website_insights_merchant_id_idx").on(table.merchantId),
+		index("website_insights_category_idx").on(table.category),
+	]);
 
 export const extractedProducts = mysqlTable("extracted_products", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	analysisId: int("analysis_id").notNull().references(() => websiteAnalyses.id, { onDelete: "cascade" }),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Product Details
 	name: varchar({ length: 500 }).notNull(),
 	description: text(),
@@ -1862,77 +1862,77 @@ export const extractedProducts = mysqlTable("extracted_products", {
 	currency: varchar({ length: 10 }).default('SAR'),
 	imageUrl: varchar("image_url", { length: 500 }),
 	productUrl: varchar("product_url", { length: 500 }),
-	
+
 	// Categories
 	category: varchar({ length: 255 }),
 	tags: text(), // JSON array
-	
+
 	// Availability
 	inStock: tinyint("in_stock").default(1).notNull(),
 	stockQuantity: int("stock_quantity"),
-	
+
 	// AI Extracted
 	aiExtracted: tinyint("ai_extracted").default(1).notNull(),
 	confidence: int().default(0).notNull(), // 0-100
-	
+
 	// Timestamps
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("extracted_products_analysis_id_idx").on(table.analysisId),
-	index("extracted_products_merchant_id_idx").on(table.merchantId),
-]);
+	(table) => [
+		index("extracted_products_analysis_id_idx").on(table.analysisId),
+		index("extracted_products_merchant_id_idx").on(table.merchantId),
+	]);
 
 export const competitorAnalyses = mysqlTable("competitor_analyses", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Competitor Details
 	name: varchar({ length: 255 }).notNull(),
 	url: varchar({ length: 500 }).notNull(),
 	industry: varchar({ length: 100 }),
-	
+
 	// Analysis Scores
 	overallScore: int("overall_score").default(0).notNull(),
 	seoScore: int("seo_score").default(0).notNull(),
 	performanceScore: int("performance_score").default(0).notNull(),
 	uxScore: int("ux_score").default(0).notNull(),
 	contentScore: int("content_score").default(0).notNull(),
-	
+
 	// Pricing Analysis
 	avgPrice: decimal("avg_price", { precision: 10, scale: 2 }),
 	minPrice: decimal("min_price", { precision: 10, scale: 2 }),
 	maxPrice: decimal("max_price", { precision: 10, scale: 2 }),
 	currency: varchar({ length: 10 }).default('SAR'),
-	
+
 	// Product Count
 	productCount: int("product_count").default(0).notNull(),
-	
+
 	// Strengths & Weaknesses
 	strengths: text(), // JSON array
 	weaknesses: text(), // JSON array
 	opportunities: text(), // JSON array
-	
+
 	// Status
 	status: mysqlEnum(['pending', 'analyzing', 'completed', 'failed']).default('pending').notNull(),
 	errorMessage: text("error_message"),
-	
+
 	// Timestamps
 	analyzedAt: timestamp("analyzed_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("competitor_analyses_merchant_id_idx").on(table.merchantId),
-	index("competitor_analyses_url_idx").on(table.url),
-]);
+	(table) => [
+		index("competitor_analyses_merchant_id_idx").on(table.merchantId),
+		index("competitor_analyses_url_idx").on(table.url),
+	]);
 
 export const competitorProducts = mysqlTable("competitor_products", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	competitorId: int("competitor_id").notNull().references(() => competitorAnalyses.id, { onDelete: "cascade" }),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Product Details
 	name: varchar({ length: 500 }).notNull(),
 	description: text(),
@@ -1940,80 +1940,80 @@ export const competitorProducts = mysqlTable("competitor_products", {
 	currency: varchar({ length: 10 }).default('SAR'),
 	imageUrl: varchar("image_url", { length: 500 }),
 	productUrl: varchar("product_url", { length: 500 }),
-	
+
 	// Categories
 	category: varchar({ length: 255 }),
-	
+
 	// Comparison with merchant's products
 	similarToMerchantProduct: int("similar_to_merchant_product").references(() => products.id, { onDelete: "set null" }),
 	priceDifference: decimal("price_difference", { precision: 10, scale: 2 }), // Positive = competitor more expensive
-	
+
 	// Timestamps
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("competitor_products_competitor_id_idx").on(table.competitorId),
-	index("competitor_products_merchant_id_idx").on(table.merchantId),
-]);
+	(table) => [
+		index("competitor_products_competitor_id_idx").on(table.competitorId),
+		index("competitor_products_merchant_id_idx").on(table.merchantId),
+	]);
 
 // ============================================
 // Smart Website Analysis Tables
 // ============================================
 
 export const discoveredPages = mysqlTable("discovered_pages", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Page Information
 	pageType: mysqlEnum("page_type", ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other']).notNull(),
 	title: varchar({ length: 500 }),
 	url: varchar({ length: 1000 }).notNull(),
 	content: text(), // Extracted text content
-	
+
 	// Metadata
 	isActive: tinyint("is_active").default(1).notNull(),
 	useInBot: tinyint("use_in_bot").default(1).notNull(), // Whether to use this page in bot responses
-	
+
 	// Timestamps
 	discoveredAt: timestamp("discovered_at", { mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("discovered_pages_merchant_id_idx").on(table.merchantId),
-	index("discovered_pages_page_type_idx").on(table.pageType),
-]);
+	(table) => [
+		index("discovered_pages_merchant_id_idx").on(table.merchantId),
+		index("discovered_pages_page_type_idx").on(table.pageType),
+	]);
 
 export const extractedFaqs = mysqlTable("extracted_faqs", {
-	id: int().autoincrement().notNull(),
+	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	pageId: int("page_id").references(() => discoveredPages.id, { onDelete: "set null" }), // Source page
-	
+
 	// FAQ Content
 	question: text().notNull(),
 	answer: text().notNull(),
 	category: varchar({ length: 255 }), // e.g., "shipping", "returns", "payment"
-	
+
 	// Metadata
 	isActive: tinyint("is_active").default(1).notNull(),
 	useInBot: tinyint("use_in_bot").default(1).notNull(), // Whether to use this FAQ in bot responses
 	priority: int().default(0).notNull(), // Higher priority FAQs shown first
-	
+
 	// Usage Stats
 	usageCount: int("usage_count").default(0).notNull(), // How many times this FAQ was used in bot responses
 	lastUsedAt: timestamp("last_used_at", { mode: 'string' }),
-	
+
 	// Timestamps
 	extractedAt: timestamp("extracted_at", { mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("extracted_faqs_merchant_id_idx").on(table.merchantId),
-	index("extracted_faqs_category_idx").on(table.category),
-	index("extracted_faqs_page_id_idx").on(table.pageId),
-]);
+	(table) => [
+		index("extracted_faqs_merchant_id_idx").on(table.merchantId),
+		index("extracted_faqs_category_idx").on(table.category),
+		index("extracted_faqs_page_id_idx").on(table.pageId),
+	]);
 
 // Type exports for the new tables
 export type DiscoveredPage = InferSelectModel<typeof discoveredPages>;
@@ -2026,126 +2026,126 @@ export type NewExtractedFaq = InferInsertModel<typeof extractedFaqs>;
 export const zidProducts = mysqlTable("zid_products", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Zid Product Info
 	zidProductId: varchar("zid_product_id", { length: 255 }).notNull(),
 	zidSku: varchar("zid_sku", { length: 255 }),
-	
+
 	// Product Details
 	nameAr: varchar("name_ar", { length: 500 }),
 	nameEn: varchar("name_en", { length: 500 }),
 	descriptionAr: text("description_ar"),
 	descriptionEn: text("description_en"),
-	
+
 	// Pricing
 	price: decimal({ precision: 10, scale: 2 }).notNull(),
 	salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
-	
+
 	// Inventory
 	quantity: int().default(0).notNull(),
 	isInStock: tinyint("is_in_stock").default(1).notNull(),
-	
+
 	// Images
 	mainImage: varchar("main_image", { length: 1000 }),
 	images: text(), // JSON array of image URLs
-	
+
 	// Categories
 	categoryId: varchar("category_id", { length: 255 }),
 	categoryName: varchar("category_name", { length: 255 }),
-	
+
 	// Status
 	isActive: tinyint("is_active").default(1).notNull(),
 	isPublished: tinyint("is_published").default(1).notNull(),
-	
+
 	// Linked to Sari Product
 	sariProductId: int("sari_product_id").references(() => products.id, { onDelete: "set null" }),
-	
+
 	// Sync Info
 	lastSyncedAt: timestamp("last_synced_at", { mode: 'string' }),
 	zidData: text("zid_data"), // Full JSON response from Zid API
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("zid_products_merchant_id_idx").on(table.merchantId),
-	index("zid_products_zid_product_id_idx").on(table.zidProductId),
-	index("zid_products_sari_product_id_idx").on(table.sariProductId),
-]);
+	(table) => [
+		index("zid_products_merchant_id_idx").on(table.merchantId),
+		index("zid_products_zid_product_id_idx").on(table.zidProductId),
+		index("zid_products_sari_product_id_idx").on(table.sariProductId),
+	]);
 
 export const zidOrders = mysqlTable("zid_orders", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Zid Order Info
 	zidOrderId: varchar("zid_order_id", { length: 255 }).notNull(),
 	zidOrderNumber: varchar("zid_order_number", { length: 255 }),
-	
+
 	// Customer Info
 	customerName: varchar("customer_name", { length: 255 }),
 	customerEmail: varchar("customer_email", { length: 255 }),
 	customerPhone: varchar("customer_phone", { length: 50 }),
-	
+
 	// Order Details
 	totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
-	status: mysqlEnum(['pending','processing','completed','cancelled','refunded']).default('pending').notNull(),
-	paymentStatus: mysqlEnum("payment_status", ['pending','paid','failed','refunded']).default('pending').notNull(),
-	
+	status: mysqlEnum(['pending', 'processing', 'completed', 'cancelled', 'refunded']).default('pending').notNull(),
+	paymentStatus: mysqlEnum("payment_status", ['pending', 'paid', 'failed', 'refunded']).default('pending').notNull(),
+
 	// Items
 	items: text().notNull(), // JSON array of order items
-	
+
 	// Shipping
 	shippingAddress: text("shipping_address"), // JSON
 	shippingMethod: varchar("shipping_method", { length: 255 }),
 	shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }),
-	
+
 	// Linked to Sari Order
 	sariOrderId: int("sari_order_id").references(() => orders.id, { onDelete: "set null" }),
-	
+
 	// Dates
 	orderDate: timestamp("order_date", { mode: 'string' }),
 	lastSyncedAt: timestamp("last_synced_at", { mode: 'string' }),
 	zidData: text("zid_data"), // Full JSON response from Zid API
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("zid_orders_merchant_id_idx").on(table.merchantId),
-	index("zid_orders_zid_order_id_idx").on(table.zidOrderId),
-	index("zid_orders_sari_order_id_idx").on(table.sariOrderId),
-	index("zid_orders_customer_phone_idx").on(table.customerPhone),
-]);
+	(table) => [
+		index("zid_orders_merchant_id_idx").on(table.merchantId),
+		index("zid_orders_zid_order_id_idx").on(table.zidOrderId),
+		index("zid_orders_sari_order_id_idx").on(table.sariOrderId),
+		index("zid_orders_customer_phone_idx").on(table.customerPhone),
+	]);
 
 export const zidWebhooks = mysqlTable("zid_webhooks", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Webhook Info
 	webhookId: varchar("webhook_id", { length: 255 }),
 	eventType: varchar("event_type", { length: 100 }).notNull(), // order.created, product.updated, etc.
-	
+
 	// Payload
 	payload: text().notNull(), // Full JSON payload
-	
+
 	// Processing
-	status: mysqlEnum(['pending','processed','failed']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'processed', 'failed']).default('pending').notNull(),
 	processedAt: timestamp("processed_at", { mode: 'string' }),
 	errorMessage: text("error_message"),
-	
+
 	// Metadata
 	ipAddress: varchar("ip_address", { length: 50 }),
 	userAgent: varchar("user_agent", { length: 500 }),
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
-(table) => [
-	index("zid_webhooks_merchant_id_idx").on(table.merchantId),
-	index("zid_webhooks_event_type_idx").on(table.eventType),
-	index("zid_webhooks_status_idx").on(table.status),
-]);
+	(table) => [
+		index("zid_webhooks_merchant_id_idx").on(table.merchantId),
+		index("zid_webhooks_event_type_idx").on(table.eventType),
+		index("zid_webhooks_status_idx").on(table.status),
+	]);
 
 // Type exports for Zid tables
 export type ZidProduct = InferSelectModel<typeof zidProducts>;
@@ -2160,46 +2160,46 @@ export type NewZidWebhook = InferInsertModel<typeof zidWebhooks>;
 export const woocommerceSettings = mysqlTable("woocommerce_settings", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Connection Details
 	storeUrl: varchar("store_url", { length: 500 }).notNull(),
 	consumerKey: varchar("consumer_key", { length: 500 }).notNull(),
 	consumerSecret: varchar("consumer_secret", { length: 500 }).notNull(),
-	
+
 	// Status
 	isActive: tinyint("is_active").default(1).notNull(),
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
 	lastTestAt: timestamp("last_test_at", { mode: 'string' }),
-	connectionStatus: mysqlEnum(['connected','disconnected','error']).default('disconnected').notNull(),
-	
+	connectionStatus: mysqlEnum(['connected', 'disconnected', 'error']).default('disconnected').notNull(),
+
 	// Sync Settings
 	autoSyncProducts: tinyint("auto_sync_products").default(1).notNull(),
 	autoSyncOrders: tinyint("auto_sync_orders").default(1).notNull(),
 	autoSyncCustomers: tinyint("auto_sync_customers").default(0).notNull(),
 	syncInterval: int("sync_interval").default(60).notNull(), // minutes
-	
+
 	// Metadata
 	storeVersion: varchar("store_version", { length: 50 }),
 	storeName: varchar("store_name", { length: 255 }),
 	storeCurrency: varchar("store_currency", { length: 10 }),
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("woocommerce_settings_merchant_id_idx").on(table.merchantId),
-	uniqueIndex("woocommerce_settings_merchant_unique").on(table.merchantId),
-]);
+	(table) => [
+		index("woocommerce_settings_merchant_id_idx").on(table.merchantId),
+		uniqueIndex("woocommerce_settings_merchant_unique").on(table.merchantId),
+	]);
 
 export const woocommerceProducts = mysqlTable("woocommerce_products", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	productId: int("product_id").references(() => products.id, { onDelete: "cascade" }), // Link to local product
-	
+
 	// WooCommerce IDs
 	wooProductId: int("woo_product_id").notNull(), // WooCommerce product ID
 	wooVariationId: int("woo_variation_id"), // For product variations
-	
+
 	// Product Info
 	name: varchar({ length: 500 }).notNull(),
 	slug: varchar({ length: 500 }).notNull(),
@@ -2207,40 +2207,40 @@ export const woocommerceProducts = mysqlTable("woocommerce_products", {
 	price: decimal({ precision: 10, scale: 2 }).notNull(),
 	regularPrice: decimal("regular_price", { precision: 10, scale: 2 }),
 	salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
-	
+
 	// Stock
-	stockStatus: mysqlEnum("stock_status", ['instock','outofstock','onbackorder']).default('instock').notNull(),
+	stockStatus: mysqlEnum("stock_status", ['instock', 'outofstock', 'onbackorder']).default('instock').notNull(),
 	stockQuantity: int("stock_quantity"),
 	manageStock: tinyint("manage_stock").default(0).notNull(),
-	
+
 	// Details
 	description: text(),
 	shortDescription: text("short_description"),
 	imageUrl: varchar("image_url", { length: 1000 }),
 	categories: text(), // JSON array of category IDs
-	
+
 	// Sync
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }).defaultNow().notNull(),
-	syncStatus: mysqlEnum("sync_status", ['synced','pending','error']).default('synced').notNull(),
-	
+	syncStatus: mysqlEnum("sync_status", ['synced', 'pending', 'error']).default('synced').notNull(),
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("woocommerce_products_merchant_id_idx").on(table.merchantId),
-	index("woocommerce_products_product_id_idx").on(table.productId),
-	index("woocommerce_products_woo_product_id_idx").on(table.wooProductId),
-	uniqueIndex("woocommerce_products_merchant_woo_unique").on(table.merchantId, table.wooProductId),
-]);
+	(table) => [
+		index("woocommerce_products_merchant_id_idx").on(table.merchantId),
+		index("woocommerce_products_product_id_idx").on(table.productId),
+		index("woocommerce_products_woo_product_id_idx").on(table.wooProductId),
+		uniqueIndex("woocommerce_products_merchant_woo_unique").on(table.merchantId, table.wooProductId),
+	]);
 
 export const woocommerceOrders = mysqlTable("woocommerce_orders", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	orderId: int("order_id").references(() => orders.id, { onDelete: "cascade" }), // Link to local order
-	
+
 	// WooCommerce Order ID
 	wooOrderId: int("woo_order_id").notNull(),
-	
+
 	// Order Info
 	orderNumber: varchar("order_number", { length: 100 }).notNull(),
 	status: varchar({ length: 50 }).notNull(), // pending, processing, completed, etc.
@@ -2250,107 +2250,107 @@ export const woocommerceOrders = mysqlTable("woocommerce_orders", {
 	totalTax: decimal("total_tax", { precision: 10, scale: 2 }),
 	shippingTotal: decimal("shipping_total", { precision: 10, scale: 2 }),
 	discountTotal: decimal("discount_total", { precision: 10, scale: 2 }),
-	
+
 	// Customer Info
 	customerEmail: varchar("customer_email", { length: 255 }),
 	customerPhone: varchar("customer_phone", { length: 50 }),
 	customerName: varchar("customer_name", { length: 255 }),
-	
+
 	// Billing
 	billingAddress: text("billing_address"), // JSON
 	shippingAddress: text("shipping_address"), // JSON
-	
+
 	// Items
 	lineItems: text("line_items").notNull(), // JSON array
-	
+
 	// Payment
 	paymentMethod: varchar("payment_method", { length: 100 }),
 	paymentMethodTitle: varchar("payment_method_title", { length: 255 }),
 	transactionId: varchar("transaction_id", { length: 255 }),
-	
+
 	// Dates
 	orderDate: timestamp("order_date", { mode: 'string' }).notNull(),
 	paidDate: timestamp("paid_date", { mode: 'string' }),
 	completedDate: timestamp("completed_date", { mode: 'string' }),
-	
+
 	// Sync
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }).defaultNow().notNull(),
-	syncStatus: mysqlEnum("sync_status", ['synced','pending','error']).default('synced').notNull(),
-	
+	syncStatus: mysqlEnum("sync_status", ['synced', 'pending', 'error']).default('synced').notNull(),
+
 	// Metadata
 	customerNote: text("customer_note"),
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("woocommerce_orders_merchant_id_idx").on(table.merchantId),
-	index("woocommerce_orders_order_id_idx").on(table.orderId),
-	index("woocommerce_orders_woo_order_id_idx").on(table.wooOrderId),
-	index("woocommerce_orders_status_idx").on(table.status),
-	uniqueIndex("woocommerce_orders_merchant_woo_unique").on(table.merchantId, table.wooOrderId),
-]);
+	(table) => [
+		index("woocommerce_orders_merchant_id_idx").on(table.merchantId),
+		index("woocommerce_orders_order_id_idx").on(table.orderId),
+		index("woocommerce_orders_woo_order_id_idx").on(table.wooOrderId),
+		index("woocommerce_orders_status_idx").on(table.status),
+		uniqueIndex("woocommerce_orders_merchant_woo_unique").on(table.merchantId, table.wooOrderId),
+	]);
 
 export const woocommerceSyncLogs = mysqlTable("woocommerce_sync_logs", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Sync Info
-	syncType: mysqlEnum("sync_type", ['products','orders','customers','manual']).notNull(),
-	direction: mysqlEnum(['import','export','bidirectional']).notNull(),
-	
+	syncType: mysqlEnum("sync_type", ['products', 'orders', 'customers', 'manual']).notNull(),
+	direction: mysqlEnum(['import', 'export', 'bidirectional']).notNull(),
+
 	// Results
-	status: mysqlEnum(['success','partial','failed']).notNull(),
+	status: mysqlEnum(['success', 'partial', 'failed']).notNull(),
 	itemsProcessed: int("items_processed").default(0).notNull(),
 	itemsSuccess: int("items_success").default(0).notNull(),
 	itemsFailed: int("items_failed").default(0).notNull(),
-	
+
 	// Details
 	errorMessage: text("error_message"),
 	details: text(), // JSON with more info
-	
+
 	// Timing
 	startedAt: timestamp("started_at", { mode: 'string' }).notNull(),
 	completedAt: timestamp("completed_at", { mode: 'string' }),
 	duration: int(), // seconds
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
-(table) => [
-	index("woocommerce_sync_logs_merchant_id_idx").on(table.merchantId),
-	index("woocommerce_sync_logs_sync_type_idx").on(table.syncType),
-	index("woocommerce_sync_logs_status_idx").on(table.status),
-]);
+	(table) => [
+		index("woocommerce_sync_logs_merchant_id_idx").on(table.merchantId),
+		index("woocommerce_sync_logs_sync_type_idx").on(table.syncType),
+		index("woocommerce_sync_logs_status_idx").on(table.status),
+	]);
 
 export const woocommerceWebhooks = mysqlTable("woocommerce_webhooks", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	
+
 	// Webhook Info
 	webhookId: varchar("webhook_id", { length: 255 }),
 	eventType: varchar("event_type", { length: 100 }).notNull(), // order.created, product.updated, etc.
 	topic: varchar({ length: 100 }).notNull(), // order.created, product.updated, etc.
-	
+
 	// Payload
 	payload: text().notNull(), // Full JSON payload
-	
+
 	// Processing
-	status: mysqlEnum(['pending','processed','failed']).default('pending').notNull(),
+	status: mysqlEnum(['pending', 'processed', 'failed']).default('pending').notNull(),
 	processedAt: timestamp("processed_at", { mode: 'string' }),
 	errorMessage: text("error_message"),
-	
+
 	// Metadata
 	ipAddress: varchar("ip_address", { length: 50 }),
 	userAgent: varchar("user_agent", { length: 500 }),
 	signature: varchar({ length: 500 }), // For webhook verification
-	
+
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 },
-(table) => [
-	index("woocommerce_webhooks_merchant_id_idx").on(table.merchantId),
-	index("woocommerce_webhooks_event_type_idx").on(table.eventType),
-	index("woocommerce_webhooks_status_idx").on(table.status),
-]);
+	(table) => [
+		index("woocommerce_webhooks_merchant_id_idx").on(table.merchantId),
+		index("woocommerce_webhooks_event_type_idx").on(table.eventType),
+		index("woocommerce_webhooks_status_idx").on(table.status),
+	]);
 
 // Type exports for WooCommerce tables
 export type WooCommerceSettings = InferSelectModel<typeof woocommerceSettings>;
@@ -2377,9 +2377,9 @@ export const emailTemplates = mysqlTable("email_templates", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
-(table) => [
-	index("email_templates_name_idx").on(table.name),
-]);
+	(table) => [
+		index("email_templates_name_idx").on(table.name),
+	]);
 
 export type EmailTemplate = InferSelectModel<typeof emailTemplates>;
 export type NewEmailTemplate = InferInsertModel<typeof emailTemplates>;
