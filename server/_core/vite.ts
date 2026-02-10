@@ -29,19 +29,19 @@ export async function setupVite(app: Express, server: Server) {
     // Pass to Vite for all other routes (SPA)
     return vite.middlewares(req, res, next);
   });
-  
+
   // Serve index.html for non-API routes
   app.use(async (req, res, next) => {
     // Skip API requests
     if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/')) {
       return next();
     }
-    
+
     // Skip static files
     if (req.path.match(/\.(js|css|json|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)$/)) {
       return next();
     }
-    
+
     const url = req.originalUrl;
 
     try {
@@ -71,8 +71,29 @@ export function serveStatic(app: Express) {
   const distPath =
     path.resolve(import.meta.dirname, "../../client/dist");
 
-  app.use(express.static(distPath));
+  // Enable Gzip compression for all responses
+  const compression = require("compression");
+  app.use(compression());
+
+  // Serve hashed assets with long-term cache (1 year)
+  app.use(
+    "/assets",
+    express.static(path.join(distPath, "assets"), {
+      maxAge: "1y",
+      immutable: true,
+    })
+  );
+
+  // Serve other static files with short cache (1 hour)
+  app.use(
+    express.static(distPath, {
+      maxAge: "1h",
+    })
+  );
+
+  // SPA fallback - no cache for HTML
   app.use("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(path.join(distPath, "index.html"));
   });
 }
