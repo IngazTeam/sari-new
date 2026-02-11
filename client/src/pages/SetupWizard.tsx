@@ -69,7 +69,7 @@ export default function SetupWizard() {
         wizardData,
       });
       setLastSaved(new Date());
-      
+
       // Show success toast briefly
       toast.success('تم الحفظ ✓', {
         duration: 1500,
@@ -131,18 +131,11 @@ export default function SetupWizard() {
         welcomeMessage: wizardData.welcomeMessage,
       });
 
-      toast({
-        title: 'تم الإعداد بنجاح!',
-        description: 'مرحباً بك في ساري، يمكنك الآن البدء في استخدام النظام.',
-      });
+      toast.success('تم الإعداد بنجاح! مرحباً بك في ساري، يمكنك الآن البدء في استخدام النظام.');
 
       setLocation('/merchant/dashboard');
     } catch (error: any) {
-      toast({
-        title: 'خطأ',
-        description: error.message || 'حدث خطأ أثناء إكمال الإعداد',
-        variant: 'destructive',
-      });
+      toast.error(error.message || 'حدث خطأ أثناء إكمال الإعداد');
     } finally {
       setIsLoading(false);
     }
@@ -192,7 +185,7 @@ export default function SetupWizard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -230,13 +223,12 @@ export default function SetupWizard() {
             {STEP_TITLES.map((title, index) => (
               <div
                 key={index}
-                className={`text-xs ${
-                  index + 1 === currentStep
+                className={`text-xs ${index + 1 === currentStep
                     ? 'text-primary font-semibold'
                     : index + 1 < currentStep
-                    ? 'text-green-600'
-                    : 'text-gray-400'
-                }`}
+                      ? 'text-green-600'
+                      : 'text-gray-400'
+                  }`}
               >
                 {index + 1 === currentStep && '→ '}
                 {completedSteps.includes(index + 1) && <Check className="inline h-3 w-3 mr-1" />}
@@ -267,7 +259,7 @@ export default function SetupWizard() {
         </Card>
 
         {/* Navigation Buttons */}
-        {currentStep !== 1 && currentStep !== 8 && (
+        {currentStep !== 1 && currentStep !== 9 && (
           <div className="flex justify-between mt-6">
             <Button
               variant="outline"
