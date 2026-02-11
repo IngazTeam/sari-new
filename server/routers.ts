@@ -5528,7 +5528,12 @@ export const appRouter = router({
         for (const service of services) {
           await db.createService({
             merchantId: merchant.id,
-            ...service,
+            name: service.name,
+            description: service.description || '',
+            basePrice: service.price ? parseInt(service.price) * 100 : 0,
+            priceType: 'fixed',
+            durationMinutes: service.durationMinutes || 30,
+            category: service.category || null,
           });
         }
 
@@ -5536,7 +5541,9 @@ export const appRouter = router({
         for (const product of products) {
           await db.createProduct({
             merchantId: merchant.id,
-            ...product,
+            name: product.name,
+            description: product.description || '',
+            price: product.price ? parseInt(product.price) * 100 : 0,
           });
         }
 
