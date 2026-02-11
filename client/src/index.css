@@ -133,13 +133,13 @@
     position: relative;
     overflow: clip;
     border-radius: 22px;
+    padding-right: 0 !important;
   }
 
   /* Prevent Radix react-remove-scroll from adding padding/margin that shifts layout */
-  body[data-scroll-locked] {
+  html {
     padding-right: 0 !important;
     margin-right: 0 !important;
-    overflow: clip !important;
   }
 
   @media (max-width: 1400px) {
