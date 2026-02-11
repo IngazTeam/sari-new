@@ -34,13 +34,15 @@ export const securityHeaders = helmet({
  */
 const allowedOrigins = [
     process.env.APP_URL || 'http://localhost:3000',
+    'https://sary.live',
+    'https://www.sary.live',
     'http://localhost:3000',
     'http://localhost:5173', // Vite dev server
 ];
 
 export const corsConfig = cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin (mobile apps, curl, etc.)
+        // Allow requests with no origin (mobile apps, curl, server-to-server, static assets)
         if (!origin) {
             return callback(null, true);
         }
