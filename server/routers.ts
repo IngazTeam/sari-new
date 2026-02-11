@@ -5455,12 +5455,12 @@ export const appRouter = router({
     // Complete setup
     completeSetup: protectedProcedure
       .input(z.object({
-        businessType: z.enum(['store', 'services', 'both']),
-        businessName: z.string(),
-        phone: z.string(),
+        businessType: z.enum(['store', 'services', 'both']).optional().default('store'),
+        businessName: z.string().optional().default(''),
+        phone: z.string().optional().default(''),
         address: z.string().optional(),
         description: z.string().optional(),
-        workingHoursType: z.enum(['24_7', 'weekdays', 'custom']),
+        workingHoursType: z.enum(['24_7', 'weekdays', 'custom']).optional().default('24_7'),
         workingHours: z.record(z.string(), z.any()).optional(),
         botTone: z.enum(['friendly', 'professional', 'casual']).optional(),
         botLanguage: z.enum(['ar', 'en', 'both']).optional(),
