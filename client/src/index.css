@@ -131,7 +131,7 @@
     min-height: calc(100vh - 40px);
     box-shadow: 0 4px 40px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(0, 0, 0, 0.05);
     position: relative;
-    overflow: hidden;
+    overflow: clip;
     border-radius: 22px;
   }
 
