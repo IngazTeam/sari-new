@@ -43,18 +43,11 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
   const handleLanguageChange = async (langCode: string) => {
     const selectedLang = languages.find(lang => lang.code === langCode);
     if (selectedLang) {
-      // تغيير اللغة بشكل غير متزامن
+      // تغيير اللغة - i18n.ts يتولى تحديث dir و lang تلقائياً عبر حدث languageChanged
       await i18n.changeLanguage(langCode);
-      
-      // تحديث اتجاه الصفحة
-      document.documentElement.dir = selectedLang.dir;
-      document.documentElement.lang = langCode;
-      
+
       // حفظ اللغة في localStorage
       localStorage.setItem('i18nextLng', langCode);
-      
-      // إعادة تحميل الصفحة لضمان تطبيق التغييرات على جميع المكونات
-      window.location.reload();
     }
     setIsOpen(false);
   };

@@ -44,7 +44,6 @@ i18n
   .init({
     resources,
     fallbackLng: 'ar',
-    lng: 'ar',
     interpolation: {
       escapeValue: false
     },

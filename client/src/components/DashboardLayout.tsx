@@ -32,12 +32,12 @@ import {
 
 import { useIsMobile } from "@/hooks/useMobile";
 import {
-  LayoutDashboard, 
-  LogOut, 
-  PanelLeft, 
-  Users, 
-  MessageSquare, 
-  Package, 
+  LayoutDashboard,
+  LogOut,
+  PanelLeft,
+  Users,
+  MessageSquare,
+  Package,
   Megaphone,
   Settings,
   ShieldCheck,
@@ -121,7 +121,7 @@ const merchantMenuGroups = [
 const getMerchantMenuItems = (t: any): MenuItem[] => [
   // الرئيسية
   { icon: LayoutDashboard, label: t('sidebar.merchant.dashboard'), path: "/merchant/dashboard", group: 'main' },
-  
+
   // المبيعات والطلبات
   { icon: Package, label: t('sidebar.merchant.products'), path: "/merchant/products", group: 'sales' },
   { icon: ShoppingCart, label: t('sidebar.merchant.chatOrders'), path: "/merchant/chat-orders", group: 'sales' },
@@ -130,12 +130,12 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Ticket, label: t('sidebar.merchant.discounts'), path: "/merchant/discounts", group: 'sales' },
   { icon: ShoppingBag, label: t('sidebar.merchant.abandonedCarts'), path: "/merchant/abandoned-carts", group: 'sales' },
   { icon: Star, label: 'التقييمات', path: "/merchant/reviews", group: 'sales' },
-  
+
   // التسويق والحملات
   { icon: Megaphone, label: t('sidebar.merchant.campaigns'), path: "/merchant/campaigns", group: 'marketing' },
   { icon: PartyPopper, label: t('sidebar.merchant.occasionCampaigns'), path: "/merchant/occasion-campaigns", group: 'marketing' },
   { icon: UserPlus, label: t('sidebar.merchant.referrals'), path: "/merchant/referrals", group: 'marketing' },
-  
+
   // ساري AI
   { icon: MessageSquare, label: t('sidebar.merchant.conversations'), path: "/merchant/conversations", group: 'sari' },
   { icon: Bot, label: 'اختبار ساري AI', path: "/merchant/test-sari", group: 'sari' },
@@ -147,7 +147,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Sparkles, label: 'اقتراحات الذكاء الاصطناعي', path: "/merchant/ai-suggestions", group: 'sari' },
   { icon: TrendingUp, label: 'تحليل المشاعر', path: "/merchant/sentiment-analysis", group: 'sari' },
   { icon: Key, label: 'الكلمات المفتاحية', path: "/merchant/keywords", group: 'sari' },
-  
+
   // واتساب
   { icon: Smartphone, label: t('sidebar.merchant.whatsapp'), path: "/merchant/whatsapp", group: 'whatsapp' },
   { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances'), path: "/merchant/whatsapp-instances", group: 'whatsapp' },
@@ -156,7 +156,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: BellRing, label: 'إشعارات واتساب التلقائية', path: "/merchant/whatsapp-auto-notifications", group: 'whatsapp' },
   { icon: MessageCircle, label: 'تحليلات الرسائل', path: "/merchant/message-analytics", group: 'whatsapp' },
   { icon: Activity, label: 'الرسائل الصوتية', path: "/merchant/voice-messages", group: 'whatsapp' },
-  
+
   // المواعيد والخدمات
   { icon: CalendarDays, label: 'التقويم والمواعيد', path: "/merchant/calendar", group: 'calendar' },
   { icon: Settings, label: 'إعدادات التقويم', path: "/merchant/calendar/settings", group: 'calendar' },
@@ -166,7 +166,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Package, label: 'تصنيفات الخدمات', path: "/merchant/service-categories", group: 'calendar' },
   { icon: Gift, label: 'باقات الخدمات', path: "/merchant/service-packages", group: 'calendar' },
   { icon: Star, label: 'تقييمات الحجوزات', path: "/merchant/booking-reviews", group: 'calendar' },
-  
+
   // التحليلات والتقارير
   { icon: BarChart3, label: t('sidebar.merchant.analytics'), path: "/merchant/analytics", group: 'analytics' },
   { icon: TrendingUp, label: 'التحليلات المتقدمة', path: "/merchant/advanced-analytics", group: 'analytics' },
@@ -180,7 +180,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: FileText, label: 'التقارير الأسبوعية', path: "/merchant/weekly-reports", group: 'analytics' },
   { icon: Zap, label: 'اختبارات A/B', path: "/merchant/ab-tests", group: 'analytics' },
   { icon: TrendingUp, label: 'تحليلات تجربة ساري', path: "/merchant/try-sari-analytics", group: 'analytics' },
-  
+
   // التكاملات
   { icon: Plug, label: 'لوحة التكاملات', path: "/merchant/integrations-dashboard", group: 'integrations' },
   { icon: Store, label: t('sidebar.merchant.salla'), path: "/merchant/salla", group: 'integrations' },
@@ -193,13 +193,13 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: FileText, label: 'تقارير Sheets', path: "/merchant/sheets/reports", group: 'integrations' },
   { icon: Warehouse, label: 'مزامنة المخزون', path: "/merchant/sheets/inventory", group: 'integrations' },
   { icon: Database, label: 'مزامنة البيانات', path: "/merchant/data-sync", group: 'integrations' },
-  
+
   // برنامج الولاء
   { icon: Heart, label: 'إعدادات الولاء', path: "/merchant/loyalty/settings", group: 'loyalty' },
   { icon: Crown, label: 'مستويات الولاء', path: "/merchant/loyalty/tiers", group: 'loyalty' },
   { icon: Gift, label: 'مكافآت الولاء', path: "/merchant/loyalty/rewards", group: 'loyalty' },
   { icon: Users, label: 'عملاء الولاء', path: "/merchant/loyalty/customers", group: 'loyalty' },
-  
+
   // المدفوعات
   { icon: Wallet, label: 'المدفوعات', path: "/merchant/payments", group: 'payments' },
   { icon: Link, label: 'روابط الدفع', path: "/merchant/payment-links", group: 'payments' },
@@ -207,7 +207,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: CreditCard, label: t('sidebar.merchant.subscriptions'), path: "/merchant/subscriptions", group: 'payments' },
   { icon: Wallet, label: 'مدفوعات الاشتراك', path: "/merchant/merchant-payments", group: 'payments' },
   { icon: Award, label: 'اشتراكي', path: "/merchant/my-subscription", group: 'payments' },
-  
+
   // الإعدادات
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings", group: 'settings' },
   { icon: Languages, label: 'إعدادات اللغة', path: "/merchant/language-settings", group: 'settings' },
@@ -328,19 +328,19 @@ function DashboardLayoutContent({
     setShowLogoutConfirm(false);
     logout();
   };
-  
+
   const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => 
-      prev.includes(groupId) 
+    setExpandedGroups(prev =>
+      prev.includes(groupId)
         ? prev.filter(id => id !== groupId)
         : [...prev, groupId]
     );
   };
-  
+
   // Get menu items based on user role
   const menuItems = user?.role === 'admin' ? getAdminMenuItems(t) : getMerchantMenuItems(t);
   const activeMenuItem = menuItems.find(item => item.path === location);
-  
+
   // Group menu items by group
   const groupedMenuItems = menuItems.reduce((acc, item) => {
     const group = item.group || 'other';
@@ -348,7 +348,7 @@ function DashboardLayoutContent({
     acc[group].push(item);
     return acc;
   }, {} as Record<string, MenuItem[]>);
-  
+
   // Auto-expand group containing active item
   useEffect(() => {
     if (activeMenuItem?.group && !expandedGroups.includes(activeMenuItem.group)) {
@@ -446,19 +446,18 @@ function DashboardLayoutContent({
                 merchantMenuGroups.map((group) => {
                   const groupItems = groupedMenuItems[group.id] || [];
                   if (groupItems.length === 0) return null;
-                  
+
                   const isExpanded = expandedGroups.includes(group.id);
                   const hasActiveItem = groupItems.some(item => item.path === location);
                   const GroupIcon = group.icon;
-                  
+
                   return (
                     <div key={group.id} className="mb-1">
                       {/* Group Header */}
                       <button
                         onClick={() => toggleGroup(group.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-accent/50 ${
-                          hasActiveItem ? 'text-primary bg-accent/30' : 'text-muted-foreground'
-                        } ${isCollapsed ? 'justify-center' : ''}`}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-accent/50 ${hasActiveItem ? 'text-primary bg-accent/30' : 'text-muted-foreground'
+                          } ${isCollapsed ? 'justify-center' : ''}`}
                       >
                         <GroupIcon className="h-4 w-4 shrink-0" />
                         {!isCollapsed && (
@@ -472,7 +471,7 @@ function DashboardLayoutContent({
                           </>
                         )}
                       </button>
-                      
+
                       {/* Group Items */}
                       {(isExpanded || isCollapsed) && (
                         <div className={`${!isCollapsed ? 'mr-2 border-r border-border/50' : ''}`}>
@@ -593,7 +592,9 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">{children}</div>
+        </main>
       </SidebarInset>
 
       {/* Logout Confirmation Dialog */}
