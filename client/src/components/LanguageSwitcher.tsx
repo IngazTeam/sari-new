@@ -54,7 +54,7 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
 
   if (variant === 'compact') {
     return (
-      <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+      <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className={className}>
             <Globe className="h-4 w-4" />
@@ -104,7 +104,7 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
 
   // Default variant
   return (
-    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen} modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className={cn("gap-2", className)}>
           <Globe className="h-4 w-4" />
