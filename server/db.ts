@@ -5200,7 +5200,7 @@ export async function getSyncLog(merchantId: string) {
 export async function getAllBusinessTemplates() {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return await db.select().from(businessTemplates).where(eq(businessTemplates.isActive, 1));
+  return await db.select().from(businessTemplates).where(eq(businessTemplates.is_active, 1));
 }
 
 export async function getBusinessTemplatesByType(businessType: 'store' | 'services' | 'both') {
@@ -5209,7 +5209,7 @@ export async function getBusinessTemplatesByType(businessType: 'store' | 'servic
   return await db.select().from(businessTemplates)
     .where(and(
       eq(businessTemplates.businessType, businessType),
-      eq(businessTemplates.isActive, 1)
+      eq(businessTemplates.is_active, 1)
     ));
 }
 
@@ -8814,7 +8814,7 @@ export async function getBusinessTemplatesWithTranslations(language?: 'ar' | 'en
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const templates = await db.select().from(businessTemplates).where(eq(businessTemplates.isActive, 1));
+  const templates = await db.select().from(businessTemplates).where(eq(businessTemplates.is_active, 1));
 
   const templatesWithTranslations = await Promise.all(
     templates.map(async (template) => {
