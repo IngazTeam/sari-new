@@ -135,6 +135,15 @@
     border-radius: 33px;
   }
 
+  /* Override sidebar components to respect body height instead of viewport */
+  [data-slot="sidebar-wrapper"] {
+    min-height: calc(100vh - 40px) !important;
+  }
+
+  [data-slot="sidebar-container"] {
+    height: calc(100vh - 40px) !important;
+  }
+
   h1,
   h2,
   h3,
