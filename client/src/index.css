@@ -125,7 +125,7 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Expo Arabic', sans-serif;
-    font-weight: 400;
+    font-weight: 500;
     max-width: 1360px;
     margin: 20px auto;
     min-height: calc(100vh - 40px);
