@@ -286,17 +286,21 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": `${sidebarWidth}px`,
-        } as CSSProperties
-      }
-    >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
-        {children}
-      </DashboardLayoutContent>
-    </SidebarProvider>
+    <div className="min-h-screen bg-muted/30">
+      <div className="max-w-[1400px] mx-auto bg-background min-h-screen shadow-sm border-x border-border/50">
+        <SidebarProvider
+          style={
+            {
+              "--sidebar-width": `${sidebarWidth}px`,
+            } as CSSProperties
+          }
+        >
+          <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+            {children}
+          </DashboardLayoutContent>
+        </SidebarProvider>
+      </div>
+    </div>
   );
 }
 
@@ -592,9 +596,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">{children}</div>
-        </main>
+        <main className="flex-1 p-4 md:p-6">{children}</main>
       </SidebarInset>
 
       {/* Logout Confirmation Dialog */}
