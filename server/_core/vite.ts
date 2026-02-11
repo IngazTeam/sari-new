@@ -1,5 +1,6 @@
 import { type Express } from "express";
 import express from "express";
+import compression from "compression";
 import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
@@ -72,7 +73,6 @@ export function serveStatic(app: Express) {
     path.resolve(import.meta.dirname, "../../client/dist");
 
   // Enable Gzip compression for all responses
-  const compression = require("compression");
   app.use(compression());
 
   // Serve hashed assets with long-term cache (1 year)
