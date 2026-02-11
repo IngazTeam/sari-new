@@ -119,16 +119,16 @@ export default function SetupWizard() {
     setIsLoading(true);
     try {
       await completeSetupMutation.mutateAsync({
-        businessType: wizardData.businessType,
-        businessName: wizardData.businessName,
-        phone: wizardData.phone,
-        address: wizardData.address,
-        description: wizardData.description,
-        workingHoursType: wizardData.workingHoursType || 'weekdays',
+        businessType: wizardData.businessType || 'store',
+        businessName: wizardData.businessName || '',
+        phone: wizardData.phone || '',
+        address: wizardData.address || '',
+        description: wizardData.description || '',
+        workingHoursType: wizardData.workingHoursType || '24_7',
         workingHours: wizardData.workingHours,
-        botTone: wizardData.botTone,
-        botLanguage: wizardData.botLanguage,
-        welcomeMessage: wizardData.welcomeMessage,
+        botTone: wizardData.botTone || 'friendly',
+        botLanguage: wizardData.botLanguage || 'ar',
+        welcomeMessage: wizardData.welcomeMessage || '',
       });
 
       toast.success('تم الإعداد بنجاح! مرحباً بك في ساري، يمكنك الآن البدء في استخدام النظام.');
@@ -176,7 +176,7 @@ export default function SetupWizard() {
       case 7:
         return <PersonalityStep {...stepProps} />;
       case 8:
-        return <LanguageStep data={wizardData} onUpdate={updateWizardData} />;
+        return <LanguageStep data={wizardData} onUpdate={updateWizardData} goToNextStep={goToNextStep} />;
       case 9:
         return <CompleteStep {...stepProps} completeSetup={completeSetup} isLoading={isLoading} />;
       default:
@@ -224,10 +224,10 @@ export default function SetupWizard() {
               <div
                 key={index}
                 className={`text-xs ${index + 1 === currentStep
-                    ? 'text-primary font-semibold'
-                    : index + 1 < currentStep
-                      ? 'text-green-600'
-                      : 'text-gray-400'
+                  ? 'text-primary font-semibold'
+                  : index + 1 < currentStep
+                    ? 'text-green-600'
+                    : 'text-gray-400'
                   }`}
               >
                 {index + 1 === currentStep && '→ '}
@@ -260,7 +260,7 @@ export default function SetupWizard() {
 
         {/* Navigation Buttons */}
         {currentStep !== 1 && currentStep !== 9 && (
-          <div className="flex justify-between mt-6">
+          <div className="flex justify-start mt-6">
             <Button
               variant="outline"
               onClick={goToPreviousStep}
@@ -268,10 +268,6 @@ export default function SetupWizard() {
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               السابق
-            </Button>
-            <Button onClick={goToNextStep}>
-              التالي
-              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
         )}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Check, Globe } from 'lucide-react';
+import { Check, Globe, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Language {
@@ -28,9 +28,10 @@ interface LanguageStepProps {
     currency?: string;
   };
   onUpdate: (data: any) => void;
+  goToNextStep: () => void;
 }
 
-export default function LanguageStep({ data, onUpdate }: LanguageStepProps) {
+export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageStepProps) {
   const [selectedLanguage, setSelectedLanguage] = useState(data.botLanguage || 'ar');
 
   useEffect(() => {
@@ -126,6 +127,14 @@ export default function LanguageStep({ data, onUpdate }: LanguageStepProps) {
             {selectedLanguage === 'it' && 'Ciao! Sono Sari, il tuo assistente intelligente. Come posso aiutarti oggi?'}
           </p>
         </div>
+      </div>
+
+      {/* Next Button */}
+      <div className="flex justify-center pt-4">
+        <Button size="lg" onClick={goToNextStep} className="px-8 bg-emerald-600 hover:bg-emerald-700">
+          التالي
+          <ArrowRight className="mr-2 h-5 w-5" />
+        </Button>
       </div>
     </div>
   );
