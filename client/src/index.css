@@ -129,7 +129,7 @@
     max-width: 1400px;
     margin: 20px auto;
     min-height: calc(100vh - 40px);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.06);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
     position: relative;
     overflow: hidden;
     border-radius: 33px;

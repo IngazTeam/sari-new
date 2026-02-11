@@ -19,10 +19,10 @@ export function NotificationBell() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const { user, loading: authLoading } = useAuth();
-  
+
   // Only fetch notifications if user is authenticated
   const isAuthenticated = Boolean(user);
-  
+
   // Fetch notifications - only when authenticated
   const { data: notifications = [] } = trpc.notifications.list.useQuery(undefined, {
     enabled: isAuthenticated,
@@ -32,7 +32,7 @@ export function NotificationBell() {
     enabled: isAuthenticated,
     retry: false,
   });
-  
+
   // Mutations
   const markAsRead = trpc.notifications.markAsRead.useMutation({
     onSuccess: () => {
@@ -40,7 +40,7 @@ export function NotificationBell() {
       utils.notifications.unreadCount.invalidate();
     },
   });
-  
+
   const markAllAsRead = trpc.notifications.markAllAsRead.useMutation({
     onSuccess: () => {
       utils.notifications.list.invalidate();
@@ -48,7 +48,7 @@ export function NotificationBell() {
       toast.success("تم تحديد جميع الإشعارات كمقروءة");
     },
   });
-  
+
   const deleteNotification = trpc.notifications.delete.useMutation({
     onSuccess: () => {
       utils.notifications.list.invalidate();
@@ -56,7 +56,7 @@ export function NotificationBell() {
       toast.success("تم حذف الإشعار");
     },
   });
-  
+
   const handleNotificationClick = (notification: typeof notifications[0]) => {
     if (!notification.isRead) {
       markAsRead.mutate({ id: notification.id });
@@ -65,7 +65,7 @@ export function NotificationBell() {
       setLocation(notification.link);
     }
   };
-  
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "success":
@@ -78,14 +78,14 @@ export function NotificationBell() {
         return "ℹ️";
     }
   };
-  
+
   // Don't render if not authenticated or still loading
   if (authLoading || !isAuthenticated) {
     return null;
   }
-  
+
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
@@ -114,7 +114,7 @@ export function NotificationBell() {
             </Button>
           )}
         </div>
-        
+
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -126,9 +126,8 @@ export function NotificationBell() {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`group relative px-4 py-3 hover:bg-accent/50 transition-colors ${
-                    !notification.isRead ? "bg-accent/20" : ""
-                  }`}
+                  className={`group relative px-4 py-3 hover:bg-accent/50 transition-colors ${!notification.isRead ? "bg-accent/20" : ""
+                    }`}
                 >
                   <div
                     className="cursor-pointer"
@@ -159,7 +158,7 @@ export function NotificationBell() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <Button
                     variant="ghost"
                     size="icon"

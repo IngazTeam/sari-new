@@ -40,7 +40,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
   // Compact variant - icon only with dropdown
   if (variant === 'compact') {
     return (
-      <DropdownMenu>
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className={className}>
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -49,7 +49,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => theme !== 'light' && toggleTheme()}
             className="flex items-center justify-between"
           >
@@ -59,7 +59,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
             </span>
             {theme === 'light' && <Check className="h-4 w-4 text-primary" />}
           </DropdownMenuItem>
-          <DropdownMenuItem 
+          <DropdownMenuItem
             onClick={() => theme !== 'dark' && toggleTheme()}
             className="flex items-center justify-between"
           >
@@ -76,7 +76,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
 
   // Default variant - button with text
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className={cn("gap-2", className)}>
           {theme === 'light' ? (
@@ -93,7 +93,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-36">
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => theme !== 'light' && toggleTheme()}
           className={cn(
             "flex items-center justify-between cursor-pointer",
@@ -106,7 +106,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
           </span>
           {theme === 'light' && <Check className="h-4 w-4 text-primary" />}
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => theme !== 'dark' && toggleTheme()}
           className={cn(
             "flex items-center justify-between cursor-pointer",
