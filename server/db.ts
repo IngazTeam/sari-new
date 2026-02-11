@@ -101,6 +101,7 @@ import {
   businessTemplates,
   BusinessTemplate,
   InsertBusinessTemplate,
+  templateTranslations,
   services,
   Service,
   InsertService,
@@ -5208,7 +5209,7 @@ export async function getBusinessTemplatesByType(businessType: 'store' | 'servic
   if (!db) throw new Error("Database not available");
   return await db.select().from(businessTemplates)
     .where(and(
-      eq(businessTemplates.businessType, businessType),
+      eq(businessTemplates.business_type, businessType),
       eq(businessTemplates.is_active, 1)
     ));
 }
@@ -8796,7 +8797,7 @@ export async function deleteTemplateTranslation(id: number) {
 export async function getTemplateTranslationsByTemplateId(templateId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return await db.select().from(templateTranslations).where(eq(templateTranslations.templateId, templateId));
+  return await db.select().from(templateTranslations).where(eq(templateTranslations.template_id, templateId));
 }
 
 export async function getTemplateTranslation(templateId: number, language: 'ar' | 'en') {
@@ -8804,11 +8805,12 @@ export async function getTemplateTranslation(templateId: number, language: 'ar' 
   if (!db) throw new Error("Database not available");
   const results = await db.select().from(templateTranslations)
     .where(and(
-      eq(templateTranslations.templateId, templateId),
+      eq(templateTranslations.template_id, templateId),
       eq(templateTranslations.language, language)
     ));
   return results[0];
 }
+
 
 export async function getBusinessTemplatesWithTranslations(language?: 'ar' | 'en') {
   const db = await getDb();
@@ -8826,10 +8828,10 @@ export async function getBusinessTemplatesWithTranslations(language?: 'ar' | 'en
         if (translation) {
           return {
             ...template,
-            templateName: translation.templateName,
+            templateName: translation.template_name,
             description: translation.description,
-            suitableFor: translation.suitableFor,
-            botPersonality: translation.botPersonality,
+            suitableFor: translation.suitable_for,
+            botPersonality: translation.bot_personality,
             translations
           };
         }
@@ -8860,10 +8862,10 @@ export async function getBusinessTemplateByIdWithTranslations(id: number, langua
     if (translation) {
       return {
         ...template,
-        templateName: translation.templateName,
+        templateName: translation.template_name,
         description: translation.description,
-        suitableFor: translation.suitableFor,
-        botPersonality: translation.botPersonality,
+        suitableFor: translation.suitable_for,
+        botPersonality: translation.bot_personality,
         translations
       };
     }
