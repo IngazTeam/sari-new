@@ -212,7 +212,7 @@ export default function Login() {
             </form>
             <div className="mt-4 text-center text-sm">
               <span className="text-muted-foreground">لا تملك حساباً؟ </span>
-              <a href="/register" className="text-primary hover:underline font-medium">
+              <a href="/signup" className="text-primary hover:underline font-medium">
                 سجل الآن
               </a>
             </div>
