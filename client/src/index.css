@@ -127,12 +127,12 @@
     font-family: 'Expo Arabic', sans-serif;
     font-weight: 400;
     max-width: 1400px;
-    margin-left: auto;
-    margin-right: auto;
-    min-height: 100vh;
+    margin: 20px auto;
+    min-height: calc(100vh - 40px);
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.06);
     position: relative;
-    overflow-x: hidden;
+    overflow: hidden;
+    border-radius: 33px;
   }
 
   h1,
