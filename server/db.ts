@@ -4488,12 +4488,20 @@ export async function createPasswordResetToken(data: {
   userId: number;
   email: string;
   token: string;
-  expiresAt: Date;
+  expiresAt: Date | string;
+  used?: number;
 }): Promise<PasswordResetToken | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const [result] = await db.insert(passwordResetTokens).values(data);
+  // Format expiresAt to MySQL-compatible TIMESTAMP (YYYY-MM-DD HH:MM:SS)
+  const expiresAtDate = data.expiresAt instanceof Date ? data.expiresAt : new Date(data.expiresAt);
+  const formattedExpiresAt = expiresAtDate.toISOString().slice(0, 19).replace('T', ' ');
+
+  const [result] = await db.insert(passwordResetTokens).values({
+    ...data,
+    expiresAt: formattedExpiresAt,
+  });
   return await getPasswordResetTokenById(Number(result.insertId));
 }
 
