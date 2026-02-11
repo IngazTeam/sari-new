@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, Plus, Trash2, Package, Briefcase } from 'lucide-react';
+import { ArrowRight, Plus, Trash2, Package, Briefcase, Lightbulb, AlertCircle } from 'lucide-react';
 
 interface ProductsServicesStepProps {
   wizardData: Record<string, any>;
@@ -20,6 +20,20 @@ interface Item {
   price: string;
 }
 
+const PRODUCT_SUGGESTIONS = [
+  { name: 'قميص قطني', price: '89' },
+  { name: 'بنطلون جينز', price: '159' },
+  { name: 'حذاء رياضي', price: '249' },
+  { name: 'ساعة يد', price: '399' },
+];
+
+const SERVICE_SUGGESTIONS = [
+  { name: 'قص شعر', price: '50' },
+  { name: 'صبغة شعر', price: '150' },
+  { name: 'استشارة طبية', price: '200' },
+  { name: 'تصميم شعار', price: '500' },
+];
+
 export default function ProductsServicesStep({
   wizardData,
   updateWizardData,
@@ -31,10 +45,10 @@ export default function ProductsServicesStep({
   const isServices = businessType === 'services' || businessType === 'both';
 
   const [products, setProducts] = useState<Item[]>(
-    wizardData.products || [{ id: '1', name: '', description: '', price: '' }]
+    wizardData.products || []
   );
   const [services, setServices] = useState<Item[]>(
-    wizardData.services || [{ id: '1', name: '', description: '', price: '' }]
+    wizardData.services || []
   );
 
   const addItem = (type: 'products' | 'services') => {
@@ -68,15 +82,35 @@ export default function ProductsServicesStep({
     }
   };
 
+  const addSuggestion = (type: 'products' | 'services', suggestion: { name: string; price: string }) => {
+    const newItem: Item = {
+      id: Date.now().toString(),
+      name: suggestion.name,
+      description: '',
+      price: suggestion.price,
+    };
+    if (type === 'products') {
+      setProducts([...products, newItem]);
+    } else {
+      setServices([...services, newItem]);
+    }
+  };
+
+  // Check if at least one valid item exists
+  const filledProducts = products.filter(p => p.name.trim());
+  const filledServices = services.filter(s => s.name.trim());
+  const hasFilledItems = filledProducts.length > 0 || filledServices.length > 0;
+  const hasAnyItems = products.length > 0 || services.length > 0;
+
   const handleNext = () => {
     const data: any = {};
-    
+
     if (isStore) {
-      data.products = products.filter(p => p.name.trim());
+      data.products = filledProducts;
     }
-    
+
     if (isServices) {
-      data.services = services.filter(s => s.name.trim());
+      data.services = filledServices;
     }
 
     updateWizardData(data);
@@ -94,24 +128,24 @@ export default function ProductsServicesStep({
     const label = type === 'products' ? 'المنتج' : 'الخدمة';
 
     return (
-      <Card key={item.id} className="p-4">
+      <Card key={item.id} className="p-4 border-emerald-100 bg-white">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center space-x-2 space-x-reverse">
-            <Icon className="h-5 w-5 text-primary" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <Icon className="h-4 w-4 text-emerald-600" />
+            </div>
             <h4 className="font-semibold text-gray-900">
               {label} #{index + 1}
             </h4>
           </div>
-          {items.length > 1 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => removeItem(type, item.id)}
-              className="text-red-500 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => removeItem(type, item.id)}
+            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
 
         <div className="space-y-3">
@@ -119,9 +153,10 @@ export default function ProductsServicesStep({
             <Label htmlFor={`${type}-name-${item.id}`}>الاسم *</Label>
             <Input
               id={`${type}-name-${item.id}`}
-              placeholder={type === 'products' ? 'مثال: قميص قطني' : 'مثال: قص شعر'}
+              placeholder={type === 'products' ? 'مثال: قميص قطني' : 'مثال: قص شعر رجالي'}
               value={item.name}
               onChange={(e) => updateItem(type, item.id, 'name', e.target.value)}
+              className={!item.name.trim() && hasAnyItems ? 'border-amber-300' : ''}
             />
           </div>
 
@@ -129,7 +164,7 @@ export default function ProductsServicesStep({
             <Label htmlFor={`${type}-desc-${item.id}`}>الوصف (اختياري)</Label>
             <Textarea
               id={`${type}-desc-${item.id}`}
-              placeholder={type === 'products' ? 'وصف المنتج...' : 'وصف الخدمة...'}
+              placeholder={type === 'products' ? 'وصف المنتج...' : 'وصف الخدمة ومدتها...'}
               value={item.description}
               onChange={(e) => updateItem(type, item.id, 'description', e.target.value)}
               rows={2}
@@ -152,15 +187,94 @@ export default function ProductsServicesStep({
     );
   };
 
+  const renderEmptyState = (type: 'products' | 'services') => {
+    const isProducts = type === 'products';
+    const suggestions = isProducts ? PRODUCT_SUGGESTIONS : SERVICE_SUGGESTIONS;
+    const Icon = isProducts ? Package : Briefcase;
+    const label = isProducts ? 'المنتجات' : 'الخدمات';
+    const items = isProducts ? products : services;
+
+    if (items.length > 0) return null;
+
+    return (
+      <div className="border-2 border-dashed border-emerald-200 rounded-xl p-6 text-center space-y-4 bg-emerald-50/30">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-100 mb-2">
+          <Icon className="h-7 w-7 text-emerald-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-gray-800 mb-1">
+            ابدأ بإضافة {label}
+          </p>
+          <p className="text-sm text-gray-500">
+            {isProducts
+              ? 'أضف منتجاتك ليتمكن ساري من عرضها للعملاء والرد على استفساراتهم'
+              : 'أضف خدماتك ليتمكن ساري من حجز المواعيد وتقديم التفاصيل للعملاء'}
+          </p>
+        </div>
+
+        {/* Quick Add Button */}
+        <Button
+          onClick={() => addItem(type)}
+          className="bg-emerald-600 hover:bg-emerald-700"
+        >
+          <Plus className="h-4 w-4 ml-2" />
+          إضافة {isProducts ? 'منتج' : 'خدمة'}
+        </Button>
+
+        {/* Suggestions */}
+        <div className="pt-3 border-t border-emerald-200">
+          <p className="text-xs text-gray-500 mb-2 flex items-center justify-center gap-1">
+            <Lightbulb className="h-3 w-3" />
+            أو أضف سريعاً من الأمثلة:
+          </p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {suggestions.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => addSuggestion(type, s)}
+                className="text-xs px-3 py-1.5 rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
+              >
+                {s.name} ({s.price} ر.س)
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
         <p className="text-gray-600">
-          أضف بعض {isStore && isServices ? 'المنتجات والخدمات' : isStore ? 'المنتجات' : 'الخدمات'} لتبدأ
+          أضف {isStore && isServices ? 'المنتجات والخدمات' : isStore ? 'المنتجات' : 'الخدمات'} التي تقدمها
         </p>
         <p className="text-sm text-gray-500 mt-1">
-          يمكنك إضافة المزيد لاحقاً من لوحة التحكم
+          سيستخدمها ساري للرد على عملائك تلقائياً عبر واتساب
         </p>
+      </div>
+
+      {/* Tips Banner */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+        <Lightbulb className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-amber-800 space-y-1">
+          <p className="font-medium">💡 نصائح لإضافة {isStore ? 'المنتجات' : 'الخدمات'}:</p>
+          <ul className="list-disc list-inside space-y-0.5 text-xs text-amber-700">
+            {isStore ? (
+              <>
+                <li>أضف اسم واضح ومحدد (مثال: "قميص أبيض قطن - مقاس L")</li>
+                <li>حدد السعر بالريال السعودي</li>
+                <li>أضف وصف مختصر يساعد ساري في الرد على العملاء</li>
+              </>
+            ) : (
+              <>
+                <li>أضف اسم الخدمة بوضوح (مثال: "قص شعر رجالي")</li>
+                <li>حدد السعر أو النطاق السعري</li>
+                <li>اذكر مدة الخدمة في الوصف إن أمكن</li>
+              </>
+            )}
+          </ul>
+        </div>
       </div>
 
       <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
@@ -169,18 +283,28 @@ export default function ProductsServicesStep({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2 space-x-reverse">
-                <Package className="h-5 w-5 text-blue-600" />
+                <Package className="h-5 w-5 text-emerald-600" />
                 <span>المنتجات</span>
+                {filledProducts.length > 0 && (
+                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                    {filledProducts.length} منتج
+                  </span>
+                )}
               </h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addItem('products')}
-              >
-                <Plus className="h-4 w-4 ml-1" />
-                إضافة منتج
-              </Button>
+              {products.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addItem('products')}
+                  className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                >
+                  <Plus className="h-4 w-4 ml-1" />
+                  إضافة منتج
+                </Button>
+              )}
             </div>
+
+            {renderEmptyState('products')}
 
             <div className="space-y-3">
               {products.map((product, index) => renderItemForm(product, 'products', index))}
@@ -188,23 +312,36 @@ export default function ProductsServicesStep({
           </div>
         )}
 
+        {/* Separator */}
+        {isStore && isServices && <hr className="border-gray-200" />}
+
         {/* Services Section */}
         {isServices && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2 space-x-reverse">
-                <Briefcase className="h-5 w-5 text-purple-600" />
+                <Briefcase className="h-5 w-5 text-emerald-600" />
                 <span>الخدمات</span>
+                {filledServices.length > 0 && (
+                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
+                    {filledServices.length} خدمة
+                  </span>
+                )}
               </h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => addItem('services')}
-              >
-                <Plus className="h-4 w-4 ml-1" />
-                إضافة خدمة
-              </Button>
+              {services.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addItem('services')}
+                  className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                >
+                  <Plus className="h-4 w-4 ml-1" />
+                  إضافة خدمة
+                </Button>
+              )}
             </div>
+
+            {renderEmptyState('services')}
 
             <div className="space-y-3">
               {services.map((service, index) => renderItemForm(service, 'services', index))}
@@ -215,14 +352,22 @@ export default function ProductsServicesStep({
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t">
-        <Button variant="ghost" onClick={handleSkip}>
+        <Button variant="ghost" onClick={handleSkip} className="text-gray-500 hover:text-gray-700">
+          <AlertCircle className="h-4 w-4 ml-1" />
           تخطي - سأضيف لاحقاً
         </Button>
 
-        <Button size="lg" onClick={handleNext} className="px-8">
-          التالي
-          <ArrowRight className="mr-2 h-5 w-5" />
-        </Button>
+        {hasFilledItems ? (
+          <Button size="lg" onClick={handleNext} className="px-8 bg-emerald-600 hover:bg-emerald-700">
+            التالي ({filledProducts.length + filledServices.length} عنصر)
+            <ArrowRight className="mr-2 h-5 w-5" />
+          </Button>
+        ) : (
+          <div className="text-sm text-gray-400 flex items-center gap-1">
+            <AlertCircle className="h-4 w-4" />
+            أضف عنصر واحد على الأقل أو تخطَّ الخطوة
+          </div>
+        )}
       </div>
     </div>
   );
