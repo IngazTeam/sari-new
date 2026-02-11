@@ -10,12 +10,12 @@ export interface EmailOptions {
 
 export async function sendEmail(options: EmailOptions): Promise<void> {
   const settings = await getSmtpSettings();
-  
+
   if (!settings) {
     throw new Error("SMTP settings not configured");
   }
 
-  const transporter = nodemailer.createTransporter({
+  const transporter = nodemailer.createTransport({
     host: settings.host,
     port: settings.port,
     secure: settings.port === 465, // true for 465, false for other ports
@@ -36,12 +36,12 @@ export async function sendEmail(options: EmailOptions): Promise<void> {
 
 export async function testSmtpConnection(testEmail: string): Promise<boolean> {
   const settings = await getSmtpSettings();
-  
+
   if (!settings) {
     throw new Error("SMTP settings not configured");
   }
 
-  const transporter = nodemailer.createTransporter({
+  const transporter = nodemailer.createTransport({
     host: settings.host,
     port: settings.port,
     secure: settings.port === 465,
