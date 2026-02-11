@@ -359,10 +359,13 @@ export async function activateUserTrial(userId: number): Promise<boolean> {
   const trialEndDate = new Date();
   trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days trial
 
+  // Format dates as MySQL-compatible TIMESTAMP strings (YYYY-MM-DD HH:MM:SS)
+  const formatDate = (d: Date) => d.toISOString().slice(0, 19).replace('T', ' ');
+
   await db.update(users)
     .set({
-      trialStartDate: trialStartDate.toISOString(),
-      trialEndDate: trialEndDate.toISOString(),
+      trialStartDate: formatDate(trialStartDate),
+      trialEndDate: formatDate(trialEndDate),
       isTrialActive: 1,
     })
     .where(eq(users.id, userId));
