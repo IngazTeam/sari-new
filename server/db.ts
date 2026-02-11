@@ -5225,7 +5225,7 @@ export async function incrementTemplateUsage(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(businessTemplates)
-    .set({ usageCount: sql`${businessTemplates.usageCount} + 1` })
+    .set({ usage_count: sql`usage_count + 1` })
     .where(eq(businessTemplates.id, id));
 }
 
