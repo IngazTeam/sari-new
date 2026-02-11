@@ -135,6 +135,13 @@
     border-radius: 22px;
   }
 
+  /* Prevent Radix react-remove-scroll from adding padding/margin that shifts layout */
+  body[data-scroll-locked] {
+    padding-right: 0 !important;
+    margin-right: 0 !important;
+    overflow: clip !important;
+  }
+
   @media (max-width: 1400px) {
     body {
       margin: 20px 16px;
