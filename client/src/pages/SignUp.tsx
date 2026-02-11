@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Store, Mail, Lock, User, Phone } from 'lucide-react';
+import { Loader2, Store, Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'wouter';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -22,6 +22,8 @@ export default function SignUp() {
     phone: '',
   });
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (data) => {
@@ -171,15 +173,23 @@ export default function SignUp() {
                   <Input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
                     required
                     minLength={6}
-                    className="pr-10"
+                    className="pr-10 pl-10"
                     disabled={signupMutation.isPending}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -190,15 +200,23 @@ export default function SignUp() {
                   <Input
                     id="confirmPassword"
                     name="confirmPassword"
-                    type="password"
+                    type={showConfirmPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
                     minLength={6}
-                    className="pr-10"
+                    className="pr-10 pl-10"
                     disabled={signupMutation.isPending}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
             </CardContent>
