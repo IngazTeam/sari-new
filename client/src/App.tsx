@@ -206,7 +206,7 @@ function Router() {
       <Route path="/company/privacy" component={Privacy} />
       <Route path="/try-sari" component={TrySari} />
       <Route path="/try-sari-enhanced" component={TrySariEnhanced} />
-      <Route path="/setup-wizard" component={SetupWizard} />
+      <Route path="/merchant/setup-wizard" component={SetupWizard} />
 
       {/* Merchant Routes */}
       <Route path="/merchant/dashboard">
