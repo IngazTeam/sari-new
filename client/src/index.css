@@ -135,13 +135,9 @@
     border-radius: 22px;
     padding-right: 0 !important;
     margin-right: auto !important;
-    pointer-events: auto !important;
   }
 
-  /* Hide Radix Select overlay that changes background appearance */
-  [data-radix-select-viewport]~* {
-    background: transparent !important;
-  }
+
 
   /* Prevent Radix react-remove-scroll from shifting layout */
   html {
