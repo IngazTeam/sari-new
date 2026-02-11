@@ -130,16 +130,25 @@
     margin: 20px auto;
     min-height: calc(100vh - 40px);
     box-shadow: 0 4px 40px rgba(0, 0, 0, 0.10), 0 0 0 1px rgba(0, 0, 0, 0.05);
-    position: relative;
-    overflow: clip;
+    position: relative !important;
+    overflow: clip !important;
     border-radius: 22px;
     padding-right: 0 !important;
+    margin-right: auto !important;
   }
 
-  /* Prevent Radix react-remove-scroll from adding padding/margin that shifts layout */
+  /* Prevent Radix react-remove-scroll from shifting layout */
   html {
     padding-right: 0 !important;
     margin-right: 0 !important;
+    overflow: auto !important;
+  }
+
+  /* Override Tailwind font-normal on sidebar items */
+  [data-slot="sidebar"] a,
+  [data-slot="sidebar"] button,
+  [data-slot="sidebar"] span {
+    font-weight: 600 !important;
   }
 
   @media (max-width: 1400px) {
