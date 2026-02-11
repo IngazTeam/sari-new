@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,13 +42,27 @@ export default function SmtpSettings() {
   const { data: stats } = trpc.smtp.getStats.useQuery();
 
   const [formData, setFormData] = useState({
-    host: settings?.host || "",
-    port: settings?.port || 587,
-    username: settings?.username || "",
+    host: "",
+    port: 587,
+    username: "",
     password: "",
-    fromEmail: settings?.fromEmail || "",
-    fromName: settings?.fromName || "ساري",
+    fromEmail: "",
+    fromName: "ساري",
   });
+
+  // Sync form data when settings load from the server
+  useEffect(() => {
+    if (settings) {
+      setFormData((prev) => ({
+        host: settings.host || prev.host,
+        port: settings.port || prev.port,
+        username: settings.username || prev.username,
+        password: "", // Never pre-fill password
+        fromEmail: settings.fromEmail || prev.fromEmail,
+        fromName: settings.fromName || prev.fromName,
+      }));
+    }
+  }, [settings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +79,7 @@ export default function SmtpSettings() {
 
   const handleProviderChange = (provider: string) => {
     setSmtpProvider(provider);
-    
+
     // Pre-fill settings based on provider
     const presets: Record<string, { host: string; port: number }> = {
       smtp2go: { host: "mail.smtp2go.com", port: 2525 },
@@ -330,8 +344,8 @@ export default function SmtpSettings() {
                               log.status === "sent"
                                 ? "default"
                                 : log.status === "failed"
-                                ? "destructive"
-                                : "secondary"
+                                  ? "destructive"
+                                  : "secondary"
                             }
                           >
                             {log.status === "sent" ? "تم الإرسال" : log.status === "failed" ? "فشل" : "معلق"}
