@@ -21,17 +21,17 @@ interface Item {
 }
 
 const PRODUCT_SUGGESTIONS = [
-  { name: 'قميص قطني', price: '89' },
-  { name: 'بنطلون جينز', price: '159' },
-  { name: 'حذاء رياضي', price: '249' },
-  { name: 'ساعة يد', price: '399' },
+  { name: 'جوال سامسونج S24', price: '3499' },
+  { name: 'لابتوب ديل انسبايرون', price: '2899' },
+  { name: 'سماعات ايربودز', price: '899' },
+  { name: 'شاحن لاسلكي', price: '149' },
 ];
 
 const SERVICE_SUGGESTIONS = [
-  { name: 'قص شعر', price: '50' },
-  { name: 'صبغة شعر', price: '150' },
-  { name: 'استشارة طبية', price: '200' },
-  { name: 'تصميم شعار', price: '500' },
+  { name: 'استقدام عاملة منزلية', price: '15000' },
+  { name: 'تأشيرة عمالة', price: '2000' },
+  { name: 'كشف طبي عام', price: '150' },
+  { name: 'تنظيف أسنان', price: '300' },
 ];
 
 export default function ProductsServicesStep({
@@ -153,7 +153,7 @@ export default function ProductsServicesStep({
             <Label htmlFor={`${type}-name-${item.id}`}>الاسم *</Label>
             <Input
               id={`${type}-name-${item.id}`}
-              placeholder={type === 'products' ? 'مثال: قميص قطني' : 'مثال: قص شعر رجالي'}
+              placeholder={type === 'products' ? 'مثال: جوال سامسونج S24' : 'مثال: استقدام عاملة منزلية'}
               value={item.name}
               onChange={(e) => updateItem(type, item.id, 'name', e.target.value)}
               className={!item.name.trim() && hasAnyItems ? 'border-amber-300' : ''}
@@ -164,7 +164,7 @@ export default function ProductsServicesStep({
             <Label htmlFor={`${type}-desc-${item.id}`}>الوصف (اختياري)</Label>
             <Textarea
               id={`${type}-desc-${item.id}`}
-              placeholder={type === 'products' ? 'وصف المنتج...' : 'وصف الخدمة ومدتها...'}
+              placeholder={type === 'products' ? 'وصف المنتج ومميزاته...' : 'وصف الخدمة ومدتها والشروط...'}
               value={item.description}
               onChange={(e) => updateItem(type, item.id, 'description', e.target.value)}
               rows={2}
@@ -262,15 +262,15 @@ export default function ProductsServicesStep({
           <ul className="list-disc list-inside space-y-0.5 text-xs text-amber-700">
             {isStore ? (
               <>
-                <li>أضف اسم واضح ومحدد (مثال: "قميص أبيض قطن - مقاس L")</li>
+                <li>أضف اسم واضح ومحدد (مثال: "جوال سامسونج S24 - 256GB")</li>
                 <li>حدد السعر بالريال السعودي</li>
                 <li>أضف وصف مختصر يساعد ساري في الرد على العملاء</li>
               </>
             ) : (
               <>
-                <li>أضف اسم الخدمة بوضوح (مثال: "قص شعر رجالي")</li>
+                <li>أضف اسم الخدمة بوضوح (مثال: "استقدام عاملة منزلية" أو "كشف طبي عام")</li>
                 <li>حدد السعر أو النطاق السعري</li>
-                <li>اذكر مدة الخدمة في الوصف إن أمكن</li>
+                <li>اذكر مدة الخدمة والشروط في الوصف إن أمكن</li>
               </>
             )}
           </ul>
