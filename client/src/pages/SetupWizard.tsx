@@ -188,53 +188,90 @@ export default function SetupWizard() {
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">إعداد ساري</h1>
-          <p className="text-gray-600">سنساعدك في إعداد كل شيء خلال 5 دقائق فقط</p>
+        <div className="text-center mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">إعداد ساري</h1>
+          <p className="text-sm md:text-base text-gray-600">سنساعدك في إعداد كل شيء خلال 5 دقائق فقط</p>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mb-8">
+        {/* Progress Section */}
+        <div className="mb-6 md:mb-8">
+          {/* Top info row */}
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              الخطوة {currentStep} من {TOTAL_STEPS}
+            <span className="text-sm font-semibold text-emerald-700">
+              {currentStep} / {TOTAL_STEPS}
             </span>
-            <div className="flex items-center gap-3">
-              {/* Saving Indicator */}
+            <div className="flex items-center gap-2">
               {isSaving && (
                 <span className="text-xs text-gray-500 flex items-center gap-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  جاري الحفظ...
+                  <span className="hidden sm:inline">جاري الحفظ...</span>
                 </span>
               )}
               {!isSaving && lastSaved && (
                 <span className="text-xs text-green-600 flex items-center gap-1">
                   <Check className="h-3 w-3" />
-                  تم الحفظ
+                  <span className="hidden sm:inline">تم الحفظ</span>
                 </span>
               )}
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
                 {Math.round(progressPercentage)}%
               </span>
             </div>
           </div>
-          <Progress value={progressPercentage} className="h-2" />
-          <div className="flex justify-between mt-2">
-            {STEP_TITLES.map((title, index) => (
-              <div
-                key={index}
-                className={`text-xs ${index + 1 === currentStep
-                  ? 'text-primary font-semibold'
-                  : index + 1 < currentStep
-                    ? 'text-green-600'
-                    : 'text-gray-400'
-                  }`}
-              >
-                {index + 1 === currentStep && '→ '}
-                {completedSteps.includes(index + 1) && <Check className="inline h-3 w-3 mr-1" />}
-                {title}
-              </div>
-            ))}
+
+          {/* Progress Bar */}
+          <Progress value={progressPercentage} className="h-2 mb-3" />
+
+          {/* Mobile: Current step name + dot indicators */}
+          <div className="md:hidden">
+            <p className="text-sm font-semibold text-emerald-700 mb-2 text-center">
+              {STEP_TITLES[currentStep - 1]}
+            </p>
+            <div className="flex justify-center items-center gap-1.5">
+              {STEP_TITLES.map((_, index) => {
+                const stepNum = index + 1;
+                const isCompleted = completedSteps.includes(stepNum);
+                const isCurrent = stepNum === currentStep;
+                return (
+                  <div
+                    key={index}
+                    className={`
+                      rounded-full transition-all duration-300
+                      ${isCurrent
+                        ? 'w-6 h-2.5 bg-emerald-500'
+                        : isCompleted
+                          ? 'w-2.5 h-2.5 bg-emerald-400'
+                          : 'w-2.5 h-2.5 bg-gray-200'
+                      }
+                    `}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop: Full step labels */}
+          <div className="hidden md:flex justify-between mt-2">
+            {STEP_TITLES.map((title, index) => {
+              const stepNum = index + 1;
+              const isCompleted = completedSteps.includes(stepNum);
+              const isCurrent = stepNum === currentStep;
+              return (
+                <div
+                  key={index}
+                  className={`text-xs transition-colors ${isCurrent
+                      ? 'text-emerald-600 font-bold'
+                      : isCompleted
+                        ? 'text-green-600'
+                        : 'text-gray-400'
+                    }`}
+                >
+                  {isCurrent && '→ '}
+                  {isCompleted && <Check className="inline h-3 w-3 mr-0.5" />}
+                  {title}
+                </div>
+              );
+            })}
           </div>
         </div>
 
