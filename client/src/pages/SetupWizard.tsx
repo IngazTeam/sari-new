@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -59,30 +59,72 @@ export default function SetupWizard() {
     }
   }, [progress]);
 
-  // Auto-save progress
-  const saveProgress = async () => {
+  // Save progress to server
+  const saveProgress = useCallback(async (data?: { step?: number; completed?: number[]; wData?: Record<string, any> }) => {
     setIsSaving(true);
     try {
       await saveProgressMutation.mutateAsync({
+        currentStep: data?.step ?? currentStep,
+        completedSteps: data?.completed ?? completedSteps,
+        wizardData: data?.wData ?? wizardData,
+      });
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Failed to save progress:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentStep, completedSteps, wizardData]);
+
+  // Debounced auto-save: save 2 seconds after any data change
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialLoadRef = useRef(true);
+
+  useEffect(() => {
+    // Skip auto-save on initial load
+    if (isInitialLoadRef.current) {
+      return;
+    }
+    // Clear previous timer
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    // Set new debounced save
+    saveTimerRef.current = setTimeout(() => {
+      saveProgress();
+    }, 2000);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [wizardData, currentStep]);
+
+  // Mark initial load complete after progress is loaded
+  useEffect(() => {
+    if (progress && !loadingProgress) {
+      // Small delay to let initial state settle
+      setTimeout(() => {
+        isInitialLoadRef.current = false;
+      }, 500);
+    }
+  }, [progress, loadingProgress]);
+
+  // Save before page unload (refresh/close)
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Use sendBeacon for reliable save on page close
+      const payload = JSON.stringify({
         currentStep,
         completedSteps,
         wizardData,
       });
-      setLastSaved(new Date());
-
-      // Show success toast briefly
-      toast.success('تم الحفظ ✓', {
-        duration: 1500,
-      });
-    } catch (error) {
-      console.error('Failed to save progress:', error);
-      toast.error('فشل حفظ التقدم', {
-        description: 'سيتم إعادة المحاولة تلقائياً',
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+      navigator.sendBeacon?.('/api/trpc/setupWizard.saveProgress', payload);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [currentStep, completedSteps, wizardData]);
 
   // Update wizard data
   const updateWizardData = (stepData: Record<string, any>) => {
@@ -98,7 +140,19 @@ export default function SetupWizard() {
       }
       setCompletedSteps(newCompletedSteps);
       setCurrentStep(currentStep + 1);
+      // Immediate save (not debounced) when explicitly moving forward
+      saveProgress({ step: currentStep + 1, completed: newCompletedSteps });
+    }
+  };
+
+  // Navigate to a specific step (for clicking on step indicators)
+  const goToStep = (targetStep: number) => {
+    // Allow going to any completed step, or the next available step
+    const canNavigate = completedSteps.includes(targetStep) || targetStep <= Math.max(...completedSteps, 0) + 1;
+    if (canNavigate && targetStep !== currentStep && targetStep >= 1 && targetStep <= TOTAL_STEPS) {
+      // Save current data before navigating
       saveProgress();
+      setCurrentStep(targetStep);
     }
   };
 
@@ -232,11 +286,15 @@ export default function SetupWizard() {
                 const stepNum = index + 1;
                 const isCompleted = completedSteps.includes(stepNum);
                 const isCurrent = stepNum === currentStep;
+                const canClick = isCompleted || stepNum <= Math.max(...completedSteps, 0) + 1;
                 return (
-                  <div
+                  <button
                     key={index}
+                    onClick={() => canClick && goToStep(stepNum)}
                     className={`
                       rounded-full transition-all duration-300
+                      ${canClick && !isCurrent ? 'cursor-pointer hover:scale-125' : ''}
+                      ${!canClick ? 'cursor-default' : ''}
                       ${isCurrent
                         ? 'w-6 h-2.5 bg-emerald-500'
                         : isCompleted
@@ -244,32 +302,39 @@ export default function SetupWizard() {
                           : 'w-2.5 h-2.5 bg-gray-200'
                       }
                     `}
+                    disabled={!canClick}
+                    aria-label={`الخطوة ${stepNum}: ${STEP_TITLES[index]}`}
                   />
                 );
               })}
             </div>
           </div>
 
-          {/* Desktop: Full step labels */}
+          {/* Desktop: Full step labels (clickable) */}
           <div className="hidden md:flex justify-between mt-2">
             {STEP_TITLES.map((title, index) => {
               const stepNum = index + 1;
               const isCompleted = completedSteps.includes(stepNum);
               const isCurrent = stepNum === currentStep;
+              const canClick = isCompleted || stepNum <= Math.max(...completedSteps, 0) + 1;
               return (
-                <div
+                <button
                   key={index}
+                  onClick={() => canClick && goToStep(stepNum)}
+                  disabled={!canClick}
                   className={`text-xs transition-colors ${isCurrent
                       ? 'text-emerald-600 font-bold'
                       : isCompleted
-                        ? 'text-green-600'
-                        : 'text-gray-400'
+                        ? 'text-green-600 hover:text-green-800 cursor-pointer hover:underline'
+                        : canClick
+                          ? 'text-gray-500 hover:text-gray-700 cursor-pointer'
+                          : 'text-gray-400 cursor-default'
                     }`}
                 >
                   {isCurrent && '→ '}
                   {isCompleted && <Check className="inline h-3 w-3 mr-0.5" />}
                   {title}
-                </div>
+                </button>
               );
             })}
           </div>
