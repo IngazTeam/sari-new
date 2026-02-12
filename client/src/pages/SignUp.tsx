@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Store, Mail, Lock, User, Phone, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Store, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Link } from 'wouter';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -55,12 +56,17 @@ export default function SignUp() {
       return;
     }
 
+    if (!formData.phone) {
+      setError('رقم الهاتف مطلوب');
+      return;
+    }
+
     signupMutation.mutate({
       name: formData.name,
       email: formData.email,
       password: formData.password,
       businessName: formData.businessName,
-      phone: formData.phone || undefined,
+      phone: formData.phone,
     });
   };
 
@@ -150,20 +156,13 @@ export default function SignUp() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف (اختياري)</Label>
-                <div className="relative">
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="966500000000"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="pr-10"
-                    disabled={signupMutation.isPending}
-                  />
-                </div>
+                <Label htmlFor="phone">رقم الهاتف *</Label>
+                <PhoneInput
+                  value={formData.phone}
+                  onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
+                  required
+                  disabled={signupMutation.isPending}
+                />
               </div>
 
               <div className="space-y-2">

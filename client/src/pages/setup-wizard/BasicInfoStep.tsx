@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowRight, Building2, Phone, MapPin, FileText, Clock } from 'lucide-react';
+import { ArrowRight, Building2, MapPin, FileText, Clock } from 'lucide-react';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 interface BasicInfoStepProps {
   wizardData: Record<string, any>;
@@ -89,17 +90,14 @@ export default function BasicInfoStep({
         {/* Phone */}
         <div className="space-y-2">
           <Label htmlFor="phone" className="flex items-center space-x-2 space-x-reverse">
-            <Phone className="h-4 w-4 text-gray-500" />
+            <span>📱</span>
             <span>رقم الهاتف *</span>
           </Label>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="مثال: +966501234567"
+          <PhoneInput
             value={formData.phone}
-            onChange={(e) => handleChange('phone', e.target.value)}
-            className={errors.phone ? 'border-red-500' : ''}
-            dir="ltr"
+            onChange={(val) => handleChange('phone', val)}
+            required
+            error={!!errors.phone}
           />
           {errors.phone && (
             <p className="text-sm text-red-500">{errors.phone}</p>

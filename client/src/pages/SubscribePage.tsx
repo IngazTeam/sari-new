@@ -10,19 +10,20 @@ import { trpc } from '@/lib/trpc';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 export default function SubscribePage() {
   const [, params] = useRoute('/subscribe/:planId');
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   const [step, setStep] = useState<'plan' | 'auth' | 'billing'>('plan');
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(
     params?.planId ? parseInt(params.planId) : null
   );
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isNewUser, setIsNewUser] = useState(true);
-  
+
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,13 +33,13 @@ export default function SubscribePage() {
 
   // Fetch plans
   const { data: plans, isLoading: plansLoading } = trpc.subscriptionPlans.listPlans.useQuery();
-  
+
   // Get selected plan details
   const selectedPlan = plans?.find(p => p.id === selectedPlanId);
-  
+
   // Calculate price
-  const price = selectedPlan 
-    ? billingCycle === 'monthly' 
+  const price = selectedPlan
+    ? billingCycle === 'monthly'
       ? parseFloat(selectedPlan.monthlyPrice)
       : parseFloat(selectedPlan.yearlyPrice)
     : 0;
@@ -105,7 +106,7 @@ export default function SubscribePage() {
     try {
       // Step 1: Register or Login
       let userId: number;
-      
+
       if (isNewUser) {
         // Register new user
         const registerResult = await registerMutation.mutateAsync({
@@ -204,11 +205,10 @@ export default function SubscribePage() {
                 return (
                   <Card
                     key={plan.id}
-                    className={`relative border-2 ${
-                      isPopular
-                        ? 'border-primary shadow-xl scale-105'
-                        : 'border-border hover:border-primary/30'
-                    } transition-all cursor-pointer`}
+                    className={`relative border-2 ${isPopular
+                      ? 'border-primary shadow-xl scale-105'
+                      : 'border-border hover:border-primary/30'
+                      } transition-all cursor-pointer`}
                     onClick={() => handlePlanSelect(plan.id)}
                   >
                     {isPopular && (
@@ -240,7 +240,7 @@ export default function SubscribePage() {
                           <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                           <span className="text-sm">{plan.maxCustomers} محادثة شهرياً</span>
                         </li>
-                        
+
                         {features.map((feature, idx) => (
                           <li key={idx} className="flex items-start gap-2">
                             <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -280,17 +280,15 @@ export default function SubscribePage() {
                 {/* Auth Type Toggle */}
                 <div className="flex items-center justify-center gap-4 p-1 bg-muted rounded-lg">
                   <button
-                    className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-                      isNewUser ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-                    }`}
+                    className={`flex-1 py-2 px-4 rounded-md transition-colors ${isNewUser ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                      }`}
                     onClick={() => setIsNewUser(true)}
                   >
                     حساب جديد
                   </button>
                   <button
-                    className={`flex-1 py-2 px-4 rounded-md transition-colors ${
-                      !isNewUser ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-                    }`}
+                    className={`flex-1 py-2 px-4 rounded-md transition-colors ${!isNewUser ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                      }`}
                     onClick={() => setIsNewUser(false)}
                   >
                     لدي حساب
@@ -337,14 +335,11 @@ export default function SubscribePage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">رقم الجوال</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
+                      <Label htmlFor="phone">رقم الجوال *</Label>
+                      <PhoneInput
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="05xxxxxxxx"
-                        dir="ltr"
+                        onChange={setPhone}
+                        required
                       />
                     </div>
                   </>
