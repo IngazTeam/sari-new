@@ -8812,11 +8812,15 @@ export async function getTemplateTranslation(templateId: number, language: 'ar' 
 }
 
 
-export async function getBusinessTemplatesWithTranslations(language?: 'ar' | 'en') {
+export async function getBusinessTemplatesWithTranslations(language?: 'ar' | 'en', businessType?: 'store' | 'services' | 'both') {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const templates = await db.select().from(businessTemplates).where(eq(businessTemplates.is_active, 1));
+  const conditions = [eq(businessTemplates.is_active, 1)];
+  if (businessType) {
+    conditions.push(eq(businessTemplates.business_type, businessType));
+  }
+  const templates = await db.select().from(businessTemplates).where(and(...conditions));
 
   const templatesWithTranslations = await Promise.all(
     templates.map(async (template) => {

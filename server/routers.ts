@@ -5503,7 +5503,7 @@ export const appRouter = router({
         language: z.enum(['ar', 'en']).optional(),
       }))
       .query(async ({ input }) => {
-        return await db.getBusinessTemplatesWithTranslations(input.language);
+        return await db.getBusinessTemplatesWithTranslations(input.language, input.businessType);
       }),
 
     // Apply template
