@@ -7,10 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { 
-  CheckCircle2, 
-  Store, 
-  MessageSquare, 
+import {
+  CheckCircle2,
+  Store,
+  MessageSquare,
   Sparkles,
   ArrowRight,
   ArrowLeft,
@@ -82,7 +82,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
           businessName: businessName.trim(),
           phone: phone.trim() || undefined,
         });
-        
+
         toast.success('تم حفظ معلومات المتجر بنجاح');
       } catch (error) {
         toast.error('حدث خطأ أثناء حفظ البيانات');
@@ -91,7 +91,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     }
 
     const nextStep = currentStep + 1;
-    
+
     if (nextStep < steps.length) {
       await updateStep.mutateAsync({ step: nextStep });
       setCurrentStep(nextStep);
@@ -129,8 +129,8 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
   const CurrentIcon = steps[currentStep].icon;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-2xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+      <Card className="w-full max-w-2xl my-auto max-h-[95vh] sm:max-h-[90vh] flex flex-col">
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -144,18 +144,16 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                 </CardDescription>
               </div>
             </div>
-            {currentStep === 0 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleSkip}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSkip}
+              className="text-gray-500 hover:text-gray-700 flex-shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </Button>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm text-gray-600">
               <span>الخطوة {currentStep + 1} من {steps.length}</span>
@@ -165,7 +163,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 overflow-y-auto flex-1 min-h-0">
           {/* Step 0: Welcome */}
           {currentStep === 0 && (
             <div className="space-y-6 py-6">
