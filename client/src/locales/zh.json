@@ -1102,5 +1102,60 @@
     "tr": "Türkçe",
     "it": "Italiano",
     "zh": "中文"
+  },
+  "menu": {
+    "solutions": {
+      "title": "解决方案",
+      "sales": {
+        "title": "销售方案",
+        "description": "加速您的销售管道并提高转化率"
+      },
+      "marketing": {
+        "title": "营销方案",
+        "description": "WhatsApp上的个性化营销活动"
+      },
+      "support": {
+        "title": "客服方案",
+        "description": "AI驱动的即时回复"
+      }
+    },
+    "product": {
+      "title": "产品",
+      "ai": {
+        "title": "AI代理",
+        "description": "具有Sari个性的智能代理"
+      },
+      "chatbot": {
+        "title": "聊天机器人",
+        "description": "无代码聊天机器人"
+      },
+      "whatsapp": {
+        "title": "WhatsApp集成",
+        "description": "通过QR码轻松连接"
+      },
+      "broadcasts": {
+        "title": "群发消息",
+        "description": "面向数千客户的个性化活动"
+      }
+    },
+    "resources": {
+      "title": "资源",
+      "blog": {
+        "title": "博客",
+        "description": "文章和营销建议"
+      },
+      "helpCenter": {
+        "title": "帮助中心",
+        "description": "解答您的问题"
+      },
+      "successStories": {
+        "title": "成功案例",
+        "description": "客户经验分享"
+      }
+    },
+    "pricing": "定价",
+    "trySari": "试用Sari",
+    "login": "登录",
+    "startFree": "立即免费开始"
   }
 }

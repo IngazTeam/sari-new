@@ -1102,5 +1102,60 @@
     "tr": "Türkçe",
     "it": "Italiano",
     "zh": "中文"
+  },
+  "menu": {
+    "solutions": {
+      "title": "الحلول",
+      "sales": {
+        "title": "للمبيعات",
+        "description": "سرّع خط مبيعاتك وزد تحويلاتك"
+      },
+      "marketing": {
+        "title": "للتسويق",
+        "description": "حملات تسويقية مخصصة على واتساب"
+      },
+      "support": {
+        "title": "للدعم الفني",
+        "description": "ردود فورية بالذكاء الاصطناعي"
+      }
+    },
+    "product": {
+      "title": "المنتج",
+      "ai": {
+        "title": "الذكاء الاصطناعي",
+        "description": "وكيل ذكي بشخصية ساري"
+      },
+      "chatbot": {
+        "title": "روبوت الدردشة",
+        "description": "روبوتات دردشة بدون برمجة"
+      },
+      "whatsapp": {
+        "title": "التكامل مع WhatsApp",
+        "description": "ربط سهل عبر QR Code"
+      },
+      "broadcasts": {
+        "title": "البث الجماعي",
+        "description": "حملات مخصصة لآلاف العملاء"
+      }
+    },
+    "resources": {
+      "title": "الموارد",
+      "blog": {
+        "title": "المدونة",
+        "description": "مقالات ونصائح تسويقية"
+      },
+      "helpCenter": {
+        "title": "مركز المساعدة",
+        "description": "إجابات على أسئلتك"
+      },
+      "successStories": {
+        "title": "قصص النجاح",
+        "description": "تجارب عملائنا"
+      }
+    },
+    "pricing": "التسعير",
+    "trySari": "جرب ساري",
+    "login": "تسجيل الدخول",
+    "startFree": "ابدأ الآن مجاناً"
   }
 }

@@ -1102,5 +1102,60 @@
     "tr": "Türkçe",
     "it": "Italiano",
     "zh": "中文"
+  },
+  "menu": {
+    "solutions": {
+      "title": "Lösungen",
+      "sales": {
+        "title": "Für Verkauf",
+        "description": "Beschleunigen Sie Ihre Vertriebspipeline und steigern Sie Konversionen"
+      },
+      "marketing": {
+        "title": "Für Marketing",
+        "description": "Individuelle Marketingkampagnen auf WhatsApp"
+      },
+      "support": {
+        "title": "Für Support",
+        "description": "Sofortige KI-gestützte Antworten"
+      }
+    },
+    "product": {
+      "title": "Produkt",
+      "ai": {
+        "title": "KI-Agent",
+        "description": "Intelligenter Agent mit Saris Persönlichkeit"
+      },
+      "chatbot": {
+        "title": "Chatbot",
+        "description": "Chatbots ohne Programmierung"
+      },
+      "whatsapp": {
+        "title": "WhatsApp-Integration",
+        "description": "Einfache Verbindung per QR-Code"
+      },
+      "broadcasts": {
+        "title": "Broadcasts",
+        "description": "Individuelle Kampagnen für Tausende Kunden"
+      }
+    },
+    "resources": {
+      "title": "Ressourcen",
+      "blog": {
+        "title": "Blog",
+        "description": "Artikel und Marketing-Tipps"
+      },
+      "helpCenter": {
+        "title": "Hilfe-Center",
+        "description": "Antworten auf Ihre Fragen"
+      },
+      "successStories": {
+        "title": "Erfolgsgeschichten",
+        "description": "Erfahrungen unserer Kunden"
+      }
+    },
+    "pricing": "Preise",
+    "trySari": "Sari testen",
+    "login": "Anmelden",
+    "startFree": "Jetzt kostenlos starten"
   }
 }

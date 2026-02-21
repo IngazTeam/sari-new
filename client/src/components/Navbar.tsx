@@ -36,60 +36,60 @@ export default function Navbar() {
 
   const solutionsMenu = [
     {
-      title: 'للمبيعات',
+      title: t('menu.solutions.sales.title'),
       href: '/solutions/sales',
-      description: 'سرّع خط مبيعاتك وزد تحويلاتك'
+      description: t('menu.solutions.sales.description')
     },
     {
-      title: 'للتسويق',
+      title: t('menu.solutions.marketing.title'),
       href: '/solutions/marketing',
-      description: 'حملات تسويقية مخصصة على واتساب'
+      description: t('menu.solutions.marketing.description')
     },
     {
-      title: 'للدعم الفني',
+      title: t('menu.solutions.support.title'),
       href: '/solutions/support',
-      description: 'ردود فورية بالذكاء الاصطناعي'
+      description: t('menu.solutions.support.description')
     }
   ];
 
   const productMenu = [
     {
-      title: 'الذكاء الاصطناعي',
+      title: t('menu.product.ai.title'),
       href: '/product/ai-agent',
-      description: 'وكيل ذكي بشخصية ساري'
+      description: t('menu.product.ai.description')
     },
     {
-      title: 'روبوت الدردشة',
+      title: t('menu.product.chatbot.title'),
       href: '/product/chatbot',
-      description: 'روبوتات دردشة بدون برمجة'
+      description: t('menu.product.chatbot.description')
     },
     {
-      title: 'التكامل مع WhatsApp',
+      title: t('menu.product.whatsapp.title'),
       href: '/product/whatsapp',
-      description: 'ربط سهل عبر QR Code'
+      description: t('menu.product.whatsapp.description')
     },
     {
-      title: 'البث الجماعي',
+      title: t('menu.product.broadcasts.title'),
       href: '/product/broadcasts',
-      description: 'حملات مخصصة لآلاف العملاء'
+      description: t('menu.product.broadcasts.description')
     }
   ];
 
   const resourcesMenu = [
     {
-      title: 'المدونة',
+      title: t('menu.resources.blog.title'),
       href: '/resources/blog',
-      description: 'مقالات ونصائح تسويقية'
+      description: t('menu.resources.blog.description')
     },
     {
-      title: 'مركز المساعدة',
+      title: t('menu.resources.helpCenter.title'),
       href: '/resources/help-center',
-      description: 'إجابات على أسئلتك'
+      description: t('menu.resources.helpCenter.description')
     },
     {
-      title: 'قصص النجاح',
+      title: t('menu.resources.successStories.title'),
       href: '/resources/success-stories',
-      description: 'تجارب عملائنا'
+      description: t('menu.resources.successStories.description')
     }
   ];
 
@@ -110,7 +110,7 @@ export default function Navbar() {
               {/* الحلول */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-sm font-medium">
-                  الحلول
+                  {t('menu.solutions.title')}
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid w-[400px] gap-3 p-4">
@@ -133,7 +133,7 @@ export default function Navbar() {
               {/* المنتج */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-sm font-medium">
-                  المنتج
+                  {t('menu.product.title')}
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid w-[400px] gap-3 p-4">
@@ -156,7 +156,7 @@ export default function Navbar() {
               {/* الموارد */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-sm font-medium">
-                  الموارد
+                  {t('menu.resources.title')}
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid w-[400px] gap-3 p-4">
@@ -180,7 +180,7 @@ export default function Navbar() {
               <NavigationMenuItem>
                 <Link href="/pricing">
                   <NavigationMenuLink className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer px-4 py-2 inline-block">
-                    التسعير
+                    {t('menu.pricing')}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
@@ -189,7 +189,7 @@ export default function Navbar() {
               <NavigationMenuItem>
                 <Link href="/try-sari">
                   <NavigationMenuLink className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer px-4 py-2 inline-block">
-                    جرب ساري
+                    {t('menu.trySari')}
                   </NavigationMenuLink>
                 </Link>
               </NavigationMenuItem>
@@ -208,56 +208,56 @@ export default function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('ar')}
                 className={currentLang === 'ar' ? 'bg-accent' : ''}
               >
                 <span className="ml-2">🇸🇦</span>
                 العربية
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('en')}
                 className={currentLang === 'en' ? 'bg-accent' : ''}
               >
                 <span className="ml-2">🇬🇧</span>
                 English
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('fr')}
                 className={currentLang === 'fr' ? 'bg-accent' : ''}
               >
                 <span className="ml-2">🇫🇷</span>
                 Français
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('de')}
                 className={currentLang === 'de' ? 'bg-accent' : ''}
               >
                 <span className="ml-2">🇩🇪</span>
                 Deutsch
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('es')}
                 className={currentLang === 'es' ? 'bg-accent' : ''}
               >
                 <span className="ml-2">🇪🇸</span>
                 Español
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('zh')}
                 className={currentLang === 'zh' ? 'bg-accent' : ''}
               >
                 <span className="ml-2">🇨🇳</span>
                 中文
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('tr')}
                 className={currentLang === 'tr' ? 'bg-accent' : ''}
               >
                 <span className="ml-2">🇹🇷</span>
                 Türkçe
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => changeLanguage('it')}
                 className={currentLang === 'it' ? 'bg-accent' : ''}
               >
@@ -266,7 +266,7 @@ export default function Navbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           <Link href="/login">
             <Button variant="ghost">{t('auth.login')}</Button>
           </Link>
@@ -293,7 +293,7 @@ export default function Navbar() {
           <div className="container py-4 space-y-3">
             {/* الحلول */}
             <div className="space-y-2">
-              <div className="text-sm font-bold text-foreground py-2">الحلول</div>
+              <div className="text-sm font-bold text-foreground py-2">{t('menu.solutions.title')}</div>
               {solutionsMenu.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div
@@ -308,7 +308,7 @@ export default function Navbar() {
 
             {/* المنتج */}
             <div className="space-y-2">
-              <div className="text-sm font-bold text-foreground py-2">المنتج</div>
+              <div className="text-sm font-bold text-foreground py-2">{t('menu.product.title')}</div>
               {productMenu.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div
@@ -323,7 +323,7 @@ export default function Navbar() {
 
             {/* الموارد */}
             <div className="space-y-2">
-              <div className="text-sm font-bold text-foreground py-2">الموارد</div>
+              <div className="text-sm font-bold text-foreground py-2">{t('menu.resources.title')}</div>
               {resourcesMenu.map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div
@@ -342,7 +342,7 @@ export default function Navbar() {
                 className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 onClick={() => setIsMenuOpen(false)}
               >
-                التسعير
+                {t('menu.pricing')}
               </div>
             </Link>
 
@@ -352,7 +352,7 @@ export default function Navbar() {
                 className="block py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors cursor-pointer"
                 onClick={() => setIsMenuOpen(false)}
               >
-                جرب ساري
+                {t('menu.trySari')}
               </div>
             </Link>
 
@@ -360,14 +360,14 @@ export default function Navbar() {
               <div onClick={() => setIsMenuOpen(false)}>
                 <Link href="/login">
                   <Button variant="outline" className="w-full">
-                    تسجيل الدخول
+                    {t('menu.login')}
                   </Button>
                 </Link>
               </div>
               <div onClick={() => setIsMenuOpen(false)}>
                 <Link href="/signup">
                   <Button className="w-full bg-primary hover:bg-primary/90">
-                    ابدأ الآن مجاناً
+                    {t('menu.startFree')}
                   </Button>
                 </Link>
               </div>

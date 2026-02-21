@@ -1102,5 +1102,60 @@
     "tr": "Türkçe",
     "it": "Italiano",
     "zh": "中文"
+  },
+  "menu": {
+    "solutions": {
+      "title": "Çözümler",
+      "sales": {
+        "title": "Satış İçin",
+        "description": "Satış hattınızı hızlandırın ve dönüşümlerinizi artırın"
+      },
+      "marketing": {
+        "title": "Pazarlama İçin",
+        "description": "WhatsApp'ta özelleştirilmiş pazarlama kampanyaları"
+      },
+      "support": {
+        "title": "Destek İçin",
+        "description": "Yapay zeka destekli anında yanıtlar"
+      }
+    },
+    "product": {
+      "title": "Ürün",
+      "ai": {
+        "title": "AI Asistan",
+        "description": "Sari kişiliğine sahip akıllı asistan"
+      },
+      "chatbot": {
+        "title": "Chatbot",
+        "description": "Kodsuz chatbotlar"
+      },
+      "whatsapp": {
+        "title": "WhatsApp Entegrasyonu",
+        "description": "QR Kod ile kolay bağlantı"
+      },
+      "broadcasts": {
+        "title": "Toplu Mesaj",
+        "description": "Binlerce müşteriye özel kampanyalar"
+      }
+    },
+    "resources": {
+      "title": "Kaynaklar",
+      "blog": {
+        "title": "Blog",
+        "description": "Makaleler ve pazarlama ipuçları"
+      },
+      "helpCenter": {
+        "title": "Yardım Merkezi",
+        "description": "Sorularınızın yanıtları"
+      },
+      "successStories": {
+        "title": "Başarı Hikayeleri",
+        "description": "Müşterilerimizin deneyimleri"
+      }
+    },
+    "pricing": "Fiyatlandırma",
+    "trySari": "Sari'yi Dene",
+    "login": "Giriş Yap",
+    "startFree": "Ücretsiz Başla"
   }
 }
