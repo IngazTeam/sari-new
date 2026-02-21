@@ -57,7 +57,7 @@ export default function UploadProducts() {
   };
 
   const downloadTemplate = () => {
-    const csvContent = 'name,description,price,imageUrl,stock\nمنتج تجريبي,وصف المنتج,99.99,https://example.com/image.jpg,10';
+    const csvContent = '\uFEFFname,description,price,imageUrl,stock\nمنتج تجريبي,وصف المنتج,99.99,https://example.com/image.jpg,10';
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -169,7 +169,7 @@ export default function UploadProducts() {
               className="hidden"
               id="csv-upload"
             />
-            
+
             {selectedFile ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-center gap-2 text-green-600">
@@ -245,8 +245,8 @@ export default function UploadProducts() {
                     </div>
                   )}
                 </div>
-                <Button 
-                  className="w-full mt-4" 
+                <Button
+                  className="w-full mt-4"
                   onClick={() => setLocation('/merchant/products')}
                 >
                   عرض المنتجات
