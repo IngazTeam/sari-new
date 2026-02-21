@@ -1091,5 +1091,16 @@
     "orderDetails": "طلب رقم {{orderId}} - {{status}}{{tracking}}\nالمبلغ: {{amount}} - التاريخ: {{date}}",
     "productDetails": "• {{name}} - {{price}} {{stock}}{{description}}",
     "storeInfo": "معلومات المتجر:\nاسم المتجر: {{businessName}}\nرقم التواصل: {{phone}}"
+  },
+  "language": {
+    "label": "اللغة",
+    "ar": "العربية",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "es": "Español",
+    "tr": "Türkçe",
+    "it": "Italiano",
+    "zh": "中文"
   }
 }

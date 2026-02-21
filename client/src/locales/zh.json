@@ -167,136 +167,209 @@
   },
   "home": {
     "hero": {
-      "badge": "مدعوم بالذكاء الاصطناعي",
-      "title": "ساري",
-      "subtitle": "مساعد المبيعات الذكي على الواتساب",
-      "description": "أتمت خدمة عملائك ورد مبيعاتك باستخدام الذكاء الاصطناعي. ساري يرد على عملائك باللهجة السعودية على مدار الساعة.",
-      "cta": "ابدأ الآن مجاناً",
-      "watchPrices": "شاهد الأسعار"
+      "badge": "AI驱动",
+      "title": "Sari",
+      "subtitle": "WhatsApp智能销售助手",
+      "description": "通过语音消息管理您的销售：只需录制您的订单、地址、产品和数量，其余交给Sari。理解沙特方言，自动将语音转换为完整订单。",
+      "ctaTrySari": "立即试用Sari",
+      "ctaStartFree": "免费开始",
+      "ctaPricing": "查看价格"
     },
     "chat": {
-      "title": "ساري",
-      "subtitle": "مساعد المبيعات الذكي",
-      "placeholder": "مرحباً! أنا ساري، مساعدك الذكي. كيف أقدر أساعدك اليوم؟",
-      "askPlaceholder": "عندكم جوالات أيفون؟"
+      "title": "Sari",
+      "subtitle": "智能销售助手",
+      "greeting": "你好！我是Sari，您的智能助手。今天我能帮您什么？😊",
+      "customerQuestion": "你们有iPhone 15 Pro吗？",
+      "botResponse1": "欢迎！是的，我们有iPhone 15 Pro 🎉",
+      "botResponse2": "有三种颜色可选：黑色钛金属、蓝色钛金属和原色钛金属",
+      "botResponse3": "价格：4,999 SAR",
+      "botResponse4": "您想订购吗？😊",
+      "customerReply": "是的，我想要一个黑色的",
+      "botConfirm": "完美！没问题 👍"
     },
     "features": {
-      "title": "لماذا ساري؟",
-      "subtitle": "كل ما تحتاجه لإدارة مبيعاتك على الواتساب",
-      "ai": {
-        "title": "ذكاء اصطناعي متقدم",
-        "description": "يفهم استفسارات العملاء ويرد بشكل طبيعي باللهجة السعودية"
+      "title": "为什么选择Sari？",
+      "subtitle": "管理WhatsApp销售所需的一切",
+      "voiceOrder": {
+        "title": "语音订单",
+        "description": "您的客户只需语音下单：产品、数量和地址 - Sari处理其余一切"
       },
-      "products": {
-        "title": "إدارة المنتجات",
-        "description": "أضف منتجاتك وساري سيعرضها للعملاء تلقائياً"
+      "smartReply": {
+        "title": "智能自动回复",
+        "description": "Sari以沙特方言全天候回复客户咨询"
       },
-      "orders": {
-        "title": "تتبع الطلبات",
-        "description": "إدارة كاملة للطلبات مع إشعارات تلقائية للعملاء"
+      "autoOrders": {
+        "title": "自动订单",
+        "description": "自动将对话转换为带支付链接的完整订单"
       },
-      "analytics": {
-        "title": "تحليلات ذكية",
-        "description": "تقارير مفصلة عن المبيعات والمحادثات"
+      "abandonedCarts": {
+        "title": "弃购提醒",
+        "description": "自动提醒未完成订单的客户以提高转化率"
       },
-      "campaigns": {
-        "title": "حملات تسويقية",
-        "description": "أرسل رسائل جماعية وعروض خاصة لعملائك"
+      "invoices": {
+        "title": "WhatsApp发票",
+        "description": "通过WhatsApp直接发送带支付链接的专业发票"
       },
-      "support": {
-        "title": "دعم 24/7",
-        "description": "فريق دعم متاح دائماً لمساعدتك"
+      "tracking": {
+        "title": "订单跟踪",
+        "description": "从确认到交付自动更新客户订单状态"
+      },
+      "gifts": {
+        "title": "礼品和祝贺",
+        "description": "在节日期间自动向客户发送带特别优惠的消息"
+      },
+      "notifications": {
+        "title": "智能通知",
+        "description": "新订单或重要咨询到达时即时通知商家"
+      },
+      "reports": {
+        "title": "报告和分析",
+        "description": "关于销售和对话的详细报告以提高店铺表现"
+      },
+      "sales": {
+        "title": "增加销售",
+        "description": "以更高的转化率将咨询转化为销售"
+      },
+      "available": {
+        "title": "全天候可用",
+        "description": "随时为您的客户服务，即使在营业时间之外"
+      },
+      "secure": {
+        "title": "安全可靠",
+        "description": "完全保护您客户的数据和对话"
       }
     },
     "pricing": {
-      "title": "خطط الأسعار",
-      "subtitle": "اختر الخطة المناسبة لنشاطك التجاري",
-      "monthly": "شهري",
-      "yearly": "سنوي",
-      "save": "وفر 20%",
-      "starter": {
-        "name": "المبتدئ",
-        "price": "مجاناً",
-        "description": "مثالي للتجربة",
-        "features": [
-          "100 محادثة شهرياً",
-          "منتجات غير محدودة",
-          "دعم أساسي",
-          "تحليلات بسيطة"
-        ],
-        "cta": "ابدأ مجاناً"
+      "title": "定价计划",
+      "subtitle": "为您的业务选择合适的计划",
+      "free": {
+        "name": "免费",
+        "price": "0",
+        "period": "每月",
+        "description": "试用和入门",
+        "feature1": "每月100次对话",
+        "feature2": "智能自动回复",
+        "feature3": "基础仪表板",
+        "feature4": "邮件支持",
+        "cta": "免费开始"
       },
-      "professional": {
-        "name": "الاحترافي",
+      "pro": {
+        "name": "专业版",
         "price": "299",
-        "period": "ريال/شهر",
-        "description": "للأعمال المتوسطة",
-        "features": [
-          "1000 محادثة شهرياً",
-          "منتجات غير محدودة",
-          "حملات تسويقية",
-          "تحليلات متقدمة",
-          "دعم أولوية"
-        ],
-        "cta": "ابدأ الآن",
-        "popular": "الأكثر شعبية"
+        "period": "每月",
+        "description": "适合中型商店",
+        "popular": "最受欢迎",
+        "feature1": "每月1,000次对话",
+        "feature2": "智能自动回复",
+        "feature3": "自动订单",
+        "feature4": "报告和分析",
+        "feature5": "支付集成",
+        "feature6": "优先支持",
+        "cta": "立即订阅"
       },
-      "enterprise": {
-        "name": "المؤسسات",
-        "price": "تواصل معنا",
-        "description": "للشركات الكبيرة",
-        "features": [
-          "محادثات غير محدودة",
-          "منتجات غير محدودة",
-          "حملات متقدمة",
-          "تحليلات مخصصة",
-          "مدير حساب مخصص"
-        ],
-        "cta": "تواصل معنا"
+      "advanced": {
+        "name": "高级版",
+        "price": "599",
+        "period": "每月",
+        "description": "适合大型商店",
+        "feature1": "无限对话",
+        "feature2": "所有专业版功能",
+        "feature3": "营销活动",
+        "feature4": "Google Sheets集成",
+        "feature5": "Google Calendar集成",
+        "feature6": "24/7专属支持",
+        "cta": "立即订阅"
       }
     },
     "cta": {
-      "title": "جاهز للبدء؟",
-      "description": "انضم لمئات التجار الذين يستخدمون ساري لزيادة مبيعاتهم",
-      "button": "ابدأ الآن مجاناً"
+      "title": "准备好开始了吗？",
+      "subtitle": "加入数千家使用Sari增加销售的商家",
+      "button": "立即免费开始"
+    },
+    "stats": {
+      "merchants": "活跃商家",
+      "conversations": "每月对话",
+      "satisfaction": "客户满意度",
+      "support": "持续支持"
+    },
+    "steps": {
+      "title": "如何开始使用Sari？",
+      "subtitle": "四个简单步骤开始",
+      "step1": {
+        "title": "创建您的账户",
+        "description": "在不到一分钟内创建免费账户"
+      },
+      "step2": {
+        "title": "连接WhatsApp",
+        "description": "通过QR码轻松连接您商店的WhatsApp号码"
+      },
+      "step3": {
+        "title": "添加您的产品",
+        "description": "添加您的产品和价格以便Sari识别"
+      },
+      "step4": {
+        "title": "开始销售",
+        "description": "让Sari管理您的客户并增加销售"
+      }
+    },
+    "testimonials": {
+      "title": "客户评价",
+      "subtitle": "使用Sari的商家真实体验",
+      "testimonial1": {
+        "name": "Ahmed Al-Malki",
+        "role": "电子产品店主",
+        "content": "Sari改变了我与客户打交道的方式。现在我可以专注于店铺发展，而Sari处理各种咨询。"
+      },
+      "testimonial2": {
+        "name": "Fatima Al-Otaibi",
+        "role": "时装店主",
+        "content": "使用Sari后我的销售额增长了40%。客户喜欢快速专业的回复。"
+      },
+      "testimonial3": {
+        "name": "Mohammed Al-Qahtani",
+        "role": "香水店主",
+        "content": "对我店铺最好的投资。Sari用自然的沙特方言说话并理解客户需求。"
+      }
+    },
+    "faq": {
+      "title": "常见问题",
+      "subtitle": "最常见问题的答案",
+      "q1": {
+        "question": "什么是Sari？",
+        "answer": "Sari是一个在WhatsApp上工作的智能销售助手，自动回复客户咨询并将对话转换为完整订单。"
+      },
+      "q2": {
+        "question": "Sari如何工作？",
+        "answer": "连接您商店的WhatsApp号码后，Sari使用人工智能接收消息并自动回复，可以创建订单和发送支付链接。"
+      },
+      "q3": {
+        "question": "Sari支持阿拉伯语吗？",
+        "answer": "是的，Sari专为沙特市场设计，使用自然的沙特方言。"
+      },
+      "q4": {
+        "question": "我可以免费试用Sari吗？",
+        "answer": "是的，我们提供每月100次对话的免费计划供您试用。"
+      },
+      "q5": {
+        "question": "如何付款？",
+        "answer": "您可以通过信用卡、Apple Pay或Mada按月或按年付款。"
+      },
+      "q6": {
+        "question": "我可以随时取消吗？",
+        "answer": "是的，您可以随时取消订阅，无需支付额外费用。"
+      }
     }
   },
   "dashboard": {
-    "title": "لوحة التحكم",
-    "welcome": "مرحباً، {{name}}",
-    "overview": "نظرة عامة",
-    "statistics": "الإحصائيات",
-    "recentActivity": "النشاط الأخير",
-    "quickActions": "إجراءات سريعة",
-    "totalConversations": "إجمالي المحادثات",
-    "activeCustomers": "العملاء النشطون",
     "totalOrders": "إجمالي الطلبات",
     "totalRevenue": "إجمالي الإيرادات",
-    "pendingOrders": "الطلبات المعلقة",
+    "averageOrderValue": "متوسط قيمة الطلب",
     "completedOrders": "الطلبات المكتملة",
-    "todayConversations": "محادثات اليوم",
-    "todayOrders": "طلبات اليوم",
-    "todayRevenue": "إيرادات اليوم",
-    "thisWeek": "هذا الأسبوع",
-    "thisMonth": "هذا الشهر",
-    "lastMonth": "الشهر الماضي",
-    "growth": "النمو",
-    "decline": "الانخفاض",
-    "noChange": "لا تغيير",
-    "stats": {
-      "totalOrders": "إجمالي الطلبات",
-      "totalRevenue": "إجمالي الإيرادات",
-      "activeConversations": "المحادثات النشطة",
-      "products": "المنتجات"
-    },
-    "charts": {
-      "ordersTitle": "اتجاه الطلبات (آخر 30 يوم)",
-      "revenueTitle": "اتجاه الإيرادات (آخر 30 يوم)",
-      "topProducts": "أفضل المنتجات مبيعاً"
-    },
-    "comparison": {
-      "vs30Days": "مقارنة بـ 30 يوم السابقة"
-    }
+    "averageRating": "متوسط التقييم",
+    "last30Days": "آخر 30 يوم",
+    "averageOrder": "متوسط الطلب",
+    "successfulOrders": "طلبات ناجحة",
+    "reviews": "تقييم"
   },
   "conversations": {
     "title": "المحادثات",
@@ -1019,15 +1092,15 @@
     "productDetails": "• {{name}} - {{price}} {{stock}}{{description}}",
     "storeInfo": "معلومات المتجر:\nاسم المتجر: {{businessName}}\nرقم التواصل: {{phone}}"
   },
-  "dashboard": {
-    "totalOrders": "إجمالي الطلبات",
-    "totalRevenue": "إجمالي الإيرادات",
-    "averageOrderValue": "متوسط قيمة الطلب",
-    "completedOrders": "الطلبات المكتملة",
-    "averageRating": "متوسط التقييم",
-    "last30Days": "آخر 30 يوم",
-    "averageOrder": "متوسط الطلب",
-    "successfulOrders": "طلبات ناجحة",
-    "reviews": "تقييم"
+  "language": {
+    "label": "语言",
+    "ar": "العربية",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "es": "Español",
+    "tr": "Türkçe",
+    "it": "Italiano",
+    "zh": "中文"
   }
 }

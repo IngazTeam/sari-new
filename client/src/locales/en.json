@@ -169,23 +169,17 @@
   "home": {
     "hero": {
       "badge": "AI-Powered",
-      "title": "Sary",
+      "title": "Sari",
       "subtitle": "Smart Sales Assistant on WhatsApp",
-      "description": "Manage your sales with voice messages: just record your order, address, product, and quantity, and leave the rest to Sary. Understands Saudi dialect and converts voice to complete order automatically.",
-      "ctaTrySari": "Try Sary Now",
+      "description": "Manage your sales with voice messages: just record your order, address, product, and quantity, and leave the rest to Sari. Understands Saudi dialect and converts voice to complete order automatically.",
+      "ctaTrySari": "Try Sari Now",
       "ctaStartFree": "Start Free Now",
       "ctaPricing": "View Pricing"
     },
-    "stats": {
-      "merchants": "Active Merchants",
-      "conversations": "Monthly Conversations",
-      "satisfaction": "Customer Satisfaction",
-      "support": "24/7 Support"
-    },
     "chat": {
-      "title": "Sary",
+      "title": "Sari",
       "subtitle": "Smart Sales Assistant",
-      "greeting": "Hello! I'm Sary, your smart assistant. How can I help you today? 😊",
+      "greeting": "Hello! I'm Sari, your smart assistant. How can I help you today? 😊",
       "customerQuestion": "Do you have iPhone 15 Pro?",
       "botResponse1": "Welcome! Yes, we have iPhone 15 Pro 🎉",
       "botResponse2": "Available in three colors: Black Titanium, Blue Titanium, and Natural Titanium",
@@ -195,15 +189,15 @@
       "botConfirm": "Perfect! Got it 👍"
     },
     "features": {
-      "title": "Why Sary?",
+      "title": "Why Sari?",
       "subtitle": "Everything you need to manage your WhatsApp sales",
       "voiceOrder": {
         "title": "Voice Message Orders",
-        "description": "Your customers order by voice only: product, quantity, and address - Sary handles the rest"
+        "description": "Your customers order by voice only: product, quantity, and address - Sari handles the rest"
       },
       "smartReply": {
         "title": "Smart Auto-Reply",
-        "description": "Sary responds to your customers' inquiries in Saudi dialect 24/7"
+        "description": "Sari responds to your customers' inquiries in Saudi dialect 24/7"
       },
       "autoOrders": {
         "title": "Automatic Orders",
@@ -244,45 +238,6 @@
       "secure": {
         "title": "Safe & Reliable",
         "description": "Complete protection for your customers' data and conversations"
-      }
-    },
-    "steps": {
-      "title": "How to Start with Sary?",
-      "subtitle": "Four simple steps to get started",
-      "step1": {
-        "title": "Register Your Account",
-        "description": "Create a free account in less than a minute"
-      },
-      "step2": {
-        "title": "Connect WhatsApp",
-        "description": "Connect your store's WhatsApp number easily via QR Code"
-      },
-      "step3": {
-        "title": "Add Your Products",
-        "description": "Add your products and prices for Sary to recognize"
-      },
-      "step4": {
-        "title": "Start Selling",
-        "description": "Let Sary handle your customers and increase your sales"
-      }
-    },
-    "testimonials": {
-      "title": "What Our Customers Say",
-      "subtitle": "Real experiences from merchants using Sary",
-      "testimonial1": {
-        "name": "Ahmed Al-Malki",
-        "role": "Electronics Store Owner",
-        "content": "Sary changed the way I deal with customers. Now I can focus on developing the store while Sary handles inquiries."
-      },
-      "testimonial2": {
-        "name": "Fatima Al-Otaibi",
-        "role": "Fashion Store Owner",
-        "content": "My sales increased 40% after using Sary. Customers love the fast and professional response."
-      },
-      "testimonial3": {
-        "name": "Mohammed Al-Qahtani",
-        "role": "Perfume Store Owner",
-        "content": "Best investment I made for my store. Sary speaks natural Saudi dialect and understands customer needs."
       }
     },
     "pricing": {
@@ -327,23 +282,73 @@
         "cta": "Subscribe Now"
       }
     },
+    "cta": {
+      "title": "Ready to Start?",
+      "subtitle": "Join thousands of merchants using Sari to increase their sales",
+      "button": "Start Free Now"
+    },
+    "stats": {
+      "merchants": "Active Merchants",
+      "conversations": "Monthly Conversations",
+      "satisfaction": "Customer Satisfaction",
+      "support": "24/7 Support"
+    },
+    "steps": {
+      "title": "How to Start with Sari?",
+      "subtitle": "Four simple steps to get started",
+      "step1": {
+        "title": "Register Your Account",
+        "description": "Create a free account in less than a minute"
+      },
+      "step2": {
+        "title": "Connect WhatsApp",
+        "description": "Connect your store's WhatsApp number easily via QR Code"
+      },
+      "step3": {
+        "title": "Add Your Products",
+        "description": "Add your products and prices for Sari to recognize"
+      },
+      "step4": {
+        "title": "Start Selling",
+        "description": "Let Sari handle your customers and increase your sales"
+      }
+    },
+    "testimonials": {
+      "title": "What Our Customers Say",
+      "subtitle": "Real experiences from merchants using Sari",
+      "testimonial1": {
+        "name": "Ahmed Al-Malki",
+        "role": "Electronics Store Owner",
+        "content": "Sari changed the way I deal with customers. Now I can focus on developing the store while Sari handles inquiries."
+      },
+      "testimonial2": {
+        "name": "Fatima Al-Otaibi",
+        "role": "Fashion Store Owner",
+        "content": "My sales increased 40% after using Sari. Customers love the fast and professional response."
+      },
+      "testimonial3": {
+        "name": "Mohammed Al-Qahtani",
+        "role": "Perfume Store Owner",
+        "content": "Best investment I made for my store. Sari speaks natural Saudi dialect and understands customer needs."
+      }
+    },
     "faq": {
       "title": "Frequently Asked Questions",
       "subtitle": "Answers to the most common questions",
       "q1": {
-        "question": "What is Sary?",
-        "answer": "Sary is a smart sales assistant that works on WhatsApp, automatically responds to your customers' inquiries and converts conversations to complete orders."
+        "question": "What is Sari?",
+        "answer": "Sari is a smart sales assistant that works on WhatsApp, automatically responds to your customers' inquiries and converts conversations to complete orders."
       },
       "q2": {
-        "question": "How does Sary work?",
-        "answer": "After connecting your store's WhatsApp number, Sary receives messages and responds automatically using artificial intelligence, and can create orders and send payment links."
+        "question": "How does Sari work?",
+        "answer": "After connecting your store's WhatsApp number, Sari receives messages and responds automatically using artificial intelligence, and can create orders and send payment links."
       },
       "q3": {
-        "question": "Does Sary support Arabic?",
-        "answer": "Yes, Sary is specifically designed for the Saudi market and speaks natural Saudi dialect."
+        "question": "Does Sari support Arabic?",
+        "answer": "Yes, Sari is specifically designed for the Saudi market and speaks natural Saudi dialect."
       },
       "q4": {
-        "question": "Can I try Sary for free?",
+        "question": "Can I try Sari for free?",
         "answer": "Yes, we offer a free plan that allows 100 conversations monthly to try the service."
       },
       "q5": {
@@ -354,11 +359,6 @@
         "question": "Can I cancel subscription anytime?",
         "answer": "Yes, you can cancel subscription anytime without any additional fees."
       }
-    },
-    "cta": {
-      "title": "Ready to Start?",
-      "subtitle": "Join thousands of merchants using Sary to increase their sales",
-      "button": "Start Free Now"
     }
   },
   "dashboard": {
@@ -1092,5 +1092,16 @@
     "orderDetails": "Order #{{orderId}} - {{status}}{{tracking}}\nAmount: {{amount}} - Date: {{date}}",
     "productDetails": "• {{name}} - {{price}} {{stock}}{{description}}",
     "storeInfo": "Store Information:\nStore Name: {{businessName}}\nContact: {{phone}}"
+  },
+  "language": {
+    "label": "Language",
+    "ar": "العربية",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "es": "Español",
+    "tr": "Türkçe",
+    "it": "Italiano",
+    "zh": "中文"
   }
 }

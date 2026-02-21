@@ -170,95 +170,194 @@
       "badge": "Propulsé par l'IA",
       "title": "Sari",
       "subtitle": "Assistant de vente intelligent sur WhatsApp",
-      "description": "Automatisez votre service client et augmentez vos ventes avec l'IA. Sari répond à vos clients en dialecte saoudien 24/7.",
-      "cta": "Commencez gratuitement",
-      "watchPrices": "Voir les prix"
+      "description": "Gérez vos ventes avec des messages vocaux : enregistrez simplement votre commande, adresse, produit et quantité, et laissez le reste à Sari. Comprend le dialecte saoudien et convertit la voix en commande complète automatiquement.",
+      "ctaTrySari": "Essayer Sari maintenant",
+      "ctaStartFree": "Commencer gratuitement",
+      "ctaPricing": "Voir les prix"
     },
     "chat": {
       "title": "Sari",
       "subtitle": "Assistant de vente intelligent",
-      "placeholder": "Bonjour ! Je suis Sari, votre assistant intelligent. Comment puis-je vous aider aujourd'hui ?",
-      "askPlaceholder": "Avez-vous des iPhones ?"
+      "greeting": "Bonjour ! Je suis Sari, votre assistant intelligent. Comment puis-je vous aider aujourd'hui ? 😊",
+      "customerQuestion": "Avez-vous l'iPhone 15 Pro ?",
+      "botResponse1": "Bienvenue ! Oui, nous avons l'iPhone 15 Pro 🎉",
+      "botResponse2": "Disponible en trois couleurs : Titane Noir, Titane Bleu et Titane Naturel",
+      "botResponse3": "Prix : 4 999 SAR",
+      "botResponse4": "Souhaitez-vous le commander ? 😊",
+      "customerReply": "Oui, j'en veux un en noir",
+      "botConfirm": "Parfait ! C'est noté 👍"
     },
     "features": {
       "title": "Pourquoi Sari ?",
-      "subtitle": "Tout ce dont vous avez besoin pour gérer vos ventes sur WhatsApp",
-      "ai": {
-        "title": "Intelligence artificielle avancée",
-        "description": "Comprend les demandes des clients et répond naturellement en dialecte saoudien"
+      "subtitle": "Tout ce dont vous avez besoin pour gérer vos ventes WhatsApp",
+      "voiceOrder": {
+        "title": "Commandes vocales",
+        "description": "Vos clients commandent uniquement par la voix : produit, quantité et adresse - Sari s'occupe du reste"
       },
-      "products": {
-        "title": "Gestion des produits",
-        "description": "Ajoutez vos produits et Sari les présentera automatiquement aux clients"
+      "smartReply": {
+        "title": "Réponse automatique intelligente",
+        "description": "Sari répond aux demandes de vos clients en dialecte saoudien 24/7"
       },
-      "orders": {
+      "autoOrders": {
+        "title": "Commandes automatiques",
+        "description": "Convertissez les conversations en commandes complètes avec lien de paiement automatiquement"
+      },
+      "abandonedCarts": {
+        "title": "Paniers abandonnés",
+        "description": "Rappels automatiques pour les clients n'ayant pas terminé leurs commandes"
+      },
+      "invoices": {
+        "title": "Factures WhatsApp",
+        "description": "Envoyez des factures professionnelles directement via WhatsApp avec lien de paiement"
+      },
+      "tracking": {
         "title": "Suivi des commandes",
-        "description": "Gestion complète des commandes avec notifications automatiques pour les clients"
+        "description": "Mises à jour automatiques pour les clients sur l'état de leurs commandes"
       },
-      "analytics": {
-        "title": "Analyses intelligentes",
-        "description": "Rapports détaillés sur les ventes et les conversations"
+      "gifts": {
+        "title": "Cadeaux et félicitations",
+        "description": "Messages automatiques aux clients lors d'occasions spéciales avec offres"
       },
-      "campaigns": {
-        "title": "Campagnes marketing",
-        "description": "Envoyez des messages groupés et des offres spéciales à vos clients"
+      "notifications": {
+        "title": "Notifications intelligentes",
+        "description": "Alertes instantanées pour le commerçant lors de nouvelles commandes ou demandes importantes"
       },
-      "support": {
-        "title": "Support 24/7",
-        "description": "Équipe de support toujours disponible pour vous aider"
+      "reports": {
+        "title": "Rapports et analyses",
+        "description": "Rapports détaillés sur les ventes et conversations pour améliorer les performances"
+      },
+      "sales": {
+        "title": "Augmenter les ventes",
+        "description": "Convertissez les demandes en ventes avec un taux de conversion plus élevé"
+      },
+      "available": {
+        "title": "Disponible 24/7",
+        "description": "Servez vos clients à tout moment, même en dehors des heures d'ouverture"
+      },
+      "secure": {
+        "title": "Sûr et fiable",
+        "description": "Protection complète des données et conversations de vos clients"
       }
     },
     "pricing": {
       "title": "Plans tarifaires",
-      "subtitle": "Choisissez le plan qui convient à votre entreprise",
-      "monthly": "Mensuel",
-      "yearly": "Annuel",
-      "save": "Économisez 20%",
-      "starter": {
-        "name": "Débutant",
-        "price": "Gratuit",
-        "description": "Idéal pour l'essai",
-        "features": [
-          "100 conversations par mois",
-          "Produits illimités",
-          "Support de base",
-          "Analyses simples"
-        ],
-        "cta": "Commencez gratuitement"
+      "subtitle": "Choisissez le plan adapté à votre entreprise",
+      "free": {
+        "name": "Gratuit",
+        "price": "0",
+        "period": "Mensuel",
+        "description": "Pour essayer et démarrer",
+        "feature1": "100 conversations par mois",
+        "feature2": "Réponse automatique intelligente",
+        "feature3": "Tableau de bord basique",
+        "feature4": "Support par email",
+        "cta": "Commencer gratuitement"
       },
-      "professional": {
+      "pro": {
         "name": "Professionnel",
         "price": "299",
-        "period": "SAR/mois",
-        "description": "Pour les entreprises moyennes",
-        "features": [
-          "1000 conversations par mois",
-          "Produits illimités",
-          "Campagnes marketing",
-          "Analyses avancées",
-          "Support prioritaire"
-        ],
-        "cta": "Commencez maintenant",
-        "popular": "Le plus populaire"
+        "period": "Mensuel",
+        "description": "Pour les boutiques moyennes",
+        "popular": "Le plus populaire",
+        "feature1": "1 000 conversations par mois",
+        "feature2": "Réponse automatique intelligente",
+        "feature3": "Commandes automatiques",
+        "feature4": "Rapports et analyses",
+        "feature5": "Intégration des paiements",
+        "feature6": "Support prioritaire",
+        "cta": "S'abonner maintenant"
       },
-      "enterprise": {
-        "name": "Entreprise",
-        "price": "Contactez-nous",
-        "description": "Pour les grandes entreprises",
-        "features": [
-          "Conversations illimitées",
-          "Produits illimités",
-          "Campagnes avancées",
-          "Analyses personnalisées",
-          "Gestionnaire de compte dédié"
-        ],
-        "cta": "Contactez-nous"
+      "advanced": {
+        "name": "Avancé",
+        "price": "599",
+        "period": "Mensuel",
+        "description": "Pour les grandes boutiques",
+        "feature1": "Conversations illimitées",
+        "feature2": "Toutes les fonctionnalités Pro",
+        "feature3": "Campagnes marketing",
+        "feature4": "Intégration Google Sheets",
+        "feature5": "Intégration Google Calendar",
+        "feature6": "Support dédié 24/7",
+        "cta": "S'abonner maintenant"
       }
     },
     "cta": {
       "title": "Prêt à commencer ?",
-      "description": "Rejoignez des centaines de commerçants qui utilisent Sari pour augmenter leurs ventes",
-      "button": "Commencez gratuitement"
+      "subtitle": "Rejoignez des milliers de commerçants qui utilisent Sari pour augmenter leurs ventes",
+      "button": "Commencer gratuitement"
+    },
+    "stats": {
+      "merchants": "Commerçants actifs",
+      "conversations": "Conversations mensuelles",
+      "satisfaction": "Satisfaction client",
+      "support": "Support continu"
+    },
+    "steps": {
+      "title": "Comment démarrer avec Sari ?",
+      "subtitle": "Quatre étapes simples pour commencer",
+      "step1": {
+        "title": "Créez votre compte",
+        "description": "Créez un compte gratuit en moins d'une minute"
+      },
+      "step2": {
+        "title": "Connectez WhatsApp",
+        "description": "Connectez le numéro WhatsApp de votre boutique facilement via QR Code"
+      },
+      "step3": {
+        "title": "Ajoutez vos produits",
+        "description": "Ajoutez vos produits et prix pour que Sari les reconnaisse"
+      },
+      "step4": {
+        "title": "Commencez à vendre",
+        "description": "Laissez Sari gérer vos clients et augmenter vos ventes"
+      }
+    },
+    "testimonials": {
+      "title": "Ce que disent nos clients",
+      "subtitle": "Expériences réelles de commerçants utilisant Sari",
+      "testimonial1": {
+        "name": "Ahmed Al-Malki",
+        "role": "Propriétaire de magasin d'électronique",
+        "content": "Sari a changé ma façon de gérer les clients. Maintenant je peux me concentrer sur le développement du magasin pendant que Sari gère les demandes."
+      },
+      "testimonial2": {
+        "name": "Fatima Al-Otaibi",
+        "role": "Propriétaire de boutique de mode",
+        "content": "Mes ventes ont augmenté de 40% après avoir utilisé Sari. Les clients adorent la réponse rapide et professionnelle."
+      },
+      "testimonial3": {
+        "name": "Mohammed Al-Qahtani",
+        "role": "Propriétaire de parfumerie",
+        "content": "Le meilleur investissement pour mon magasin. Sari parle le dialecte saoudien naturel et comprend les besoins des clients."
+      }
+    },
+    "faq": {
+      "title": "Questions fréquemment posées",
+      "subtitle": "Réponses aux questions les plus courantes",
+      "q1": {
+        "question": "Qu'est-ce que Sari ?",
+        "answer": "Sari est un assistant de vente intelligent sur WhatsApp qui répond automatiquement aux demandes de vos clients et convertit les conversations en commandes complètes."
+      },
+      "q2": {
+        "question": "Comment fonctionne Sari ?",
+        "answer": "Après avoir connecté le numéro WhatsApp de votre boutique, Sari reçoit les messages et répond automatiquement grâce à l'intelligence artificielle, crée des commandes et envoie des liens de paiement."
+      },
+      "q3": {
+        "question": "Sari supporte-t-il l'arabe ?",
+        "answer": "Oui, Sari est spécialement conçu pour le marché saoudien et parle le dialecte saoudien naturel."
+      },
+      "q4": {
+        "question": "Puis-je essayer Sari gratuitement ?",
+        "answer": "Oui, nous offrons un plan gratuit avec 100 conversations par mois pour essayer le service."
+      },
+      "q5": {
+        "question": "Comment se fait le paiement ?",
+        "answer": "Vous pouvez payer mensuellement ou annuellement par carte de crédit, Apple Pay ou Mada."
+      },
+      "q6": {
+        "question": "Puis-je annuler à tout moment ?",
+        "answer": "Oui, vous pouvez annuler votre abonnement à tout moment sans frais supplémentaires."
+      }
     }
   },
   "dashboard": {
@@ -992,5 +1091,16 @@
     "orderDetails": "Commande numéro {{orderId}} - {{status}}{{tracking}}\nMontant : {{amount}} - Date : {{date}}",
     "productDetails": "• {{name}} - {{price}} {{stock}}{{description}}",
     "storeInfo": "Informations sur le magasin :\nNom du magasin : {{businessName}}\nNuméro de contact : {{phone}}"
+  },
+  "language": {
+    "label": "Langue",
+    "ar": "العربية",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "es": "Español",
+    "tr": "Türkçe",
+    "it": "Italiano",
+    "zh": "中文"
   }
 }

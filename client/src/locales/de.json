@@ -167,136 +167,209 @@
   },
   "home": {
     "hero": {
-      "badge": "مدعوم بالذكاء الاصطناعي",
-      "title": "ساري",
-      "subtitle": "مساعد المبيعات الذكي على الواتساب",
-      "description": "أتمت خدمة عملائك ورد مبيعاتك باستخدام الذكاء الاصطناعي. ساري يرد على عملائك باللهجة السعودية على مدار الساعة.",
-      "cta": "ابدأ الآن مجاناً",
-      "watchPrices": "شاهد الأسعار"
+      "badge": "KI-gesteuert",
+      "title": "Sari",
+      "subtitle": "Intelligenter Verkaufsassistent auf WhatsApp",
+      "description": "Verwalte deine Verkäufe mit Sprachnachrichten: Nimm einfach deine Bestellung, Adresse, Produkt und Menge auf und überlasse den Rest Sari. Versteht den saudischen Dialekt und wandelt Sprache automatisch in eine vollständige Bestellung um.",
+      "ctaTrySari": "Sari jetzt testen",
+      "ctaStartFree": "Jetzt kostenlos starten",
+      "ctaPricing": "Preise ansehen"
     },
     "chat": {
-      "title": "ساري",
-      "subtitle": "مساعد المبيعات الذكي",
-      "placeholder": "مرحباً! أنا ساري، مساعدك الذكي. كيف أقدر أساعدك اليوم؟",
-      "askPlaceholder": "عندكم جوالات أيفون؟"
+      "title": "Sari",
+      "subtitle": "Intelligenter Verkaufsassistent",
+      "greeting": "Hallo! Ich bin Sari, dein intelligenter Assistent. Wie kann ich dir heute helfen? 😊",
+      "customerQuestion": "Haben Sie iPhone 15 Pro?",
+      "botResponse1": "Willkommen! Ja, wir haben das iPhone 15 Pro 🎉",
+      "botResponse2": "Verfügbar in drei Farben: Schwarz Titan, Blau Titan und Natur Titan",
+      "botResponse3": "Preis: 4.999 SAR",
+      "botResponse4": "Möchten Sie es bestellen? 😊",
+      "customerReply": "Ja, ich möchte eines in Schwarz",
+      "botConfirm": "Perfekt! Erledigt 👍"
     },
     "features": {
-      "title": "لماذا ساري؟",
-      "subtitle": "كل ما تحتاجه لإدارة مبيعاتك على الواتساب",
-      "ai": {
-        "title": "ذكاء اصطناعي متقدم",
-        "description": "يفهم استفسارات العملاء ويرد بشكل طبيعي باللهجة السعودية"
+      "title": "Warum Sari?",
+      "subtitle": "Alles was du brauchst um deine WhatsApp-Verkäufe zu verwalten",
+      "voiceOrder": {
+        "title": "Sprachbestellungen",
+        "description": "Deine Kunden bestellen nur per Sprache: Produkt, Menge und Adresse - Sari erledigt den Rest"
       },
-      "products": {
-        "title": "إدارة المنتجات",
-        "description": "أضف منتجاتك وساري سيعرضها للعملاء تلقائياً"
+      "smartReply": {
+        "title": "Intelligente Auto-Antwort",
+        "description": "Sari beantwortet Kundenanfragen im saudischen Dialekt rund um die Uhr"
       },
-      "orders": {
-        "title": "تتبع الطلبات",
-        "description": "إدارة كاملة للطلبات مع إشعارات تلقائية للعملاء"
+      "autoOrders": {
+        "title": "Automatische Bestellungen",
+        "description": "Konvertiere Gespräche automatisch in vollständige Bestellungen mit Zahlungslink"
       },
-      "analytics": {
-        "title": "تحليلات ذكية",
-        "description": "تقارير مفصلة عن المبيعات والمحادثات"
+      "abandonedCarts": {
+        "title": "Verlassene Warenkörbe",
+        "description": "Automatische Erinnerungen für Kunden die ihre Bestellung nicht abgeschlossen haben"
       },
-      "campaigns": {
-        "title": "حملات تسويقية",
-        "description": "أرسل رسائل جماعية وعروض خاصة لعملائك"
+      "invoices": {
+        "title": "WhatsApp-Rechnungen",
+        "description": "Sende professionelle Rechnungen direkt über WhatsApp mit Zahlungslink"
       },
-      "support": {
-        "title": "دعم 24/7",
-        "description": "فريق دعم متاح دائماً لمساعدتك"
+      "tracking": {
+        "title": "Bestellverfolgung",
+        "description": "Automatische Updates für Kunden über den Bestellstatus von der Bestätigung bis zur Lieferung"
+      },
+      "gifts": {
+        "title": "Geschenke & Grüße",
+        "description": "Automatische Nachrichten an Kunden zu besonderen Anlässen mit Sonderangeboten"
+      },
+      "notifications": {
+        "title": "Intelligente Benachrichtigungen",
+        "description": "Sofortige Benachrichtigungen für Händler bei neuen Bestellungen oder wichtigen Anfragen"
+      },
+      "reports": {
+        "title": "Berichte & Analysen",
+        "description": "Detaillierte Berichte über Verkäufe und Gespräche zur Verbesserung der Shop-Leistung"
+      },
+      "sales": {
+        "title": "Umsatzsteigerung",
+        "description": "Konvertiere Anfragen in Verkäufe mit höherer Konversionsrate"
+      },
+      "available": {
+        "title": "24/7 Verfügbar",
+        "description": "Bediene deine Kunden jederzeit, auch außerhalb der Geschäftszeiten"
+      },
+      "secure": {
+        "title": "Sicher & Zuverlässig",
+        "description": "Vollständiger Schutz für Kundendaten und Gespräche"
       }
     },
     "pricing": {
-      "title": "خطط الأسعار",
-      "subtitle": "اختر الخطة المناسبة لنشاطك التجاري",
-      "monthly": "شهري",
-      "yearly": "سنوي",
-      "save": "وفر 20%",
-      "starter": {
-        "name": "المبتدئ",
-        "price": "مجاناً",
-        "description": "مثالي للتجربة",
-        "features": [
-          "100 محادثة شهرياً",
-          "منتجات غير محدودة",
-          "دعم أساسي",
-          "تحليلات بسيطة"
-        ],
-        "cta": "ابدأ مجاناً"
+      "title": "Preispläne",
+      "subtitle": "Wähle den richtigen Plan für dein Unternehmen",
+      "free": {
+        "name": "Kostenlos",
+        "price": "0",
+        "period": "Monatlich",
+        "description": "Zum Testen und Starten",
+        "feature1": "100 Gespräche monatlich",
+        "feature2": "Intelligente Auto-Antwort",
+        "feature3": "Basis-Dashboard",
+        "feature4": "E-Mail-Support",
+        "cta": "Kostenlos starten"
       },
-      "professional": {
-        "name": "الاحترافي",
+      "pro": {
+        "name": "Professionell",
         "price": "299",
-        "period": "ريال/شهر",
-        "description": "للأعمال المتوسطة",
-        "features": [
-          "1000 محادثة شهرياً",
-          "منتجات غير محدودة",
-          "حملات تسويقية",
-          "تحليلات متقدمة",
-          "دعم أولوية"
-        ],
-        "cta": "ابدأ الآن",
-        "popular": "الأكثر شعبية"
+        "period": "Monatlich",
+        "description": "Für mittlere Geschäfte",
+        "popular": "Am beliebtesten",
+        "feature1": "1.000 Gespräche monatlich",
+        "feature2": "Intelligente Auto-Antwort",
+        "feature3": "Automatische Bestellungen",
+        "feature4": "Berichte & Analysen",
+        "feature5": "Zahlungsintegration",
+        "feature6": "Prioritäts-Support",
+        "cta": "Jetzt abonnieren"
       },
-      "enterprise": {
-        "name": "المؤسسات",
-        "price": "تواصل معنا",
-        "description": "للشركات الكبيرة",
-        "features": [
-          "محادثات غير محدودة",
-          "منتجات غير محدودة",
-          "حملات متقدمة",
-          "تحليلات مخصصة",
-          "مدير حساب مخصص"
-        ],
-        "cta": "تواصل معنا"
+      "advanced": {
+        "name": "Erweitert",
+        "price": "599",
+        "period": "Monatlich",
+        "description": "Für große Geschäfte",
+        "feature1": "Unbegrenzte Gespräche",
+        "feature2": "Alle Pro-Funktionen",
+        "feature3": "Marketing-Kampagnen",
+        "feature4": "Google Sheets Integration",
+        "feature5": "Google Calendar Integration",
+        "feature6": "Dedizierter 24/7 Support",
+        "cta": "Jetzt abonnieren"
       }
     },
     "cta": {
-      "title": "جاهز للبدء؟",
-      "description": "انضم لمئات التجار الذين يستخدمون ساري لزيادة مبيعاتهم",
-      "button": "ابدأ الآن مجاناً"
+      "title": "Bereit loszulegen?",
+      "subtitle": "Schließe dich Tausenden von Händlern an die Sari nutzen",
+      "button": "Jetzt kostenlos starten"
+    },
+    "stats": {
+      "merchants": "Aktive Händler",
+      "conversations": "Monatliche Gespräche",
+      "satisfaction": "Kundenzufriedenheit",
+      "support": "24/7 Support"
+    },
+    "steps": {
+      "title": "Wie starte ich mit Sari?",
+      "subtitle": "Vier einfache Schritte zum Start",
+      "step1": {
+        "title": "Konto erstellen",
+        "description": "Erstelle ein kostenloses Konto in weniger als einer Minute"
+      },
+      "step2": {
+        "title": "WhatsApp verbinden",
+        "description": "Verbinde deine WhatsApp-Nummer einfach per QR-Code"
+      },
+      "step3": {
+        "title": "Produkte hinzufügen",
+        "description": "Füge deine Produkte und Preise hinzu damit Sari sie erkennt"
+      },
+      "step4": {
+        "title": "Verkaufen starten",
+        "description": "Lass Sari deine Kunden betreuen und steigere deine Verkäufe"
+      }
+    },
+    "testimonials": {
+      "title": "Was unsere Kunden sagen",
+      "subtitle": "Echte Erfahrungen von Händlern die Sari nutzen",
+      "testimonial1": {
+        "name": "Ahmed Al-Malki",
+        "role": "Elektronikladen-Besitzer",
+        "content": "Sari hat die Art verändert wie ich mit Kunden umgehe. Jetzt kann ich mich auf die Entwicklung des Ladens konzentrieren während Sari die Anfragen bearbeitet."
+      },
+      "testimonial2": {
+        "name": "Fatima Al-Otaibi",
+        "role": "Modeladen-Besitzerin",
+        "content": "Meine Verkäufe sind nach der Nutzung von Sari um 40% gestiegen. Kunden lieben die schnelle und professionelle Antwort."
+      },
+      "testimonial3": {
+        "name": "Mohammed Al-Qahtani",
+        "role": "Parfümladen-Besitzer",
+        "content": "Beste Investition für meinen Laden. Sari spricht natürlichen saudischen Dialekt und versteht Kundenbedürfnisse."
+      }
+    },
+    "faq": {
+      "title": "Häufig gestellte Fragen",
+      "subtitle": "Antworten auf die häufigsten Fragen",
+      "q1": {
+        "question": "Was ist Sari?",
+        "answer": "Sari ist ein intelligenter Verkaufsassistent auf WhatsApp der automatisch auf Kundenanfragen antwortet und Gespräche in vollständige Bestellungen umwandelt."
+      },
+      "q2": {
+        "question": "Wie funktioniert Sari?",
+        "answer": "Nach der Verbindung deiner WhatsApp-Nummer empfängt Sari Nachrichten und antwortet automatisch mit KI, erstellt Bestellungen und sendet Zahlungslinks."
+      },
+      "q3": {
+        "question": "Unterstützt Sari Arabisch?",
+        "answer": "Ja, Sari ist speziell für den saudischen Markt entwickelt und spricht natürlichen saudischen Dialekt."
+      },
+      "q4": {
+        "question": "Kann ich Sari kostenlos testen?",
+        "answer": "Ja, wir bieten einen kostenlosen Plan mit 100 Gesprächen monatlich zum Testen."
+      },
+      "q5": {
+        "question": "Wie wird bezahlt?",
+        "answer": "Sie können monatlich oder jährlich per Kreditkarte, Apple Pay oder Mada bezahlen."
+      },
+      "q6": {
+        "question": "Kann ich jederzeit kündigen?",
+        "answer": "Ja, Sie können Ihr Abonnement jederzeit ohne zusätzliche Kosten kündigen."
+      }
     }
   },
   "dashboard": {
-    "title": "لوحة التحكم",
-    "welcome": "مرحباً، {{name}}",
-    "overview": "نظرة عامة",
-    "statistics": "الإحصائيات",
-    "recentActivity": "النشاط الأخير",
-    "quickActions": "إجراءات سريعة",
-    "totalConversations": "إجمالي المحادثات",
-    "activeCustomers": "العملاء النشطون",
     "totalOrders": "إجمالي الطلبات",
     "totalRevenue": "إجمالي الإيرادات",
-    "pendingOrders": "الطلبات المعلقة",
+    "averageOrderValue": "متوسط قيمة الطلب",
     "completedOrders": "الطلبات المكتملة",
-    "todayConversations": "محادثات اليوم",
-    "todayOrders": "طلبات اليوم",
-    "todayRevenue": "إيرادات اليوم",
-    "thisWeek": "هذا الأسبوع",
-    "thisMonth": "هذا الشهر",
-    "lastMonth": "الشهر الماضي",
-    "growth": "النمو",
-    "decline": "الانخفاض",
-    "noChange": "لا تغيير",
-    "stats": {
-      "totalOrders": "إجمالي الطلبات",
-      "totalRevenue": "إجمالي الإيرادات",
-      "activeConversations": "المحادثات النشطة",
-      "products": "المنتجات"
-    },
-    "charts": {
-      "ordersTitle": "اتجاه الطلبات (آخر 30 يوم)",
-      "revenueTitle": "اتجاه الإيرادات (آخر 30 يوم)",
-      "topProducts": "أفضل المنتجات مبيعاً"
-    },
-    "comparison": {
-      "vs30Days": "مقارنة بـ 30 يوم السابقة"
-    }
+    "averageRating": "متوسط التقييم",
+    "last30Days": "آخر 30 يوم",
+    "averageOrder": "متوسط الطلب",
+    "successfulOrders": "طلبات ناجحة",
+    "reviews": "تقييم"
   },
   "conversations": {
     "title": "المحادثات",
@@ -1019,15 +1092,15 @@
     "productDetails": "• {{name}} - {{price}} {{stock}}{{description}}",
     "storeInfo": "معلومات المتجر:\nاسم المتجر: {{businessName}}\nرقم التواصل: {{phone}}"
   },
-  "dashboard": {
-    "totalOrders": "إجمالي الطلبات",
-    "totalRevenue": "إجمالي الإيرادات",
-    "averageOrderValue": "متوسط قيمة الطلب",
-    "completedOrders": "الطلبات المكتملة",
-    "averageRating": "متوسط التقييم",
-    "last30Days": "آخر 30 يوم",
-    "averageOrder": "متوسط الطلب",
-    "successfulOrders": "طلبات ناجحة",
-    "reviews": "تقييم"
+  "language": {
+    "label": "Sprache",
+    "ar": "العربية",
+    "en": "English",
+    "fr": "Français",
+    "de": "Deutsch",
+    "es": "Español",
+    "tr": "Türkçe",
+    "it": "Italiano",
+    "zh": "中文"
   }
 }
