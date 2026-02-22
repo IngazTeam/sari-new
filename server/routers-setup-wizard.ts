@@ -18,11 +18,16 @@ export const setupWizardRouter = router({
 
         let progress = await db.getSetupWizardProgress(merchant.id);
         if (!progress) {
+            // Seed wizard data with info already provided during signup
+            const initialData = JSON.stringify({
+                businessName: merchant.businessName || '',
+                phone: merchant.phone || '',
+            });
             const progressId = await db.createSetupWizardProgress({
                 merchantId: merchant.id,
                 currentStep: 1,
                 completedSteps: JSON.stringify([]),
-                wizardData: JSON.stringify({}),
+                wizardData: initialData,
                 isCompleted: 0,
             });
             progress = await db.getSetupWizardProgress(merchant.id);
