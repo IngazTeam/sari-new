@@ -226,20 +226,22 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             <div className="space-y-2 max-h-[300px] overflow-y-auto">
                                 {extractedProducts.slice(0, 5).map((product: any, index: number) => (
                                     <Card key={index} className="p-3 flex items-center gap-3">
-                                        {product.imageUrl ? (
+                                        {product.imageUrl && product.imageUrl.trim() ? (
                                             <img
                                                 src={product.imageUrl}
                                                 alt={product.name}
                                                 className="w-12 h-12 rounded-lg object-cover bg-muted"
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).style.display = 'none';
+                                                    // Show fallback sibling
+                                                    const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                                                    if (fallback) (fallback as HTMLElement).style.display = 'flex';
                                                 }}
                                             />
-                                        ) : (
-                                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                                                <Package className="w-6 h-6 text-muted-foreground" />
-                                            </div>
-                                        )}
+                                        ) : null}
+                                        <div className={`w-12 h-12 rounded-lg bg-muted items-center justify-center ${product.imageUrl && product.imageUrl.trim() ? 'hidden' : 'flex'}`}>
+                                            <Package className="w-6 h-6 text-muted-foreground" />
+                                        </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="font-medium truncate">{product.name}</p>
                                             {product.description && (
