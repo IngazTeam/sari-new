@@ -440,10 +440,14 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
 }
 
 /**
- * استخراج المنتجات من الموقع — multi-strategy
+ * استخراج المنتجات من الموقع — multi-strategy with enrichment
  * 1. JSON-LD structured data (most e-commerce platforms embed this)
  * 2. HTML product patterns (price + title selectors)
- * 3. AI extraction from text as fallback
+ * 3. Salla/Zid/Shopify API endpoints
+ * 4. AI extraction from text as fallback
+ * 
+ * If early strategies return sparse data (no description/images),
+ * we merge with AI enrichment.
  */
 export async function extractProducts(url: string, html: string, text: string): Promise<ExtractedProduct[]> {
   try {
@@ -453,21 +457,31 @@ export async function extractProducts(url: string, html: string, text: string): 
     const jsonLdProducts = extractFromJsonLD(html, url);
     if (jsonLdProducts.length > 0) {
       console.log(`[WebsiteAnalyzer] Found ${jsonLdProducts.length} products via JSON-LD`);
-      return jsonLdProducts;
+      return jsonLdProducts; // JSON-LD is the most complete source
     }
 
-    // Strategy 2: Extract from HTML product patterns
-    const htmlProducts = extractFromHTMLPatterns(html, url);
-    if (htmlProducts.length > 0) {
-      console.log(`[WebsiteAnalyzer] Found ${htmlProducts.length} products via HTML patterns`);
-      return htmlProducts;
-    }
-
-    // Strategy 3: Try /products.json for Salla/Shopify stores
+    // Strategy 2: Try Salla/Zid/Shopify API endpoints
     const apiProducts = await tryProductsAPI(url);
     if (apiProducts.length > 0) {
       console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via API`);
       return apiProducts;
+    }
+
+    // Strategy 3: Extract from HTML product patterns
+    const htmlProducts = extractFromHTMLPatterns(html, url);
+    if (htmlProducts.length > 0) {
+      console.log(`[WebsiteAnalyzer] Found ${htmlProducts.length} products via HTML patterns`);
+      // HTML extraction often misses descriptions —
+      // if most products lack description, try AI enrichment
+      const needsEnrichment = htmlProducts.filter(p => !p.description).length > htmlProducts.length * 0.5;
+      if (needsEnrichment && text.length >= 200) {
+        console.log('[WebsiteAnalyzer] HTML products lack descriptions, attempting AI enrichment...');
+        const aiProducts = await extractWithAI(text, url);
+        if (aiProducts.length > 0) {
+          return mergeProducts(htmlProducts, aiProducts);
+        }
+      }
+      return htmlProducts;
     }
 
     // Strategy 4: Fall back to AI extraction if we have enough text
@@ -476,29 +490,76 @@ export async function extractProducts(url: string, html: string, text: string): 
       return [];
     }
 
-    // Use AI to extract products
+    return await extractWithAI(text, url);
+  } catch (error) {
+    console.error('[WebsiteAnalyzer] Error extracting products:', error);
+    return [];
+  }
+}
+
+/**
+ * Merge HTML-extracted products with AI-extracted products.
+ * Uses name similarity to match products and fill in missing fields.
+ */
+function mergeProducts(primary: ExtractedProduct[], secondary: ExtractedProduct[]): ExtractedProduct[] {
+  return primary.map(p => {
+    // Find matching product by name similarity
+    const match = secondary.find(s => {
+      const pName = p.name.toLowerCase().trim();
+      const sName = s.name.toLowerCase().trim();
+      return pName === sName || pName.includes(sName) || sName.includes(pName);
+    });
+
+    if (!match) return p;
+
+    return {
+      ...p,
+      description: p.description || match.description,
+      imageUrl: p.imageUrl || match.imageUrl,
+      category: p.category || match.category,
+      tags: p.tags?.length ? p.tags : match.tags,
+      price: p.price || match.price,
+    };
+  });
+}
+
+/**
+ * AI-based product extraction with image URL support
+ */
+async function extractWithAI(text: string, url: string): Promise<ExtractedProduct[]> {
+  try {
     const response = await invokeLLM({
       messages: [
         {
           role: 'system',
           content: `أنت خبير في استخراج معلومات المنتجات من المواقع الإلكترونية. قم بتحليل المحتوى واستخراج قائمة المنتجات أو الخدمات المتاحة.
 
+قواعد مهمة:
+- استخرج اسم المنتج كاملاً بدقة
+- اكتب وصف مفيد وموجز لكل منتج (إذا لم يوجد وصف صريح، اكتب وصفاً من خلال اسم المنتج وسياق الموقع)
+- استخرج السعر بدقة
+- إذا وجدت رابط صورة في النص، ضعه في imageUrl. إذا لم تجد صورة اتركه فارغاً
+- حدد الفئة (category) لكل منتج
+
 يجب أن تكون الإجابة بصيغة JSON فقط، بدون أي نص إضافي.`
         },
         {
           role: 'user',
-          content: `قم بتحليل هذا الموقع واستخراج جميع المنتجات أو الخدمات:
+          content: `الموقع: ${url}
 
-النص: ${text.substring(0, 8000)}
+قم بتحليل محتوى هذا الموقع واستخراج جميع المنتجات أو الخدمات:
+
+${text.substring(0, 12000)}
 
 استخرج المنتجات بالتنسيق التالي (JSON فقط):
 {
   "products": [
     {
-      "name": "اسم المنتج",
-      "description": "وصف المنتج",
+      "name": "اسم المنتج الكامل",
+      "description": "وصف المنتج — اكتب وصفاً مفيداً حتى لو لم يكن موجوداً صراحة",
       "price": 100.00,
       "currency": "SAR",
+      "imageUrl": "رابط الصورة إذا وجد في النص أو فارغ",
       "category": "الفئة",
       "tags": ["تاج1", "تاج2"],
       "inStock": true,
@@ -525,12 +586,13 @@ export async function extractProducts(url: string, html: string, text: string): 
                     description: { type: 'string' },
                     price: { type: 'number' },
                     currency: { type: 'string' },
+                    imageUrl: { type: 'string' },
                     category: { type: 'string' },
                     tags: { type: 'array', items: { type: 'string' } },
                     inStock: { type: 'boolean' },
                     confidence: { type: 'number' }
                   },
-                  required: ['name', 'description', 'price', 'currency', 'inStock', 'confidence'],
+                  required: ['name', 'description', 'price', 'currency', 'imageUrl', 'inStock', 'confidence'],
                   additionalProperties: false
                 }
               }
@@ -543,14 +605,25 @@ export async function extractProducts(url: string, html: string, text: string): 
     });
 
     const content = response.choices[0].message.content;
-    if (!content) {
-      return [];
-    }
+    if (!content) return [];
 
     const result = JSON.parse(content as string);
-    return result.products || [];
+    const products: ExtractedProduct[] = (result.products || []).map((p: any) => ({
+      name: p.name || '',
+      description: p.description || '',
+      price: p.price || 0,
+      currency: p.currency || 'SAR',
+      imageUrl: (p.imageUrl && p.imageUrl.startsWith('http')) ? p.imageUrl : undefined,
+      category: p.category || undefined,
+      tags: p.tags || [],
+      inStock: p.inStock ?? true,
+      confidence: p.confidence || 70,
+    }));
+
+    console.log(`[WebsiteAnalyzer] AI extracted ${products.length} products`);
+    return products;
   } catch (error) {
-    console.error('[WebsiteAnalyzer] Error extracting products:', error);
+    console.error('[WebsiteAnalyzer] AI extraction failed:', error);
     return [];
   }
 }
@@ -615,10 +688,27 @@ function parseJsonLDProduct(item: any, baseUrl: string): ExtractedProduct | null
     const name = item.name;
     if (!name) return null;
 
+    // Handle both single Offer and AggregateOffer
     const offers = item.offers || {};
-    const price = parseFloat(offers.price || offers.lowPrice || '0');
-    const currency = offers.priceCurrency || 'SAR';
-    const inStock = offers.availability ? !offers.availability.includes('OutOfStock') : true;
+    let price = 0;
+    let currency = 'SAR';
+    let inStock = true;
+
+    if (offers['@type'] === 'AggregateOffer') {
+      price = parseFloat(offers.lowPrice || offers.highPrice || '0');
+      currency = offers.priceCurrency || 'SAR';
+      inStock = offers.availability ? !offers.availability.includes('OutOfStock') : true;
+    } else if (Array.isArray(offers)) {
+      // Multiple offers (variants) — take least price
+      const prices = offers.map((o: any) => parseFloat(o.price || '0')).filter((p: number) => p > 0);
+      price = prices.length > 0 ? Math.min(...prices) : 0;
+      currency = offers[0]?.priceCurrency || 'SAR';
+      inStock = offers.some((o: any) => !o.availability?.includes('OutOfStock'));
+    } else {
+      price = parseFloat(offers.price || offers.lowPrice || '0');
+      currency = offers.priceCurrency || 'SAR';
+      inStock = offers.availability ? !offers.availability.includes('OutOfStock') : true;
+    }
 
     let imageUrl = '';
     if (item.image) {
@@ -632,16 +722,35 @@ function parseJsonLDProduct(item: any, baseUrl: string): ExtractedProduct | null
       productUrl = new URL(productUrl, baseUrl).href;
     }
 
+    // Build description — include variant info if available
+    let description = item.description || '';
+    if (item.hasVariant && Array.isArray(item.hasVariant)) {
+      const variantNames = item.hasVariant
+        .map((v: any) => v.name || v.sku)
+        .filter(Boolean)
+        .slice(0, 5);
+      if (variantNames.length > 0) {
+        description = description
+          ? `${description} | الخيارات: ${variantNames.join('، ')}`
+          : `الخيارات: ${variantNames.join('، ')}`;
+      }
+    }
+
+    // Extract category from breadcrumb or category field
+    const category = item.category ||
+      (item.breadcrumb?.itemListElement?.slice(-2, -1)?.[0]?.name) ||
+      undefined;
+
     return {
       name,
-      description: item.description || '',
+      description,
       price,
       currency,
       imageUrl: imageUrl || undefined,
       productUrl: productUrl || undefined,
-      category: item.category || undefined,
+      category,
       inStock,
-      confidence: 95, // JSON-LD is highly reliable
+      confidence: 95,
     };
   } catch {
     return null;
@@ -649,7 +758,8 @@ function parseJsonLDProduct(item: any, baseUrl: string): ExtractedProduct | null
 }
 
 /**
- * Extract products from common HTML patterns (price + product card selectors)
+ * Extract products from common HTML patterns (price + title selectors)
+ * Enhanced with description extraction and Saudi platform selectors
  */
 function extractFromHTMLPatterns(html: string, baseUrl: string): ExtractedProduct[] {
   const products: ExtractedProduct[] = [];
@@ -658,46 +768,94 @@ function extractFromHTMLPatterns(html: string, baseUrl: string): ExtractedProduc
     const dom = new JSDOM(html);
     const document = dom.window.document;
 
-    // Common e-commerce product card selectors
+    // Common e-commerce product card selectors (including Saudi platforms)
     const productSelectors = [
       '.product-card', '.product-item', '.product',
       '[data-product]', '[data-product-id]',
-      '.s-product-card', // Salla
+      '.s-product-card', '.s-product-card-entry', // Salla
+      '.zid-product-card', '.product-block', // Zid
       '.woocommerce-loop-product',
       '.product-grid-item',
+      '.products-list .product', '.product-box',
     ];
+
+    // Name selectors — ordered by specificity
+    const nameSelectors = [
+      '.product-title', '.product-name',
+      '.s-product-card-entry__title', // Salla
+      '.woocommerce-loop-product__title',
+      '.product-card__title',
+      'h3 a', 'h2 a', 'h3', 'h2',
+    ].join(', ');
+
+    // Price selectors
+    const priceSelectors = [
+      '.price', '.product-price',
+      '.s-product-card-entry__price', // Salla
+      '.amount', '.current-price', '.sale-price',
+    ].join(', ');
+
+    // Description selectors
+    const descSelectors = [
+      '.product-description', '.product-excerpt',
+      '.s-product-card-entry__description', // Salla
+      'p.description', '.short-description',
+      '.product-brief', '.product-subtitle',
+    ].join(', ');
 
     for (const selector of productSelectors) {
       const cards = document.querySelectorAll(selector);
       if (cards.length === 0) continue;
 
       cards.forEach((card: any) => {
-        const nameEl = card.querySelector('.product-title, .product-name, h3, h2, .s-product-card-entry__title, .woocommerce-loop-product__title');
-        const priceEl = card.querySelector('.price, .product-price, .s-product-card-entry__price, .amount');
+        const nameEl = card.querySelector(nameSelectors);
+        const priceEl = card.querySelector(priceSelectors);
         const linkEl = card.querySelector('a[href]');
         const imgEl = card.querySelector('img');
+        const descEl = card.querySelector(descSelectors);
 
         const name = nameEl?.textContent?.trim();
         if (!name) return;
 
-        let priceText = priceEl?.textContent?.replace(/[^\d.٫]/g, '').replace('٫', '.') || '0';
+        // Parse price — handles Arabic numerals and various formats
+        let priceText = priceEl?.textContent?.replace(/[^\d.٫,]/g, '')
+          .replace('٫', '.').replace(',', '') || '0';
         const price = parseFloat(priceText) || 0;
+
+        // Detect currency from price text
+        const priceFullText = priceEl?.textContent || '';
+        let currency = 'SAR';
+        if (priceFullText.includes('$') || priceFullText.includes('USD')) currency = 'USD';
+        else if (priceFullText.includes('€') || priceFullText.includes('EUR')) currency = 'EUR';
+        else if (priceFullText.includes('د.إ') || priceFullText.includes('AED')) currency = 'AED';
+        else if (priceFullText.includes('د.ك') || priceFullText.includes('KWD')) currency = 'KWD';
 
         let productUrl = linkEl?.getAttribute('href') || '';
         if (productUrl && !productUrl.startsWith('http')) {
           try { productUrl = new URL(productUrl, baseUrl).href; } catch { productUrl = ''; }
         }
 
-        let imageUrl = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src') || '';
+        // Get image URL — check multiple attributes
+        let imageUrl = imgEl?.getAttribute('src') ||
+          imgEl?.getAttribute('data-src') ||
+          imgEl?.getAttribute('data-lazy-src') ||
+          imgEl?.getAttribute('data-original') || '';
         if (imageUrl && !imageUrl.startsWith('http')) {
           try { imageUrl = new URL(imageUrl, baseUrl).href; } catch { imageUrl = ''; }
         }
+        // Skip placeholder/loading images
+        if (imageUrl && (imageUrl.includes('placeholder') || imageUrl.includes('data:image') || imageUrl.includes('loading'))) {
+          imageUrl = '';
+        }
+
+        // Extract description from card
+        const description = descEl?.textContent?.trim()?.substring(0, 200) || '';
 
         products.push({
           name,
-          description: '',
+          description,
           price,
-          currency: 'SAR',
+          currency,
           imageUrl: imageUrl || undefined,
           productUrl: productUrl || undefined,
           inStock: true,
@@ -715,16 +873,19 @@ function extractFromHTMLPatterns(html: string, baseUrl: string): ExtractedProduc
 }
 
 /**
- * Try common e-commerce API endpoints (Salla, Shopify)
+ * Try common e-commerce API endpoints (Salla, Zid, Shopify, WooCommerce)
  */
 async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
   const products: ExtractedProduct[] = [];
   const baseUrl = new URL(url).origin;
 
-  // Try Salla API format
+  // API endpoints for major Saudi and global platforms
   const apiEndpoints = [
-    `${baseUrl}/api/products`,
-    `${baseUrl}/products.json`,
+    { url: `${baseUrl}/api/products`, platform: 'salla' },
+    { url: `${baseUrl}/products.json`, platform: 'shopify' },
+    { url: `${baseUrl}/api/v1/products`, platform: 'zid' },
+    { url: `${baseUrl}/wp-json/wc/v3/products`, platform: 'woocommerce' },
+    { url: `${baseUrl}/wp-json/wc/store/v1/products`, platform: 'woocommerce-store' },
   ];
 
   for (const endpoint of apiEndpoints) {
@@ -732,7 +893,7 @@ async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(endpoint, {
+      const response = await fetch(endpoint.url, {
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -749,24 +910,66 @@ async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
 
       const data = await response.json() as any;
 
-      // Shopify format: { products: [...] }
+      // Extract products array from various response formats
       const rawProducts = data.products || data.data || (Array.isArray(data) ? data : []);
 
       for (const p of rawProducts.slice(0, 50)) {
+        // Get image URL from various platform formats
+        const imageUrl = p.image?.src ||           // Shopify
+          p.images?.[0]?.src ||                      // Shopify array
+          p.images?.[0]?.url ||                      // Salla
+          p.images?.[0]?.original_url ||             // Zid
+          p.thumbnail ||                              // Generic
+          p.main_image ||                             // Zid alt
+          p.featured_image ||                         // Generic
+          undefined;
+
+        // Get description — strip HTML tags
+        const rawDesc = p.body_html || p.description || p.short_description || p.content || '';
+        const description = rawDesc.replace(/<[^>]*>/g, '').trim().substring(0, 300);
+
+        // Get category
+        const category = p.category?.name ||
+          p.categories?.[0]?.name ||
+          p.product_type ||
+          p.type ||
+          undefined;
+
+        // Get price from variants or direct
+        const price = parseFloat(
+          p.price || p.variants?.[0]?.price || p.sale_price || p.regular_price || '0'
+        );
+
+        // Get currency
+        const currency = p.currency || p.price_currency || 'SAR';
+
+        // Get product URL
+        let productUrl = p.url || p.permalink || p.slug || undefined;
+        if (productUrl && !productUrl.startsWith('http') && productUrl.startsWith('/')) {
+          productUrl = `${baseUrl}${productUrl}`;
+        }
+
+        // Determine stock status
+        const inStock = p.in_stock !== false &&
+          p.available !== false &&
+          p.quantity !== 0 &&
+          p.status !== 'out_of_stock';
+
         products.push({
           name: p.title || p.name || '',
-          description: p.body_html?.replace(/<[^>]*>/g, '')?.substring(0, 200) || p.description || '',
-          price: parseFloat(p.price || p.variants?.[0]?.price || '0'),
-          currency: p.currency || 'SAR',
-          imageUrl: p.image?.src || p.images?.[0]?.src || p.thumbnail || undefined,
-          productUrl: p.url || undefined,
-          inStock: true,
+          description,
+          price,
+          currency,
+          imageUrl,
+          productUrl,
+          category,
+          inStock,
           confidence: 90,
         });
       }
 
       if (products.length > 0) {
-        console.log(`[WebsiteAnalyzer] Got ${products.length} products from ${endpoint}`);
+        console.log(`[WebsiteAnalyzer] Got ${products.length} products from ${endpoint.url} (${endpoint.platform})`);
         return products;
       }
     } catch {
