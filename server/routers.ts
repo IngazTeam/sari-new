@@ -100,9 +100,7 @@ export const appRouter = router({
         password: z.string().min(6),
       }))
       .mutation(async ({ input, ctx }) => {
-        console.log('🔵 [AUTH] Login attempt:', input.email);
         const user = await db.getUserByEmail(input.email);
-        console.log('🔵 [AUTH] User found:', user?.email);
 
         if (!user || !user.password) {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });

@@ -9,7 +9,10 @@ import { ENV } from "./env";
 
 // JWT Secret - uses JWT_SECRET from environment
 const getJwtSecret = (): string => {
-  return ENV.cookieSecret || 'default-secret-key';
+  if (!ENV.cookieSecret) {
+    throw new Error('JWT_SECRET is not configured. Set it in your environment variables.');
+  }
+  return ENV.cookieSecret;
 };
 
 export type SessionPayload = {
@@ -27,7 +30,7 @@ export async function createSessionToken(
 ): Promise<string> {
   const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
   const expiresInSeconds = Math.floor(expiresInMs / 1000);
-  
+
   const token = jwt.sign(
     {
       userId: String(userId),
@@ -37,7 +40,7 @@ export async function createSessionToken(
     getJwtSecret(),
     { expiresIn: expiresInSeconds }
   );
-  
+
   return token;
 }
 
@@ -54,7 +57,7 @@ export async function verifySession(
 
   try {
     const decoded = jwt.verify(token, getJwtSecret()) as any;
-    
+
     const userId = decoded.userId || decoded.id;
     if (!userId) {
       console.warn("[Auth] Session payload missing userId");
@@ -87,32 +90,25 @@ function parseCookies(cookieHeader: string | undefined): Map<string, string> {
  * Authenticate request and return user
  */
 export async function authenticateRequest(req: Request): Promise<User> {
-  console.log('[CustomAuth] authenticateRequest called');
-  
   // Try multiple sources for the session token
   let sessionToken = (req as any).cookies?.[COOKIE_NAME];
-  console.log('[CustomAuth] Cookie token:', sessionToken ? 'found' : 'not found');
-  
+
   // Fallback to Authorization header (Bearer token)
   if (!sessionToken) {
     const authHeader = req.headers.authorization;
-    console.log('[CustomAuth] Auth header:', authHeader ? 'found' : 'not found');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       sessionToken = authHeader.substring(7);
-      console.log('[CustomAuth] Bearer token extracted');
     }
   }
-  
+
   // Fallback to cookie header
   if (!sessionToken && req.headers.cookie) {
     const cookies = parseCookies(req.headers.cookie);
     sessionToken = cookies.get(COOKIE_NAME);
   }
-  
+
   // Verify the token
-  console.log('[CustomAuth] Verifying token...');
   const session = await verifySession(sessionToken);
-  console.log('[CustomAuth] Session result:', session ? `userId=${session.userId}` : 'null');
 
   if (!session) {
     throw ForbiddenError("Invalid session token");

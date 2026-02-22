@@ -36,7 +36,7 @@ router.post('/tap', async (req: Request, res: Response) => {
 
     // Process webhook
     const result = await handleTapWebhook(req.body);
-    
+
     if (result.success) {
       return res.status(200).json({ message: result.message });
     } else {
@@ -73,7 +73,7 @@ router.post('/paypal', async (req: Request, res: Response) => {
 
     // Process webhook
     const result = await handlePayPalWebhook(req.body);
-    
+
     if (result.success) {
       return res.status(200).json({ message: result.message });
     } else {
@@ -91,11 +91,11 @@ router.post('/paypal', async (req: Request, res: Response) => {
  */
 router.post('/greenapi', async (req: Request, res: Response) => {
   try {
-    console.log('[Green API Webhook] Received:', JSON.stringify(req.body, null, 2));
-    
+    console.log('[Green API Webhook] Received webhook event');
+
     // Process webhook
     const result = await handleGreenAPIWebhook(req.body);
-    
+
     if (result.success) {
       return res.status(200).json({ message: result.message });
     } else {
@@ -113,8 +113,8 @@ router.post('/greenapi', async (req: Request, res: Response) => {
  */
 router.post('/salla', async (req: Request, res: Response) => {
   try {
-    console.log('[Salla Webhook] Received:', JSON.stringify(req.body, null, 2));
-    
+    console.log('[Salla Webhook] Received webhook event');
+
     // Process webhook
     await handleSallaWebhook(req, res);
   } catch (error) {
@@ -130,24 +130,24 @@ router.post('/salla', async (req: Request, res: Response) => {
 router.post('/zid/:merchantId', async (req: Request, res: Response) => {
   try {
     const merchantId = parseInt(req.params.merchantId);
-    
+
     if (isNaN(merchantId)) {
       return res.status(400).json({ error: 'Invalid merchant ID' });
     }
 
-    console.log(`[Zid Webhook] Merchant ${merchantId} - Received:`, JSON.stringify(req.body, null, 2));
-    
+    console.log(`[Zid Webhook] Merchant ${merchantId} - Received webhook event`);
+
     // Verify webhook signature (if Zid provides one)
     const signature = req.headers['x-zid-signature'] as string;
     // TODO: Implement signature verification when Zid provides documentation
-    
+
     // Extract event type from payload
     const event = req.body.event || req.body.type || 'unknown';
     const payload = req.body.data || req.body.payload || req.body;
 
     // Process webhook
     await handleZidWebhook(merchantId, event, payload);
-    
+
     return res.status(200).json({ message: 'Webhook processed successfully' });
   } catch (error) {
     console.error('[Zid Webhook] Error:', error);
@@ -162,25 +162,25 @@ router.post('/zid/:merchantId', async (req: Request, res: Response) => {
 router.post('/calendly/:merchantId', async (req: Request, res: Response) => {
   try {
     const merchantId = parseInt(req.params.merchantId);
-    
+
     if (isNaN(merchantId)) {
       return res.status(400).json({ error: 'Invalid merchant ID' });
     }
 
-    console.log(`[Calendly Webhook] Merchant ${merchantId} - Received:`, JSON.stringify(req.body, null, 2));
-    
+    console.log(`[Calendly Webhook] Merchant ${merchantId} - Received webhook event`);
+
     // Verify webhook signature
     const signature = req.headers['calendly-webhook-signature'] as string;
     // TODO: Implement signature verification
     // Calendly uses HMAC-SHA256 with the webhook signing key
-    
+
     // Extract event type from payload
     const event = req.body.event || 'unknown';
     const payload = req.body;
 
     // Process webhook
     await handleCalendlyWebhook(merchantId, event, payload);
-    
+
     return res.status(200).json({ message: 'Webhook processed successfully' });
   } catch (error) {
     console.error('[Calendly Webhook] Error:', error);
@@ -196,9 +196,15 @@ router.get('/status/:platform/:merchantId', async (req: Request, res: Response) 
   try {
     const { platform, merchantId } = req.params;
     const parsedMerchantId = parseInt(merchantId);
-    
+
     if (isNaN(parsedMerchantId)) {
       return res.status(400).json({ error: 'Invalid merchant ID' });
+    }
+
+    // Require API key or authorization header for status checks
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Authorization required' });
     }
 
     const validPlatforms = ['zid', 'calendly', 'salla'];
@@ -208,14 +214,14 @@ router.get('/status/:platform/:merchantId', async (req: Request, res: Response) 
 
     // Get integration status
     const integration = await db.getIntegrationByType(
-      parsedMerchantId, 
+      parsedMerchantId,
       platform as 'zid' | 'calendly' | 'shopify' | 'woocommerce'
     );
 
     if (!integration) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         connected: false,
-        message: 'Integration not found' 
+        message: 'Integration not found'
       });
     }
 
