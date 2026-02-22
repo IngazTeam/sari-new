@@ -99,7 +99,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/">
           <div className="flex items-center gap-2 font-bold text-xl hover:opacity-80 transition-opacity cursor-pointer">
-            <img src="/sari-logo.png" alt="ساري" className="h-10 w-auto" />
+            <img src="/sari-logo.png" alt="ساري" className="h-12 w-auto object-contain" />
           </div>
         </Link>
 

@@ -13,7 +13,7 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="space-y-4 lg:col-span-1">
             <div className="flex items-center gap-2">
-              <img src="/sari-logo.png" alt="ساري" className="h-10 w-auto" />
+              <img src="/sari-logo.png" alt="ساري" className="h-12 w-auto object-contain" />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t('footer.description')}
