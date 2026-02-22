@@ -10,7 +10,7 @@ import { useLocation } from 'wouter';
 export default function SubscriptionPlans() {
   const [, setLocation] = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('monthly');
-  
+
   const { data: plans, isLoading } = trpc.subscriptionPlans.listPlans.useQuery();
   const { data: currentSubscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
   const startTrial = trpc.merchantSubscription.startTrial.useMutation();
@@ -32,7 +32,7 @@ export default function SubscriptionPlans() {
         planId,
         billingCycle: selectedPeriod,
       });
-      
+
       if (result.paymentUrl) {
         // Redirect to Tap payment page
         window.location.href = result.paymentUrl;
@@ -64,7 +64,7 @@ export default function SubscriptionPlans() {
 
   return (
     <div className="container py-8">
-      <div className="text-center mb-8">
+      <div className="text-right mb-8">
         <h1 className="text-4xl font-bold mb-2">اختر الباقة المناسبة لك</h1>
         <p className="text-muted-foreground text-lg">ابدأ بفترة تجريبية مجانية 7 أيام</p>
       </div>
@@ -103,8 +103,8 @@ export default function SubscriptionPlans() {
             </CardDescription>
           </CardHeader>
           <CardFooter>
-            <Button 
-              onClick={handleStartTrial} 
+            <Button
+              onClick={handleStartTrial}
               disabled={startTrial.isPending}
               size="lg"
               className="w-full sm:w-auto"
@@ -123,8 +123,8 @@ export default function SubscriptionPlans() {
           const features = plan.features ? JSON.parse(plan.features) : [];
 
           return (
-            <Card 
-              key={plan.id} 
+            <Card
+              key={plan.id}
               className={`relative ${isCurrentPlan ? 'border-primary shadow-lg' : ''}`}
             >
               {isCurrentPlan && (
@@ -132,7 +132,7 @@ export default function SubscriptionPlans() {
                   <Badge className="bg-primary">الباقة الحالية</Badge>
                 </div>
               )}
-              
+
               <CardHeader>
                 <CardTitle className="text-2xl">{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
@@ -187,7 +187,7 @@ export default function SubscriptionPlans() {
       </div>
 
       {/* Additional Info */}
-      <div className="mt-12 text-center text-sm text-muted-foreground">
+      <div className="mt-12 text-right text-sm text-muted-foreground">
         <p>جميع الباقات تشمل:</p>
         <p className="mt-2">
           ردود ذكية بالذكاء الاصطناعي • إدارة المنتجات • الحملات التسويقية • التقارير والإحصائيات • الدعم الفني
