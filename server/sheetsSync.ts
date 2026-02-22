@@ -133,7 +133,7 @@ export async function syncOrderToSheets(orderId: number): Promise<{
     if (order.items) {
       try {
         const items = JSON.parse(order.items);
-        productsStr = items.map((item: any) => 
+        productsStr = items.map((item: any) =>
           `${item.name} (${item.quantity}x)`
         ).join(', ');
       } catch (e) {
@@ -402,7 +402,7 @@ export async function updateInventoryFromSheets(merchantId: number): Promise<{
     // تحديث كل منتج
     for (const row of result.values) {
       const [productIdStr, , , , stockStr] = row;
-      
+
       if (!productIdStr || !stockStr) continue;
 
       const productId = parseInt(productIdStr);
@@ -455,3 +455,125 @@ function translateOrderStatus(status: string): string {
 
   return statusMap[status] || status;
 }
+
+// Header mapping for product sync
+const PRODUCT_HEADER_MAP: Record<string, string> = {
+  'name': 'name', 'الاسم': 'name', 'اسم المنتج': 'name', 'product name': 'name', 'اسم': 'name',
+  'description': 'description', 'الوصف': 'description', 'وصف': 'description',
+  'price': 'price', 'السعر': 'price', 'سعر': 'price',
+  'imageurl': 'imageUrl', 'image': 'imageUrl', 'الصورة': 'imageUrl', 'رابط الصورة': 'imageUrl',
+  'stock': 'stock', 'المخزون': 'stock', 'الكمية': 'stock', 'quantity': 'stock',
+  'category': 'category', 'التصنيف': 'category', 'الفئة': 'category',
+};
+
+function normalizeProductHeader(header: string): string | null {
+  const normalized = header.trim().toLowerCase().replace(/\s+/g, ' ');
+  return PRODUCT_HEADER_MAP[normalized] || null;
+}
+
+/**
+ * مزامنة المنتجات من Google Sheets (للكرون)
+ * يقرأ من ورقة "المنتجات" أو "Products" ويحدّث/يضيف المنتجات
+ */
+export async function syncProductsFromSheets(merchantId: number): Promise<{
+  success: boolean;
+  created: number;
+  updated: number;
+  message: string;
+}> {
+  try {
+    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+
+    if (!integration || !integration.isActive || !integration.sheetId) {
+      return { success: false, created: 0, updated: 0, message: 'Google Sheets غير مربوط' };
+    }
+
+    const spreadsheetId = integration.sheetId;
+
+    // Try reading from different sheet names
+    let result = await sheets.readFromSheet(merchantId, spreadsheetId, 'المنتجات!A1:F');
+    if (!result.success || !result.values || result.values.length < 2) {
+      result = await sheets.readFromSheet(merchantId, spreadsheetId, 'Products!A1:F');
+    }
+    if (!result.success || !result.values || result.values.length < 2) {
+      result = await sheets.readFromSheet(merchantId, spreadsheetId, 'Sheet1!A1:F');
+    }
+
+    if (!result.success || !result.values || result.values.length < 2) {
+      return { success: false, created: 0, updated: 0, message: 'لا توجد بيانات منتجات في الشيت' };
+    }
+
+    const rows = result.values;
+    const headers = rows[0].map((h: string) => normalizeProductHeader(h?.toString().trim()));
+
+    if (!headers.includes('name')) {
+      return { success: false, created: 0, updated: 0, message: 'الشيت لا يحتوي على عمود الاسم' };
+    }
+
+    // Get existing products for duplicate detection
+    const existingProducts = await db.getProductsByMerchantId(merchantId);
+    const existing = new Map(existingProducts.map(p => [p.name.toLowerCase().trim(), p.id]));
+
+    let created = 0;
+    let updated = 0;
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      const product: Record<string, any> = {};
+
+      headers.forEach((header: string | null, idx: number) => {
+        if (header && row[idx]) {
+          product[header] = row[idx].toString().trim();
+        }
+      });
+
+      if (!product.name) continue;
+
+      const data = {
+        name: product.name,
+        description: product.description || null,
+        price: parseFloat(product.price) || 0,
+        imageUrl: product.imageUrl || null,
+        stock: product.stock ? parseInt(product.stock) : null,
+        category: product.category || null,
+      };
+
+      const existingId = existing.get(product.name.toLowerCase().trim());
+
+      try {
+        if (existingId) {
+          await db.updateProduct(existingId, data);
+          updated++;
+        } else {
+          await db.createProduct({ merchantId, ...data });
+          created++;
+        }
+      } catch (error) {
+        console.error(`[Sheets Sync] Error syncing product row ${i + 1}:`, error);
+      }
+    }
+
+    // Update last sync time
+    if (created > 0 || updated > 0) {
+      await db.updateGoogleIntegration(integration.id, {
+        lastSync: new Date().toISOString(),
+      });
+    }
+
+    return {
+      success: true,
+      created,
+      updated,
+      message: `تم المزامنة: ${created} جديد، ${updated} محدّث`,
+    };
+  } catch (error: any) {
+    console.error('[Sheets Sync] Error syncing products from sheets:', error);
+    return {
+      success: false,
+      created: 0,
+      updated: 0,
+      message: error.message || 'فشل مزامنة المنتجات',
+    };
+  }
+}
+
