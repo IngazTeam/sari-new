@@ -103,18 +103,18 @@ type MenuItem = {
 };
 
 // Menu groups for merchant
-const merchantMenuGroups = [
-  { id: 'main', label: 'الرئيسية', icon: LayoutDashboard },
-  { id: 'sales', label: 'المبيعات والطلبات', icon: ShoppingCart },
-  { id: 'marketing', label: 'التسويق والحملات', icon: Megaphone },
-  { id: 'sari', label: 'ساري AI', icon: Bot },
-  { id: 'whatsapp', label: 'واتساب', icon: Smartphone },
-  { id: 'calendar', label: 'المواعيد والخدمات', icon: CalendarDays },
-  { id: 'analytics', label: 'التحليلات والتقارير', icon: BarChart3 },
-  { id: 'integrations', label: 'التكاملات', icon: Plug },
-  { id: 'loyalty', label: 'برنامج الولاء', icon: Heart },
-  { id: 'payments', label: 'المدفوعات', icon: Wallet },
-  { id: 'settings', label: 'الإعدادات', icon: Settings },
+const getMerchantMenuGroups = (t: any) => [
+  { id: 'main', label: t('sidebar.groups.main'), icon: LayoutDashboard },
+  { id: 'sales', label: t('sidebar.groups.sales'), icon: ShoppingCart },
+  { id: 'marketing', label: t('sidebar.groups.marketing'), icon: Megaphone },
+  { id: 'sari', label: t('sidebar.groups.sari'), icon: Bot },
+  { id: 'whatsapp', label: t('sidebar.groups.whatsapp'), icon: Smartphone },
+  { id: 'calendar', label: t('sidebar.groups.calendar'), icon: CalendarDays },
+  { id: 'analytics', label: t('sidebar.groups.analytics'), icon: BarChart3 },
+  { id: 'integrations', label: t('sidebar.groups.integrations'), icon: Plug },
+  { id: 'loyalty', label: t('sidebar.groups.loyalty'), icon: Heart },
+  { id: 'payments', label: t('sidebar.groups.payments'), icon: Wallet },
+  { id: 'settings', label: t('sidebar.groups.settings'), icon: Settings },
 ];
 
 // Menu items based on user role
@@ -125,11 +125,11 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   // المبيعات والطلبات
   { icon: Package, label: t('sidebar.merchant.products'), path: "/merchant/products", group: 'sales' },
   { icon: ShoppingCart, label: t('sidebar.merchant.chatOrders'), path: "/merchant/chat-orders", group: 'sales' },
-  { icon: FileText, label: 'الطلبات', path: "/merchant/orders", group: 'sales' },
-  { icon: Users, label: 'إدارة العملاء', path: "/merchant/customers", group: 'sales' },
+  { icon: FileText, label: t('sidebar.merchant.orders'), path: "/merchant/orders", group: 'sales' },
+  { icon: Users, label: t('sidebar.merchant.customerManagement'), path: "/merchant/customers", group: 'sales' },
   { icon: Ticket, label: t('sidebar.merchant.discounts'), path: "/merchant/discounts", group: 'sales' },
   { icon: ShoppingBag, label: t('sidebar.merchant.abandonedCarts'), path: "/merchant/abandoned-carts", group: 'sales' },
-  { icon: Star, label: 'التقييمات', path: "/merchant/reviews", group: 'sales' },
+  { icon: Star, label: t('sidebar.merchant.reviews'), path: "/merchant/reviews", group: 'sales' },
 
   // التسويق والحملات
   { icon: Megaphone, label: t('sidebar.merchant.campaigns'), path: "/merchant/campaigns", group: 'marketing' },
@@ -138,80 +138,80 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
 
   // ساري AI
   { icon: MessageSquare, label: t('sidebar.merchant.conversations'), path: "/merchant/conversations", group: 'sari' },
-  { icon: Bot, label: 'اختبار ساري AI', path: "/merchant/test-sari", group: 'sari' },
-  { icon: Sparkles, label: 'ملعب ساري AI', path: "/merchant/sari-playground", group: 'sari' },
-  { icon: BarChart3, label: 'إحصائيات ساري AI', path: "/merchant/sari-analytics", group: 'sari' },
+  { icon: Bot, label: t('sidebar.merchant.testSari'), path: "/merchant/test-sari", group: 'sari' },
+  { icon: Sparkles, label: t('sidebar.merchant.sariPlayground'), path: "/merchant/sari-playground", group: 'sari' },
+  { icon: BarChart3, label: t('sidebar.merchant.sariAnalytics'), path: "/merchant/sari-analytics", group: 'sari' },
   { icon: Bot, label: t('sidebar.merchant.botSettings'), path: "/merchant/bot-settings", group: 'sari' },
-  { icon: Sparkles, label: 'إعدادات شخصية ساري', path: "/merchant/sari-personality", group: 'sari' },
-  { icon: Zap, label: 'الردود السريعة', path: "/merchant/quick-responses", group: 'sari' },
-  { icon: Sparkles, label: 'اقتراحات الذكاء الاصطناعي', path: "/merchant/ai-suggestions", group: 'sari' },
-  { icon: TrendingUp, label: 'تحليل المشاعر', path: "/merchant/sentiment-analysis", group: 'sari' },
-  { icon: Key, label: 'الكلمات المفتاحية', path: "/merchant/keywords", group: 'sari' },
+  { icon: Sparkles, label: t('sidebar.merchant.sariPersonality'), path: "/merchant/sari-personality", group: 'sari' },
+  { icon: Zap, label: t('sidebar.merchant.quickResponses'), path: "/merchant/quick-responses", group: 'sari' },
+  { icon: Sparkles, label: t('sidebar.merchant.aiSuggestions'), path: "/merchant/ai-suggestions", group: 'sari' },
+  { icon: TrendingUp, label: t('sidebar.merchant.sentimentAnalysis'), path: "/merchant/sentiment-analysis", group: 'sari' },
+  { icon: Key, label: t('sidebar.merchant.keywords'), path: "/merchant/keywords", group: 'sari' },
 
   // واتساب
   { icon: Smartphone, label: t('sidebar.merchant.whatsapp'), path: "/merchant/whatsapp", group: 'whatsapp' },
   { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances'), path: "/merchant/whatsapp-instances", group: 'whatsapp' },
   { icon: Bell, label: t('sidebar.merchant.orderNotifications'), path: "/merchant/order-notifications", group: 'whatsapp' },
   { icon: Calendar, label: t('sidebar.merchant.scheduledMessages'), path: "/merchant/scheduled-messages", group: 'whatsapp' },
-  { icon: BellRing, label: 'إشعارات واتساب التلقائية', path: "/merchant/whatsapp-auto-notifications", group: 'whatsapp' },
-  { icon: MessageCircle, label: 'تحليلات الرسائل', path: "/merchant/message-analytics", group: 'whatsapp' },
-  { icon: Activity, label: 'الرسائل الصوتية', path: "/merchant/voice-messages", group: 'whatsapp' },
+  { icon: BellRing, label: t('sidebar.merchant.whatsappAutoNotifications'), path: "/merchant/whatsapp-auto-notifications", group: 'whatsapp' },
+  { icon: MessageCircle, label: t('sidebar.merchant.messageAnalytics'), path: "/merchant/message-analytics", group: 'whatsapp' },
+  { icon: Activity, label: t('sidebar.merchant.voiceMessages'), path: "/merchant/voice-messages", group: 'whatsapp' },
 
   // المواعيد والخدمات
-  { icon: CalendarDays, label: 'التقويم والمواعيد', path: "/merchant/calendar", group: 'calendar' },
-  { icon: Settings, label: 'إعدادات التقويم', path: "/merchant/calendar/settings", group: 'calendar' },
-  { icon: UsersRound, label: 'إدارة الموظفين', path: "/merchant/staff", group: 'calendar' },
-  { icon: Briefcase, label: 'إدارة الخدمات', path: "/merchant/services", group: 'calendar' },
-  { icon: BookOpen, label: 'إدارة الحجوزات', path: "/merchant/bookings", group: 'calendar' },
-  { icon: Package, label: 'تصنيفات الخدمات', path: "/merchant/service-categories", group: 'calendar' },
-  { icon: Gift, label: 'باقات الخدمات', path: "/merchant/service-packages", group: 'calendar' },
-  { icon: Star, label: 'تقييمات الحجوزات', path: "/merchant/booking-reviews", group: 'calendar' },
+  { icon: CalendarDays, label: t('sidebar.merchant.calendarAppointments'), path: "/merchant/calendar", group: 'calendar' },
+  { icon: Settings, label: t('sidebar.merchant.calendarSettings'), path: "/merchant/calendar/settings", group: 'calendar' },
+  { icon: UsersRound, label: t('sidebar.merchant.staffManagement'), path: "/merchant/staff", group: 'calendar' },
+  { icon: Briefcase, label: t('sidebar.merchant.serviceManagement'), path: "/merchant/services", group: 'calendar' },
+  { icon: BookOpen, label: t('sidebar.merchant.bookingManagement'), path: "/merchant/bookings", group: 'calendar' },
+  { icon: Package, label: t('sidebar.merchant.serviceCategories'), path: "/merchant/service-categories", group: 'calendar' },
+  { icon: Gift, label: t('sidebar.merchant.servicePackages'), path: "/merchant/service-packages", group: 'calendar' },
+  { icon: Star, label: t('sidebar.merchant.bookingReviews'), path: "/merchant/booking-reviews", group: 'calendar' },
 
   // التحليلات والتقارير
   { icon: BarChart3, label: t('sidebar.merchant.analytics'), path: "/merchant/analytics", group: 'analytics' },
-  { icon: TrendingUp, label: 'التحليلات المتقدمة', path: "/merchant/advanced-analytics", group: 'analytics' },
-  { icon: Activity, label: 'لوحة الرؤى', path: "/merchant/insights", group: 'analytics' },
-  { icon: Gauge, label: 'مقاييس الأداء', path: "/merchant/performance-metrics", group: 'analytics' },
-  { icon: FileText, label: 'التقارير', path: "/merchant/reports", group: 'analytics' },
-  { icon: Clock, label: 'التقارير المجدولة', path: "/merchant/scheduled-reports", group: 'analytics' },
-  { icon: MessageCircle, label: 'استخدام الرسائل', path: "/merchant/usage", group: 'analytics' },
-  { icon: Search, label: 'تحليل الموقع', path: "/merchant/website-analysis", group: 'analytics' },
-  { icon: Activity, label: 'تحليلات متقدمة', path: "/merchant/analysis", group: 'analytics' },
-  { icon: FileText, label: 'التقارير الأسبوعية', path: "/merchant/weekly-reports", group: 'analytics' },
-  { icon: Zap, label: 'اختبارات A/B', path: "/merchant/ab-tests", group: 'analytics' },
-  { icon: TrendingUp, label: 'تحليلات تجربة ساري', path: "/merchant/try-sari-analytics", group: 'analytics' },
+  { icon: TrendingUp, label: t('sidebar.merchant.advancedAnalytics'), path: "/merchant/advanced-analytics", group: 'analytics' },
+  { icon: Activity, label: t('sidebar.merchant.insightsDashboard'), path: "/merchant/insights", group: 'analytics' },
+  { icon: Gauge, label: t('sidebar.merchant.performanceMetrics'), path: "/merchant/performance-metrics", group: 'analytics' },
+  { icon: FileText, label: t('sidebar.merchant.reports'), path: "/merchant/reports", group: 'analytics' },
+  { icon: Clock, label: t('sidebar.merchant.scheduledReports'), path: "/merchant/scheduled-reports", group: 'analytics' },
+  { icon: MessageCircle, label: t('sidebar.merchant.messageUsage'), path: "/merchant/usage", group: 'analytics' },
+  { icon: Search, label: t('sidebar.merchant.websiteAnalysis'), path: "/merchant/website-analysis", group: 'analytics' },
+  { icon: Activity, label: t('sidebar.merchant.advancedAnalysis'), path: "/merchant/analysis", group: 'analytics' },
+  { icon: FileText, label: t('sidebar.merchant.weeklyReports'), path: "/merchant/weekly-reports", group: 'analytics' },
+  { icon: Zap, label: t('sidebar.merchant.abTests'), path: "/merchant/ab-tests", group: 'analytics' },
+  { icon: TrendingUp, label: t('sidebar.merchant.trySariAnalytics'), path: "/merchant/try-sari-analytics", group: 'analytics' },
 
   // التكاملات
-  { icon: Plug, label: 'لوحة التكاملات', path: "/merchant/integrations-dashboard", group: 'integrations' },
+  { icon: Plug, label: t('sidebar.merchant.integrationsDashboard'), path: "/merchant/integrations-dashboard", group: 'integrations' },
   { icon: Store, label: t('sidebar.merchant.salla'), path: "/merchant/salla", group: 'integrations' },
-  { icon: Store, label: 'تكامل زد', path: "/merchant/integrations/zid", group: 'integrations' },
-  { icon: ShoppingCart, label: 'إعدادات WooCommerce', path: "/merchant/woocommerce/settings", group: 'integrations' },
-  { icon: BarChart3, label: 'تحليلات WooCommerce', path: "/merchant/woocommerce/analytics", group: 'integrations' },
-  { icon: Calendar, label: 'تكامل Calendly', path: "/merchant/integrations/calendly", group: 'integrations' },
-  { icon: FileSpreadsheet, label: 'إعدادات Google Sheets', path: "/merchant/sheets/settings", group: 'integrations' },
-  { icon: Download, label: 'تصدير البيانات', path: "/merchant/sheets/export", group: 'integrations' },
-  { icon: FileText, label: 'تقارير Sheets', path: "/merchant/sheets/reports", group: 'integrations' },
-  { icon: Warehouse, label: 'مزامنة المخزون', path: "/merchant/sheets/inventory", group: 'integrations' },
-  { icon: Database, label: 'مزامنة البيانات', path: "/merchant/data-sync", group: 'integrations' },
+  { icon: Store, label: t('sidebar.merchant.zidIntegration'), path: "/merchant/integrations/zid", group: 'integrations' },
+  { icon: ShoppingCart, label: t('sidebar.merchant.woocommerceSettings'), path: "/merchant/woocommerce/settings", group: 'integrations' },
+  { icon: BarChart3, label: t('sidebar.merchant.woocommerceAnalytics'), path: "/merchant/woocommerce/analytics", group: 'integrations' },
+  { icon: Calendar, label: t('sidebar.merchant.calendlyIntegration'), path: "/merchant/integrations/calendly", group: 'integrations' },
+  { icon: FileSpreadsheet, label: t('sidebar.merchant.sheetsSettings'), path: "/merchant/sheets/settings", group: 'integrations' },
+  { icon: Download, label: t('sidebar.merchant.dataExport'), path: "/merchant/sheets/export", group: 'integrations' },
+  { icon: FileText, label: t('sidebar.merchant.sheetsReports'), path: "/merchant/sheets/reports", group: 'integrations' },
+  { icon: Warehouse, label: t('sidebar.merchant.inventorySync'), path: "/merchant/sheets/inventory", group: 'integrations' },
+  { icon: Database, label: t('sidebar.merchant.dataSync'), path: "/merchant/data-sync", group: 'integrations' },
 
   // برنامج الولاء
-  { icon: Heart, label: 'إعدادات الولاء', path: "/merchant/loyalty/settings", group: 'loyalty' },
-  { icon: Crown, label: 'مستويات الولاء', path: "/merchant/loyalty/tiers", group: 'loyalty' },
-  { icon: Gift, label: 'مكافآت الولاء', path: "/merchant/loyalty/rewards", group: 'loyalty' },
-  { icon: Users, label: 'عملاء الولاء', path: "/merchant/loyalty/customers", group: 'loyalty' },
+  { icon: Heart, label: t('sidebar.merchant.loyaltySettings'), path: "/merchant/loyalty/settings", group: 'loyalty' },
+  { icon: Crown, label: t('sidebar.merchant.loyaltyTiers'), path: "/merchant/loyalty/tiers", group: 'loyalty' },
+  { icon: Gift, label: t('sidebar.merchant.loyaltyRewards'), path: "/merchant/loyalty/rewards", group: 'loyalty' },
+  { icon: Users, label: t('sidebar.merchant.loyaltyCustomers'), path: "/merchant/loyalty/customers", group: 'loyalty' },
 
   // المدفوعات
-  { icon: Wallet, label: 'المدفوعات', path: "/merchant/payments", group: 'payments' },
-  { icon: Link, label: 'روابط الدفع', path: "/merchant/payment-links", group: 'payments' },
-  { icon: CreditCard, label: 'إعدادات الدفع', path: "/merchant/payment-settings", group: 'payments' },
+  { icon: Wallet, label: t('sidebar.merchant.paymentsPage'), path: "/merchant/payments", group: 'payments' },
+  { icon: Link, label: t('sidebar.merchant.paymentLinks'), path: "/merchant/payment-links", group: 'payments' },
+  { icon: CreditCard, label: t('sidebar.merchant.paymentSettings'), path: "/merchant/payment-settings", group: 'payments' },
   { icon: CreditCard, label: t('sidebar.merchant.subscriptions'), path: "/merchant/subscriptions", group: 'payments' },
-  { icon: Wallet, label: 'مدفوعات الاشتراك', path: "/merchant/merchant-payments", group: 'payments' },
-  { icon: Award, label: 'اشتراكي', path: "/merchant/my-subscription", group: 'payments' },
+  { icon: Wallet, label: t('sidebar.merchant.subscriptionPayments'), path: "/merchant/merchant-payments", group: 'payments' },
+  { icon: Award, label: t('sidebar.merchant.mySubscription'), path: "/merchant/my-subscription", group: 'payments' },
 
   // الإعدادات
   { icon: Settings, label: t('sidebar.merchant.settings'), path: "/merchant/settings", group: 'settings' },
-  { icon: Languages, label: 'إعدادات اللغة', path: "/merchant/language-settings", group: 'settings' },
-  { icon: BellRing, label: 'إعدادات الإشعارات', path: "/merchant/notification-settings", group: 'settings' },
+  { icon: Languages, label: t('sidebar.merchant.languageSettings'), path: "/merchant/language-settings", group: 'settings' },
+  { icon: BellRing, label: t('sidebar.merchant.notificationSettings'), path: "/merchant/notification-settings", group: 'settings' },
 ];
 
 const getAdminMenuItems = (t: any) => [
@@ -219,19 +219,19 @@ const getAdminMenuItems = (t: any) => [
   { icon: Users, label: t('sidebar.admin.merchants'), path: "/admin/merchants" },
   { icon: Megaphone, label: t('sidebar.admin.campaigns'), path: "/admin/campaigns" },
   { icon: Smartphone, label: t('sidebar.admin.whatsappRequests'), path: "/admin/whatsapp-requests" },
-  { icon: Award, label: 'الباقات', path: "/admin/packages" },
-  { icon: Gift, label: 'الخدمات الإضافية', path: "/admin/addons" },
+  { icon: Award, label: t('sidebar.admin.packages'), path: "/admin/packages" },
+  { icon: Gift, label: t('sidebar.admin.addons'), path: "/admin/addons" },
   { icon: CreditCard, label: t('sidebar.admin.paymentGateways'), path: "/admin/payment-gateways" },
   { icon: Settings, label: t('sidebar.admin.settings'), path: "/admin/settings" },
-  { icon: MessageSquare, label: 'إعدادات SMTP', path: "/admin/smtp-settings" },
-  { icon: FileText, label: 'قوالب الإيميلات', path: "/admin/email-templates" },
-  { icon: Languages, label: 'ترجمات القوالب', path: "/admin/template-translations" },
-  { icon: Zap, label: 'إعدادات Google OAuth', path: "/admin/google-oauth" },
-  { icon: Database, label: 'مزامنة البيانات', path: "/admin/data-sync" },
-  { icon: BarChart3, label: 'إدارة SEO', path: "/admin/seo" },
-  { icon: BellRing, label: 'تفضيلات الإشعارات', path: "/admin/notification-preferences" },
-  { icon: FileText, label: 'التقرير الأسبوعي', path: "/admin/weekly-report" },
-  { icon: Bell, label: 'إشعارات Push', path: "/admin/push-notifications" },
+  { icon: MessageSquare, label: t('sidebar.admin.smtpSettings'), path: "/admin/smtp-settings" },
+  { icon: FileText, label: t('sidebar.admin.emailTemplates'), path: "/admin/email-templates" },
+  { icon: Languages, label: t('sidebar.admin.templateTranslations'), path: "/admin/template-translations" },
+  { icon: Zap, label: t('sidebar.admin.googleOAuth'), path: "/admin/google-oauth" },
+  { icon: Database, label: t('sidebar.admin.dataSync'), path: "/admin/data-sync" },
+  { icon: BarChart3, label: t('sidebar.admin.seoManagement'), path: "/admin/seo" },
+  { icon: BellRing, label: t('sidebar.admin.notificationPreferences'), path: "/admin/notification-preferences" },
+  { icon: FileText, label: t('sidebar.admin.weeklyReport'), path: "/admin/weekly-report" },
+  { icon: Bell, label: t('sidebar.admin.pushNotifications'), path: "/admin/push-notifications" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -265,10 +265,10 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
+              {t('sidebar.signInTitle')}
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              {t('sidebar.signInDescription')}
             </p>
           </div>
           <Button
@@ -278,7 +278,7 @@ export default function DashboardLayout({
             size="lg"
             className="w-full shadow-lg hover:shadow-xl transition-all"
           >
-            Sign in
+            {t('sidebar.signInButton')}
           </Button>
         </div>
       </div>
@@ -339,6 +339,7 @@ function DashboardLayoutContent({
 
   // Get menu items based on user role
   const menuItems = user?.role === 'admin' ? getAdminMenuItems(t) : getMerchantMenuItems(t);
+  const menuGroups = getMerchantMenuGroups(t);
   const activeMenuItem = menuItems.find(item => item.path === location);
 
   // Group menu items by group
@@ -443,7 +444,7 @@ function DashboardLayoutContent({
                 })
               ) : (
                 // Merchant: grouped with collapsible sections
-                merchantMenuGroups.map((group) => {
+                menuGroups.map((group) => {
                   const groupItems = groupedMenuItems[group.id] || [];
                   if (groupItems.length === 0) return null;
 
@@ -596,18 +597,18 @@ function DashboardLayoutContent({
       <AlertDialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد تسجيل الخروج</AlertDialogTitle>
+            <AlertDialogTitle>{t('sidebar.logoutConfirmTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟
+              {t('sidebar.logoutConfirmMessage')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex gap-2">
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmLogout}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              تسجيل الخروج
+              {t('common.logout')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
