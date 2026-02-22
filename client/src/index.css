@@ -144,6 +144,7 @@
     padding-right: 0 !important;
     margin-right: 0 !important;
     overflow: auto !important;
+    scrollbar-gutter: stable;
   }
 
   /* Override Tailwind font-normal on sidebar items */
