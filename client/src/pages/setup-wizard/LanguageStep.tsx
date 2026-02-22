@@ -16,6 +16,7 @@ interface Language {
 const languages: Language[] = [
   { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', currency: 'SAR', currencySymbol: 'ر.س' },
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧', currency: 'USD', currencySymbol: '$' },
+  { code: 'both', name: 'Arabic + English', nativeName: 'العربية والإنجليزية', flag: '🌍', currency: 'SAR', currencySymbol: 'ر.س' },
   { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', currency: 'EUR', currencySymbol: '€' },
   { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', currency: 'TRY', currencySymbol: '₺' },
   { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', currency: 'EUR', currencySymbol: '€' },
@@ -121,6 +122,7 @@ export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageS
           <p className="text-sm">
             {selectedLanguage === 'ar' && 'مرحباً! أنا ساري، مساعدك الذكي. كيف أقدر أساعدك اليوم؟'}
             {selectedLanguage === 'en' && 'Hello! I\'m Sari, your smart assistant. How can I help you today?'}
+            {selectedLanguage === 'both' && 'مرحباً! أنا ساري، مساعدك الذكي 😊 Hello! I\'m Sari, how can I help you today?'}
             {selectedLanguage === 'fr' && 'Bonjour ! Je suis Sari, votre assistant intelligent. Comment puis-je vous aider aujourd\'hui ?'}
             {selectedLanguage === 'tr' && 'Merhaba! Ben Sari, akıllı asistanınız. Bugün size nasıl yardımcı olabilirim?'}
             {selectedLanguage === 'es' && '¡Hola! Soy Sari, tu asistente inteligente. ¿Cómo puedo ayudarte hoy?'}

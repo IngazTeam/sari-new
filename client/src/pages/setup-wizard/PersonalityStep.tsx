@@ -3,8 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowRight, Smile, Briefcase, Coffee, MessageSquare, Globe, Eye } from 'lucide-react';
+import { ArrowRight, Smile, Briefcase, Coffee, MessageSquare, Eye } from 'lucide-react';
 import PreviewChat from '@/components/PreviewChat';
 
 interface PersonalityStepProps {
@@ -40,11 +39,7 @@ const TONES = [
   },
 ];
 
-const LANGUAGES = [
-  { id: 'ar', title: 'العربية فقط', flag: '🇸🇦' },
-  { id: 'en', title: 'English only', flag: '🇬🇧' },
-  { id: 'both', title: 'العربية والإنجليزية', flag: '🌍' },
-];
+
 
 export default function PersonalityStep({
   wizardData,
@@ -52,7 +47,7 @@ export default function PersonalityStep({
   goToNextStep,
 }: PersonalityStepProps) {
   const [botTone, setBotTone] = useState(wizardData.botTone || 'friendly');
-  const [botLanguage, setBotLanguage] = useState(wizardData.botLanguage || 'ar');
+
   const [welcomeMessage, setWelcomeMessage] = useState(
     wizardData.welcomeMessage || ''
   );
@@ -60,7 +55,6 @@ export default function PersonalityStep({
   const handleNext = () => {
     updateWizardData({
       botTone,
-      botLanguage,
       welcomeMessage,
     });
     goToNextStep();
@@ -91,9 +85,8 @@ export default function PersonalityStep({
             return (
               <Card
                 key={tone.id}
-                className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                  isSelected ? 'ring-2 ring-primary shadow-lg' : ''
-                }`}
+                className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${isSelected ? 'ring-2 ring-primary shadow-lg' : ''
+                  }`}
                 onClick={() => setBotTone(tone.id)}
               >
                 <div className="p-4 space-y-3">
@@ -123,41 +116,7 @@ export default function PersonalityStep({
         </div>
       </div>
 
-      {/* Language Selection */}
-      <div className="space-y-3">
-        <Label className="text-base font-semibold flex items-center space-x-2 space-x-reverse">
-          <Globe className="h-5 w-5 text-primary" />
-          <span>اللغة</span>
-        </Label>
 
-        <RadioGroup value={botLanguage} onValueChange={setBotLanguage}>
-          <div className="grid md:grid-cols-3 gap-3">
-            {LANGUAGES.map((lang) => {
-              const isSelected = botLanguage === lang.id;
-
-              return (
-                <div
-                  key={lang.id}
-                  className={`flex items-center space-x-3 space-x-reverse p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    isSelected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setBotLanguage(lang.id)}
-                >
-                  <RadioGroupItem value={lang.id} id={lang.id} />
-                  <Label htmlFor={lang.id} className="flex-1 cursor-pointer">
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <span className="text-2xl">{lang.flag}</span>
-                      <span className="font-medium">{lang.title}</span>
-                    </div>
-                  </Label>
-                </div>
-              );
-            })}
-          </div>
-        </RadioGroup>
-      </div>
 
       {/* Custom Welcome Message */}
       <div className="space-y-3">
@@ -170,8 +129,8 @@ export default function PersonalityStep({
             selectedTone?.id === 'friendly'
               ? 'مثال: أهلاً وسهلاً! أنا ساري، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟ 😊'
               : selectedTone?.id === 'professional'
-              ? 'مثال: مرحباً بك في [اسم نشاطك]. أنا ساري، المساعد الافتراضي. يسعدني خدمتك.'
-              : 'مثال: هلا! أنا ساري، جاهز أساعدك بأي شي تحتاجه 👋'
+                ? 'مثال: مرحباً بك في [اسم نشاطك]. أنا ساري، المساعد الافتراضي. يسعدني خدمتك.'
+                : 'مثال: هلا! أنا ساري، جاهز أساعدك بأي شي تحتاجه 👋'
           }
           value={welcomeMessage}
           onChange={(e) => setWelcomeMessage(e.target.value)}
@@ -195,7 +154,7 @@ export default function PersonalityStep({
         <PreviewChat
           businessName={wizardData.businessName || 'متجرك'}
           botTone={botTone as 'friendly' | 'professional' | 'casual'}
-          botLanguage={botLanguage as 'ar' | 'en' | 'both'}
+          botLanguage={(wizardData.botLanguage || 'ar') as 'ar' | 'en' | 'both'}
           products={wizardData.products || []}
           services={wizardData.services || []}
           welcomeMessage={welcomeMessage}
