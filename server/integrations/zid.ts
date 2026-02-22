@@ -7,13 +7,16 @@ import * as db from '../db';
 const ZID_API_BASE = 'https://api.zid.sa/v1';
 
 // Helper function to make Zid API requests
-async function zidApiRequest(endpoint: string, accessToken: string, options: RequestInit = {}) {
+// Zid v1 API requires both Authorization (OAuth) and X-Manager-Token headers
+async function zidApiRequest(endpoint: string, accessToken: string, managerToken?: string, options: RequestInit = {}) {
   const response = await fetch(`${ZID_API_BASE}${endpoint}`, {
     ...options,
     headers: {
       'Authorization': `Bearer ${accessToken}`,
+      ...(managerToken ? { 'X-Manager-Token': managerToken } : {}),
       'Content-Type': 'application/json',
       'Accept': 'application/json',
+      'Accept-Language': 'ar',
       ...options.headers,
     },
   });
@@ -33,7 +36,7 @@ export const zidRouter = router({
     .input(z.object({ merchantId: z.number() }))
     .query(async ({ input }) => {
       const integration = await db.getIntegrationByType(input.merchantId, 'zid');
-      
+
       if (!integration) {
         return { connected: false };
       }
@@ -53,17 +56,29 @@ export const zidRouter = router({
       merchantId: z.number(),
       storeUrl: z.string().url(),
       accessToken: z.string(),
+      managerToken: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       try {
-        // Verify the access token by fetching store info
-        const storeInfo = await zidApiRequest('/store', input.accessToken);
+        // Verify the access token by fetching store manager profile
+        // Zid v1 API: GET /managers/account/profile
+        const profileResponse = await zidApiRequest(
+          '/managers/account/profile',
+          input.accessToken,
+          input.managerToken || input.accessToken
+        );
 
-        // Save integration
+        // Extract store name from profile response
+        const storeName = profileResponse?.user?.store?.name
+          || profileResponse?.store?.name
+          || profileResponse?.name
+          || 'متجر زد';
+
+        // Save integration — store both tokens
         await db.createIntegration({
           merchantId: input.merchantId,
           type: 'zid',
-          storeName: storeInfo.name || 'متجر زد',
+          storeName,
           storeUrl: input.storeUrl,
           accessToken: input.accessToken,
           isActive: true,
@@ -72,6 +87,7 @@ export const zidRouter = router({
             syncProducts: true,
             syncOrders: true,
             syncCustomers: true,
+            managerToken: input.managerToken || input.accessToken,
           }),
         });
 
@@ -97,7 +113,7 @@ export const zidRouter = router({
     .input(z.object({ merchantId: z.number() }))
     .mutation(async ({ input }) => {
       const integration = await db.getIntegrationByType(input.merchantId, 'zid');
-      
+
       if (!integration || !integration.accessToken) {
         throw new TRPCError({
           code: 'NOT_FOUND',
@@ -106,10 +122,12 @@ export const zidRouter = router({
       }
 
       try {
-        // Sync products
-        const products = await zidApiRequest('/products', integration.accessToken);
+        // Sync products — Zid v1 endpoint: /managers/store/products
+        const settings = integration.settings ? JSON.parse(integration.settings) : {};
+        const managerToken = settings.managerToken || integration.accessToken;
+        const products = await zidApiRequest('/managers/store/products', integration.accessToken, managerToken);
         let syncedProducts = 0;
-        
+
         if (products.data) {
           for (const product of products.data) {
             await db.upsertProductFromZid(input.merchantId, product);
@@ -128,9 +146,9 @@ export const zidRouter = router({
           message: `تمت مزامنة ${syncedProducts} منتج`,
         });
 
-        return { 
-          success: true, 
-          message: `تمت مزامنة ${syncedProducts} منتج بنجاح` 
+        return {
+          success: true,
+          message: `تمت مزامنة ${syncedProducts} منتج بنجاح`
         };
       } catch (error: any) {
         await db.createSyncLog({
@@ -158,7 +176,7 @@ export const zidRouter = router({
     }))
     .mutation(async ({ input }) => {
       const integration = await db.getIntegrationByType(input.merchantId, 'zid');
-      
+
       if (!integration) {
         throw new TRPCError({
           code: 'NOT_FOUND',
@@ -178,7 +196,7 @@ export const zidRouter = router({
 
   // Get sync logs
   getSyncLogs: protectedProcedure
-    .input(z.object({ 
+    .input(z.object({
       merchantId: z.number(),
       limit: z.number().optional().default(10),
     }))
@@ -191,7 +209,7 @@ export const zidRouter = router({
     .input(z.object({ merchantId: z.number() }))
     .query(async ({ input }) => {
       const integration = await db.getIntegrationByType(input.merchantId, 'zid');
-      
+
       if (!integration) {
         return null;
       }
@@ -204,7 +222,7 @@ export const zidRouter = router({
         products,
         orders,
         customers,
-        lastSync: integration.lastSyncAt 
+        lastSync: integration.lastSyncAt
           ? new Date(integration.lastSyncAt).toLocaleDateString('ar-SA')
           : null,
       };
@@ -219,18 +237,18 @@ export const zidRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { processZidWebhook } = await import('../webhooks/zid-webhook');
-      
+
       // Get Zid settings to retrieve webhook secret
       const dbZid = await import('../db_zid');
       const settings = await dbZid.getZidSettings(input.merchantId);
-      
+
       const result = await processZidWebhook(
         input.payload,
         input.merchantId,
         input.signature,
         settings?.clientSecret || undefined
       );
-      
+
       return result;
     }),
 });
