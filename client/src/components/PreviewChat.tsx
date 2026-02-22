@@ -78,6 +78,7 @@ export default function PreviewChat({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const responses = RESPONSES[botTone];
 
@@ -92,9 +93,11 @@ export default function PreviewChat({
     setMessages([initialMessage]);
   }, [welcomeMessage, botTone]);
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom — scroll within container only (prevents page jitter)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   // Simulate bot response
@@ -209,24 +212,22 @@ export default function PreviewChat({
       </div>
 
       {/* Messages */}
-      <div className="h-80 overflow-y-auto p-4 bg-gray-50 space-y-4">
+      <div ref={messagesContainerRef} className="h-64 overflow-y-auto p-4 bg-gray-50 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                message.sender === 'user'
+              className={`max-w-[80%] rounded-2xl px-4 py-2 ${message.sender === 'user'
                   ? 'bg-green-600 text-white rounded-br-md'
                   : 'bg-white text-gray-800 shadow-sm rounded-bl-md'
-              }`}
+                }`}
             >
               <p className="text-sm whitespace-pre-wrap">{message.text}</p>
               <p
-                className={`text-xs mt-1 ${
-                  message.sender === 'user' ? 'text-green-100' : 'text-gray-400'
-                }`}
+                className={`text-xs mt-1 ${message.sender === 'user' ? 'text-green-100' : 'text-gray-400'
+                  }`}
               >
                 {message.timestamp.toLocaleTimeString('ar-SA', {
                   hour: '2-digit',
