@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from 'react-i18next';
 
 export default function LoyaltyTiers() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: tiers, isLoading, refetch } = trpc.loyalty.getTiers.useQuery();
   const updateTier = trpc.loyalty.updateTier.useMutation();
@@ -75,8 +77,8 @@ export default function LoyaltyTiers() {
       <div className="flex items-center gap-3 mb-6">
         <Trophy className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">مستويات الولاء</h1>
-          <p className="text-muted-foreground">إدارة مستويات العملاء ومزاياهم</p>
+          <h1 className="text-3xl font-bold">{t('loyaltyTiersPage.text0')}</h1>
+          <p className="text-muted-foreground">{t('loyaltyTiersPage.text1')}</p>
         </div>
       </div>
 
@@ -104,7 +106,7 @@ export default function LoyaltyTiers() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor={`minPoints-${tier.id}`}>الحد الأدنى من النقاط</Label>
+                    <Label htmlFor={`minPoints-${tier.id}`}>{t('loyaltyTiersPage.text2')}</Label>
                     <Input
                       id={`minPoints-${tier.id}`}
                       type="number"
@@ -118,7 +120,7 @@ export default function LoyaltyTiers() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`discountPercentage-${tier.id}`}>نسبة الخصم (%)</Label>
+                    <Label htmlFor={`discountPercentage-${tier.id}`}>{t('loyaltyTiersPage.text3')}</Label>
                     <Input
                       id={`discountPercentage-${tier.id}`}
                       type="number"
@@ -133,7 +135,7 @@ export default function LoyaltyTiers() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`priority-${tier.id}`}>الأولوية</Label>
+                    <Label htmlFor={`priority-${tier.id}`}>{t('loyaltyTiersPage.text4')}</Label>
                     <Input
                       id={`priority-${tier.id}`}
                       type="number"
@@ -147,7 +149,7 @@ export default function LoyaltyTiers() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor={`color-${tier.id}`}>اللون</Label>
+                    <Label htmlFor={`color-${tier.id}`}>{t('loyaltyTiersPage.text5')}</Label>
                     <div className="flex gap-2">
                       <Input
                         id={`color-${tier.id}`}
@@ -169,10 +171,10 @@ export default function LoyaltyTiers() {
 
                 {/* المزايا */}
                 <div className="bg-muted p-4 rounded-lg space-y-2">
-                  <h4 className="font-semibold">المزايا:</h4>
+                  <h4 className="font-semibold">{t('loyaltyTiersPage.text6')}</h4>
                   <ul className="list-disc list-inside space-y-1 text-sm">
                     <li>خصم {displayTier.discountPercentage}% على جميع المشتريات</li>
-                    {displayTier.freeShipping === 1 && <li>شحن مجاني</li>}
+                    {displayTier.freeShipping === 1 && <li>{t('loyaltyTiersPage.text7')}</li>}
                     {displayTier.priority > 0 && <li>أولوية في الخدمة (مستوى {displayTier.priority})</li>}
                   </ul>
                 </div>

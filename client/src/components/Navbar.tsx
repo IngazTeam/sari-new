@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/navigation-menu';
 
 export default function Navbar() {
+  const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
@@ -99,7 +100,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/">
           <div className="flex items-center gap-2 font-bold text-xl hover:opacity-80 transition-opacity cursor-pointer">
-            <img src="/sari-logo.png" alt="ساري" className="h-12 w-auto object-contain" />
+            <img src="/sari-logo.png" alt={t('compNavbarPage.text0')} className="h-12 w-auto object-contain" />
           </div>
         </Link>
 

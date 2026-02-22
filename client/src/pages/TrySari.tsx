@@ -7,6 +7,7 @@ import { Send, Bot, User, Sparkles, MessageCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SignupPromptDialog from '@/components/SignupPromptDialog';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -26,6 +27,7 @@ const EXAMPLE_MESSAGES = [
 ];
 
 export default function TrySari() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -141,7 +143,7 @@ export default function TrySari() {
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full mb-4">
             <Sparkles className="w-4 h-4" />
-            <span className="text-sm font-medium">جرّب ساري الآن مجاناً</span>
+            <span className="text-sm font-medium">{t('trySariPage.text0')}</span>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             تحدث مع ساري AI
@@ -162,8 +164,8 @@ export default function TrySari() {
                     <Bot className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-white">ساري AI</h3>
-                    <p className="text-xs text-blue-100">مساعدك الذكي للمبيعات</p>
+                    <h3 className="font-semibold text-white">{t('trySariPage.text1')}</h3>
+                    <p className="text-xs text-blue-100">{t('trySariPage.text2')}</p>
                   </div>
                   <Button
                     variant="ghost"
@@ -252,7 +254,7 @@ export default function TrySari() {
                   <Input
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="اكتب رسالتك هنا..."
+                    placeholder={t('trySariPage.text3')}
                     className="flex-1 text-right"
                     disabled={chatMutation.isPending}
                   />
@@ -273,7 +275,7 @@ export default function TrySari() {
               <Card className="p-4">
                 <div className="flex items-center gap-2 mb-4">
                   <MessageCircle className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900">جرّب هذه الأمثلة</h3>
+                  <h3 className="font-semibold text-gray-900">{t('trySariPage.text4')}</h3>
                 </div>
                 <div className="space-y-2">
                   {basicExamples.map((example, idx) => (
@@ -325,26 +327,26 @@ export default function TrySari() {
                 <ul className="space-y-2 text-sm text-gray-700">
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">•</span>
-                    <span>ردود فورية باللهجة السعودية</span>
+                    <span>{t('trySariPage.text5')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">•</span>
-                    <span>فهم ذكي لاستفسارات العملاء</span>
+                    <span>{t('trySariPage.text6')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">•</span>
-                    <span>اقتراح المنتجات المناسبة</span>
+                    <span>{t('trySariPage.text7')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">•</span>
-                    <span>متاح 24/7 بدون توقف</span>
+                    <span>{t('trySariPage.text8')}</span>
                   </li>
                 </ul>
               </Card>
 
               {/* CTA */}
               <Card className="p-4 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
-                <h3 className="font-semibold mb-2">جاهز للبدء؟</h3>
+                <h3 className="font-semibold mb-2">{t('trySariPage.text9')}</h3>
                 <p className="text-sm text-gray-300 mb-4">
                   ابدأ الآن واحصل على ساري AI لمتجرك
                 </p>

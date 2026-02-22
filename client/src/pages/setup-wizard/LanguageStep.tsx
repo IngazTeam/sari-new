@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Globe, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface Language {
   code: string;
@@ -33,6 +34,7 @@ interface LanguageStepProps {
 }
 
 export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageStepProps) {
+  const { t } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState(data.botLanguage || 'ar');
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageS
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
           <Globe className="w-8 h-8 text-primary" />
         </div>
-        <h2 className="text-2xl font-bold">اختر لغة البوت</h2>
+        <h2 className="text-2xl font-bold">{t('wizardLanguageStepPage.text0')}</h2>
         <p className="text-muted-foreground">
           اختر اللغة التي سيستخدمها ساري للتواصل مع عملائك
         </p>
@@ -117,7 +119,7 @@ export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageS
       </Card>
 
       <div className="bg-muted/50 rounded-lg p-4">
-        <h4 className="font-medium mb-3">معاينة رسالة البوت:</h4>
+        <h4 className="font-medium mb-3">{t('wizardLanguageStepPage.text1')}</h4>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border">
           <p className="text-sm">
             {selectedLanguage === 'ar' && 'مرحباً! أنا ساري، مساعدك الذكي. كيف أقدر أساعدك اليوم؟'}

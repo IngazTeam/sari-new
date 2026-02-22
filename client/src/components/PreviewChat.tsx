@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageSquare, Send, Bot, User, Sparkles, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   id: number;
@@ -74,6 +75,7 @@ export default function PreviewChat({
   welcomeMessage,
   className = '',
 }: PreviewChatProps) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -274,7 +276,7 @@ export default function PreviewChat({
       <div className="p-4 bg-white border-t">
         <div className="flex gap-2">
           <Input
-            placeholder="اكتب رسالتك..."
+            placeholder={t('compPreviewChatPage.text0')}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}

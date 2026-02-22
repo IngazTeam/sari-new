@@ -6,14 +6,16 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Calendar, CheckCircle2, AlertCircle, ExternalLink, Unlink } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 export default function CalendarSettings() {
+  const { t } = useTranslation();
   const [isConnecting, setIsConnecting] = useState(false);
   
   const { data: status, isLoading, refetch } = trpc.calendar.getStatus.useQuery();
   const disconnectMutation = trpc.calendar.disconnect.useMutation({
     onSuccess: () => {
-      toast.success("تم فصل Google Calendar بنجاح");
+      toast.success(t('calendarSettingsPage.text0'));
       refetch();
     },
     onError: (error) => {
@@ -70,7 +72,7 @@ export default function CalendarSettings() {
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">إعدادات Google Calendar</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('calendarSettingsPage.text1')}</h1>
         <p className="text-muted-foreground">
           قم بربط حسابك في Google Calendar لإدارة المواعيد تلقائياً
         </p>
@@ -109,11 +111,11 @@ export default function CalendarSettings() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground mb-1">البريد الإلكتروني</p>
+                  <p className="text-muted-foreground mb-1">{t('calendarSettingsPage.text2')}</p>
                   <p className="font-medium">{status.email}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">تاريخ الربط</p>
+                  <p className="text-muted-foreground mb-1">{t('calendarSettingsPage.text3')}</p>
                   <p className="font-medium">
                     {new Date(status.connectedAt!).toLocaleDateString('ar-SA')}
                   </p>
@@ -152,10 +154,10 @@ export default function CalendarSettings() {
                 <AlertDescription>
                   قم بربط حسابك في Google Calendar لتمكين:
                   <ul className="list-disc list-inside mt-2 mr-4">
-                    <li>المزامنة التلقائية للمواعيد</li>
-                    <li>منع الحجز المزدوج</li>
-                    <li>التذكيرات التلقائية</li>
-                    <li>إدارة المواعيد من تطبيق Google Calendar</li>
+                    <li>{t('calendarSettingsPage.text4')}</li>
+                    <li>{t('calendarSettingsPage.text5')}</li>
+                    <li>{t('calendarSettingsPage.text6')}</li>
+                    <li>{t('calendarSettingsPage.text7')}</li>
                   </ul>
                 </AlertDescription>
               </Alert>
@@ -186,7 +188,7 @@ export default function CalendarSettings() {
       {status?.connected && (
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات التذكيرات</CardTitle>
+            <CardTitle>{t('calendarSettingsPage.text8')}</CardTitle>
             <CardDescription>
               سيتم إرسال تذكيرات تلقائية عبر WhatsApp للعملاء
             </CardDescription>
@@ -195,22 +197,22 @@ export default function CalendarSettings() {
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <p className="font-medium">تذكير قبل 24 ساعة</p>
+                  <p className="font-medium">{t('calendarSettingsPage.text9')}</p>
                   <p className="text-sm text-muted-foreground">
                     يتم الإرسال قبل يوم من الموعد
                   </p>
                 </div>
-                <Badge variant="outline" className="bg-green-50">مفعّل</Badge>
+                <Badge variant="outline" className="bg-green-50">{t('calendarSettingsPage.text10')}</Badge>
               </div>
 
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <p className="font-medium">تذكير قبل 1 ساعة</p>
+                  <p className="font-medium">{t('calendarSettingsPage.text11')}</p>
                   <p className="text-sm text-muted-foreground">
                     يتم الإرسال قبل ساعة من الموعد
                   </p>
                 </div>
-                <Badge variant="outline" className="bg-green-50">مفعّل</Badge>
+                <Badge variant="outline" className="bg-green-50">{t('calendarSettingsPage.text12')}</Badge>
               </div>
 
               <Alert>

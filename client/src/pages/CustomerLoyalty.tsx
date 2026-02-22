@@ -15,8 +15,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function CustomerLoyalty() {
+  const { t } = useTranslation();
   const { customerPhone } = useParams<{ customerPhone: string }>();
   const { toast } = useToast();
   
@@ -79,8 +81,8 @@ export default function CustomerLoyalty() {
     <div className="container max-w-6xl py-8">
       {/* رأس الصفحة */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2">برنامج الولاء</h1>
-        <p className="text-muted-foreground">اكسب نقاطاً واحصل على مكافآت رائعة!</p>
+        <h1 className="text-4xl font-bold mb-2">{t('customerLoyaltyPage.text0')}</h1>
+        <p className="text-muted-foreground">{t('customerLoyaltyPage.text1')}</p>
       </div>
 
       {/* بطاقة النقاط الرئيسية */}
@@ -91,7 +93,7 @@ export default function CustomerLoyalty() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Star className="h-5 w-5 text-yellow-500 fill-current" />
-                <p className="text-sm text-muted-foreground">نقاطك الحالية</p>
+                <p className="text-sm text-muted-foreground">{t('customerLoyaltyPage.text2')}</p>
               </div>
               <p className="text-5xl font-bold text-primary">{customerPoints?.totalPoints || 0}</p>
             </div>
@@ -100,7 +102,7 @@ export default function CustomerLoyalty() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <TrendingUp className="h-5 w-5 text-green-500" />
-                <p className="text-sm text-muted-foreground">إجمالي النقاط</p>
+                <p className="text-sm text-muted-foreground">{t('customerLoyaltyPage.text3')}</p>
               </div>
               <p className="text-5xl font-bold">{customerPoints?.lifetimePoints || 0}</p>
             </div>
@@ -109,7 +111,7 @@ export default function CustomerLoyalty() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Award className="h-5 w-5 text-purple-500" />
-                <p className="text-sm text-muted-foreground">مستواك</p>
+                <p className="text-sm text-muted-foreground">{t('customerLoyaltyPage.text4')}</p>
               </div>
               {customerPoints?.tier ? (
                 <div className="flex flex-col items-center gap-2">
@@ -126,7 +128,7 @@ export default function CustomerLoyalty() {
                   </Badge>
                 </div>
               ) : (
-                <p className="text-2xl text-muted-foreground">لا يوجد</p>
+                <p className="text-2xl text-muted-foreground">{t('customerLoyaltyPage.text5')}</p>
               )}
             </div>
           </div>
@@ -134,16 +136,16 @@ export default function CustomerLoyalty() {
           {/* مزايا المستوى */}
           {customerPoints?.tier && (
             <div className="mt-6 p-4 bg-background/50 rounded-lg">
-              <h3 className="font-semibold mb-2 text-center">مزاياك الحالية:</h3>
+              <h3 className="font-semibold mb-2 text-center">{t('customerLoyaltyPage.text6')}</h3>
               <div className="flex flex-wrap justify-center gap-3">
                 <Badge variant="secondary">
                   خصم {customerPoints.tier.discountPercentage}%
                 </Badge>
                 {customerPoints.tier.freeShipping === 1 && (
-                  <Badge variant="secondary">شحن مجاني</Badge>
+                  <Badge variant="secondary">{t('customerLoyaltyPage.text7')}</Badge>
                 )}
                 {customerPoints.tier.priority > 0 && (
-                  <Badge variant="secondary">أولوية في الخدمة</Badge>
+                  <Badge variant="secondary">{t('customerLoyaltyPage.text8')}</Badge>
                 )}
               </div>
             </div>
@@ -295,7 +297,7 @@ export default function CustomerLoyalty() {
                       className="flex items-center justify-between p-4 border rounded-lg"
                     >
                       <div className="flex-1">
-                        <p className="font-medium">استبدال مكافأة</p>
+                        <p className="font-medium">{t('customerLoyaltyPage.text9')}</p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(redemption.createdAt).toLocaleString("ar-SA")}
                         </p>
@@ -339,7 +341,7 @@ export default function CustomerLoyalty() {
       <Dialog open={!!selectedReward} onOpenChange={() => setSelectedReward(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الاستبدال</DialogTitle>
+            <DialogTitle>{t('customerLoyaltyPage.text10')}</DialogTitle>
             <DialogDescription>
               هل أنت متأكد من استبدال هذه المكافأة؟
             </DialogDescription>
@@ -353,7 +355,7 @@ export default function CustomerLoyalty() {
                   {selectedReward.descriptionAr}
                 </p>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">التكلفة:</span>
+                  <span className="text-sm">{t('customerLoyaltyPage.text11')}</span>
                   <Badge variant="outline">
                     <Star className="ml-1 h-3 w-3 fill-current" />
                     {selectedReward.pointsCost} نقطة
@@ -363,11 +365,11 @@ export default function CustomerLoyalty() {
 
               <div className="p-4 bg-primary/10 rounded-lg">
                 <div className="flex items-center justify-between text-sm">
-                  <span>رصيدك الحالي:</span>
+                  <span>{t('customerLoyaltyPage.text12')}</span>
                   <span className="font-bold">{customerPoints?.totalPoints}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-2">
-                  <span>الرصيد بعد الاستبدال:</span>
+                  <span>{t('customerLoyaltyPage.text13')}</span>
                   <span className="font-bold">
                     {(customerPoints?.totalPoints || 0) - selectedReward.pointsCost}
                   </span>

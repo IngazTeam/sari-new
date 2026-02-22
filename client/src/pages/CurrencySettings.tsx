@@ -8,8 +8,10 @@ import { toast } from 'sonner';
 import { DollarSign, Loader2, Save, Info } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CURRENCY_CONFIG, type Currency } from '@shared/currency';
+import { useTranslation } from 'react-i18next';
 
 export default function CurrencySettings() {
+  const { t } = useTranslation();
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('SAR');
 
   // Get current merchant
@@ -18,7 +20,7 @@ export default function CurrencySettings() {
   // Update merchant mutation
   const updateMutation = trpc.merchant.update.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث العملة بنجاح');
+      toast.success(t('currencySettingsPage.text0'));
       refetch();
     },
     onError: (error) => {
@@ -35,7 +37,7 @@ export default function CurrencySettings() {
 
   const handleSave = () => {
     if (!selectedCurrency) {
-      toast.error('يرجى اختيار العملة');
+      toast.error(t('currencySettingsPage.text1'));
       return;
     }
 
@@ -55,7 +57,7 @@ export default function CurrencySettings() {
   return (
     <div className="container max-w-4xl py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إعدادات العملة</h1>
+        <h1 className="text-3xl font-bold">{t('currencySettingsPage.text2')}</h1>
         <p className="text-muted-foreground mt-2">
           اختر العملة الأساسية لمتجرك. سيتم عرض جميع الأسعار والمبالغ بهذه العملة.
         </p>
@@ -81,26 +83,26 @@ export default function CurrencySettings() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="currency">اختر العملة</Label>
+              <Label htmlFor="currency">{t('currencySettingsPage.text3')}</Label>
               <Select
                 value={selectedCurrency}
                 onValueChange={(value) => setSelectedCurrency(value as Currency)}
               >
                 <SelectTrigger id="currency" className="w-full">
-                  <SelectValue placeholder="اختر العملة" />
+                  <SelectValue placeholder={t('currencySettingsPage.text4')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="SAR">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">﷼</span>
-                      <span>ريال سعودي</span>
+                      <span>{t('currencySettingsPage.text5')}</span>
                       <span className="text-muted-foreground text-sm">(SAR)</span>
                     </div>
                   </SelectItem>
                   <SelectItem value="USD">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">$</span>
-                      <span>دولار أمريكي</span>
+                      <span>{t('currencySettingsPage.text6')}</span>
                       <span className="text-muted-foreground text-sm">(USD)</span>
                     </div>
                   </SelectItem>
@@ -109,18 +111,18 @@ export default function CurrencySettings() {
             </div>
 
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-              <h4 className="font-semibold text-sm">معلومات العملة المختارة:</h4>
+              <h4 className="font-semibold text-sm">{t('currencySettingsPage.text7')}</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div>
-                  <span className="text-muted-foreground">الرمز:</span>
+                  <span className="text-muted-foreground">{t('currencySettingsPage.text8')}</span>
                   <span className="font-medium mr-2">{selectedCurrency === 'SAR' ? '﷼' : '$'}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">الكود:</span>
+                  <span className="text-muted-foreground">{t('currencySettingsPage.text9')}</span>
                   <span className="font-medium mr-2">{selectedCurrency}</span>
                 </div>
                 <div className="col-span-2">
-                  <span className="text-muted-foreground">الاسم:</span>
+                  <span className="text-muted-foreground">{t('currencySettingsPage.text10')}</span>
                   <span className="font-medium mr-2">{selectedCurrency === 'SAR' ? 'ريال سعودي' : 'دولار أمريكي'}</span>
                 </div>
               </div>
@@ -150,24 +152,24 @@ export default function CurrencySettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>ملاحظات هامة</CardTitle>
+          <CardTitle>{t('currencySettingsPage.text11')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <div className="flex gap-2">
             <span>•</span>
-            <p>سيتم عرض جميع المنتجات والطلبات الجديدة بالعملة المختارة</p>
+            <p>{t('currencySettingsPage.text12')}</p>
           </div>
           <div className="flex gap-2">
             <span>•</span>
-            <p>المنتجات والطلبات الموجودة ستحتفظ بعملتها الأصلية</p>
+            <p>{t('currencySettingsPage.text13')}</p>
           </div>
           <div className="flex gap-2">
             <span>•</span>
-            <p>يمكنك تغيير العملة في أي وقت</p>
+            <p>{t('currencySettingsPage.text14')}</p>
           </div>
           <div className="flex gap-2">
             <span>•</span>
-            <p>يمكنك تحديد عملة مختلفة لكل منتج عند إضافته</p>
+            <p>{t('currencySettingsPage.text15')}</p>
           </div>
         </CardContent>
       </Card>

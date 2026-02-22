@@ -7,8 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { AlertCircle, CheckCircle2, Copy, Eye, EyeOff } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useTranslation } from 'react-i18next';
 
 export default function AdminGoogleOAuth() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   
   const [clientId, setClientId] = useState("");
@@ -33,7 +35,7 @@ export default function AdminGoogleOAuth() {
 
   const handleSave = async () => {
     if (!clientId.trim() || !clientSecret.trim()) {
-      toast.error("يجب ملء جميع الحقول المطلوبة");
+      toast.error(t('adminGoogleOAuthPage.text0'));
       return;
     }
 
@@ -44,12 +46,12 @@ export default function AdminGoogleOAuth() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
       setIsSaved(true);
-      toast.success("تم حفظ إعدادات Google OAuth بنجاح");
+      toast.success(t('adminGoogleOAuthPage.text1'));
 
       // إعادة تعيين الحالة بعد 3 ثوانِ
       setTimeout(() => setIsSaved(false), 3000);
     } catch (error) {
-      toast.error("فشل حفظ الإعدادات");
+      toast.error(t('adminGoogleOAuthPage.text2'));
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +65,7 @@ export default function AdminGoogleOAuth() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">إعدادات Google OAuth</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('adminGoogleOAuthPage.text3')}</h1>
         <p className="text-muted-foreground mt-2">
           أدر بيانات اعتماد Google OAuth لتفعيل تسجيل الدخول عبر Google
         </p>
@@ -72,13 +74,13 @@ export default function AdminGoogleOAuth() {
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>ملاحظة مهمة:</strong> احفظ بيانات الاعتماد في مكان آمن. لا تشارك Client Secret مع أحد.
+          <strong>{t('adminGoogleOAuthPage.text4')}</strong> احفظ بيانات الاعتماد في مكان آمن. لا تشارك Client Secret مع أحد.
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle>بيانات Google OAuth</CardTitle>
+          <CardTitle>{t('adminGoogleOAuthPage.text5')}</CardTitle>
           <CardDescription>
             أدخل بيانات الاعتماد من Google Cloud Console
           </CardDescription>
@@ -172,7 +174,7 @@ export default function AdminGoogleOAuth() {
       {/* Instructions Card */}
       <Card>
         <CardHeader>
-          <CardTitle>كيفية الحصول على بيانات Google OAuth</CardTitle>
+          <CardTitle>{t('adminGoogleOAuthPage.text6')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <ol className="space-y-3 list-decimal list-inside">
@@ -187,10 +189,10 @@ export default function AdminGoogleOAuth() {
                 Google Cloud Console
               </a>
             </li>
-            <li>أنشئ مشروع جديد أو اختر مشروعاً موجوداً</li>
-            <li>فعّل Google+ API من قسم APIs & Services</li>
-            <li>اذهب إلى "Credentials" وأنشئ "OAuth 2.0 Client ID"</li>
-            <li>اختر "Web application" كنوع التطبيق</li>
+            <li>{t('adminGoogleOAuthPage.text7')}</li>
+            <li>{t('adminGoogleOAuthPage.text8')}</li>
+            <li>{t('adminGoogleOAuthPage.text9')}</li>
+            <li>{t('adminGoogleOAuthPage.text10')}</li>
             <li>
               أضف الـ Authorized redirect URIs:
               <ul className="mt-2 ml-4 space-y-1 list-disc list-inside">
@@ -208,7 +210,7 @@ export default function AdminGoogleOAuth() {
                 </li>
               </ul>
             </li>
-            <li>انسخ Client ID و Client Secret والصقهما أعلاه</li>
+            <li>{t('adminGoogleOAuthPage.text11')}</li>
           </ol>
         </CardContent>
       </Card>
@@ -219,7 +221,7 @@ export default function AdminGoogleOAuth() {
           <CardContent className="pt-6">
             <div className="flex gap-2 items-center text-green-700">
               <CheckCircle2 className="h-5 w-5" />
-              <span>تم حفظ إعدادات Google OAuth بنجاح</span>
+              <span>{t('adminGoogleOAuthPage.text12')}</span>
             </div>
           </CardContent>
         </Card>

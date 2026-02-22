@@ -174,7 +174,7 @@ export default function Support() {
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Clock className="w-6 h-6 text-primary" />
-                <h3 className="text-xl font-semibold">ساعات العمل</h3>
+                <h3 className="text-xl font-semibold">{t('supportPage.text0')}</h3>
               </div>
               <div className="space-y-2">
                 {supportHours.map((item) => (
@@ -207,17 +207,17 @@ export default function Support() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name">الاسم</Label>
+                      <Label htmlFor="name">{t('supportPage.text1')}</Label>
                       <Input
                         id="name"
                         value={formData.name}
                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="أدخل اسمك"
+                        placeholder={t('supportPage.text2')}
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="email">البريد الإلكتروني</Label>
+                      <Label htmlFor="email">{t('supportPage.text3')}</Label>
                       <Input
                         id="email"
                         type="email"
@@ -230,23 +230,23 @@ export default function Support() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="subject">الموضوع</Label>
+                    <Label htmlFor="subject">{t('supportPage.text4')}</Label>
                     <Input
                       id="subject"
                       value={formData.subject}
                       onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      placeholder="موضوع الرسالة"
+                      placeholder={t('supportPage.text5')}
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="message">الرسالة</Label>
+                    <Label htmlFor="message">{t('supportPage.text6')}</Label>
                     <Textarea
                       id="message"
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                      placeholder="اكتب رسالتك هنا..."
+                      placeholder={t('supportPage.text7')}
                       rows={6}
                       required
                     />

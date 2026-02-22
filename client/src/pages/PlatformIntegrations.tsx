@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Store, CheckCircle2, XCircle, ExternalLink, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface PlatformInfo {
   platform: 'salla' | 'zid' | 'woocommerce' | 'shopify';
@@ -20,6 +21,7 @@ interface PlatformInfo {
 }
 
 export default function PlatformIntegrations() {
+  const { t } = useTranslation();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const utils = trpc.useUtils();
 
@@ -45,7 +47,7 @@ export default function PlatformIntegrations() {
   // Mutations للفصل
   const disconnectSalla = trpc.salla.disconnect.useMutation({
     onSuccess: () => {
-      toast.success('تم فصل سلة بنجاح');
+      toast.success(t('platformIntegrationsPage.text0'));
       utils.integrations.getCurrentPlatform.invalidate();
       utils.salla.getConnection.invalidate();
     },
@@ -56,7 +58,7 @@ export default function PlatformIntegrations() {
 
   const disconnectZid = trpc.zid.disconnect.useMutation({
     onSuccess: () => {
-      toast.success('تم فصل زد بنجاح');
+      toast.success(t('platformIntegrationsPage.text1'));
       utils.integrations.getCurrentPlatform.invalidate();
       utils.zid.getStatus.invalidate();
     },
@@ -67,7 +69,7 @@ export default function PlatformIntegrations() {
 
   const disconnectWoo = trpc.woocommerce.disconnect.useMutation({
     onSuccess: () => {
-      toast.success('تم فصل ووكومرس بنجاح');
+      toast.success(t('platformIntegrationsPage.text2'));
       utils.integrations.getCurrentPlatform.invalidate();
       utils.woocommerce.getSettings.invalidate();
     },
@@ -151,7 +153,7 @@ export default function PlatformIntegrations() {
   return (
     <div className="container max-w-6xl py-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">ربط منصات التجارة الإلكترونية</h1>
+        <h1 className="text-3xl font-bold">{t('platformIntegrationsPage.text3')}</h1>
         <p className="text-muted-foreground mt-2">
           قم بربط متجرك الإلكتروني لمزامنة المنتجات والطلبات تلقائياً
         </p>
@@ -161,7 +163,7 @@ export default function PlatformIntegrations() {
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          <strong>ملاحظة مهمة:</strong> يمكنك ربط منصة واحدة فقط في نفس الوقت لتجنب تضارب البيانات.
+          <strong>{t('platformIntegrationsPage.text4')}</strong> يمكنك ربط منصة واحدة فقط في نفس الوقت لتجنب تضارب البيانات.
           إذا أردت التبديل إلى منصة أخرى، يجب فصل المنصة الحالية أولاً.
         </AlertDescription>
       </Alert>
@@ -269,18 +271,18 @@ export default function PlatformIntegrations() {
       {/* معلومات إضافية */}
       <Card>
         <CardHeader>
-          <CardTitle>لماذا منصة واحدة فقط؟</CardTitle>
+          <CardTitle>{t('platformIntegrationsPage.text5')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            <strong>منع تضارب البيانات:</strong> ربط منصات متعددة قد يؤدي إلى تكرار المنتجات والطلبات
+            <strong>{t('platformIntegrationsPage.text6')}</strong> ربط منصات متعددة قد يؤدي إلى تكرار المنتجات والطلبات
             وصعوبة التتبع.
           </p>
           <p>
-            <strong>تحسين الأداء:</strong> المزامنة مع منصة واحدة تضمن سرعة أفضل واستهلاك أقل للموارد.
+            <strong>{t('platformIntegrationsPage.text7')}</strong> المزامنة مع منصة واحدة تضمن سرعة أفضل واستهلاك أقل للموارد.
           </p>
           <p>
-            <strong>سهولة الإدارة:</strong> إدارة منصة واحدة أبسط وأكثر وضوحاً من إدارة منصات متعددة.
+            <strong>{t('platformIntegrationsPage.text8')}</strong> إدارة منصة واحدة أبسط وأكثر وضوحاً من إدارة منصات متعددة.
           </p>
         </CardContent>
       </Card>

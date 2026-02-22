@@ -610,7 +610,7 @@ export default function BotSettings() {
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
                     <p className="text-sm">{t('botSettingsPage.previewCustomerMsg')}</p>
-                    <span className="text-xs text-muted-foreground">10:30 ص</span>
+                    <span className="text-xs text-muted-foreground">{t('merchantBotSettingsPage.text0')}</span>
                   </div>
                 </div>
 
@@ -626,7 +626,7 @@ export default function BotSettings() {
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs opacity-90">10:30 ص</span>
+                    <span className="text-xs opacity-90">{t('merchantBotSettingsPage.text1')}</span>
                   </div>
                 </div>
 
@@ -641,7 +641,7 @@ export default function BotSettings() {
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
                     <p className="text-sm">{t('botSettingsPage.previewAfterHoursMsg')}</p>
-                    <span className="text-xs text-muted-foreground">11:30 م</span>
+                    <span className="text-xs text-muted-foreground">{t('merchantBotSettingsPage.text2')}</span>
                   </div>
                 </div>
 
@@ -651,13 +651,13 @@ export default function BotSettings() {
                     <div className="flex items-start gap-2 mb-1">
                       <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium mb-1">ساري</p>
+                        <p className="text-sm font-medium mb-1">{t('merchantBotSettingsPage.text3')}</p>
                         <p className="text-sm whitespace-pre-wrap">
                           {formData.outOfHoursMessage || t('botSettingsPage.previewDefaultOutOfHours')}
                         </p>
                       </div>
                     </div>
-                    <span className="text-xs opacity-90">11:30 م</span>
+                    <span className="text-xs opacity-90">{t('merchantBotSettingsPage.text4')}</span>
                   </div>
                 </div>
               </div>

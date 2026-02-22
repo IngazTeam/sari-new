@@ -44,8 +44,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, type Currency } from "@shared/currency";
+import { useTranslation } from 'react-i18next';
 
 export default function Orders() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: merchant } = trpc.merchant.get.useQuery();
   const merchantCurrency = (merchant?.currency as Currency) || 'SAR';
@@ -112,7 +114,7 @@ export default function Orders() {
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">إدارة الطلبات</h1>
+          <h1 className="text-3xl font-bold">{t('ordersPage.text0')}</h1>
           <p className="text-muted-foreground mt-1">
             عرض وإدارة جميع الطلبات
           </p>
@@ -123,47 +125,47 @@ export default function Orders() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('ordersPage.text1')}</CardTitle>
             <ShoppingBag className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.total || 0}</div>
-            <p className="text-xs text-muted-foreground">جميع الطلبات</p>
+            <p className="text-xs text-muted-foreground">{t('ordersPage.text2')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('ordersPage.text3')}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.pending || 0}</div>
-            <p className="text-xs text-muted-foreground">تحتاج متابعة</p>
+            <p className="text-xs text-muted-foreground">{t('ordersPage.text4')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مكتملة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('ordersPage.text5')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.completed || 0}</div>
-            <p className="text-xs text-muted-foreground">تم التوصيل</p>
+            <p className="text-xs text-muted-foreground">{t('ordersPage.text6')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('ordersPage.text7')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {formatPrice(stats?.totalRevenue || 0)}
             </div>
-            <p className="text-xs text-muted-foreground">هذا الشهر</p>
+            <p className="text-xs text-muted-foreground">{t('ordersPage.text8')}</p>
           </CardContent>
         </Card>
       </div>
@@ -171,15 +173,15 @@ export default function Orders() {
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الطلبات</CardTitle>
-          <CardDescription>ابحث وفلتر الطلبات</CardDescription>
+          <CardTitle>{t('ordersPage.text9')}</CardTitle>
+          <CardDescription>{t('ordersPage.text10')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="ابحث برقم الطلب أو اسم العميل..."
+                placeholder={t('ordersPage.text11')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -187,23 +189,23 @@ export default function Orders() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="الحالة" />
+                <SelectValue placeholder={t('ordersPage.text12')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="pending">قيد الانتظار</SelectItem>
-                <SelectItem value="confirmed">مؤكد</SelectItem>
-                <SelectItem value="processing">قيد المعالجة</SelectItem>
-                <SelectItem value="shipped">تم الشحن</SelectItem>
-                <SelectItem value="delivered">تم التوصيل</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
+                <SelectItem value="all">{t('ordersPage.text13')}</SelectItem>
+                <SelectItem value="pending">{t('ordersPage.text14')}</SelectItem>
+                <SelectItem value="confirmed">{t('ordersPage.text15')}</SelectItem>
+                <SelectItem value="processing">{t('ordersPage.text16')}</SelectItem>
+                <SelectItem value="shipped">{t('ordersPage.text17')}</SelectItem>
+                <SelectItem value="delivered">{t('ordersPage.text18')}</SelectItem>
+                <SelectItem value="cancelled">{t('ordersPage.text19')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Orders Table */}
           {isLoading ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-8">{t('ordersPage.text20')}</div>
           ) : orders.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               لا توجد طلبات
@@ -213,13 +215,13 @@ export default function Orders() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>رقم الطلب</TableHead>
-                    <TableHead>العميل</TableHead>
-                    <TableHead>المنتجات</TableHead>
-                    <TableHead>الإجمالي</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead>{t('ordersPage.text21')}</TableHead>
+                    <TableHead>{t('ordersPage.text22')}</TableHead>
+                    <TableHead>{t('ordersPage.text23')}</TableHead>
+                    <TableHead>{t('ordersPage.text24')}</TableHead>
+                    <TableHead>{t('ordersPage.text25')}</TableHead>
+                    <TableHead>{t('ordersPage.text26')}</TableHead>
+                    <TableHead>{t('ordersPage.text27')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -265,7 +267,7 @@ export default function Orders() {
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تفاصيل الطلب</DialogTitle>
+            <DialogTitle>{t('ordersPage.text28')}</DialogTitle>
             <DialogDescription>
               معلومات كاملة عن الطلب #{selectedOrder?.orderNumber || selectedOrder?.id.slice(0, 8)}
             </DialogDescription>
@@ -276,25 +278,25 @@ export default function Orders() {
               {/* Customer Info */}
               <Card>
                 <CardHeader>
-                  <CardTitle>معلومات العميل</CardTitle>
+                  <CardTitle>{t('ordersPage.text29')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-muted-foreground">الاسم</p>
+                      <p className="text-sm text-muted-foreground">{t('ordersPage.text30')}</p>
                       <p className="font-medium">
                         {selectedOrder.customer?.name || "غير محدد"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">رقم الهاتف</p>
+                      <p className="text-sm text-muted-foreground">{t('ordersPage.text31')}</p>
                       <p className="font-medium">
                         {selectedOrder.customer?.phone || "غير محدد"}
                       </p>
                     </div>
                     {selectedOrder.deliveryAddress && (
                       <div className="col-span-2">
-                        <p className="text-sm text-muted-foreground">عنوان التوصيل</p>
+                        <p className="text-sm text-muted-foreground">{t('ordersPage.text32')}</p>
                         <p className="font-medium">{selectedOrder.deliveryAddress}</p>
                       </div>
                     )}
@@ -305,7 +307,7 @@ export default function Orders() {
               {/* Order Items */}
               <Card>
                 <CardHeader>
-                  <CardTitle>المنتجات</CardTitle>
+                  <CardTitle>{t('ordersPage.text33')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -326,7 +328,7 @@ export default function Orders() {
                   </div>
                   <div className="mt-4 pt-4 border-t">
                     <div className="flex justify-between items-center text-lg font-bold">
-                      <span>الإجمالي</span>
+                      <span>{t('ordersPage.text34')}</span>
                       <span>{formatPrice(selectedOrder.totalAmount)}</span>
                     </div>
                   </div>
@@ -336,7 +338,7 @@ export default function Orders() {
               {/* Order Status */}
               <Card>
                 <CardHeader>
-                  <CardTitle>حالة الطلب</CardTitle>
+                  <CardTitle>{t('ordersPage.text35')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
@@ -357,12 +359,12 @@ export default function Orders() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">قيد الانتظار</SelectItem>
-                        <SelectItem value="confirmed">مؤكد</SelectItem>
-                        <SelectItem value="processing">قيد المعالجة</SelectItem>
-                        <SelectItem value="shipped">تم الشحن</SelectItem>
-                        <SelectItem value="delivered">تم التوصيل</SelectItem>
-                        <SelectItem value="cancelled">ملغي</SelectItem>
+                        <SelectItem value="pending">{t('ordersPage.text36')}</SelectItem>
+                        <SelectItem value="confirmed">{t('ordersPage.text37')}</SelectItem>
+                        <SelectItem value="processing">{t('ordersPage.text38')}</SelectItem>
+                        <SelectItem value="shipped">{t('ordersPage.text39')}</SelectItem>
+                        <SelectItem value="delivered">{t('ordersPage.text40')}</SelectItem>
+                        <SelectItem value="cancelled">{t('ordersPage.text41')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -373,7 +375,7 @@ export default function Orders() {
               {selectedOrder.notes && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>ملاحظات</CardTitle>
+                    <CardTitle>{t('ordersPage.text42')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-sm">{selectedOrder.notes}</p>

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Check, Loader2, Rocket, Store, Briefcase, MessageSquare, Calendar, Settings, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface CompleteStepProps {
   wizardData: Record<string, any>;
@@ -14,6 +15,7 @@ export default function CompleteStep({
   completeSetup,
   isLoading,
 }: CompleteStepProps) {
+  const { t } = useTranslation();
   const businessType = wizardData.businessType;
   const hasProducts = wizardData.products && wizardData.products.length > 0;
   const hasServices = wizardData.services && wizardData.services.length > 0;
@@ -91,7 +93,7 @@ export default function CompleteStep({
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2 space-x-reverse">
               <MessageSquare className="h-5 w-5 text-green-600" />
-              <span>معاينة محادثة ساري</span>
+              <span>{t('wizardCompleteStepPage.text0')}</span>
             </h3>
             <Button
               variant="outline"
@@ -112,7 +114,7 @@ export default function CompleteStep({
                 </div>
                 <div>
                   <p className="font-semibold">ساري - {wizardData.businessName || 'مساعدك الذكي'}</p>
-                  <p className="text-xs text-green-100">متصل الآن</p>
+                  <p className="text-xs text-green-100">{t('wizardCompleteStepPage.text1')}</p>
                 </div>
               </div>
 
@@ -170,15 +172,15 @@ export default function CompleteStep({
               )}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">معلومات النشاط</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text2')}</h3>
               <div className="space-y-1 text-sm text-gray-700">
-                <p><strong>الاسم:</strong> {wizardData.businessName || 'غير محدد'}</p>
-                <p><strong>النوع:</strong> {
+                <p><strong>{t('wizardCompleteStepPage.text3')}</strong> {wizardData.businessName || 'غير محدد'}</p>
+                <p><strong>{t('wizardCompleteStepPage.text4')}</strong> {
                   businessType === 'store' ? 'متجر إلكتروني' :
                     businessType === 'services' ? 'مقدم خدمات' :
                       'منتجات وخدمات'
                 }</p>
-                <p><strong>الهاتف:</strong> {wizardData.phone || 'غير محدد'}</p>
+                <p><strong>{t('wizardCompleteStepPage.text5')}</strong> {wizardData.phone || 'غير محدد'}</p>
               </div>
             </div>
           </div>
@@ -191,7 +193,7 @@ export default function CompleteStep({
               <Store className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">المنتجات والخدمات</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text6')}</h3>
               <div className="space-y-1 text-sm text-gray-700">
                 {hasProducts && (
                   <p className="flex items-center space-x-1 space-x-reverse">
@@ -206,7 +208,7 @@ export default function CompleteStep({
                   </p>
                 )}
                 {!hasProducts && !hasServices && (
-                  <p className="text-gray-500">لم يتم إضافة منتجات أو خدمات بعد</p>
+                  <p className="text-gray-500">{t('wizardCompleteStepPage.text7')}</p>
                 )}
               </div>
             </div>
@@ -220,14 +222,14 @@ export default function CompleteStep({
               <MessageSquare className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">شخصية ساري</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text8')}</h3>
               <div className="space-y-1 text-sm text-gray-700">
-                <p><strong>الأسلوب:</strong> {
+                <p><strong>{t('wizardCompleteStepPage.text9')}</strong> {
                   wizardData.botTone === 'friendly' ? 'ودود ومرح' :
                     wizardData.botTone === 'professional' ? 'احترافي ورسمي' :
                       'عفوي وبسيط'
                 }</p>
-                <p><strong>اللغة:</strong> {
+                <p><strong>{t('wizardCompleteStepPage.text10')}</strong> {
                   wizardData.botLanguage === 'ar' ? 'العربية' :
                     wizardData.botLanguage === 'en' ? 'الإنجليزية' :
                       'العربية والإنجليزية'
@@ -244,7 +246,7 @@ export default function CompleteStep({
               <Calendar className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-gray-900 mb-2">التكاملات</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">{t('wizardCompleteStepPage.text11')}</h3>
               <div className="space-y-1 text-sm text-gray-700">
                 {wizardData.enableCalendar && (
                   <p className="flex items-center space-x-1 space-x-reverse">
@@ -259,7 +261,7 @@ export default function CompleteStep({
                   </p>
                 )}
                 {!hasIntegrations && (
-                  <p className="text-gray-500">لم يتم تفعيل تكاملات</p>
+                  <p className="text-gray-500">{t('wizardCompleteStepPage.text12')}</p>
                 )}
               </div>
             </div>
@@ -272,24 +274,24 @@ export default function CompleteStep({
         <div className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center space-x-2 space-x-reverse">
             <Rocket className="h-5 w-5 text-emerald-600" />
-            <span>ماذا بعد؟</span>
+            <span>{t('wizardCompleteStepPage.text13')}</span>
           </h3>
           <ul className="space-y-2 text-sm text-gray-700">
             <li className="flex items-start space-x-2 space-x-reverse">
               <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>سنقوم بإنشاء حسابك وتجهيز كل شيء</span>
+              <span>{t('wizardCompleteStepPage.text14')}</span>
             </li>
             <li className="flex items-start space-x-2 space-x-reverse">
               <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>ستتمكن من ربط رقم واتساب الخاص بك</span>
+              <span>{t('wizardCompleteStepPage.text15')}</span>
             </li>
             <li className="flex items-start space-x-2 space-x-reverse">
               <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>ساري سيبدأ في الرد على عملائك تلقائياً</span>
+              <span>{t('wizardCompleteStepPage.text16')}</span>
             </li>
             <li className="flex items-start space-x-2 space-x-reverse">
               <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <span>يمكنك متابعة المحادثات والطلبات من لوحة التحكم</span>
+              <span>{t('wizardCompleteStepPage.text17')}</span>
             </li>
           </ul>
         </div>

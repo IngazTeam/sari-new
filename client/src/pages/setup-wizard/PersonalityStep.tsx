@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowRight, Smile, Briefcase, Coffee, MessageSquare, Eye } from 'lucide-react';
 import PreviewChat from '@/components/PreviewChat';
+import { useTranslation } from 'react-i18next';
 
 interface PersonalityStepProps {
   wizardData: Record<string, any>;
@@ -46,6 +47,7 @@ export default function PersonalityStep({
   updateWizardData,
   goToNextStep,
 }: PersonalityStepProps) {
+  const { t } = useTranslation();
   const [botTone, setBotTone] = useState(wizardData.botTone || 'friendly');
 
   const [welcomeMessage, setWelcomeMessage] = useState(
@@ -74,7 +76,7 @@ export default function PersonalityStep({
       <div className="space-y-3">
         <Label className="text-base font-semibold flex items-center space-x-2 space-x-reverse">
           <MessageSquare className="h-5 w-5 text-primary" />
-          <span>أسلوب التواصل</span>
+          <span>{t('wizardPersonalityStepPage.text0')}</span>
         </Label>
 
         <div className="grid md:grid-cols-3 gap-3">
@@ -104,7 +106,7 @@ export default function PersonalityStep({
                   </div>
 
                   <div className="pt-2 border-t">
-                    <p className="text-xs text-gray-500 mb-1">مثال:</p>
+                    <p className="text-xs text-gray-500 mb-1">{t('wizardPersonalityStepPage.text1')}</p>
                     <p className="text-xs text-gray-700 italic bg-gray-50 p-2 rounded">
                       "{tone.example}"
                     </p>
@@ -146,7 +148,7 @@ export default function PersonalityStep({
       <div className="space-y-3">
         <Label className="text-base font-semibold flex items-center space-x-2 space-x-reverse">
           <Eye className="h-5 w-5 text-primary" />
-          <span>معاينة تفاعلية</span>
+          <span>{t('wizardPersonalityStepPage.text2')}</span>
         </Label>
         <p className="text-sm text-gray-600 mb-4">
           جرب كيف سيتفاعل ساري مع عملائك بناءً على الإعدادات التي اخترتها

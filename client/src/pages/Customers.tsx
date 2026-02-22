@@ -42,8 +42,10 @@ import {
   Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from 'react-i18next';
 
 export default function Customers() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
@@ -147,7 +149,7 @@ export default function Customers() {
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">إدارة العملاء</h1>
+          <h1 className="text-3xl font-bold">{t('customersPage.text0')}</h1>
           <p className="text-muted-foreground mt-1">
             عرض وإدارة جميع عملائك
           </p>
@@ -162,7 +164,7 @@ export default function Customers() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('customersPage.text1')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -175,7 +177,7 @@ export default function Customers() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">العملاء النشطين</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('customersPage.text2')}</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -188,12 +190,12 @@ export default function Customers() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">عملاء جدد</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('customersPage.text3')}</CardTitle>
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.newThisMonth || 0}</div>
-            <p className="text-xs text-muted-foreground">خلال هذا الشهر</p>
+            <p className="text-xs text-muted-foreground">{t('customersPage.text4')}</p>
           </CardContent>
         </Card>
       </div>
@@ -201,15 +203,15 @@ export default function Customers() {
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة العملاء</CardTitle>
-          <CardDescription>ابحث وفلتر العملاء</CardDescription>
+          <CardTitle>{t('customersPage.text5')}</CardTitle>
+          <CardDescription>{t('customersPage.text6')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 mb-4">
             <div className="relative flex-1">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="ابحث بالاسم أو رقم الهاتف..."
+                placeholder={t('customersPage.text7')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -219,7 +221,7 @@ export default function Customers() {
 
           {/* Customers Table */}
           {isLoading ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-8">{t('customersPage.text8')}</div>
           ) : customers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               لا يوجد عملاء
@@ -229,13 +231,13 @@ export default function Customers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>الاسم</TableHead>
-                    <TableHead>رقم الهاتف</TableHead>
-                    <TableHead>عدد المحادثات</TableHead>
-                    <TableHead>عدد الطلبات</TableHead>
-                    <TableHead>آخر تفاعل</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead>{t('customersPage.text9')}</TableHead>
+                    <TableHead>{t('customersPage.text10')}</TableHead>
+                    <TableHead>{t('customersPage.text11')}</TableHead>
+                    <TableHead>{t('customersPage.text12')}</TableHead>
+                    <TableHead>{t('customersPage.text13')}</TableHead>
+                    <TableHead>{t('customersPage.text14')}</TableHead>
+                    <TableHead>{t('customersPage.text15')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -302,7 +304,7 @@ export default function Customers() {
       <Dialog open={showDetails} onOpenChange={setShowDetails}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تفاصيل العميل</DialogTitle>
+            <DialogTitle>{t('customersPage.text16')}</DialogTitle>
             <DialogDescription>
               معلومات شاملة عن العميل وتفاعلاته
             </DialogDescription>
@@ -311,39 +313,39 @@ export default function Customers() {
           {selectedCustomer && (
             <Tabs defaultValue="info" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="info">المعلومات</TabsTrigger>
-                <TabsTrigger value="conversations">المحادثات</TabsTrigger>
-                <TabsTrigger value="orders">الطلبات</TabsTrigger>
-                <TabsTrigger value="notes">الملاحظات</TabsTrigger>
+                <TabsTrigger value="info">{t('customersPage.text17')}</TabsTrigger>
+                <TabsTrigger value="conversations">{t('customersPage.text18')}</TabsTrigger>
+                <TabsTrigger value="orders">{t('customersPage.text19')}</TabsTrigger>
+                <TabsTrigger value="notes">{t('customersPage.text20')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>المعلومات الأساسية</CardTitle>
+                    <CardTitle>{t('customersPage.text21')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>الاسم</Label>
+                        <Label>{t('customersPage.text22')}</Label>
                         <p className="text-sm font-medium">
                           {selectedCustomer.name || "غير محدد"}
                         </p>
                       </div>
                       <div>
-                        <Label>رقم الهاتف</Label>
+                        <Label>{t('customersPage.text23')}</Label>
                         <p className="text-sm font-medium">
                           {selectedCustomer.phone}
                         </p>
                       </div>
                       <div>
-                        <Label>البريد الإلكتروني</Label>
+                        <Label>{t('customersPage.text24')}</Label>
                         <p className="text-sm font-medium">
                           {selectedCustomer.email || "غير محدد"}
                         </p>
                       </div>
                       <div>
-                        <Label>تاريخ التسجيل</Label>
+                        <Label>{t('customersPage.text25')}</Label>
                         <p className="text-sm font-medium">
                           {new Date(
                             selectedCustomer.createdAt
@@ -353,7 +355,7 @@ export default function Customers() {
                     </div>
 
                     <div>
-                      <Label className="mb-2 block">التصنيفات</Label>
+                      <Label className="mb-2 block">{t('customersPage.text26')}</Label>
                       <div className="flex flex-wrap gap-2 mb-2">
                         {selectedCustomer.tags?.map((tag: string) => (
                           <Badge key={tag} variant="secondary">
@@ -370,7 +372,7 @@ export default function Customers() {
                       </div>
                       <div className="flex gap-2">
                         <Input
-                          placeholder="إضافة تصنيف جديد"
+                          placeholder={t('customersPage.text27')}
                           value={newTag}
                           onChange={(e) => setNewTag(e.target.value)}
                         />
@@ -386,7 +388,7 @@ export default function Customers() {
               <TabsContent value="conversations">
                 <Card>
                   <CardHeader>
-                    <CardTitle>سجل المحادثات</CardTitle>
+                    <CardTitle>{t('customersPage.text28')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground text-center py-8">
@@ -399,7 +401,7 @@ export default function Customers() {
               <TabsContent value="orders">
                 <Card>
                   <CardHeader>
-                    <CardTitle>سجل الطلبات</CardTitle>
+                    <CardTitle>{t('customersPage.text29')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground text-center py-8">
@@ -412,13 +414,13 @@ export default function Customers() {
               <TabsContent value="notes" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>الملاحظات</CardTitle>
+                    <CardTitle>{t('customersPage.text30')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label>إضافة ملاحظة جديدة</Label>
+                      <Label>{t('customersPage.text31')}</Label>
                       <Textarea
-                        placeholder="اكتب ملاحظة..."
+                        placeholder={t('customersPage.text32')}
                         value={newNote}
                         onChange={(e) => setNewNote(e.target.value)}
                       />
@@ -429,7 +431,7 @@ export default function Customers() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label>الملاحظات السابقة</Label>
+                      <Label>{t('customersPage.text33')}</Label>
                       {selectedCustomer.notes?.length > 0 ? (
                         selectedCustomer.notes.map((note: any, index: number) => (
                           <Card key={index}>

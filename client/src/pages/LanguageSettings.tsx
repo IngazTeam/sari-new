@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useCurrency } from "@/contexts/CurrencyContext";
 
 export default function LanguageSettings() {
+  const { t } = useTranslation();
   const { t, i18n } = useTranslation();
   const { currency, setCurrency } = useCurrency();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
@@ -66,7 +67,7 @@ export default function LanguageSettings() {
         <Languages className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-3xl font-bold">{t('common.settings')}</h1>
-          <p className="text-muted-foreground">إدارة إعدادات اللغة والعملة</p>
+          <p className="text-muted-foreground">{t('languageSettingsPage.text0')}</p>
         </div>
       </div>
 
@@ -86,10 +87,10 @@ export default function LanguageSettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="language">اللغة</Label>
+              <Label htmlFor="language">{t('languageSettingsPage.text1')}</Label>
               <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
                 <SelectTrigger id="language">
-                  <SelectValue placeholder="اختر اللغة" />
+                  <SelectValue placeholder={t('languageSettingsPage.text2')} />
                 </SelectTrigger>
                 <SelectContent>
                   {languages.map((lang) => (
@@ -108,11 +109,11 @@ export default function LanguageSettings() {
             </div>
 
             <div className="rounded-lg bg-muted p-4 space-y-2">
-              <p className="text-sm font-medium">ملاحظة:</p>
+              <p className="text-sm font-medium">{t('languageSettingsPage.text3')}</p>
               <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>تغيير اللغة سيؤثر على جميع واجهات التطبيق</li>
-                <li>رسائل البوت ستتكيف تلقائياً مع اللغة المختارة</li>
-                <li>يمكن تغيير اللغة في أي وقت</li>
+                <li>{t('languageSettingsPage.text4')}</li>
+                <li>{t('languageSettingsPage.text5')}</li>
+                <li>{t('languageSettingsPage.text6')}</li>
               </ul>
             </div>
           </CardContent>
@@ -131,10 +132,10 @@ export default function LanguageSettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="currency">العملة</Label>
+              <Label htmlFor="currency">{t('languageSettingsPage.text7')}</Label>
               <Select value={selectedCurrency} onValueChange={handleCurrencyChange}>
                 <SelectTrigger id="currency">
-                  <SelectValue placeholder="اختر العملة" />
+                  <SelectValue placeholder={t('languageSettingsPage.text8')} />
                 </SelectTrigger>
                 <SelectContent>
                   {currencies.map((curr) => (
@@ -153,11 +154,11 @@ export default function LanguageSettings() {
             </div>
 
             <div className="rounded-lg bg-muted p-4 space-y-2">
-              <p className="text-sm font-medium">ملاحظة:</p>
+              <p className="text-sm font-medium">{t('languageSettingsPage.text9')}</p>
               <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                <li>تغيير العملة سيؤثر على عرض الأسعار فقط</li>
-                <li>لن يتم تحويل الأسعار تلقائياً</li>
-                <li>يمكن تغيير العملة في أي وقت</li>
+                <li>{t('languageSettingsPage.text10')}</li>
+                <li>{t('languageSettingsPage.text11')}</li>
+                <li>{t('languageSettingsPage.text12')}</li>
               </ul>
             </div>
           </CardContent>
@@ -167,7 +168,7 @@ export default function LanguageSettings() {
       {/* Preview Section */}
       <Card>
         <CardHeader>
-          <CardTitle>معاينة الإعدادات</CardTitle>
+          <CardTitle>{t('languageSettingsPage.text13')}</CardTitle>
           <CardDescription>
             معاينة كيف ستظهر اللغة والعملة في التطبيق
           </CardDescription>
@@ -175,14 +176,14 @@ export default function LanguageSettings() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground mb-2">عينة من النصوص:</p>
+              <p className="text-sm text-muted-foreground mb-2">{t('languageSettingsPage.text14')}</p>
               <div className="space-y-2">
                 <p className="font-medium">{t('common.welcome')}</p>
                 <p className="text-sm">{t('bot.welcome')}</p>
               </div>
             </div>
             <div className="rounded-lg border p-4">
-              <p className="text-sm text-muted-foreground mb-2">عينة من الأسعار:</p>
+              <p className="text-sm text-muted-foreground mb-2">{t('languageSettingsPage.text15')}</p>
               <div className="space-y-2">
                 <p className="font-medium">
                   {t('common.price')}: {currencies.find(c => c.code === selectedCurrency)?.symbol} 1,500

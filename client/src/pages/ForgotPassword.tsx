@@ -9,8 +9,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowRight, Mail, CheckCircle2, AlertCircle, Clock, KeyRound } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useTranslation } from 'react-i18next';
 
 export default function ForgotPassword() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [remainingTime, setRemainingTime] = useState<number | null>(null);
@@ -78,7 +80,7 @@ export default function ForgotPassword() {
                 </div>
               </div>
               <div>
-                <CardTitle className="text-2xl font-bold">تم إرسال الرابط!</CardTitle>
+                <CardTitle className="text-2xl font-bold">{t('forgotPasswordPage.text0')}</CardTitle>
                 <CardDescription className="text-base mt-2">
                   تحقق من بريدك الإلكتروني
                 </CardDescription>
@@ -138,7 +140,7 @@ export default function ForgotPassword() {
               </div>
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">نسيت كلمة المرور؟</CardTitle>
+              <CardTitle className="text-3xl font-bold">{t('forgotPasswordPage.text1')}</CardTitle>
               <CardDescription className="text-base mt-2">
                 لا تقلق، سنرسل لك رابطاً لإعادة تعيينها
               </CardDescription>
@@ -164,7 +166,7 @@ export default function ForgotPassword() {
                         لقد تجاوزت الحد الأقصى للمحاولات (3 محاولات)
                       </p>
                       <p>
-                        يرجى الانتظار <strong className="text-orange-600 text-lg">{formatTime(remainingTime)}</strong> قبل المحاولة مرة أخرى.
+                        يرجى الانتظار <strong className="text-orange-600 text-lg">{formatTime(remainingTime)}</strong>{t('forgotPasswordPage.text2')}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
                         هذا الإجراء لحماية حسابك من الوصول غير المصرح به.
@@ -175,7 +177,7 @@ export default function ForgotPassword() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="email">{t('forgotPasswordPage.text3')}</Label>
                 <Input
                   id="email"
                   type="email"

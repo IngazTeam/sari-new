@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Check, X, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function ComparePlans() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
@@ -20,7 +22,7 @@ export default function ComparePlans() {
   // Upgrade/downgrade mutation
   const upgradeMutation = trpc.subscriptions.upgradeSubscription.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث الباقة بنجاح');
+      toast.success(t('comparePlansPage.text0'));
       setLocation('/merchant/subscription');
     },
     onError: (error) => {
@@ -30,12 +32,12 @@ export default function ComparePlans() {
 
   const handleSelectPlan = (planId: number) => {
     if (!currentSubscription) {
-      toast.error('لا يوجد اشتراك نشط');
+      toast.error(t('comparePlansPage.text1'));
       return;
     }
 
     if (planId === currentSubscription.planId) {
-      toast.info('هذه هي باقتك الحالية');
+      toast.info(t('comparePlansPage.text2'));
       return;
     }
 
@@ -56,7 +58,7 @@ export default function ComparePlans() {
       <div className="container mx-auto py-8">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">لا توجد باقات متاحة حالياً</p>
+            <p className="text-center text-muted-foreground">{t('comparePlansPage.text3')}</p>
           </CardContent>
         </Card>
       </div>
@@ -96,7 +98,7 @@ export default function ComparePlans() {
     <div className="container mx-auto py-8 px-4">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">مقارنة الباقات</h1>
+        <h1 className="text-4xl font-bold mb-4">{t('comparePlansPage.text4')}</h1>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           اختر الباقة المناسبة لاحتياجات عملك. يمكنك الترقية أو التخفيض في أي وقت.
         </p>
@@ -135,7 +137,7 @@ export default function ComparePlans() {
                           </Badge>
                         )}
                         {currentSubscription?.planId === plan.id && (
-                          <Badge variant="secondary">الباقة الحالية</Badge>
+                          <Badge variant="secondary">{t('comparePlansPage.text5')}</Badge>
                         )}
                       </div>
                       <CardTitle className="text-2xl">{plan.name}</CardTitle>
@@ -218,7 +220,7 @@ export default function ComparePlans() {
       <div className="mt-12 text-center">
         <Card className="max-w-2xl mx-auto">
           <CardContent className="pt-6">
-            <h3 className="text-xl font-semibold mb-2">هل تحتاج مساعدة في اختيار الباقة المناسبة؟</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('comparePlansPage.text6')}</h3>
             <p className="text-muted-foreground mb-4">
               تواصل مع فريق الدعم للحصول على استشارة مجانية
             </p>

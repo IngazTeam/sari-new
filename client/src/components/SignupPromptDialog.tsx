@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Sparkles } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 interface SignupPromptDialogProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface SignupPromptDialogProps {
 }
 
 export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPromptDialogProps) {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     name: '',
@@ -42,7 +44,7 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-[#00d25e]" />
-              <DialogTitle className="text-2xl">أعجبك ساري؟</DialogTitle>
+              <DialogTitle className="text-2xl">{t('compSignupPromptDialogPage.text0')}</DialogTitle>
             </div>
           </div>
           <DialogDescription className="text-base pt-2">
@@ -52,17 +54,17 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name">الاسم</Label>
+            <Label htmlFor="name">{t('compSignupPromptDialogPage.text1')}</Label>
             <Input
               id="name"
-              placeholder="أدخل اسمك"
+              placeholder={t('compSignupPromptDialogPage.text2')}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">البريد الإلكتروني</Label>
+            <Label htmlFor="email">{t('compSignupPromptDialogPage.text3')}</Label>
             <Input
               id="email"
               type="email"
@@ -73,7 +75,7 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">رقم الجوال</Label>
+            <Label htmlFor="phone">{t('compSignupPromptDialogPage.text4')}</Label>
             <Input
               id="phone"
               type="tel"
@@ -85,7 +87,7 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
 
           <div className="bg-gradient-to-r from-[#00d25e]/10 to-blue-50 p-4 rounded-lg">
             <p className="text-sm text-gray-700 font-medium">
-              ✨ احصل على <span className="text-[#00d25e] font-bold">7 أيام تجربة مجانية</span>
+              ✨ احصل على <span className="text-[#00d25e] font-bold">{t('compSignupPromptDialogPage.text5')}</span>
             </p>
             <p className="text-xs text-gray-600 mt-1">
               بدون الحاجة لبطاقة ائتمانية

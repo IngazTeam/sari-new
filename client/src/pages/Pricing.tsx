@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 import { CheckCircle2, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
+import { useTranslation } from 'react-i18next';
 
 export default function Pricing() {
+  const { t } = useTranslation();
   // Fetch plans from database
   const { data: plans, isLoading, error } = trpc.subscriptionPlans.listPlans.useQuery();
 
@@ -68,14 +70,14 @@ export default function Pricing() {
           {isLoading && (
             <div className="flex justify-center items-center py-20">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <span className="mr-3 text-lg text-muted-foreground">جاري تحميل الباقات...</span>
+              <span className="mr-3 text-lg text-muted-foreground">{t('pricingPage.text0')}</span>
             </div>
           )}
 
           {/* Error State */}
           {error && (
             <div className="text-center py-20">
-              <p className="text-red-500 text-lg mb-4">حدث خطأ أثناء تحميل الباقات</p>
+              <p className="text-red-500 text-lg mb-4">{t('pricingPage.text1')}</p>
               <Button onClick={() => window.location.reload()} variant="outline">
                 إعادة المحاولة
               </Button>
@@ -119,7 +121,7 @@ export default function Pricing() {
                             <span className="text-5xl font-bold">{plan.monthlyPrice}</span>
                             <span className="text-muted-foreground">{plan.currency}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">شهرياً</p>
+                          <p className="text-sm text-muted-foreground mt-1">{t('pricingPage.text2')}</p>
                         </div>
                         {plan.description && (
                           <p className="text-sm text-muted-foreground">{plan.description}</p>
@@ -176,7 +178,7 @@ export default function Pricing() {
           {/* No Plans State */}
           {!isLoading && !error && (!plans || plans.length === 0) && (
             <div className="text-center py-20">
-              <p className="text-muted-foreground text-lg">لا توجد باقات متاحة حالياً</p>
+              <p className="text-muted-foreground text-lg">{t('pricingPage.text3')}</p>
             </div>
           )}
         </div>

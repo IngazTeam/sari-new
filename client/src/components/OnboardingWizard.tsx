@@ -18,6 +18,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface OnboardingWizardProps {
   onComplete?: () => void;
@@ -25,6 +26,7 @@ interface OnboardingWizardProps {
 }
 
 export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
   const [businessName, setBusinessName] = useState('');
   const [phone, setPhone] = useState('');
@@ -68,7 +70,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     // Validate step 1 (business info)
     if (currentStep === 1) {
       if (!businessName.trim()) {
-        toast.error('يرجى إدخال اسم المتجر');
+        toast.error(t('compOnboardingWizardPage.text0'));
         return;
       }
 
@@ -78,9 +80,9 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
           phone: phone.trim() || undefined,
         });
 
-        toast.success('تم حفظ معلومات المتجر بنجاح');
+        toast.success(t('compOnboardingWizardPage.text1'));
       } catch (error) {
-        toast.error('حدث خطأ أثناء حفظ البيانات');
+        toast.error(t('compOnboardingWizardPage.text2'));
         return;
       }
     }
@@ -104,11 +106,11 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
   const handleComplete = async () => {
     try {
       await completeOnboarding.mutateAsync();
-      toast.success('مبروك! 🎉 تم إعداد حسابك بنجاح');
+      toast.success(t('compOnboardingWizardPage.text3'));
       onComplete?.();
       setLocation('/merchant/dashboard');
     } catch (error) {
-      toast.error('حدث خطأ أثناء إكمال الإعداد');
+      toast.error(t('compOnboardingWizardPage.text4'));
     }
   };
 
@@ -164,7 +166,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                 <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary to-primary flex items-center justify-center">
                   <Sparkles className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold">أهلاً بك في ساري!</h3>
+                <h3 className="text-xl font-semibold">{t('compOnboardingWizardPage.text5')}</h3>
                 <p className="text-gray-600 max-w-md mx-auto">
                   ساري هو مساعدك الذكي الذي يعمل بالذكاء الاصطناعي لإدارة متجرك على واتساب.
                   يرد على عملائك باللهجة السعودية، يساعدهم في اختيار المنتجات، ويستقبل الطلبات تلقائياً.
@@ -174,18 +176,18 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 rounded-lg bg-primary/10">
                   <MessageSquare className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <h4 className="font-semibold mb-1">ردود تلقائية</h4>
-                  <p className="text-sm text-gray-600">رد فوري على جميع رسائل العملاء</p>
+                  <h4 className="font-semibold mb-1">{t('compOnboardingWizardPage.text6')}</h4>
+                  <p className="text-sm text-gray-600">{t('compOnboardingWizardPage.text7')}</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-primary/10">
                   <Store className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <h4 className="font-semibold mb-1">إدارة المنتجات</h4>
-                  <p className="text-sm text-gray-600">نظام متكامل لإدارة منتجاتك</p>
+                  <h4 className="font-semibold mb-1">{t('compOnboardingWizardPage.text8')}</h4>
+                  <p className="text-sm text-gray-600">{t('compOnboardingWizardPage.text9')}</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-primary/10">
                   <CheckCircle2 className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <h4 className="font-semibold mb-1">استقبال الطلبات</h4>
-                  <p className="text-sm text-gray-600">طلبات تلقائية من واتساب مباشرة</p>
+                  <h4 className="font-semibold mb-1">{t('compOnboardingWizardPage.text10')}</h4>
+                  <p className="text-sm text-gray-600">{t('compOnboardingWizardPage.text11')}</p>
                 </div>
               </div>
 
@@ -200,7 +202,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
             <div className="space-y-4 py-6">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="businessName">اسم المتجر *</Label>
+                  <Label htmlFor="businessName">{t('compOnboardingWizardPage.text12')}</Label>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button type="button" className="text-gray-400 hover:text-gray-600">
@@ -209,13 +211,13 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm">
                       <div className="space-y-2">
-                        <p className="font-medium">اسم متجرك الذي سيظهر للعملاء في جميع المحادثات</p>
+                        <p className="font-medium">{t('compOnboardingWizardPage.text13')}</p>
                         <div className="space-y-1 text-xs">
-                          <p className="text-green-600">✅ متجر الهدايا الفاخرة</p>
-                          <p className="text-green-600">✅ عطور الرياض</p>
-                          <p className="text-green-600">✅ متجر الإلكترونيات</p>
-                          <p className="text-red-600">❌ متجري (غير واضح)</p>
-                          <p className="text-red-600">❌ ABC Store (بالإنجليزية)</p>
+                          <p className="text-green-600">{t('compOnboardingWizardPage.text14')}</p>
+                          <p className="text-green-600">{t('compOnboardingWizardPage.text15')}</p>
+                          <p className="text-green-600">{t('compOnboardingWizardPage.text16')}</p>
+                          <p className="text-red-600">{t('compOnboardingWizardPage.text17')}</p>
+                          <p className="text-red-600">{t('compOnboardingWizardPage.text18')}</p>
                         </div>
                       </div>
                     </TooltipContent>
@@ -225,7 +227,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                   id="businessName"
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="مثال: متجر الهدايا الفاخرة"
+                  placeholder={t('compOnboardingWizardPage.text19')}
                   className="text-right"
                 />
                 <p className="text-sm text-gray-500">
@@ -235,7 +237,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
 
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="phone">رقم الجوال (اختياري)</Label>
+                  <Label htmlFor="phone">{t('compOnboardingWizardPage.text20')}</Label>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button type="button" className="text-gray-400 hover:text-gray-600">
@@ -244,15 +246,15 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-sm">
                       <div className="space-y-2">
-                        <p className="font-medium">رقمك الشخصي للتواصل الإداري (ليس رقم المتجر)</p>
+                        <p className="font-medium">{t('compOnboardingWizardPage.text21')}</p>
                         <div className="space-y-1 text-xs">
                           <p className="text-green-600">✅ 0512345678</p>
                           <p className="text-green-600">✅ 0501234567</p>
                           <p className="text-green-600">✅ +966512345678</p>
-                          <p className="text-red-600">❌ 512345678 (بدون 05)</p>
-                          <p className="text-red-600">❌ 05-123-4567 (بفواصل)</p>
+                          <p className="text-red-600">{t('compOnboardingWizardPage.text22')}</p>
+                          <p className="text-red-600">{t('compOnboardingWizardPage.text23')}</p>
                         </div>
-                        <p className="text-xs text-gray-400">سنستخدمه للتواصل معك بخصوص حسابك</p>
+                        <p className="text-xs text-gray-400">{t('compOnboardingWizardPage.text24')}</p>
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -279,7 +281,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                 <div className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold">حسابك جاهز! 🎉</h3>
+                <h3 className="text-xl font-semibold">{t('compOnboardingWizardPage.text25')}</h3>
                 <p className="text-gray-600 max-w-md mx-auto">
                   يمكنك الآن استكشاف لوحة التحكم بالكامل، إضافة المنتجات، وتجربة ردود ساري الذكية مجاناً
                 </p>
@@ -287,30 +289,30 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
 
               {/* What you can do now */}
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
-                <h4 className="font-semibold text-green-800">✅ متاح لك الآن مجاناً:</h4>
+                <h4 className="font-semibold text-green-800">{t('compOnboardingWizardPage.text26')}</h4>
                 <ul className="space-y-1 text-sm text-green-700">
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>استكشاف لوحة التحكم وجميع الإعدادات</span>
+                    <span>{t('compOnboardingWizardPage.text27')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>إضافة المنتجات والخدمات</span>
+                    <span>{t('compOnboardingWizardPage.text28')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>تجربة ردود ساري الذكية ومعاينتها</span>
+                    <span>{t('compOnboardingWizardPage.text29')}</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>إعداد شخصية ساري وأسلوب التواصل</span>
+                    <span>{t('compOnboardingWizardPage.text30')}</span>
                   </li>
                 </ul>
               </div>
 
               {/* WhatsApp requires subscription */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
-                <h4 className="font-semibold text-amber-800">📱 لربط واتساب يجب الاشتراك بباقة</h4>
+                <h4 className="font-semibold text-amber-800">{t('compOnboardingWizardPage.text31')}</h4>
                 <p className="text-sm text-amber-700">
                   لتفعيل الرد التلقائي على واتساب واستقبال الطلبات من العملاء، اختر الباقة المناسبة لك:
                 </p>
@@ -322,26 +324,26 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                   className="border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary hover:shadow-md transition-all"
                   onClick={() => setLocation('/merchant/subscription/plans')}
                 >
-                  <h5 className="font-semibold text-gray-900 mb-1">الأساسية</h5>
-                  <p className="text-2xl font-bold text-primary mb-1">99 <span className="text-sm font-normal">ر.س/شهر</span></p>
-                  <p className="text-xs text-gray-500">500 رسالة/شهر</p>
+                  <h5 className="font-semibold text-gray-900 mb-1">{t('compOnboardingWizardPage.text32')}</h5>
+                  <p className="text-2xl font-bold text-primary mb-1">99 <span className="text-sm font-normal">{t('compOnboardingWizardPage.text33')}</span></p>
+                  <p className="text-xs text-gray-500">{t('compOnboardingWizardPage.text34')}</p>
                 </div>
                 <div
                   className="border-2 border-primary rounded-lg p-4 text-center cursor-pointer hover:shadow-md transition-all bg-primary/5 relative"
                   onClick={() => setLocation('/merchant/subscription/plans')}
                 >
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-2 py-0.5 rounded-full">الأكثر طلباً</span>
-                  <h5 className="font-semibold text-gray-900 mb-1">الاحترافية</h5>
-                  <p className="text-2xl font-bold text-primary mb-1">199 <span className="text-sm font-normal">ر.س/شهر</span></p>
-                  <p className="text-xs text-gray-500">2000 رسالة/شهر</p>
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-2 py-0.5 rounded-full">{t('compOnboardingWizardPage.text35')}</span>
+                  <h5 className="font-semibold text-gray-900 mb-1">{t('compOnboardingWizardPage.text36')}</h5>
+                  <p className="text-2xl font-bold text-primary mb-1">199 <span className="text-sm font-normal">{t('compOnboardingWizardPage.text37')}</span></p>
+                  <p className="text-xs text-gray-500">{t('compOnboardingWizardPage.text38')}</p>
                 </div>
                 <div
                   className="border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary hover:shadow-md transition-all"
                   onClick={() => setLocation('/merchant/subscription/plans')}
                 >
-                  <h5 className="font-semibold text-gray-900 mb-1">المتقدمة</h5>
-                  <p className="text-2xl font-bold text-primary mb-1">399 <span className="text-sm font-normal">ر.س/شهر</span></p>
-                  <p className="text-xs text-gray-500">5000 رسالة/شهر</p>
+                  <h5 className="font-semibold text-gray-900 mb-1">{t('compOnboardingWizardPage.text39')}</h5>
+                  <p className="text-2xl font-bold text-primary mb-1">399 <span className="text-sm font-normal">{t('compOnboardingWizardPage.text40')}</span></p>
+                  <p className="text-xs text-gray-500">{t('compOnboardingWizardPage.text41')}</p>
                 </div>
               </div>
 

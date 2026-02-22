@@ -9,8 +9,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, MessageSquare, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useTranslation } from 'react-i18next';
 
 export default function Login() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -141,7 +143,7 @@ export default function Login() {
               </div>
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">ساري</CardTitle>
+              <CardTitle className="text-3xl font-bold">{t('loginPage.text0')}</CardTitle>
               <CardDescription className="text-base mt-2">
                 وكيل المبيعات الذكي على الواتساب
               </CardDescription>
@@ -156,7 +158,7 @@ export default function Login() {
                 </Alert>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="email">{t('loginPage.text1')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -171,7 +173,7 @@ export default function Login() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">كلمة المرور</Label>
+                  <Label htmlFor="password">{t('loginPage.text2')}</Label>
                   <a href="/forgot-password" className="text-sm text-primary hover:underline">
                     نسيت كلمة المرور؟
                   </a>
@@ -223,7 +225,7 @@ export default function Login() {
               </Button>
             </form>
             <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">لا تملك حساباً؟ </span>
+              <span className="text-muted-foreground">{t('loginPage.text3')}</span>
               <a href="/signup" className="text-primary hover:underline font-medium">
                 سجل الآن
               </a>

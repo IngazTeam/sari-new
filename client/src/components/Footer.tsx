@@ -13,7 +13,7 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="space-y-4 lg:col-span-1">
             <div className="flex items-center gap-2">
-              <img src="/sari-logo.png" alt="ساري" className="h-12 w-auto object-contain" />
+              <img src="/sari-logo.png" alt={t('compFooterPage.text0')} className="h-12 w-auto object-contain" />
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t('footer.description')}
@@ -60,7 +60,7 @@ export default function Footer() {
 
           {/* الحلول */}
           <div>
-            <h3 className="font-semibold mb-4">الحلول</h3>
+            <h3 className="font-semibold mb-4">{t('compFooterPage.text1')}</h3>
             <ul className="space-y-3">
               <li>
                 <Link href="/solutions/sales">
@@ -88,7 +88,7 @@ export default function Footer() {
 
           {/* المنتج */}
           <div>
-            <h3 className="font-semibold mb-4">المنتج</h3>
+            <h3 className="font-semibold mb-4">{t('compFooterPage.text2')}</h3>
             <ul className="space-y-3">
               <li>
                 <Link href="/product/ai-agent">
@@ -130,7 +130,7 @@ export default function Footer() {
 
           {/* الشركة */}
           <div>
-            <h3 className="font-semibold mb-4">الشركة</h3>
+            <h3 className="font-semibold mb-4">{t('compFooterPage.text3')}</h3>
             <ul className="space-y-3">
               <li>
                 <Link href="/company/about">
@@ -165,7 +165,7 @@ export default function Footer() {
 
           {/* الموارد والدعم */}
           <div>
-            <h3 className="font-semibold mb-4">الموارد والدعم</h3>
+            <h3 className="font-semibold mb-4">{t('compFooterPage.text4')}</h3>
             <ul className="space-y-3">
               <li>
                 <Link href="/resources/blog">
@@ -216,7 +216,7 @@ export default function Footer() {
             </div>
             <div className="flex items-start gap-2">
               <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <span>الرياض، المملكة العربية السعودية</span>
+              <span>{t('compFooterPage.text5')}</span>
             </div>
           </div>
         </div>

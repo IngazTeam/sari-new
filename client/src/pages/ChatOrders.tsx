@@ -87,7 +87,7 @@ export default function ChatOrders() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">جاري تحميل الطلبات...</p>
+            <p className="text-muted-foreground">{t('chatOrdersPage.text0')}</p>
           </div>
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function ChatOrders() {
     <div className="container mx-auto py-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">طلبات الواتساب</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('chatOrdersPage.text1')}</h1>
         <p className="text-muted-foreground">
           جميع الطلبات التي تم إنشاؤها من محادثات الواتساب
         </p>
@@ -108,7 +108,7 @@ export default function ChatOrders() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('chatOrdersPage.text2')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -118,7 +118,7 @@ export default function ChatOrders() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('chatOrdersPage.text3')}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -130,7 +130,7 @@ export default function ChatOrders() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">تم التوصيل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('chatOrdersPage.text4')}</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -142,7 +142,7 @@ export default function ChatOrders() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">طلبات هدايا</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('chatOrdersPage.text5')}</CardTitle>
             <Gift className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -156,7 +156,7 @@ export default function ChatOrders() {
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الطلبات</CardTitle>
+          <CardTitle>{t('chatOrdersPage.text6')}</CardTitle>
           <CardDescription>
             جميع الطلبات مرتبة حسب الأحدث
           </CardDescription>
@@ -165,7 +165,7 @@ export default function ChatOrders() {
           {!orders || orders.length === 0 ? (
             <div className="text-center py-12">
               <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد طلبات بعد</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('chatOrdersPage.text7')}</h3>
               <p className="text-muted-foreground">
                 عندما يقوم العملاء بالطلب عبر الواتساب، ستظهر الطلبات هنا
               </p>
@@ -174,13 +174,13 @@ export default function ChatOrders() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>رقم الطلب</TableHead>
-                  <TableHead>العميل</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>الإجراءات</TableHead>
+                  <TableHead>{t('chatOrdersPage.text8')}</TableHead>
+                  <TableHead>{t('chatOrdersPage.text9')}</TableHead>
+                  <TableHead>{t('chatOrdersPage.text10')}</TableHead>
+                  <TableHead>{t('chatOrdersPage.text11')}</TableHead>
+                  <TableHead>{t('chatOrdersPage.text12')}</TableHead>
+                  <TableHead>{t('chatOrdersPage.text13')}</TableHead>
+                  <TableHead>{t('chatOrdersPage.text14')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -208,7 +208,7 @@ export default function ChatOrders() {
                           هدية
                         </Badge>
                       ) : (
-                        <Badge variant="outline">عادي</Badge>
+                        <Badge variant="outline">{t('chatOrdersPage.text15')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -230,12 +230,12 @@ export default function ChatOrders() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">قيد الانتظار</SelectItem>
-                            <SelectItem value="paid">مدفوع</SelectItem>
-                            <SelectItem value="processing">قيد المعالجة</SelectItem>
-                            <SelectItem value="shipped">تم الشحن</SelectItem>
-                            <SelectItem value="delivered">تم التوصيل</SelectItem>
-                            <SelectItem value="cancelled">ملغي</SelectItem>
+                            <SelectItem value="pending">{t('chatOrdersPage.text16')}</SelectItem>
+                            <SelectItem value="paid">{t('chatOrdersPage.text17')}</SelectItem>
+                            <SelectItem value="processing">{t('chatOrdersPage.text18')}</SelectItem>
+                            <SelectItem value="shipped">{t('chatOrdersPage.text19')}</SelectItem>
+                            <SelectItem value="delivered">{t('chatOrdersPage.text20')}</SelectItem>
+                            <SelectItem value="cancelled">{t('chatOrdersPage.text21')}</SelectItem>
                           </SelectContent>
                         </Select>
                         
@@ -262,7 +262,7 @@ export default function ChatOrders() {
       {selectedOrderId && (
         <Card className="mt-6">
           <CardHeader>
-            <CardTitle>تفاصيل الطلب</CardTitle>
+            <CardTitle>{t('chatOrdersPage.text22')}</CardTitle>
           </CardHeader>
           <CardContent>
             {/* TODO: Add order details */}

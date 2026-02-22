@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Settings } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function LoyaltySettings() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: settings, isLoading, refetch } = trpc.loyalty.getSettings.useQuery();
   const updateSettings = trpc.loyalty.updateSettings.useMutation();
@@ -74,8 +76,8 @@ export default function LoyaltySettings() {
       <div className="flex items-center gap-3 mb-6">
         <Settings className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">إعدادات نظام الولاء</h1>
-          <p className="text-muted-foreground">إدارة برنامج النقاط والمكافآت</p>
+          <h1 className="text-3xl font-bold">{t('loyaltySettingsPage.text0')}</h1>
+          <p className="text-muted-foreground">{t('loyaltySettingsPage.text1')}</p>
         </div>
       </div>
 
@@ -83,12 +85,12 @@ export default function LoyaltySettings() {
         {/* تفعيل النظام */}
         <Card>
           <CardHeader>
-            <CardTitle>تفعيل نظام الولاء</CardTitle>
-            <CardDescription>تشغيل أو إيقاف برنامج النقاط للعملاء</CardDescription>
+            <CardTitle>{t('loyaltySettingsPage.text2')}</CardTitle>
+            <CardDescription>{t('loyaltySettingsPage.text3')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <Label htmlFor="isEnabled" className="text-base">تفعيل النظام</Label>
+              <Label htmlFor="isEnabled" className="text-base">{t('loyaltySettingsPage.text4')}</Label>
               <Switch
                 id="isEnabled"
                 checked={formData.isEnabled === 1}
@@ -103,13 +105,13 @@ export default function LoyaltySettings() {
         {/* إعدادات النقاط */}
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات النقاط</CardTitle>
-            <CardDescription>تحديد قيمة النقاط وطريقة حسابها</CardDescription>
+            <CardTitle>{t('loyaltySettingsPage.text5')}</CardTitle>
+            <CardDescription>{t('loyaltySettingsPage.text6')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="pointsPerCurrency">نقاط لكل 1 ريال</Label>
+                <Label htmlFor="pointsPerCurrency">{t('loyaltySettingsPage.text7')}</Label>
                 <Input
                   id="pointsPerCurrency"
                   type="number"
@@ -125,7 +127,7 @@ export default function LoyaltySettings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="currencyPerPoint">ريال لكل 1 نقطة</Label>
+                <Label htmlFor="currencyPerPoint">{t('loyaltySettingsPage.text8')}</Label>
                 <Input
                   id="currencyPerPoint"
                   type="number"
@@ -142,7 +144,7 @@ export default function LoyaltySettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pointsExpiryDays">مدة صلاحية النقاط (بالأيام)</Label>
+              <Label htmlFor="pointsExpiryDays">{t('loyaltySettingsPage.text9')}</Label>
               <Input
                 id="pointsExpiryDays"
                 type="number"
@@ -162,8 +164,8 @@ export default function LoyaltySettings() {
         {/* مكافآت إضافية */}
         <Card>
           <CardHeader>
-            <CardTitle>مكافآت إضافية</CardTitle>
-            <CardDescription>نقاط إضافية للأنشطة المختلفة</CardDescription>
+            <CardTitle>{t('loyaltySettingsPage.text10')}</CardTitle>
+            <CardDescription>{t('loyaltySettingsPage.text11')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* مكافأة الإحالة */}
@@ -182,7 +184,7 @@ export default function LoyaltySettings() {
               </div>
               {formData.enableReferralBonus === 1 && (
                 <div className="space-y-2">
-                  <Label htmlFor="referralBonusPoints">نقاط الإحالة</Label>
+                  <Label htmlFor="referralBonusPoints">{t('loyaltySettingsPage.text12')}</Label>
                   <Input
                     id="referralBonusPoints"
                     type="number"
@@ -212,7 +214,7 @@ export default function LoyaltySettings() {
               </div>
               {formData.enableReviewBonus === 1 && (
                 <div className="space-y-2">
-                  <Label htmlFor="reviewBonusPoints">نقاط التقييم</Label>
+                  <Label htmlFor="reviewBonusPoints">{t('loyaltySettingsPage.text13')}</Label>
                   <Input
                     id="reviewBonusPoints"
                     type="number"
@@ -242,7 +244,7 @@ export default function LoyaltySettings() {
               </div>
               {formData.enableBirthdayBonus === 1 && (
                 <div className="space-y-2">
-                  <Label htmlFor="birthdayBonusPoints">نقاط عيد الميلاد</Label>
+                  <Label htmlFor="birthdayBonusPoints">{t('loyaltySettingsPage.text14')}</Label>
                   <Input
                     id="birthdayBonusPoints"
                     type="number"

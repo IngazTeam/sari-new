@@ -2,8 +2,10 @@ import { Link } from "wouter";
 import { ArrowRight, Headphones, Zap, Clock, Users, MessageCircle, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTranslation } from 'react-i18next';
 
 export default function SolutionsSupport() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       {/* Hero Section */}
@@ -40,15 +42,15 @@ export default function SolutionsSupport() {
         <div className="grid md:grid-cols-3 gap-8">
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">40%</div>
-            <div className="text-gray-600">تقليل في عبء العمل</div>
+            <div className="text-gray-600">{t('solutionsSupportPage.text0')}</div>
           </Card>
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">80%</div>
-            <div className="text-gray-600">من الأسئلة الشائعة يحلها الذكاء الاصطناعي</div>
+            <div className="text-gray-600">{t('solutionsSupportPage.text1')}</div>
           </Card>
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">40%</div>
-            <div className="text-gray-600">حلول أسرع</div>
+            <div className="text-gray-600">{t('solutionsSupportPage.text2')}</div>
           </Card>
         </div>
       </section>
@@ -56,8 +58,8 @@ export default function SolutionsSupport() {
       {/* Features Section */}
       <section className="container py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">دعم فني متقدم بالذكاء الاصطناعي</h2>
-          <p className="text-xl text-gray-600">أدوات قوية لفريق دعم استثنائي</p>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsSupportPage.text3')}</h2>
+          <p className="text-xl text-gray-600">{t('solutionsSupportPage.text4')}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -65,7 +67,7 @@ export default function SolutionsSupport() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <Zap className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">ردود فورية 24/7</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text5')}</h3>
             <p className="text-gray-600 leading-relaxed">
               قدم إجابات فورية ودقيقة مستندة إلى قاعدة معرفتك على مدار الساعة. حل معظم الاستفسارات دون تدخل بشري.
             </p>
@@ -75,7 +77,7 @@ export default function SolutionsSupport() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <MessageCircle className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">توجيه ذكي</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text6')}</h3>
             <p className="text-gray-600 leading-relaxed">
               وجّه المحادثات المعقدة إلى الوكيل البشري المناسب تلقائياً من خلال قواعد توجيه متقدمة. لا تضيع أي استفسار.
             </p>
@@ -85,7 +87,7 @@ export default function SolutionsSupport() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <Users className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">صندوق وارد موحد</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text7')}</h3>
             <p className="text-gray-600 leading-relaxed">
               تعاون بشكل أفضل مع صندوق وارد موحد لجميع منصات المراسلة، مع علامات وسمات جهات الاتصال والتاريخ والمزيد.
             </p>
@@ -95,7 +97,7 @@ export default function SolutionsSupport() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <TrendingDown className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">رؤى مبنية على البيانات</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text8')}</h3>
             <p className="text-gray-600 leading-relaxed">
               عزز عمليات الدعم برؤى مبنية على البيانات حول وقت الاستجابة والحلول والأداء حسب الوكيل.
             </p>
@@ -107,8 +109,8 @@ export default function SolutionsSupport() {
       <section className="bg-white py-20">
         <div className="container">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">قدرات الذكاء الاصطناعي</h2>
-            <p className="text-xl text-gray-600">وكيل دعم ذكي يفهم عملاءك</p>
+            <h2 className="text-4xl font-bold mb-4">{t('solutionsSupportPage.text9')}</h2>
+            <p className="text-xl text-gray-600">{t('solutionsSupportPage.text10')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -116,7 +118,7 @@ export default function SolutionsSupport() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-6">
                 🌍
               </div>
-              <h3 className="text-2xl font-bold mb-4">متعدد اللغات</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text11')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 يدعم العربية والإنجليزية ولغات متعددة. يفهم اللهجات المحلية ويرد بنفس الأسلوب.
               </p>
@@ -126,7 +128,7 @@ export default function SolutionsSupport() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-6">
                 🧠
               </div>
-              <h3 className="text-2xl font-bold mb-4">سياقي</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text12')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 يفهم سياق المحادثة ويتذكر التفاعلات السابقة. ردود دقيقة وشخصية.
               </p>
@@ -136,7 +138,7 @@ export default function SolutionsSupport() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-6">
                 💙
               </div>
-              <h3 className="text-2xl font-bold mb-4">متعاطف</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text13')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 يتعامل مع العملاء بتعاطف واحترافية. يعرف متى يحول إلى وكيل بشري.
               </p>
@@ -148,8 +150,8 @@ export default function SolutionsSupport() {
       {/* How It Works */}
       <section className="container py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">كيف يعمل؟</h2>
-          <p className="text-xl text-gray-600">من الاستفسار إلى الحل في ثوانٍ</p>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsSupportPage.text14')}</h2>
+          <p className="text-xl text-gray-600">{t('solutionsSupportPage.text15')}</p>
         </div>
 
         <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
@@ -157,7 +159,7 @@ export default function SolutionsSupport() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               1
             </div>
-            <h3 className="text-xl font-bold mb-2">الاستفسار</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text16')}</h3>
             <p className="text-gray-600">
               العميل يرسل استفساره عبر واتساب
             </p>
@@ -167,7 +169,7 @@ export default function SolutionsSupport() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               2
             </div>
-            <h3 className="text-xl font-bold mb-2">الرد الفوري</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text17')}</h3>
             <p className="text-gray-600">
               ساري يرد فوراً بإجابة دقيقة من قاعدة المعرفة
             </p>
@@ -177,7 +179,7 @@ export default function SolutionsSupport() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               3
             </div>
-            <h3 className="text-xl font-bold mb-2">التصعيد</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text18')}</h3>
             <p className="text-gray-600">
               إذا لزم الأمر، يحول إلى وكيل بشري مع السياق الكامل
             </p>
@@ -187,7 +189,7 @@ export default function SolutionsSupport() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               4
             </div>
-            <h3 className="text-xl font-bold mb-2">الحل</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text19')}</h3>
             <p className="text-gray-600">
               يتم حل المشكلة بسرعة ورضا العميل
             </p>
@@ -199,7 +201,7 @@ export default function SolutionsSupport() {
       <section className="container py-20">
         <Card className="bg-gradient-to-l from-blue-600 to-blue-800 text-white p-12 text-center">
           <Clock className="w-16 h-16 mx-auto mb-6 opacity-90" />
-          <h2 className="text-4xl font-bold mb-4">جاهز لتحسين دعمك الفني؟</h2>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsSupportPage.text20')}</h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
             انضم إلى مئات الشركات التي حسّنت رضا عملائها مع ساري
           </p>

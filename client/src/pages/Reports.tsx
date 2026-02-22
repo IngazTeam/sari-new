@@ -28,8 +28,10 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
+import { useTranslation } from 'react-i18next';
 
 export default function Reports() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
@@ -56,7 +58,7 @@ export default function Reports() {
     <div className="container py-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">التقارير والإحصائيات</h1>
+          <h1 className="text-3xl font-bold">{t('reportsPage.text0')}</h1>
           <p className="text-muted-foreground mt-1">
             تقارير شاملة عن أداء عملك
           </p>
@@ -67,10 +69,10 @@ export default function Reports() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="day">اليوم</SelectItem>
-              <SelectItem value="week">هذا الأسبوع</SelectItem>
-              <SelectItem value="month">هذا الشهر</SelectItem>
-              <SelectItem value="year">هذا العام</SelectItem>
+              <SelectItem value="day">{t('reportsPage.text1')}</SelectItem>
+              <SelectItem value="week">{t('reportsPage.text2')}</SelectItem>
+              <SelectItem value="month">{t('reportsPage.text3')}</SelectItem>
+              <SelectItem value="year">{t('reportsPage.text4')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -78,15 +80,15 @@ export default function Reports() {
 
       <Tabs defaultValue="sales" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="sales">تقرير المبيعات</TabsTrigger>
-          <TabsTrigger value="customers">تقرير العملاء</TabsTrigger>
-          <TabsTrigger value="conversations">تقرير المحادثات</TabsTrigger>
+          <TabsTrigger value="sales">{t('reportsPage.text5')}</TabsTrigger>
+          <TabsTrigger value="customers">{t('reportsPage.text6')}</TabsTrigger>
+          <TabsTrigger value="conversations">{t('reportsPage.text7')}</TabsTrigger>
         </TabsList>
 
         {/* Sales Report */}
         <TabsContent value="sales" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">تقرير المبيعات</h2>
+            <h2 className="text-2xl font-bold">{t('reportsPage.text8')}</h2>
             <Button
               variant="outline"
               onClick={() => handleExportReport("المبيعات")}
@@ -97,7 +99,7 @@ export default function Reports() {
           </div>
 
           {loadingSales ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-8">{t('reportsPage.text9')}</div>
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-4">
@@ -174,7 +176,7 @@ export default function Reports() {
               {/* Top Products */}
               <Card>
                 <CardHeader>
-                  <CardTitle>أكثر المنتجات مبيعاً</CardTitle>
+                  <CardTitle>{t('reportsPage.text10')}</CardTitle>
                   <CardDescription>
                     المنتجات الأكثر طلباً خلال الفترة
                   </CardDescription>
@@ -213,7 +215,7 @@ export default function Reports() {
         {/* Customers Report */}
         <TabsContent value="customers" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">تقرير العملاء</h2>
+            <h2 className="text-2xl font-bold">{t('reportsPage.text11')}</h2>
             <Button
               variant="outline"
               onClick={() => handleExportReport("العملاء")}
@@ -224,7 +226,7 @@ export default function Reports() {
           </div>
 
           {loadingCustomers ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-8">{t('reportsPage.text12')}</div>
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-4">
@@ -300,7 +302,7 @@ export default function Reports() {
               {/* Top Customers */}
               <Card>
                 <CardHeader>
-                  <CardTitle>أفضل العملاء</CardTitle>
+                  <CardTitle>{t('reportsPage.text13')}</CardTitle>
                   <CardDescription>
                     العملاء الأكثر إنفاقاً خلال الفترة
                   </CardDescription>
@@ -341,7 +343,7 @@ export default function Reports() {
         {/* Conversations Report */}
         <TabsContent value="conversations" className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">تقرير المحادثات</h2>
+            <h2 className="text-2xl font-bold">{t('reportsPage.text14')}</h2>
             <Button
               variant="outline"
               onClick={() => handleExportReport("المحادثات")}
@@ -352,7 +354,7 @@ export default function Reports() {
           </div>
 
           {loadingConversations ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-8">{t('reportsPage.text15')}</div>
           ) : (
             <>
               <div className="grid gap-4 md:grid-cols-4">
@@ -428,7 +430,7 @@ export default function Reports() {
               {/* Conversation Topics */}
               <Card>
                 <CardHeader>
-                  <CardTitle>المواضيع الأكثر شيوعاً</CardTitle>
+                  <CardTitle>{t('reportsPage.text16')}</CardTitle>
                   <CardDescription>
                     أكثر المواضيع التي يسأل عنها العملاء
                   </CardDescription>

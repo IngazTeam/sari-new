@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface QuickActionsProps {
   conversationId: number;
@@ -153,6 +154,7 @@ export function QuickActions({
   className,
   compact = false,
 }: QuickActionsProps) {
+  const { t } = useTranslation();
   const [selectedAction, setSelectedAction] = useState<QuickAction | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -256,7 +258,7 @@ export function QuickActions({
       
     } catch (error) {
       console.error('Action error:', error);
-      toast.error('حدث خطأ أثناء تنفيذ الإجراء');
+      toast.error(t('compQuickActionsPage.text0'));
     } finally {
       setIsProcessing(false);
     }
@@ -271,7 +273,7 @@ export function QuickActions({
           <>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>المبلغ (ريال)</Label>
+                <Label>{t('compQuickActionsPage.text1')}</Label>
                 <Input
                   type="number"
                   placeholder="0.00"
@@ -280,9 +282,9 @@ export function QuickActions({
                 />
               </div>
               <div className="space-y-2">
-                <Label>الوصف</Label>
+                <Label>{t('compQuickActionsPage.text2')}</Label>
                 <Input
-                  placeholder="مثال: طلب منتج X"
+                  placeholder={t('compQuickActionsPage.text3')}
                   value={actionData.description || ''}
                   onChange={(e) => setActionData({ ...actionData, description: e.target.value })}
                 />
@@ -296,16 +298,16 @@ export function QuickActions({
           <>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>الخدمة</Label>
+                <Label>{t('compQuickActionsPage.text4')}</Label>
                 <Input
-                  placeholder="مثال: استشارة"
+                  placeholder={t('compQuickActionsPage.text5')}
                   value={actionData.service || ''}
                   onChange={(e) => setActionData({ ...actionData, service: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>التاريخ</Label>
+                  <Label>{t('compQuickActionsPage.text6')}</Label>
                   <Input
                     type="date"
                     value={actionData.date || ''}
@@ -313,7 +315,7 @@ export function QuickActions({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>الوقت</Label>
+                  <Label>{t('compQuickActionsPage.text7')}</Label>
                   <Input
                     type="time"
                     value={actionData.time || ''}
@@ -330,26 +332,26 @@ export function QuickActions({
           <>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>عنوان العرض</Label>
+                <Label>{t('compQuickActionsPage.text8')}</Label>
                 <Input
-                  placeholder="مثال: عرض نهاية الأسبوع"
+                  placeholder={t('compQuickActionsPage.text9')}
                   value={actionData.offerTitle || ''}
                   onChange={(e) => setActionData({ ...actionData, offerTitle: e.target.value })}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>نسبة الخصم</Label>
+                  <Label>{t('compQuickActionsPage.text10')}</Label>
                   <Input
-                    placeholder="مثال: 20%"
+                    placeholder={t('compQuickActionsPage.text11')}
                     value={actionData.discount || ''}
                     onChange={(e) => setActionData({ ...actionData, discount: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>كود الخصم</Label>
+                  <Label>{t('compQuickActionsPage.text12')}</Label>
                   <Input
-                    placeholder="مثال: SPECIAL20"
+                    placeholder={t('compQuickActionsPage.text13')}
                     value={actionData.code || ''}
                     onChange={(e) => setActionData({ ...actionData, code: e.target.value })}
                   />

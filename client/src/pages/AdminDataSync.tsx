@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertCircle, CheckCircle, Loader, Info } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminDataSync() {
+  const { t } = useTranslation();
   const [merchantId, setMerchantId] = useState('');
   const [instanceId, setInstanceId] = useState('');
   const [token, setToken] = useState('');
@@ -50,23 +52,23 @@ export default function AdminDataSync() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">مزامنة بيانات Green API</h1>
-        <p className="text-gray-500 mt-2">قم بتحميل البيانات الحقيقية من حسابك في Green API</p>
+        <h1 className="text-3xl font-bold">{t('adminDataSyncPage.text0')}</h1>
+        <p className="text-gray-500 mt-2">{t('adminDataSyncPage.text1')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input Form */}
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات المزامنة</CardTitle>
-            <CardDescription>أدخل بيانات Green API الخاصة بك</CardDescription>
+            <CardTitle>{t('adminDataSyncPage.text2')}</CardTitle>
+            <CardDescription>{t('adminDataSyncPage.text3')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">معرف التاجر</label>
+              <label className="block text-sm font-medium mb-2">{t('adminDataSyncPage.text4')}</label>
               <Input
                 type="number"
-                placeholder="مثال: 1"
+                placeholder={t('adminDataSyncPage.text5')}
                 value={merchantId}
                 onChange={(e) => setMerchantId(e.target.value)}
                 disabled={isLoading}
@@ -74,10 +76,10 @@ export default function AdminDataSync() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">معرف الحساب (Instance ID)</label>
+              <label className="block text-sm font-medium mb-2">{t('adminDataSyncPage.text6')}</label>
               <Input
                 type="text"
-                placeholder="مثال: 1101234567"
+                placeholder={t('adminDataSyncPage.text7')}
                 value={instanceId}
                 onChange={(e) => setInstanceId(e.target.value)}
                 disabled={isLoading}
@@ -88,7 +90,7 @@ export default function AdminDataSync() {
               <label className="block text-sm font-medium mb-2">API Token</label>
               <Input
                 type="password"
-                placeholder="أدخل API Token الخاص بك"
+                placeholder={t('adminDataSyncPage.text8')}
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 disabled={isLoading}
@@ -96,7 +98,7 @@ export default function AdminDataSync() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">عدد المحادثات</label>
+              <label className="block text-sm font-medium mb-2">{t('adminDataSyncPage.text9')}</label>
               <Input
                 type="number"
                 placeholder="100"
@@ -160,7 +162,7 @@ export default function AdminDataSync() {
                 <div className="flex items-start space-x-3">
                   <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="font-semibold text-red-900">خطأ</h3>
+                    <h3 className="font-semibold text-red-900">{t('adminDataSyncPage.text10')}</h3>
                     <p className="text-red-700 text-sm mt-1">{error}</p>
                   </div>
                 </div>
@@ -173,34 +175,34 @@ export default function AdminDataSync() {
               <CardHeader>
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-green-900">نتائج المزامنة</CardTitle>
+                  <CardTitle className="text-green-900">{t('adminDataSyncPage.text11')}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">الحالة</p>
+                    <p className="text-sm text-gray-600">{t('adminDataSyncPage.text12')}</p>
                     <p className="font-semibold text-lg">
                       {syncResult.status === 'completed' ? 'مكتملة ✓' : syncResult.status}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">المحادثات المعالجة</p>
+                    <p className="text-sm text-gray-600">{t('adminDataSyncPage.text13')}</p>
                     <p className="font-semibold text-lg">{syncResult.chatsProcessed}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">الرسائل المعالجة</p>
+                    <p className="text-sm text-gray-600">{t('adminDataSyncPage.text14')}</p>
                     <p className="font-semibold text-lg">{syncResult.messagesProcessed}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">الأخطاء</p>
+                    <p className="text-sm text-gray-600">{t('adminDataSyncPage.text15')}</p>
                     <p className="font-semibold text-lg">{syncResult.errors.length}</p>
                   </div>
                 </div>
 
                 {syncResult.errors.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-green-200">
-                    <p className="text-sm font-semibold text-gray-700 mb-2">الأخطاء:</p>
+                    <p className="text-sm font-semibold text-gray-700 mb-2">{t('adminDataSyncPage.text16')}</p>
                     <ul className="space-y-1 text-sm text-gray-600">
                       {syncResult.errors.map((error: string, idx: number) => (
                         <li key={idx}>• {error}</li>
@@ -218,12 +220,12 @@ export default function AdminDataSync() {
                 <div className="flex items-start space-x-3">
                   <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <h3 className="font-semibold text-blue-900">نصائح</h3>
+                    <h3 className="font-semibold text-blue-900">{t('adminDataSyncPage.text17')}</h3>
                     <ul className="text-blue-700 text-sm mt-2 space-y-1">
-                      <li>• تأكد من صحة بيانات Green API</li>
-                      <li>• ستتم مزامنة المحادثات والرسائل الحقيقية</li>
-                      <li>• قد تستغرق المزامنة بعض الوقت حسب عدد البيانات</li>
-                      <li>• الحد الأقصى للمحادثات: 1000</li>
+                      <li>{t('adminDataSyncPage.text18')}</li>
+                      <li>{t('adminDataSyncPage.text19')}</li>
+                      <li>{t('adminDataSyncPage.text20')}</li>
+                      <li>{t('adminDataSyncPage.text21')}</li>
                     </ul>
                   </div>
                 </div>

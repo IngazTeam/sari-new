@@ -35,6 +35,7 @@ interface LanguageSwitcherProps {
 }
 
 export function LanguageSwitcher({ variant = 'default', className }: LanguageSwitcherProps) {
+  const { t } = useTranslation();
   const { i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -84,7 +85,7 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
   if (variant === 'full') {
     return (
       <div className={cn("space-y-2", className)}>
-        <label className="text-sm font-medium">اللغة / Language</label>
+        <label className="text-sm font-medium">{t('compLanguageSwitcherPage.text0')}</label>
         <div className="flex gap-2">
           {languages.map((lang) => (
             <Button

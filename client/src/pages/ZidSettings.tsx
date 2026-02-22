@@ -8,8 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle, XCircle, RefreshCw, Link as LinkIcon, Unlink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 export default function ZidSettings() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
@@ -94,7 +96,7 @@ export default function ZidSettings() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إعدادات Zid</h1>
+        <h1 className="text-3xl font-bold">{t('zidSettingsPage.text0')}</h1>
         <p className="text-muted-foreground mt-2">
           ربط متجرك على منصة زد مع ساري لمزامنة المنتجات والطلبات والعملاء
         </p>
@@ -146,7 +148,7 @@ export default function ZidSettings() {
                     id="clientId"
                     value={clientId}
                     onChange={(e) => setClientId(e.target.value)}
-                    placeholder="أدخل Client ID"
+                    placeholder={t('zidSettingsPage.text1')}
                   />
                 </div>
 
@@ -157,7 +159,7 @@ export default function ZidSettings() {
                     type="password"
                     value={clientSecret}
                     onChange={(e) => setClientSecret(e.target.value)}
-                    placeholder="أدخل Client Secret"
+                    placeholder={t('zidSettingsPage.text2')}
                   />
                 </div>
 
@@ -184,7 +186,7 @@ export default function ZidSettings() {
             <div className="space-y-4">
               {status.storeUrl && (
                 <div>
-                  <Label>رابط المتجر</Label>
+                  <Label>{t('zidSettingsPage.text3')}</Label>
                   <a
                     href={status.storeUrl}
                     target="_blank"
@@ -198,7 +200,7 @@ export default function ZidSettings() {
 
               <div className="grid gap-4">
                 <div>
-                  <Label>آخر مزامنة للمنتجات</Label>
+                  <Label>{t('zidSettingsPage.text4')}</Label>
                   <p className="text-sm text-muted-foreground">
                     {status.lastProductSync
                       ? new Date(status.lastProductSync).toLocaleString('ar-SA')
@@ -207,7 +209,7 @@ export default function ZidSettings() {
                 </div>
 
                 <div>
-                  <Label>آخر مزامنة للطلبات</Label>
+                  <Label>{t('zidSettingsPage.text5')}</Label>
                   <p className="text-sm text-muted-foreground">
                     {status.lastOrderSync
                       ? new Date(status.lastOrderSync).toLocaleString('ar-SA')
@@ -216,7 +218,7 @@ export default function ZidSettings() {
                 </div>
 
                 <div>
-                  <Label>آخر مزامنة للعملاء</Label>
+                  <Label>{t('zidSettingsPage.text6')}</Label>
                   <p className="text-sm text-muted-foreground">
                     {status.lastCustomerSync
                       ? new Date(status.lastCustomerSync).toLocaleString('ar-SA')
@@ -252,7 +254,7 @@ export default function ZidSettings() {
       {status?.connected && (
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات المزامنة التلقائية</CardTitle>
+            <CardTitle>{t('zidSettingsPage.text7')}</CardTitle>
             <CardDescription>
               تفعيل المزامنة التلقائية للبيانات من Zid
             </CardDescription>
@@ -260,7 +262,7 @@ export default function ZidSettings() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>مزامنة المنتجات تلقائياً</Label>
+                <Label>{t('zidSettingsPage.text8')}</Label>
                 <p className="text-sm text-muted-foreground">
                   مزامنة المنتجات كل ساعة
                 </p>
@@ -276,7 +278,7 @@ export default function ZidSettings() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>مزامنة الطلبات تلقائياً</Label>
+                <Label>{t('zidSettingsPage.text9')}</Label>
                 <p className="text-sm text-muted-foreground">
                   مزامنة الطلبات كل 15 دقيقة
                 </p>
@@ -292,7 +294,7 @@ export default function ZidSettings() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label>مزامنة العملاء تلقائياً</Label>
+                <Label>{t('zidSettingsPage.text10')}</Label>
                 <p className="text-sm text-muted-foreground">
                   مزامنة العملاء يومياً
                 </p>
@@ -313,7 +315,7 @@ export default function ZidSettings() {
       {status?.connected && (
         <Card>
           <CardHeader>
-            <CardTitle>المزامنة اليدوية</CardTitle>
+            <CardTitle>{t('zidSettingsPage.text11')}</CardTitle>
             <CardDescription>
               قم بمزامنة البيانات يدوياً من Zid
             </CardDescription>

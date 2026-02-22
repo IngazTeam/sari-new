@@ -19,8 +19,10 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useTranslation } from 'react-i18next';
 
 export default function ServiceDetails() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const serviceId = parseInt(id || "0");
@@ -49,7 +51,7 @@ export default function ServiceDetails() {
       <div className="container py-8">
         <Card className="p-8 text-center">
           <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-semibold mb-2">الخدمة غير موجودة</h2>
+          <h2 className="text-xl font-semibold mb-2">{t('serviceDetailsPage.text0')}</h2>
           <Button onClick={() => setLocation("/merchant/services")} className="mt-4">
             العودة للخدمات
           </Button>
@@ -107,7 +109,7 @@ export default function ServiceDetails() {
               <DollarSign className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">السعر</p>
+              <p className="text-sm text-muted-foreground">{t('serviceDetailsPage.text1')}</p>
               <p className="text-2xl font-bold">
                 {service.priceType === "fixed"
                   ? formatPrice(service.basePrice || 0)
@@ -123,7 +125,7 @@ export default function ServiceDetails() {
               <Clock className="w-6 h-6 text-blue-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">المدة</p>
+              <p className="text-sm text-muted-foreground">{t('serviceDetailsPage.text2')}</p>
               <p className="text-2xl font-bold">{service.durationMinutes} دقيقة</p>
             </div>
           </div>
@@ -135,7 +137,7 @@ export default function ServiceDetails() {
               <Calendar className="w-6 h-6 text-green-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">الحجوزات المتاحة</p>
+              <p className="text-sm text-muted-foreground">{t('serviceDetailsPage.text3')}</p>
               <p className="text-2xl font-bold">
                 {service.maxBookingsPerDay || "غير محدود"}
               </p>
@@ -149,7 +151,7 @@ export default function ServiceDetails() {
               <Star className="w-6 h-6 text-yellow-500" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">التقييم</p>
+              <p className="text-sm text-muted-foreground">{t('serviceDetailsPage.text4')}</p>
               <p className="text-2xl font-bold">
                 {ratingStats.averageRating > 0
                   ? ratingStats.averageRating.toFixed(1)
@@ -169,14 +171,14 @@ export default function ServiceDetails() {
       <Card className="p-6 mb-6">
         <div className="flex items-center gap-2 mb-6">
           <BarChart3 className="w-5 h-5" />
-          <h2 className="text-xl font-semibold">إحصائيات الحجوزات</h2>
+          <h2 className="text-xl font-semibold">{t('serviceDetailsPage.text5')}</h2>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
           <Card className="p-4 bg-muted/50">
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-4 h-4 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">الإجمالي</p>
+              <p className="text-sm text-muted-foreground">{t('serviceDetailsPage.text6')}</p>
             </div>
             <p className="text-2xl font-bold">{bookingStats.total}</p>
           </Card>
@@ -184,7 +186,7 @@ export default function ServiceDetails() {
           <Card className="p-4 bg-yellow-50 dark:bg-yellow-950/20">
             <div className="flex items-center gap-2 mb-2">
               <Clock className="w-4 h-4 text-yellow-600" />
-              <p className="text-sm text-yellow-600">قيد الانتظار</p>
+              <p className="text-sm text-yellow-600">{t('serviceDetailsPage.text7')}</p>
             </div>
             <p className="text-2xl font-bold text-yellow-600">{bookingStats.pending}</p>
           </Card>
@@ -192,7 +194,7 @@ export default function ServiceDetails() {
           <Card className="p-4 bg-blue-50 dark:bg-blue-950/20">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="w-4 h-4 text-blue-600" />
-              <p className="text-sm text-blue-600">مؤكد</p>
+              <p className="text-sm text-blue-600">{t('serviceDetailsPage.text8')}</p>
             </div>
             <p className="text-2xl font-bold text-blue-600">{bookingStats.confirmed}</p>
           </Card>
@@ -200,7 +202,7 @@ export default function ServiceDetails() {
           <Card className="p-4 bg-purple-50 dark:bg-purple-950/20">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-purple-600" />
-              <p className="text-sm text-purple-600">جاري التنفيذ</p>
+              <p className="text-sm text-purple-600">{t('serviceDetailsPage.text9')}</p>
             </div>
             <p className="text-2xl font-bold text-purple-600">{bookingStats.inProgress}</p>
           </Card>
@@ -208,7 +210,7 @@ export default function ServiceDetails() {
           <Card className="p-4 bg-green-50 dark:bg-green-950/20">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle className="w-4 h-4 text-green-600" />
-              <p className="text-sm text-green-600">مكتمل</p>
+              <p className="text-sm text-green-600">{t('serviceDetailsPage.text10')}</p>
             </div>
             <p className="text-2xl font-bold text-green-600">{bookingStats.completed}</p>
           </Card>
@@ -216,7 +218,7 @@ export default function ServiceDetails() {
           <Card className="p-4 bg-red-50 dark:bg-red-950/20">
             <div className="flex items-center gap-2 mb-2">
               <XCircle className="w-4 h-4 text-red-600" />
-              <p className="text-sm text-red-600">ملغي</p>
+              <p className="text-sm text-red-600">{t('serviceDetailsPage.text11')}</p>
             </div>
             <p className="text-2xl font-bold text-red-600">{bookingStats.cancelled}</p>
           </Card>
@@ -224,7 +226,7 @@ export default function ServiceDetails() {
           <Card className="p-4 bg-gray-50 dark:bg-gray-950/20">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle className="w-4 h-4 text-gray-600" />
-              <p className="text-sm text-gray-600">لم يحضر</p>
+              <p className="text-sm text-gray-600">{t('serviceDetailsPage.text12')}</p>
             </div>
             <p className="text-2xl font-bold text-gray-600">{bookingStats.noShow}</p>
           </Card>
@@ -233,13 +235,13 @@ export default function ServiceDetails() {
         <div className="mt-6 p-4 bg-primary/5 rounded-lg">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
+              <p className="text-sm text-muted-foreground">{t('serviceDetailsPage.text13')}</p>
               <p className="text-2xl font-bold text-primary">
                 {formatPrice(bookingStats.totalRevenue)}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">معدل الإكمال</p>
+              <p className="text-sm text-muted-foreground">{t('serviceDetailsPage.text14')}</p>
               <p className="text-2xl font-bold">
                 {bookingStats.total > 0
                   ? ((bookingStats.completed / bookingStats.total) * 100).toFixed(1)
@@ -253,11 +255,11 @@ export default function ServiceDetails() {
 
       {/* Recent Bookings */}
       <Card className="p-6">
-        <h2 className="text-xl font-semibold mb-4">الحجوزات الأخيرة</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('serviceDetailsPage.text15')}</h2>
         {recentBookings.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>لا توجد حجوزات حتى الآن</p>
+            <p>{t('serviceDetailsPage.text16')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -296,7 +298,7 @@ export default function ServiceDetails() {
       {/* Rating Distribution */}
       {ratingStats.totalReviews > 0 && (
         <Card className="p-6 mt-6">
-          <h2 className="text-xl font-semibold mb-4">توزيع التقييمات</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('serviceDetailsPage.text17')}</h2>
           <div className="space-y-3">
             {[5, 4, 3, 2, 1].map((rating) => {
               const count = ratingStats.ratingDistribution[rating as keyof typeof ratingStats.ratingDistribution] || 0;

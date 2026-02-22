@@ -11,6 +11,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Send, Bot, User, Sparkles, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,6 +20,7 @@ interface Message {
 }
 
 export default function SariPlayground() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -107,7 +109,7 @@ export default function SariPlayground() {
         <Card className="p-4 bg-white/80 backdrop-blur">
           <div className="flex items-center gap-2 mb-3">
             <Bot className="h-5 w-5 text-blue-600" />
-            <h3 className="font-semibold text-gray-800">أمثلة للتجربة:</h3>
+            <h3 className="font-semibold text-gray-800">{t('sariPlaygroundPage.text0')}</h3>
           </div>
           <div className="flex flex-wrap gap-2">
             {exampleQueries.map((query, index) => (
@@ -131,7 +133,7 @@ export default function SariPlayground() {
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
                 <Bot className="h-16 w-16" />
-                <p className="text-lg">ابدأ المحادثة مع ساري...</p>
+                <p className="text-lg">{t('sariPlaygroundPage.text1')}</p>
               </div>
             ) : (
               messages.map((message, index) => (
@@ -192,7 +194,7 @@ export default function SariPlayground() {
                 <div className="bg-gray-100 rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-2 text-gray-600">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>ساري يفكر...</span>
+                    <span>{t('sariPlaygroundPage.text2')}</span>
                   </div>
                 </div>
               </div>
@@ -208,7 +210,7 @@ export default function SariPlayground() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="اكتب رسالتك هنا..."
+                placeholder={t('sariPlaygroundPage.text3')}
                 disabled={chatMutation.isPending}
                 className="flex-1 text-lg"
                 dir="rtl"
@@ -239,15 +241,15 @@ export default function SariPlayground() {
         <div className="grid grid-cols-3 gap-4">
           <Card className="p-4 text-center bg-white/80 backdrop-blur">
             <p className="text-2xl font-bold text-blue-600">{messages.filter(m => m.role === 'user').length}</p>
-            <p className="text-sm text-gray-600">رسائل المستخدم</p>
+            <p className="text-sm text-gray-600">{t('sariPlaygroundPage.text4')}</p>
           </Card>
           <Card className="p-4 text-center bg-white/80 backdrop-blur">
             <p className="text-2xl font-bold text-purple-600">{messages.filter(m => m.role === 'assistant').length}</p>
-            <p className="text-sm text-gray-600">ردود ساري</p>
+            <p className="text-sm text-gray-600">{t('sariPlaygroundPage.text5')}</p>
           </Card>
           <Card className="p-4 text-center bg-white/80 backdrop-blur">
             <p className="text-2xl font-bold text-green-600">{messages.length}</p>
-            <p className="text-sm text-gray-600">إجمالي الرسائل</p>
+            <p className="text-sm text-gray-600">{t('sariPlaygroundPage.text6')}</p>
           </Card>
         </div>
 
@@ -256,7 +258,7 @@ export default function SariPlayground() {
           <div className="flex items-start gap-3">
             <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-semibold text-blue-900">ملاحظة:</h4>
+              <h4 className="font-semibold text-blue-900">{t('sariPlaygroundPage.text7')}</h4>
               <p className="text-sm text-blue-800">
                 هذه الصفحة للتجربة فقط. الردود تستخدم نفس نظام ساري AI المستخدم في الواتساب.
                 يمكنك اختبار أنواع مختلفة من الأسئلة لرؤية كيف يتفاعل ساري مع العملاء.

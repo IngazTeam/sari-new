@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, User, Mail, Phone, Briefcase, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 interface StaffFormData {
   name: string;
@@ -20,6 +21,7 @@ interface StaffFormData {
 }
 
 export default function StaffManagement() {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
   const [formData, setFormData] = useState<StaffFormData>({
@@ -35,7 +37,7 @@ export default function StaffManagement() {
   
   const createMutation = trpc.staff.create.useMutation({
     onSuccess: () => {
-      toast.success("تم إضافة الموظف بنجاح");
+      toast.success(t('staffManagementPage.text0'));
       setIsDialogOpen(false);
       resetForm();
       utils.staff.list.invalidate();
@@ -47,7 +49,7 @@ export default function StaffManagement() {
 
   const updateMutation = trpc.staff.update.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث بيانات الموظف بنجاح");
+      toast.success(t('staffManagementPage.text1'));
       setIsDialogOpen(false);
       resetForm();
       utils.staff.list.invalidate();
@@ -59,7 +61,7 @@ export default function StaffManagement() {
 
   const deleteMutation = trpc.staff.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف الموظف بنجاح");
+      toast.success(t('staffManagementPage.text2'));
       utils.staff.list.invalidate();
     },
     onError: (error) => {
@@ -82,7 +84,7 @@ export default function StaffManagement() {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.phone || !formData.specialization) {
-      toast.error("يرجى ملء جميع الحقول المطلوبة");
+      toast.error(t('staffManagementPage.text3'));
       return;
     }
 
@@ -125,7 +127,7 @@ export default function StaffManagement() {
     <div className="container max-w-6xl py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">إدارة الموظفين</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('staffManagementPage.text4')}</h1>
           <p className="text-muted-foreground">
             إدارة فريق العمل وربطهم بالخدمات والمواعيد
           </p>
@@ -150,18 +152,18 @@ export default function StaffManagement() {
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">الاسم *</Label>
+                <Label htmlFor="name">{t('staffManagementPage.text5')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="أحمد محمد"
+                  placeholder={t('staffManagementPage.text6')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني *</Label>
+                <Label htmlFor="email">{t('staffManagementPage.text7')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -173,7 +175,7 @@ export default function StaffManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الجوال *</Label>
+                <Label htmlFor="phone">{t('staffManagementPage.text8')}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -184,23 +186,23 @@ export default function StaffManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="specialization">التخصص *</Label>
+                <Label htmlFor="specialization">{t('staffManagementPage.text9')}</Label>
                 <Input
                   id="specialization"
                   value={formData.specialization}
                   onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                  placeholder="مثال: حلاق، معالج تجميل، مدرب رياضي"
+                  placeholder={t('staffManagementPage.text10')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="workingHours">أوقات العمل (اختياري)</Label>
+                <Label htmlFor="workingHours">{t('staffManagementPage.text11')}</Label>
                 <Textarea
                   id="workingHours"
                   value={formData.workingHours}
                   onChange={(e) => setFormData({ ...formData, workingHours: e.target.value })}
-                  placeholder="مثال: السبت-الخميس: 9 صباحاً - 5 مساءً"
+                  placeholder={t('staffManagementPage.text12')}
                   rows={3}
                 />
               </div>
@@ -275,7 +277,7 @@ export default function StaffManagement() {
       {/* جدول الموظفين */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الموظفين</CardTitle>
+          <CardTitle>{t('staffManagementPage.text13')}</CardTitle>
           <CardDescription>
             جميع الموظفين المسجلين في النظام
           </CardDescription>
@@ -293,11 +295,11 @@ export default function StaffManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الموظف</TableHead>
-                  <TableHead>التخصص</TableHead>
-                  <TableHead>التواصل</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-left">الإجراءات</TableHead>
+                  <TableHead>{t('staffManagementPage.text14')}</TableHead>
+                  <TableHead>{t('staffManagementPage.text15')}</TableHead>
+                  <TableHead>{t('staffManagementPage.text16')}</TableHead>
+                  <TableHead>{t('staffManagementPage.text17')}</TableHead>
+                  <TableHead className="text-left">{t('staffManagementPage.text18')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

@@ -19,8 +19,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentDetails() {
+  const { t } = useTranslation();
   const params = useParams();
   const [, navigate] = useLocation();
   const paymentId = parseInt(params.id || '0');
@@ -44,8 +46,8 @@ export default function PaymentDetails() {
         <Card>
           <CardContent className="py-8 text-center">
             <XCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">المعاملة غير موجودة</h2>
-            <p className="text-muted-foreground mb-4">لم يتم العثور على المعاملة المطلوبة</p>
+            <h2 className="text-xl font-semibold mb-2">{t('paymentDetailsPage.text0')}</h2>
+            <p className="text-muted-foreground mb-4">{t('paymentDetailsPage.text1')}</p>
             <Button onClick={() => navigate('/merchant/payments')}>
               <ArrowLeft className="ml-2 h-4 w-4" />
               العودة للمعاملات
@@ -161,7 +163,7 @@ export default function PaymentDetails() {
         <CardContent className="space-y-6">
           {/* Amount Section */}
           <div className="bg-muted/50 rounded-lg p-6 text-center">
-            <p className="text-sm text-muted-foreground mb-2">المبلغ الإجمالي</p>
+            <p className="text-sm text-muted-foreground mb-2">{t('paymentDetailsPage.text2')}</p>
             <p className="text-4xl font-bold text-primary">
               {payment.amount.toFixed(2)} {payment.currency}
             </p>
@@ -171,19 +173,19 @@ export default function PaymentDetails() {
 
           {/* Customer Information */}
           <div>
-            <h3 className="font-semibold text-lg mb-4">معلومات العميل</h3>
+            <h3 className="font-semibold text-lg mb-4">{t('paymentDetailsPage.text3')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">الاسم</p>
+                <p className="text-sm text-muted-foreground">{t('paymentDetailsPage.text4')}</p>
                 <p className="font-medium">{payment.customerName || 'غير محدد'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">رقم الجوال</p>
+                <p className="text-sm text-muted-foreground">{t('paymentDetailsPage.text5')}</p>
                 <p className="font-medium" dir="ltr">{payment.customerPhone}</p>
               </div>
               {payment.customerEmail && (
                 <div>
-                  <p className="text-sm text-muted-foreground">البريد الإلكتروني</p>
+                  <p className="text-sm text-muted-foreground">{t('paymentDetailsPage.text6')}</p>
                   <p className="font-medium">{payment.customerEmail}</p>
                 </div>
               )}
@@ -194,21 +196,21 @@ export default function PaymentDetails() {
 
           {/* Payment Information */}
           <div>
-            <h3 className="font-semibold text-lg mb-4">معلومات الدفع</h3>
+            <h3 className="font-semibold text-lg mb-4">{t('paymentDetailsPage.text7')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">معرف المعاملة</p>
+                <p className="text-sm text-muted-foreground">{t('paymentDetailsPage.text8')}</p>
                 <p className="font-medium font-mono text-sm">{payment.tapChargeId || 'غير متوفر'}</p>
               </div>
               {payment.paymentMethod && (
                 <div>
-                  <p className="text-sm text-muted-foreground">طريقة الدفع</p>
+                  <p className="text-sm text-muted-foreground">{t('paymentDetailsPage.text9')}</p>
                   <p className="font-medium">{payment.paymentMethod}</p>
                 </div>
               )}
               {payment.description && (
                 <div className="md:col-span-2">
-                  <p className="text-sm text-muted-foreground">الوصف</p>
+                  <p className="text-sm text-muted-foreground">{t('paymentDetailsPage.text10')}</p>
                   <p className="font-medium">{payment.description}</p>
                 </div>
               )}
@@ -219,13 +221,13 @@ export default function PaymentDetails() {
 
           {/* Timeline */}
           <div>
-            <h3 className="font-semibold text-lg mb-4">سجل التحديثات</h3>
+            <h3 className="font-semibold text-lg mb-4">{t('paymentDetailsPage.text11')}</h3>
             <div className="space-y-3">
               {payment.createdAt && (
                 <div className="flex items-start gap-3">
                   <div className="h-2 w-2 rounded-full bg-muted-foreground mt-2"></div>
                   <div>
-                    <p className="font-medium">تم إنشاء المعاملة</p>
+                    <p className="font-medium">{t('paymentDetailsPage.text12')}</p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(payment.createdAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}
                     </p>
@@ -237,7 +239,7 @@ export default function PaymentDetails() {
                 <div className="flex items-start gap-3">
                   <div className="h-2 w-2 rounded-full bg-blue-600 mt-2"></div>
                   <div>
-                    <p className="font-medium">تم التصريح بالدفع</p>
+                    <p className="font-medium">{t('paymentDetailsPage.text13')}</p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(payment.authorizedAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}
                     </p>
@@ -249,7 +251,7 @@ export default function PaymentDetails() {
                 <div className="flex items-start gap-3">
                   <div className="h-2 w-2 rounded-full bg-green-600 mt-2"></div>
                   <div>
-                    <p className="font-medium">تم إتمام الدفع بنجاح</p>
+                    <p className="font-medium">{t('paymentDetailsPage.text14')}</p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(payment.capturedAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}
                     </p>
@@ -261,7 +263,7 @@ export default function PaymentDetails() {
                 <div className="flex items-start gap-3">
                   <div className="h-2 w-2 rounded-full bg-destructive mt-2"></div>
                   <div>
-                    <p className="font-medium">فشلت المعاملة</p>
+                    <p className="font-medium">{t('paymentDetailsPage.text15')}</p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(payment.failedAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}
                     </p>
@@ -276,7 +278,7 @@ export default function PaymentDetails() {
                 <div className="flex items-start gap-3">
                   <div className="h-2 w-2 rounded-full bg-blue-600 mt-2"></div>
                   <div>
-                    <p className="font-medium">تم استرجاع المبلغ</p>
+                    <p className="font-medium">{t('paymentDetailsPage.text16')}</p>
                     <p className="text-sm text-muted-foreground">
                       {format(new Date(payment.refundedAt), 'dd MMMM yyyy - hh:mm a', { locale: ar })}
                     </p>
@@ -291,11 +293,11 @@ export default function PaymentDetails() {
             <>
               <Separator />
               <div>
-                <h3 className="font-semibold text-lg mb-4">معلومات إضافية</h3>
+                <h3 className="font-semibold text-lg mb-4">{t('paymentDetailsPage.text17')}</h3>
                 <div className="space-y-2">
                   {payment.orderId && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">رقم الطلب</span>
+                      <span className="text-muted-foreground">{t('paymentDetailsPage.text18')}</span>
                       <Link href={`/merchant/orders/${payment.orderId}`}>
                         <Button variant="link" className="h-auto p-0">
                           #{payment.orderId}
@@ -305,7 +307,7 @@ export default function PaymentDetails() {
                   )}
                   {payment.bookingId && (
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">رقم الحجز</span>
+                      <span className="text-muted-foreground">{t('paymentDetailsPage.text19')}</span>
                       <Link href={`/merchant/bookings/${payment.bookingId}`}>
                         <Button variant="link" className="h-auto p-0">
                           #{payment.bookingId}
@@ -323,7 +325,7 @@ export default function PaymentDetails() {
       {/* Print Footer */}
       <div className="hidden print:block text-center text-sm text-muted-foreground mt-8">
         <p>تم الطباعة في {format(new Date(), 'dd MMMM yyyy - hh:mm a', { locale: ar })}</p>
-        <p className="mt-2">نظام ساري - إدارة المبيعات عبر واتساب</p>
+        <p className="mt-2">{t('paymentDetailsPage.text20')}</p>
       </div>
     </div>
   );

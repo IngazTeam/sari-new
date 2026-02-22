@@ -11,8 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { useTranslation } from 'react-i18next';
 
 export default function SubscribePage() {
+  const { t } = useTranslation();
   const [, params] = useRoute('/subscribe/:planId');
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -168,21 +170,21 @@ export default function SubscribePage() {
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'plan' ? 'bg-primary text-white' : 'bg-muted'}`}>
                 1
               </div>
-              <span className="text-sm font-medium">اختر الباقة</span>
+              <span className="text-sm font-medium">{t('subscribePagePage.text0')}</span>
             </div>
             <div className="w-16 h-0.5 bg-muted" />
             <div className={`flex items-center gap-2 ${step === 'auth' ? 'text-primary' : 'text-muted-foreground'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'auth' ? 'bg-primary text-white' : 'bg-muted'}`}>
                 2
               </div>
-              <span className="text-sm font-medium">إنشاء الحساب</span>
+              <span className="text-sm font-medium">{t('subscribePagePage.text1')}</span>
             </div>
             <div className="w-16 h-0.5 bg-muted" />
             <div className={`flex items-center gap-2 ${step === 'billing' ? 'text-primary' : 'text-muted-foreground'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step === 'billing' ? 'bg-primary text-white' : 'bg-muted'}`}>
                 3
               </div>
-              <span className="text-sm font-medium">الدفع</span>
+              <span className="text-sm font-medium">{t('subscribePagePage.text2')}</span>
             </div>
           </div>
         </div>
@@ -191,7 +193,7 @@ export default function SubscribePage() {
         {step === 'plan' && (
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold mb-4">اختر الباقة المناسبة</h1>
+              <h1 className="text-4xl font-bold mb-4">{t('subscribePagePage.text3')}</h1>
               <p className="text-lg text-muted-foreground">
                 ابدأ رحلتك مع ساري واختر الباقة التي تناسب احتياجاتك
               </p>
@@ -230,7 +232,7 @@ export default function SubscribePage() {
                           <span className="text-5xl font-bold">{plan.monthlyPrice}</span>
                           <span className="text-muted-foreground">{plan.currency}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">شهرياً</p>
+                        <p className="text-sm text-muted-foreground mt-1">{t('subscribePagePage.text4')}</p>
                       </div>
                     </CardHeader>
 
@@ -270,7 +272,7 @@ export default function SubscribePage() {
           <div className="max-w-2xl mx-auto">
             <Card>
               <CardHeader>
-                <h2 className="text-2xl font-bold text-center">إنشاء حساب جديد</h2>
+                <h2 className="text-2xl font-bold text-center">{t('subscribePagePage.text5')}</h2>
                 <p className="text-center text-muted-foreground">
                   الباقة المختارة: <span className="font-semibold text-foreground">{selectedPlan.name}</span>
                 </p>
@@ -297,7 +299,7 @@ export default function SubscribePage() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
+                  <Label htmlFor="email">{t('subscribePagePage.text6')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -310,7 +312,7 @@ export default function SubscribePage() {
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="password">كلمة المرور</Label>
+                  <Label htmlFor="password">{t('subscribePagePage.text7')}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -325,17 +327,17 @@ export default function SubscribePage() {
                 {isNewUser && (
                   <>
                     <div className="space-y-2">
-                      <Label htmlFor="businessName">اسم النشاط التجاري</Label>
+                      <Label htmlFor="businessName">{t('subscribePagePage.text8')}</Label>
                       <Input
                         id="businessName"
                         value={businessName}
                         onChange={(e) => setBusinessName(e.target.value)}
-                        placeholder="مثال: متجر الإلكترونيات"
+                        placeholder={t('subscribePagePage.text9')}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="phone">رقم الجوال *</Label>
+                      <Label htmlFor="phone">{t('subscribePagePage.text10')}</Label>
                       <PhoneInput
                         value={phone}
                         onChange={setPhone}
@@ -347,7 +349,7 @@ export default function SubscribePage() {
 
                 {/* Billing Cycle */}
                 <div className="space-y-2">
-                  <Label>دورة الفوترة</Label>
+                  <Label>{t('subscribePagePage.text11')}</Label>
                   <RadioGroup value={billingCycle} onValueChange={(v) => setBillingCycle(v as 'monthly' | 'yearly')}>
                     <div className="flex items-center space-x-2 space-x-reverse">
                       <RadioGroupItem value="monthly" id="monthly" />
@@ -368,15 +370,15 @@ export default function SubscribePage() {
                 {/* Summary */}
                 <div className="p-4 bg-muted rounded-lg space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">الباقة:</span>
+                    <span className="text-muted-foreground">{t('subscribePagePage.text12')}</span>
                     <span className="font-semibold">{selectedPlan.name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">دورة الفوترة:</span>
+                    <span className="text-muted-foreground">{t('subscribePagePage.text13')}</span>
                     <span className="font-semibold">{billingCycle === 'monthly' ? 'شهري' : 'سنوي'}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold pt-2 border-t">
-                    <span>المجموع:</span>
+                    <span>{t('subscribePagePage.text14')}</span>
                     <span>{price.toFixed(2)} {selectedPlan.currency}</span>
                   </div>
                 </div>

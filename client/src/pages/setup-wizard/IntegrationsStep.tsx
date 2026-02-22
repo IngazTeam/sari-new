@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { ArrowRight, Calendar, FileSpreadsheet, Check, ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface IntegrationsStepProps {
   wizardData: Record<string, any>;
@@ -18,6 +19,7 @@ export default function IntegrationsStep({
   goToNextStep,
   skipStep,
 }: IntegrationsStepProps) {
+  const { t } = useTranslation();
   const [enableCalendar, setEnableCalendar] = useState(
     wizardData.enableCalendar || false
   );
@@ -80,15 +82,15 @@ export default function IntegrationsStep({
                 <ul className="space-y-1 text-xs text-gray-500">
                   <li className="flex items-center space-x-1 space-x-reverse">
                     <Check className="h-3 w-3 text-green-600" />
-                    <span>إنشاء مواعيد تلقائياً</span>
+                    <span>{t('wizardIntegrationsStepPage.text0')}</span>
                   </li>
                   <li className="flex items-center space-x-1 space-x-reverse">
                     <Check className="h-3 w-3 text-green-600" />
-                    <span>إرسال تذكيرات للعملاء</span>
+                    <span>{t('wizardIntegrationsStepPage.text1')}</span>
                   </li>
                   <li className="flex items-center space-x-1 space-x-reverse">
                     <Check className="h-3 w-3 text-green-600" />
-                    <span>تجنب التعارضات في المواعيد</span>
+                    <span>{t('wizardIntegrationsStepPage.text2')}</span>
                   </li>
                 </ul>
 
@@ -145,15 +147,15 @@ export default function IntegrationsStep({
                 <ul className="space-y-1 text-xs text-gray-500">
                   <li className="flex items-center space-x-1 space-x-reverse">
                     <Check className="h-3 w-3 text-green-600" />
-                    <span>تصدير الطلبات والمبيعات</span>
+                    <span>{t('wizardIntegrationsStepPage.text3')}</span>
                   </li>
                   <li className="flex items-center space-x-1 space-x-reverse">
                     <Check className="h-3 w-3 text-green-600" />
-                    <span>تحديث البيانات تلقائياً</span>
+                    <span>{t('wizardIntegrationsStepPage.text4')}</span>
                   </li>
                   <li className="flex items-center space-x-1 space-x-reverse">
                     <Check className="h-3 w-3 text-green-600" />
-                    <span>إنشاء تقارير مخصصة</span>
+                    <span>{t('wizardIntegrationsStepPage.text5')}</span>
                   </li>
                 </ul>
 
@@ -187,7 +189,7 @@ export default function IntegrationsStep({
       {/* Info Box */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <p className="text-sm text-yellow-800">
-          💡 <strong>نصيحة:</strong> يمكنك تفعيل هذه التكاملات في أي وقت من لوحة التحكم
+          💡 <strong>{t('wizardIntegrationsStepPage.text6')}</strong> يمكنك تفعيل هذه التكاملات في أي وقت من لوحة التحكم
         </p>
       </div>
 

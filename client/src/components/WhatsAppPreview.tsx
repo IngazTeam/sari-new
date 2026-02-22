@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import AudioWaveAnimation from './AudioWaveAnimation';
+import { useTranslation } from 'react-i18next';
 
 export interface PreviewMessage {
   id: number | string;
@@ -53,6 +54,7 @@ export function WhatsAppPreview({
   darkMode = false,
   autoScroll = true,
 }: WhatsAppPreviewProps) {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -195,7 +197,7 @@ export function WhatsAppPreview({
                 <div className="space-y-2">
                   <img 
                     src={message.mediaUrl} 
-                    alt="صورة" 
+                    alt={t('compWhatsAppPreviewPage.text0')} 
                     className="rounded-lg max-w-full h-auto max-h-[300px] object-cover"
                   />
                   {message.content && (
@@ -395,7 +397,7 @@ export function WhatsAppPreview({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="اكتب رسالة..."
+              placeholder={t('compWhatsAppPreviewPage.text1')}
               className={cn(
                 "w-full px-4 py-2 rounded-full text-sm focus:outline-none",
                 darkMode 

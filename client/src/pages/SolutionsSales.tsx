@@ -2,8 +2,10 @@ import { Link } from "wouter";
 import { ArrowRight, TrendingUp, Users, Target, BarChart3, MessageSquare, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTranslation } from 'react-i18next';
 
 export default function SolutionsSales() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       {/* Hero Section */}
@@ -40,15 +42,15 @@ export default function SolutionsSales() {
         <div className="grid md:grid-cols-3 gap-8">
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">30%</div>
-            <div className="text-gray-600">تقليل في دورة المبيعات</div>
+            <div className="text-gray-600">{t('solutionsSalesPage.text0')}</div>
           </Card>
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">3x</div>
-            <div className="text-gray-600">استجابات أسرع</div>
+            <div className="text-gray-600">{t('solutionsSalesPage.text1')}</div>
           </Card>
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">20%</div>
-            <div className="text-gray-600">نمو في الإيرادات</div>
+            <div className="text-gray-600">{t('solutionsSalesPage.text2')}</div>
           </Card>
         </div>
       </section>
@@ -56,8 +58,8 @@ export default function SolutionsSales() {
       {/* Features Section */}
       <section className="container py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">كيف يساعدك ساري في المبيعات؟</h2>
-          <p className="text-xl text-gray-600">أدوات قوية لفريق المبيعات الحديث</p>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsSalesPage.text3')}</h2>
+          <p className="text-xl text-gray-600">{t('solutionsSalesPage.text4')}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -65,7 +67,7 @@ export default function SolutionsSales() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <Users className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">مساحة عمل موحدة</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text5')}</h3>
             <p className="text-gray-600 leading-relaxed">
               مساحة عمل واحدة لجميع مندوبي المبيعات للتعاون والتواصل وتحويل العملاء المحتملين. تتبع كل محادثة وتفاعل في مكان واحد.
             </p>
@@ -75,7 +77,7 @@ export default function SolutionsSales() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <Target className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">تأهيل فوري للعملاء</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text6')}</h3>
             <p className="text-gray-600 leading-relaxed">
               تأكد من عدم ضياع أي عميل محتمل جاهز للشراء. تأهيل فوري في الوقت الفعلي على قناة المراسلة المفضلة لديك.
             </p>
@@ -85,7 +87,7 @@ export default function SolutionsSales() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <MessageSquare className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">إدارة ذكية للعملاء المحتملين</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text7')}</h3>
             <p className="text-gray-600 leading-relaxed">
               أدر حجم كبير من العملاء المحتملين بسهولة على واتساب. استخدم الذكاء الاصطناعي لتأهيل العملاء وتسليم الأفضل لمندوبيك تلقائياً.
             </p>
@@ -95,7 +97,7 @@ export default function SolutionsSales() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <BarChart3 className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">مراقبة الجودة</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text8')}</h3>
             <p className="text-gray-600 leading-relaxed">
               راقب محادثات العملاء بسهولة وتأكد من تجربة عملاء عالية الجودة لتجنب مخاطر السمعة. تقارير مفصلة عن أداء الفريق.
             </p>
@@ -107,8 +109,8 @@ export default function SolutionsSales() {
       <section className="bg-white py-20">
         <div className="container">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">كيف يعمل؟</h2>
-            <p className="text-xl text-gray-600">أربع خطوات بسيطة لتحويل المبيعات</p>
+            <h2 className="text-4xl font-bold mb-4">{t('solutionsSalesPage.text9')}</h2>
+            <p className="text-xl text-gray-600">{t('solutionsSalesPage.text10')}</p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
@@ -116,7 +118,7 @@ export default function SolutionsSales() {
               <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 1
               </div>
-              <h3 className="text-xl font-bold mb-2">استقبال العميل</h3>
+              <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text11')}</h3>
               <p className="text-gray-600">
                 العميل يتواصل معك عبر واتساب من أي مصدر (إعلان، موقع، رابط)
               </p>
@@ -126,7 +128,7 @@ export default function SolutionsSales() {
               <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 2
               </div>
-              <h3 className="text-xl font-bold mb-2">التأهيل الذكي</h3>
+              <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text12')}</h3>
               <p className="text-gray-600">
                 ساري يؤهل العميل تلقائياً ويجمع المعلومات المهمة
               </p>
@@ -136,7 +138,7 @@ export default function SolutionsSales() {
               <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 3
               </div>
-              <h3 className="text-xl font-bold mb-2">التوزيع التلقائي</h3>
+              <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text13')}</h3>
               <p className="text-gray-600">
                 يتم توزيع العميل المؤهل على المندوب المناسب تلقائياً
               </p>
@@ -146,7 +148,7 @@ export default function SolutionsSales() {
               <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
                 4
               </div>
-              <h3 className="text-xl font-bold mb-2">إتمام الصفقة</h3>
+              <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text14')}</h3>
               <p className="text-gray-600">
                 المندوب يتابع ويغلق الصفقة بسرعة أكبر
               </p>
@@ -159,7 +161,7 @@ export default function SolutionsSales() {
       <section className="container py-20">
         <Card className="bg-gradient-to-l from-blue-600 to-blue-800 text-white p-12 text-center">
           <Clock className="w-16 h-16 mx-auto mb-6 opacity-90" />
-          <h2 className="text-4xl font-bold mb-4">جاهز لزيادة مبيعاتك؟</h2>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsSalesPage.text15')}</h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
             انضم إلى مئات التجار الذين ضاعفوا مبيعاتهم باستخدام ساري
           </p>

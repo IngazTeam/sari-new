@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Loader2, Upload, Download, RefreshCw, Package, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useTranslation } from 'react-i18next';
 
 export default function SheetsInventory() {
+  const { t } = useTranslation();
   const [lastAction, setLastAction] = useState<'export' | 'import' | null>(null);
 
   // مزامنة المخزون إلى Sheets
@@ -61,7 +63,7 @@ export default function SheetsInventory() {
     <DashboardLayout>
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">مزامنة المخزون</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('sheetsInventoryPage.text0')}</h1>
           <p className="text-muted-foreground">
             مزامنة ثنائية الاتجاه بين قاعدة البيانات و Google Sheets
           </p>
@@ -75,7 +77,7 @@ export default function SheetsInventory() {
               <Upload className="w-6 h-6 text-blue-600" />
             </div>
 
-            <h3 className="text-xl font-semibold mb-2">تصدير إلى Sheets</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('sheetsInventoryPage.text1')}</h3>
             <p className="text-sm text-muted-foreground mb-6">
               نقل بيانات المخزون من قاعدة البيانات إلى Google Sheets
             </p>
@@ -94,16 +96,16 @@ export default function SheetsInventory() {
             {lastAction === 'export' && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <p className="text-sm text-green-800">تم التصدير بنجاح</p>
+                <p className="text-sm text-green-800">{t('sheetsInventoryPage.text2')}</p>
               </div>
             )}
 
             <div className="mt-6 pt-6 border-t">
-              <h4 className="font-medium mb-2 text-sm">متى تستخدم هذا؟</h4>
+              <h4 className="font-medium mb-2 text-sm">{t('sheetsInventoryPage.text3')}</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• عند إضافة منتجات جديدة</li>
-                <li>• بعد تحديث الأسعار</li>
-                <li>• لمشاركة المخزون مع الفريق</li>
+                <li>{t('sheetsInventoryPage.text4')}</li>
+                <li>{t('sheetsInventoryPage.text5')}</li>
+                <li>{t('sheetsInventoryPage.text6')}</li>
               </ul>
             </div>
           </Card>
@@ -114,7 +116,7 @@ export default function SheetsInventory() {
               <Download className="w-6 h-6 text-green-600" />
             </div>
 
-            <h3 className="text-xl font-semibold mb-2">استيراد من Sheets</h3>
+            <h3 className="text-xl font-semibold mb-2">{t('sheetsInventoryPage.text7')}</h3>
             <p className="text-sm text-muted-foreground mb-6">
               تحديث كميات المخزون من Google Sheets إلى قاعدة البيانات
             </p>
@@ -134,16 +136,16 @@ export default function SheetsInventory() {
             {lastAction === 'import' && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <p className="text-sm text-green-800">تم الاستيراد بنجاح</p>
+                <p className="text-sm text-green-800">{t('sheetsInventoryPage.text8')}</p>
               </div>
             )}
 
             <div className="mt-6 pt-6 border-t">
-              <h4 className="font-medium mb-2 text-sm">متى تستخدم هذا؟</h4>
+              <h4 className="font-medium mb-2 text-sm">{t('sheetsInventoryPage.text9')}</h4>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• بعد جرد المخزون اليدوي</li>
-                <li>• عند تحديث الكميات في Sheets</li>
-                <li>• لمزامنة التغييرات من الفريق</li>
+                <li>{t('sheetsInventoryPage.text10')}</li>
+                <li>{t('sheetsInventoryPage.text11')}</li>
+                <li>{t('sheetsInventoryPage.text12')}</li>
               </ul>
             </div>
           </Card>
@@ -153,7 +155,7 @@ export default function SheetsInventory() {
         <Card className="p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
             <RefreshCw className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-semibold">كيف تعمل المزامنة؟</h2>
+            <h2 className="text-xl font-semibold">{t('sheetsInventoryPage.text13')}</h2>
           </div>
 
           <div className="space-y-4">
@@ -162,7 +164,7 @@ export default function SheetsInventory() {
                 <span className="text-sm font-bold text-blue-600">1</span>
               </div>
               <div>
-                <h3 className="font-medium mb-1">التصدير إلى Sheets</h3>
+                <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text14')}</h3>
                 <p className="text-sm text-muted-foreground">
                   يتم نسخ جميع المنتجات مع أسعارها وكمياتها إلى صفحة "المخزون" في Google Sheets
                 </p>
@@ -174,7 +176,7 @@ export default function SheetsInventory() {
                 <span className="text-sm font-bold text-green-600">2</span>
               </div>
               <div>
-                <h3 className="font-medium mb-1">التعديل في Sheets</h3>
+                <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text15')}</h3>
                 <p className="text-sm text-muted-foreground">
                   يمكنك تعديل الكميات مباشرة في Google Sheets (عمود "الكمية المتاحة")
                 </p>
@@ -186,7 +188,7 @@ export default function SheetsInventory() {
                 <span className="text-sm font-bold text-purple-600">3</span>
               </div>
               <div>
-                <h3 className="font-medium mb-1">الاستيراد من Sheets</h3>
+                <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text16')}</h3>
                 <p className="text-sm text-muted-foreground">
                   يتم قراءة الكميات المحدثة من Sheets وتطبيقها على قاعدة البيانات
                 </p>
@@ -200,12 +202,12 @@ export default function SheetsInventory() {
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold mb-2 text-amber-900">⚠️ تحذيرات مهمة:</h3>
+              <h3 className="font-semibold mb-2 text-amber-900">{t('sheetsInventoryPage.text17')}</h3>
               <ul className="text-sm text-amber-800 space-y-1">
-                <li>• <strong>الاستيراد من Sheets</strong> سيستبدل الكميات الحالية في قاعدة البيانات</li>
-                <li>• تأكد من صحة البيانات في Sheets قبل الاستيراد</li>
-                <li>• لا تقم بحذف أو تعديل أعمدة "رقم المنتج" و "الكمية المتاحة"</li>
-                <li>• يتم تحديث الكميات فقط، الأسعار والأسماء لا تتأثر بالاستيراد</li>
+                <li>• <strong>{t('sheetsInventoryPage.text18')}</strong> سيستبدل الكميات الحالية في قاعدة البيانات</li>
+                <li>{t('sheetsInventoryPage.text19')}</li>
+                <li>{t('sheetsInventoryPage.text20')}</li>
+                <li>{t('sheetsInventoryPage.text21')}</li>
               </ul>
             </div>
           </div>
@@ -216,12 +218,12 @@ export default function SheetsInventory() {
           <div className="flex items-start gap-3">
             <Package className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold mb-2 text-blue-900">💡 نصائح للاستخدام الأمثل:</h3>
+              <h3 className="font-semibold mb-2 text-blue-900">{t('sheetsInventoryPage.text22')}</h3>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>• قم بالتصدير أولاً للحصول على أحدث البيانات</li>
-                <li>• استخدم Google Sheets للجرد السريع مع الفريق</li>
-                <li>• يمكنك إضافة أعمدة إضافية للملاحظات (لن تؤثر على الاستيراد)</li>
-                <li>• احتفظ بنسخة احتياطية قبل الاستيراد للمرة الأولى</li>
+                <li>{t('sheetsInventoryPage.text23')}</li>
+                <li>{t('sheetsInventoryPage.text24')}</li>
+                <li>{t('sheetsInventoryPage.text25')}</li>
+                <li>{t('sheetsInventoryPage.text26')}</li>
               </ul>
             </div>
           </div>

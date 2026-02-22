@@ -14,6 +14,7 @@ import {
     ExternalLink,
     Search
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface WebsiteStepProps {
     wizardData: Record<string, any>;
@@ -23,6 +24,7 @@ interface WebsiteStepProps {
 }
 
 export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep, skipStep }: WebsiteStepProps) {
+  const { t } = useTranslation();
     const [url, setUrl] = useState(wizardData.websiteUrl || '');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<any>(wizardData.websiteAnalysis || null);
@@ -124,7 +126,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 <div className="w-16 h-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
                     <Globe className="w-8 h-8 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold">هل عندك موقع أو متجر إلكتروني؟</h2>
+                <h2 className="text-2xl font-bold">{t('wizardWebsiteStepPage.text0')}</h2>
                 <p className="text-muted-foreground">
                     أدخل رابط موقعك وساري يسحب المنتجات والمعلومات تلقائياً
                 </p>
@@ -178,8 +180,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             <div className="flex items-center gap-3">
                                 <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
                                 <div>
-                                    <p className="font-medium text-blue-900">ساري يحلل موقعك الآن...</p>
-                                    <p className="text-sm text-blue-700">يتم استخراج المنتجات والمعلومات، قد يستغرق بضع ثوانٍ</p>
+                                    <p className="font-medium text-blue-900">{t('wizardWebsiteStepPage.text1')}</p>
+                                    <p className="text-sm text-blue-700">{t('wizardWebsiteStepPage.text2')}</p>
                                 </div>
                             </div>
                         </Card>
@@ -264,8 +266,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             <div className="flex items-center gap-3">
                                 <AlertCircle className="w-5 h-5 text-amber-600" />
                                 <div>
-                                    <p className="font-medium text-amber-900">لم يتم العثور على منتجات</p>
-                                    <p className="text-sm text-amber-700">يمكنك إضافة المنتجات يدوياً في الخطوة التالية</p>
+                                    <p className="font-medium text-amber-900">{t('wizardWebsiteStepPage.text3')}</p>
+                                    <p className="text-sm text-amber-700">{t('wizardWebsiteStepPage.text4')}</p>
                                 </div>
                             </div>
                         </Card>

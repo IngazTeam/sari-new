@@ -2,8 +2,10 @@ import { Link } from "wouter";
 import { ArrowRight, Brain, MessageSquare, Sparkles, Zap, Globe, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTranslation } from 'react-i18next';
 
 export default function ProductAI() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       {/* Hero Section */}
@@ -39,7 +41,7 @@ export default function ProductAI() {
       <section className="container py-20">
         <div className="grid md:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
           <div>
-            <h2 className="text-4xl font-bold mb-6">شخصية ساري الفريدة</h2>
+            <h2 className="text-4xl font-bold mb-6">{t('productAIPage.text0')}</h2>
             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
               ساري ليست مجرد روبوت دردشة عادي. إنها وكيلة مبيعات ذكية بشخصية ودودة ومحترفة، مدربة خصيصاً على ثقافة السوق السعودي والخليجي.
             </p>
@@ -49,8 +51,8 @@ export default function ProductAI() {
                   <Globe className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold mb-1">متعددة اللغات</h3>
-                  <p className="text-gray-600">تتحدث العربية بلهجة سعودية طبيعية والإنجليزية بطلاقة</p>
+                  <h3 className="font-bold mb-1">{t('productAIPage.text1')}</h3>
+                  <p className="text-gray-600">{t('productAIPage.text2')}</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -58,8 +60,8 @@ export default function ProductAI() {
                   <Heart className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold mb-1">ودودة ومحترفة</h3>
-                  <p className="text-gray-600">تتعامل مع العملاء بأسلوب ودود لكن احترافي</p>
+                  <h3 className="font-bold mb-1">{t('productAIPage.text3')}</h3>
+                  <p className="text-gray-600">{t('productAIPage.text4')}</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
@@ -67,8 +69,8 @@ export default function ProductAI() {
                   <Brain className="w-4 h-4 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold mb-1">ذكية وسياقية</h3>
-                  <p className="text-gray-600">تفهم السياق وتتذكر تفاصيل المحادثة</p>
+                  <h3 className="font-bold mb-1">{t('productAIPage.text5')}</h3>
+                  <p className="text-gray-600">{t('productAIPage.text6')}</p>
                 </div>
               </li>
             </ul>
@@ -80,7 +82,7 @@ export default function ProductAI() {
                   👤
                 </div>
                 <div className="flex-1 bg-gray-100 rounded-2xl rounded-tr-none p-3">
-                  <p className="text-sm">السلام عليكم، أبحث عن هدية لأخي</p>
+                  <p className="text-sm">{t('productAIPage.text7')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3 flex-row-reverse">
@@ -88,7 +90,7 @@ export default function ProductAI() {
                   س
                 </div>
                 <div className="flex-1 bg-blue-600 text-white rounded-2xl rounded-tl-none p-3">
-                  <p className="text-sm">وعليكم السلام! أهلاً وسهلاً 😊 أكيد بساعدك تلاقي هدية مميزة. ممكن تقولي إيش اهتماماته؟ رياضة، تقنية، موضة؟</p>
+                  <p className="text-sm">{t('productAIPage.text8')}</p>
                 </div>
               </div>
             </div>
@@ -103,8 +105,8 @@ export default function ProductAI() {
       <section className="bg-white py-20">
         <div className="container">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">قدرات ساري الذكية</h2>
-            <p className="text-xl text-gray-600">تقنيات متقدمة لتجربة عملاء استثنائية</p>
+            <h2 className="text-4xl font-bold mb-4">{t('productAIPage.text9')}</h2>
+            <p className="text-xl text-gray-600">{t('productAIPage.text10')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -112,7 +114,7 @@ export default function ProductAI() {
               <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                 <MessageSquare className="w-7 h-7 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">فهم طبيعي للغة</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('productAIPage.text11')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 تفهم ساري اللهجات العربية المختلفة والعامية السعودية. تتعامل مع الأخطاء الإملائية والاختصارات بذكاء.
               </p>
@@ -122,7 +124,7 @@ export default function ProductAI() {
               <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                 <Sparkles className="w-7 h-7 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">بحث ذكي في المنتجات</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('productAIPage.text12')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 تبحث ساري في كتالوج منتجاتك وتقترح الخيارات الأنسب بناءً على احتياجات العميل وميزانيته.
               </p>
@@ -132,7 +134,7 @@ export default function ProductAI() {
               <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                 <Zap className="w-7 h-7 text-blue-600" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">ردود فورية 24/7</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('productAIPage.text13')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 ساري متاحة دائماً للرد على عملائك في أي وقت، حتى خارج ساعات العمل. لا تفوت أي فرصة مبيعات.
               </p>
@@ -144,14 +146,14 @@ export default function ProductAI() {
       {/* Use Cases */}
       <section className="container py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">كيف تساعدك ساري؟</h2>
-          <p className="text-xl text-gray-600">حالات استخدام متنوعة لكل نوع من الأعمال</p>
+          <h2 className="text-4xl font-bold mb-4">{t('productAIPage.text14')}</h2>
+          <p className="text-xl text-gray-600">{t('productAIPage.text15')}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
           <Card className="p-8 border-blue-100">
             <div className="text-4xl mb-4">🛍️</div>
-            <h3 className="text-2xl font-bold mb-4">التجارة الإلكترونية</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('productAIPage.text16')}</h3>
             <p className="text-gray-600 leading-relaxed mb-4">
               ساري تساعد عملاءك في إيجاد المنتجات المناسبة، تجيب على أسئلتهم حول المقاسات والألوان، وتوجههم لإتمام الشراء.
             </p>
@@ -173,7 +175,7 @@ export default function ProductAI() {
 
           <Card className="p-8 border-blue-100">
             <div className="text-4xl mb-4">🏢</div>
-            <h3 className="text-2xl font-bold mb-4">الخدمات المهنية</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('productAIPage.text17')}</h3>
             <p className="text-gray-600 leading-relaxed mb-4">
               ساري تؤهل العملاء المحتملين، تحدد احتياجاتهم، وتحجز المواعيد تلقائياً مع الفريق المناسب.
             </p>
@@ -195,7 +197,7 @@ export default function ProductAI() {
 
           <Card className="p-8 border-blue-100">
             <div className="text-4xl mb-4">🏥</div>
-            <h3 className="text-2xl font-bold mb-4">الرعاية الصحية</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('productAIPage.text18')}</h3>
             <p className="text-gray-600 leading-relaxed mb-4">
               ساري تساعد المرضى في حجز المواعيد، تذكيرهم بالمواعيد، والإجابة على الأسئلة العامة عن الخدمات.
             </p>
@@ -217,7 +219,7 @@ export default function ProductAI() {
 
           <Card className="p-8 border-blue-100">
             <div className="text-4xl mb-4">🎓</div>
-            <h3 className="text-2xl font-bold mb-4">التعليم</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('productAIPage.text19')}</h3>
             <p className="text-gray-600 leading-relaxed mb-4">
               ساري تساعد الطلاب في التسجيل، تجيب على أسئلتهم حول الدورات، وترسل التحديثات والإشعارات المهمة.
             </p>
@@ -243,7 +245,7 @@ export default function ProductAI() {
       <section className="container py-20">
         <Card className="bg-gradient-to-l from-blue-600 to-blue-800 text-white p-12 text-center">
           <Brain className="w-16 h-16 mx-auto mb-6 opacity-90" />
-          <h2 className="text-4xl font-bold mb-4">جاهز لتجربة قوة الذكاء الاصطناعي؟</h2>
+          <h2 className="text-4xl font-bold mb-4">{t('productAIPage.text20')}</h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
             اجعل ساري جزءاً من فريقك اليوم وابدأ في تحويل المحادثات إلى مبيعات
           </p>

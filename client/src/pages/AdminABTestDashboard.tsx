@@ -8,8 +8,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { TrendingUp, Users, MousePointer, CheckCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminABTestDashboard() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [days, setDays] = useState(30);
   const [newVariantData, setNewVariantData] = useState({
@@ -61,8 +63,8 @@ export default function AdminABTestDashboard() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">غير مصرح</h1>
-          <p className="text-gray-600 mt-2">هذه الصفحة متاحة فقط للمسؤولين</p>
+          <h1 className="text-2xl font-bold text-red-600">{t('adminABTestDashboardPage.text0')}</h1>
+          <p className="text-gray-600 mt-2">{t('adminABTestDashboardPage.text1')}</p>
         </div>
       </div>
     );
@@ -82,15 +84,15 @@ export default function AdminABTestDashboard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">لوحة تحكم اختبار A/B</h1>
-          <p className="text-gray-600 mt-2">مراقبة أداء متغيرات النافذة المنبثقة</p>
+          <h1 className="text-4xl font-bold text-gray-900">{t('adminABTestDashboardPage.text2')}</h1>
+          <p className="text-gray-600 mt-2">{t('adminABTestDashboardPage.text3')}</p>
         </div>
 
         {/* Overall Metrics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">إجمالي العروض</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('adminABTestDashboardPage.text4')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -102,7 +104,7 @@ export default function AdminABTestDashboard() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">عدد النقرات</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('adminABTestDashboardPage.text5')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -114,7 +116,7 @@ export default function AdminABTestDashboard() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">معدل النقر</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('adminABTestDashboardPage.text6')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -126,7 +128,7 @@ export default function AdminABTestDashboard() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">معدل التحويل</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">{t('adminABTestDashboardPage.text7')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -140,12 +142,12 @@ export default function AdminABTestDashboard() {
         {/* Filters */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>الفلاتر</CardTitle>
+            <CardTitle>{t('adminABTestDashboardPage.text8')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4 items-end">
               <div>
-                <Label>عدد الأيام</Label>
+                <Label>{t('adminABTestDashboardPage.text9')}</Label>
                 <Input
                   type="number"
                   min="1"
@@ -155,7 +157,7 @@ export default function AdminABTestDashboard() {
                   className="mt-2 w-24"
                 />
               </div>
-              <Button onClick={() => statsQuery.refetch()}>تحديث</Button>
+              <Button onClick={() => statsQuery.refetch()}>{t('adminABTestDashboardPage.text10')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -163,7 +165,7 @@ export default function AdminABTestDashboard() {
         {/* Variants Comparison */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>مقارنة المتغيرات</CardTitle>
+            <CardTitle>{t('adminABTestDashboardPage.text11')}</CardTitle>
             <CardDescription>أداء كل متغير في آخر {days} يوم</CardDescription>
           </CardHeader>
           <CardContent>
@@ -179,11 +181,11 @@ export default function AdminABTestDashboard() {
                       <h3 className="text-lg font-semibold">المتغير {stat.variant}</h3>
                       <div className="flex gap-4">
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">معدل النقر</p>
+                          <p className="text-sm text-gray-600">{t('adminABTestDashboardPage.text12')}</p>
                           <p className="text-2xl font-bold text-green-600">{stat.clickRate}%</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">معدل التحويل</p>
+                          <p className="text-sm text-gray-600">{t('adminABTestDashboardPage.text13')}</p>
                           <p className="text-2xl font-bold text-blue-600">{stat.conversionRate}%</p>
                         </div>
                       </div>
@@ -191,19 +193,19 @@ export default function AdminABTestDashboard() {
 
                     <div className="grid grid-cols-4 gap-4 text-center">
                       <div className="bg-blue-50 p-3 rounded">
-                        <p className="text-sm text-gray-600">العروض</p>
+                        <p className="text-sm text-gray-600">{t('adminABTestDashboardPage.text14')}</p>
                         <p className="text-2xl font-bold text-blue-600">{stat.shown}</p>
                       </div>
                       <div className="bg-green-50 p-3 rounded">
-                        <p className="text-sm text-gray-600">النقرات</p>
+                        <p className="text-sm text-gray-600">{t('adminABTestDashboardPage.text15')}</p>
                         <p className="text-2xl font-bold text-green-600">{stat.clicked}</p>
                       </div>
                       <div className="bg-purple-50 p-3 rounded">
-                        <p className="text-sm text-gray-600">التحويلات</p>
+                        <p className="text-sm text-gray-600">{t('adminABTestDashboardPage.text16')}</p>
                         <p className="text-2xl font-bold text-purple-600">{stat.converted}</p>
                       </div>
                       <div className="bg-gray-50 p-3 rounded">
-                        <p className="text-sm text-gray-600">معدل التحويل</p>
+                        <p className="text-sm text-gray-600">{t('adminABTestDashboardPage.text17')}</p>
                         <p className="text-2xl font-bold text-gray-600">{stat.conversionRate}%</p>
                       </div>
                     </div>
@@ -217,21 +219,21 @@ export default function AdminABTestDashboard() {
         {/* Create New Variant */}
         <Card>
           <CardHeader>
-            <CardTitle>إنشاء متغير جديد</CardTitle>
-            <CardDescription>أضف متغيراً جديداً لاختبار A/B</CardDescription>
+            <CardTitle>{t('adminABTestDashboardPage.text18')}</CardTitle>
+            <CardDescription>{t('adminABTestDashboardPage.text19')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Dialog>
               <DialogTrigger asChild>
-                <Button className="mb-4">إنشاء متغير جديد</Button>
+                <Button className="mb-4">{t('adminABTestDashboardPage.text20')}</Button>
               </DialogTrigger>
               <DialogContent className="max-w-md">
                 <DialogHeader>
-                  <DialogTitle>إنشاء متغير جديد</DialogTitle>
+                  <DialogTitle>{t('adminABTestDashboardPage.text21')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label>معرف المتغير (A, B, C...)</Label>
+                    <Label>{t('adminABTestDashboardPage.text22')}</Label>
                     <Input
                       value={newVariantData.variantId}
                       onChange={(e) => setNewVariantData({ ...newVariantData, variantId: e.target.value })}
@@ -240,43 +242,43 @@ export default function AdminABTestDashboard() {
                     />
                   </div>
                   <div>
-                    <Label>العنوان</Label>
+                    <Label>{t('adminABTestDashboardPage.text23')}</Label>
                     <Input
                       value={newVariantData.title}
                       onChange={(e) => setNewVariantData({ ...newVariantData, title: e.target.value })}
-                      placeholder="أعجبك ساري؟"
+                      placeholder={t('adminABTestDashboardPage.text24')}
                       className="mt-2"
                     />
                   </div>
                   <div>
-                    <Label>الوصف</Label>
+                    <Label>{t('adminABTestDashboardPage.text25')}</Label>
                     <Input
                       value={newVariantData.description}
                       onChange={(e) => setNewVariantData({ ...newVariantData, description: e.target.value })}
-                      placeholder="احصل على ساري لمتجرك الآن"
+                      placeholder={t('adminABTestDashboardPage.text26')}
                       className="mt-2"
                     />
                   </div>
                   <div>
-                    <Label>نص زر الـ CTA</Label>
+                    <Label>{t('adminABTestDashboardPage.text27')}</Label>
                     <Input
                       value={newVariantData.ctaText}
                       onChange={(e) => setNewVariantData({ ...newVariantData, ctaText: e.target.value })}
-                      placeholder="ابدأ الآن"
+                      placeholder={t('adminABTestDashboardPage.text28')}
                       className="mt-2"
                     />
                   </div>
                   <div>
-                    <Label>نص العرض</Label>
+                    <Label>{t('adminABTestDashboardPage.text29')}</Label>
                     <Input
                       value={newVariantData.offerText}
                       onChange={(e) => setNewVariantData({ ...newVariantData, offerText: e.target.value })}
-                      placeholder="احصل على خصم 20%"
+                      placeholder={t('adminABTestDashboardPage.text30')}
                       className="mt-2"
                     />
                   </div>
                   <div>
-                    <Label>عدد الرسائل قبل الظهور</Label>
+                    <Label>{t('adminABTestDashboardPage.text31')}</Label>
                     <Input
                       type="number"
                       value={newVariantData.messageThreshold}
@@ -294,7 +296,7 @@ export default function AdminABTestDashboard() {
 
             {/* Active Variants List */}
             <div className="mt-6">
-              <h3 className="font-semibold mb-4">المتغيرات النشطة</h3>
+              <h3 className="font-semibold mb-4">{t('adminABTestDashboardPage.text32')}</h3>
               {variantsQuery.data && variantsQuery.data.length > 0 ? (
                 <div className="space-y-3">
                   {variantsQuery.data.map((variant) => (
@@ -304,13 +306,13 @@ export default function AdminABTestDashboard() {
                           <p className="font-semibold">المتغير {variant.variantId}</p>
                           <p className="text-sm text-gray-600">{variant.title}</p>
                         </div>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">نشط</span>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">{t('adminABTestDashboardPage.text33')}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-sm">لا توجد متغيرات نشطة</p>
+                <p className="text-gray-500 text-sm">{t('adminABTestDashboardPage.text34')}</p>
               )}
             </div>
           </CardContent>

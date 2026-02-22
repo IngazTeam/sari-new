@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { AlertCircle, Clock, Sparkles, XCircle } from 'lucide-react';
 import { Link } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 export function TrialBanner() {
+  const { t } = useTranslation();
   const { data: trialStatus } = trpc.trial.getStatus.useQuery();
   const { data: expiryData } = trpc.trial.checkExpiry.useQuery();
   const { data: subscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
@@ -137,7 +139,7 @@ export function TrialBanner() {
           <div className="flex items-center gap-2 mb-3">
             <Clock className={`h-4 w-4 ${iconColor}`} />
             <p className={`text-sm ${textColor}`}>
-              <strong>الوقت المتبقي:</strong> {timeLeft}
+              <strong>{t('compTrialBannerPage.text0')}</strong> {timeLeft}
             </p>
           </div>
 

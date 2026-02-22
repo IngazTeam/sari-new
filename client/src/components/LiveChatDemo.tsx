@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bot, User, CheckCircle2, Package, CreditCard, Mic } from 'lucide-react';
 import AudioWaveAnimation from './AudioWaveAnimation';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   id: number;
@@ -57,6 +58,7 @@ const chatScenario: Omit<Message, 'id'>[] = [
 ];
 
 export default function LiveChatDemo() {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [isTyping, setIsTyping] = useState(false);
@@ -146,7 +148,7 @@ export default function LiveChatDemo() {
           <Bot className="w-7 h-7 text-[#075E54]" />
         </div>
         <div className="flex-1">
-          <div className="font-semibold text-white">ساري</div>
+          <div className="font-semibold text-white">{t('compLiveChatDemoPage.text0')}</div>
           <div className="text-sm text-white/80 flex items-center gap-1">
             <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
             متصل الآن
@@ -238,7 +240,7 @@ export default function LiveChatDemo() {
       {/* Chat Footer */}
       <div className="bg-white dark:bg-[#1F2C33] p-3 border-t flex items-center gap-2 flex-shrink-0">
         <div className="flex-1 bg-gray-100 dark:bg-[#2A3942] rounded-full px-4 py-2">
-          <p className="text-sm text-gray-400">اكتب رسالة...</p>
+          <p className="text-sm text-gray-400">{t('compLiveChatDemoPage.text1')}</p>
         </div>
         <button className="w-10 h-10 rounded-full bg-[#075E54] flex items-center justify-center">
           <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">

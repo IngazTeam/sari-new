@@ -2,8 +2,10 @@ import { Link } from "wouter";
 import { ArrowRight, Megaphone, TrendingUp, Target, Zap, BarChart, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTranslation } from 'react-i18next';
 
 export default function SolutionsMarketing() {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       {/* Hero Section */}
@@ -40,15 +42,15 @@ export default function SolutionsMarketing() {
         <div className="grid md:grid-cols-3 gap-8">
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">4x</div>
-            <div className="text-gray-600">تكلفة اكتساب عملاء أقل</div>
+            <div className="text-gray-600">{t('solutionsMarketingPage.text0')}</div>
           </Card>
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">3x</div>
-            <div className="text-gray-600">عائد استثمار أعلى</div>
+            <div className="text-gray-600">{t('solutionsMarketingPage.text1')}</div>
           </Card>
           <Card className="p-8 text-center border-blue-200 hover:shadow-lg transition-shadow">
             <div className="text-5xl font-bold text-blue-600 mb-2">85%</div>
-            <div className="text-gray-600">معدل استجابة أعلى</div>
+            <div className="text-gray-600">{t('solutionsMarketingPage.text2')}</div>
           </Card>
         </div>
       </section>
@@ -56,8 +58,8 @@ export default function SolutionsMarketing() {
       {/* Features Section */}
       <section className="container py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">قوة التسويق عبر واتساب</h2>
-          <p className="text-xl text-gray-600">أدوات تسويقية متقدمة لنتائج استثنائية</p>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsMarketingPage.text3')}</h2>
+          <p className="text-xl text-gray-600">{t('solutionsMarketingPage.text4')}</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -65,7 +67,7 @@ export default function SolutionsMarketing() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <Zap className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">تحويل فوري للمحادثات</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsMarketingPage.text5')}</h3>
             <p className="text-gray-600 leading-relaxed">
               حوّل كل نقطة تواصل - من الروابط إلى التفاعلات الميدانية والإعلانات - إلى محادثات هادفة فوراً. لا تفقد أي فرصة.
             </p>
@@ -75,7 +77,7 @@ export default function SolutionsMarketing() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <Target className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">إعلانات ذكية</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsMarketingPage.text6')}</h3>
             <p className="text-gray-600 leading-relaxed">
               حسّن الإسناد، أعد الاستهداف بسهولة، وزد العائد على الاستثمار مع إعلانات Meta وGoogle التي تنقر إلى واتساب مباشرة.
             </p>
@@ -85,7 +87,7 @@ export default function SolutionsMarketing() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <Users className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">محادثات تلقائية ذكية</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsMarketingPage.text7')}</h3>
             <p className="text-gray-600 leading-relaxed">
               أشرك مستخدميك تلقائياً وقدم سير عمل رائعة بعد التحويل بمحادثات مدعومة بالذكاء الاصطناعي، لكنها تبدو بشرية.
             </p>
@@ -95,7 +97,7 @@ export default function SolutionsMarketing() {
             <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
               <BarChart className="w-7 h-7 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-4">رؤى قوية</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('solutionsMarketingPage.text8')}</h3>
             <p className="text-gray-600 leading-relaxed">
               ابق على اطلاع برؤى قوية لتحسين رسائلك وحملاتك وأداء إعلاناتك. قرارات مبنية على البيانات.
             </p>
@@ -107,8 +109,8 @@ export default function SolutionsMarketing() {
       <section className="bg-white py-20">
         <div className="container">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">أنواع الحملات التسويقية</h2>
-            <p className="text-xl text-gray-600">حملات متنوعة لكل هدف تسويقي</p>
+            <h2 className="text-4xl font-bold mb-4">{t('solutionsMarketingPage.text9')}</h2>
+            <p className="text-xl text-gray-600">{t('solutionsMarketingPage.text10')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -116,7 +118,7 @@ export default function SolutionsMarketing() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-6">
                 📢
               </div>
-              <h3 className="text-2xl font-bold mb-4">حملات الإعلان</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('solutionsMarketingPage.text11')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 اربط إعلاناتك على Meta وGoogle مباشرة بواتساب. تتبع الأداء وحسّن العائد على الاستثمار.
               </p>
@@ -126,7 +128,7 @@ export default function SolutionsMarketing() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-6">
                 🎯
               </div>
-              <h3 className="text-2xl font-bold mb-4">حملات مخصصة</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('solutionsMarketingPage.text12')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 أرسل رسائل مخصصة لشرائح محددة من عملائك. زد معدل التفاعل والتحويل.
               </p>
@@ -136,7 +138,7 @@ export default function SolutionsMarketing() {
               <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mx-auto mb-6">
                 🔄
               </div>
-              <h3 className="text-2xl font-bold mb-4">حملات إعادة الاستهداف</h3>
+              <h3 className="text-2xl font-bold mb-4">{t('solutionsMarketingPage.text13')}</h3>
               <p className="text-gray-600 leading-relaxed">
                 أعد التواصل مع العملاء الذين أبدوا اهتماماً. حوّل الزوار إلى عملاء فعليين.
               </p>
@@ -148,8 +150,8 @@ export default function SolutionsMarketing() {
       {/* How It Works */}
       <section className="container py-20">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">كيف يعمل؟</h2>
-          <p className="text-xl text-gray-600">من الإعلان إلى التحويل في خطوات بسيطة</p>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsMarketingPage.text14')}</h2>
+          <p className="text-xl text-gray-600">{t('solutionsMarketingPage.text15')}</p>
         </div>
 
         <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
@@ -157,7 +159,7 @@ export default function SolutionsMarketing() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               1
             </div>
-            <h3 className="text-xl font-bold mb-2">الإعلان</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsMarketingPage.text16')}</h3>
             <p className="text-gray-600">
               العميل يشاهد إعلانك على Meta أو Google
             </p>
@@ -167,7 +169,7 @@ export default function SolutionsMarketing() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               2
             </div>
-            <h3 className="text-xl font-bold mb-2">الدردشة</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsMarketingPage.text17')}</h3>
             <p className="text-gray-600">
               ينقر ويبدأ محادثة مباشرة على واتساب
             </p>
@@ -177,7 +179,7 @@ export default function SolutionsMarketing() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               3
             </div>
-            <h3 className="text-xl font-bold mb-2">الإشراك</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsMarketingPage.text18')}</h3>
             <p className="text-gray-600">
               ساري يشرك العميل بمحادثة ذكية ومخصصة
             </p>
@@ -187,7 +189,7 @@ export default function SolutionsMarketing() {
             <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
               4
             </div>
-            <h3 className="text-xl font-bold mb-2">التحويل</h3>
+            <h3 className="text-xl font-bold mb-2">{t('solutionsMarketingPage.text19')}</h3>
             <p className="text-gray-600">
               يتحول العميل من زائر إلى مشتري
             </p>
@@ -199,7 +201,7 @@ export default function SolutionsMarketing() {
       <section className="container py-20">
         <Card className="bg-gradient-to-l from-blue-600 to-blue-800 text-white p-12 text-center">
           <TrendingUp className="w-16 h-16 mx-auto mb-6 opacity-90" />
-          <h2 className="text-4xl font-bold mb-4">جاهز لتحويل تسويقك؟</h2>
+          <h2 className="text-4xl font-bold mb-4">{t('solutionsMarketingPage.text20')}</h2>
           <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
             انضم إلى مئات المسوقين الذين حققوا نتائج استثنائية مع ساري
           </p>

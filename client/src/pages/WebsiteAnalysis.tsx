@@ -27,8 +27,10 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function WebsiteAnalysis() {
+  const { t } = useTranslation();
   const [url, setUrl] = useState('');
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<number | null>(null);
 
@@ -52,7 +54,7 @@ export default function WebsiteAnalysis() {
   // Mutations
   const analyzeMutation = trpc.websiteAnalysis.analyze.useMutation({
     onSuccess: (data) => {
-      toast.success('تم بدء التحليل');
+      toast.success(t('websiteAnalysisPage.text0'));
       setSelectedAnalysisId(data.analysisId);
       utils.websiteAnalysis.listAnalyses.invalidate();
       setUrl('');
@@ -64,7 +66,7 @@ export default function WebsiteAnalysis() {
 
   const deleteMutation = trpc.websiteAnalysis.deleteAnalysis.useMutation({
     onSuccess: () => {
-      toast.success('تم حذف التحليل');
+      toast.success(t('websiteAnalysisPage.text1'));
       utils.websiteAnalysis.listAnalyses.invalidate();
       if (selectedAnalysisId) {
         setSelectedAnalysisId(null);
@@ -77,7 +79,7 @@ export default function WebsiteAnalysis() {
 
   const handleAnalyze = () => {
     if (!url) {
-      toast.error('الرجاء إدخال رابط الموقع');
+      toast.error(t('websiteAnalysisPage.text2'));
       return;
     }
 
@@ -85,7 +87,7 @@ export default function WebsiteAnalysis() {
       new URL(url);
       analyzeMutation.mutate({ url });
     } catch {
-      toast.error('الرجاء إدخال رابط صحيح');
+      toast.error(t('websiteAnalysisPage.text3'));
     }
   };
 
@@ -167,7 +169,7 @@ export default function WebsiteAnalysis() {
     <div className="container mx-auto py-8 space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold mb-2">التحليل الذكي للمواقع</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('websiteAnalysisPage.text4')}</h1>
         <p className="text-muted-foreground">
           قم بتحليل أي موقع إلكتروني واحصل على رؤى ذكية وتوصيات لتحسين موقعك
         </p>
@@ -176,7 +178,7 @@ export default function WebsiteAnalysis() {
       {/* Analysis Form */}
       <Card>
         <CardHeader>
-          <CardTitle>تحليل موقع جديد</CardTitle>
+          <CardTitle>{t('websiteAnalysisPage.text5')}</CardTitle>
           <CardDescription>
             أدخل رابط الموقع الذي تريد تحليله
           </CardDescription>
@@ -254,22 +256,22 @@ export default function WebsiteAnalysis() {
                     {analysis.status === 'analyzing' ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        <span className="text-sm">جاري التحليل...</span>
+                        <span className="text-sm">{t('websiteAnalysisPage.text6')}</span>
                       </>
                     ) : analysis.status === 'completed' ? (
                       <>
                         <CheckCircle className="h-4 w-4 text-green-600" />
-                        <span className="text-sm">مكتمل</span>
+                        <span className="text-sm">{t('websiteAnalysisPage.text7')}</span>
                       </>
                     ) : analysis.status === 'failed' ? (
                       <>
                         <XCircle className="h-4 w-4 text-red-600" />
-                        <span className="text-sm">فشل</span>
+                        <span className="text-sm">{t('websiteAnalysisPage.text8')}</span>
                       </>
                     ) : (
                       <>
                         <Loader2 className="h-4 w-4" />
-                        <span className="text-sm">قيد الانتظار</span>
+                        <span className="text-sm">{t('websiteAnalysisPage.text9')}</span>
                       </>
                     )}
                   </div>
@@ -278,7 +280,7 @@ export default function WebsiteAnalysis() {
                   {analysis.status === 'completed' && (
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium">النقاط الإجمالية</span>
+                        <span className="text-sm font-medium">{t('websiteAnalysisPage.text10')}</span>
                         <span className={`text-2xl font-bold ${getScoreColor(analysis.overallScore)}`}>
                           {analysis.overallScore}
                         </span>
@@ -298,8 +300,8 @@ export default function WebsiteAnalysis() {
         ) : (
           <div className="col-span-full text-center py-12">
             <Search className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">لا توجد تحليلات بعد</p>
-            <p className="text-sm text-muted-foreground">ابدأ بتحليل موقعك الأول</p>
+            <p className="text-muted-foreground">{t('websiteAnalysisPage.text11')}</p>
+            <p className="text-sm text-muted-foreground">{t('websiteAnalysisPage.text12')}</p>
           </div>
         )}
       </div>
@@ -329,10 +331,10 @@ export default function WebsiteAnalysis() {
           <CardContent>
             <Tabs defaultValue="overview">
               <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-                <TabsTrigger value="insights">الرؤى</TabsTrigger>
-                <TabsTrigger value="products">المنتجات</TabsTrigger>
-                <TabsTrigger value="details">التفاصيل</TabsTrigger>
+                <TabsTrigger value="overview">{t('websiteAnalysisPage.text13')}</TabsTrigger>
+                <TabsTrigger value="insights">{t('websiteAnalysisPage.text14')}</TabsTrigger>
+                <TabsTrigger value="products">{t('websiteAnalysisPage.text15')}</TabsTrigger>
+                <TabsTrigger value="details">{t('websiteAnalysisPage.text16')}</TabsTrigger>
               </TabsList>
 
               {/* Overview Tab */}
@@ -362,7 +364,7 @@ export default function WebsiteAnalysis() {
                           <Zap className={`h-6 w-6 ${getScoreColor(currentAnalysis.performanceScore)}`} />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">الأداء</p>
+                          <p className="text-sm text-muted-foreground">{t('websiteAnalysisPage.text17')}</p>
                           <p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.performanceScore)}`}>
                             {currentAnalysis.performanceScore}
                           </p>
@@ -378,7 +380,7 @@ export default function WebsiteAnalysis() {
                           <Eye className={`h-6 w-6 ${getScoreColor(currentAnalysis.uxScore)}`} />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">تجربة المستخدم</p>
+                          <p className="text-sm text-muted-foreground">{t('websiteAnalysisPage.text18')}</p>
                           <p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.uxScore)}`}>
                             {currentAnalysis.uxScore}
                           </p>
@@ -394,7 +396,7 @@ export default function WebsiteAnalysis() {
                           <FileText className={`h-6 w-6 ${getScoreColor(currentAnalysis.contentQuality)}`} />
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">المحتوى</p>
+                          <p className="text-sm text-muted-foreground">{t('websiteAnalysisPage.text19')}</p>
                           <p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.contentQuality)}`}>
                             {currentAnalysis.contentQuality}
                           </p>
@@ -408,7 +410,7 @@ export default function WebsiteAnalysis() {
                 {currentAnalysis.description && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">وصف الموقع</CardTitle>
+                      <CardTitle className="text-lg">{t('websiteAnalysisPage.text20')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground">{currentAnalysis.description}</p>
@@ -420,7 +422,7 @@ export default function WebsiteAnalysis() {
                 {currentAnalysis.seoIssues && currentAnalysis.seoIssues.length > 0 && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">مشاكل SEO</CardTitle>
+                      <CardTitle className="text-lg">{t('websiteAnalysisPage.text21')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
@@ -462,14 +464,14 @@ export default function WebsiteAnalysis() {
                         
                         {insight.recommendation && (
                           <div className="bg-blue-50 p-3 rounded-lg">
-                            <p className="text-sm font-medium text-blue-900 mb-1">التوصية:</p>
+                            <p className="text-sm font-medium text-blue-900 mb-1">{t('websiteAnalysisPage.text22')}</p>
                             <p className="text-sm text-blue-800">{insight.recommendation}</p>
                           </div>
                         )}
 
                         {insight.impact && (
                           <div className="bg-green-50 p-3 rounded-lg">
-                            <p className="text-sm font-medium text-green-900 mb-1">التأثير المتوقع:</p>
+                            <p className="text-sm font-medium text-green-900 mb-1">{t('websiteAnalysisPage.text23')}</p>
                             <p className="text-sm text-green-800">{insight.impact}</p>
                           </div>
                         )}
@@ -483,7 +485,7 @@ export default function WebsiteAnalysis() {
                 ) : (
                   <div className="text-center py-12">
                     <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">لا توجد رؤى متاحة</p>
+                    <p className="text-muted-foreground">{t('websiteAnalysisPage.text24')}</p>
                   </div>
                 )}
               </TabsContent>
@@ -555,7 +557,7 @@ export default function WebsiteAnalysis() {
                 ) : (
                   <div className="text-center py-12">
                     <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">لم يتم العثور على منتجات</p>
+                    <p className="text-muted-foreground">{t('websiteAnalysisPage.text25')}</p>
                   </div>
                 )}
               </TabsContent>
@@ -565,23 +567,23 @@ export default function WebsiteAnalysis() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">معلومات عامة</CardTitle>
+                      <CardTitle className="text-lg">{t('websiteAnalysisPage.text26')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">اللغة:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text27')}</span>
                         <span className="font-medium">{currentAnalysis.language}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">عدد الكلمات:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text28')}</span>
                         <span className="font-medium">{currentAnalysis.wordCount.toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">عدد الصور:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text29')}</span>
                         <span className="font-medium">{currentAnalysis.imageCount}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">عدد الفيديوهات:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text30')}</span>
                         <span className="font-medium">{currentAnalysis.videoCount}</span>
                       </div>
                     </CardContent>
@@ -589,27 +591,27 @@ export default function WebsiteAnalysis() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">الأداء</CardTitle>
+                      <CardTitle className="text-lg">{t('websiteAnalysisPage.text31')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">وقت التحميل:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text32')}</span>
                         <span className="font-medium">{currentAnalysis.loadTime}ms</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">حجم الصفحة:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text33')}</span>
                         <span className="font-medium">
                           {(currentAnalysis.pageSize / 1024).toFixed(2)} KB
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">محسّن للجوال:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text34')}</span>
                         <span className="font-medium">
                           {currentAnalysis.mobileOptimized ? 'نعم' : 'لا'}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">يحتوي على واتساب:</span>
+                        <span className="text-muted-foreground">{t('websiteAnalysisPage.text35')}</span>
                         <span className="font-medium">
                           {currentAnalysis.hasWhatsapp ? 'نعم' : 'لا'}
                         </span>

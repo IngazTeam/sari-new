@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Search, Send, RefreshCw, ShoppingCart, DollarSign, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { formatCurrency, type Currency } from "@shared/currency";
+import { useTranslation } from 'react-i18next';
 
 interface Order {
   id: number;
@@ -39,6 +40,7 @@ interface Order {
 }
 
 export default function WooCommerceOrders() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: merchant } = trpc.merchant.get.useQuery();
   const merchantCurrency = (merchant?.currency as Currency) || 'SAR';
@@ -198,8 +200,8 @@ export default function WooCommerceOrders() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">طلبات WooCommerce</h1>
-          <p className="text-muted-foreground">إدارة الطلبات المزامنة من متجر WooCommerce</p>
+          <h1 className="text-3xl font-bold">{t('wooCommerceOrdersPage.text0')}</h1>
+          <p className="text-muted-foreground">{t('wooCommerceOrdersPage.text1')}</p>
         </div>
         <Button 
           onClick={() => syncOrdersMutation.mutate()}
@@ -214,7 +216,7 @@ export default function WooCommerceOrders() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceOrdersPage.text2')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -224,7 +226,7 @@ export default function WooCommerceOrders() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد المعالجة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceOrdersPage.text3')}</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -234,7 +236,7 @@ export default function WooCommerceOrders() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مكتملة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceOrdersPage.text4')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -244,7 +246,7 @@ export default function WooCommerceOrders() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceOrdersPage.text5')}</CardTitle>
             <DollarSign className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -256,7 +258,7 @@ export default function WooCommerceOrders() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>البحث والفلترة</CardTitle>
+          <CardTitle>{t('wooCommerceOrdersPage.text6')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -264,7 +266,7 @@ export default function WooCommerceOrders() {
               <div className="relative">
                 <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="ابحث برقم الطلب، اسم العميل، أو رقم الهاتف..."
+                  placeholder={t('wooCommerceOrdersPage.text7')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pr-10"
@@ -273,17 +275,17 @@ export default function WooCommerceOrders() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="حالة الطلب" />
+                <SelectValue placeholder={t('wooCommerceOrdersPage.text8')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="pending">قيد الانتظار</SelectItem>
-                <SelectItem value="processing">قيد المعالجة</SelectItem>
-                <SelectItem value="on-hold">معلق</SelectItem>
-                <SelectItem value="completed">مكتمل</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
-                <SelectItem value="refunded">مسترجع</SelectItem>
-                <SelectItem value="failed">فاشل</SelectItem>
+                <SelectItem value="all">{t('wooCommerceOrdersPage.text9')}</SelectItem>
+                <SelectItem value="pending">{t('wooCommerceOrdersPage.text10')}</SelectItem>
+                <SelectItem value="processing">{t('wooCommerceOrdersPage.text11')}</SelectItem>
+                <SelectItem value="on-hold">{t('wooCommerceOrdersPage.text12')}</SelectItem>
+                <SelectItem value="completed">{t('wooCommerceOrdersPage.text13')}</SelectItem>
+                <SelectItem value="cancelled">{t('wooCommerceOrdersPage.text14')}</SelectItem>
+                <SelectItem value="refunded">{t('wooCommerceOrdersPage.text15')}</SelectItem>
+                <SelectItem value="failed">{t('wooCommerceOrdersPage.text16')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -294,15 +296,15 @@ export default function WooCommerceOrders() {
       <Card>
         <CardHeader>
           <CardTitle>قائمة الطلبات ({filteredOrders.length})</CardTitle>
-          <CardDescription>جميع الطلبات المزامنة من WooCommerce</CardDescription>
+          <CardDescription>{t('wooCommerceOrdersPage.text17')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8">جاري التحميل...</div>
+            <div className="text-center py-8">{t('wooCommerceOrdersPage.text18')}</div>
           ) : filteredOrders.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Package className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>لا توجد طلبات</p>
+              <p>{t('wooCommerceOrdersPage.text19')}</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -331,27 +333,27 @@ export default function WooCommerceOrders() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">العميل: </span>
+                            <span className="text-muted-foreground">{t('wooCommerceOrdersPage.text20')}</span>
                             <span className="font-medium">{order.customerName}</span>
                           </div>
                           {order.customerPhone && (
                             <div>
-                              <span className="text-muted-foreground">الهاتف: </span>
+                              <span className="text-muted-foreground">{t('wooCommerceOrdersPage.text21')}</span>
                               <span className="font-medium">{order.customerPhone}</span>
                             </div>
                           )}
                           <div>
-                            <span className="text-muted-foreground">الحالة: </span>
+                            <span className="text-muted-foreground">{t('wooCommerceOrdersPage.text22')}</span>
                             {getStatusBadge(order.status)}
                           </div>
                           <div>
-                            <span className="text-muted-foreground">المبلغ: </span>
+                            <span className="text-muted-foreground">{t('wooCommerceOrdersPage.text23')}</span>
                             <span className="font-bold text-lg">{formatCurrency(parseFloat(order.total), order.currency as Currency, 'ar-SA')}</span>
                           </div>
                         </div>
 
                         <div className="text-sm">
-                          <span className="text-muted-foreground">المنتجات: </span>
+                          <span className="text-muted-foreground">{t('wooCommerceOrdersPage.text24')}</span>
                           <span>{lineItems.map((item: any) => item.name).join(', ')}</span>
                         </div>
                       </div>
@@ -403,25 +405,25 @@ export default function WooCommerceOrders() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>اسم العميل</Label>
+                  <Label>{t('wooCommerceOrdersPage.text25')}</Label>
                   <p className="font-medium">{selectedOrder.customerName}</p>
                 </div>
                 <div>
-                  <Label>البريد الإلكتروني</Label>
+                  <Label>{t('wooCommerceOrdersPage.text26')}</Label>
                   <p className="font-medium">{selectedOrder.customerEmail || '-'}</p>
                 </div>
                 <div>
-                  <Label>رقم الهاتف</Label>
+                  <Label>{t('wooCommerceOrdersPage.text27')}</Label>
                   <p className="font-medium">{selectedOrder.customerPhone || '-'}</p>
                 </div>
                 <div>
-                  <Label>حالة الطلب</Label>
+                  <Label>{t('wooCommerceOrdersPage.text28')}</Label>
                   <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
                 </div>
               </div>
 
               <div>
-                <Label>المنتجات</Label>
+                <Label>{t('wooCommerceOrdersPage.text29')}</Label>
                 <div className="mt-2 space-y-2">
                   {JSON.parse(selectedOrder.lineItems || '[]').map((item: any, index: number) => (
                     <div key={index} className="flex justify-between border-b pb-2">
@@ -434,38 +436,38 @@ export default function WooCommerceOrders() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>المجموع الفرعي</Label>
+                  <Label>{t('wooCommerceOrdersPage.text30')}</Label>
                   <p className="font-medium">{selectedOrder.subtotal} {selectedOrder.currency}</p>
                 </div>
                 <div>
-                  <Label>الشحن</Label>
+                  <Label>{t('wooCommerceOrdersPage.text31')}</Label>
                   <p className="font-medium">{selectedOrder.shippingTotal} {selectedOrder.currency}</p>
                 </div>
                 <div>
-                  <Label>الضريبة</Label>
+                  <Label>{t('wooCommerceOrdersPage.text32')}</Label>
                   <p className="font-medium">{selectedOrder.taxTotal} {selectedOrder.currency}</p>
                 </div>
                 <div>
-                  <Label>الخصم</Label>
+                  <Label>{t('wooCommerceOrdersPage.text33')}</Label>
                   <p className="font-medium">{selectedOrder.discountTotal} {selectedOrder.currency}</p>
                 </div>
               </div>
 
               <div>
-                <Label>المجموع الإجمالي</Label>
+                <Label>{t('wooCommerceOrdersPage.text34')}</Label>
                 <p className="text-2xl font-bold">{formatCurrency(parseFloat(selectedOrder.total), selectedOrder.currency as Currency, 'ar-SA')}</p>
               </div>
 
               {selectedOrder.paymentMethodTitle && (
                 <div>
-                  <Label>طريقة الدفع</Label>
+                  <Label>{t('wooCommerceOrdersPage.text35')}</Label>
                   <p className="font-medium">{selectedOrder.paymentMethodTitle}</p>
                 </div>
               )}
 
               {selectedOrder.orderNotes && (
                 <div>
-                  <Label>ملاحظات</Label>
+                  <Label>{t('wooCommerceOrdersPage.text36')}</Label>
                   <p className="text-sm">{selectedOrder.orderNotes}</p>
                 </div>
               )}
@@ -478,33 +480,33 @@ export default function WooCommerceOrders() {
       <Dialog open={isUpdateStatusOpen} onOpenChange={setIsUpdateStatusOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تحديث حالة الطلب</DialogTitle>
+            <DialogTitle>{t('wooCommerceOrdersPage.text37')}</DialogTitle>
             <DialogDescription>
               تحديث حالة الطلب #{selectedOrder?.orderNumber}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>الحالة الجديدة</Label>
+              <Label>{t('wooCommerceOrdersPage.text38')}</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر الحالة" />
+                  <SelectValue placeholder={t('wooCommerceOrdersPage.text39')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">قيد الانتظار</SelectItem>
-                  <SelectItem value="processing">قيد المعالجة</SelectItem>
-                  <SelectItem value="on-hold">معلق</SelectItem>
-                  <SelectItem value="completed">مكتمل</SelectItem>
-                  <SelectItem value="cancelled">ملغي</SelectItem>
-                  <SelectItem value="refunded">مسترجع</SelectItem>
-                  <SelectItem value="failed">فاشل</SelectItem>
+                  <SelectItem value="pending">{t('wooCommerceOrdersPage.text40')}</SelectItem>
+                  <SelectItem value="processing">{t('wooCommerceOrdersPage.text41')}</SelectItem>
+                  <SelectItem value="on-hold">{t('wooCommerceOrdersPage.text42')}</SelectItem>
+                  <SelectItem value="completed">{t('wooCommerceOrdersPage.text43')}</SelectItem>
+                  <SelectItem value="cancelled">{t('wooCommerceOrdersPage.text44')}</SelectItem>
+                  <SelectItem value="refunded">{t('wooCommerceOrdersPage.text45')}</SelectItem>
+                  <SelectItem value="failed">{t('wooCommerceOrdersPage.text46')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>ملاحظة (اختياري)</Label>
+              <Label>{t('wooCommerceOrdersPage.text47')}</Label>
               <Textarea
-                placeholder="أضف ملاحظة للعميل..."
+                placeholder={t('wooCommerceOrdersPage.text48')}
                 value={statusNote}
                 onChange={(e) => setStatusNote(e.target.value)}
                 rows={3}

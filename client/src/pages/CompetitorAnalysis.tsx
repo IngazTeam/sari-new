@@ -33,8 +33,10 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useTranslation } from 'react-i18next';
 
 export default function CompetitorAnalysis() {
+  const { t } = useTranslation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
@@ -47,7 +49,7 @@ export default function CompetitorAnalysis() {
   // Mutations
   const addMutation = trpc.websiteAnalysis.addCompetitor.useMutation({
     onSuccess: () => {
-      toast.success('تم إضافة المنافس وبدء التحليل');
+      toast.success(t('competitorAnalysisPage.text0'));
       utils.websiteAnalysis.listCompetitors.invalidate();
       setIsAddDialogOpen(false);
       setName('');
@@ -60,7 +62,7 @@ export default function CompetitorAnalysis() {
 
   const deleteMutation = trpc.websiteAnalysis.deleteCompetitor.useMutation({
     onSuccess: () => {
-      toast.success('تم حذف المنافس');
+      toast.success(t('competitorAnalysisPage.text1'));
       utils.websiteAnalysis.listCompetitors.invalidate();
     },
     onError: (error) => {
@@ -70,7 +72,7 @@ export default function CompetitorAnalysis() {
 
   const handleAdd = () => {
     if (!name || !url) {
-      toast.error('الرجاء إدخال جميع الحقول');
+      toast.error(t('competitorAnalysisPage.text2'));
       return;
     }
 
@@ -78,7 +80,7 @@ export default function CompetitorAnalysis() {
       new URL(url);
       addMutation.mutate({ name, url });
     } catch {
-      toast.error('الرجاء إدخال رابط صحيح');
+      toast.error(t('competitorAnalysisPage.text3'));
     }
   };
 
@@ -105,7 +107,7 @@ export default function CompetitorAnalysis() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">تحليل المنافسين</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('competitorAnalysisPage.text4')}</h1>
           <p className="text-muted-foreground">
             قم بإضافة منافسيك وقارن موقعك معهم
           </p>
@@ -120,23 +122,23 @@ export default function CompetitorAnalysis() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>إضافة منافس جديد</DialogTitle>
+              <DialogTitle>{t('competitorAnalysisPage.text5')}</DialogTitle>
               <DialogDescription>
                 أدخل معلومات المنافس لبدء التحليل
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">اسم المنافس</Label>
+                <Label htmlFor="name">{t('competitorAnalysisPage.text6')}</Label>
                 <Input
                   id="name"
-                  placeholder="مثال: متجر المنافس"
+                  placeholder={t('competitorAnalysisPage.text7')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="url">رابط الموقع</Label>
+                <Label htmlFor="url">{t('competitorAnalysisPage.text8')}</Label>
                 <Input
                   id="url"
                   placeholder="https://example.com"
@@ -203,22 +205,22 @@ export default function CompetitorAnalysis() {
                   {competitor.status === 'analyzing' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">جاري التحليل...</span>
+                      <span className="text-sm">{t('competitorAnalysisPage.text9')}</span>
                     </>
                   ) : competitor.status === 'completed' ? (
                     <>
                       <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">مكتمل</span>
+                      <span className="text-sm">{t('competitorAnalysisPage.text10')}</span>
                     </>
                   ) : competitor.status === 'failed' ? (
                     <>
                       <XCircle className="h-4 w-4 text-red-600" />
-                      <span className="text-sm">فشل</span>
+                      <span className="text-sm">{t('competitorAnalysisPage.text11')}</span>
                     </>
                   ) : (
                     <>
                       <Loader2 className="h-4 w-4" />
-                      <span className="text-sm">قيد الانتظار</span>
+                      <span className="text-sm">{t('competitorAnalysisPage.text12')}</span>
                     </>
                   )}
                 </div>
@@ -228,7 +230,7 @@ export default function CompetitorAnalysis() {
                     {/* Overall Score */}
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium">النقاط الإجمالية</span>
+                        <span className="text-sm font-medium">{t('competitorAnalysisPage.text13')}</span>
                         <span className={`text-2xl font-bold ${getScoreColor(competitor.overallScore)}`}>
                           {competitor.overallScore}
                         </span>
@@ -245,7 +247,7 @@ export default function CompetitorAnalysis() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">الأداء:</span>
+                        <span className="text-muted-foreground">{t('competitorAnalysisPage.text14')}</span>
                         <span className={`font-medium ${getScoreColor(competitor.performanceScore)}`}>
                           {competitor.performanceScore}
                         </span>
@@ -257,7 +259,7 @@ export default function CompetitorAnalysis() {
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">المحتوى:</span>
+                        <span className="text-muted-foreground">{t('competitorAnalysisPage.text15')}</span>
                         <span className={`font-medium ${getScoreColor(competitor.contentScore)}`}>
                           {competitor.contentScore}
                         </span>
@@ -271,13 +273,13 @@ export default function CompetitorAnalysis() {
                           {competitor.productCount} منتج
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">متوسط السعر:</span>
+                          <span className="text-muted-foreground">{t('competitorAnalysisPage.text16')}</span>
                           <span className="font-medium">
                             {competitor.avgPrice?.toFixed(2)} {competitor.currency}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">النطاق:</span>
+                          <span className="text-muted-foreground">{t('competitorAnalysisPage.text17')}</span>
                           <span className="font-medium">
                             {competitor.minPrice?.toFixed(2)} - {competitor.maxPrice?.toFixed(2)} {competitor.currency}
                           </span>
@@ -342,7 +344,7 @@ export default function CompetitorAnalysis() {
           <CardContent className="py-12">
             <div className="text-center">
               <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا يوجد منافسون بعد</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('competitorAnalysisPage.text18')}</h3>
               <p className="text-muted-foreground mb-4">
                 ابدأ بإضافة منافسيك لمقارنة موقعك معهم
               </p>

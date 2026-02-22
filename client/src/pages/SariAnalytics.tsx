@@ -35,10 +35,12 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444'];
 
 export default function SariAnalytics() {
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState<'7' | '30' | '90'>('30');
 
   // Mock data - في الإنتاج سيتم جلبها من API
@@ -88,7 +90,7 @@ export default function SariAnalytics() {
               </div>
               إحصائيات ساري AI
             </h1>
-            <p className="text-gray-600 mt-1">تحليل شامل لأداء الذكاء الاصطناعي</p>
+            <p className="text-gray-600 mt-1">{t('sariAnalyticsPage.text0')}</p>
           </div>
           
           <div className="flex items-center gap-3">
@@ -97,9 +99,9 @@ export default function SariAnalytics() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7">آخر 7 أيام</SelectItem>
-                <SelectItem value="30">آخر 30 يوم</SelectItem>
-                <SelectItem value="90">آخر 90 يوم</SelectItem>
+                <SelectItem value="7">{t('sariAnalyticsPage.text1')}</SelectItem>
+                <SelectItem value="30">{t('sariAnalyticsPage.text2')}</SelectItem>
+                <SelectItem value="90">{t('sariAnalyticsPage.text3')}</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="icon">
@@ -113,11 +115,11 @@ export default function SariAnalytics() {
           <Card className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm">إجمالي المحادثات</p>
+                <p className="text-blue-100 text-sm">{t('sariAnalyticsPage.text4')}</p>
                 <p className="text-3xl font-bold mt-1">{stats.totalConversations.toLocaleString()}</p>
                 <div className="flex items-center gap-1 mt-2 text-blue-100">
                   <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm">+12% من الشهر الماضي</span>
+                  <span className="text-sm">{t('sariAnalyticsPage.text5')}</span>
                 </div>
               </div>
               <MessageSquare className="h-12 w-12 text-blue-200" />
@@ -127,11 +129,11 @@ export default function SariAnalytics() {
           <Card className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-purple-100 text-sm">إجمالي الرسائل</p>
+                <p className="text-purple-100 text-sm">{t('sariAnalyticsPage.text6')}</p>
                 <p className="text-3xl font-bold mt-1">{stats.totalMessages.toLocaleString()}</p>
                 <div className="flex items-center gap-1 mt-2 text-purple-100">
                   <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm">+18% من الشهر الماضي</span>
+                  <span className="text-sm">{t('sariAnalyticsPage.text7')}</span>
                 </div>
               </div>
               <Bot className="h-12 w-12 text-purple-200" />
@@ -141,11 +143,11 @@ export default function SariAnalytics() {
           <Card className="p-6 bg-gradient-to-br from-green-500 to-green-600 text-white">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">الرسائل الصوتية</p>
+                <p className="text-green-100 text-sm">{t('sariAnalyticsPage.text8')}</p>
                 <p className="text-3xl font-bold mt-1">{stats.voiceMessages.toLocaleString()}</p>
                 <div className="flex items-center gap-1 mt-2 text-green-100">
                   <TrendingUp className="h-4 w-4" />
-                  <span className="text-sm">+25% من الشهر الماضي</span>
+                  <span className="text-sm">{t('sariAnalyticsPage.text9')}</span>
                 </div>
               </div>
               <Mic className="h-12 w-12 text-green-200" />
@@ -155,7 +157,7 @@ export default function SariAnalytics() {
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">متوسط وقت الاستجابة</p>
+                <p className="text-gray-600 text-sm">{t('sariAnalyticsPage.text10')}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{stats.avgResponseTime}s</p>
                 <Badge variant="outline" className="mt-2 text-green-600 border-green-600">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -169,7 +171,7 @@ export default function SariAnalytics() {
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">نسبة النجاح</p>
+                <p className="text-gray-600 text-sm">{t('sariAnalyticsPage.text11')}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{stats.successRate}%</p>
                 <Badge variant="outline" className="mt-2 text-green-600 border-green-600">
                   <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -183,7 +185,7 @@ export default function SariAnalytics() {
           <Card className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">نشط اليوم</p>
+                <p className="text-gray-600 text-sm">{t('sariAnalyticsPage.text12')}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{stats.activeToday}</p>
                 <Badge variant="outline" className="mt-2 text-blue-600 border-blue-600">
                   <div className="flex items-center gap-1">
@@ -201,7 +203,7 @@ export default function SariAnalytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Daily Activity */}
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">النشاط اليومي</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sariAnalyticsPage.text13')}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={dailyData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -218,7 +220,7 @@ export default function SariAnalytics() {
 
           {/* Intent Distribution */}
           <Card className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">توزيع نوايا العملاء</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sariAnalyticsPage.text14')}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -242,7 +244,7 @@ export default function SariAnalytics() {
 
           {/* Performance Metrics */}
           <Card className="p-6 lg:col-span-2">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">مقاييس الأداء</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('sariAnalyticsPage.text15')}</h3>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={performanceData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -266,12 +268,12 @@ export default function SariAnalytics() {
               <Sparkles className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">رؤى ذكية من ساري</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('sariAnalyticsPage.text16')}</h3>
               <div className="space-y-2 text-gray-700">
-                <p>✨ <strong>أداء ممتاز:</strong> نسبة النجاح 94.5% أعلى من المتوسط بـ 12%</p>
-                <p>📈 <strong>نمو مستمر:</strong> زيادة 18% في عدد الرسائل مقارنة بالشهر الماضي</p>
-                <p>🎯 <strong>دقة عالية:</strong> 91.7% من الردود كانت دقيقة ومفيدة للعملاء</p>
-                <p>⚡ <strong>سرعة فائقة:</strong> متوسط وقت الاستجابة 2.3 ثانية فقط</p>
+                <p>✨ <strong>{t('sariAnalyticsPage.text17')}</strong> نسبة النجاح 94.5% أعلى من المتوسط بـ 12%</p>
+                <p>📈 <strong>{t('sariAnalyticsPage.text18')}</strong> زيادة 18% في عدد الرسائل مقارنة بالشهر الماضي</p>
+                <p>🎯 <strong>{t('sariAnalyticsPage.text19')}</strong> 91.7% من الردود كانت دقيقة ومفيدة للعملاء</p>
+                <p>⚡ <strong>{t('sariAnalyticsPage.text20')}</strong> متوسط وقت الاستجابة 2.3 ثانية فقط</p>
               </div>
             </div>
           </div>

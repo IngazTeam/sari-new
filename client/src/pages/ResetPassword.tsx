@@ -9,8 +9,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ArrowRight, Lock, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useTranslation } from 'react-i18next';
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const [, params] = useRoute('/reset-password/:token');
   const token = params?.token || '';
   
@@ -66,7 +68,7 @@ export default function ResetPassword() {
             <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
               <CheckCircle2 className="w-10 h-10 text-green-600" />
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">تم تغيير كلمة المرور!</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">{t('resetPasswordPage.text0')}</CardTitle>
             <CardDescription className="text-base text-gray-600">
               يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة
             </CardDescription>
@@ -102,7 +104,7 @@ export default function ResetPassword() {
         <Card className="w-full max-w-md shadow-xl border-blue-100">
           <CardContent className="py-12 text-center">
             <div className="animate-spin text-4xl mb-4">⏳</div>
-            <p className="text-gray-600">جاري التحقق من الرابط...</p>
+            <p className="text-gray-600">{t('resetPasswordPage.text1')}</p>
           </CardContent>
         </Card>
         </div>
@@ -121,7 +123,7 @@ export default function ResetPassword() {
             <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
               <AlertCircle className="w-10 h-10 text-red-600" />
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">رابط غير صالح</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">{t('resetPasswordPage.text2')}</CardTitle>
             <CardDescription className="text-base text-gray-600">
               {tokenError?.message || 'الرابط غير صالح أو منتهي الصلاحية'}
             </CardDescription>
@@ -163,7 +165,7 @@ export default function ResetPassword() {
       <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50 p-4">
       <Card className="w-full max-w-md shadow-xl border-blue-100">
         <CardHeader className="text-center space-y-2 pb-8">
-          <CardTitle className="text-3xl font-bold text-gray-900">إعادة تعيين كلمة المرور</CardTitle>
+          <CardTitle className="text-3xl font-bold text-gray-900">{t('resetPasswordPage.text3')}</CardTitle>
           <CardDescription className="text-base text-gray-600">
             أدخل كلمة المرور الجديدة لحسابك
           </CardDescription>
@@ -188,7 +190,7 @@ export default function ResetPassword() {
                 <Input
                   id="newPassword"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="أدخل كلمة المرور الجديدة"
+                  placeholder={t('resetPasswordPage.text4')}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
@@ -217,7 +219,7 @@ export default function ResetPassword() {
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
-                  placeholder="أعد إدخال كلمة المرور"
+                  placeholder={t('resetPasswordPage.text5')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required

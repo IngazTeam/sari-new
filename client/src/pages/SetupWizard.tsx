@@ -18,6 +18,7 @@ import IntegrationsStep from './setup-wizard/IntegrationsStep';
 import PersonalityStep from './setup-wizard/PersonalityStep';
 import LanguageStep from './setup-wizard/LanguageStep';
 import CompleteStep from './setup-wizard/CompleteStep';
+import { useTranslation } from 'react-i18next';
 
 const TOTAL_STEPS = 10;
 
@@ -35,6 +36,7 @@ const STEP_TITLES = [
 ];
 
 export default function SetupWizard() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   // Using sonner toast
   const [currentStep, setCurrentStep] = useState(1);
@@ -187,7 +189,7 @@ export default function SetupWizard() {
         welcomeMessage: wizardData.welcomeMessage || '',
       });
 
-      toast.success('تم الإعداد بنجاح! مرحباً بك في ساري، يمكنك الآن البدء في استخدام النظام.');
+      toast.success(t('setupWizardPage.text0'));
 
       setLocation('/merchant/dashboard');
     } catch (error: any) {
@@ -247,8 +249,8 @@ export default function SetupWizard() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6 md:mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">إعداد ساري</h1>
-          <p className="text-sm md:text-base text-gray-600">سنساعدك في إعداد كل شيء خلال 5 دقائق فقط</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">{t('setupWizardPage.text1')}</h1>
+          <p className="text-sm md:text-base text-gray-600">{t('setupWizardPage.text2')}</p>
         </div>
 
         {/* Progress Section */}
@@ -262,13 +264,13 @@ export default function SetupWizard() {
               {isSaving && (
                 <span className="text-xs text-gray-500 flex items-center gap-1">
                   <Loader2 className="h-3 w-3 animate-spin" />
-                  <span className="hidden sm:inline">جاري الحفظ...</span>
+                  <span className="hidden sm:inline">{t('setupWizardPage.text3')}</span>
                 </span>
               )}
               {!isSaving && lastSaved && (
                 <span className="text-xs text-green-600 flex items-center gap-1">
                   <Check className="h-3 w-3" />
-                  <span className="hidden sm:inline">تم الحفظ</span>
+                  <span className="hidden sm:inline">{t('setupWizardPage.text4')}</span>
                 </span>
               )}
               <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">

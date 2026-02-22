@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   content: string;
@@ -64,6 +65,7 @@ export function AISuggestions({
   className,
   compact = false,
 }: AISuggestionsProps) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(!compact);
   const [copiedId, setCopiedId] = useState<number | null>(null);
 
@@ -87,13 +89,13 @@ export function AISuggestions({
   const handleCopy = async (text: string, id: number) => {
     await navigator.clipboard.writeText(text);
     setCopiedId(id);
-    toast.success('تم نسخ الرد');
+    toast.success(t('compAISuggestionsPage.text0'));
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleSelect = (text: string) => {
     onSelectSuggestion(text);
-    toast.success('تم اختيار الرد');
+    toast.success(t('compAISuggestionsPage.text1'));
   };
 
   if (compact && !isExpanded) {
@@ -121,8 +123,8 @@ export function AISuggestions({
               <Sparkles className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h4 className="text-sm font-medium">اقتراحات الذكاء الاصطناعي</h4>
-              <p className="text-xs text-muted-foreground">ردود مقترحة بناءً على المحادثة</p>
+              <h4 className="text-sm font-medium">{t('compAISuggestionsPage.text2')}</h4>
+              <p className="text-xs text-muted-foreground">{t('compAISuggestionsPage.text3')}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -143,7 +145,7 @@ export function AISuggestions({
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>توليد اقتراحات جديدة</TooltipContent>
+                <TooltipContent>{t('compAISuggestionsPage.text4')}</TooltipContent>
               </Tooltip>
             </TooltipProvider>
             {compact && (
@@ -210,7 +212,7 @@ export function AISuggestions({
                           )}
                         </Button>
                       </TooltipTrigger>
-                      <TooltipContent>نسخ</TooltipContent>
+                      <TooltipContent>{t('compAISuggestionsPage.text5')}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>

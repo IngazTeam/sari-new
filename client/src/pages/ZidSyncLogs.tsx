@@ -3,21 +3,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Loader2, CheckCircle, XCircle, Clock, Package, ShoppingCart, Users } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 export default function ZidSyncLogs() {
+  const { t } = useTranslation();
   const { data: logs, isLoading } = trpc.zid.getSyncLogs.useQuery({ limit: 50 });
   const { data: stats } = trpc.zid.getSyncStats.useQuery();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500">مكتمل</Badge>;
+        return <Badge className="bg-green-500">{t('zidSyncLogsPage.text0')}</Badge>;
       case 'failed':
-        return <Badge variant="destructive">فشل</Badge>;
+        return <Badge variant="destructive">{t('zidSyncLogsPage.text1')}</Badge>;
       case 'in_progress':
-        return <Badge className="bg-blue-500">جاري التنفيذ</Badge>;
+        return <Badge className="bg-blue-500">{t('zidSyncLogsPage.text2')}</Badge>;
       case 'pending':
-        return <Badge variant="outline">قيد الانتظار</Badge>;
+        return <Badge variant="outline">{t('zidSyncLogsPage.text3')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -62,7 +64,7 @@ export default function ZidSyncLogs() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">سجل المزامنة</h1>
+        <h1 className="text-3xl font-bold">{t('zidSyncLogsPage.text4')}</h1>
         <p className="text-muted-foreground mt-2">
           سجل جميع عمليات المزامنة مع Zid
         </p>
@@ -73,7 +75,7 @@ export default function ZidSyncLogs() {
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">إجمالي المزامنات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('zidSyncLogsPage.text5')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalSyncs}</div>
@@ -113,7 +115,7 @@ export default function ZidSyncLogs() {
       {/* Sync Logs */}
       <Card>
         <CardHeader>
-          <CardTitle>سجل العمليات</CardTitle>
+          <CardTitle>{t('zidSyncLogsPage.text6')}</CardTitle>
           <CardDescription>
             آخر 50 عملية مزامنة
           </CardDescription>
@@ -177,7 +179,7 @@ export default function ZidSyncLogs() {
                         ثانية
                       </span>
                     ) : (
-                      <span>جاري التنفيذ...</span>
+                      <span>{t('zidSyncLogsPage.text7')}</span>
                     )}
                   </div>
                 </div>

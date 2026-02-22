@@ -25,8 +25,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Gift, Edit, Trash2, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { useTranslation } from 'react-i18next';
 
 export default function LoyaltyRewards() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: rewards, isLoading, refetch } = trpc.loyalty.getRewards.useQuery({
     activeOnly: false,
@@ -168,8 +170,8 @@ export default function LoyaltyRewards() {
         <div className="flex items-center gap-3">
           <Gift className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">المكافآت</h1>
-            <p className="text-muted-foreground">إدارة المكافآت المتاحة للعملاء</p>
+            <h1 className="text-3xl font-bold">{t('loyaltyRewardsPage.text0')}</h1>
+            <p className="text-muted-foreground">{t('loyaltyRewardsPage.text1')}</p>
           </div>
         </div>
 
@@ -182,7 +184,7 @@ export default function LoyaltyRewards() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>إضافة مكافأة جديدة</DialogTitle>
+              <DialogTitle>{t('loyaltyRewardsPage.text2')}</DialogTitle>
               <DialogDescription>
                 أنشئ مكافأة جديدة يمكن للعملاء استبدالها بالنقاط
               </DialogDescription>
@@ -250,19 +252,19 @@ export default function LoyaltyRewards() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">النوع</p>
+                  <p className="text-muted-foreground">{t('loyaltyRewardsPage.text3')}</p>
                   <p className="font-medium">{getRewardTypeLabel(reward.type)}</p>
                 </div>
                 {reward.discountAmount && (
                   <div>
-                    <p className="text-muted-foreground">قيمة الخصم</p>
+                    <p className="text-muted-foreground">{t('loyaltyRewardsPage.text4')}</p>
                     <p className="font-medium">
                       {reward.discountAmount} {reward.discountType === "percentage" ? "%" : "ريال"}
                     </p>
                   </div>
                 )}
                 <div>
-                  <p className="text-muted-foreground">عدد الاستبدالات</p>
+                  <p className="text-muted-foreground">{t('loyaltyRewardsPage.text5')}</p>
                   <p className="font-medium">
                     {reward.currentRedemptions}
                     {reward.maxRedemptions ? ` / ${reward.maxRedemptions}` : " / غير محدود"}
@@ -280,8 +282,8 @@ export default function LoyaltyRewards() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Gift className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">لا توجد مكافآت حتى الآن</p>
-              <p className="text-sm text-muted-foreground">ابدأ بإضافة مكافأة جديدة</p>
+              <p className="text-muted-foreground">{t('loyaltyRewardsPage.text6')}</p>
+              <p className="text-sm text-muted-foreground">{t('loyaltyRewardsPage.text7')}</p>
             </CardContent>
           </Card>
         )}
@@ -292,8 +294,8 @@ export default function LoyaltyRewards() {
         <Dialog open={!!editingReward} onOpenChange={() => setEditingReward(null)}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>تعديل المكافأة</DialogTitle>
-              <DialogDescription>تحديث بيانات المكافأة</DialogDescription>
+              <DialogTitle>{t('loyaltyRewardsPage.text8')}</DialogTitle>
+              <DialogDescription>{t('loyaltyRewardsPage.text9')}</DialogDescription>
             </DialogHeader>
 
             <RewardForm formData={formData} setFormData={setFormData} />
@@ -326,17 +328,17 @@ function RewardForm({ formData, setFormData }: any) {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="titleAr">العنوان بالعربي *</Label>
+          <Label htmlFor="titleAr">{t('loyaltyRewardsPage.text10')}</Label>
           <Input
             id="titleAr"
             value={formData.titleAr}
             onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
-            placeholder="خصم 10 ريال"
+            placeholder={t('loyaltyRewardsPage.text11')}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="title">العنوان بالإنجليزي *</Label>
+          <Label htmlFor="title">{t('loyaltyRewardsPage.text12')}</Label>
           <Input
             id="title"
             value={formData.title}
@@ -348,17 +350,17 @@ function RewardForm({ formData, setFormData }: any) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="descriptionAr">الوصف بالعربي</Label>
+          <Label htmlFor="descriptionAr">{t('loyaltyRewardsPage.text13')}</Label>
           <Textarea
             id="descriptionAr"
             value={formData.descriptionAr}
             onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
-            placeholder="احصل على خصم 10 ريال على طلبك القادم"
+            placeholder={t('loyaltyRewardsPage.text14')}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">الوصف بالإنجليزي</Label>
+          <Label htmlFor="description">{t('loyaltyRewardsPage.text15')}</Label>
           <Textarea
             id="description"
             value={formData.description}
@@ -370,7 +372,7 @@ function RewardForm({ formData, setFormData }: any) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="type">نوع المكافأة *</Label>
+          <Label htmlFor="type">{t('loyaltyRewardsPage.text16')}</Label>
           <Select
             value={formData.type}
             onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -379,16 +381,16 @@ function RewardForm({ formData, setFormData }: any) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="discount">خصم</SelectItem>
-              <SelectItem value="free_product">منتج مجاني</SelectItem>
-              <SelectItem value="free_shipping">شحن مجاني</SelectItem>
-              <SelectItem value="gift">هدية</SelectItem>
+              <SelectItem value="discount">{t('loyaltyRewardsPage.text17')}</SelectItem>
+              <SelectItem value="free_product">{t('loyaltyRewardsPage.text18')}</SelectItem>
+              <SelectItem value="free_shipping">{t('loyaltyRewardsPage.text19')}</SelectItem>
+              <SelectItem value="gift">{t('loyaltyRewardsPage.text20')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="pointsCost">تكلفة النقاط *</Label>
+          <Label htmlFor="pointsCost">{t('loyaltyRewardsPage.text21')}</Label>
           <Input
             id="pointsCost"
             type="number"
@@ -402,7 +404,7 @@ function RewardForm({ formData, setFormData }: any) {
       {formData.type === "discount" && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="discountAmount">قيمة الخصم *</Label>
+            <Label htmlFor="discountAmount">{t('loyaltyRewardsPage.text22')}</Label>
             <Input
               id="discountAmount"
               type="number"
@@ -415,7 +417,7 @@ function RewardForm({ formData, setFormData }: any) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="discountType">نوع الخصم *</Label>
+            <Label htmlFor="discountType">{t('loyaltyRewardsPage.text23')}</Label>
             <Select
               value={formData.discountType}
               onValueChange={(value) => setFormData({ ...formData, discountType: value })}
@@ -424,8 +426,8 @@ function RewardForm({ formData, setFormData }: any) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="fixed">مبلغ ثابت (ريال)</SelectItem>
-                <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
+                <SelectItem value="fixed">{t('loyaltyRewardsPage.text24')}</SelectItem>
+                <SelectItem value="percentage">{t('loyaltyRewardsPage.text25')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -434,7 +436,7 @@ function RewardForm({ formData, setFormData }: any) {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="maxRedemptions">الحد الأقصى للاستبدالات</Label>
+          <Label htmlFor="maxRedemptions">{t('loyaltyRewardsPage.text26')}</Label>
           <Input
             id="maxRedemptions"
             type="number"
@@ -443,12 +445,12 @@ function RewardForm({ formData, setFormData }: any) {
             onChange={(e) =>
               setFormData({ ...formData, maxRedemptions: parseInt(e.target.value) })
             }
-            placeholder="0 = غير محدود"
+            placeholder={t('loyaltyRewardsPage.text27')}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="isActive">الحالة</Label>
+          <Label htmlFor="isActive">{t('loyaltyRewardsPage.text28')}</Label>
           <div className="flex items-center gap-2 h-10">
             <Switch
               id="isActive"

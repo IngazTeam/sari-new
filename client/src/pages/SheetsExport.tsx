@@ -6,8 +6,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Download, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useTranslation } from 'react-i18next';
 
 export default function SheetsExport() {
+  const { t } = useTranslation();
   const [selectedConversations, setSelectedConversations] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
@@ -81,7 +83,7 @@ export default function SheetsExport() {
     <DashboardLayout>
       <div className="container max-w-6xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">تصدير المحادثات</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('sheetsExportPage.text0')}</h1>
           <p className="text-muted-foreground">
             تصدير المحادثات المحددة إلى Google Sheets
           </p>
@@ -93,7 +95,7 @@ export default function SheetsExport() {
             <div className="flex items-center gap-3">
               <MessageSquare className="w-8 h-8 text-blue-600" />
               <div>
-                <p className="text-sm text-muted-foreground">إجمالي المحادثات</p>
+                <p className="text-sm text-muted-foreground">{t('sheetsExportPage.text1')}</p>
                 <p className="text-2xl font-bold">{conversations?.length || 0}</p>
               </div>
             </div>
@@ -103,7 +105,7 @@ export default function SheetsExport() {
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
               <div>
-                <p className="text-sm text-muted-foreground">المحددة</p>
+                <p className="text-sm text-muted-foreground">{t('sheetsExportPage.text2')}</p>
                 <p className="text-2xl font-bold">{selectedConversations.length}</p>
               </div>
             </div>
@@ -126,7 +128,7 @@ export default function SheetsExport() {
         {/* قائمة المحادثات */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">المحادثات</h2>
+            <h2 className="text-xl font-semibold">{t('sheetsExportPage.text3')}</h2>
             <div className="flex items-center gap-2">
               <Checkbox
                 id="select-all"
@@ -145,7 +147,7 @@ export default function SheetsExport() {
           {!conversations || conversations.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquare className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">لا توجد محادثات</p>
+              <p className="text-muted-foreground">{t('sheetsExportPage.text4')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -197,7 +199,7 @@ export default function SheetsExport() {
         {/* ملاحظة */}
         <Card className="p-4 mt-6 bg-blue-50 border-blue-200">
           <p className="text-sm text-blue-800">
-            💡 <strong>ملاحظة:</strong> سيتم تصدير جميع الرسائل في المحادثات المحددة إلى صفحة "المحادثات" في Google Sheets
+            💡 <strong>{t('sheetsExportPage.text5')}</strong> سيتم تصدير جميع الرسائل في المحادثات المحددة إلى صفحة "المحادثات" في Google Sheets
           </p>
         </Card>
       </div>

@@ -21,8 +21,10 @@ import {
   Loader2,
   Save
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function NotificationSettings() {
+  const { t } = useTranslation();
   const [merchantId, setMerchantId] = useState<number | null>(null);
 
   // Get merchant ID
@@ -43,7 +45,7 @@ export default function NotificationSettings() {
   // Update preferences mutation
   const updateMutation = trpc.notificationPreferences.update.useMutation({
     onSuccess: () => {
-      toast.success('تم حفظ إعدادات الإشعارات بنجاح');
+      toast.success(t('notificationSettingsPage.text0'));
       refetch();
     },
     onError: (error) => {
@@ -71,8 +73,8 @@ export default function NotificationSettings() {
     <div className="container mx-auto py-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">إعدادات الإشعارات</h1>
-          <p className="text-gray-600">تخصيص تفضيلات الإشعارات وساعات الهدوء</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('notificationSettingsPage.text1')}</h1>
+          <p className="text-gray-600">{t('notificationSettingsPage.text2')}</p>
         </div>
       </div>
 
@@ -82,9 +84,9 @@ export default function NotificationSettings() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-primary" />
-              <CardTitle>طريقة الإرسال المفضلة</CardTitle>
+              <CardTitle>{t('notificationSettingsPage.text3')}</CardTitle>
             </div>
-            <CardDescription>اختر كيف تريد استلام الإشعارات</CardDescription>
+            <CardDescription>{t('notificationSettingsPage.text4')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col gap-3">
@@ -123,15 +125,15 @@ export default function NotificationSettings() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-primary" />
-              <CardTitle>أنواع الإشعارات</CardTitle>
+              <CardTitle>{t('notificationSettingsPage.text5')}</CardTitle>
             </div>
-            <CardDescription>اختر الإشعارات التي تريد استلامها</CardDescription>
+            <CardDescription>{t('notificationSettingsPage.text6')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="w-4 h-4 text-blue-600" />
-                <Label htmlFor="newOrders">الطلبات الجديدة</Label>
+                <Label htmlFor="newOrders">{t('notificationSettingsPage.text7')}</Label>
               </div>
               <Switch
                 id="newOrders"
@@ -143,7 +145,7 @@ export default function NotificationSettings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-green-600" />
-                <Label htmlFor="newMessages">الرسائل الجديدة</Label>
+                <Label htmlFor="newMessages">{t('notificationSettingsPage.text8')}</Label>
               </div>
               <Switch
                 id="newMessages"
@@ -155,7 +157,7 @@ export default function NotificationSettings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-purple-600" />
-                <Label htmlFor="appointments">المواعيد</Label>
+                <Label htmlFor="appointments">{t('notificationSettingsPage.text9')}</Label>
               </div>
               <Switch
                 id="appointments"
@@ -167,7 +169,7 @@ export default function NotificationSettings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-orange-600" />
-                <Label htmlFor="orderStatus">تحديثات حالة الطلب</Label>
+                <Label htmlFor="orderStatus">{t('notificationSettingsPage.text10')}</Label>
               </div>
               <Switch
                 id="orderStatus"
@@ -179,7 +181,7 @@ export default function NotificationSettings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <BellOff className="w-4 h-4 text-yellow-600" />
-                <Label htmlFor="missedMessages">الرسائل الفائتة</Label>
+                <Label htmlFor="missedMessages">{t('notificationSettingsPage.text11')}</Label>
               </div>
               <Switch
                 id="missedMessages"
@@ -191,7 +193,7 @@ export default function NotificationSettings() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-red-600" />
-                <Label htmlFor="whatsappDisconnect">فك ربط واتساب</Label>
+                <Label htmlFor="whatsappDisconnect">{t('notificationSettingsPage.text12')}</Label>
               </div>
               <Switch
                 id="whatsappDisconnect"
@@ -207,13 +209,13 @@ export default function NotificationSettings() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-primary" />
-              <CardTitle>ساعات الهدوء</CardTitle>
+              <CardTitle>{t('notificationSettingsPage.text13')}</CardTitle>
             </div>
-            <CardDescription>إيقاف الإشعارات خلال فترة معينة</CardDescription>
+            <CardDescription>{t('notificationSettingsPage.text14')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="quietHours">تفعيل ساعات الهدوء</Label>
+              <Label htmlFor="quietHours">{t('notificationSettingsPage.text15')}</Label>
               <Switch
                 id="quietHours"
                 checked={preferences.quietHoursEnabled}
@@ -225,7 +227,7 @@ export default function NotificationSettings() {
               <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">من الساعة</Label>
+                    <Label className="text-sm font-medium">{t('notificationSettingsPage.text16')}</Label>
                     <Input
                       type="time"
                       value={preferences.quietHoursStart || '22:00'}
@@ -235,7 +237,7 @@ export default function NotificationSettings() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">إلى الساعة</Label>
+                    <Label className="text-sm font-medium">{t('notificationSettingsPage.text17')}</Label>
                     <Input
                       type="time"
                       value={preferences.quietHoursEnd || '08:00'}
@@ -256,14 +258,14 @@ export default function NotificationSettings() {
         {/* إعدادات إضافية */}
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات إضافية</CardTitle>
-            <CardDescription>خيارات متقدمة للإشعارات</CardDescription>
+            <CardTitle>{t('notificationSettingsPage.text18')}</CardTitle>
+            <CardDescription>{t('notificationSettingsPage.text19')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="instant">إشعارات فورية</Label>
-                <p className="text-sm text-gray-600">إرسال الإشعارات فوراً</p>
+                <Label htmlFor="instant">{t('notificationSettingsPage.text20')}</Label>
+                <p className="text-sm text-gray-600">{t('notificationSettingsPage.text21')}</p>
               </div>
               <Switch
                 id="instant"
@@ -274,8 +276,8 @@ export default function NotificationSettings() {
 
             <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="batch">تجميع الإشعارات</Label>
-                <p className="text-sm text-gray-600">تجميع الإشعارات المتعددة</p>
+                <Label htmlFor="batch">{t('notificationSettingsPage.text22')}</Label>
+                <p className="text-sm text-gray-600">{t('notificationSettingsPage.text23')}</p>
               </div>
               <Switch
                 id="batch"
@@ -286,7 +288,7 @@ export default function NotificationSettings() {
 
             {preferences.batchNotifications && (
               <div className="space-y-2 p-4 bg-gray-50 rounded-lg">
-                <Label className="text-sm font-medium">فترة التجميع (دقائق)</Label>
+                <Label className="text-sm font-medium">{t('notificationSettingsPage.text24')}</Label>
                 <Input
                   type="number"
                   min="5"

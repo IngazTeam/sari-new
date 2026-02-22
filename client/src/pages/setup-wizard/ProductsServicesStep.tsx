@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { ArrowRight, Plus, Trash2, Package, Briefcase, Lightbulb, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ProductsServicesStepProps {
   wizardData: Record<string, any>;
@@ -46,6 +47,7 @@ export default function ProductsServicesStep({
   goToNextStep,
   skipStep,
 }: ProductsServicesStepProps) {
+  const { t } = useTranslation();
   const businessType = wizardData.businessType;
   const isStore = businessType === 'store' || businessType === 'both';
   const isServices = businessType === 'services' || businessType === 'both';
@@ -156,7 +158,7 @@ export default function ProductsServicesStep({
 
         <div className="space-y-3">
           <div>
-            <Label htmlFor={`${type}-name-${item.id}`}>الاسم *</Label>
+            <Label htmlFor={`${type}-name-${item.id}`}>{t('wizardProductsServicesStepPage.text0')}</Label>
             <Input
               id={`${type}-name-${item.id}`}
               placeholder={type === 'products' ? 'مثال: جوال سامسونج S24' : 'مثال: استقدام عاملة منزلية'}
@@ -167,7 +169,7 @@ export default function ProductsServicesStep({
           </div>
 
           <div>
-            <Label htmlFor={`${type}-desc-${item.id}`}>الوصف (اختياري)</Label>
+            <Label htmlFor={`${type}-desc-${item.id}`}>{t('wizardProductsServicesStepPage.text1')}</Label>
             <Textarea
               id={`${type}-desc-${item.id}`}
               placeholder={type === 'products' ? 'وصف المنتج ومميزاته...' : 'وصف الخدمة ومدتها والشروط...'}
@@ -178,7 +180,7 @@ export default function ProductsServicesStep({
           </div>
 
           <div>
-            <Label htmlFor={`${type}-price-${item.id}`}>السعر (ريال) *</Label>
+            <Label htmlFor={`${type}-price-${item.id}`}>{t('wizardProductsServicesStepPage.text2')}</Label>
             <Input
               id={`${type}-price-${item.id}`}
               type="number"
@@ -268,15 +270,15 @@ export default function ProductsServicesStep({
           <ul className="list-disc list-inside space-y-0.5 text-xs text-amber-700">
             {isStore ? (
               <>
-                <li>أضف اسم واضح ومحدد (مثال: "جوال سامسونج S24 - 256GB")</li>
-                <li>حدد السعر بالريال السعودي</li>
-                <li>أضف وصف مختصر يساعد ساري في الرد على العملاء</li>
+                <li>{t('wizardProductsServicesStepPage.text3')}</li>
+                <li>{t('wizardProductsServicesStepPage.text4')}</li>
+                <li>{t('wizardProductsServicesStepPage.text5')}</li>
               </>
             ) : (
               <>
-                <li>أضف اسم الخدمة بوضوح (مثال: "استقدام عاملة منزلية" أو "كشف طبي عام")</li>
-                <li>حدد السعر أو النطاق السعري</li>
-                <li>اذكر مدة الخدمة والشروط في الوصف إن أمكن</li>
+                <li>{t('wizardProductsServicesStepPage.text6')}</li>
+                <li>{t('wizardProductsServicesStepPage.text7')}</li>
+                <li>{t('wizardProductsServicesStepPage.text8')}</li>
               </>
             )}
           </ul>
@@ -290,7 +292,7 @@ export default function ProductsServicesStep({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2 space-x-reverse">
                 <Package className="h-5 w-5 text-emerald-600" />
-                <span>المنتجات</span>
+                <span>{t('wizardProductsServicesStepPage.text9')}</span>
                 {filledProducts.length > 0 && (
                   <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                     {filledProducts.length} منتج
@@ -327,7 +329,7 @@ export default function ProductsServicesStep({
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 flex items-center space-x-2 space-x-reverse">
                 <Briefcase className="h-5 w-5 text-emerald-600" />
-                <span>الخدمات</span>
+                <span>{t('wizardProductsServicesStepPage.text10')}</span>
                 {filledServices.length > 0 && (
                   <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">
                     {filledServices.length} خدمة

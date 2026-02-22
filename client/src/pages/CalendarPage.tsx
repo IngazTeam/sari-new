@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, User, Phone, AlertCircle, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 export default function CalendarPage() {
+  const { t } = useTranslation();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   const { data: status } = trpc.calendar.getStatus.useQuery();
@@ -25,7 +27,7 @@ export default function CalendarPage() {
 
   const cancelMutation = trpc.calendar.cancelAppointment.useMutation({
     onSuccess: () => {
-      toast.success("تم إلغاء الموعد بنجاح");
+      toast.success(t('calendarPagePage.text0'));
       refetch();
     },
     onError: (error) => {
@@ -86,7 +88,7 @@ export default function CalendarPage() {
   return (
     <div className="container max-w-7xl py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">التقويم والمواعيد</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('calendarPagePage.text1')}</h1>
         <p className="text-muted-foreground">
           إدارة جميع المواعيد المحجوزة مع العملاء
         </p>
@@ -142,7 +144,7 @@ export default function CalendarPage() {
       {/* التقويم */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>التقويم الشهري</CardTitle>
+          <CardTitle>{t('calendarPagePage.text2')}</CardTitle>
         </CardHeader>
         <CardContent>
           <FullCalendar
@@ -186,14 +188,14 @@ export default function CalendarPage() {
       {/* قائمة المواعيد القادمة */}
       <Card>
         <CardHeader>
-          <CardTitle>المواعيد القادمة</CardTitle>
+          <CardTitle>{t('calendarPagePage.text3')}</CardTitle>
           <CardDescription>
             المواعيد المحجوزة خلال الشهر الحالي
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+            <div className="text-center py-8 text-muted-foreground">{t('calendarPagePage.text4')}</div>
           ) : !appointments || appointments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               لا توجد مواعيد محجوزة
@@ -245,8 +247,8 @@ export default function CalendarPage() {
                         </span>
                       </div>
                       <div className="text-sm">
-                        <span className="text-muted-foreground">الخدمة:</span> {apt.serviceName} | 
-                        <span className="text-muted-foreground"> الموظف:</span> {apt.staffName}
+                        <span className="text-muted-foreground">{t('calendarPagePage.text5')}</span> {apt.serviceName} | 
+                        <span className="text-muted-foreground">{t('calendarPagePage.text6')}</span> {apt.staffName}
                       </div>
                     </div>
                     <Button 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowRight, Check } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface BusinessTypeStepProps {
   wizardData: Record<string, any>;
@@ -90,6 +91,7 @@ export default function BusinessTypeStep({
   updateWizardData,
   goToNextStep,
 }: BusinessTypeStepProps) {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<string>(wizardData.businessType || '');
 
   const handleSelect = (typeId: string) => {
@@ -146,7 +148,7 @@ export default function BusinessTypeStep({
 
                 {/* Examples */}
                 <div className="pt-4 border-t border-gray-100">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">أمثلة:</p>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">{t('wizardBusinessTypeStepPage.text0')}</p>
                   <ul className="space-y-1.5">
                     {type.examples.map((example, index) => (
                       <li key={index} className="text-xs text-gray-600 flex items-center">
@@ -165,7 +167,7 @@ export default function BusinessTypeStep({
       {/* Help Text */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
         <p className="text-sm text-emerald-800">
-          💡 <strong>نصيحة:</strong> يمكنك تغيير نوع النشاط لاحقاً من الإعدادات
+          💡 <strong>{t('wizardBusinessTypeStepPage.text1')}</strong> يمكنك تغيير نوع النشاط لاحقاً من الإعدادات
         </p>
       </div>
 

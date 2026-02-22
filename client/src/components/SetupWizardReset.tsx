@@ -16,14 +16,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { RefreshCw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function SetupWizardReset() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
   const resetWizardMutation = trpc.setupWizard.resetWizard.useMutation({
     onSuccess: () => {
-      toast.success('تم إعادة تعيين معالج الإعداد بنجاح');
+      toast.success(t('compSetupWizardResetPage.text0'));
       setIsOpen(false);
       // Redirect to wizard
       setTimeout(() => {
@@ -55,7 +57,7 @@ export default function SetupWizardReset() {
           <div className="flex items-start space-x-3 space-x-reverse mb-3">
             <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="font-semibold text-orange-900 mb-1">تنبيه مهم</h4>
+              <h4 className="font-semibold text-orange-900 mb-1">{t('compSetupWizardResetPage.text1')}</h4>
               <p className="text-sm text-orange-700">
                 إعادة تشغيل معالج الإعداد سيسمح لك بتغيير نوع نشاطك التجاري واختيار قالب جديد.
                 لن يتم حذف أي بيانات موجودة (منتجات، حملات، محادثات).
@@ -64,10 +66,10 @@ export default function SetupWizardReset() {
           </div>
           
           <ul className="text-sm text-orange-700 space-y-1 mr-8">
-            <li>• يمكنك تغيير نوع النشاط (متجر، خدمات، كلاهما)</li>
-            <li>• يمكنك اختيار قالب جاهز مختلف</li>
-            <li>• يمكنك تعديل شخصية ساري وأسلوب الرد</li>
-            <li>• جميع بياناتك الحالية ستبقى محفوظة</li>
+            <li>{t('compSetupWizardResetPage.text2')}</li>
+            <li>{t('compSetupWizardResetPage.text3')}</li>
+            <li>{t('compSetupWizardResetPage.text4')}</li>
+            <li>{t('compSetupWizardResetPage.text5')}</li>
           </ul>
         </div>
 
@@ -92,9 +94,9 @@ export default function SetupWizardReset() {
                   سيتم إعادة تشغيل معالج الإعداد من البداية. سيمكنك هذا من:
                 </p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>تغيير نوع نشاطك التجاري</li>
-                  <li>اختيار قالب جديد</li>
-                  <li>تعديل إعدادات ساري</li>
+                  <li>{t('compSetupWizardResetPage.text6')}</li>
+                  <li>{t('compSetupWizardResetPage.text7')}</li>
+                  <li>{t('compSetupWizardResetPage.text8')}</li>
                 </ul>
                 <p className="font-semibold text-orange-600 mt-3">
                   ملاحظة: جميع بياناتك الحالية (منتجات، حملات، محادثات) ستبقى محفوظة.
@@ -102,7 +104,7 @@ export default function SetupWizardReset() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              <AlertDialogCancel>{t('compSetupWizardResetPage.text9')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleReset}
                 disabled={resetWizardMutation.isPending}

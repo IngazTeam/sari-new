@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowRight, Building2, MapPin, FileText, Clock } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { useTranslation } from 'react-i18next';
 
 interface BasicInfoStepProps {
   wizardData: Record<string, any>;
@@ -18,6 +19,7 @@ export default function BasicInfoStep({
   updateWizardData,
   goToNextStep,
 }: BasicInfoStepProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     businessName: wizardData.businessName || '',
     phone: wizardData.phone || '',
@@ -73,11 +75,11 @@ export default function BasicInfoStep({
         <div className="space-y-2">
           <Label htmlFor="businessName" className="flex items-center space-x-2 space-x-reverse">
             <Building2 className="h-4 w-4 text-gray-500" />
-            <span>اسم النشاط التجاري *</span>
+            <span>{t('wizardBasicInfoStepPage.text0')}</span>
           </Label>
           <Input
             id="businessName"
-            placeholder="مثال: متجر الأناقة للملابس"
+            placeholder={t('wizardBasicInfoStepPage.text1')}
             value={formData.businessName}
             onChange={(e) => handleChange('businessName', e.target.value)}
             className={errors.businessName ? 'border-red-500' : ''}
@@ -91,7 +93,7 @@ export default function BasicInfoStep({
         <div className="space-y-2">
           <Label htmlFor="phone" className="flex items-center space-x-2 space-x-reverse">
             <span>📱</span>
-            <span>رقم الهاتف *</span>
+            <span>{t('wizardBasicInfoStepPage.text2')}</span>
           </Label>
           <PhoneInput
             value={formData.phone}
@@ -111,11 +113,11 @@ export default function BasicInfoStep({
         <div className="space-y-2">
           <Label htmlFor="address" className="flex items-center space-x-2 space-x-reverse">
             <MapPin className="h-4 w-4 text-gray-500" />
-            <span>العنوان (اختياري)</span>
+            <span>{t('wizardBasicInfoStepPage.text3')}</span>
           </Label>
           <Input
             id="address"
-            placeholder="مثال: الرياض، حي النخيل، شارع الملك فهد"
+            placeholder={t('wizardBasicInfoStepPage.text4')}
             value={formData.address}
             onChange={(e) => handleChange('address', e.target.value)}
           />
@@ -125,11 +127,11 @@ export default function BasicInfoStep({
         <div className="space-y-2">
           <Label htmlFor="description" className="flex items-center space-x-2 space-x-reverse">
             <FileText className="h-4 w-4 text-gray-500" />
-            <span>وصف النشاط (اختياري)</span>
+            <span>{t('wizardBasicInfoStepPage.text5')}</span>
           </Label>
           <Textarea
             id="description"
-            placeholder="مثال: نقدم أفضل الملابس العصرية بأسعار مناسبة مع خدمة توصيل سريعة"
+            placeholder={t('wizardBasicInfoStepPage.text6')}
             value={formData.description}
             onChange={(e) => handleChange('description', e.target.value)}
             rows={3}
@@ -143,7 +145,7 @@ export default function BasicInfoStep({
         <div className="space-y-3">
           <Label className="flex items-center space-x-2 space-x-reverse">
             <Clock className="h-4 w-4 text-gray-500" />
-            <span>ساعات العمل</span>
+            <span>{t('wizardBasicInfoStepPage.text7')}</span>
           </Label>
           <RadioGroup
             value={formData.workingHoursType}
@@ -153,8 +155,8 @@ export default function BasicInfoStep({
               <RadioGroupItem value="24_7" id="24_7" />
               <Label htmlFor="24_7" className="flex-1 cursor-pointer">
                 <div>
-                  <p className="font-medium">24/7 - متاح دائماً</p>
-                  <p className="text-xs text-gray-500">نعمل على مدار الساعة طوال أيام الأسبوع</p>
+                  <p className="font-medium">{t('wizardBasicInfoStepPage.text8')}</p>
+                  <p className="text-xs text-gray-500">{t('wizardBasicInfoStepPage.text9')}</p>
                 </div>
               </Label>
             </div>
@@ -163,8 +165,8 @@ export default function BasicInfoStep({
               <RadioGroupItem value="weekdays" id="weekdays" />
               <Label htmlFor="weekdays" className="flex-1 cursor-pointer">
                 <div>
-                  <p className="font-medium">أيام العمل فقط</p>
-                  <p className="text-xs text-gray-500">من السبت إلى الخميس (9 صباحاً - 6 مساءً)</p>
+                  <p className="font-medium">{t('wizardBasicInfoStepPage.text10')}</p>
+                  <p className="text-xs text-gray-500">{t('wizardBasicInfoStepPage.text11')}</p>
                 </div>
               </Label>
             </div>
@@ -173,8 +175,8 @@ export default function BasicInfoStep({
               <RadioGroupItem value="custom" id="custom" />
               <Label htmlFor="custom" className="flex-1 cursor-pointer">
                 <div>
-                  <p className="font-medium">ساعات مخصصة</p>
-                  <p className="text-xs text-gray-500">سأحدد ساعات العمل لاحقاً</p>
+                  <p className="font-medium">{t('wizardBasicInfoStepPage.text12')}</p>
+                  <p className="text-xs text-gray-500">{t('wizardBasicInfoStepPage.text13')}</p>
                 </div>
               </Label>
             </div>

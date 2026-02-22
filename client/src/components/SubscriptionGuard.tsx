@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Lock, AlertCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 interface SubscriptionGuardProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ export function SubscriptionGuard({
   feature = 'هذه الميزة',
   fallbackMessage 
 }: SubscriptionGuardProps) {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { data: status, isLoading } = trpc.merchantSubscription.checkStatus.useQuery();
 
@@ -39,7 +41,7 @@ export function SubscriptionGuard({
             <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center">
               <Lock className="h-6 w-6 text-destructive" />
             </div>
-            <CardTitle className="text-2xl">اشتراك مطلوب</CardTitle>
+            <CardTitle className="text-2xl">{t('compSubscriptionGuardPage.text0')}</CardTitle>
             <CardDescription>
               {fallbackMessage || `يتطلب الوصول إلى ${feature} اشتراكاً نشطاً`}
             </CardDescription>
@@ -69,7 +71,7 @@ export function SubscriptionGuard({
             </div>
 
             <div className="pt-4 text-center text-sm text-muted-foreground">
-              <p>هل لديك اشتراك نشط؟</p>
+              <p>{t('compSubscriptionGuardPage.text1')}</p>
               <Button 
                 variant="link" 
                 size="sm"

@@ -1,11 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Zap, Shield, TrendingUp, MessageCircle, Bot } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface WelcomeStepProps {
   goToNextStep: () => void;
 }
 
 export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -28,7 +30,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
             <Zap className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">ردود تلقائية ذكية</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text0')}</h3>
             <p className="text-sm text-gray-600">
               ساري يرد على عملائك 24/7 بذكاء اصطناعي متقدم
             </p>
@@ -40,7 +42,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
             <TrendingUp className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">زيادة المبيعات</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text1')}</h3>
             <p className="text-sm text-gray-600">
               تحويل المحادثات إلى طلبات ومبيعات فعلية
             </p>
@@ -52,7 +54,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
             <Shield className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">آمن ومضمون</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text2')}</h3>
             <p className="text-sm text-gray-600">
               بياناتك محمية بأعلى معايير الأمان
             </p>
@@ -64,7 +66,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 mb-1">سهل الاستخدام</h3>
+            <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text3')}</h3>
             <p className="text-sm text-gray-600">
               لا تحتاج خبرة تقنية، كل شيء بسيط وواضح
             </p>
@@ -79,13 +81,13 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
             <MessageCircle className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900 text-sm">ساري</p>
-            <p className="text-xs text-green-600">متصل الآن</p>
+            <p className="font-semibold text-gray-900 text-sm">{t('wizardWelcomeStepPage.text4')}</p>
+            <p className="text-xs text-green-600">{t('wizardWelcomeStepPage.text5')}</p>
           </div>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 max-w-sm mr-auto">
-          <p className="text-sm text-gray-700">مرحباً! 👋 أنا ساري، مساعدك الذكي. كيف أقدر أساعدك اليوم؟</p>
-          <p className="text-[10px] text-gray-400 mt-1 text-left">12:00 م ✓✓</p>
+          <p className="text-sm text-gray-700">{t('wizardWelcomeStepPage.text6')}</p>
+          <p className="text-[10px] text-gray-400 mt-1 text-left">{t('wizardWelcomeStepPage.text7')}</p>
         </div>
       </div>
 

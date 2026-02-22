@@ -31,8 +31,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Ticket, Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 export default function DiscountCodes() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newCode, setNewCode] = useState({
@@ -130,8 +132,8 @@ export default function DiscountCodes() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">كودات الخصم</h1>
-          <p className="text-muted-foreground">إدارة كودات الخصم والعروض الترويجية</p>
+          <h1 className="text-3xl font-bold">{t('discountCodesPage.text0')}</h1>
+          <p className="text-muted-foreground">{t('discountCodesPage.text1')}</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -142,17 +144,17 @@ export default function DiscountCodes() {
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>إنشاء كود خصم جديد</DialogTitle>
+              <DialogTitle>{t('discountCodesPage.text2')}</DialogTitle>
               <DialogDescription>
                 أضف كود خصم جديد لتقديمه لعملائك
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="code">كود الخصم *</Label>
+                <Label htmlFor="code">{t('discountCodesPage.text3')}</Label>
                 <Input
                   id="code"
-                  placeholder="مثال: SUMMER2024"
+                  placeholder={t('discountCodesPage.text4')}
                   value={newCode.code}
                   onChange={(e) => setNewCode({ ...newCode, code: e.target.value.toUpperCase() })}
                 />
@@ -160,7 +162,7 @@ export default function DiscountCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="type">نوع الخصم *</Label>
+                  <Label htmlFor="type">{t('discountCodesPage.text5')}</Label>
                   <Select
                     value={newCode.type}
                     onValueChange={(value: "percentage" | "fixed") =>
@@ -171,8 +173,8 @@ export default function DiscountCodes() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
-                      <SelectItem value="fixed">مبلغ ثابت (ريال)</SelectItem>
+                      <SelectItem value="percentage">{t('discountCodesPage.text6')}</SelectItem>
+                      <SelectItem value="fixed">{t('discountCodesPage.text7')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -192,7 +194,7 @@ export default function DiscountCodes() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="minOrderAmount">الحد الأدنى للطلب (ريال)</Label>
+                <Label htmlFor="minOrderAmount">{t('discountCodesPage.text8')}</Label>
                 <Input
                   id="minOrderAmount"
                   type="number"
@@ -204,7 +206,7 @@ export default function DiscountCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="maxUses">الحد الأقصى للاستخدام</Label>
+                  <Label htmlFor="maxUses">{t('discountCodesPage.text9')}</Label>
                   <Input
                     id="maxUses"
                     type="number"
@@ -215,7 +217,7 @@ export default function DiscountCodes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expiresAt">تاريخ الانتهاء</Label>
+                  <Label htmlFor="expiresAt">{t('discountCodesPage.text10')}</Label>
                   <Input
                     id="expiresAt"
                     type="date"
@@ -241,34 +243,34 @@ export default function DiscountCodes() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الكودات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('discountCodesPage.text11')}</CardTitle>
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.total || 0}</div>
-            <p className="text-xs text-muted-foreground">جميع كودات الخصم</p>
+            <p className="text-xs text-muted-foreground">{t('discountCodesPage.text12')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الكودات النشطة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('discountCodesPage.text13')}</CardTitle>
             <ToggleRight className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.active || 0}</div>
-            <p className="text-xs text-muted-foreground">متاحة للاستخدام</p>
+            <p className="text-xs text-muted-foreground">{t('discountCodesPage.text14')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مرات الاستخدام</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('discountCodesPage.text15')}</CardTitle>
             <Ticket className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.used || 0}</div>
-            <p className="text-xs text-muted-foreground">إجمالي الاستخدامات</p>
+            <p className="text-xs text-muted-foreground">{t('discountCodesPage.text16')}</p>
           </CardContent>
         </Card>
       </div>
@@ -276,28 +278,28 @@ export default function DiscountCodes() {
       {/* Discount Codes Table */}
       <Card>
         <CardHeader>
-          <CardTitle>جميع كودات الخصم</CardTitle>
-          <CardDescription>إدارة وتتبع كودات الخصم الخاصة بك</CardDescription>
+          <CardTitle>{t('discountCodesPage.text17')}</CardTitle>
+          <CardDescription>{t('discountCodesPage.text18')}</CardDescription>
         </CardHeader>
         <CardContent>
           {!codes || codes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Ticket className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>لا توجد كودات خصم حالياً</p>
-              <p className="text-sm">قم بإنشاء أول كود خصم لعملائك</p>
+              <p>{t('discountCodesPage.text19')}</p>
+              <p className="text-sm">{t('discountCodesPage.text20')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الكود</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>القيمة</TableHead>
-                  <TableHead>الحد الأدنى</TableHead>
-                  <TableHead>الاستخدام</TableHead>
-                  <TableHead>تاريخ الانتهاء</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-left">الإجراءات</TableHead>
+                  <TableHead>{t('discountCodesPage.text21')}</TableHead>
+                  <TableHead>{t('discountCodesPage.text22')}</TableHead>
+                  <TableHead>{t('discountCodesPage.text23')}</TableHead>
+                  <TableHead>{t('discountCodesPage.text24')}</TableHead>
+                  <TableHead>{t('discountCodesPage.text25')}</TableHead>
+                  <TableHead>{t('discountCodesPage.text26')}</TableHead>
+                  <TableHead>{t('discountCodesPage.text27')}</TableHead>
+                  <TableHead className="text-left">{t('discountCodesPage.text28')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -319,9 +321,9 @@ export default function DiscountCodes() {
                     <TableCell>{formatDate(code.expiresAt)}</TableCell>
                     <TableCell>
                       {code.isActive ? (
-                        <Badge variant="default" className="bg-green-600">نشط</Badge>
+                        <Badge variant="default" className="bg-green-600">{t('discountCodesPage.text29')}</Badge>
                       ) : (
-                        <Badge variant="secondary">معطل</Badge>
+                        <Badge variant="secondary">{t('discountCodesPage.text30')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-left">

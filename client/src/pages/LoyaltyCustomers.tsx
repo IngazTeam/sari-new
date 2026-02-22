@@ -24,8 +24,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Users, Plus, Minus, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from 'react-i18next';
 
 export default function LoyaltyCustomers() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const { data: customers, isLoading, refetch } = trpc.loyalty.getAllCustomersPoints.useQuery({
     limit: 100,
@@ -109,8 +111,8 @@ export default function LoyaltyCustomers() {
       <div className="flex items-center gap-3 mb-6">
         <Users className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">عملاء نظام الولاء</h1>
-          <p className="text-muted-foreground">عرض وإدارة نقاط العملاء</p>
+          <h1 className="text-3xl font-bold">{t('loyaltyCustomersPage.text0')}</h1>
+          <p className="text-muted-foreground">{t('loyaltyCustomersPage.text1')}</p>
         </div>
       </div>
 
@@ -118,28 +120,28 @@ export default function LoyaltyCustomers() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>إجمالي العملاء</CardDescription>
+            <CardDescription>{t('loyaltyCustomersPage.text2')}</CardDescription>
             <CardTitle className="text-3xl">{stats?.totalCustomers || 0}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>النقاط الموزعة</CardDescription>
+            <CardDescription>{t('loyaltyCustomersPage.text3')}</CardDescription>
             <CardTitle className="text-3xl">{stats?.totalPointsDistributed || 0}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>النقاط المستبدلة</CardDescription>
+            <CardDescription>{t('loyaltyCustomersPage.text4')}</CardDescription>
             <CardTitle className="text-3xl">{stats?.totalPointsRedeemed || 0}</CardTitle>
           </CardHeader>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>إجمالي الاستبدالات</CardDescription>
+            <CardDescription>{t('loyaltyCustomersPage.text5')}</CardDescription>
             <CardTitle className="text-3xl">{stats?.totalRedemptions || 0}</CardTitle>
           </CardHeader>
         </Card>
@@ -148,20 +150,20 @@ export default function LoyaltyCustomers() {
       {/* جدول العملاء */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة العملاء</CardTitle>
-          <CardDescription>جميع العملاء المسجلين في نظام الولاء</CardDescription>
+          <CardTitle>{t('loyaltyCustomersPage.text6')}</CardTitle>
+          <CardDescription>{t('loyaltyCustomersPage.text7')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>العميل</TableHead>
-                <TableHead>رقم الجوال</TableHead>
-                <TableHead>النقاط الحالية</TableHead>
-                <TableHead>إجمالي النقاط</TableHead>
-                <TableHead>المستوى</TableHead>
-                <TableHead>آخر نشاط</TableHead>
-                <TableHead className="text-left">إجراءات</TableHead>
+                <TableHead>{t('loyaltyCustomersPage.text8')}</TableHead>
+                <TableHead>{t('loyaltyCustomersPage.text9')}</TableHead>
+                <TableHead>{t('loyaltyCustomersPage.text10')}</TableHead>
+                <TableHead>{t('loyaltyCustomersPage.text11')}</TableHead>
+                <TableHead>{t('loyaltyCustomersPage.text12')}</TableHead>
+                <TableHead>{t('loyaltyCustomersPage.text13')}</TableHead>
+                <TableHead className="text-left">{t('loyaltyCustomersPage.text14')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -190,7 +192,7 @@ export default function LoyaltyCustomers() {
                         {customer.tier.icon} {customer.tier.nameAr}
                       </Badge>
                     ) : (
-                      <Badge variant="secondary">لا يوجد</Badge>
+                      <Badge variant="secondary">{t('loyaltyCustomersPage.text15')}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -241,7 +243,7 @@ export default function LoyaltyCustomers() {
       <Dialog open={isAddPointsDialogOpen} onOpenChange={setIsAddPointsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>إضافة نقاط</DialogTitle>
+            <DialogTitle>{t('loyaltyCustomersPage.text16')}</DialogTitle>
             <DialogDescription>
               إضافة نقاط لـ {selectedCustomer?.customerName}
             </DialogDescription>
@@ -249,7 +251,7 @@ export default function LoyaltyCustomers() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="addPoints">عدد النقاط</Label>
+              <Label htmlFor="addPoints">{t('loyaltyCustomersPage.text17')}</Label>
               <Input
                 id="addPoints"
                 type="number"
@@ -262,17 +264,17 @@ export default function LoyaltyCustomers() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reasonAr">السبب (بالعربي)</Label>
+              <Label htmlFor="reasonAr">{t('loyaltyCustomersPage.text18')}</Label>
               <Textarea
                 id="reasonAr"
                 value={pointsForm.reasonAr}
                 onChange={(e) => setPointsForm({ ...pointsForm, reasonAr: e.target.value })}
-                placeholder="مثال: مكافأة خاصة"
+                placeholder={t('loyaltyCustomersPage.text19')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reason">السبب (بالإنجليزي)</Label>
+              <Label htmlFor="reason">{t('loyaltyCustomersPage.text20')}</Label>
               <Textarea
                 id="reason"
                 value={pointsForm.reason}
@@ -304,7 +306,7 @@ export default function LoyaltyCustomers() {
       <Dialog open={isDeductPointsDialogOpen} onOpenChange={setIsDeductPointsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>خصم نقاط</DialogTitle>
+            <DialogTitle>{t('loyaltyCustomersPage.text21')}</DialogTitle>
             <DialogDescription>
               خصم نقاط من {selectedCustomer?.customerName} (الرصيد الحالي: {selectedCustomer?.totalPoints})
             </DialogDescription>
@@ -312,7 +314,7 @@ export default function LoyaltyCustomers() {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="deductPoints">عدد النقاط</Label>
+              <Label htmlFor="deductPoints">{t('loyaltyCustomersPage.text22')}</Label>
               <Input
                 id="deductPoints"
                 type="number"
@@ -326,17 +328,17 @@ export default function LoyaltyCustomers() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deductReasonAr">السبب (بالعربي)</Label>
+              <Label htmlFor="deductReasonAr">{t('loyaltyCustomersPage.text23')}</Label>
               <Textarea
                 id="deductReasonAr"
                 value={pointsForm.reasonAr}
                 onChange={(e) => setPointsForm({ ...pointsForm, reasonAr: e.target.value })}
-                placeholder="مثال: تعديل يدوي"
+                placeholder={t('loyaltyCustomersPage.text24')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deductReason">السبب (بالإنجليزي)</Label>
+              <Label htmlFor="deductReason">{t('loyaltyCustomersPage.text25')}</Label>
               <Textarea
                 id="deductReason"
                 value={pointsForm.reason}

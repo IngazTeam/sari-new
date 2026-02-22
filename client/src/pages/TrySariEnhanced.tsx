@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SignupPromptDialogEnhanced } from '@/components/SignupPromptDialogEnhanced';
 import { trpc } from '@/lib/trpc';
 import { MessageCircle, Zap, BarChart3, Lock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function TrySariEnhanced() {
+  const { t } = useTranslation();
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [messageCount, setMessageCount] = useState(0);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
@@ -77,8 +79,8 @@ export default function TrySariEnhanced() {
         <div className="max-w-6xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">جرب ساري مجاناً</h1>
-              <p className="text-gray-600 mt-2">تحدث مع مساعد المبيعات الذكي الآن</p>
+              <h1 className="text-3xl font-bold text-gray-900">{t('trySariEnhancedPage.text0')}</h1>
+              <p className="text-gray-600 mt-2">{t('trySariEnhancedPage.text1')}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">عدد الرسائل: {messageCount}</p>
@@ -94,15 +96,15 @@ export default function TrySariEnhanced() {
           <div className="lg:col-span-2">
             <Card className="h-[600px] flex flex-col">
               <CardHeader className="border-b">
-                <CardTitle>محادثة ساري</CardTitle>
-                <CardDescription>تحدث مع مساعد المبيعات الذكي</CardDescription>
+                <CardTitle>{t('trySariEnhancedPage.text2')}</CardTitle>
+                <CardDescription>{t('trySariEnhancedPage.text3')}</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                 {conversationHistory.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
                     <div className="text-center">
                       <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>ابدأ المحادثة بكتابة رسالة</p>
+                      <p>{t('trySariEnhancedPage.text4')}</p>
                     </div>
                   </div>
                 ) : (
@@ -142,7 +144,7 @@ export default function TrySariEnhanced() {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="اكتب رسالتك هنا..."
+                    placeholder={t('trySariEnhancedPage.text5')}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     disabled={isLoading}
                   />
@@ -162,35 +164,35 @@ export default function TrySariEnhanced() {
           <div className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">المميزات</CardTitle>
+                <CardTitle className="text-lg">{t('trySariEnhancedPage.text6')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex gap-3">
                   <Zap className="w-5 h-5 text-yellow-500 flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold text-sm">ذكاء اصطناعي متقدم</p>
-                    <p className="text-xs text-gray-600">يفهم احتياجات عملائك</p>
+                    <p className="font-semibold text-sm">{t('trySariEnhancedPage.text7')}</p>
+                    <p className="text-xs text-gray-600">{t('trySariEnhancedPage.text8')}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <MessageCircle className="w-5 h-5 text-blue-500 flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold text-sm">دعم الواتساب</p>
-                    <p className="text-xs text-gray-600">تواصل مباشر مع عملائك</p>
+                    <p className="font-semibold text-sm">{t('trySariEnhancedPage.text9')}</p>
+                    <p className="text-xs text-gray-600">{t('trySariEnhancedPage.text10')}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <BarChart3 className="w-5 h-5 text-green-500 flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold text-sm">تحليلات شاملة</p>
-                    <p className="text-xs text-gray-600">تتبع أداء المبيعات</p>
+                    <p className="font-semibold text-sm">{t('trySariEnhancedPage.text11')}</p>
+                    <p className="text-xs text-gray-600">{t('trySariEnhancedPage.text12')}</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <Lock className="w-5 h-5 text-purple-500 flex-shrink-0 mt-1" />
                   <div>
-                    <p className="font-semibold text-sm">آمن وموثوق</p>
-                    <p className="text-xs text-gray-600">حماية بيانات عملائك</p>
+                    <p className="font-semibold text-sm">{t('trySariEnhancedPage.text13')}</p>
+                    <p className="text-xs text-gray-600">{t('trySariEnhancedPage.text14')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -198,7 +200,7 @@ export default function TrySariEnhanced() {
 
             <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-none">
               <CardHeader>
-                <CardTitle className="text-lg">ابدأ الآن</CardTitle>
+                <CardTitle className="text-lg">{t('trySariEnhancedPage.text15')}</CardTitle>
                 <CardDescription className="text-green-100">
                   احصل على 7 أيام تجربة مجانية
                 </CardDescription>

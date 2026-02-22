@@ -117,7 +117,7 @@ export default function SallaIntegration() {
   return (
     <div className="container max-w-4xl py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">ربط متجر Salla</h1>
+        <h1 className="text-3xl font-bold">{t('sallaIntegrationPage.text0')}</h1>
         <p className="text-muted-foreground mt-2">
           قم بربط متجرك في Salla لمزامنة المنتجات تلقائياً
         </p>
@@ -133,7 +133,7 @@ export default function SallaIntegration() {
                   <Store className="h-6 w-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
-                  <CardTitle>متجر مربوط</CardTitle>
+                  <CardTitle>{t('sallaIntegrationPage.text1')}</CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-1">
                     <a 
                       href={connection.storeUrl} 
@@ -208,7 +208,7 @@ export default function SallaIntegration() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>ربط متجر Salla</CardTitle>
+            <CardTitle>{t('sallaIntegrationPage.text2')}</CardTitle>
             <CardDescription>
               أدخل بيانات متجرك لبدء المزامنة التلقائية
             </CardDescription>
@@ -217,18 +217,18 @@ export default function SallaIntegration() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <strong>كيفية الحصول على Personal Access Token:</strong>
+                <strong>{t('sallaIntegrationPage.text3')}</strong>
                 <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
-                  <li>سجل دخول إلى لوحة تحكم Salla</li>
-                  <li>اذهب إلى الإعدادات → API</li>
-                  <li>اضغط على "Create Token"</li>
-                  <li>انسخ الـ Token والصقه هنا</li>
+                  <li>{t('sallaIntegrationPage.text4')}</li>
+                  <li>{t('sallaIntegrationPage.text5')}</li>
+                  <li>{t('sallaIntegrationPage.text6')}</li>
+                  <li>{t('sallaIntegrationPage.text7')}</li>
                 </ol>
               </AlertDescription>
             </Alert>
 
             <div className="space-y-2">
-              <Label htmlFor="storeUrl">رابط المتجر</Label>
+              <Label htmlFor="storeUrl">{t('sallaIntegrationPage.text8')}</Label>
               <Input
                 id="storeUrl"
                 type="url"
@@ -244,7 +244,7 @@ export default function SallaIntegration() {
               <Input
                 id="accessToken"
                 type="password"
-                placeholder="أدخل الـ Token من Salla"
+                placeholder={t('sallaIntegrationPage.text9')}
                 value={accessToken}
                 onChange={(e) => setAccessToken(e.target.value)}
                 disabled={isConnecting}
@@ -276,8 +276,8 @@ export default function SallaIntegration() {
       {connection?.connected && syncLogs && syncLogs.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>سجل المزامنة</CardTitle>
-            <CardDescription>آخر 20 عملية مزامنة</CardDescription>
+            <CardTitle>{t('sallaIntegrationPage.text10')}</CardTitle>
+            <CardDescription>{t('sallaIntegrationPage.text11')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -314,10 +314,10 @@ export default function SallaIntegration() {
                       </span>
                     )}
                     {log.status === 'failed' && (
-                      <span className="text-red-600">فشل</span>
+                      <span className="text-red-600">{t('sallaIntegrationPage.text12')}</span>
                     )}
                     {log.status === 'in_progress' && (
-                      <span className="text-primary">جاري...</span>
+                      <span className="text-primary">{t('sallaIntegrationPage.text13')}</span>
                     )}
                   </div>
                 </div>
@@ -330,7 +330,7 @@ export default function SallaIntegration() {
       {/* Info Card */}
       <Card>
         <CardHeader>
-          <CardTitle>كيف يعمل التكامل؟</CardTitle>
+          <CardTitle>{t('sallaIntegrationPage.text14')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="flex gap-3">
@@ -338,7 +338,7 @@ export default function SallaIntegration() {
               1
             </div>
             <div>
-              <strong>المزامنة الكاملة:</strong> تتم مرة واحدة يومياً في الساعة 3 صباحاً لجلب جميع المنتجات والأسعار والصور
+              <strong>{t('sallaIntegrationPage.text15')}</strong> تتم مرة واحدة يومياً في الساعة 3 صباحاً لجلب جميع المنتجات والأسعار والصور
             </div>
           </div>
           <div className="flex gap-3">
@@ -346,7 +346,7 @@ export default function SallaIntegration() {
               2
             </div>
             <div>
-              <strong>مزامنة المخزون:</strong> تتم كل ساعة لتحديث الكميات المتوفرة فقط
+              <strong>{t('sallaIntegrationPage.text16')}</strong> تتم كل ساعة لتحديث الكميات المتوفرة فقط
             </div>
           </div>
           <div className="flex gap-3">
@@ -354,7 +354,7 @@ export default function SallaIntegration() {
               3
             </div>
             <div>
-              <strong>التخزين المحلي:</strong> المنتجات تُحفظ في قاعدة بيانات ساري للرد السريع على العملاء
+              <strong>{t('sallaIntegrationPage.text17')}</strong> المنتجات تُحفظ في قاعدة بيانات ساري للرد السريع على العملاء
             </div>
           </div>
           <div className="flex gap-3">
@@ -362,7 +362,7 @@ export default function SallaIntegration() {
               4
             </div>
             <div>
-              <strong>إنشاء الطلبات:</strong> عندما يطلب العميل من الواتساب، يتم إنشاء الطلب تلقائياً في Salla
+              <strong>{t('sallaIntegrationPage.text18')}</strong> عندما يطلب العميل من الواتساب، يتم إنشاء الطلب تلقائياً في Salla
             </div>
           </div>
         </CardContent>

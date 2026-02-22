@@ -8,8 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2, XCircle, ExternalLink, Store, RefreshCw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 export default function WooCommerceSettings() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [storeUrl, setStoreUrl] = useState('');
   const [consumerKey, setConsumerKey] = useState('');
@@ -138,7 +140,7 @@ export default function WooCommerceSettings() {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">إعدادات WooCommerce</h1>
+          <h1 className="text-3xl font-bold">{t('wooCommerceSettingsPage.text0')}</h1>
           <p className="text-muted-foreground mt-2">
             ربط متجر WooCommerce الخاص بك مع ساري لمزامنة المنتجات والطلبات تلقائياً
           </p>
@@ -158,11 +160,11 @@ export default function WooCommerceSettings() {
             <AlertDescription className={isConnected ? 'text-green-800' : 'text-yellow-800'}>
               {isConnected ? (
                 <>
-                  <strong>متصل</strong> - متجرك مربوط بنجاح
+                  <strong>{t('wooCommerceSettingsPage.text1')}</strong> - متجرك مربوط بنجاح
                   {settings.storeName && ` (${settings.storeName})`}
                 </>
               ) : (
-                <><strong>غير متصل</strong> - يرجى اختبار الاتصال</>
+                <><strong>{t('wooCommerceSettingsPage.text2')}</strong> - يرجى اختبار الاتصال</>
               )}
             </AlertDescription>
           </div>
@@ -173,24 +175,24 @@ export default function WooCommerceSettings() {
       {isConnected && settings && (
         <Card>
           <CardHeader>
-            <CardTitle>معلومات المتجر</CardTitle>
+            <CardTitle>{t('wooCommerceSettingsPage.text3')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-muted-foreground">اسم المتجر</p>
+                <p className="text-sm text-muted-foreground">{t('wooCommerceSettingsPage.text4')}</p>
                 <p className="font-medium">{settings.storeName || 'غير متوفر'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">إصدار WooCommerce</p>
+                <p className="text-sm text-muted-foreground">{t('wooCommerceSettingsPage.text5')}</p>
                 <p className="font-medium">{settings.storeVersion || 'غير متوفر'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">العملة</p>
+                <p className="text-sm text-muted-foreground">{t('wooCommerceSettingsPage.text6')}</p>
                 <p className="font-medium">{settings.storeCurrency || 'غير متوفر'}</p>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">آخر مزامنة</p>
+                <p className="text-sm text-muted-foreground">{t('wooCommerceSettingsPage.text7')}</p>
                 <p className="font-medium">
                   {settings.lastSyncAt
                     ? new Date(settings.lastSyncAt).toLocaleString('ar-SA')
@@ -205,14 +207,14 @@ export default function WooCommerceSettings() {
       {/* Connection Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>إعدادات الاتصال</CardTitle>
+          <CardTitle>{t('wooCommerceSettingsPage.text8')}</CardTitle>
           <CardDescription>
             أدخل بيانات الاتصال بمتجر WooCommerce الخاص بك
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="storeUrl">رابط المتجر *</Label>
+            <Label htmlFor="storeUrl">{t('wooCommerceSettingsPage.text9')}</Label>
             <Input
               id="storeUrl"
               type="url"
@@ -252,12 +254,12 @@ export default function WooCommerceSettings() {
 
           <Alert>
             <AlertDescription>
-              <strong>كيفية الحصول على مفاتيح API:</strong>
+              <strong>{t('wooCommerceSettingsPage.text10')}</strong>
               <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
-                <li>ادخل إلى لوحة تحكم WordPress</li>
-                <li>اذهب إلى: WooCommerce → Settings → Advanced → REST API</li>
-                <li>اضغط "Add Key" واختر صلاحيات Read/Write</li>
-                <li>انسخ Consumer Key و Consumer Secret</li>
+                <li>{t('wooCommerceSettingsPage.text11')}</li>
+                <li>{t('wooCommerceSettingsPage.text12')}</li>
+                <li>{t('wooCommerceSettingsPage.text13')}</li>
+                <li>{t('wooCommerceSettingsPage.text14')}</li>
               </ol>
               <a
                 href="https://woocommerce.github.io/woocommerce-rest-api-docs/#authentication"
@@ -294,7 +296,7 @@ export default function WooCommerceSettings() {
       {/* Sync Settings */}
       <Card>
         <CardHeader>
-          <CardTitle>إعدادات المزامنة</CardTitle>
+          <CardTitle>{t('wooCommerceSettingsPage.text15')}</CardTitle>
           <CardDescription>
             تحكم في كيفية مزامنة البيانات بين ساري و WooCommerce
           </CardDescription>
@@ -302,7 +304,7 @@ export default function WooCommerceSettings() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>مزامنة المنتجات تلقائياً</Label>
+              <Label>{t('wooCommerceSettingsPage.text16')}</Label>
               <p className="text-sm text-muted-foreground">
                 مزامنة المنتجات من WooCommerce بشكل دوري
               </p>
@@ -315,7 +317,7 @@ export default function WooCommerceSettings() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>مزامنة الطلبات تلقائياً</Label>
+              <Label>{t('wooCommerceSettingsPage.text17')}</Label>
               <p className="text-sm text-muted-foreground">
                 مزامنة الطلبات من WooCommerce بشكل دوري
               </p>
@@ -327,7 +329,7 @@ export default function WooCommerceSettings() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="syncInterval">فترة المزامنة (بالدقائق)</Label>
+            <Label htmlFor="syncInterval">{t('wooCommerceSettingsPage.text18')}</Label>
             <Input
               id="syncInterval"
               type="number"
@@ -347,7 +349,7 @@ export default function WooCommerceSettings() {
       {settings && (
         <Card className="border-destructive">
           <CardHeader>
-            <CardTitle className="text-destructive">منطقة الخطر</CardTitle>
+            <CardTitle className="text-destructive">{t('wooCommerceSettingsPage.text19')}</CardTitle>
             <CardDescription>
               إجراءات لا يمكن التراجع عنها
             </CardDescription>

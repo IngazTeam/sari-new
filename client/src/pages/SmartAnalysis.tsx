@@ -19,8 +19,10 @@ import {
   ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 export default function SmartAnalysis() {
+  const { t } = useTranslation();
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
@@ -49,21 +51,21 @@ export default function SmartAnalysis() {
 
   const deletePage = trpc.analysis.deletePage.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف الصفحة");
+      toast.success(t('smartAnalysisPage.text0'));
       refetchPages();
     },
   });
 
   const deleteFaq = trpc.analysis.deleteFaq.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف السؤال");
+      toast.success(t('smartAnalysisPage.text1'));
       refetchFaqs();
     },
   });
 
   const handleAnalyze = () => {
     if (!websiteUrl) {
-      toast.error("الرجاء إدخال رابط الموقع");
+      toast.error(t('smartAnalysisPage.text2'));
       return;
     }
 
@@ -104,7 +106,7 @@ export default function SmartAnalysis() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">التحليل الذكي للموقع</h1>
+        <h1 className="text-3xl font-bold">{t('smartAnalysisPage.text3')}</h1>
         <p className="text-muted-foreground mt-2">
           اكتشف منصة متجرك واستخرج المنتجات والصفحات والأسئلة الشائعة تلقائياً
         </p>
@@ -173,7 +175,7 @@ export default function SmartAnalysis() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الصفحات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('smartAnalysisPage.text4')}</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -183,7 +185,7 @@ export default function SmartAnalysis() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الأسئلة الشائعة</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('smartAnalysisPage.text5')}</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -193,7 +195,7 @@ export default function SmartAnalysis() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">صفحات الشحن</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('smartAnalysisPage.text6')}</CardTitle>
               <ShoppingCart className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -205,7 +207,7 @@ export default function SmartAnalysis() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">صفحات FAQ</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('smartAnalysisPage.text7')}</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>

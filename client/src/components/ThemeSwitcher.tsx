@@ -8,6 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Sun, Moon, Monitor, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ThemeSwitcherProps {
   variant?: 'default' | 'compact' | 'toggle';
@@ -15,6 +16,7 @@ interface ThemeSwitcherProps {
 }
 
 export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherProps) {
+  const { t } = useTranslation();
   const { theme, toggleTheme, switchable } = useTheme();
 
   if (!switchable || !toggleTheme) {
@@ -32,7 +34,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
       >
         <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
         <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-        <span className="sr-only">تبديل الوضع</span>
+        <span className="sr-only">{t('compThemeSwitcherPage.text0')}</span>
       </Button>
     );
   }
@@ -45,7 +47,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
           <Button variant="ghost" size="icon" className={className}>
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">تبديل الوضع</span>
+            <span className="sr-only">{t('compThemeSwitcherPage.text1')}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -82,12 +84,12 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
           {theme === 'light' ? (
             <>
               <Sun className="h-4 w-4" />
-              <span className="hidden sm:inline">فاتح</span>
+              <span className="hidden sm:inline">{t('compThemeSwitcherPage.text2')}</span>
             </>
           ) : (
             <>
               <Moon className="h-4 w-4" />
-              <span className="hidden sm:inline">داكن</span>
+              <span className="hidden sm:inline">{t('compThemeSwitcherPage.text3')}</span>
             </>
           )}
         </Button>

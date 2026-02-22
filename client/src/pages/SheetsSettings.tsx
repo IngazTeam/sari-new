@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Loader2, CheckCircle2, XCircle, ExternalLink, FileSpreadsheet, Settings, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useTranslation } from 'react-i18next';
 
 export default function SheetsSettings() {
+  const { t } = useTranslation();
   const [isConnecting, setIsConnecting] = useState(false);
 
   // الحصول على حالة الاتصال
@@ -114,7 +116,7 @@ export default function SheetsSettings() {
     <DashboardLayout>
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">إعدادات Google Sheets</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('sheetsSettingsPage.text0')}</h1>
           <p className="text-muted-foreground">
             ربط حسابك في Google Sheets لحفظ البيانات تلقائياً
           </p>
@@ -126,7 +128,7 @@ export default function SheetsSettings() {
             <div className="flex items-center gap-3">
               <FileSpreadsheet className="w-6 h-6 text-green-600" />
               <div>
-                <h2 className="text-xl font-semibold">حالة الاتصال</h2>
+                <h2 className="text-xl font-semibold">{t('sheetsSettingsPage.text1')}</h2>
                 <p className="text-sm text-muted-foreground">
                   {status?.isConnected ? 'متصل' : 'غير متصل'}
                 </p>
@@ -221,7 +223,7 @@ export default function SheetsSettings() {
             <div className="flex items-center gap-3 mb-6">
               <Settings className="w-6 h-6 text-primary" />
               <div>
-                <h2 className="text-xl font-semibold">إعدادات التقارير التلقائية</h2>
+                <h2 className="text-xl font-semibold">{t('sheetsSettingsPage.text2')}</h2>
                 <p className="text-sm text-muted-foreground">
                   تفعيل إرسال التقارير عبر WhatsApp
                 </p>
@@ -286,12 +288,12 @@ export default function SheetsSettings() {
         {/* معلومات إضافية */}
         {status?.isConnected && (
           <Card className="p-6 mt-6 bg-blue-50 border-blue-200">
-            <h3 className="font-semibold mb-2 text-blue-900">ملاحظات مهمة:</h3>
+            <h3 className="font-semibold mb-2 text-blue-900">{t('sheetsSettingsPage.text3')}</h3>
             <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
-              <li>يتم حفظ الطلبات تلقائياً في Google Sheets عند إنشائها</li>
-              <li>يمكنك تصدير المحادثات والمخزون يدوياً من الصفحات المخصصة</li>
-              <li>التقارير التلقائية تُحفظ في صفحة "التقارير" داخل Spreadsheet</li>
-              <li>يمكنك تعديل البيانات مباشرة في Google Sheets</li>
+              <li>{t('sheetsSettingsPage.text4')}</li>
+              <li>{t('sheetsSettingsPage.text5')}</li>
+              <li>{t('sheetsSettingsPage.text6')}</li>
+              <li>{t('sheetsSettingsPage.text7')}</li>
             </ul>
           </Card>
         )}

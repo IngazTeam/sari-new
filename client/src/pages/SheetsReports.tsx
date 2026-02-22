@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Loader2, FileText, Send, Calendar, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import DashboardLayout from '@/components/DashboardLayout';
+import { useTranslation } from 'react-i18next';
 
 export default function SheetsReports() {
+  const { t } = useTranslation();
   const [generatingReport, setGeneratingReport] = useState<string | null>(null);
 
   // توليد تقرير يومي
@@ -146,7 +148,7 @@ export default function SheetsReports() {
     <DashboardLayout>
       <div className="container max-w-6xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">التقارير التلقائية</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('sheetsReportsPage.text0')}</h1>
           <p className="text-muted-foreground">
             توليد وإرسال التقارير إلى Google Sheets و WhatsApp
           </p>
@@ -205,27 +207,27 @@ export default function SheetsReports() {
 
         {/* معلومات التقارير */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold mb-4">محتويات التقارير</h2>
+          <h2 className="text-xl font-semibold mb-4">{t('sheetsReportsPage.text1')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="font-medium mb-2">📊 الإحصائيات الأساسية</h3>
+              <h3 className="font-medium mb-2">{t('sheetsReportsPage.text2')}</h3>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• عدد الطلبات الإجمالي</li>
-                <li>• إجمالي الإيرادات</li>
-                <li>• عدد المحادثات</li>
-                <li>• عدد الرسائل</li>
-                <li>• عدد العملاء الجدد</li>
+                <li>{t('sheetsReportsPage.text3')}</li>
+                <li>{t('sheetsReportsPage.text4')}</li>
+                <li>{t('sheetsReportsPage.text5')}</li>
+                <li>{t('sheetsReportsPage.text6')}</li>
+                <li>{t('sheetsReportsPage.text7')}</li>
               </ul>
             </div>
 
             <div>
-              <h3 className="font-medium mb-2">📈 التحليلات المتقدمة</h3>
+              <h3 className="font-medium mb-2">{t('sheetsReportsPage.text8')}</h3>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• أكثر 5 منتجات مبيعاً</li>
-                <li>• توزيع الطلبات حسب الحالة</li>
-                <li>• معدل التحويل</li>
-                <li>• متوسط قيمة الطلب</li>
-                <li>• أوقات الذروة</li>
+                <li>{t('sheetsReportsPage.text9')}</li>
+                <li>{t('sheetsReportsPage.text10')}</li>
+                <li>{t('sheetsReportsPage.text11')}</li>
+                <li>{t('sheetsReportsPage.text12')}</li>
+                <li>{t('sheetsReportsPage.text13')}</li>
               </ul>
             </div>
           </div>
@@ -233,12 +235,12 @@ export default function SheetsReports() {
 
         {/* ملاحظات */}
         <Card className="p-4 mt-6 bg-amber-50 border-amber-200">
-          <h3 className="font-semibold mb-2 text-amber-900">💡 ملاحظات مهمة:</h3>
+          <h3 className="font-semibold mb-2 text-amber-900">{t('sheetsReportsPage.text14')}</h3>
           <ul className="text-sm text-amber-800 space-y-1">
-            <li>• يتم حفظ التقارير تلقائياً في صفحة "التقارير" داخل Google Sheets</li>
-            <li>• يمكنك تفعيل/تعطيل إرسال التقارير التلقائية من صفحة الإعدادات</li>
-            <li>• التقارير المرسلة عبر WhatsApp تحتوي على ملخص مختصر</li>
-            <li>• للحصول على التقرير الكامل، افتح Google Sheets مباشرة</li>
+            <li>{t('sheetsReportsPage.text15')}</li>
+            <li>{t('sheetsReportsPage.text16')}</li>
+            <li>{t('sheetsReportsPage.text17')}</li>
+            <li>{t('sheetsReportsPage.text18')}</li>
           </ul>
         </Card>
       </div>

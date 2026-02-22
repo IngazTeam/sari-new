@@ -535,7 +535,7 @@ export default function AdvancedAnalyticsDashboard() {
                 <div className="text-3xl font-bold">156</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <ArrowUpRight className="w-3 h-3 text-green-500" />
-                  <span className="text-green-500">+23%</span> من الشهر الماضي
+                  <span className="text-green-500">+23%</span>{t('merchantAdvancedAnalyticsDashboardPage.text0')}
                 </p>
               </CardContent>
             </Card>
@@ -547,7 +547,7 @@ export default function AdvancedAnalyticsDashboard() {
                 <div className="text-3xl font-bold">89</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <ArrowUpRight className="w-3 h-3 text-green-500" />
-                  <span className="text-green-500">+12%</span> من الشهر الماضي
+                  <span className="text-green-500">+12%</span>{t('merchantAdvancedAnalyticsDashboardPage.text1')}
                 </p>
               </CardContent>
             </Card>
@@ -559,7 +559,7 @@ export default function AdvancedAnalyticsDashboard() {
                 <div className="text-3xl font-bold">67%</div>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <ArrowUpRight className="w-3 h-3 text-green-500" />
-                  <span className="text-green-500">+5%</span> من الشهر الماضي
+                  <span className="text-green-500">+5%</span>{t('merchantAdvancedAnalyticsDashboardPage.text2')}
                 </p>
               </CardContent>
             </Card>

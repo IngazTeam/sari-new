@@ -14,8 +14,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useTranslation } from 'react-i18next';
 
 export default function WooCommerceProducts() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(1);
@@ -61,11 +63,11 @@ export default function WooCommerceProducts() {
   const getStockStatusBadge = (status: string) => {
     switch (status) {
       case 'instock':
-        return <Badge className="bg-green-500">متوفر</Badge>;
+        return <Badge className="bg-green-500">{t('wooCommerceProductsPage.text0')}</Badge>;
       case 'outofstock':
-        return <Badge variant="destructive">غير متوفر</Badge>;
+        return <Badge variant="destructive">{t('wooCommerceProductsPage.text1')}</Badge>;
       case 'onbackorder':
-        return <Badge className="bg-yellow-500">متوفر قريباً</Badge>;
+        return <Badge className="bg-yellow-500">{t('wooCommerceProductsPage.text2')}</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -83,7 +85,7 @@ export default function WooCommerceProducts() {
     <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">منتجات WooCommerce</h1>
+          <h1 className="text-3xl font-bold">{t('wooCommerceProductsPage.text3')}</h1>
           <p className="text-muted-foreground mt-2">
             عرض وإدارة المنتجات المزامنة من متجر WooCommerce
           </p>
@@ -103,7 +105,7 @@ export default function WooCommerceProducts() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي المنتجات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('wooCommerceProductsPage.text4')}</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -113,7 +115,7 @@ export default function WooCommerceProducts() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">متوفر</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('wooCommerceProductsPage.text5')}</CardTitle>
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -123,7 +125,7 @@ export default function WooCommerceProducts() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">غير متوفر</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('wooCommerceProductsPage.text6')}</CardTitle>
               <TrendingDown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -133,7 +135,7 @@ export default function WooCommerceProducts() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">متوفر قريباً</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('wooCommerceProductsPage.text7')}</CardTitle>
               <AlertCircle className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
@@ -146,7 +148,7 @@ export default function WooCommerceProducts() {
       {/* Search */}
       <Card>
         <CardHeader>
-          <CardTitle>بحث عن منتج</CardTitle>
+          <CardTitle>{t('wooCommerceProductsPage.text8')}</CardTitle>
           <CardDescription>
             ابحث بالاسم أو SKU
           </CardDescription>
@@ -155,7 +157,7 @@ export default function WooCommerceProducts() {
           <div className="relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="ابحث عن منتج..."
+              placeholder={t('wooCommerceProductsPage.text9')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -167,7 +169,7 @@ export default function WooCommerceProducts() {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة المنتجات</CardTitle>
+          <CardTitle>{t('wooCommerceProductsPage.text10')}</CardTitle>
           <CardDescription>
             {products?.length || 0} منتج
           </CardDescription>
@@ -182,13 +184,13 @@ export default function WooCommerceProducts() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>الصورة</TableHead>
-                    <TableHead>الاسم</TableHead>
+                    <TableHead>{t('wooCommerceProductsPage.text11')}</TableHead>
+                    <TableHead>{t('wooCommerceProductsPage.text12')}</TableHead>
                     <TableHead>SKU</TableHead>
-                    <TableHead>السعر</TableHead>
-                    <TableHead>المخزون</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>آخر مزامنة</TableHead>
+                    <TableHead>{t('wooCommerceProductsPage.text13')}</TableHead>
+                    <TableHead>{t('wooCommerceProductsPage.text14')}</TableHead>
+                    <TableHead>{t('wooCommerceProductsPage.text15')}</TableHead>
+                    <TableHead>{t('wooCommerceProductsPage.text16')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

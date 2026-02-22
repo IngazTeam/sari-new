@@ -6,6 +6,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowRight, Check, Sparkles, Loader2, Languages, PackageOpen } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface TemplatesStepProps {
   wizardData: Record<string, any>;
@@ -20,6 +21,7 @@ export default function TemplatesStep({
   goToNextStep,
   skipStep,
 }: TemplatesStepProps) {
+  const { t } = useTranslation();
   const [selectedTemplate, setSelectedTemplate] = useState<number | null>(
     wizardData.templateId || null
   );
@@ -44,7 +46,7 @@ export default function TemplatesStep({
     setIsApplying(true);
     try {
       await applyTemplateMutation.mutateAsync({ templateId: selectedTemplate });
-      toast.success('تم تطبيق القالب بنجاح! تم إضافة المنتجات والخدمات والإعدادات من القالب.');
+      toast.success(t('wizardTemplatesStepPage.text0'));
       goToNextStep();
     } catch (error: any) {
       toast.error(error.message || 'حدث خطأ أثناء تطبيق القالب');
@@ -81,7 +83,7 @@ export default function TemplatesStep({
         <Languages className="h-5 w-5 text-muted-foreground" />
         <Tabs value={language} onValueChange={(value) => setLanguage(value as 'ar' | 'en')}>
           <TabsList>
-            <TabsTrigger value="ar">🇸🇦 العربية</TabsTrigger>
+            <TabsTrigger value="ar">{t('wizardTemplatesStepPage.text1')}</TabsTrigger>
             <TabsTrigger value="en">🇬🇧 English</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -138,7 +140,7 @@ export default function TemplatesStep({
                   {/* What's Included */}
                   <div className="flex items-center space-x-2 space-x-reverse text-xs text-gray-500">
                     <Sparkles className="h-3 w-3 text-emerald-500" />
-                    <span>يتضمن منتجات/خدمات + إعدادات + رسائل جاهزة</span>
+                    <span>{t('wizardTemplatesStepPage.text2')}</span>
                   </div>
                 </div>
               </Card>
@@ -154,8 +156,8 @@ export default function TemplatesStep({
             <PackageOpen className="h-8 w-8 text-emerald-400" />
           </div>
           <div>
-            <p className="text-gray-600 font-medium mb-1">لا توجد قوالب متاحة حالياً</p>
-            <p className="text-sm text-gray-400">يمكنك تخطي هذه الخطوة وإضافة المنتجات والخدمات يدوياً</p>
+            <p className="text-gray-600 font-medium mb-1">{t('wizardTemplatesStepPage.text3')}</p>
+            <p className="text-sm text-gray-400">{t('wizardTemplatesStepPage.text4')}</p>
           </div>
           <Button
             onClick={handleSkip}
@@ -198,7 +200,7 @@ export default function TemplatesStep({
       {/* Info Box */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
         <p className="text-sm text-emerald-800">
-          💡 <strong>ملاحظة:</strong> يمكنك تعديل أو حذف أي شيء من القالب لاحقاً
+          💡 <strong>{t('wizardTemplatesStepPage.text5')}</strong> يمكنك تعديل أو حذف أي شيء من القالب لاحقاً
         </p>
       </div>
     </div>

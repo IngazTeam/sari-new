@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, X, Send } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface VoiceRecorderProps {
   onRecordingComplete: (audioBlob: Blob, duration: number) => void;
@@ -14,6 +15,7 @@ export function VoiceRecorder({
   onCancel,
   maxDuration = 120 
 }: VoiceRecorderProps) {
+  const { t } = useTranslation();
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -90,7 +92,7 @@ export function VoiceRecorder({
 
     } catch (error) {
       console.error('Error starting recording:', error);
-      toast.error('فشل الوصول إلى الميكروفون. تأكد من منح الإذن.');
+      toast.error(t('compVoiceRecorderPage.text0'));
     }
   };
 
@@ -162,7 +164,7 @@ export function VoiceRecorder({
           <div className="flex items-center gap-2 flex-1">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-sm font-medium">جاري التسجيل...</span>
+              <span className="text-sm font-medium">{t('compVoiceRecorderPage.text1')}</span>
             </div>
             
             {/* المؤقت */}
@@ -206,7 +208,7 @@ export function VoiceRecorder({
           <div className="flex items-center gap-2 flex-1">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 bg-green-500 rounded-full" />
-              <span className="text-sm font-medium">تسجيل جاهز</span>
+              <span className="text-sm font-medium">{t('compVoiceRecorderPage.text2')}</span>
             </div>
             <span className="text-sm text-muted-foreground">
               ({formatTime(duration)})

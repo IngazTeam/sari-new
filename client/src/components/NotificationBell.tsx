@@ -14,8 +14,10 @@ import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useTranslation } from 'react-i18next';
 
 export function NotificationBell() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const { user, loading: authLoading } = useAuth();
@@ -45,7 +47,7 @@ export function NotificationBell() {
     onSuccess: () => {
       utils.notifications.list.invalidate();
       utils.notifications.unreadCount.invalidate();
-      toast.success("تم تحديد جميع الإشعارات كمقروءة");
+      toast.success(t('compNotificationBellPage.text0'));
     },
   });
 
@@ -53,7 +55,7 @@ export function NotificationBell() {
     onSuccess: () => {
       utils.notifications.list.invalidate();
       utils.notifications.unreadCount.invalidate();
-      toast.success("تم حذف الإشعار");
+      toast.success(t('compNotificationBellPage.text1'));
     },
   });
 
@@ -101,7 +103,7 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="font-semibold">الإشعارات</h3>
+          <h3 className="font-semibold">{t('compNotificationBellPage.text2')}</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -119,7 +121,7 @@ export function NotificationBell() {
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Bell className="h-12 w-12 mb-3 opacity-20" />
-              <p className="text-sm">لا توجد إشعارات</p>
+              <p className="text-sm">{t('compNotificationBellPage.text3')}</p>
             </div>
           ) : (
             <div className="divide-y">

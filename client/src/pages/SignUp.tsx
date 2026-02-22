@@ -11,8 +11,10 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Link } from 'wouter';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useTranslation } from 'react-i18next';
 
 export default function SignUp() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState({
     name: '',
@@ -88,7 +90,7 @@ export default function SignUp() {
                 <Store className="w-6 h-6 text-white" />
               </div>
             </div>
-            <CardTitle className="text-2xl text-center">إنشاء حساب جديد</CardTitle>
+            <CardTitle className="text-2xl text-center">{t('signUpPage.text0')}</CardTitle>
             <CardDescription className="text-center">
               انضم إلى ساري وابدأ في تحسين مبيعاتك عبر الواتساب
             </CardDescription>
@@ -102,14 +104,14 @@ export default function SignUp() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="name">الاسم الكامل</Label>
+                <Label htmlFor="name">{t('signUpPage.text1')}</Label>
                 <div className="relative">
                   <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="name"
                     name="name"
                     type="text"
-                    placeholder="أحمد محمد"
+                    placeholder={t('signUpPage.text2')}
                     value={formData.name}
                     onChange={handleChange}
                     required
@@ -120,7 +122,7 @@ export default function SignUp() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">البريد الإلكتروني</Label>
+                <Label htmlFor="email">{t('signUpPage.text3')}</Label>
                 <div className="relative">
                   <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -138,14 +140,14 @@ export default function SignUp() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="businessName">اسم المتجر</Label>
+                <Label htmlFor="businessName">{t('signUpPage.text4')}</Label>
                 <div className="relative">
                   <Store className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="businessName"
                     name="businessName"
                     type="text"
-                    placeholder="متجر الإلكترونيات"
+                    placeholder={t('signUpPage.text5')}
                     value={formData.businessName}
                     onChange={handleChange}
                     required
@@ -156,7 +158,7 @@ export default function SignUp() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">رقم الهاتف *</Label>
+                <Label htmlFor="phone">{t('signUpPage.text6')}</Label>
                 <PhoneInput
                   value={formData.phone}
                   onChange={(val) => setFormData(prev => ({ ...prev, phone: val }))}
@@ -166,7 +168,7 @@ export default function SignUp() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">كلمة المرور</Label>
+                <Label htmlFor="password">{t('signUpPage.text7')}</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -193,7 +195,7 @@ export default function SignUp() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
+                <Label htmlFor="confirmPassword">{t('signUpPage.text8')}</Label>
                 <div className="relative">
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
