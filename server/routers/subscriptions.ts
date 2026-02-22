@@ -288,7 +288,6 @@ export const merchantSubscriptionRouter = router({
 
     const subscriptionId = await db.createMerchantSubscription({
       merchantId: merchant.id,
-      planId: null,
       status: 'trial',
       billingCycle: 'monthly',
       startDate: now.toISOString(),
@@ -323,8 +322,8 @@ export const merchantSubscriptionRouter = router({
       }
 
       // Calculate amount
-      const amount = input.billingCycle === 'monthly' 
-        ? parseFloat(plan.monthlyPrice) 
+      const amount = input.billingCycle === 'monthly'
+        ? parseFloat(plan.monthlyPrice)
         : parseFloat(plan.yearlyPrice);
 
       // Create payment transaction
@@ -566,17 +565,17 @@ export const merchantSubscriptionRouter = router({
       const now = new Date();
       const trialEnd = new Date(user.trialEndDate);
       if (now <= trialEnd) {
-        return { 
-          isActive: true, 
+        return {
+          isActive: true,
           reason: 'الفترة التجريبية نشطة',
-          isTrial: true 
+          isTrial: true
         };
       }
     }
 
     // Check regular subscription
     const isActive = await db.checkMerchantSubscriptionStatus(merchant.id);
-    return { 
+    return {
       isActive,
       reason: isActive ? 'اشتراك نشط' : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
       isTrial: false
@@ -597,7 +596,7 @@ export const merchantAddonsRouter = router({
     }
 
     const addons = await db.getMerchantActiveAddons(merchant.id);
-    
+
     // Get addon details for each
     const addonsWithDetails = await Promise.all(
       addons.map(async (addon) => {
@@ -632,8 +631,8 @@ export const merchantAddonsRouter = router({
       }
 
       // Calculate amount
-      const unitPrice = input.billingCycle === 'monthly' 
-        ? parseFloat(addon.monthlyPrice) 
+      const unitPrice = input.billingCycle === 'monthly'
+        ? parseFloat(addon.monthlyPrice)
         : parseFloat(addon.yearlyPrice);
       const totalAmount = unitPrice * input.quantity;
 
