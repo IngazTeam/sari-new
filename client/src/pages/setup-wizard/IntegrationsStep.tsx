@@ -73,8 +73,8 @@ export default function IntegrationsStep({
                   )}
                 </div>
 
-                <p className="text-sm text-gray-600 mb-3">
-                  مزامنة المواعيد تلقائياً مع تقويم Google الخاص بك
+                <p className="text-sm text-gray-600 mb-1">
+                  يسجّل ساري مواعيد الاجتماعات والحجوزات التي ينشئها مع عملائك تلقائياً في تقويم Google الخاص بك
                 </p>
 
                 <ul className="space-y-1 text-xs text-gray-500">
@@ -138,8 +138,8 @@ export default function IntegrationsStep({
                   )}
                 </div>
 
-                <p className="text-sm text-gray-600 mb-3">
-                  تصدير البيانات والتقارير تلقائياً إلى Google Sheets
+                <p className="text-sm text-gray-600 mb-1">
+                  يسجّل ساري نتائج المحادثات مع كل عميل تلقائياً في جدول بيانات Google لتتمكن من المتابعة معه
                 </p>
 
                 <ul className="space-y-1 text-xs text-gray-500">
