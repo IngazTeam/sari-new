@@ -19,7 +19,7 @@ export default function ZidCallback() {
         navigate('/merchant/zid/settings');
       }, 2000);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       setStatus('error');
       setMessage(error.message || 'فشل في ربط Zid');
     },
@@ -44,7 +44,7 @@ export default function ZidCallback() {
 
       if (!clientId || !clientSecret || !redirectUri) {
         setStatus('error');
-        setMessage('بيانات الاتصال غير مكتملة');
+        setMessage('بيانات الاتصال غير موجودة أو انتهت صلاحية الجلسة. يرجى البدء من صفحة الإعدادات.');
         return;
       }
 
