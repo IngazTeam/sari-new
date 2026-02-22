@@ -3,7 +3,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Sparkles } from 'lucide-react';
+import { Check, Sparkles, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 
@@ -13,18 +13,7 @@ export default function SubscriptionPlans() {
 
   const { data: plans, isLoading } = trpc.subscriptionPlans.listPlans.useQuery();
   const { data: currentSubscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
-  const startTrial = trpc.merchantSubscription.startTrial.useMutation();
   const subscribe = trpc.merchantSubscription.subscribe.useMutation();
-
-  const handleStartTrial = async () => {
-    try {
-      await startTrial.mutateAsync();
-      toast.success('تم بدء الفترة التجريبية بنجاح! 🎉');
-      setLocation('/merchant/dashboard');
-    } catch (error: any) {
-      toast.error(error.message || 'فشل بدء الفترة التجريبية');
-    }
-  };
 
   const handleSubscribe = async (planId: number) => {
     try {
@@ -34,7 +23,6 @@ export default function SubscriptionPlans() {
       });
 
       if (result.paymentUrl) {
-        // Redirect to Tap payment page
         window.location.href = result.paymentUrl;
       } else {
         toast.success('تم الاشتراك بنجاح!');
@@ -60,13 +48,21 @@ export default function SubscriptionPlans() {
     );
   }
 
-  const canStartTrial = !currentSubscription || currentSubscription.status === 'expired';
+  // Calculate trial status
+  const isTrial = currentSubscription?.status === 'trial';
+  const isExpired = currentSubscription?.status === 'expired';
+  const isActive = currentSubscription?.status === 'active';
+  const daysRemaining = currentSubscription?.daysRemaining ?? 0;
 
   return (
     <div className="container py-8">
       <div className="text-right mb-8">
         <h1 className="text-4xl font-bold mb-2">اختر الباقة المناسبة لك</h1>
-        <p className="text-muted-foreground text-lg">ابدأ بفترة تجريبية مجانية 7 أيام</p>
+        <p className="text-muted-foreground text-lg">
+          {isTrial
+            ? `أنت في الفترة التجريبية — متبقي ${daysRemaining} ${daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? 'يومين' : 'أيام'}`
+            : 'اشترك في إحدى الباقات لتفعيل جميع الميزات'}
+        </p>
       </div>
 
       {/* Period Toggle */}
@@ -90,28 +86,34 @@ export default function SubscriptionPlans() {
         </div>
       </div>
 
-      {/* Trial Banner */}
-      {canStartTrial && (
-        <Card className="mb-8 border-primary bg-primary/5">
-          <CardHeader>
+      {/* Trial Status Banner */}
+      {isTrial && (
+        <Card className="mb-8 border-blue-200 bg-blue-50">
+          <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle>جرّب ساري مجاناً لمدة 7 أيام</CardTitle>
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              <CardTitle className="text-blue-900">🎁 أنت في الفترة التجريبية المجانية</CardTitle>
             </div>
-            <CardDescription>
-              استمتع بجميع ميزات ساري بدون أي التزام مالي. لا حاجة لبطاقة ائتمان!
+            <CardDescription className="text-blue-700 flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              متبقي {daysRemaining} {daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? 'يومين' : 'أيام'} — اشترك الآن لضمان الاستمرارية
             </CardDescription>
           </CardHeader>
-          <CardFooter>
-            <Button
-              onClick={handleStartTrial}
-              disabled={startTrial.isPending}
-              size="lg"
-              className="w-full sm:w-auto"
-            >
-              {startTrial.isPending ? 'جاري البدء...' : 'ابدأ الفترة التجريبية المجانية'}
-            </Button>
-          </CardFooter>
+        </Card>
+      )}
+
+      {/* Expired Trial Banner */}
+      {isExpired && (
+        <Card className="mb-8 border-red-200 bg-red-50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <CardTitle className="text-red-900">⏰ انتهت الفترة التجريبية</CardTitle>
+            </div>
+            <CardDescription className="text-red-700">
+              اشترك الآن في إحدى الباقات لمتابعة استخدام جميع ميزات ساري
+            </CardDescription>
+          </CardHeader>
         </Card>
       )}
 

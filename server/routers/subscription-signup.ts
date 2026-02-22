@@ -26,41 +26,41 @@ export const subscriptionSignupRouter = router({
         // Get user ID from context or input
         const userId = ctx.user?.id || input.userId;
         if (!userId) {
-          throw new TRPCError({ 
-            code: 'UNAUTHORIZED', 
-            message: 'User not authenticated' 
+          throw new TRPCError({
+            code: 'UNAUTHORIZED',
+            message: 'User not authenticated'
           });
         }
 
         // Get user details
         const user = await db.getUserById(userId);
         if (!user) {
-          throw new TRPCError({ 
-            code: 'NOT_FOUND', 
-            message: 'User not found' 
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'User not found'
           });
         }
 
         // Get merchant
         const merchant = await db.getMerchantByUserId(userId);
         if (!merchant) {
-          throw new TRPCError({ 
-            code: 'NOT_FOUND', 
-            message: 'Merchant not found' 
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Merchant not found'
           });
         }
 
         // Get plan details
         const plan = await db.getSubscriptionPlanById(input.planId);
         if (!plan) {
-          throw new TRPCError({ 
-            code: 'NOT_FOUND', 
-            message: 'Plan not found' 
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Plan not found'
           });
         }
 
         // Calculate amount based on billing cycle
-        const amount = input.billingCycle === 'monthly' 
+        const amount = input.billingCycle === 'monthly'
           ? parseFloat(plan.monthlyPrice)
           : parseFloat(plan.yearlyPrice);
 
@@ -82,9 +82,9 @@ export const subscriptionSignupRouter = router({
         // Get Tap settings
         const tapSettings = await db.getTapSettings();
         if (!tapSettings || !tapSettings.isActive) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: 'Payment gateway not configured' 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Payment gateway not configured'
           });
         }
 
@@ -128,11 +128,11 @@ export const subscriptionSignupRouter = router({
         };
       } catch (error: any) {
         console.error('[Subscription Signup] Error:', error);
-        
+
         if (error instanceof TRPCError) {
           throw error;
         }
-        
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error.message || 'Failed to create subscription',
@@ -155,9 +155,9 @@ export const subscriptionSignupRouter = router({
         // Check if user exists
         const existingUser = await db.getUserByEmail(input.email);
         if (existingUser) {
-          throw new TRPCError({ 
-            code: 'BAD_REQUEST', 
-            message: 'Email already registered' 
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Email already registered'
           });
         }
 
@@ -176,8 +176,28 @@ export const subscriptionSignupRouter = router({
           userId,
           businessName: input.businessName,
           phone: input.phone,
-          subscriptionStatus: 'pending',
+          subscriptionStatus: 'trial',
         });
+
+        // Auto-start 7-day trial
+        const now = new Date();
+        const trialEndDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+        await db.createMerchantSubscription({
+          merchantId,
+          status: 'trial',
+          billingCycle: 'monthly',
+          startDate: now.toISOString(),
+          endDate: trialEndDate.toISOString(),
+          trialEndsAt: trialEndDate.toISOString(),
+          autoRenew: 0,
+        });
+
+        // Activate trial on user record
+        await db.activateUserTrial(userId);
+
+        // Set trial customer limit
+        await db.updateMerchantCustomerLimit(merchantId, 100);
 
         return {
           success: true,
@@ -186,11 +206,11 @@ export const subscriptionSignupRouter = router({
         };
       } catch (error: any) {
         console.error('[Register User] Error:', error);
-        
+
         if (error instanceof TRPCError) {
           throw error;
         }
-        
+
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: error.message || 'Failed to register user',

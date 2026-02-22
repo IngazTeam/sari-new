@@ -11,22 +11,22 @@ import { sendTrialExpiryEmail } from '../_core/email';
  */
 export async function checkTrialsExpiring3Days() {
   console.log('[Cron] Checking for trials expiring in 3 days...');
-  
+
   try {
     const users = await db.getUsersWithExpiringTrial(3);
-    
+
     console.log(`[Cron] Found ${users.length} users with trials expiring in 3 days`);
-    
+
     for (const user of users) {
       if (!user.email) continue;
-      
+
       try {
         await sendTrialExpiryEmail({
           name: user.name || 'عزيزي المستخدم',
           email: user.email,
           daysRemaining: 3,
         });
-        
+
         console.log(`[Cron] Sent 3-day expiry email to ${user.email}`);
       } catch (error) {
         console.error(`[Cron] Failed to send email to ${user.email}:`, error);
@@ -42,22 +42,22 @@ export async function checkTrialsExpiring3Days() {
  */
 export async function checkTrialsExpiring1Day() {
   console.log('[Cron] Checking for trials expiring in 1 day...');
-  
+
   try {
     const users = await db.getUsersWithExpiringTrial(1);
-    
+
     console.log(`[Cron] Found ${users.length} users with trials expiring in 1 day`);
-    
+
     for (const user of users) {
       if (!user.email) continue;
-      
+
       try {
         await sendTrialExpiryEmail({
           name: user.name || 'عزيزي المستخدم',
           email: user.email,
           daysRemaining: 1,
         });
-        
+
         console.log(`[Cron] Sent 1-day expiry email to ${user.email}`);
       } catch (error) {
         console.error(`[Cron] Failed to send email to ${user.email}:`, error);
@@ -73,17 +73,36 @@ export async function checkTrialsExpiring1Day() {
  */
 export async function checkExpiredTrials() {
   console.log('[Cron] Checking for expired trials...');
-  
+
   try {
     const users = await db.getUsersWithExpiredTrial();
-    
+
     console.log(`[Cron] Found ${users.length} users with expired trials`);
-    
+
     for (const user of users) {
       try {
-        // Deactivate trial
+        // Deactivate trial on user record
         await db.deactivateUserTrial(user.id);
-        
+
+        // Update merchant subscription status to expired
+        const merchant = await db.getMerchantByUserId(user.id);
+        if (merchant) {
+          await db.updateMerchant(merchant.id, { subscriptionStatus: 'expired' });
+        }
+
+        // Send expiry notification email
+        if (user.email) {
+          try {
+            await sendTrialExpiryEmail({
+              name: user.name || 'عزيزي المستخدم',
+              email: user.email,
+              daysRemaining: 0,
+            });
+          } catch (emailError) {
+            console.error(`[Cron] Failed to send expiry email to ${user.email}:`, emailError);
+          }
+        }
+
         console.log(`[Cron] Deactivated trial for user ${user.id} (${user.email})`);
       } catch (error) {
         console.error(`[Cron] Failed to deactivate trial for user ${user.id}:`, error);
@@ -99,11 +118,11 @@ export async function checkExpiredTrials() {
  */
 export async function runTrialExpiryCheck() {
   console.log('[Cron] Starting trial expiry check...');
-  
+
   await checkTrialsExpiring3Days();
   await checkTrialsExpiring1Day();
   await checkExpiredTrials();
-  
+
   console.log('[Cron] Trial expiry check completed');
 }
 
