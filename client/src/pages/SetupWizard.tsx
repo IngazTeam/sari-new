@@ -12,19 +12,21 @@ import WelcomeStep from './setup-wizard/WelcomeStep';
 import BusinessTypeStep from './setup-wizard/BusinessTypeStep';
 import TemplatesStep from './setup-wizard/TemplatesStep';
 import BasicInfoStep from './setup-wizard/BasicInfoStep';
+import WebsiteStep from './setup-wizard/WebsiteStep';
 import ProductsServicesStep from './setup-wizard/ProductsServicesStep';
 import IntegrationsStep from './setup-wizard/IntegrationsStep';
 import PersonalityStep from './setup-wizard/PersonalityStep';
 import LanguageStep from './setup-wizard/LanguageStep';
 import CompleteStep from './setup-wizard/CompleteStep';
 
-const TOTAL_STEPS = 9;
+const TOTAL_STEPS = 10;
 
 const STEP_TITLES = [
   'مرحباً بك!',
   'نوع نشاطك',
   'اختر قالب جاهز',
   'معلومات النشاط',
+  'ربط موقعك',
   'المنتجات والخدمات',
   'التكاملات',
   'شخصية ساري',
@@ -224,14 +226,16 @@ export default function SetupWizard() {
       case 4:
         return <BasicInfoStep {...stepProps} />;
       case 5:
-        return <ProductsServicesStep {...stepProps} />;
+        return <WebsiteStep {...stepProps} />;
       case 6:
-        return <IntegrationsStep {...stepProps} />;
+        return <ProductsServicesStep {...stepProps} />;
       case 7:
-        return <PersonalityStep {...stepProps} />;
+        return <IntegrationsStep {...stepProps} />;
       case 8:
-        return <LanguageStep data={wizardData} onUpdate={updateWizardData} goToNextStep={goToNextStep} />;
+        return <PersonalityStep {...stepProps} />;
       case 9:
+        return <LanguageStep data={wizardData} onUpdate={updateWizardData} goToNextStep={goToNextStep} />;
+      case 10:
         return <CompleteStep {...stepProps} completeSetup={completeSetup} isLoading={isLoading} />;
       default:
         return null;
@@ -323,12 +327,12 @@ export default function SetupWizard() {
                   onClick={() => canClick && goToStep(stepNum)}
                   disabled={!canClick}
                   className={`text-xs transition-colors ${isCurrent
-                      ? 'text-emerald-600 font-bold'
-                      : isCompleted
-                        ? 'text-green-600 hover:text-green-800 cursor-pointer hover:underline'
-                        : canClick
-                          ? 'text-gray-500 hover:text-gray-700 cursor-pointer'
-                          : 'text-gray-400 cursor-default'
+                    ? 'text-emerald-600 font-bold'
+                    : isCompleted
+                      ? 'text-green-600 hover:text-green-800 cursor-pointer hover:underline'
+                      : canClick
+                        ? 'text-gray-500 hover:text-gray-700 cursor-pointer'
+                        : 'text-gray-400 cursor-default'
                     }`}
                 >
                   {isCurrent && '→ '}
