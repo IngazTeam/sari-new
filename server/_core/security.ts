@@ -34,11 +34,13 @@ export const securityHeaders = helmet({
  */
 const allowedOrigins = [
     process.env.APP_URL || 'http://localhost:3000',
+    process.env.FRONTEND_URL,
+    process.env.VITE_FRONTEND_URL,
     'https://sary.live',
     'https://www.sary.live',
     'http://localhost:3000',
     'http://localhost:5173', // Vite dev server
-];
+].filter(Boolean) as string[];
 
 export const corsConfig = cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {

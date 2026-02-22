@@ -44,6 +44,7 @@ import { integrationsRouter } from "./routers-integrations";
 import { subscriptionReportsRouter } from "./routers-subscription-reports";
 import { weeklyReportRouter } from "./routers-weekly-report";
 import { templateTranslationsRouter } from "./routers-template-translations";
+import { userNotificationsRouter } from "./routers-user-notifications";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -63,31 +64,8 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const appRouter = router({
-  notifications: router({
-    list: protectedProcedure.query(async ({ ctx }) => {
-      return await db.getNotificationsByUserId(ctx.user.id);
-    }),
-
-    unreadCount: protectedProcedure.query(async ({ ctx }) => {
-      return await db.getUnreadNotificationsCount(ctx.user.id);
-    }),
-
-    markAsRead: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        return await db.markNotificationAsRead(input.id, ctx.user.id);
-      }),
-
-    markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
-      return await db.markAllNotificationsAsRead(ctx.user.id);
-    }),
-
-    delete: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        return await db.deleteNotification(input.id, ctx.user.id);
-      }),
-  }),
+  // User Notifications — modularized to routers-user-notifications.ts
+  notifications: userNotificationsRouter,
   system: systemRouter,
 
   auth: router({
@@ -8431,143 +8409,19 @@ export const appRouter = router({
       }),
   }),
 
-  // Usage & Statistics
-  usage: router({
-    getCurrentUsage: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
+  // Usage & Statistics — modularized to routers-usage.ts
+  usage: usageRouter,
 
-      const usage = await db.getMerchantCurrentUsage(merchant.id);
-      if (!usage) throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد بيانات استخدام' });
-
-      return usage;
-    }),
-
-    getUsageHistory: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
-
-      return await db.getMerchantUsageHistory(merchant.id);
-    }),
-  }),
-
-  // Subscription Reports (Admin)
-  subscriptionReports: router({
-    getOverview: adminProcedure.query(async () => {
-      return await db.getSubscriptionOverview();
-    }),
-
-    getConversionRate: adminProcedure
-      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
-      .query(async ({ input }) => {
-        return await db.getSubscriptionConversionRate(input?.period || 'month');
-      }),
-
-    getUpgradeDowngrade: adminProcedure
-      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
-      .query(async ({ input }) => {
-        return await db.getUpgradeDowngradeStats(input?.period || 'month');
-      }),
-
-    getCancellations: adminProcedure
-      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
-      .query(async ({ input }) => {
-        return await db.getCancellationStats(input?.period || 'month');
-      }),
-
-    getRevenue: adminProcedure
-      .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
-      .query(async ({ input }) => {
-        return await db.getRevenueStats(input?.period || 'month');
-      }),
-
-    getMonthlyRevenue: adminProcedure.query(async () => {
-      return await db.getMonthlyRevenueStats();
-    }),
-
-    getDistributionByPlan: adminProcedure.query(async () => {
-      return await db.getSubscriptionDistributionByPlan();
-    }),
-  }),
+  // Subscription Reports (Admin) — modularized to routers-subscription-reports.ts
+  subscriptionReports: subscriptionReportsRouter,
 
   // Smart Notifications
   smartNotifications: smartNotificationsRouter,
 
-  // Email Notifications
-  email: router({
-    sendWelcome: protectedProcedure
-      .input(z.object({
-        name: z.string(),
-        email: z.string().email(),
-        trialEndDate: z.string(),
-      }))
-      .mutation(async ({ input }) => {
-        const { sendWelcomeEmail } = await import('./_core/email');
-        const success = await sendWelcomeEmail(input);
-        return { success };
-      }),
+  // Email Notifications — modularized to routers-email.ts
+  email: emailRouter,
 
-    sendSubscriptionConfirmation: protectedProcedure
-      .input(z.object({
-        name: z.string(),
-        email: z.string().email(),
-        planName: z.string(),
-        startDate: z.string(),
-        endDate: z.string(),
-      }))
-      .mutation(async ({ input }) => {
-        const { sendSubscriptionConfirmationEmail } = await import('./_core/email');
-        const success = await sendSubscriptionConfirmationEmail(input);
-        return { success };
-      }),
-
-    sendTrialExpiry: protectedProcedure
-      .input(z.object({
-        name: z.string(),
-        email: z.string().email(),
-        daysRemaining: z.number(),
-      }))
-      .mutation(async ({ input }) => {
-        const { sendTrialExpiryEmail } = await import('./_core/email');
-        const success = await sendTrialExpiryEmail(input);
-        return { success };
-      }),
-  }),
-
-  // Trial Management
-  trial: router({
-    getStatus: protectedProcedure.query(async ({ ctx }) => {
-      const user = await db.getUserById(ctx.user.id);
-      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-
-      return {
-        isTrialActive: user.isTrialActive === 1,
-        trialStartDate: user.trialStartDate,
-        trialEndDate: user.trialEndDate,
-        whatsappConnected: user.whatsappConnected === 1,
-      };
-    }),
-
-    checkExpiry: protectedProcedure.query(async ({ ctx }) => {
-      const user = await db.getUserById(ctx.user.id);
-      if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
-
-      if (user.isTrialActive === 1 && user.trialEndDate) {
-        const now = new Date();
-        const endDate = new Date(user.trialEndDate);
-        const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-        return {
-          isExpired: daysRemaining <= 0,
-          daysRemaining: Math.max(0, daysRemaining),
-        };
-      }
-
-      return {
-        isExpired: false,
-        daysRemaining: 0,
-      };
-    }),
-  }),
+  // Trial Management — modularized to routers-trial.ts
+  trial: trialRouter,
 });
 export type AppRouter = typeof appRouter;

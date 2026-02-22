@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
@@ -27,6 +28,7 @@ import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { validateEnv } from "./validateEnv";
 import { applySecurityMiddleware } from "./security";
+import { logError } from "./logger";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -52,6 +54,10 @@ async function startServer() {
   validateEnv();
 
   const app = express();
+
+  // Trust first proxy (Nginx on Forge) — required for correct client IP in rate limiter
+  app.set('trust proxy', 1);
+
   const server = createServer(app);
 
   // Apply security middleware (Helmet, CORS, request ID)
@@ -62,6 +68,21 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // Parse cookies
   app.use(cookieParser());
+
+  // Gzip compression for API responses (60-80% size reduction)
+  app.use(compression());
+
+  // Request timeout middleware (30s) — prevents hung requests from exhausting resources
+  app.use((req, res, next) => {
+    if (req.path === '/health' || req.path === '/ready') return next();
+    req.setTimeout(30000);
+    res.setTimeout(30000, () => {
+      if (!res.headersSent) {
+        res.status(408).json({ error: 'Request Timeout', errorAr: 'انتهت مهلة الطلب', code: 'TIMEOUT' });
+      }
+    });
+    next();
+  });
 
   // Health check endpoints for load balancers and orchestrators
   app.get('/health', (req, res) => {
@@ -254,22 +275,34 @@ async function startServer() {
 
     // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
     cron.schedule('0 9 * * *', async () => {
-      console.log('[Cron] Running occasion campaigns check...');
-      await runOccasionCampaignsCron();
+      try {
+        console.log('[Cron] Running occasion campaigns check...');
+        await runOccasionCampaignsCron();
+      } catch (error) {
+        logError('[Cron] Occasion campaigns failed', error);
+      }
     });
 
     // Instance Expiry Check (runs daily at 8 AM)
     cron.schedule('0 8 * * *', async () => {
-      console.log('[Cron] Running instance expiry check...');
-      const { checkInstanceExpiry } = await import('../jobs/instance-expiry-check');
-      await checkInstanceExpiry();
+      try {
+        console.log('[Cron] Running instance expiry check...');
+        const { checkInstanceExpiry } = await import('../jobs/instance-expiry-check');
+        await checkInstanceExpiry();
+      } catch (error) {
+        logError('[Cron] Instance expiry check failed', error);
+      }
     });
 
     // Monthly Usage Reset (runs on the 1st of each month at 00:00)
     cron.schedule('0 0 1 * *', async () => {
-      console.log('[Cron] Running monthly usage reset...');
-      const { resetMonthlyUsage } = await import('../usage-tracking');
-      await resetMonthlyUsage();
+      try {
+        console.log('[Cron] Running monthly usage reset...');
+        const { resetMonthlyUsage } = await import('../usage-tracking');
+        await resetMonthlyUsage();
+      } catch (error) {
+        logError('[Cron] Monthly usage reset failed', error);
+      }
     });
 
     // Start WhatsApp message polling for all connected merchants
@@ -300,5 +333,15 @@ async function startServer() {
     process.on('SIGINT', () => gracefulShutdown('SIGINT'));
   });
 }
+
+// Global process error handlers — prevent silent crashes
+process.on('unhandledRejection', (reason) => {
+  logError('Unhandled Promise Rejection', reason instanceof Error ? reason : new Error(String(reason)));
+});
+
+process.on('uncaughtException', (error) => {
+  logError('Uncaught Exception — shutting down', error);
+  process.exit(1);
+});
 
 startServer().catch(console.error);
