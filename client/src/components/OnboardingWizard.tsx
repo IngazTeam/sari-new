@@ -58,13 +58,8 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
       icon: Store,
     },
     {
-      title: 'ربط واتساب',
-      description: 'اربط رقم واتساب للبدء في استقبال الطلبات',
-      icon: MessageSquare,
-    },
-    {
       title: 'جاهز للانطلاق! 🚀',
-      description: 'كل شيء جاهز الآن',
+      description: 'استكشف ساري واشترك لربط واتساب',
       icon: CheckCircle2,
     },
   ];
@@ -121,9 +116,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     onSkip?.();
   };
 
-  const handleWhatsAppSetup = () => {
-    setLocation('/merchant/whatsapp-setup');
-  };
+
 
   const progress = ((currentStep + 1) / steps.length) * 100;
   const CurrentIcon = steps[currentStep].icon;
@@ -279,160 +272,88 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
             </div>
           )}
 
-          {/* Step 2: WhatsApp Setup */}
+          {/* Step 2: Trial + Subscription Info */}
           {currentStep === 2 && (
-            <div className="space-y-6 py-6">
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-                  <MessageSquare className="w-8 h-8 text-green-600" />
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <h3 className="text-lg font-semibold">ربط رقم واتساب</h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="text-gray-400 hover:text-gray-600">
-                        <HelpCircle className="w-5 h-5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-sm">
-                      <div className="space-y-2">
-                        <p className="font-medium">رقم متجرك الرسمي للرد التلقائي</p>
-                        <div className="space-y-1 text-xs">
-                          <p className="text-green-600">✅ رقم جديد غير مستخدم</p>
-                          <p className="text-green-600">✅ رقم مخصص للمتجر فقط</p>
-                          <p className="text-red-600">❌ رقمك الشخصي</p>
-                          <p className="text-red-600">❌ رقم مستخدم في واتساب</p>
-                        </div>
-                        <p className="text-xs text-gray-400">يمكنك شراء رقم جديد من أي مزود خدمة</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  لكي يتمكن ساري من استقبال الرسائل والرد على العملاء، نحتاج إلى ربط رقم واتساب خاص بمتجرك.
-                </p>
-              </div>
-
-              <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-primary">ما تحتاجه:</h4>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="text-primary hover:text-primary">
-                        <HelpCircle className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-sm">
-                      <div className="space-y-2">
-                        <p className="font-medium">خطوات الربط الناجح:</p>
-                        <div className="space-y-1 text-xs">
-                          <p>📱 احصل على رقم جديد وفعّله</p>
-                          <p>📲 افتح واتساب على جهازك</p>
-                          <p>🔒 امسح QR code من الموقع</p>
-                          <p>✅ انتظر التفعيل (2-5 دقائق)</p>
-                        </div>
-                        <p className="text-xs text-gray-400">تأكد من اتصال إنترنت مستقر</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <ul className="space-y-1 text-sm text-primary">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>رقم جوال سعودي جديد (غير مستخدم في واتساب)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>جهاز الجوال معك لمسح رمز QR</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>5 دقائق فقط لإكمال الربط</span>
-                  </li>
-                </ul>
-              </div>
-
-              <Button
-                onClick={handleWhatsAppSetup}
-                className="w-full bg-green-600 hover:bg-green-700"
-                size="lg"
-              >
-                <MessageSquare className="ml-2 w-5 h-5" />
-                ابدأ ربط واتساب
-              </Button>
-
-              <p className="text-center text-sm text-gray-500">
-                يمكنك تخطي هذه الخطوة والعودة لها لاحقاً من الإعدادات
-              </p>
-            </div>
-          )}
-
-          {/* Step 3: Complete */}
-          {currentStep === 3 && (
             <div className="space-y-6 py-6">
               <div className="text-center space-y-4">
                 <div className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold">كل شيء جاهز! 🎉</h3>
+                <h3 className="text-xl font-semibold">حسابك جاهز! 🎉</h3>
                 <p className="text-gray-600 max-w-md mx-auto">
-                  تم إعداد حسابك بنجاح. يمكنك الآن البدء في استخدام ساري لإدارة متجرك على واتساب.
+                  يمكنك الآن استكشاف لوحة التحكم بالكامل، إضافة المنتجات، وتجربة ردود ساري الذكية مجاناً
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 border border-primary/30 rounded-lg p-6 space-y-4">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-semibold text-primary">الخطوات التالية:</h4>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button type="button" className="text-primary hover:text-primary">
-                        <HelpCircle className="w-4 h-4" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-sm">
-                      <div className="space-y-2">
-                        <p className="font-medium">الخطوات المقترحة للبدء:</p>
-                        <div className="space-y-1 text-xs">
-                          <p>📦 أضف 5-10 منتجات على الأقل</p>
-                          <p>📱 اربط واتساب إن لم تفعل</p>
-                          <p>✅ جرّب إرسال رسالة تجريبية</p>
-                          <p>🚀 ابدأ استقبال العملاء!</p>
-                        </div>
-                        <p className="text-xs text-gray-400">يمكنك البدء بأي خطوة من لوحة التحكم</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
+              {/* What you can do now */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                <h4 className="font-semibold text-green-800">✅ متاح لك الآن مجاناً:</h4>
+                <ul className="space-y-1 text-sm text-green-700">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>استكشاف لوحة التحكم وجميع الإعدادات</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>إضافة المنتجات والخدمات</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>تجربة ردود ساري الذكية ومعاينتها</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>إعداد شخصية ساري وأسلوب التواصل</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* WhatsApp requires subscription */}
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+                <h4 className="font-semibold text-amber-800">📱 لربط واتساب يجب الاشتراك بباقة</h4>
+                <p className="text-sm text-amber-700">
+                  لتفعيل الرد التلقائي على واتساب واستقبال الطلبات من العملاء، اختر الباقة المناسبة لك:
+                </p>
+              </div>
+
+              {/* Abbreviated Plans */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div
+                  className="border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary hover:shadow-md transition-all"
+                  onClick={() => setLocation('/merchant/subscription/plans')}
+                >
+                  <h5 className="font-semibold text-gray-900 mb-1">الأساسية</h5>
+                  <p className="text-2xl font-bold text-primary mb-1">99 <span className="text-sm font-normal">ر.س/شهر</span></p>
+                  <p className="text-xs text-gray-500">500 رسالة/شهر</p>
                 </div>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm flex-shrink-0">
-                      1
-                    </div>
-                    <div>
-                      <p className="font-medium">أضف منتجاتك</p>
-                      <p className="text-sm text-gray-600">ابدأ بإضافة منتجاتك أو استيرادها من ملف CSV</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm flex-shrink-0">
-                      2
-                    </div>
-                    <div>
-                      <p className="font-medium">اربط واتساب (إن لم تفعل)</p>
-                      <p className="text-sm text-gray-600">اربط رقم واتساب لبدء استقبال الطلبات</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm flex-shrink-0">
-                      3
-                    </div>
-                    <div>
-                      <p className="font-medium">ابدأ البيع!</p>
-                      <p className="text-sm text-gray-600">ساري سيرد على عملائك ويستقبل الطلبات تلقائياً</p>
-                    </div>
-                  </div>
+                <div
+                  className="border-2 border-primary rounded-lg p-4 text-center cursor-pointer hover:shadow-md transition-all bg-primary/5 relative"
+                  onClick={() => setLocation('/merchant/subscription/plans')}
+                >
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 bg-primary text-white text-xs px-2 py-0.5 rounded-full">الأكثر طلباً</span>
+                  <h5 className="font-semibold text-gray-900 mb-1">الاحترافية</h5>
+                  <p className="text-2xl font-bold text-primary mb-1">199 <span className="text-sm font-normal">ر.س/شهر</span></p>
+                  <p className="text-xs text-gray-500">2000 رسالة/شهر</p>
+                </div>
+                <div
+                  className="border-2 border-gray-200 rounded-lg p-4 text-center cursor-pointer hover:border-primary hover:shadow-md transition-all"
+                  onClick={() => setLocation('/merchant/subscription/plans')}
+                >
+                  <h5 className="font-semibold text-gray-900 mb-1">المتقدمة</h5>
+                  <p className="text-2xl font-bold text-primary mb-1">399 <span className="text-sm font-normal">ر.س/شهر</span></p>
+                  <p className="text-xs text-gray-500">5000 رسالة/شهر</p>
                 </div>
               </div>
+
+              <Button
+                onClick={() => setLocation('/merchant/subscription/plans')}
+                className="w-full"
+                variant="outline"
+                size="sm"
+              >
+                عرض جميع الباقات والمقارنة
+                <ArrowLeft className="mr-2 w-4 h-4" />
+              </Button>
             </div>
           )}
 
