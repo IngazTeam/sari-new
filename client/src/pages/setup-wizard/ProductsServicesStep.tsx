@@ -25,13 +25,19 @@ const PRODUCT_SUGGESTIONS = [
   { name: 'لابتوب ديل انسبايرون', price: '2899' },
   { name: 'سماعات ايربودز', price: '899' },
   { name: 'شاحن لاسلكي', price: '149' },
+  { name: 'طاولة مكتب', price: '750' },
+  { name: 'كرسي مكتبي', price: '1200' },
 ];
 
 const SERVICE_SUGGESTIONS = [
-  { name: 'استقدام عاملة منزلية', price: '15000' },
-  { name: 'تأشيرة عمالة', price: '2000' },
-  { name: 'كشف طبي عام', price: '150' },
+  { name: 'حجز موعد كشف طبي', price: '150' },
   { name: 'تنظيف أسنان', price: '300' },
+  { name: 'جلسة تصوير فوتوغرافي', price: '500' },
+  { name: 'استشارة قانونية', price: '400' },
+  { name: 'جلسة تجميل وعناية', price: '250' },
+  { name: 'صيانة مكيفات', price: '200' },
+  { name: 'استقدام عاملة منزلية', price: '15000' },
+  { name: 'حجز قاعة مناسبات', price: '5000' },
 ];
 
 export default function ProductsServicesStep({
