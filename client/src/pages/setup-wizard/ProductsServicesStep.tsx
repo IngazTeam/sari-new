@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, Plus, Trash2, Package, Briefcase, Lightbulb, AlertCircle } from 'lucide-react';
+import { ArrowRight, Plus, Trash2, Package, Briefcase, Lightbulb, AlertCircle, Globe, ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ProductsServicesStepProps {
@@ -19,6 +19,10 @@ interface Item {
   name: string;
   description: string;
   price: string;
+  imageUrl?: string;
+  currency?: string;
+  category?: string;
+  productUrl?: string;
 }
 
 const PRODUCT_SUGGESTIONS = [
@@ -130,6 +134,9 @@ export default function ProductsServicesStep({
     skipStep();
   };
 
+  // Check if products came from website scraping (have imageUrl or productUrl)
+  const hasScrapedProducts = products.some(p => p.imageUrl || p.productUrl);
+
   const renderItemForm = (item: Item, type: 'products' | 'services', index: number) => {
     const items = type === 'products' ? products : services;
     const Icon = type === 'products' ? Package : Briefcase;
@@ -139,12 +146,31 @@ export default function ProductsServicesStep({
       <Card key={item.id} className="p-4 border-emerald-100 bg-white">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center space-x-2 space-x-reverse">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+            {/* Show product image thumbnail if available */}
+            {item.imageUrl ? (
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                className="w-10 h-10 rounded-lg object-cover bg-muted border"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                  // Show fallback icon
+                  const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className={`w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center ${item.imageUrl ? 'hidden' : ''}`}>
               <Icon className="h-4 w-4 text-emerald-600" />
             </div>
-            <h4 className="font-semibold text-gray-900">
-              {label} #{index + 1}
-            </h4>
+            <div>
+              <h4 className="font-semibold text-gray-900">
+                {label} #{index + 1}
+              </h4>
+              {item.category && (
+                <span className="text-xs text-gray-500">{item.category}</span>
+              )}
+            </div>
           </div>
           <Button
             variant="ghost"
@@ -180,7 +206,12 @@ export default function ProductsServicesStep({
           </div>
 
           <div>
-            <Label htmlFor={`${type}-price-${item.id}`}>{t('wizardProductsServicesStepPage.text2')}</Label>
+            <Label htmlFor={`${type}-price-${item.id}`}>
+              {t('wizardProductsServicesStepPage.text2')}
+              {item.currency && item.currency !== 'SAR' && (
+                <span className="text-xs text-gray-400 mr-2">({item.currency})</span>
+              )}
+            </Label>
             <Input
               id={`${type}-price-${item.id}`}
               type="number"
@@ -229,24 +260,26 @@ export default function ProductsServicesStep({
           إضافة {isProducts ? 'منتج' : 'خدمة'}
         </Button>
 
-        {/* Suggestions */}
-        <div className="pt-3 border-t border-emerald-200">
-          <p className="text-xs text-gray-500 mb-2 flex items-center justify-center gap-1">
-            <Lightbulb className="h-3 w-3" />
-            أو أضف سريعاً من الأمثلة:
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {suggestions.map((s, i) => (
-              <button
-                key={i}
-                onClick={() => addSuggestion(type, s)}
-                className="text-xs px-3 py-1.5 rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
-              >
-                {s.name} ({s.price} ر.س)
-              </button>
-            ))}
+        {/* Suggestions — only show if NO scraped products exist */}
+        {!hasScrapedProducts && (
+          <div className="pt-3 border-t border-emerald-200">
+            <p className="text-xs text-gray-500 mb-2 flex items-center justify-center gap-1">
+              <Lightbulb className="h-3 w-3" />
+              أو أضف سريعاً من الأمثلة:
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => addSuggestion(type, s)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-colors"
+                >
+                  {s.name} ({s.price} ر.س)
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -261,6 +294,17 @@ export default function ProductsServicesStep({
           سيستخدمها ساري للرد على عملائك تلقائياً عبر واتساب
         </p>
       </div>
+
+      {/* Scraped Products Banner */}
+      {hasScrapedProducts && products.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex gap-3">
+          <Globe className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-blue-800">
+            <p className="font-medium">🌐 تم استيراد {products.length} منتج من موقعك</p>
+            <p className="text-xs text-blue-600 mt-0.5">يمكنك تعديل أو حذف أي منتج أدناه</p>
+          </div>
+        </div>
+      )}
 
       {/* Tips Banner */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">

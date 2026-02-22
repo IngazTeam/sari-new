@@ -369,10 +369,12 @@ export default function SetupWizard() {
               {currentStep === 2 && 'اختر نوع نشاطك التجاري'}
               {currentStep === 3 && 'وفر الوقت باستخدام قالب جاهز'}
               {currentStep === 4 && 'أخبرنا المزيد عن نشاطك'}
-              {currentStep === 5 && 'أضف منتجاتك أو خدماتك'}
-              {currentStep === 6 && 'ربط مع Google (اختياري)'}
-              {currentStep === 7 && 'اجعل ساري يتحدث بأسلوبك'}
-              {currentStep === 8 && 'مراجعة نهائية قبل البدء'}
+              {currentStep === 5 && 'ساري يسحب المنتجات من موقعك تلقائياً'}
+              {currentStep === 6 && 'أضف منتجاتك أو خدماتك'}
+              {currentStep === 7 && 'ربط مع Google (اختياري)'}
+              {currentStep === 8 && 'اجعل ساري يتحدث بأسلوبك'}
+              {currentStep === 9 && 'اختر لغة التواصل'}
+              {currentStep === 10 && 'مراجعة نهائية قبل البدء'}
             </CardDescription>
           </CardHeader>
           <CardContent>
