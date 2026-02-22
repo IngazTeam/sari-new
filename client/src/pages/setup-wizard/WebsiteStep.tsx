@@ -24,7 +24,7 @@ interface WebsiteStepProps {
 }
 
 export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep, skipStep }: WebsiteStepProps) {
-  const { t } = useTranslation();
+    const { t } = useTranslation();
     const [url, setUrl] = useState(wizardData.websiteUrl || '');
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<any>(wizardData.websiteAnalysis || null);
@@ -106,6 +106,10 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 name: p.name || '',
                 description: p.description || '',
                 price: p.price?.toString() || '',
+                currency: p.currency || 'SAR',
+                imageUrl: p.imageUrl || '',
+                productUrl: p.productUrl || '',
+                category: p.category || '',
             }));
             updateWizardData({
                 products,

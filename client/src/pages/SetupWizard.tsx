@@ -187,6 +187,20 @@ export default function SetupWizard() {
         botTone: wizardData.botTone || 'friendly',
         botLanguage: wizardData.botLanguage || 'ar',
         welcomeMessage: wizardData.welcomeMessage || '',
+        products: (wizardData.products || []).filter((p: any) => p.name?.trim()).map((p: any) => ({
+          name: p.name,
+          description: p.description || '',
+          price: p.price || '0',
+          currency: p.currency || 'SAR',
+          imageUrl: p.imageUrl || '',
+          productUrl: p.productUrl || '',
+          category: p.category || '',
+        })),
+        services: (wizardData.services || []).filter((s: any) => s.name?.trim()).map((s: any) => ({
+          name: s.name,
+          description: s.description || '',
+          price: s.price || '0',
+        })),
       });
 
       toast.success(t('setupWizardPage.text0'));

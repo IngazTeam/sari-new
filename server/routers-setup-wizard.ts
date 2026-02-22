@@ -68,6 +68,20 @@ export const setupWizardRouter = router({
             botTone: z.enum(['friendly', 'professional', 'casual']).optional(),
             botLanguage: z.enum(['ar', 'en', 'both']).optional(),
             welcomeMessage: z.string().optional(),
+            products: z.array(z.object({
+                name: z.string(),
+                description: z.string().optional().default(''),
+                price: z.string().optional().default('0'),
+                currency: z.string().optional().default('SAR'),
+                imageUrl: z.string().optional().default(''),
+                productUrl: z.string().optional().default(''),
+                category: z.string().optional().default(''),
+            })).optional().default([]),
+            services: z.array(z.object({
+                name: z.string(),
+                description: z.string().optional().default(''),
+                price: z.string().optional().default('0'),
+            })).optional().default([]),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -89,6 +103,38 @@ export const setupWizardRouter = router({
                     language: input.botLanguage,
                     welcomeMessage: input.welcomeMessage,
                 });
+            }
+
+            // Save products to DB
+            if (input.products && input.products.length > 0) {
+                for (const product of input.products) {
+                    if (!product.name.trim()) continue;
+                    await db.createProduct({
+                        merchantId: merchant.id,
+                        name: product.name,
+                        description: product.description || '',
+                        price: Math.round(parseFloat(product.price || '0') * 100), // convert to cents
+                        currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
+                        imageUrl: product.imageUrl || null,
+                        productUrl: product.productUrl || null,
+                        category: product.category || null,
+                    });
+                }
+            }
+
+            // Save services to DB
+            if (input.services && input.services.length > 0) {
+                for (const service of input.services) {
+                    if (!service.name.trim()) continue;
+                    await db.createService({
+                        merchantId: merchant.id,
+                        name: service.name,
+                        description: service.description || '',
+                        basePrice: Math.round(parseFloat(service.price || '0') * 100),
+                        priceType: 'fixed',
+                        durationMinutes: 30,
+                    });
+                }
             }
 
             await db.completeSetupWizard(merchant.id);
