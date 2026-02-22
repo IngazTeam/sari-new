@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/navigation-menu';
 
 export default function Navbar() {
-  const { t } = useTranslation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const currentLang = i18n.language;
