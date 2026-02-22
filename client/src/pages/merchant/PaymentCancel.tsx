@@ -2,8 +2,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { XCircle } from "lucide-react";
 import { useLocation } from "wouter";
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentCancel() {
+  const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const params = new URLSearchParams(location.split('?')[1]);
   const subscriptionId = params.get('subscriptionId');
@@ -17,15 +19,15 @@ export default function PaymentCancel() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold mb-2">تم إلغاء الدفع</h2>
+            <h2 className="text-2xl font-bold mb-2">{t('paymentCancelPage.text0')}</h2>
             <p className="text-muted-foreground">
-              لم تكتمل عملية الدفع. لم يتم خصم أي مبلغ من حسابك.
+              {t('paymentCancelPage.text2')}
             </p>
           </div>
 
           {subscriptionId && (
             <div className="bg-muted p-4 rounded-lg text-right">
-              <p className="text-sm text-muted-foreground mb-2">رقم الطلب</p>
+              <p className="text-sm text-muted-foreground mb-2">{t('paymentCancelPage.text1')}</p>
               <p className="font-mono font-bold">#{subscriptionId}</p>
             </div>
           )}
@@ -35,23 +37,23 @@ export default function PaymentCancel() {
               className="w-full"
               onClick={() => setLocation('/merchant/subscriptions')}
             >
-              المحاولة مرة أخرى
+              {t('paymentCancelPage.text3')}
             </Button>
             <Button
               variant="outline"
               className="w-full"
               onClick={() => setLocation('/merchant/dashboard')}
             >
-              العودة إلى لوحة التحكم
+              {t('paymentCancelPage.text4')}
             </Button>
           </div>
 
           <div className="bg-primary/10 dark:bg-blue-950 p-4 rounded-lg text-right">
             <p className="text-sm font-medium text-primary dark:text-blue-200 mb-2">
-              هل تحتاج مساعدة؟
+              {t('paymentCancelPage.text5')}
             </p>
             <p className="text-xs text-primary dark:text-blue-300">
-              يمكنك التواصل مع فريق الدعم الفني للمساعدة في إتمام عملية الاشتراك
+              {t('paymentCancelPage.text6')}
             </p>
           </div>
         </CardContent>

@@ -25,8 +25,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from 'react-i18next';
 
 export default function QuickResponses() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: responses, isLoading } = trpc.quickResponses.list.useQuery();
   const { data: stats } = trpc.quickResponses.getStats.useQuery();
@@ -57,13 +59,13 @@ export default function QuickResponses() {
   const handleCreate = async () => {
     try {
       await createMutation.mutateAsync(formData);
-      toast.success("تم إضافة الرد السريع بنجاح");
+      toast.success(t('quickResponsesPage.text0'));
       setIsCreateOpen(false);
       resetForm();
       utils.quickResponses.list.invalidate();
       utils.quickResponses.getStats.invalidate();
     } catch (error) {
-      toast.error("فشل إضافة الرد السريع");
+      toast.error(t('quickResponsesPage.text1'));
     }
   };
   
@@ -75,13 +77,13 @@ export default function QuickResponses() {
         id: editingResponse.id,
         ...formData,
       });
-      toast.success("تم تحديث الرد السريع بنجاح");
+      toast.success(t('quickResponsesPage.text2'));
       setIsEditOpen(false);
       setEditingResponse(null);
       resetForm();
       utils.quickResponses.list.invalidate();
     } catch (error) {
-      toast.error("فشل تحديث الرد السريع");
+      toast.error(t('quickResponsesPage.text3'));
     }
   };
   
@@ -90,22 +92,22 @@ export default function QuickResponses() {
     
     try {
       await deleteMutation.mutateAsync({ id });
-      toast.success("تم حذف الرد السريع بنجاح");
+      toast.success(t('quickResponsesPage.text4'));
       utils.quickResponses.list.invalidate();
       utils.quickResponses.getStats.invalidate();
     } catch (error) {
-      toast.error("فشل حذف الرد السريع");
+      toast.error(t('quickResponsesPage.text5'));
     }
   };
   
   const handleToggleActive = async (id: number, isActive: boolean) => {
     try {
       await updateMutation.mutateAsync({ id, isActive: !isActive });
-      toast.success(isActive ? "تم تعطيل الرد السريع" : "تم تفعيل الرد السريع");
+      toast.success(isActive ? t('quickResponsesPage.text34') : t('quickResponsesPage.text35'));
       utils.quickResponses.list.invalidate();
       utils.quickResponses.getStats.invalidate();
     } catch (error) {
-      toast.error("فشل تحديث حالة الرد السريع");
+      toast.error(t('quickResponsesPage.text6'));
     }
   };
   
@@ -134,10 +136,10 @@ export default function QuickResponses() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <MessageSquare className="h-8 w-8 text-primary" />
-            إدارة الردود السريعة
+            {t('quickResponsesPage.text36')}
           </h1>
           <p className="text-muted-foreground mt-2">
-            أضف وعدّل الردود الجاهزة التي يستخدمها ساري في المحادثات
+            {t('quickResponsesPage.text37')}
           </p>
         </div>
         
@@ -145,57 +147,57 @@ export default function QuickResponses() {
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="mr-2 h-4 w-4" />
-              إضافة رد جديد
+              {t('quickResponsesPage.text38')}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>إضافة رد سريع جديد</DialogTitle>
+              <DialogTitle>{t('quickResponsesPage.text7')}</DialogTitle>
               <DialogDescription>
-                أضف رداً جاهزاً يستخدمه ساري عند اكتشاف كلمات معينة
+                {t('quickResponsesPage.text39')}
               </DialogDescription>
             </DialogHeader>
             
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="trigger">العبارة المحفزة *</Label>
+                <Label htmlFor="trigger">{t('quickResponsesPage.text8')}</Label>
                 <Input
                   id="trigger"
                   value={formData.trigger}
                   onChange={(e) => setFormData({ ...formData, trigger: e.target.value })}
-                  placeholder="مثال: السعر، كم التوصيل، متى يوصل"
+                  placeholder={t('quickResponsesPage.text9')}
                 />
                 <p className="text-sm text-muted-foreground">
-                  الكلمة أو العبارة التي تحفز هذا الرد
+                  {t('quickResponsesPage.text40')}
                 </p>
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="response">الرد *</Label>
+                <Label htmlFor="response">{t('quickResponsesPage.text10')}</Label>
                 <Textarea
                   id="response"
                   value={formData.response}
                   onChange={(e) => setFormData({ ...formData, response: e.target.value })}
-                  placeholder="مثال: أسعارنا تبدأ من 50 ريال، والتوصيل مجاني للطلبات فوق 200 ريال"
+                  placeholder={t('quickResponsesPage.text11')}
                   rows={4}
                 />
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="keywords">كلمات مفتاحية إضافية</Label>
+                <Label htmlFor="keywords">{t('quickResponsesPage.text12')}</Label>
                 <Input
                   id="keywords"
                   value={formData.keywords}
                   onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                  placeholder="مثال: سعر، كم، فلوس، ثمن (افصل بفاصلة)"
+                  placeholder={t('quickResponsesPage.text13')}
                 />
                 <p className="text-sm text-muted-foreground">
-                  كلمات إضافية تحفز نفس الرد (اختياري)
+                  {t('quickResponsesPage.text41')}
                 </p>
               </div>
               
               <div className="grid gap-2">
-                <Label htmlFor="priority">الأولوية (0-10)</Label>
+                <Label htmlFor="priority">{t('quickResponsesPage.text14')}</Label>
                 <Input
                   id="priority"
                   type="number"
@@ -205,18 +207,18 @@ export default function QuickResponses() {
                   onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
                 />
                 <p className="text-sm text-muted-foreground">
-                  الأولوية الأعلى تعني استخدام هذا الرد أولاً
+                  {t('quickResponsesPage.text42')}
                 </p>
               </div>
             </div>
             
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
-                إلغاء
+                {t('quickResponsesPage.text43')}
               </Button>
               <Button onClick={handleCreate} disabled={createMutation.isPending || !formData.trigger || !formData.response}>
                 {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                إضافة
+                {t('quickResponsesPage.text44')}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -228,7 +230,7 @@ export default function QuickResponses() {
         <div className="grid gap-4 md:grid-cols-3 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الردود</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('quickResponsesPage.text15')}</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -238,7 +240,7 @@ export default function QuickResponses() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الردود النشطة</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('quickResponsesPage.text16')}</CardTitle>
               <TrendingUp className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -248,7 +250,7 @@ export default function QuickResponses() {
           
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">الردود المعطلة</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('quickResponsesPage.text17')}</CardTitle>
               <ToggleLeft className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -261,28 +263,28 @@ export default function QuickResponses() {
       {/* Responses Table */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الردود السريعة</CardTitle>
+          <CardTitle>{t('quickResponsesPage.text18')}</CardTitle>
           <CardDescription>
-            جميع الردود الجاهزة المتاحة لساري
+            {t('quickResponsesPage.text45')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {!responses || responses.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p>لا توجد ردود سريعة حالياً</p>
-              <p className="text-sm mt-2">ابدأ بإضافة أول رد سريع</p>
+              <p>{t('quickResponsesPage.text19')}</p>
+              <p className="text-sm mt-2">{t('quickResponsesPage.text20')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                <TableHead>العبارة المحفزة</TableHead>
-                <TableHead>الرد</TableHead>
-                <TableHead>الأولوية</TableHead>
-                <TableHead>عدد الاستخدام</TableHead>
-                <TableHead>الحالة</TableHead>
-                  <TableHead className="text-left">الإجراءات</TableHead>
+                <TableHead>{t('quickResponsesPage.text21')}</TableHead>
+                <TableHead>{t('quickResponsesPage.text22')}</TableHead>
+                <TableHead>{t('quickResponsesPage.text23')}</TableHead>
+                <TableHead>{t('quickResponsesPage.text24')}</TableHead>
+                <TableHead>{t('quickResponsesPage.text25')}</TableHead>
+                  <TableHead className="text-left">{t('quickResponsesPage.text26')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -296,13 +298,13 @@ export default function QuickResponses() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {response.useCount} مرة
+                      {t('quickResponsesPage.text49', { var0: response.useCount })}
                     </TableCell>
                     <TableCell>
                       {response.isActive ? (
-                        <Badge className="bg-green-600">نشط</Badge>
+                        <Badge className="bg-green-600">{t('quickResponsesPage.text27')}</Badge>
                       ) : (
-                        <Badge variant="secondary">معطل</Badge>
+                        <Badge variant="secondary">{t('quickResponsesPage.text28')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-left">
@@ -346,15 +348,15 @@ export default function QuickResponses() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>تعديل الرد السريع</DialogTitle>
+            <DialogTitle>{t('quickResponsesPage.text29')}</DialogTitle>
             <DialogDescription>
-              عدّل الرد الجاهز حسب احتياجك
+              {t('quickResponsesPage.text46')}
             </DialogDescription>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-trigger">العبارة المحفزة *</Label>
+              <Label htmlFor="edit-trigger">{t('quickResponsesPage.text30')}</Label>
               <Input
                 id="edit-trigger"
                 value={formData.trigger}
@@ -363,7 +365,7 @@ export default function QuickResponses() {
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="edit-response">الرد *</Label>
+              <Label htmlFor="edit-response">{t('quickResponsesPage.text31')}</Label>
               <Textarea
                 id="edit-response"
                 value={formData.response}
@@ -373,7 +375,7 @@ export default function QuickResponses() {
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="edit-keywords">كلمات مفتاحية إضافية</Label>
+              <Label htmlFor="edit-keywords">{t('quickResponsesPage.text32')}</Label>
               <Input
                 id="edit-keywords"
                 value={formData.keywords}
@@ -382,7 +384,7 @@ export default function QuickResponses() {
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="edit-priority">الأولوية (0-10)</Label>
+              <Label htmlFor="edit-priority">{t('quickResponsesPage.text33')}</Label>
               <Input
                 id="edit-priority"
                 type="number"
@@ -396,11 +398,11 @@ export default function QuickResponses() {
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
-              إلغاء
+              {t('quickResponsesPage.text47')}
             </Button>
             <Button onClick={handleEdit} disabled={updateMutation.isPending || !formData.trigger || !formData.response}>
               {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              حفظ التغييرات
+              {t('quickResponsesPage.text48')}
             </Button>
           </DialogFooter>
         </DialogContent>

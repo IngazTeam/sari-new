@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Bot, 
-  Clock, 
-  MessageSquare, 
-  Zap, 
+import {
+  Bot,
+  Clock,
+  MessageSquare,
+  Zap,
   Save,
   CheckCircle2,
   AlertCircle,
@@ -26,21 +27,22 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 
 export default function BotSettings() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
-  
+
   // Get current settings
   const { data: settings, isLoading } = trpc.botSettings.get.useQuery();
   const { data: shouldRespond } = trpc.botSettings.shouldRespond.useQuery();
-  
+
   // Update mutation
   const updateMutation = trpc.botSettings.update.useMutation({
     onSuccess: () => {
-      toast.success('تم حفظ الإعدادات بنجاح');
+      toast.success(t('botSettingsPage.saveSuccess'));
       utils.botSettings.get.invalidate();
       utils.botSettings.shouldRespond.invalidate();
     },
     onError: (error) => {
-      toast.error('فشل حفظ الإعدادات: ' + error.message);
+      toast.error(t('botSettingsPage.saveError') + error.message);
     },
   });
 
@@ -106,19 +108,19 @@ export default function BotSettings() {
   };
 
   const weekDays = [
-    { value: 0, label: 'الأحد' },
-    { value: 1, label: 'الإثنين' },
-    { value: 2, label: 'الثلاثاء' },
-    { value: 3, label: 'الأربعاء' },
-    { value: 4, label: 'الخميس' },
-    { value: 5, label: 'الجمعة' },
-    { value: 6, label: 'السبت' },
+    { value: 0, label: t('botSettingsPage.sunday') },
+    { value: 1, label: t('botSettingsPage.monday') },
+    { value: 2, label: t('botSettingsPage.tuesday') },
+    { value: 3, label: t('botSettingsPage.wednesday') },
+    { value: 4, label: t('botSettingsPage.thursday') },
+    { value: 5, label: t('botSettingsPage.friday') },
+    { value: 6, label: t('botSettingsPage.saturday') },
   ];
 
   if (isLoading) {
     return (
       <div className="container max-w-4xl py-8">
-        <div className="text-center">جاري التحميل...</div>
+        <div className="text-center">{t('botSettingsPage.loading')}</div>
       </div>
     );
   }
@@ -127,39 +129,39 @@ export default function BotSettings() {
   const generalTemplates = [
     {
       id: 'formal',
-      name: 'رسمي',
-      description: 'أسلوب رسمي ومحترف للشركات',
+      name: t('botSettingsPage.templateFormal'),
+      description: t('botSettingsPage.templateFormalDesc'),
       icon: '💼',
       category: 'general',
       settings: {
-        welcomeMessage: 'مرحباً بكم في متجرنا. نحن هنا لخدمتكم ومساعدتكم في اختيار أفضل المنتجات. كيف يمكنني مساعدتكم اليوم؟',
-        outOfHoursMessage: 'نشكركم على تواصلكم. نحن حالياً خارج أوقات العمل الرسمية. سنقوم بالرد عليكم في أقرب وقت ممكن.',
+        welcomeMessage: t('botSettingsPage.text1'),
+        outOfHoursMessage: t('botSettingsPage.text2'),
         tone: 'professional' as const,
         responseDelay: 3,
       },
     },
     {
       id: 'friendly',
-      name: 'ودود',
-      description: 'أسلوب ودي ومريح للتواصل',
+      name: t('botSettingsPage.templateFriendly'),
+      description: t('botSettingsPage.templateFriendlyDesc'),
       icon: '😊',
       category: 'general',
       settings: {
-        welcomeMessage: 'هلا وغلا! 👋 أهلين فيك عندنا. أنا ساري ومستعد أساعدك في أي شي تحتاجه. كيف أقدر أخدمك اليوم؟',
-        outOfHoursMessage: 'يعطيك العافية على التواصل! 🙏 الحين أحنا مقفلين، بس باكر بنرد عليك على طول. شكراً على صبرك!',
+        welcomeMessage: t('botSettingsPage.text3'),
+        outOfHoursMessage: t('botSettingsPage.text4'),
         tone: 'friendly' as const,
         responseDelay: 2,
       },
     },
     {
       id: 'modern',
-      name: 'عصري',
-      description: 'أسلوب عصري ومباشر',
+      name: t('botSettingsPage.templateModern'),
+      description: t('botSettingsPage.templateModernDesc'),
       icon: '⚡',
       category: 'general',
       settings: {
-        welcomeMessage: 'مرحباً! أنا ساري، مساعدك الذكي. جاهز لمساعدتك في إيجاد ما تبحث عنه بسرعة وسهولة. وش تحتاج؟',
-        outOfHoursMessage: 'شكراً على رسالتك! حالياً خارج ساعات الدوام. بنرجع لك بأقرب وقت.',
+        welcomeMessage: t('botSettingsPage.text5'),
+        outOfHoursMessage: t('botSettingsPage.text6'),
         tone: 'casual' as const,
         responseDelay: 1,
       },
@@ -170,78 +172,78 @@ export default function BotSettings() {
   const industryTemplates = [
     {
       id: 'restaurant',
-      name: 'مطاعم',
-      description: 'مخصص للمطاعم والمقاهي',
+      name: t('botSettingsPage.templateRestaurant'),
+      description: t('botSettingsPage.templateRestaurantDesc'),
       icon: '🍴',
       category: 'industry',
       settings: {
-        welcomeMessage: 'أهلاً وسهلاً! 🍴 مرحباً بك في مطعمنا. أنا ساري وجاهز أساعدك في اختيار ألذ الأطباق. تبي تشوف قائمة الطعام أو عندك استفسار معين؟',
-        outOfHoursMessage: 'شكراً على تواصلك! 🙏 المطعم حالياً مقفل. ساعات العمل من 12 ظهراً إلى 12 منتصف الليل. بنرد عليك بكرة!',
+        welcomeMessage: t('botSettingsPage.text7'),
+        outOfHoursMessage: t('botSettingsPage.text8'),
         tone: 'friendly' as const,
         responseDelay: 2,
       },
     },
     {
       id: 'fashion',
-      name: 'أزياء',
-      description: 'مخصص لمتاجر الأزياء والموضة',
+      name: t('botSettingsPage.templateFashion'),
+      description: t('botSettingsPage.templateFashionDesc'),
       icon: '👗',
       category: 'industry',
       settings: {
-        welcomeMessage: 'مرحباً بك في متجرنا! 👗✨ أنا ساري، مستشارك الشخصي للموضة. عندنا أحدث التصاميم وأجمل القطع. وش تدور عليه اليوم؟',
-        outOfHoursMessage: 'شكراً على اهتمامك! 💖 نحن حالياً مقفلين، بس بنرجع لك بكرة نساعدك تختار إطلالتك المثالية!',
+        welcomeMessage: t('botSettingsPage.text9'),
+        outOfHoursMessage: t('botSettingsPage.text10'),
         tone: 'friendly' as const,
         responseDelay: 2,
       },
     },
     {
       id: 'electronics',
-      name: 'إلكترونيات',
-      description: 'مخصص لمتاجر الإلكترونيات',
+      name: t('botSettingsPage.templateElectronics'),
+      description: t('botSettingsPage.templateElectronicsDesc'),
       icon: '📱',
       category: 'industry',
       settings: {
-        welcomeMessage: 'مرحباً بك! 📱 أنا ساري، مستشارك التقني. عندنا أحدث الأجهزة والإكسسوارات بأفضل الأسعار. وش الجهاز اللي تدور عليه؟',
-        outOfHoursMessage: 'شكراً على تواصلك! 👍 المتجر حالياً مقفل. بنرجع لك في ساعات الدوام نساعدك تختار الجهاز المناسب!',
+        welcomeMessage: t('botSettingsPage.text11'),
+        outOfHoursMessage: t('botSettingsPage.text12'),
         tone: 'professional' as const,
         responseDelay: 2,
       },
     },
     {
       id: 'beauty',
-      name: 'تجميل',
-      description: 'مخصص لصالونات التجميل ومستحضرات التجميل',
+      name: t('botSettingsPage.templateBeauty'),
+      description: t('botSettingsPage.templateBeautyDesc'),
       icon: '💄',
       category: 'industry',
       settings: {
-        welcomeMessage: 'أهلاً وسهلاً! 💄✨ مرحباً بك في عالم الجمال. أنا ساري وجاهزة أساعدك في حجز موعدك أو الاستفسار عن خدماتنا. كيف أقدر أخدمك؟',
-        outOfHoursMessage: 'شكراً على تواصلك! 💕 الصالون حالياً مقفل. بنرد عليك بكرة نحجز لك موعدك المثالي!',
+        welcomeMessage: t('botSettingsPage.text13'),
+        outOfHoursMessage: t('botSettingsPage.text14'),
         tone: 'friendly' as const,
         responseDelay: 2,
       },
     },
     {
       id: 'realestate',
-      name: 'عقارات',
-      description: 'مخصص لمكاتب العقارات',
+      name: t('botSettingsPage.templateRealEstate'),
+      description: t('botSettingsPage.templateRealEstateDesc'),
       icon: '🏠',
       category: 'industry',
       settings: {
-        welcomeMessage: 'مرحباً بكم في مكتبنا العقاري. 🏠 أنا ساري، مستشارك العقاري. عندنا أفضل العروض للبيع والإيجار. كيف يمكنني مساعدتكم؟',
-        outOfHoursMessage: 'نشكركم على تواصلكم. نحن حالياً خارج ساعات الدوام الرسمي. سنقوم بالتواصل معكم في أقرب وقت لمناقشة احتياجاتكم.',
+        welcomeMessage: t('botSettingsPage.text15'),
+        outOfHoursMessage: t('botSettingsPage.text16'),
         tone: 'professional' as const,
         responseDelay: 3,
       },
     },
     {
       id: 'services',
-      name: 'خدمات',
-      description: 'مخصص لمقدمي الخدمات',
+      name: t('botSettingsPage.templateServices'),
+      description: t('botSettingsPage.templateServicesDesc'),
       icon: '🛠️',
       category: 'industry',
       settings: {
-        welcomeMessage: 'مرحباً بك! 🛠️ أنا ساري من فريق خدمة العملاء. نحن متخصصون في تقديم أفضل الخدمات بجودة عالية. كيف أقدر أساعدك اليوم؟',
-        outOfHoursMessage: 'شكراً على تواصلك. نحن حالياً خارج ساعات العمل. سنرد عليك في أقرب وقت لتقديم الخدمة المطلوبة.',
+        welcomeMessage: t('botSettingsPage.text17'),
+        outOfHoursMessage: t('botSettingsPage.text18'),
         tone: 'professional' as const,
         responseDelay: 2,
       },
@@ -255,15 +257,15 @@ export default function BotSettings() {
       ...formData,
       ...template.settings,
     });
-    toast.success(`تم تطبيق القالب "${template.name}" بنجاح`);
+    toast.success(t('botSettingsPage.templateApplied', { name: template.name }));
   };
 
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">إعدادات الروبوت</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('botSettingsPage.title')}</h1>
         <p className="text-muted-foreground">
-          تخصيص سلوك ساري AI للرد التلقائي على رسائل WhatsApp
+          {t('botSettingsPage.subtitle')}
         </p>
       </div>
 
@@ -272,16 +274,16 @@ export default function BotSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            القوالب الجاهزة
+            {t('botSettingsPage.templatesTitle')}
           </CardTitle>
           <CardDescription>
-            اختر قالباً جاهزاً لتطبيق الإعدادات بضغطة واحدة
+            {t('botSettingsPage.templatesDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* General Templates */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">قوالب عامة</h3>
+            <h3 className="text-sm font-semibold mb-3">{t('botSettingsPage.generalTemplates')}</h3>
             <div className="grid md:grid-cols-3 gap-4">
               {generalTemplates.map((template) => (
                 <Card key={template.id} className="border-2 hover:border-primary/50 transition-colors">
@@ -299,7 +301,7 @@ export default function BotSettings() {
                       className="w-full"
                       onClick={() => applyTemplate(template)}
                     >
-                      تطبيق
+                      {t('botSettingsPage.apply')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -311,7 +313,7 @@ export default function BotSettings() {
 
           {/* Industry Templates */}
           <div>
-            <h3 className="text-sm font-semibold mb-3">قوالب متخصصة حسب نوع النشاط</h3>
+            <h3 className="text-sm font-semibold mb-3">{t('botSettingsPage.industryTemplates')}</h3>
             <div className="grid md:grid-cols-3 gap-4">
               {industryTemplates.map((template) => (
                 <Card key={template.id} className="border-2 hover:border-primary/50 transition-colors">
@@ -329,7 +331,7 @@ export default function BotSettings() {
                       className="w-full"
                       onClick={() => applyTemplate(template)}
                     >
-                      تطبيق
+                      {t('botSettingsPage.text0')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -347,11 +349,11 @@ export default function BotSettings() {
             {shouldRespond.shouldRespond ? (
               <span className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <strong>الروبوت نشط</strong> - يرد تلقائياً على الرسائل الواردة
+                <strong>{t('botSettingsPage.botActive')}</strong> - {t('botSettingsPage.botActiveDesc')}
               </span>
             ) : (
               <span>
-                <strong>الروبوت متوقف</strong> - {shouldRespond.reason === 'Auto-reply is disabled' ? 'الرد التلقائي معطّل' : shouldRespond.reason === 'Outside working hours' ? 'خارج ساعات العمل' : 'خارج أيام العمل'}
+                <strong>{t('botSettingsPage.botStopped')}</strong> - {shouldRespond.reason === 'Auto-reply is disabled' ? t('botSettingsPage.reasonDisabled') : shouldRespond.reason === 'Outside working hours' ? t('botSettingsPage.reasonOutsideHours') : t('botSettingsPage.reasonOutsideDays')}
               </span>
             )}
           </AlertDescription>
@@ -364,18 +366,18 @@ export default function BotSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Zap className="h-5 w-5" />
-              الرد التلقائي
+              {t('botSettingsPage.autoReplyTitle')}
             </CardTitle>
             <CardDescription>
-              تفعيل أو تعطيل الرد التلقائي على رسائل WhatsApp
+              {t('botSettingsPage.autoReplyDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="autoReply">تفعيل الرد التلقائي</Label>
+                <Label htmlFor="autoReply">{t('botSettingsPage.enableAutoReply')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  عند التفعيل، سيرد ساري تلقائياً على جميع الرسائل الواردة
+                  {t('botSettingsPage.enableAutoReplyDesc')}
                 </p>
               </div>
               <Switch
@@ -392,18 +394,18 @@ export default function BotSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              ساعات العمل
+              {t('botSettingsPage.workingHoursTitle')}
             </CardTitle>
             <CardDescription>
-              تحديد ساعات وأيام العمل للرد التلقائي
+              {t('botSettingsPage.workingHoursDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="workingHours">تفعيل ساعات العمل</Label>
+                <Label htmlFor="workingHours">{t('botSettingsPage.enableWorkingHours')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  عند التفعيل، سيرد الروبوت فقط خلال ساعات وأيام العمل المحددة
+                  {t('botSettingsPage.enableWorkingHoursDesc')}
                 </p>
               </div>
               <Switch
@@ -416,10 +418,10 @@ export default function BotSettings() {
             {formData.workingHoursEnabled && (
               <>
                 <Separator />
-                
+
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="startTime">وقت البداية</Label>
+                    <Label htmlFor="startTime">{t('botSettingsPage.startTime')}</Label>
                     <Input
                       id="startTime"
                       type="time"
@@ -428,7 +430,7 @@ export default function BotSettings() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="endTime">وقت النهاية</Label>
+                    <Label htmlFor="endTime">{t('botSettingsPage.endTime')}</Label>
                     <Input
                       id="endTime"
                       type="time"
@@ -439,7 +441,7 @@ export default function BotSettings() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>أيام العمل</Label>
+                  <Label>{t('botSettingsPage.workingDays')}</Label>
                   <div className="flex flex-wrap gap-2">
                     {weekDays.map(day => (
                       <Badge
@@ -453,7 +455,7 @@ export default function BotSettings() {
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    اضغط على اليوم لتفعيله أو تعطيله
+                    {t('botSettingsPage.clickDayToggle')}
                   </p>
                 </div>
               </>
@@ -466,38 +468,38 @@ export default function BotSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
-              الرسائل
+              {t('botSettingsPage.messagesTitle')}
             </CardTitle>
             <CardDescription>
-              تخصيص رسائل الترحيب والرسائل خارج أوقات العمل
+              {t('botSettingsPage.messagesDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="welcomeMessage">رسالة الترحيب</Label>
+              <Label htmlFor="welcomeMessage">{t('botSettingsPage.welcomeMessage')}</Label>
               <Textarea
                 id="welcomeMessage"
-                placeholder="مرحباً! أنا ساري، مساعدك الذكي. كيف أقدر أساعدك اليوم؟ 😊"
+                placeholder={t('botSettingsPage.welcomeMessagePlaceholder')}
                 value={formData.welcomeMessage}
                 onChange={(e) => setFormData({ ...formData, welcomeMessage: e.target.value })}
                 rows={3}
               />
               <p className="text-sm text-muted-foreground">
-                الرسالة الأولى التي يراها العميل الجديد (اختياري)
+                {t('botSettingsPage.welcomeMessageDesc')}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="outOfHoursMessage">رسالة خارج أوقات العمل</Label>
+              <Label htmlFor="outOfHoursMessage">{t('botSettingsPage.outOfHoursMessage')}</Label>
               <Textarea
                 id="outOfHoursMessage"
-                placeholder="شكراً لتواصلك! نحن حالياً خارج أوقات العمل. سنرد عليك في أقرب وقت ممكن. ⏰"
+                placeholder={t('botSettingsPage.outOfHoursMessagePlaceholder')}
                 value={formData.outOfHoursMessage}
                 onChange={(e) => setFormData({ ...formData, outOfHoursMessage: e.target.value })}
                 rows={3}
               />
               <p className="text-sm text-muted-foreground">
-                الرسالة التي تُرسل عند التواصل خارج ساعات العمل
+                {t('botSettingsPage.outOfHoursMessageDesc')}
               </p>
             </div>
           </CardContent>
@@ -508,19 +510,19 @@ export default function BotSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5" />
-              سلوك الذكاء الاصطناعي
+              {t('botSettingsPage.aiBehaviorTitle')}
             </CardTitle>
             <CardDescription>
-              تخصيص طريقة رد ساري AI
+              {t('botSettingsPage.aiBehaviorDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tone">نبرة الصوت</Label>
+                <Label htmlFor="tone">{t('botSettingsPage.tone')}</Label>
                 <Select
                   value={formData.tone}
-                  onValueChange={(value: 'friendly' | 'professional' | 'casual') => 
+                  onValueChange={(value: 'friendly' | 'professional' | 'casual') =>
                     setFormData({ ...formData, tone: value })
                   }
                 >
@@ -528,18 +530,18 @@ export default function BotSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="friendly">ودود 😊</SelectItem>
-                    <SelectItem value="professional">احترافي 💼</SelectItem>
-                    <SelectItem value="casual">عادي 👋</SelectItem>
+                    <SelectItem value="friendly">{t('botSettingsPage.toneFriendly')}</SelectItem>
+                    <SelectItem value="professional">{t('botSettingsPage.toneProfessional')}</SelectItem>
+                    <SelectItem value="casual">{t('botSettingsPage.toneCasual')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="language">اللغة</Label>
+                <Label htmlFor="language">{t('botSettingsPage.language')}</Label>
                 <Select
                   value={formData.language}
-                  onValueChange={(value: 'ar' | 'en' | 'both') => 
+                  onValueChange={(value: 'ar' | 'en' | 'both') =>
                     setFormData({ ...formData, language: value })
                   }
                 >
@@ -547,9 +549,9 @@ export default function BotSettings() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ar">العربية فقط 🇸🇦</SelectItem>
-                    <SelectItem value="en">الإنجليزية فقط 🇬🇧</SelectItem>
-                    <SelectItem value="both">كلاهما 🌍</SelectItem>
+                    <SelectItem value="ar">{t('botSettingsPage.langArabic')}</SelectItem>
+                    <SelectItem value="en">{t('botSettingsPage.langEnglish')}</SelectItem>
+                    <SelectItem value="both">{t('botSettingsPage.langBoth')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -557,7 +559,7 @@ export default function BotSettings() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="responseDelay">تأخير الرد (ثواني)</Label>
+                <Label htmlFor="responseDelay">{t('botSettingsPage.responseDelay')}</Label>
                 <Input
                   id="responseDelay"
                   type="number"
@@ -567,12 +569,12 @@ export default function BotSettings() {
                   onChange={(e) => setFormData({ ...formData, responseDelay: parseInt(e.target.value) })}
                 />
                 <p className="text-sm text-muted-foreground">
-                  الوقت قبل إرسال الرد (1-10 ثواني)
+                  {t('botSettingsPage.responseDelayDesc')}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="maxLength">الحد الأقصى لطول الرد</Label>
+                <Label htmlFor="maxLength">{t('botSettingsPage.maxResponseLength')}</Label>
                 <Input
                   id="maxLength"
                   type="number"
@@ -582,7 +584,7 @@ export default function BotSettings() {
                   onChange={(e) => setFormData({ ...formData, maxResponseLength: parseInt(e.target.value) })}
                 />
                 <p className="text-sm text-muted-foreground">
-                  عدد الأحرف (50-500)
+                  {t('botSettingsPage.maxResponseLengthDesc')}
                 </p>
               </div>
             </div>
@@ -594,10 +596,10 @@ export default function BotSettings() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Eye className="h-5 w-5" />
-              معاينة مباشرة
+              {t('botSettingsPage.previewTitle')}
             </CardTitle>
             <CardDescription>
-              شاهد كيف ستبدو ردود ساري بناءً على الإعدادات الحالية
+              {t('botSettingsPage.previewDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -607,7 +609,7 @@ export default function BotSettings() {
                 {/* Customer message */}
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
-                    <p className="text-sm">مرحبا، أريد الاستفسار عن منتجاتكم</p>
+                    <p className="text-sm">{t('botSettingsPage.previewCustomerMsg')}</p>
                     <span className="text-xs text-muted-foreground">10:30 ص</span>
                   </div>
                 </div>
@@ -618,9 +620,9 @@ export default function BotSettings() {
                     <div className="flex items-start gap-2 mb-1">
                       <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium mb-1">ساري</p>
+                        <p className="text-sm font-medium mb-1">{t('botSettingsPage.sari')}</p>
                         <p className="text-sm whitespace-pre-wrap">
-                          {formData.welcomeMessage || 'مرحباً بك! كيف يمكنني مساعدتك اليوم؟'}
+                          {formData.welcomeMessage || t('botSettingsPage.previewDefaultWelcome')}
                         </p>
                       </div>
                     </div>
@@ -631,14 +633,14 @@ export default function BotSettings() {
                 {/* Separator */}
                 <div className="flex items-center gap-2 py-2">
                   <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
-                  <span className="text-xs text-muted-foreground">خارج ساعات العمل</span>
+                  <span className="text-xs text-muted-foreground">{t('botSettingsPage.previewOutsideHours')}</span>
                   <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
                 </div>
 
                 {/* Customer message after hours */}
                 <div className="flex justify-start">
                   <div className="bg-white dark:bg-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-[80%] shadow-sm">
-                    <p className="text-sm">هل يمكنني الطلب الآن؟</p>
+                    <p className="text-sm">{t('botSettingsPage.previewAfterHoursMsg')}</p>
                     <span className="text-xs text-muted-foreground">11:30 م</span>
                   </div>
                 </div>
@@ -651,7 +653,7 @@ export default function BotSettings() {
                       <div>
                         <p className="text-sm font-medium mb-1">ساري</p>
                         <p className="text-sm whitespace-pre-wrap">
-                          {formData.outOfHoursMessage || 'نحن حالياً خارج ساعات العمل. سنرد عليك قريباً.'}
+                          {formData.outOfHoursMessage || t('botSettingsPage.previewDefaultOutOfHours')}
                         </p>
                       </div>
                     </div>
@@ -664,15 +666,15 @@ export default function BotSettings() {
               <div className="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 mt-4">
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    <span className="text-muted-foreground">النبرة:</span>
+                    <span className="text-muted-foreground">{t('botSettingsPage.toneLabel')}</span>
                     <Badge variant="outline" className="mr-2">
-                      {formData.tone === 'professional' ? 'رسمي' : formData.tone === 'friendly' ? 'ودود' : 'عصري'}
+                      {formData.tone === 'professional' ? t('botSettingsPage.toneFormalLabel') : formData.tone === 'friendly' ? t('botSettingsPage.toneFriendlyLabel') : t('botSettingsPage.toneModernLabel')}
                     </Badge>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">تأخير الرد:</span>
+                    <span className="text-muted-foreground">{t('botSettingsPage.responseDelayLabel')}</span>
                     <Badge variant="outline" className="mr-2">
-                      {formData.responseDelay} ثانية
+                      {formData.responseDelay} {t('botSettingsPage.seconds')}
                     </Badge>
                   </div>
                 </div>
@@ -685,13 +687,13 @@ export default function BotSettings() {
         <Alert>
           <Info className="h-4 w-4" />
           <AlertDescription>
-            <strong>ملاحظة:</strong> التغييرات ستطبق فوراً على جميع الرسائل الجديدة. لن تؤثر على المحادثات الجارية.
+            <strong>{t('botSettingsPage.note')}</strong> {t('botSettingsPage.infoNote')}
           </AlertDescription>
         </Alert>
 
         {/* Action Buttons */}
         <div className="flex justify-between items-center">
-          <Button 
+          <Button
             type="button"
             variant="outline"
             size="lg"
@@ -699,16 +701,16 @@ export default function BotSettings() {
             disabled={sendTestMutation.isPending}
           >
             <Send className="h-4 w-4 ml-2" />
-            {sendTestMutation.isPending ? 'جاري الإرسال...' : 'إرسال رسالة تجريبية'}
+            {sendTestMutation.isPending ? t('botSettingsPage.sendingTest') : t('botSettingsPage.sendTestMessage')}
           </Button>
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             size="lg"
             disabled={updateMutation.isPending}
           >
             <Save className="h-4 w-4 ml-2" />
-            {updateMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+            {updateMutation.isPending ? t('botSettingsPage.saving') : t('botSettingsPage.saveSettings')}
           </Button>
         </div>
       </form>

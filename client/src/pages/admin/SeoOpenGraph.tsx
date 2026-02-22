@@ -4,12 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, Upload } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function SeoOpenGraph() {
+  const { t } = useTranslation();
   const [selectedPage, setSelectedPage] = useState("home");
   const [ogData, setOgData] = useState({
-    title: "ساري - وكيل مبيعات ذكي للواتساب",
-    description: "منصة ساري تساعدك في إدارة مبيعاتك عبر الواتساب بذكاء اصطناعي",
+    title: t('adminSeoOpenGraphPage.text0'),
+    description: t('adminSeoOpenGraphPage.text1'),
     image: "/og-image.jpg",
     type: "website",
     url: "https://sari.app",
@@ -24,13 +26,13 @@ export default function SeoOpenGraph() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">محرر Open Graph</h1>
-        <p className="text-gray-600 mt-2">أدر كيفية ظهور صفحاتك على وسائل التواصل الاجتماعي</p>
+        <h1 className="text-3xl font-bold">{t('adminSeoOpenGraphPage.text2')}</h1>
+        <p className="text-gray-600 mt-2">{t('adminSeoOpenGraphPage.text3')}</p>
       </div>
 
       {/* Page Selector */}
       <Card className="p-6">
-        <label className="block text-sm font-medium mb-3">اختر الصفحة</label>
+        <label className="block text-sm font-medium mb-3">{t('adminSeoOpenGraphPage.text4')}</label>
         <div className="flex gap-2 flex-wrap">
           {pages.map(page => (
             <Button
@@ -49,30 +51,30 @@ export default function SeoOpenGraph() {
         {/* Editor */}
         <div className="col-span-2 space-y-4">
           <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-6">بيانات Open Graph</h2>
+            <h2 className="text-lg font-semibold mb-6">{t('adminSeoOpenGraphPage.text5')}</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">العنوان</label>
+                <label className="block text-sm font-medium mb-2">{t('adminSeoOpenGraphPage.text6')}</label>
                 <Input
                   value={ogData.title}
                   onChange={(e) => handleChange("title", e.target.value)}
-                  placeholder="أدخل عنوان Open Graph"
+                  placeholder={t('adminSeoOpenGraphPage.text7')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">الوصف</label>
+                <label className="block text-sm font-medium mb-2">{t('adminSeoOpenGraphPage.text8')}</label>
                 <Textarea
                   value={ogData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
-                  placeholder="أدخل وصف Open Graph"
+                  placeholder={t('adminSeoOpenGraphPage.text9')}
                   rows={4}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">رابط الصورة</label>
+                <label className="block text-sm font-medium mb-2">{t('adminSeoOpenGraphPage.text10')}</label>
                 <Input
                   value={ogData.image}
                   onChange={(e) => handleChange("image", e.target.value)}
@@ -82,21 +84,21 @@ export default function SeoOpenGraph() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">النوع</label>
+                  <label className="block text-sm font-medium mb-2">{t('adminSeoOpenGraphPage.text11')}</label>
                   <select
                     value={ogData.type}
                     onChange={(e) => handleChange("type", e.target.value)}
                     className="w-full px-3 py-2 border rounded-lg"
                   >
-                    <option value="website">موقع ويب</option>
-                    <option value="article">مقالة</option>
-                    <option value="video">فيديو</option>
-                    <option value="image">صورة</option>
+                    <option value="website">{t('adminSeoOpenGraphPage.text12')}</option>
+                    <option value="article">{t('adminSeoOpenGraphPage.text13')}</option>
+                    <option value="video">{t('adminSeoOpenGraphPage.text14')}</option>
+                    <option value="image">{t('adminSeoOpenGraphPage.text15')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">الرابط</label>
+                  <label className="block text-sm font-medium mb-2">{t('adminSeoOpenGraphPage.text16')}</label>
                   <Input
                     value={ogData.url}
                     onChange={(e) => handleChange("url", e.target.value)}
@@ -119,7 +121,7 @@ export default function SeoOpenGraph() {
         {/* Preview */}
         <div className="space-y-4">
           <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">معاينة Facebook</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('adminSeoOpenGraphPage.text17')}</h2>
             <div className="border rounded-lg overflow-hidden">
               <img
                 src={ogData.image}
@@ -135,7 +137,7 @@ export default function SeoOpenGraph() {
           </Card>
 
           <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">معاينة Twitter</h2>
+            <h2 className="text-lg font-semibold mb-4">{t('adminSeoOpenGraphPage.text18')}</h2>
             <div className="border rounded-lg overflow-hidden bg-gray-50">
               <img
                 src={ogData.image}

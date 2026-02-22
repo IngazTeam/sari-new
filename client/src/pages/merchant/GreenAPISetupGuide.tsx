@@ -16,16 +16,16 @@ export default function GreenAPISetupGuide() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     setCopiedText(label);
-    toast.success(`تم نسخ ${label}`);
+    toast.success(t('greenApiGuidePage.copied', { label }));
     setTimeout(() => setCopiedText(""), 2000);
   };
 
   return (
     <div className="container mx-auto p-6 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">دليل إعداد Green API الشامل</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('greenApiGuidePage.title')}</h1>
         <p className="text-muted-foreground">
-          اتبع هذه الخطوات لربط رقم واتساب الخاص بك مع ساري
+          {t('greenApiGuidePage.subtitle')}
         </p>
       </div>
 
@@ -33,25 +33,25 @@ export default function GreenAPISetupGuide() {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge className="bg-primary text-primary-foreground">الخطوة 1</Badge>
-            <CardTitle>التسجيل في Green API</CardTitle>
+            <Badge className="bg-primary text-primary-foreground">{t('greenApiGuidePage.step1')}</Badge>
+            <CardTitle>{t('greenApiGuidePage.step1Title')}</CardTitle>
           </div>
           <CardDescription>
-            احصل على حساب مجاني في Green API
+            {t('greenApiGuidePage.step1Desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">1. افتح موقع Green API</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s1Step1')}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => window.open("https://green-api.com", "_blank")}
               >
                 <ExternalLink className="w-4 h-4 ml-2" />
-                افتح Green API
+                {t('greenApiGuidePage.openGreenApi')}
               </Button>
             </div>
           </div>
@@ -59,9 +59,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">2. اضغط على "Sign Up" أو "تسجيل"</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s1Step2')}</p>
               <p className="text-sm text-muted-foreground">
-                سجل باستخدام بريدك الإلكتروني أو حساب Google
+                {t('greenApiGuidePage.s1Step2Desc')}
               </p>
             </div>
           </div>
@@ -69,9 +69,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">3. فعّل حسابك عبر البريد الإلكتروني</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s1Step3')}</p>
               <p className="text-sm text-muted-foreground">
-                ستصلك رسالة تأكيد، اضغط على الرابط لتفعيل الحساب
+                {t('greenApiGuidePage.s1Step3Desc')}
               </p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function GreenAPISetupGuide() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              <strong>ملاحظة:</strong> Green API يوفر 3 أيام تجريبية مجاناً، ثم يمكنك الاشتراك في باقة مدفوعة
+              <strong>{t('greenApiGuidePage.note')}</strong> {t('greenApiGuidePage.trialNote')}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -89,25 +89,25 @@ export default function GreenAPISetupGuide() {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge className="bg-primary text-primary-foreground">الخطوة 2</Badge>
-            <CardTitle>إنشاء Instance جديد</CardTitle>
+            <Badge className="bg-primary text-primary-foreground">{t('greenApiGuidePage.step2')}</Badge>
+            <CardTitle>{t('greenApiGuidePage.step2Title')}</CardTitle>
           </div>
           <CardDescription>
-            Instance هو الاتصال بين رقم واتساب وساري
+            {t('greenApiGuidePage.step2Desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">1. سجل دخول إلى لوحة التحكم</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s2Step1')}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => window.open("https://console.green-api.com", "_blank")}
               >
                 <ExternalLink className="w-4 h-4 ml-2" />
-                افتح لوحة التحكم
+                {t('greenApiGuidePage.openConsole')}
               </Button>
             </div>
           </div>
@@ -115,9 +115,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">2. اضغط على "Create Instance"</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s2Step2')}</p>
               <p className="text-sm text-muted-foreground">
-                ستظهر لك صفحة إنشاء instance جديد
+                {t('greenApiGuidePage.s2Step2Desc')}
               </p>
             </div>
           </div>
@@ -125,9 +125,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">3. احفظ Instance ID و API Token</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s2Step3')}</p>
               <p className="text-sm text-muted-foreground mb-2">
-                ستحتاجهما في الخطوة التالية
+                {t('greenApiGuidePage.s2Step3Desc')}
               </p>
               <div className="bg-muted p-3 rounded-md text-sm font-mono">
                 <div className="mb-2">
@@ -146,20 +146,20 @@ export default function GreenAPISetupGuide() {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge className="bg-primary text-primary-foreground">الخطوة 3</Badge>
-            <CardTitle>إعداد Webhooks</CardTitle>
+            <Badge className="bg-primary text-primary-foreground">{t('greenApiGuidePage.step3')}</Badge>
+            <CardTitle>{t('greenApiGuidePage.step3Title')}</CardTitle>
           </div>
           <CardDescription>
-            لاستقبال الرسائل الواردة تلقائياً
+            {t('greenApiGuidePage.step3Desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">1. افتح إعدادات Instance</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s3Step1')}</p>
               <p className="text-sm text-muted-foreground">
-                في لوحة التحكم، اضغط على Instance ثم "Settings"
+                {t('greenApiGuidePage.s3Step1Desc')}
               </p>
             </div>
           </div>
@@ -167,19 +167,19 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">2. فعّل Webhooks التالية:</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s3Step2')}</p>
               <div className="space-y-2 mt-2">
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">Incoming</Badge>
-                  <span className="text-sm">لاستقبال الرسائل الواردة</span>
+                  <span className="text-sm">{t('greenApiGuidePage.webhookIncoming')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">Outgoing</Badge>
-                  <span className="text-sm">لتتبع الرسائل الصادرة</span>
+                  <span className="text-sm">{t('greenApiGuidePage.webhookOutgoing')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline">State</Badge>
-                  <span className="text-sm">لمراقبة حالة الاتصال</span>
+                  <span className="text-sm">{t('greenApiGuidePage.webhookState')}</span>
                 </div>
               </div>
             </div>
@@ -188,7 +188,7 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">3. الصق Webhook URL</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s3Step3')}</p>
               <div className="bg-muted p-3 rounded-md">
                 <div className="flex items-center justify-between">
                   <code className="text-sm break-all">{webhookUrl}</code>
@@ -202,7 +202,7 @@ export default function GreenAPISetupGuide() {
                 </div>
               </div>
               {copiedText === "Webhook URL" && (
-                <p className="text-sm text-primary mt-1">✓ تم النسخ!</p>
+                <p className="text-sm text-primary mt-1">✓ {t('greenApiGuidePage.copiedMsg')}</p>
               )}
             </div>
           </div>
@@ -210,7 +210,7 @@ export default function GreenAPISetupGuide() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>مهم جداً:</strong> يجب إضافة هذا الرابط في حقل "Webhook URL" في إعدادات Green API
+              <strong>{t('greenApiGuidePage.important')}</strong> {t('greenApiGuidePage.webhookImportant')}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -220,20 +220,20 @@ export default function GreenAPISetupGuide() {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge className="bg-primary text-primary-foreground">الخطوة 4</Badge>
-            <CardTitle>ربط رقم الواتساب</CardTitle>
+            <Badge className="bg-primary text-primary-foreground">{t('greenApiGuidePage.step4')}</Badge>
+            <CardTitle>{t('greenApiGuidePage.step4Title')}</CardTitle>
           </div>
           <CardDescription>
-            امسح QR Code لربط رقمك
+            {t('greenApiGuidePage.step4Desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">1. افتح واتساب على هاتفك</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s4Step1')}</p>
               <p className="text-sm text-muted-foreground">
-                تأكد من أن الرقم غير مستخدم في جهاز آخر
+                {t('greenApiGuidePage.s4Step1Desc')}
               </p>
             </div>
           </div>
@@ -241,9 +241,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">2. اذهب إلى "الأجهزة المرتبطة"</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s4Step2')}</p>
               <p className="text-sm text-muted-foreground">
-                الإعدادات → الأجهزة المرتبطة → ربط جهاز
+                {t('greenApiGuidePage.s4Step2Desc')}
               </p>
             </div>
           </div>
@@ -251,9 +251,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">3. امسح QR Code من لوحة Green API</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s4Step3')}</p>
               <p className="text-sm text-muted-foreground">
-                ستجد QR Code في صفحة Instance في لوحة التحكم
+                {t('greenApiGuidePage.s4Step3Desc')}
               </p>
             </div>
           </div>
@@ -261,7 +261,7 @@ export default function GreenAPISetupGuide() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              <strong>نصيحة:</strong> استخدم رقم جديد مخصص للمتجر، وليس رقمك الشخصي
+              <strong>{t('greenApiGuidePage.tip')}</strong> {t('greenApiGuidePage.personalNumberTip')}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -271,24 +271,24 @@ export default function GreenAPISetupGuide() {
       <Card className="mb-6">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Badge className="bg-primary text-primary-foreground">الخطوة 5</Badge>
-            <CardTitle>اختبار الاتصال</CardTitle>
+            <Badge className="bg-primary text-primary-foreground">{t('greenApiGuidePage.step5')}</Badge>
+            <CardTitle>{t('greenApiGuidePage.step5Title')}</CardTitle>
           </div>
           <CardDescription>
-            تأكد من أن كل شيء يعمل بشكل صحيح
+            {t('greenApiGuidePage.step5Desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">1. اذهب إلى صفحة اختبار WhatsApp</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s5Step1')}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => window.location.href = "/merchant/whatsapp-test"}
               >
-                افتح صفحة الاختبار
+                {t('greenApiGuidePage.openTestPage')}
               </Button>
             </div>
           </div>
@@ -296,9 +296,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">2. أدخل Instance ID و Token</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s5Step2')}</p>
               <p className="text-sm text-muted-foreground">
-                الصقهما في الخانات المخصصة
+                {t('greenApiGuidePage.s5Step2Desc')}
               </p>
             </div>
           </div>
@@ -306,9 +306,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">3. اختبر الاتصال</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s5Step3')}</p>
               <p className="text-sm text-muted-foreground">
-                اضغط "اختبار الاتصال" - يجب أن يظهر رقم الواتساب المتصل
+                {t('greenApiGuidePage.s5Step3Desc')}
               </p>
             </div>
           </div>
@@ -316,9 +316,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">4. أرسل رسالة تجريبية</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s5Step4')}</p>
               <p className="text-sm text-muted-foreground">
-                أرسل رسالة لرقمك الشخصي للتأكد من عمل الإرسال
+                {t('greenApiGuidePage.s5Step4Desc')}
               </p>
             </div>
           </div>
@@ -326,9 +326,9 @@ export default function GreenAPISetupGuide() {
           <div className="flex items-start gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
             <div className="flex-1">
-              <p className="font-medium mb-2">5. اختبر استقبال الرسائل</p>
+              <p className="font-medium mb-2">{t('greenApiGuidePage.s5Step5')}</p>
               <p className="text-sm text-muted-foreground">
-                أرسل رسالة من رقمك الشخصي إلى رقم المتجر، يجب أن يرد ساري تلقائياً
+                {t('greenApiGuidePage.s5Step5Desc')}
               </p>
             </div>
           </div>
@@ -338,7 +338,7 @@ export default function GreenAPISetupGuide() {
       {/* روابط مفيدة */}
       <Card>
         <CardHeader>
-          <CardTitle>روابط مفيدة</CardTitle>
+          <CardTitle>{t('greenApiGuidePage.usefulLinks')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <Button
@@ -347,7 +347,7 @@ export default function GreenAPISetupGuide() {
             onClick={() => window.open("https://green-api.com/docs/", "_blank")}
           >
             <ExternalLink className="w-4 h-4 ml-2" />
-            التوثيق الرسمي لـ Green API
+            {t('greenApiGuidePage.officialDocs')}
           </Button>
           <Button
             variant="outline"
@@ -355,21 +355,21 @@ export default function GreenAPISetupGuide() {
             onClick={() => window.open("https://console.green-api.com", "_blank")}
           >
             <ExternalLink className="w-4 h-4 ml-2" />
-            لوحة تحكم Green API
+            {t('greenApiGuidePage.consoleLink')}
           </Button>
           <Button
             variant="outline"
             className="w-full justify-start"
             onClick={() => window.location.href = "/merchant/whatsapp-test"}
           >
-            صفحة اختبار WhatsApp
+            {t('greenApiGuidePage.testPageLink')}
           </Button>
           <Button
             variant="outline"
             className="w-full justify-start"
             onClick={() => window.location.href = "/merchant/whatsapp-instances"}
           >
-            إدارة WhatsApp Instances
+            {t('greenApiGuidePage.instancesLink')}
           </Button>
         </CardContent>
       </Card>

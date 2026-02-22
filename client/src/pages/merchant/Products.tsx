@@ -37,11 +37,11 @@ export default function Products() {
   const { data: products, refetch, isLoading } = trpc.products.list.useQuery();
   const { data: merchant } = trpc.merchants.getCurrent.useQuery();
   const currency = merchant?.currency || 'SAR';
-  
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
-  
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -139,7 +139,7 @@ export default function Products() {
   };
 
   const handleDelete = (productId: number, productName: string) => {
-    if (confirm(`هل أنت متأكد من حذف المنتج "${productName}"؟`)) {
+    if (confirm(`${t('productsPage.confirmDelete')} "${productName}"?`)) {
       deleteMutation.mutate({ productId });
     }
   };
@@ -154,52 +154,52 @@ export default function Products() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">إدارة المنتجات</h1>
+          <h1 className="text-3xl font-bold">{t('productsPage.title')}</h1>
           <p className="text-muted-foreground mt-2">
-            إدارة منتجات متجرك وأسعارها
+            {t('productsPage.description')}
           </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setLocation('/merchant/products/upload')}>
             <Upload className="h-4 w-4 ml-2" />
-            رفع CSV
+            {t('productsPage.uploadCSV')}
           </Button>
-          
+
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 ml-2" />
-                إضافة منتج
+                {t('productsPage.addProduct')}
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>إضافة منتج جديد</DialogTitle>
+                <DialogTitle>{t('productsPage.addNewProduct')}</DialogTitle>
                 <DialogDescription>
-                  أدخل معلومات المنتج الجديد
+                  {t('productsPage.addNewProductDesc')}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="name">اسم المنتج *</Label>
+                  <Label htmlFor="name">{t('productsPage.productNameRequired')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="مثال: هاتف ذكي"
+                    placeholder={t('productsPage.productNamePlaceholder')}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="description">الوصف</Label>
+                  <Label htmlFor="description">{t('productsPage.descriptionLabel')}</Label>
                   <Textarea
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="وصف المنتج..."
+                    placeholder={t('productsPage.descriptionPlaceholder')}
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="price">السعر ({currency === 'SAR' ? 'ريال' : '$'}) *</Label>
+                  <Label htmlFor="price">{t('productsPage.priceLabel')} ({currency === 'SAR' ? t('productsPage.sar') : t('productsPage.dollar')}) *</Label>
                   <Input
                     id="price"
                     type="number"
@@ -210,7 +210,7 @@ export default function Products() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="imageUrl">رابط الصورة</Label>
+                  <Label htmlFor="imageUrl">{t('productsPage.imageUrl')}</Label>
                   <Input
                     id="imageUrl"
                     type="url"
@@ -220,7 +220,7 @@ export default function Products() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="stock">الكمية المتوفرة</Label>
+                  <Label htmlFor="stock">{t('productsPage.stockAvailable')}</Label>
                   <Input
                     id="stock"
                     type="number"
@@ -232,10 +232,10 @@ export default function Products() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  إلغاء
+                  {t('productsPage.cancel')}
                 </Button>
                 <Button onClick={handleCreate} disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'جاري الإضافة...' : 'إضافة'}
+                  {createMutation.isPending ? t('productsPage.adding') : t('productsPage.add')}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -247,7 +247,7 @@ export default function Products() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المنتجات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('productsPage.totalProducts')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -257,7 +257,7 @@ export default function Products() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المنتجات المتوفرة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('productsPage.availableProducts')}</CardTitle>
             <Package className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -269,7 +269,7 @@ export default function Products() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">نفدت الكمية</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('productsPage.outOfStock')}</CardTitle>
             <Package className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -283,26 +283,26 @@ export default function Products() {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة المنتجات</CardTitle>
+          <CardTitle>{t('productsPage.productList')}</CardTitle>
           <CardDescription>
-            جميع منتجات متجرك
+            {t('productsPage.productListDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">جاري التحميل...</p>
+              <p className="text-muted-foreground">{t('productsPage.loading')}</p>
             </div>
           ) : products && products.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>المنتج</TableHead>
-                    <TableHead>الوصف</TableHead>
-                    <TableHead>السعر</TableHead>
-                    <TableHead>الكمية</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead>{t('productsPage.product')}</TableHead>
+                    <TableHead>{t('productsPage.descriptionLabel')}</TableHead>
+                    <TableHead>{t('productsPage.price')}</TableHead>
+                    <TableHead>{t('productsPage.stock')}</TableHead>
+                    <TableHead>{t('productsPage.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -311,8 +311,8 @@ export default function Products() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {product.imageUrl ? (
-                            <img 
-                              src={product.imageUrl} 
+                            <img
+                              src={product.imageUrl}
                               alt={product.name}
                               className="w-10 h-10 rounded object-cover"
                             />
@@ -368,13 +368,13 @@ export default function Products() {
           ) : (
             <div className="text-center py-12">
               <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-4 text-lg font-medium">لا توجد منتجات بعد</p>
+              <p className="mt-4 text-lg font-medium">{t('productsPage.noProducts')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                ابدأ بإضافة منتجات إلى متجرك
+                {t('productsPage.startAdding')}
               </p>
               <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 ml-2" />
-                إضافة منتج
+                {t('productsPage.addProduct')}
               </Button>
             </div>
           )}
@@ -385,14 +385,14 @@ export default function Products() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>تعديل المنتج</DialogTitle>
+            <DialogTitle>{t('productsPage.editProduct')}</DialogTitle>
             <DialogDescription>
-              تحديث معلومات المنتج
+              {t('productsPage.editProductDesc')}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="edit-name">اسم المنتج *</Label>
+              <Label htmlFor="edit-name">{t('productsPage.productNameRequired')}</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
@@ -400,7 +400,7 @@ export default function Products() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-description">الوصف</Label>
+              <Label htmlFor="edit-description">{t('productsPage.descriptionLabel')}</Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
@@ -408,7 +408,7 @@ export default function Products() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-price">السعر ({currency === 'SAR' ? 'ريال' : '$'}) *</Label>
+              <Label htmlFor="edit-price">{t('productsPage.priceLabel')} ({currency === 'SAR' ? t('productsPage.sar') : t('productsPage.dollar')}) *</Label>
               <Input
                 id="edit-price"
                 type="number"
@@ -418,7 +418,7 @@ export default function Products() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-imageUrl">رابط الصورة</Label>
+              <Label htmlFor="edit-imageUrl">{t('productsPage.imageUrl')}</Label>
               <Input
                 id="edit-imageUrl"
                 type="url"
@@ -427,7 +427,7 @@ export default function Products() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit-stock">الكمية المتوفرة</Label>
+              <Label htmlFor="edit-stock">{t('productsPage.stockAvailable')}</Label>
               <Input
                 id="edit-stock"
                 type="number"
@@ -442,10 +442,10 @@ export default function Products() {
               setEditingProduct(null);
               resetForm();
             }}>
-              إلغاء
+              {t('productsPage.cancel')}
             </Button>
             <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'جاري التحديث...' : 'تحديث'}
+              {updateMutation.isPending ? t('productsPage.updating') : t('productsPage.updateBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>

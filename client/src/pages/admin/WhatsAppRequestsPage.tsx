@@ -139,7 +139,7 @@ export default function WhatsAppRequestsPage() {
   if (isLoading) {
     return (
       <div className="container py-8">
-        <div className="text-center">جاري التحميل...</div>
+        <div className="text-center">{t('adminWhatsAppRequestsPagePage.text0')}</div>
       </div>
     );
   }
@@ -147,15 +147,15 @@ export default function WhatsAppRequestsPage() {
   return (
     <div className="container py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">طلبات ربط واتساب</h1>
-        <p className="text-muted-foreground">إدارة طلبات التجار لربط أرقام واتساب</p>
+        <h1 className="text-3xl font-bold">{t('adminWhatsAppRequestsPagePage.text1')}</h1>
+        <p className="text-muted-foreground">{t('adminWhatsAppRequestsPagePage.text2')}</p>
       </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminWhatsAppRequestsPagePage.text3')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingRequests.length}</div>
@@ -163,7 +163,7 @@ export default function WhatsAppRequestsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">تمت الموافقة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminWhatsAppRequestsPagePage.text4')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{approvedRequests.length}</div>
@@ -171,7 +171,7 @@ export default function WhatsAppRequestsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">مرفوضة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminWhatsAppRequestsPagePage.text5')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{rejectedRequests.length}</div>
@@ -179,7 +179,7 @@ export default function WhatsAppRequestsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">مكتملة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminWhatsAppRequestsPagePage.text6')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{completedRequests.length}</div>
@@ -191,8 +191,8 @@ export default function WhatsAppRequestsPage() {
       {pendingRequests.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>طلبات قيد الانتظار</CardTitle>
-            <CardDescription>طلبات تحتاج إلى مراجعة</CardDescription>
+            <CardTitle>{t('adminWhatsAppRequestsPagePage.text7')}</CardTitle>
+            <CardDescription>{t('adminWhatsAppRequestsPagePage.text8')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -204,7 +204,7 @@ export default function WhatsAppRequestsPage() {
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">التاجر #{request.merchantId}</span>
+                      <span className="font-medium">{t('adminWhatsAppRequestsPagePage.text9', { var0: request.merchantId })}</span>
                       {getStatusBadge(request.status)}
                     </div>
                     {request.fullNumber && (
@@ -243,8 +243,8 @@ export default function WhatsAppRequestsPage() {
       {/* All Requests */}
       <Card>
         <CardHeader>
-          <CardTitle>جميع الطلبات</CardTitle>
-          <CardDescription>سجل كامل لجميع الطلبات</CardDescription>
+          <CardTitle>{t('adminWhatsAppRequestsPagePage.text10')}</CardTitle>
+          <CardDescription>{t('adminWhatsAppRequestsPagePage.text11')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -257,7 +257,7 @@ export default function WhatsAppRequestsPage() {
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">التاجر #{request.merchantId}</span>
+                      <span className="font-medium">{t('adminWhatsAppRequestsPagePage.text12', { var0: request.merchantId })}</span>
                       {getStatusBadge(request.status)}
                     </div>
                     {request.fullNumber && (
@@ -310,7 +310,7 @@ export default function WhatsAppRequestsPage() {
       <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>الموافقة على طلب ربط واتساب</DialogTitle>
+            <DialogTitle>{t('adminWhatsAppRequestsPagePage.text13')}</DialogTitle>
             <DialogDescription>
               أدخل بيانات Green API Instance للتاجر
             </DialogDescription>
@@ -343,10 +343,10 @@ export default function WhatsAppRequestsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="adminNotes">ملاحظات (اختياري)</Label>
+              <Label htmlFor="adminNotes">{t('adminWhatsAppRequestsPagePage.text14')}</Label>
               <Textarea
                 id="adminNotes"
-                placeholder="ملاحظات إضافية..."
+                placeholder={t('adminWhatsAppRequestsPagePage.text15')}
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
               />
@@ -367,17 +367,17 @@ export default function WhatsAppRequestsPage() {
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>رفض طلب ربط واتساب</DialogTitle>
+            <DialogTitle>{t('adminWhatsAppRequestsPagePage.text16')}</DialogTitle>
             <DialogDescription>
               أدخل سبب رفض الطلب
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="rejectionReason">سبب الرفض *</Label>
+              <Label htmlFor="rejectionReason">{t('adminWhatsAppRequestsPagePage.text17')}</Label>
               <Textarea
                 id="rejectionReason"
-                placeholder="يرجى توضيح سبب رفض الطلب..."
+                placeholder={t('adminWhatsAppRequestsPagePage.text18')}
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
               />

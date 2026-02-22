@@ -13,8 +13,10 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from 'react-i18next';
 
 export default function WhatsAppTest() {
+  const { t } = useTranslation();
   // Green API Credentials
   const [instanceId, setInstanceId] = useState("");
   const [apiToken, setApiToken] = useState("");
@@ -72,18 +74,18 @@ export default function WhatsAppTest() {
 
   const saveInstanceMutation = trpc.whatsapp.saveInstance.useMutation({
     onSuccess: () => {
-      toast.success("تم حفظ بيانات WhatsApp بنجاح! ✅");
+      toast.success(t('whatsAppTestPage.text0'));
       setIsSaved(true);
       refetchInstance();
     },
     onError: (error) => {
-      toast.error(`فشل حفظ البيانات: ${error.message}`);
+      toast.error(t('whatsAppTestPage.text1'));
     },
   });
 
   const deleteInstanceMutation = trpc.whatsapp.deleteInstance.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف البيانات المحفوظة");
+      toast.success(t('whatsAppTestPage.text3'));
       setInstanceId("");
       setApiToken("");
       setIsSaved(false);
@@ -92,13 +94,13 @@ export default function WhatsAppTest() {
       refetchInstance();
     },
     onError: (error) => {
-      toast.error(`فشل حذف البيانات: ${error.message}`);
+      toast.error(t('whatsAppTestPage.text4'));
     },
   });
 
   const sendMessageMutation = trpc.whatsapp.sendTestMessage.useMutation({
     onSuccess: (data: any) => {
-      toast.success("تم إرسال الرسالة بنجاح! ✅");
+      toast.success(t('whatsAppTestPage.text6'));
       setTestResults(prev => ({
         ...prev,
         textMessage: {
@@ -109,7 +111,7 @@ export default function WhatsAppTest() {
       }));
     },
     onError: (error) => {
-      toast.error(`فشل إرسال الرسالة: ${error.message}`);
+      toast.error(t('whatsAppTestPage.text7'));
       setTestResults(prev => ({
         ...prev,
         textMessage: {
@@ -123,7 +125,7 @@ export default function WhatsAppTest() {
 
   const sendImageMutation = trpc.whatsapp.sendTestImage.useMutation({
     onSuccess: (data: any) => {
-      toast.success("تم إرسال الصورة بنجاح! ✅");
+      toast.success(t('whatsAppTestPage.text9'));
       setTestResults(prev => ({
         ...prev,
         imageMessage: {
@@ -134,7 +136,7 @@ export default function WhatsAppTest() {
       }));
     },
     onError: (error) => {
-      toast.error(`فشل إرسال الصورة: ${error.message}`);
+      toast.error(t('whatsAppTestPage.text10'));
       setTestResults(prev => ({
         ...prev,
         imageMessage: {
@@ -161,14 +163,14 @@ export default function WhatsAppTest() {
       }));
       
       if (data.success) {
-        toast.success(`الاتصال ناجح! ✅\nالحالة: ${data.status}`);
+        toast.success(t('whatsAppTestPage.text12'));
       } else {
-        toast.error(data.error || `فشل الاتصال ❌\nالحالة: ${data.status}`);
+        toast.error(data.error || t('whatsAppTestPage.text60', { var0: data.status }));
       }
     },
     onError: (error: any) => {
       console.error('[WhatsApp Test] Unexpected Error:', error);
-      toast.error(`خطأ غير متوقع: ${error.message}`);
+      toast.error(t('whatsAppTestPage.text14'));
       setConnectionStatus({
         success: false,
         status: 'error',
@@ -192,11 +194,11 @@ export default function WhatsAppTest() {
 
   const handleTestConnection = () => {
     if (!instanceId.trim()) {
-      toast.error("يرجى إدخال Instance ID");
+      toast.error(t('whatsAppTestPage.text16'));
       return;
     }
     if (!apiToken.trim()) {
-      toast.error("يرجى إدخال API Token");
+      toast.error(t('whatsAppTestPage.text17'));
       return;
     }
 
@@ -208,11 +210,11 @@ export default function WhatsAppTest() {
 
   const handleSaveInstance = () => {
     if (!instanceId.trim()) {
-      toast.error("يرجى إدخال Instance ID");
+      toast.error(t('whatsAppTestPage.text18'));
       return;
     }
     if (!apiToken.trim()) {
-      toast.error("يرجى إدخال API Token");
+      toast.error(t('whatsAppTestPage.text19'));
       return;
     }
 
@@ -233,15 +235,15 @@ export default function WhatsAppTest() {
 
   const handleSendMessage = () => {
     if (!instanceId.trim() || !apiToken.trim()) {
-      toast.error("يرجى إدخال بيانات Green API أولاً");
+      toast.error(t('whatsAppTestPage.text20'));
       return;
     }
     if (!phoneNumber.trim()) {
-      toast.error("يرجى إدخال رقم الجوال");
+      toast.error(t('whatsAppTestPage.text21'));
       return;
     }
     if (!message.trim()) {
-      toast.error("يرجى إدخال نص الرسالة");
+      toast.error(t('whatsAppTestPage.text22'));
       return;
     }
 
@@ -255,15 +257,15 @@ export default function WhatsAppTest() {
 
   const handleSendImage = () => {
     if (!instanceId.trim() || !apiToken.trim()) {
-      toast.error("يرجى إدخال بيانات Green API أولاً");
+      toast.error(t('whatsAppTestPage.text23'));
       return;
     }
     if (!phoneNumber.trim()) {
-      toast.error("يرجى إدخال رقم الجوال");
+      toast.error(t('whatsAppTestPage.text24'));
       return;
     }
     if (!imageUrl.trim()) {
-      toast.error("يرجى إدخال رابط الصورة");
+      toast.error(t('whatsAppTestPage.text25'));
       return;
     }
 
@@ -278,7 +280,7 @@ export default function WhatsAppTest() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success("تم النسخ!");
+    toast.success(t('whatsAppTestPage.text26'));
   };
 
   return (
@@ -286,9 +288,9 @@ export default function WhatsAppTest() {
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold mb-2">اختبار WhatsApp</h1>
+            <h1 className="text-3xl font-bold mb-2">{t('whatsAppTestPage.text27')}</h1>
             <p className="text-muted-foreground">
-              اختبر الاتصال بـ Green API وإرسال الرسائل
+              {t('whatsAppTestPage.text62')}
             </p>
           </div>
           <Button
@@ -296,7 +298,7 @@ export default function WhatsAppTest() {
             onClick={() => window.location.href = "/merchant/greenapi-setup"}
           >
             <ExternalLink className="w-4 h-4 ml-2" />
-            دليل الإعداد
+            {t('whatsAppTestPage.text47')}
           </Button>
         </div>
       </div>
@@ -309,10 +311,10 @@ export default function WhatsAppTest() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Phone className="w-5 h-5" />
-                بيانات Green API
+                {t('whatsAppTestPage.text63')}
               </CardTitle>
               <CardDescription>
-                أدخل Instance ID و Token من لوحة تحكم Green API
+                {t('whatsAppTestPage.text64')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -320,8 +322,8 @@ export default function WhatsAppTest() {
                 <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
                   <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                   <AlertDescription className="text-green-800 dark:text-green-200">
-                    البيانات محفوظة! Instance: {savedInstance.instanceId}
-                    {savedInstance.phoneNumber && ` • رقم الهاتف: ${savedInstance.phoneNumber}`}
+                    {t('whatsAppTestPage.text65', { var0: savedInstance.instanceId })}
+                    {savedInstance.phoneNumber && t('whatsAppTestPage.text61', { var0: savedInstance.phoneNumber })}
                   </AlertDescription>
                 </Alert>
               )}
@@ -343,7 +345,7 @@ export default function WhatsAppTest() {
                   <Input
                     id="apiToken"
                     type="password"
-                    placeholder="أدخل API Token"
+                    placeholder={t('whatsAppTestPage.text28')}
                     value={apiToken}
                     onChange={(e) => setApiToken(e.target.value)}
                     disabled={isSaved}
@@ -358,7 +360,7 @@ export default function WhatsAppTest() {
                   className="flex-1"
                 >
                   {testConnectionMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                  اختبار الاتصال
+                  {t('whatsAppTestPage.text48')}
                 </Button>
 
                 {!isSaved && connectionStatus?.success && (
@@ -370,7 +372,7 @@ export default function WhatsAppTest() {
                   >
                     {saveInstanceMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                     <Save className="ml-2 h-4 w-4" />
-                    حفظ البيانات
+                    {t('whatsAppTestPage.text49')}
                   </Button>
                 )}
 
@@ -382,7 +384,7 @@ export default function WhatsAppTest() {
                   >
                     {deleteInstanceMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                     <Trash2 className="ml-2 h-4 w-4" />
-                    حذف
+                    {t('whatsAppTestPage.text50')}
                   </Button>
                 )}
               </div>
@@ -394,12 +396,12 @@ export default function WhatsAppTest() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Send className="w-5 h-5" />
-                إرسال رسالة نصية
+                {t('whatsAppTestPage.text51')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="phoneNumber">رقم الجوال (مع رمز الدولة)</Label>
+                <Label htmlFor="phoneNumber">{t('whatsAppTestPage.text29')}</Label>
                 <Input
                   id="phoneNumber"
                   placeholder="966501234567"
@@ -407,15 +409,15 @@ export default function WhatsAppTest() {
                   onChange={(e) => setPhoneNumber(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  مثال: 966501234567 (بدون + أو 00)
+                  {t('whatsAppTestPage.text66')}
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="message">نص الرسالة</Label>
+                <Label htmlFor="message">{t('whatsAppTestPage.text30')}</Label>
                 <Textarea
                   id="message"
-                  placeholder="اكتب رسالتك هنا..."
+                  placeholder={t('whatsAppTestPage.text31')}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   rows={4}
@@ -429,7 +431,7 @@ export default function WhatsAppTest() {
               >
                 {sendMessageMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                 <Send className="ml-2 h-4 w-4" />
-                إرسال الرسالة
+                {t('whatsAppTestPage.text52')}
               </Button>
             </CardContent>
           </Card>
@@ -439,12 +441,12 @@ export default function WhatsAppTest() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ImageIcon className="w-5 h-5" />
-                إرسال صورة
+                {t('whatsAppTestPage.text53')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="imageUrl">رابط الصورة</Label>
+                <Label htmlFor="imageUrl">{t('whatsAppTestPage.text32')}</Label>
                 <Input
                   id="imageUrl"
                   placeholder="https://example.com/image.jpg"
@@ -454,10 +456,10 @@ export default function WhatsAppTest() {
               </div>
 
               <div>
-                <Label htmlFor="imageCaption">نص مرفق (اختياري)</Label>
+                <Label htmlFor="imageCaption">{t('whatsAppTestPage.text33')}</Label>
                 <Textarea
                   id="imageCaption"
-                  placeholder="وصف الصورة..."
+                  placeholder={t('whatsAppTestPage.text34')}
                   value={imageCaption}
                   onChange={(e) => setImageCaption(e.target.value)}
                   rows={2}
@@ -471,7 +473,7 @@ export default function WhatsAppTest() {
               >
                 {sendImageMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                 <ImageIcon className="ml-2 h-4 w-4" />
-                إرسال الصورة
+                {t('whatsAppTestPage.text54')}
               </Button>
             </CardContent>
           </Card>
@@ -483,10 +485,10 @@ export default function WhatsAppTest() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Info className="w-5 h-5" />
-                نتائج الاختبار
+                {t('whatsAppTestPage.text55')}
               </CardTitle>
               <CardDescription>
-                نتائج تفصيلية لجميع العمليات
+                {t('whatsAppTestPage.text56')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -500,7 +502,7 @@ export default function WhatsAppTest() {
                       ) : (
                         <XCircle className="w-4 h-4 text-red-600" />
                       )}
-                      اختبار الاتصال
+                      {t('whatsAppTestPage.text57')}
                     </h3>
                     <Badge variant={testResults.connection.success ? "default" : "destructive"}>
                       {testResults.connection.status}
@@ -509,7 +511,7 @@ export default function WhatsAppTest() {
                   
                   {testResults.connection.phoneNumber && (
                     <div className="bg-muted p-3 rounded-md">
-                      <p className="text-sm font-medium mb-1">رقم الواتساب المتصل:</p>
+                      <p className="text-sm font-medium mb-1">{t('whatsAppTestPage.text35')}</p>
                       <div className="flex items-center justify-between">
                         <code className="text-sm">{testResults.connection.phoneNumber}</code>
                         <Button
@@ -547,10 +549,10 @@ export default function WhatsAppTest() {
                       ) : (
                         <XCircle className="w-4 h-4 text-red-600" />
                       )}
-                      إرسال رسالة نصية
+                      {t('whatsAppTestPage.text58')}
                     </h3>
                     <Badge variant={testResults.textMessage.success ? "default" : "destructive"}>
-                      {testResults.textMessage.success ? "نجح" : "فشل"}
+                      {testResults.textMessage.success ? t('whatsAppTestPage.text43') : t('whatsAppTestPage.text44')}
                     </Badge>
                   </div>
                   
@@ -594,10 +596,10 @@ export default function WhatsAppTest() {
                       ) : (
                         <XCircle className="w-4 h-4 text-red-600" />
                       )}
-                      إرسال صورة
+                      {t('whatsAppTestPage.text59')}
                     </h3>
                     <Badge variant={testResults.imageMessage.success ? "default" : "destructive"}>
-                      {testResults.imageMessage.success ? "نجح" : "فشل"}
+                      {testResults.imageMessage.success ? t('whatsAppTestPage.text45') : t('whatsAppTestPage.text46')}
                     </Badge>
                   </div>
                   
@@ -633,8 +635,8 @@ export default function WhatsAppTest() {
               {!testResults.connection && !testResults.textMessage && !testResults.imageMessage && (
                 <div className="text-center py-8 text-muted-foreground">
                   <Info className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>لم يتم إجراء أي اختبار بعد</p>
-                  <p className="text-sm mt-1">ابدأ باختبار الاتصال أولاً</p>
+                  <p>{t('whatsAppTestPage.text36')}</p>
+                  <p className="text-sm mt-1">{t('whatsAppTestPage.text37')}</p>
                 </div>
               )}
             </CardContent>
@@ -643,34 +645,34 @@ export default function WhatsAppTest() {
           {/* Quick Tips */}
           <Card>
             <CardHeader>
-              <CardTitle>نصائح سريعة</CardTitle>
+              <CardTitle>{t('whatsAppTestPage.text38')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>خطوة 1:</strong> اختبر الاتصال أولاً للتأكد من صحة البيانات
+                  <strong>{t('whatsAppTestPage.text39')}</strong> {t('whatsAppTestPage.text67')}
                 </AlertDescription>
               </Alert>
               
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>خطوة 2:</strong> احفظ البيانات بعد نجاح الاتصال
+                  <strong>{t('whatsAppTestPage.text40')}</strong> {t('whatsAppTestPage.text68')}
                 </AlertDescription>
               </Alert>
               
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>خطوة 3:</strong> جرب إرسال رسالة لرقمك الشخصي
+                  <strong>{t('whatsAppTestPage.text41')}</strong> {t('whatsAppTestPage.text69')}
                 </AlertDescription>
               </Alert>
               
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>خطوة 4:</strong> أرسل رسالة من رقمك لرقم المتجر لاختبار ساري
+                  <strong>{t('whatsAppTestPage.text42')}</strong> {t('whatsAppTestPage.text70')}
                 </AlertDescription>
               </Alert>
             </CardContent>

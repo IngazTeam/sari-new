@@ -18,27 +18,27 @@ export default function OrderNotificationsSettings() {
   const [editingTemplate, setEditingTemplate] = useState('');
 
   const statusLabels: Record<string, string> = {
-    pending: 'طلب جديد',
-    confirmed: 'تأكيد الطلب',
-    processing: 'جاري التحضير',
-    shipped: 'تم الشحن',
-    delivered: 'تم التوصيل',
-    cancelled: 'إلغاء الطلب',
+    pending: t('orderNotificationsSettingsPage.text21'),
+    confirmed: t('orderNotificationsSettingsPage.text22'),
+    processing: t('orderNotificationsSettingsPage.text23'),
+    shipped: t('orderNotificationsSettingsPage.text24'),
+    delivered: t('orderNotificationsSettingsPage.text25'),
+    cancelled: t('orderNotificationsSettingsPage.text26'),
   };
 
   const statusDescriptions: Record<string, string> = {
-    pending: 'يُرسل عند إنشاء طلب جديد',
-    confirmed: 'يُرسل عند تأكيد الطلب',
-    processing: 'يُرسل عند بدء تحضير الطلب',
-    shipped: 'يُرسل عند شحن الطلب',
-    delivered: 'يُرسل عند توصيل الطلب',
-    cancelled: 'يُرسل عند إلغاء الطلب',
+    pending: t('orderNotificationsSettingsPage.text27'),
+    confirmed: t('orderNotificationsSettingsPage.text28'),
+    processing: t('orderNotificationsSettingsPage.text29'),
+    shipped: t('orderNotificationsSettingsPage.text30'),
+    delivered: t('orderNotificationsSettingsPage.text31'),
+    cancelled: t('orderNotificationsSettingsPage.text32'),
   };
 
   const handleToggle = async (id: number, enabled: boolean) => {
     try {
       await updateTemplate.mutateAsync({ id, enabled });
-      toast.success(enabled ? 'تم تفعيل الإشعار' : 'تم تعطيل الإشعار');
+      toast.success(enabled ? t('orderNotificationsSettingsPage.text11') : t('orderNotificationsSettingsPage.text12'));
       refetch();
     } catch (error) {
       toast.error(t('toast.notifications.msg3'));
@@ -70,7 +70,7 @@ export default function OrderNotificationsSettings() {
     return (
       <div className="container py-8">
         <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">جاري التحميل...</div>
+          <div className="text-muted-foreground">{t('orderNotificationsSettingsPage.text0')}</div>
         </div>
       </div>
     );
@@ -79,9 +79,9 @@ export default function OrderNotificationsSettings() {
   return (
     <div className="container py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إعدادات إشعارات الطلبات</h1>
+        <h1 className="text-3xl font-bold">{t('orderNotificationsSettingsPage.text1')}</h1>
         <p className="text-muted-foreground mt-2">
-          قم بتخصيص رسائل واتساب التي تُرسل للعملاء عند تغيير حالة الطلب
+          {t('orderNotificationsSettingsPage.text15')}
         </p>
       </div>
 
@@ -89,7 +89,7 @@ export default function OrderNotificationsSettings() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">الإشعارات المفعلة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('orderNotificationsSettingsPage.text2')}</CardTitle>
             <Bell className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -97,14 +97,14 @@ export default function OrderNotificationsSettings() {
               {templates?.filter(t => t.enabled).length || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              من أصل {templates?.length || 0} إشعار
+              {t('orderNotificationsSettingsPage.text33', { var0: templates?.length || 0 })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">الإشعارات المعطلة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('orderNotificationsSettingsPage.text3')}</CardTitle>
             <X className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -112,14 +112,14 @@ export default function OrderNotificationsSettings() {
               {templates?.filter(t => !t.enabled).length || 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              إشعارات غير مفعلة
+              {t('orderNotificationsSettingsPage.text16')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">آخر تحديث</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('orderNotificationsSettingsPage.text4')}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -129,7 +129,7 @@ export default function OrderNotificationsSettings() {
                 : '-'}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              تاريخ آخر تعديل
+              {t('orderNotificationsSettingsPage.text17')}
             </p>
           </CardContent>
         </Card>
@@ -152,7 +152,7 @@ export default function OrderNotificationsSettings() {
                       onCheckedChange={(checked) => handleToggle(template.id, checked)}
                     />
                     <Label className="text-sm">
-                      {template.enabled ? 'مفعّل' : 'معطّل'}
+                      {template.enabled ? t('orderNotificationsSettingsPage.text13') : t('orderNotificationsSettingsPage.text14')}
                     </Label>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export default function OrderNotificationsSettings() {
               {editingId === template.id ? (
                 <>
                   <div>
-                    <Label>قالب الرسالة</Label>
+                    <Label>{t('orderNotificationsSettingsPage.text5')}</Label>
                     <Textarea
                       value={editingTemplate}
                       onChange={(e) => setEditingTemplate(e.target.value)}
@@ -171,17 +171,17 @@ export default function OrderNotificationsSettings() {
                       dir="rtl"
                     />
                     <p className="text-xs text-muted-foreground mt-2">
-                      المتغيرات المتاحة: {'{customerName}'}, {'{storeName}'}, {'{orderNumber}'}, {'{total}'}, {'{trackingNumber}'}
+                      {t('orderNotificationsSettingsPage.text34')}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={() => handleSave(template.id)} size="sm">
                       <Check className="h-4 w-4 ml-2" />
-                      حفظ
+                      {t('orderNotificationsSettingsPage.text18')}
                     </Button>
                     <Button onClick={handleCancel} variant="outline" size="sm">
                       <X className="h-4 w-4 ml-2" />
-                      إلغاء
+                      {t('orderNotificationsSettingsPage.text19')}
                     </Button>
                   </div>
                 </>
@@ -197,7 +197,7 @@ export default function OrderNotificationsSettings() {
                     variant="outline"
                     size="sm"
                   >
-                    تعديل القالب
+                    {t('orderNotificationsSettingsPage.text20')}
                   </Button>
                 </>
               )}
@@ -209,13 +209,13 @@ export default function OrderNotificationsSettings() {
       {/* Help Section */}
       <Card className="bg-primary/10 dark:bg-blue-950 border-primary/30 dark:border-blue-800">
         <CardHeader>
-          <CardTitle className="text-primary dark:text-blue-100">💡 نصائح</CardTitle>
+          <CardTitle className="text-primary dark:text-blue-100">{t('orderNotificationsSettingsPage.text6')}</CardTitle>
         </CardHeader>
         <CardContent className="text-primary dark:text-blue-200 space-y-2">
-          <p>• استخدم المتغيرات لتخصيص الرسائل لكل عميل</p>
-          <p>• تأكد من تفعيل الإشعارات المهمة مثل "تأكيد الطلب" و"تم الشحن"</p>
-          <p>• اجعل الرسائل قصيرة وواضحة</p>
-          <p>• أضف رابط تتبع الشحنة في إشعار "تم الشحن"</p>
+          <p>{t('orderNotificationsSettingsPage.text7')}</p>
+          <p>{t('orderNotificationsSettingsPage.text8')}</p>
+          <p>{t('orderNotificationsSettingsPage.text9')}</p>
+          <p>{t('orderNotificationsSettingsPage.text10')}</p>
         </CardContent>
       </Card>
     </div>

@@ -8,8 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Star, MessageSquare, Calendar, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useTranslation } from 'react-i18next';
 
 export default function Reviews() {
+  const { t } = useTranslation();
   const [starFilter, setStarFilter] = useState<string>("all");
   const [replyDialog, setReplyDialog] = useState<{ open: boolean; reviewId: number | null }>({
     open: false,
@@ -66,7 +68,7 @@ export default function Reviews() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">جاري تحميل التقييمات...</p>
+            <p className="text-muted-foreground">{t('reviewsPage.text0')}</p>
           </div>
         </div>
       </div>
@@ -77,9 +79,9 @@ export default function Reviews() {
     <div className="container py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">تقييمات العملاء</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('reviewsPage.text1')}</h1>
         <p className="text-muted-foreground">
-          إدارة ومتابعة تقييمات عملائك والرد عليها
+          {t('reviewsPage.text22')}
         </p>
       </div>
 
@@ -88,7 +90,7 @@ export default function Reviews() {
         <div className="grid gap-4 md:grid-cols-4 mb-8">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">إجمالي التقييمات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reviewsPage.text2')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalReviews}</div>
@@ -97,7 +99,7 @@ export default function Reviews() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">متوسط التقييم</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reviewsPage.text3')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -109,7 +111,7 @@ export default function Reviews() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">تقييمات إيجابية</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reviewsPage.text4')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{stats.ratingDistribution[5] || 0}</div>
@@ -121,7 +123,7 @@ export default function Reviews() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">تقييمات سلبية</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('reviewsPage.text5')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{(stats.ratingDistribution[1] || 0) + (stats.ratingDistribution[2] || 0)}</div>
@@ -138,24 +140,24 @@ export default function Reviews() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            فلترة التقييمات
+            {t('reviewsPage.text23')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">حسب النجوم</label>
+              <label className="text-sm font-medium mb-2 block">{t('reviewsPage.text6')}</label>
               <Select value={starFilter} onValueChange={setStarFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر التقييم" />
+                  <SelectValue placeholder={t('reviewsPage.text7')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">جميع التقييمات</SelectItem>
-                  <SelectItem value="5">⭐⭐⭐⭐⭐ (5 نجوم)</SelectItem>
-                  <SelectItem value="4">⭐⭐⭐⭐ (4 نجوم)</SelectItem>
-                  <SelectItem value="3">⭐⭐⭐ (3 نجوم)</SelectItem>
-                  <SelectItem value="2">⭐⭐ (نجمتان)</SelectItem>
-                  <SelectItem value="1">⭐ (نجمة واحدة)</SelectItem>
+                  <SelectItem value="all">{t('reviewsPage.text8')}</SelectItem>
+                  <SelectItem value="5">{t('reviewsPage.text9')}</SelectItem>
+                  <SelectItem value="4">{t('reviewsPage.text10')}</SelectItem>
+                  <SelectItem value="3">{t('reviewsPage.text11')}</SelectItem>
+                  <SelectItem value="2">{t('reviewsPage.text12')}</SelectItem>
+                  <SelectItem value="1">{t('reviewsPage.text13')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -195,7 +197,7 @@ export default function Reviews() {
                   {/* Merchant Reply */}
                   {review.merchantReply && (
                     <div className="bg-primary/5 p-4 rounded-lg border-r-4 border-primary">
-                      <p className="text-sm font-medium mb-1">ردك:</p>
+                      <p className="text-sm font-medium mb-1">{t('reviewsPage.text14')}</p>
                       <p className="text-sm">{review.merchantReply}</p>
                       {review.repliedAt && (
                         <p className="text-xs text-muted-foreground mt-2">
@@ -214,7 +216,7 @@ export default function Reviews() {
                       className="gap-2"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      الرد على التقييم
+                      {t('reviewsPage.text24')}
                     </Button>
                   )}
                 </div>
@@ -226,11 +228,10 @@ export default function Reviews() {
             <CardContent className="py-12">
               <div className="text-center">
                 <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">لا توجد تقييمات</h3>
+                <h3 className="text-lg font-medium mb-2">{t('reviewsPage.text15')}</h3>
                 <p className="text-muted-foreground">
                   {starFilter !== "all"
-                    ? "لا توجد تقييمات بهذا الفلتر"
-                    : "لم يتم استلام أي تقييمات بعد"}
+                    ? t('reviewsPage.text18') : t('reviewsPage.text19')}
                 </p>
               </div>
             </CardContent>
@@ -242,14 +243,14 @@ export default function Reviews() {
       <Dialog open={replyDialog.open} onOpenChange={(open) => setReplyDialog({ open, reviewId: null })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>الرد على التقييم</DialogTitle>
+            <DialogTitle>{t('reviewsPage.text16')}</DialogTitle>
             <DialogDescription>
-              اكتب ردك على تقييم العميل. سيتم إرساله عبر WhatsApp.
+              {t('reviewsPage.text26')}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Textarea
-              placeholder="اكتب ردك هنا..."
+              placeholder={t('reviewsPage.text17')}
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               rows={5}
@@ -261,13 +262,13 @@ export default function Reviews() {
               variant="outline"
               onClick={() => setReplyDialog({ open: false, reviewId: null })}
             >
-              إلغاء
+              {t('reviewsPage.text25')}
             </Button>
             <Button
               onClick={submitReply}
               disabled={!replyText.trim() || replyMutation.isPending}
             >
-              {replyMutation.isPending ? "جاري الإرسال..." : "إرسال الرد"}
+              {replyMutation.isPending ? t('reviewsPage.text20') : t('reviewsPage.text21')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,8 +4,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ExternalLink, Trash2, Search, Filter } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function SeoBacklinks() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
@@ -14,7 +16,7 @@ export default function SeoBacklinks() {
       id: 1,
       sourceUrl: "https://techblog.com/ai-sales-tools",
       sourceDomain: "techblog.com",
-      anchorText: "أفضل أدوات المبيعات بالذكاء الاصطناعي",
+      anchorText: t('adminSeoBacklinksPage.text0'),
       domainAuthority: 72,
       spamScore: 2,
       status: "active",
@@ -24,7 +26,7 @@ export default function SeoBacklinks() {
       id: 2,
       sourceUrl: "https://businessnews.ae/sari-review",
       sourceDomain: "businessnews.ae",
-      anchorText: "تطبيق ساري",
+      anchorText: t('adminSeoBacklinksPage.text1'),
       domainAuthority: 68,
       spamScore: 1,
       status: "active",
@@ -34,7 +36,7 @@ export default function SeoBacklinks() {
       id: 3,
       sourceUrl: "https://startup-directory.com/sari",
       sourceDomain: "startup-directory.com",
-      anchorText: "ساري - وكيل مبيعات ذكي",
+      anchorText: t('adminSeoBacklinksPage.text2'),
       domainAuthority: 45,
       spamScore: 5,
       status: "active",
@@ -44,7 +46,7 @@ export default function SeoBacklinks() {
       id: 4,
       sourceUrl: "https://oldsite.com/broken-link",
       sourceDomain: "oldsite.com",
-      anchorText: "رابط قديم",
+      anchorText: t('adminSeoBacklinksPage.text3'),
       domainAuthority: 32,
       spamScore: 15,
       status: "broken",
@@ -54,7 +56,7 @@ export default function SeoBacklinks() {
       id: 5,
       sourceUrl: "https://arabictech.com/whatsapp-tools",
       sourceDomain: "arabictech.com",
-      anchorText: "أدوات واتساب",
+      anchorText: t('adminSeoBacklinksPage.text4'),
       domainAuthority: 55,
       spamScore: 3,
       status: "active",
@@ -88,28 +90,28 @@ export default function SeoBacklinks() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إدارة الروابط الخارجية</h1>
-        <p className="text-gray-600 mt-2">تتبع ومراقبة الروابط التي تشير إلى موقعك</p>
+        <h1 className="text-3xl font-bold">{t('adminSeoBacklinksPage.text5')}</h1>
+        <p className="text-gray-600 mt-2">{t('adminSeoBacklinksPage.text6')}</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         <Card className="p-6">
-          <p className="text-sm text-gray-600">إجمالي الروابط</p>
+          <p className="text-sm text-gray-600">{t('adminSeoBacklinksPage.text7')}</p>
           <p className="text-3xl font-bold mt-2">{backlinks.length}</p>
         </Card>
         <Card className="p-6">
-          <p className="text-sm text-gray-600">الروابط النشطة</p>
+          <p className="text-sm text-gray-600">{t('adminSeoBacklinksPage.text8')}</p>
           <p className="text-3xl font-bold mt-2">{backlinks.filter(b => b.status === "active").length}</p>
         </Card>
         <Card className="p-6">
-          <p className="text-sm text-gray-600">متوسط DA</p>
+          <p className="text-sm text-gray-600">{t('adminSeoBacklinksPage.text9')}</p>
           <p className="text-3xl font-bold mt-2">
             {Math.round(backlinks.reduce((sum, b) => sum + b.domainAuthority, 0) / backlinks.length)}
           </p>
         </Card>
         <Card className="p-6">
-          <p className="text-sm text-gray-600">الروابط المكسورة</p>
+          <p className="text-sm text-gray-600">{t('adminSeoBacklinksPage.text10')}</p>
           <p className="text-3xl font-bold mt-2 text-red-600">
             {backlinks.filter(b => b.status === "broken").length}
           </p>
@@ -121,7 +123,7 @@ export default function SeoBacklinks() {
         <div className="flex items-center gap-2 flex-1">
           <Search className="w-4 h-4 text-gray-600" />
           <Input
-            placeholder="ابحث عن نطاق أو نص الرابط..."
+            placeholder={t('adminSeoBacklinksPage.text11')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border-0"
@@ -135,9 +137,9 @@ export default function SeoBacklinks() {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-3 py-2 border rounded-lg text-sm"
           >
-            <option value="all">جميع الروابط</option>
-            <option value="active">نشطة</option>
-            <option value="broken">مكسورة</option>
+            <option value="all">{t('adminSeoBacklinksPage.text12')}</option>
+            <option value="active">{t('adminSeoBacklinksPage.text13')}</option>
+            <option value="broken">{t('adminSeoBacklinksPage.text14')}</option>
           </select>
         </div>
       </Card>
@@ -148,13 +150,13 @@ export default function SeoBacklinks() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-3 text-right text-sm font-semibold">المصدر</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">نص الرابط</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoBacklinksPage.text15')}</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoBacklinksPage.text16')}</th>
                 <th className="px-6 py-3 text-right text-sm font-semibold">DA</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">درجة Spam</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">الحالة</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">التاريخ</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">الإجراءات</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoBacklinksPage.text17')}</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoBacklinksPage.text18')}</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoBacklinksPage.text19')}</th>
+                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoBacklinksPage.text20')}</th>
               </tr>
             </thead>
             <tbody>
@@ -182,7 +184,7 @@ export default function SeoBacklinks() {
                   </td>
                   <td className="px-6 py-4">
                     <Badge variant={bl.status === "active" ? "default" : "destructive"}>
-                      {bl.status === "active" ? "نشط" : "مكسور"}
+                      {bl.status === "active" ? t('adminSeoBacklinksPage.text21') : t('adminSeoBacklinksPage.text22')}
                     </Badge>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{bl.dateAdded}</td>
@@ -205,7 +207,7 @@ export default function SeoBacklinks() {
 
       {/* Top Referring Domains */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">أفضل النطاقات المرجعية</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('adminSeoBacklinksPage.text23')}</h2>
         <div className="space-y-3">
           {Array.from(
             new Map(backlinks.map(bl => [bl.sourceDomain, bl])).values()

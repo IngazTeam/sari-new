@@ -114,8 +114,8 @@ export default function Analytics() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold">التحليلات</h1>
-          <p className="text-muted-foreground mt-2">إحصائيات شاملة عن أداء متجرك</p>
+          <h1 className="text-3xl font-bold">{t('analyticsPage.text0')}</h1>
+          <p className="text-muted-foreground mt-2">{t('analyticsPage.text1')}</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -162,8 +162,8 @@ export default function Analytics() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">التحليلات</h1>
-          <p className="text-muted-foreground mt-2">إحصائيات شاملة عن أداء متجرك</p>
+          <h1 className="text-3xl font-bold">{t('analyticsPage.text2')}</h1>
+          <p className="text-muted-foreground mt-2">{t('analyticsPage.text3')}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -173,7 +173,7 @@ export default function Analytics() {
             className="gap-2"
           >
             <FileDown className="h-4 w-4" />
-            تصدير PDF
+            {t('analyticsPage.text58')}
           </Button>
           <Button
             onClick={handleExportExcel}
@@ -182,7 +182,7 @@ export default function Analytics() {
             className="gap-2"
           >
             <FileSpreadsheet className="h-4 w-4" />
-            تصدير Excel
+            {t('analyticsPage.text59')}
           </Button>
         </div>
       </div>
@@ -192,13 +192,13 @@ export default function Analytics() {
         {/* Total Messages */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الرسائل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsPage.text4')}</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{messageStats?.total || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              نصية: {messageStats?.text || 0} | صوتية: {messageStats?.voice || 0}
+              {t('analyticsPage.text60', { var0: messageStats?.text || 0, var1: messageStats?.voice || 0 })}
             </p>
           </CardContent>
         </Card>
@@ -206,13 +206,13 @@ export default function Analytics() {
         {/* Voice Messages Percentage */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الرسائل الصوتية</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsPage.text5')}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{voicePercentage}%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {messageStats?.voice || 0} رسالة صوتية
+              {t('analyticsPage.text61', { var0: messageStats?.voice || 0 })}
             </p>
           </CardContent>
         </Card>
@@ -220,13 +220,13 @@ export default function Analytics() {
         {/* Conversion Rate */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معدل التحويل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsPage.text6')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{conversionRate?.rate || 0}%</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {conversionRate?.convertedConversations || 0} من {conversionRate?.totalConversations || 0} محادثة
+              {t('analyticsPage.text62', { var0: conversionRate?.convertedConversations || 0, var1: conversionRate?.totalConversations || 0 })}
             </p>
           </CardContent>
         </Card>
@@ -234,16 +234,13 @@ export default function Analytics() {
         {/* Peak Hour */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">وقت الذروة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsPage.text7')}</CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {peakHour ? `${peakHour.hour}:00` : 'لا يوجد'}
+              {peakHour ? `${peakHour.hour}:00 - ${peakHour.count} ${t('analyticsPage.text55')}` : t('analyticsPage.text28')}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {peakHour ? `${peakHour.count} رسالة` : 'لا توجد بيانات'}
-            </p>
           </CardContent>
         </Card>
       </div>
@@ -253,7 +250,7 @@ export default function Analytics() {
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Heart className="h-6 w-6 text-primary" />
-            تحليل مشاعر العملاء
+            {t('analyticsPage.text29')}
           </h2>
           <div className="flex gap-2">
             <Button
@@ -261,21 +258,21 @@ export default function Analytics() {
               size="sm"
               onClick={() => setSentimentDays(7)}
             >
-              7 أيام
+              {t('analyticsPage.text30')}
             </Button>
             <Button
               variant={sentimentDays === 30 ? "default" : "outline"}
               size="sm"
               onClick={() => setSentimentDays(30)}
             >
-              30 يوم
+              {t('analyticsPage.text31')}
             </Button>
             <Button
               variant={sentimentDays === 90 ? "default" : "outline"}
               size="sm"
               onClick={() => setSentimentDays(90)}
             >
-              90 يوم
+              {t('analyticsPage.text32')}
             </Button>
           </div>
         </div>
@@ -284,7 +281,7 @@ export default function Analytics() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إيجابي</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('analyticsPage.text8')}</CardTitle>
               <Smile className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -297,7 +294,7 @@ export default function Analytics() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">سلبي</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('analyticsPage.text9')}</CardTitle>
               <Frown className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -310,7 +307,7 @@ export default function Analytics() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">محايد</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('analyticsPage.text10')}</CardTitle>
               <Meh className="h-4 w-4 text-gray-600" />
             </CardHeader>
             <CardContent>
@@ -323,12 +320,12 @@ export default function Analytics() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">معدل الثقة</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('analyticsPage.text11')}</CardTitle>
               <TrendingUp className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{sentimentStats?.averageConfidence || 0}%</div>
-              <p className="text-xs text-muted-foreground mt-1">دقة التحليل</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('analyticsPage.text12')}</p>
             </CardContent>
           </Card>
         </div>
@@ -338,21 +335,21 @@ export default function Analytics() {
           {/* Pie Chart - Sentiment Distribution */}
           <Card>
             <CardHeader>
-              <CardTitle>توزيع المشاعر</CardTitle>
-              <CardDescription>نسبة كل نوع من المشاعر</CardDescription>
+              <CardTitle>{t('analyticsPage.text13')}</CardTitle>
+              <CardDescription>{t('analyticsPage.text14')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'إيجابي', value: sentimentDistribution?.positive || 0, color: '#10b981' },
-                      { name: 'سلبي', value: sentimentDistribution?.negative || 0, color: '#ef4444' },
-                      { name: 'محايد', value: sentimentDistribution?.neutral || 0, color: '#6b7280' },
-                      { name: 'سعيد', value: sentimentDistribution?.happy || 0, color: '#fbbf24' },
-                      { name: 'غاضب', value: sentimentDistribution?.angry || 0, color: '#dc2626' },
-                      { name: 'حزين', value: sentimentDistribution?.sad || 0, color: '#3b82f6' },
-                      { name: 'محبط', value: sentimentDistribution?.frustrated || 0, color: '#f97316' },
+                      { name: t('analyticsPage.text41'), value: sentimentDistribution?.positive || 0, color: '#10b981' },
+                      { name: t('analyticsPage.text42'), value: sentimentDistribution?.negative || 0, color: '#ef4444' },
+                      { name: t('analyticsPage.text43'), value: sentimentDistribution?.neutral || 0, color: '#6b7280' },
+                      { name: t('analyticsPage.text44'), value: sentimentDistribution?.happy || 0, color: '#fbbf24' },
+                      { name: t('analyticsPage.text45'), value: sentimentDistribution?.angry || 0, color: '#dc2626' },
+                      { name: t('analyticsPage.text46'), value: sentimentDistribution?.sad || 0, color: '#3b82f6' },
+                      { name: t('analyticsPage.text47'), value: sentimentDistribution?.frustrated || 0, color: '#f97316' },
                     ]}
                     cx="50%"
                     cy="50%"
@@ -363,13 +360,13 @@ export default function Analytics() {
                     dataKey="value"
                   >
                     {[
-                      { name: 'إيجابي', value: sentimentDistribution?.positive || 0, color: '#10b981' },
-                      { name: 'سلبي', value: sentimentDistribution?.negative || 0, color: '#ef4444' },
-                      { name: 'محايد', value: sentimentDistribution?.neutral || 0, color: '#6b7280' },
-                      { name: 'سعيد', value: sentimentDistribution?.happy || 0, color: '#fbbf24' },
-                      { name: 'غاضب', value: sentimentDistribution?.angry || 0, color: '#dc2626' },
-                      { name: 'حزين', value: sentimentDistribution?.sad || 0, color: '#3b82f6' },
-                      { name: 'محبط', value: sentimentDistribution?.frustrated || 0, color: '#f97316' },
+                      { name: t('analyticsPage.text48'), value: sentimentDistribution?.positive || 0, color: '#10b981' },
+                      { name: t('analyticsPage.text49'), value: sentimentDistribution?.negative || 0, color: '#ef4444' },
+                      { name: t('analyticsPage.text50'), value: sentimentDistribution?.neutral || 0, color: '#6b7280' },
+                      { name: t('analyticsPage.text51'), value: sentimentDistribution?.happy || 0, color: '#fbbf24' },
+                      { name: t('analyticsPage.text52'), value: sentimentDistribution?.angry || 0, color: '#dc2626' },
+                      { name: t('analyticsPage.text53'), value: sentimentDistribution?.sad || 0, color: '#3b82f6' },
+                      { name: t('analyticsPage.text54'), value: sentimentDistribution?.frustrated || 0, color: '#f97316' },
                     ].map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -383,8 +380,8 @@ export default function Analytics() {
           {/* Detailed Sentiment Breakdown */}
           <Card>
             <CardHeader>
-              <CardTitle>تفصيل المشاعر</CardTitle>
-              <CardDescription>جميع أنواع المشاعر المكتشفة</CardDescription>
+              <CardTitle>{t('analyticsPage.text15')}</CardTitle>
+              <CardDescription>{t('analyticsPage.text16')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -393,7 +390,7 @@ export default function Analytics() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium flex items-center gap-2">
                       <Smile className="h-4 w-4 text-yellow-500" />
-                      سعيد
+                      {t('analyticsPage.text33')}
                     </span>
                     <span className="text-sm text-muted-foreground">{sentimentDistribution?.happy || 0}</span>
                   </div>
@@ -410,7 +407,7 @@ export default function Analytics() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium flex items-center gap-2">
                       <Frown className="h-4 w-4 text-red-600" />
-                      غاضب
+                      {t('analyticsPage.text34')}
                     </span>
                     <span className="text-sm text-muted-foreground">{sentimentDistribution?.angry || 0}</span>
                   </div>
@@ -427,7 +424,7 @@ export default function Analytics() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium flex items-center gap-2">
                       <Meh className="h-4 w-4 text-blue-600" />
-                      حزين
+                      {t('analyticsPage.text35')}
                     </span>
                     <span className="text-sm text-muted-foreground">{sentimentDistribution?.sad || 0}</span>
                   </div>
@@ -444,7 +441,7 @@ export default function Analytics() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium flex items-center gap-2">
                       <Frown className="h-4 w-4 text-orange-600" />
-                      محبط
+                      {t('analyticsPage.text36')}
                     </span>
                     <span className="text-sm text-muted-foreground">{sentimentDistribution?.frustrated || 0}</span>
                   </div>
@@ -466,15 +463,15 @@ export default function Analytics() {
         {/* Message Types Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>توزيع أنواع الرسائل</CardTitle>
-            <CardDescription>نسبة كل نوع من الرسائل</CardDescription>
+            <CardTitle>{t('analyticsPage.text17')}</CardTitle>
+            <CardDescription>{t('analyticsPage.text18')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {/* Voice */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">رسائل صوتية</span>
+                  <span className="text-sm font-medium">{t('analyticsPage.text19')}</span>
                   <span className="text-sm text-muted-foreground">{voicePercentage}%</span>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -488,7 +485,7 @@ export default function Analytics() {
               {/* Text */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">رسائل نصية</span>
+                  <span className="text-sm font-medium">{t('analyticsPage.text20')}</span>
                   <span className="text-sm text-muted-foreground">{textPercentage}%</span>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -502,7 +499,7 @@ export default function Analytics() {
               {/* Image */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">رسائل صور</span>
+                  <span className="text-sm font-medium">{t('analyticsPage.text21')}</span>
                   <span className="text-sm text-muted-foreground">{imagePercentage}%</span>
                 </div>
                 <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -519,8 +516,8 @@ export default function Analytics() {
         {/* Peak Hours Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>أوقات الذروة</CardTitle>
-            <CardDescription>عدد الرسائل حسب الساعة</CardDescription>
+            <CardTitle>{t('analyticsPage.text22')}</CardTitle>
+            <CardDescription>{t('analyticsPage.text23')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-64 flex items-end justify-between gap-1">
@@ -533,7 +530,7 @@ export default function Analytics() {
                       <div
                         className="w-full bg-primary/100 rounded-t transition-all hover:bg-primary"
                         style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
-                        title={`${hour.hour}:00 - ${hour.count} رسالة`}
+                        title={t('analyticsPage.text56', { var0: hour.hour, var1: hour.count })}
                       />
                       <span className="text-xs text-muted-foreground">{hour.hour}</span>
                     </div>
@@ -541,7 +538,7 @@ export default function Analytics() {
                 })
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                  لا توجد بيانات
+                  {t('analyticsPage.text37')}
                 </div>
               )}
             </div>
@@ -554,9 +551,9 @@ export default function Analytics() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            المنتجات الأكثر استفساراً
+            {t('analyticsPage.text38')}
           </CardTitle>
-          <CardDescription>المنتجات التي يتم ذكرها في المحادثات</CardDescription>
+          <CardDescription>{t('analyticsPage.text24')}</CardDescription>
         </CardHeader>
         <CardContent>
           {topProducts && topProducts.length > 0 ? (
@@ -574,14 +571,14 @@ export default function Analytics() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl font-bold">{product.mentionCount}</span>
-                    <span className="text-sm text-muted-foreground">ذكر</span>
+                    <span className="text-sm text-muted-foreground">{t('analyticsPage.text25')}</span>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              لا توجد بيانات عن المنتجات المستفسر عنها
+              {t('analyticsPage.text39')}
             </div>
           )}
         </CardContent>
@@ -590,8 +587,8 @@ export default function Analytics() {
       {/* Daily Messages Trend */}
       <Card>
         <CardHeader>
-          <CardTitle>اتجاه الرسائل اليومية</CardTitle>
-          <CardDescription>عدد الرسائل خلال آخر 30 يوم</CardDescription>
+          <CardTitle>{t('analyticsPage.text26')}</CardTitle>
+          <CardDescription>{t('analyticsPage.text27')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-64 flex items-end justify-between gap-1">
@@ -606,7 +603,7 @@ export default function Analytics() {
                     <div
                       className="w-full bg-green-500 rounded-t transition-all hover:bg-green-600"
                       style={{ height: `${height}%`, minHeight: height > 0 ? '4px' : '0' }}
-                      title={`${dayLabel} - ${day.count} رسالة`}
+                      title={t('analyticsPage.text57', { var0: dayLabel, var1: day.count })}
                     />
                     {dailyMessages.length <= 15 && (
                       <span className="text-xs text-muted-foreground">{dayLabel}</span>
@@ -616,7 +613,7 @@ export default function Analytics() {
               })
             ) : (
               <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                لا توجد بيانات
+                {t('analyticsPage.text40')}
               </div>
             )}
           </div>

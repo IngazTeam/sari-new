@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { useTranslation } from 'react-i18next';
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const utils = trpc.useUtils();
 
@@ -32,7 +34,7 @@ export default function NotificationsPage() {
 
   const markAllAsReadMutation = trpc.notifications.markAllAsRead.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديد جميع الإشعارات كمقروءة');
+      toast.success(t('notificationsPagePage.text0'));
       utils.notifications.list.invalidate();
       utils.notifications.unreadCount.invalidate();
     },
@@ -40,7 +42,7 @@ export default function NotificationsPage() {
 
   const deleteMutation = trpc.notifications.delete.useMutation({
     onSuccess: () => {
-      toast.success('تم حذف الإشعار');
+      toast.success(t('notificationsPagePage.text1'));
       utils.notifications.list.invalidate();
       utils.notifications.unreadCount.invalidate();
     },
@@ -55,7 +57,7 @@ export default function NotificationsPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('هل أنت متأكد من حذف هذا الإشعار؟')) {
+    if (confirm(t('notificationsPagePage.text14'))) {
       await deleteMutation.mutateAsync({ id });
     }
   };
@@ -85,13 +87,13 @@ export default function NotificationsPage() {
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'success':
-        return <Badge variant="default" className="bg-green-600">نجاح</Badge>;
+        return <Badge variant="default" className="bg-green-600">{t('notificationsPagePage.text2')}</Badge>;
       case 'warning':
-        return <Badge variant="default" className="bg-yellow-600">تحذير</Badge>;
+        return <Badge variant="default" className="bg-yellow-600">{t('notificationsPagePage.text3')}</Badge>;
       case 'error':
-        return <Badge variant="destructive">خطأ</Badge>;
+        return <Badge variant="destructive">{t('notificationsPagePage.text4')}</Badge>;
       default:
-        return <Badge variant="default">معلومة</Badge>;
+        return <Badge variant="default">{t('notificationsPagePage.text5')}</Badge>;
     }
   };
 
@@ -115,10 +117,10 @@ export default function NotificationsPage() {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Bell className="h-8 w-8" />
-            الإشعارات
+            {t('notificationsPagePage.text9')}
           </h1>
           <p className="text-muted-foreground mt-1">
-            {unreadCount ? `لديك ${unreadCount} إشعار غير مقروء` : 'لا توجد إشعارات جديدة'}
+            {unreadCount ? t('notificationsPagePage.text13', { var0: unreadCount }) : t('notificationsPagePage.text8')}
           </p>
         </div>
 
@@ -128,7 +130,7 @@ export default function NotificationsPage() {
             disabled={markAllAsReadMutation.isPending}
           >
             <CheckCheck className="ml-2 h-4 w-4" />
-            تحديد الكل كمقروء
+            {t('notificationsPagePage.text10')}
           </Button>
         )}
       </div>
@@ -139,9 +141,9 @@ export default function NotificationsPage() {
           <CardContent className="pt-6">
             <div className="text-center py-12">
               <Bell className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">لا توجد إشعارات</p>
+              <p className="text-lg font-medium">{t('notificationsPagePage.text6')}</p>
               <p className="text-sm text-muted-foreground mt-2">
-                سيتم عرض الإشعارات هنا عند توفرها
+                {t('notificationsPagePage.text11')}
               </p>
             </div>
           </CardContent>
@@ -168,7 +170,7 @@ export default function NotificationsPage() {
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{notification.title}</h3>
                         {!notification.isRead && (
-                          <Badge variant="default" className="text-xs">جديد</Badge>
+                          <Badge variant="default" className="text-xs">{t('notificationsPagePage.text7')}</Badge>
                         )}
                       </div>
                       {getTypeBadge(notification.type)}
@@ -197,7 +199,7 @@ export default function NotificationsPage() {
                             onClick={() => handleNotificationClick(notification)}
                           >
                             <ExternalLink className="ml-2 h-3 w-3" />
-                            عرض
+                            {t('notificationsPagePage.text12')}
                           </Button>
                         )}
 

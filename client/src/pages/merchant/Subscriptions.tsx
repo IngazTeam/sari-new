@@ -62,9 +62,9 @@ export default function Subscriptions() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">الباقات والاشتراكات</h1>
+        <h1 className="text-3xl font-bold">{t('subscriptionsPage.text0')}</h1>
         <p className="text-muted-foreground mt-1">
-          اختر الباقة المناسبة لاحتياجات عملك
+          {t('subscriptionsPage.text21')}
         </p>
       </div>
 
@@ -74,7 +74,7 @@ export default function Subscriptions() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Crown className="h-5 w-5 text-primary" />
-              باقتك الحالية
+              {t('subscriptionsPage.text22')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -82,16 +82,16 @@ export default function Subscriptions() {
               <div>
                 <p className="text-2xl font-bold">{currentPlan.plan?.nameAr}</p>
                 <p className="text-muted-foreground mt-1">
-                  {currentPlan.plan?.priceMonthly} ريال / شهرياً
+                  {t('subscriptionsPage.text31', { var0: currentPlan.plan?.priceMonthly })}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">الاستخدام الحالي</p>
+                <p className="text-sm text-muted-foreground">{t('subscriptionsPage.text1')}</p>
                 <p className="text-lg font-semibold">
-                  {currentPlan.subscription.conversationsUsed} / {currentPlan.plan?.conversationLimit === -1 ? '∞' : currentPlan.plan?.conversationLimit} محادثة
+                  {t('subscriptionsPage.text32', { var0: currentPlan.subscription.conversationsUsed, var1: currentPlan.plan?.conversationLimit === -1 ? '∞' : currentPlan.plan?.conversationLimit })}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {currentPlan.subscription.voiceMessagesUsed} / {currentPlan.plan?.voiceMessageLimit === -1 ? '∞' : currentPlan.plan?.voiceMessageLimit} رسالة صوتية
+                  {t('subscriptionsPage.text33', { var0: currentPlan.subscription.voiceMessagesUsed, var1: currentPlan.plan?.voiceMessageLimit === -1 ? '∞' : currentPlan.plan?.voiceMessageLimit })}
                 </p>
               </div>
             </div>
@@ -113,7 +113,7 @@ export default function Subscriptions() {
                 <div className="flex items-center justify-between">
                   <Icon className={`h-8 w-8 ${colorClass}`} />
                   {isCurrentPlan && (
-                    <Badge variant="default">الباقة الحالية</Badge>
+                    <Badge variant="default">{t('subscriptionsPage.text2')}</Badge>
                   )}
                 </div>
                 <CardTitle className="text-2xl mt-4">{plan.nameAr}</CardTitle>
@@ -122,39 +122,33 @@ export default function Subscriptions() {
               <CardContent className="space-y-4">
                 <div>
                   <span className="text-4xl font-bold">{plan.priceMonthly}</span>
-                  <span className="text-muted-foreground"> ريال / شهرياً</span>
+                  <span className="text-muted-foreground">{t('subscriptionsPage.text4')}</span>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">
-                      {plan.conversationLimit === -1 ? 'محادثات غير محدودة' : `${plan.conversationLimit} محادثة شهرياً`}
+                      {plan.conversationLimit === -1 ? 'محادثات غير محدودة' : `${plan.conversationLimit} محادثة شهرياًt('subscriptionsPage.text30')${plan.voiceMessageLimit} رسالة صوتية شهرياً`}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">
-                      {plan.voiceMessageLimit === -1 ? 'رسائل صوتية غير محدودة' : `${plan.voiceMessageLimit} رسالة صوتية شهرياً`}
+                      {t('subscriptionsPage.text23')}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">
-                      حملات تسويقية غير محدودة
-                    </span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm">
-                      دعم فني على مدار الساعة
+                      {t('subscriptionsPage.text24')}
                     </span>
                   </div>
                   {index >= 1 && (
                     <div className="flex items-start gap-2">
                       <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                       <span className="text-sm">
-                        تحليلات متقدمة
+                        {t('subscriptionsPage.text25')}
                       </span>
                     </div>
                   )}
@@ -162,7 +156,7 @@ export default function Subscriptions() {
                     <div className="flex items-start gap-2">
                       <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                       <span className="text-sm">
-                        أولوية في الدعم الفني
+                        {t('subscriptionsPage.text26')}
                       </span>
                     </div>
                   )}
@@ -175,7 +169,7 @@ export default function Subscriptions() {
                   disabled={isCurrentPlan || upgradeMutation.isPending}
                   onClick={() => handleUpgrade(plan.id)}
                 >
-                  {isCurrentPlan ? 'الباقة الحالية' : isUpgrade ? 'ترقية الباقة' : 'اختيار الباقة'}
+                  {isCurrentPlan ? 'الباقة الحالية' : isUpgrade ? t('subscriptionsPage.text19') : t('subscriptionsPage.text20')}
                 </Button>
               </CardFooter>
             </Card>
@@ -186,15 +180,15 @@ export default function Subscriptions() {
       {/* Comparison Table */}
       <Card>
         <CardHeader>
-          <CardTitle>مقارنة الباقات</CardTitle>
-          <CardDescription>قارن بين الباقات المختلفة لاختيار الأنسب لك</CardDescription>
+          <CardTitle>{t('subscriptionsPage.text5')}</CardTitle>
+          <CardDescription>{t('subscriptionsPage.text6')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-right p-4 font-medium">الميزة</th>
+                  <th className="text-right p-4 font-medium">{t('subscriptionsPage.text7')}</th>
                   {activePlans.map(plan => (
                     <th key={plan.id} className="text-center p-4 font-medium">
                       {plan.nameAr}
@@ -204,15 +198,15 @@ export default function Subscriptions() {
               </thead>
               <tbody>
                 <tr className="border-b">
-                  <td className="p-4">السعر الشهري</td>
+                  <td className="p-4">{t('subscriptionsPage.text8')}</td>
                   {activePlans.map(plan => (
                     <td key={plan.id} className="text-center p-4 font-semibold">
-                      {plan.priceMonthly} ريال
+                      {t('subscriptionsPage.text34', { var0: plan.priceMonthly })}
                     </td>
                   ))}
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4">عدد المحادثات</td>
+                  <td className="p-4">{t('subscriptionsPage.text9')}</td>
                   {activePlans.map(plan => (
                     <td key={plan.id} className="text-center p-4">
                       {plan.conversationLimit === -1 ? 'غير محدود' : plan.conversationLimit}
@@ -220,7 +214,7 @@ export default function Subscriptions() {
                   ))}
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4">الرسائل الصوتية</td>
+                  <td className="p-4">{t('subscriptionsPage.text10')}</td>
                   {activePlans.map(plan => (
                     <td key={plan.id} className="text-center p-4">
                       {plan.voiceMessageLimit === -1 ? 'غير محدود' : plan.voiceMessageLimit}
@@ -228,7 +222,7 @@ export default function Subscriptions() {
                   ))}
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4">الحملات التسويقية</td>
+                  <td className="p-4">{t('subscriptionsPage.text11')}</td>
                   {activePlans.map(plan => (
                     <td key={plan.id} className="text-center p-4">
                       <Check className="h-5 w-5 text-green-500 mx-auto" />
@@ -236,7 +230,7 @@ export default function Subscriptions() {
                   ))}
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4">الدعم الفني</td>
+                  <td className="p-4">{t('subscriptionsPage.text12')}</td>
                   {activePlans.map(plan => (
                     <td key={plan.id} className="text-center p-4">
                       <Check className="h-5 w-5 text-green-500 mx-auto" />
@@ -244,7 +238,7 @@ export default function Subscriptions() {
                   ))}
                 </tr>
                 <tr className="border-b">
-                  <td className="p-4">التحليلات المتقدمة</td>
+                  <td className="p-4">{t('subscriptionsPage.text13')}</td>
                   {activePlans.map((plan, index) => (
                     <td key={plan.id} className="text-center p-4">
                       {index >= 1 ? (
@@ -256,7 +250,7 @@ export default function Subscriptions() {
                   ))}
                 </tr>
                 <tr>
-                  <td className="p-4">أولوية الدعم</td>
+                  <td className="p-4">{t('subscriptionsPage.text14')}</td>
                   {activePlans.map((plan, index) => (
                     <td key={plan.id} className="text-center p-4">
                       {index >= 2 ? (
@@ -276,25 +270,25 @@ export default function Subscriptions() {
       {/* FAQ */}
       <Card>
         <CardHeader>
-          <CardTitle>الأسئلة الشائعة</CardTitle>
+          <CardTitle>{t('subscriptionsPage.text15')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="font-medium">هل يمكنني الترقية في أي وقت؟</p>
+            <p className="font-medium">{t('subscriptionsPage.text16')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              نعم، يمكنك الترقية إلى باقة أعلى في أي وقت وسيتم تطبيق التغيير فوراً.
+              {t('subscriptionsPage.text27')}
             </p>
           </div>
           <div>
-            <p className="font-medium">ماذا يحدث عند انتهاء الاشتراك؟</p>
+            <p className="font-medium">{t('subscriptionsPage.text17')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              سيتم تجديد اشتراكك تلقائياً ما لم تقم بإلغاء التجديد التلقائي من الإعدادات.
+              {t('subscriptionsPage.text28')}
             </p>
           </div>
           <div>
-            <p className="font-medium">هل يمكنني استرداد المبلغ؟</p>
+            <p className="font-medium">{t('subscriptionsPage.text18')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              نعم، يمكنك طلب استرداد المبلغ خلال 14 يوم من تاريخ الاشتراك.
+              {t('subscriptionsPage.text29')}
             </p>
           </div>
         </CardContent>

@@ -51,7 +51,7 @@ export default function WhatsAppSetupWizard() {
   useEffect(() => {
     if (connectionCheck?.connected) {
       setConnectionStatus('connected');
-      toast.success('✅ تم ربط واتساب بنجاح!');
+      toast.success(t('whatsAppSetupWizardPage.text0'));
       setTimeout(() => {
         navigate('/merchant/whatsapp-instances');
       }, 2000);
@@ -80,7 +80,7 @@ export default function WhatsAppSetupWizard() {
           refetchRequests();
         },
         onError: (error) => {
-          toast.error(error.message || 'فشل إرسال الطلب');
+          toast.error(error.message || t('whatsAppSetupWizardPage.text24'));
         },
       }
     );
@@ -106,10 +106,10 @@ export default function WhatsAppSetupWizard() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; icon: any; label: string }> = {
-      pending: { variant: 'secondary', icon: Clock, label: 'قيد المراجعة' },
-      approved: { variant: 'default', icon: CheckCircle2, label: 'جاهز للربط' },
-      rejected: { variant: 'destructive', icon: XCircle, label: 'مرفوض' },
-      completed: { variant: 'outline', icon: CheckCircle2, label: 'مكتمل' },
+      pending: { variant: 'secondary', icon: Clock, label: t('whatsAppSetupWizardPage.text33') },
+      approved: { variant: 'default', icon: CheckCircle2, label: t('whatsAppSetupWizardPage.text34') },
+      rejected: { variant: 'destructive', icon: XCircle, label: t('whatsAppSetupWizardPage.text35') },
+      completed: { variant: 'outline', icon: CheckCircle2, label: t('whatsAppSetupWizardPage.text36') },
     };
 
     const config = variants[status] || variants.pending;
@@ -126,7 +126,7 @@ export default function WhatsAppSetupWizard() {
   if (!merchant) {
     return (
       <div className="container py-8">
-        <div className="text-center">جاري التحميل...</div>
+        <div className="text-center">{t('whatsAppSetupWizardPage.text1')}</div>
       </div>
     );
   }
@@ -134,8 +134,8 @@ export default function WhatsAppSetupWizard() {
   return (
     <div className="container max-w-2xl py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">ربط رقم واتساب</h1>
-        <p className="text-muted-foreground">ابدأ باستخدام ساري عبر ربط رقم واتساب الخاص بك</p>
+        <h1 className="text-3xl font-bold">{t('whatsAppSetupWizardPage.text2')}</h1>
+        <p className="text-muted-foreground">{t('whatsAppSetupWizardPage.text3')}</p>
       </div>
 
       {/* Completed Request */}
@@ -144,15 +144,15 @@ export default function WhatsAppSetupWizard() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <CardTitle className="text-green-900">تم ربط واتساب بنجاح!</CardTitle>
+              <CardTitle className="text-green-900">{t('whatsAppSetupWizardPage.text4')}</CardTitle>
             </div>
             <CardDescription className="text-green-700">
-              رقم الهاتف: {completedRequest.phoneNumber}
+              {t('whatsAppSetupWizardPage.text37', { var0: completedRequest.phoneNumber })}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate('/merchant/whatsapp-instances')}>
-              الذهاب إلى إدارة الأرقام
+              {t('whatsAppSetupWizardPage.text25')}
               <ArrowRight className="mr-2 h-4 w-4" />
             </Button>
           </CardContent>
@@ -165,10 +165,10 @@ export default function WhatsAppSetupWizard() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Clock className="h-5 w-5 text-yellow-600" />
-              <CardTitle className="text-yellow-900">طلبك قيد المراجعة</CardTitle>
+              <CardTitle className="text-yellow-900">{t('whatsAppSetupWizardPage.text5')}</CardTitle>
             </div>
             <CardDescription className="text-yellow-700">
-              سيتم مراجعة طلبك وإعداد رقم واتساب لك قريباً
+              {t('whatsAppSetupWizardPage.text26')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -177,7 +177,7 @@ export default function WhatsAppSetupWizard() {
                 {getStatusBadge(pendingRequest.status)}
               </div>
               <div className="text-sm text-muted-foreground">
-                تم الإرسال: {new Date(pendingRequest.createdAt).toLocaleDateString('ar-SA')}
+                {t('whatsAppSetupWizardPage.text38', { var0: new Date(pendingRequest.createdAt).toLocaleDateString('ar-SA') })}
               </div>
             </div>
           </CardContent>
@@ -190,16 +190,16 @@ export default function WhatsAppSetupWizard() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-primary" />
-              <CardTitle className="text-primary">رقمك جاهز للربط!</CardTitle>
+              <CardTitle className="text-primary">{t('whatsAppSetupWizardPage.text6')}</CardTitle>
             </div>
             <CardDescription className="text-primary">
-              تمت الموافقة على طلبك. اضغط الزر أدناه لمسح QR Code وإتمام الربط
+              {t('whatsAppSetupWizardPage.text39')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => handleShowQRCode(approvedRequest)} size="lg" className="w-full">
               <QrCode className="mr-2 h-5 w-5" />
-              مسح QR Code وربط الرقم
+              {t('whatsAppSetupWizardPage.text40')}
             </Button>
           </CardContent>
         </Card>
@@ -209,14 +209,14 @@ export default function WhatsAppSetupWizard() {
       {!pendingRequest && !approvedRequest && !completedRequest && (
         <Card>
           <CardHeader>
-            <CardTitle>طلب ربط رقم واتساب جديد</CardTitle>
+            <CardTitle>{t('whatsAppSetupWizardPage.text7')}</CardTitle>
             <CardDescription>
-              أدخل رقم الهاتف الذي تريد ربطه (اختياري)
+              {t('whatsAppSetupWizardPage.text27')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="phoneNumber">رقم الهاتف (اختياري)</Label>
+              <Label htmlFor="phoneNumber">{t('whatsAppSetupWizardPage.text8')}</Label>
               <Input
                 id="phoneNumber"
                 placeholder="+966501234567"
@@ -233,12 +233,12 @@ export default function WhatsAppSetupWizard() {
               {createRequestMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  جاري الإرسال...
+                  {t('whatsAppSetupWizardPage.text28')}
                 </>
               ) : (
                 <>
                   <Smartphone className="mr-2 h-4 w-4" />
-                  إرسال طلب ربط رقم
+                  {t('whatsAppSetupWizardPage.text29')}
                 </>
               )}
             </Button>
@@ -249,7 +249,7 @@ export default function WhatsAppSetupWizard() {
       {/* How it works */}
       <Card>
         <CardHeader>
-          <CardTitle>كيف يعمل النظام؟</CardTitle>
+          <CardTitle>{t('whatsAppSetupWizardPage.text9')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ol className="space-y-3 text-sm">
@@ -257,31 +257,31 @@ export default function WhatsAppSetupWizard() {
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 1
               </span>
-              <span>قم بإرسال طلب ربط رقم واتساب</span>
+              <span>{t('whatsAppSetupWizardPage.text10')}</span>
             </li>
             <li className="flex gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 2
               </span>
-              <span>سيقوم فريق ساري بمراجعة طلبك وإعداد رقم واتساب لك</span>
+              <span>{t('whatsAppSetupWizardPage.text11')}</span>
             </li>
             <li className="flex gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 3
               </span>
-              <span>بعد الموافقة، ستظهر لك QR Code لمسحها من هاتفك</span>
+              <span>{t('whatsAppSetupWizardPage.text12')}</span>
             </li>
             <li className="flex gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 4
               </span>
-              <span>افتح واتساب → الإعدادات → الأجهزة المرتبطة → امسح الكود</span>
+              <span>{t('whatsAppSetupWizardPage.text13')}</span>
             </li>
             <li className="flex gap-3">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                 5
               </span>
-              <span>✅ تم! يمكنك الآن استخدام ساري لإدارة محادثات واتساب</span>
+              <span>{t('whatsAppSetupWizardPage.text14')}</span>
             </li>
           </ol>
         </CardContent>
@@ -291,9 +291,9 @@ export default function WhatsAppSetupWizard() {
       <Dialog open={qrCodeDialogOpen} onOpenChange={setQrCodeDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>مسح QR Code</DialogTitle>
+            <DialogTitle>{t('whatsAppSetupWizardPage.text15')}</DialogTitle>
             <DialogDescription>
-              امسح الكود من هاتفك لربط واتساب
+              {t('whatsAppSetupWizardPage.text30')}
             </DialogDescription>
           </DialogHeader>
           
@@ -313,28 +313,28 @@ export default function WhatsAppSetupWizard() {
                 {connectionStatus === 'idle' && (
                   <Button onClick={handleStartChecking} size="lg" className="w-full">
                     <Smartphone className="mr-2 h-4 w-4" />
-                    بدء التحقق من الاتصال
+                    {t('whatsAppSetupWizardPage.text31')}
                   </Button>
                 )}
                 
                 {connectionStatus === 'checking' && (
                   <div className="flex items-center gap-2 text-primary">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>في انتظار المسح...</span>
+                    <span>{t('whatsAppSetupWizardPage.text16')}</span>
                   </div>
                 )}
                 
                 {connectionStatus === 'connected' && (
                   <div className="flex items-center gap-2 text-green-600">
                     <CheckCircle2 className="h-5 w-5" />
-                    <span className="font-medium">تم الربط بنجاح!</span>
+                    <span className="font-medium">{t('whatsAppSetupWizardPage.text17')}</span>
                   </div>
                 )}
                 
                 {connectionStatus === 'error' && (
                   <div className="flex items-center gap-2 text-red-600">
                     <XCircle className="h-5 w-5" />
-                    <span>فشل الاتصال. حاول مرة أخرى</span>
+                    <span>{t('whatsAppSetupWizardPage.text18')}</span>
                   </div>
                 )}
                 
@@ -343,7 +343,7 @@ export default function WhatsAppSetupWizard() {
                   onClick={handleRefreshQRCode}
                   size="sm"
                 >
-                  تحديث الكود
+                  {t('whatsAppSetupWizardPage.text32')}
                 </Button>
               </div>
             ) : (
@@ -354,15 +354,15 @@ export default function WhatsAppSetupWizard() {
             
             {/* Instructions */}
             <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="font-medium">الخطوات:</p>
+              <p className="font-medium">{t('whatsAppSetupWizardPage.text19')}</p>
               <ol className="list-decimal list-inside space-y-1">
-                <li>افتح واتساب على هاتفك</li>
-                <li>اذهب إلى الإعدادات</li>
-                <li>اضغط على "الأجهزة المرتبطة"</li>
-                <li>امسح الكود أعلاه</li>
+                <li>{t('whatsAppSetupWizardPage.text20')}</li>
+                <li>{t('whatsAppSetupWizardPage.text21')}</li>
+                <li>{t('whatsAppSetupWizardPage.text22')}</li>
+                <li>{t('whatsAppSetupWizardPage.text23')}</li>
               </ol>
               <p className="text-xs text-yellow-600">
-                ⏱️ الكود ينتهي خلال دقيقتين. إذا انتهى، اضغط "تحديث الكود"
+                {t('whatsAppSetupWizardPage.text41')}
               </p>
             </div>
           </div>

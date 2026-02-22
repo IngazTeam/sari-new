@@ -25,10 +25,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function RecommendationsAnalytics() {
+  const { t } = useTranslation();
   const { data: recommendations, isLoading } = trpc.seo.getAllRecommendations.useQuery();
 
   // Calculate analytics
@@ -132,7 +134,7 @@ export default function RecommendationsAnalytics() {
     return (
       <Card>
         <CardContent className="pt-6 text-center">
-          <p className="text-muted-foreground">لا توجد بيانات</p>
+          <p className="text-muted-foreground">{t('adminRecommendationsAnalyticsPage.text0')}</p>
         </CardContent>
       </Card>
     );
@@ -155,7 +157,7 @@ export default function RecommendationsAnalytics() {
       <div className="grid gap-4 md:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي التوصيات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminRecommendationsAnalyticsPage.text1')}</CardTitle>
             <Target className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -168,7 +170,7 @@ export default function RecommendationsAnalytics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معدل الإكمال</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminRecommendationsAnalyticsPage.text2')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -181,7 +183,7 @@ export default function RecommendationsAnalytics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">متوسط ROI</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminRecommendationsAnalyticsPage.text3')}</CardTitle>
             <Award className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
@@ -194,7 +196,7 @@ export default function RecommendationsAnalytics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد التنفيذ</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminRecommendationsAnalyticsPage.text4')}</CardTitle>
             <Zap className="h-4 w-4 text-orange-500" />
           </CardHeader>
           <CardContent>
@@ -207,7 +209,7 @@ export default function RecommendationsAnalytics() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">حرجة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminRecommendationsAnalyticsPage.text5')}</CardTitle>
             <PieChartIcon className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -224,7 +226,7 @@ export default function RecommendationsAnalytics() {
         {/* Status Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>توزيع الحالات</CardTitle>
+            <CardTitle>{t('adminRecommendationsAnalyticsPage.text6')}</CardTitle>
             <CardDescription>
               توزيع التوصيات حسب الحالة الحالية
             </CardDescription>
@@ -255,7 +257,7 @@ export default function RecommendationsAnalytics() {
         {/* Priority Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>توزيع الأولويات</CardTitle>
+            <CardTitle>{t('adminRecommendationsAnalyticsPage.text7')}</CardTitle>
             <CardDescription>
               توزيع التوصيات حسب مستوى الأولوية
             </CardDescription>
@@ -276,7 +278,7 @@ export default function RecommendationsAnalytics() {
         {/* Type Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>توزيع الأنواع</CardTitle>
+            <CardTitle>{t('adminRecommendationsAnalyticsPage.text8')}</CardTitle>
             <CardDescription>
               توزيع التوصيات حسب نوع التحسين
             </CardDescription>
@@ -297,7 +299,7 @@ export default function RecommendationsAnalytics() {
         {/* Difficulty Distribution */}
         <Card>
           <CardHeader>
-            <CardTitle>توزيع صعوبة التنفيذ</CardTitle>
+            <CardTitle>{t('adminRecommendationsAnalyticsPage.text9')}</CardTitle>
             <CardDescription>
               توزيع التوصيات حسب صعوبة التنفيذ
             </CardDescription>
@@ -329,20 +331,20 @@ export default function RecommendationsAnalytics() {
       {/* Summary */}
       <Card className="bg-blue-50 border-blue-200">
         <CardHeader>
-          <CardTitle className="text-lg">الملخص والتوصيات</CardTitle>
+          <CardTitle className="text-lg">{t('adminRecommendationsAnalyticsPage.text10')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <p>
-            <strong>معدل الإكمال:</strong> تم إكمال {analytics.completionRate}% من التوصيات ({analytics.completed} من {analytics.total})
+            <strong>{t('adminRecommendationsAnalyticsPage.text11')}</strong> تم إكمال {analytics.completionRate}% من التوصيات ({analytics.completed} من {analytics.total})
           </p>
           <p>
-            <strong>الأولويات:</strong> هناك {analytics.critical} توصية حرجة تحتاج إلى اهتمام فوري
+            <strong>{t('adminRecommendationsAnalyticsPage.text12')}</strong> هناك {analytics.critical} توصية حرجة تحتاج إلى اهتمام فوري
           </p>
           <p>
-            <strong>التقدم:</strong> {analytics.inProgress} توصية قيد التنفيذ حالياً
+            <strong>{t('adminRecommendationsAnalyticsPage.text13')}</strong> {analytics.inProgress} توصية قيد التنفيذ حالياً
           </p>
           <p>
-            <strong>متوسط ROI:</strong> متوسط نقاط التأثير للتوصيات المكتملة هو {analytics.averageROI}
+            <strong>{t('adminRecommendationsAnalyticsPage.text14')}</strong> متوسط نقاط التأثير للتوصيات المكتملة هو {analytics.averageROI}
           </p>
           <p className="text-blue-900 font-medium pt-2">
             💡 التوصية: ركز على التوصيات الحرجة ذات صعوبة التنفيذ المنخفضة لتحقيق أفضل ROI

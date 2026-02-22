@@ -4,8 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, DollarSign, Clock, Users, Target, BarChart3, MessageSquare, Zap, Award } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from 'react-i18next';
 
 export default function MetricsDashboard() {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('day');
   
   const { data: metrics, isLoading } = trpc.testSari.getMetrics.useQuery({ period });
@@ -18,7 +20,7 @@ export default function MetricsDashboard() {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center py-12">
-          <p className="text-muted-foreground">لا توجد بيانات متاحة</p>
+          <p className="text-muted-foreground">{t('metricsDashboardPage.text0')}</p>
         </div>
       </div>
     );
@@ -29,9 +31,9 @@ export default function MetricsDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">لوحة تحكم المقاييس</h1>
+          <h1 className="text-3xl font-bold">{t('metricsDashboardPage.text1')}</h1>
           <p className="text-muted-foreground mt-2">
-            تتبع أداء ساري AI بـ15 مقياس احترافي
+            {t('metricsDashboardPage.text49')}
           </p>
         </div>
         <Select value={period} onValueChange={(v) => setPeriod(v as any)}>
@@ -39,9 +41,9 @@ export default function MetricsDashboard() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="day">اليوم</SelectItem>
-            <SelectItem value="week">آخر أسبوع</SelectItem>
-            <SelectItem value="month">آخر شهر</SelectItem>
+            <SelectItem value="day">{t('metricsDashboardPage.text2')}</SelectItem>
+            <SelectItem value="week">{t('metricsDashboardPage.text3')}</SelectItem>
+            <SelectItem value="month">{t('metricsDashboardPage.text4')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -50,30 +52,30 @@ export default function MetricsDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <Target className="h-6 w-6 text-primary" />
-          مقاييس التحويل والمبيعات
+          {t('metricsDashboardPage.text39')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard
-            title="معدل التحويل"
+            title={t('metricsDashboardPage.text5')}
             value={`${metrics.conversion.conversionRate}%`}
             icon={<Target className="h-5 w-5" />}
-            description="نسبة المحادثات التي تحولت لاتفاق"
+            description={t('metricsDashboardPage.text6')}
             color="text-green-600"
             bgColor="bg-green-50"
           />
           <MetricCard
-            title="متوسط قيمة الصفقة"
-            value={`${metrics.conversion.avgDealValue} ريال`}
+            title={t('metricsDashboardPage.text7')}
+            value={t('metricsDashboardPage.text44', { var0: metrics.conversion.avgDealValue })}
             icon={<DollarSign className="h-5 w-5" />}
-            description="متوسط قيمة المبيعات"
+            description={t('metricsDashboardPage.text8')}
             color="text-blue-600"
             bgColor="bg-blue-50"
           />
           <MetricCard
-            title="الإيرادات المحتملة"
-            value={`${metrics.conversion.totalRevenue} ريال`}
+            title={t('metricsDashboardPage.text9')}
+            value={t('metricsDashboardPage.text45', { var0: metrics.conversion.totalRevenue })}
             icon={<TrendingUp className="h-5 w-5" />}
-            description="إجمالي قيمة الصفقات"
+            description={t('metricsDashboardPage.text10')}
             color="text-purple-600"
             bgColor="bg-purple-50"
           />
@@ -84,30 +86,30 @@ export default function MetricsDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <Clock className="h-6 w-6 text-primary" />
-          مقاييس الوقت والكفاءة
+          {t('metricsDashboardPage.text40')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard
-            title="متوسط وقت الرد"
-            value={`${(metrics.time.avgResponseTime / 1000).toFixed(1)} ث`}
+            title={t('metricsDashboardPage.text11')}
+            value={t('metricsDashboardPage.text46', { var0: (metrics.time.avgResponseTime / 1000).toFixed(1) })}
             icon={<Zap className="h-5 w-5" />}
-            description="الوقت بين رسالة العميل ورد ساري"
+            description={t('metricsDashboardPage.text12')}
             color="text-orange-600"
             bgColor="bg-orange-50"
           />
           <MetricCard
-            title="متوسط طول المحادثة"
-            value={`${metrics.time.avgConversationLength} رسالة`}
+            title={t('metricsDashboardPage.text13')}
+            value={t('metricsDashboardPage.text47', { var0: metrics.time.avgConversationLength })}
             icon={<MessageSquare className="h-5 w-5" />}
-            description="عدد الرسائل حتى نهاية المحادثة"
+            description={t('metricsDashboardPage.text14')}
             color="text-indigo-600"
             bgColor="bg-indigo-50"
           />
           <MetricCard
-            title="وقت التحويل"
-            value={`${Math.round(metrics.time.avgTimeToConversion / 60)} دقيقة`}
+            title={t('metricsDashboardPage.text15')}
+            value={t('metricsDashboardPage.text48', { var0: Math.round(metrics.time.avgTimeToConversion / 60) })}
             icon={<Clock className="h-5 w-5" />}
-            description="الوقت من بداية المحادثة حتى الاتفاق"
+            description={t('metricsDashboardPage.text16')}
             color="text-pink-600"
             bgColor="bg-pink-50"
           />
@@ -118,30 +120,30 @@ export default function MetricsDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <Award className="h-6 w-6 text-primary" />
-          مقاييس جودة المحادثة
+          {t('metricsDashboardPage.text41')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard
-            title="معدل الاستفسارات المحلولة"
+            title={t('metricsDashboardPage.text17')}
             value={`${metrics.quality.resolutionRate}%`}
             icon={<Target className="h-5 w-5" />}
-            description="نسبة الاستفسارات التي حلها ساري"
+            description={t('metricsDashboardPage.text18')}
             color="text-teal-600"
             bgColor="bg-teal-50"
           />
           <MetricCard
-            title="معدل التصعيد"
+            title={t('metricsDashboardPage.text19')}
             value={`${metrics.quality.escalationRate}%`}
             icon={<Users className="h-5 w-5" />}
-            description="نسبة المحادثات المحولة للبشر"
+            description={t('metricsDashboardPage.text20')}
             color="text-red-600"
             bgColor="bg-red-50"
           />
           <MetricCard
-            title="معدل التفاعل"
+            title={t('metricsDashboardPage.text21')}
             value={`${metrics.quality.engagementRate}%`}
             icon={<TrendingUp className="h-5 w-5" />}
-            description="نسبة العملاء الذين أكملوا المحادثة"
+            description={t('metricsDashboardPage.text22')}
             color="text-cyan-600"
             bgColor="bg-cyan-50"
           />
@@ -152,22 +154,22 @@ export default function MetricsDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <BarChart3 className="h-6 w-6 text-primary" />
-          مقاييس النمو والتحسين
+          {t('metricsDashboardPage.text42')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <MetricCard
-            title="معدل العودة"
+            title={t('metricsDashboardPage.text23')}
             value={`${metrics.growth.returnRate}%`}
             icon={<Users className="h-5 w-5" />}
-            description="نسبة العملاء الذين عادوا للمحادثة"
+            description={t('metricsDashboardPage.text24')}
             color="text-emerald-600"
             bgColor="bg-emerald-50"
           />
           <MetricCard
-            title="معدل الإحالة"
+            title={t('metricsDashboardPage.text25')}
             value={`${metrics.growth.referralRate}%`}
             icon={<TrendingUp className="h-5 w-5" />}
-            description="نسبة العملاء الذين ذكروا إحالة"
+            description={t('metricsDashboardPage.text26')}
             color="text-violet-600"
             bgColor="bg-violet-50"
           />
@@ -178,38 +180,38 @@ export default function MetricsDashboard() {
       <div>
         <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
           <Award className="h-6 w-6 text-primary" />
-          مقاييس إضافية متقدمة
+          {t('metricsDashboardPage.text43')}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <MetricCard
-            title="معدل النقر على المنتجات"
+            title={t('metricsDashboardPage.text27')}
             value={`${metrics.advanced.productClickRate}%`}
             icon={<Target className="h-5 w-5" />}
-            description="نسبة النقر على المنتجات المقترحة"
+            description={t('metricsDashboardPage.text28')}
             color="text-amber-600"
             bgColor="bg-amber-50"
           />
           <MetricCard
-            title="معدل إكمال الطلب"
+            title={t('metricsDashboardPage.text29')}
             value={`${metrics.advanced.orderCompletionRate}%`}
             icon={<DollarSign className="h-5 w-5" />}
-            description="نسبة الاتفاقات المكتملة"
+            description={t('metricsDashboardPage.text30')}
             color="text-lime-600"
             bgColor="bg-lime-50"
           />
           <MetricCard
-            title="نقاط رضا العملاء (CSAT)"
+            title={t('metricsDashboardPage.text31')}
             value={`${metrics.advanced.csatScore}/5`}
             icon={<Award className="h-5 w-5" />}
-            description="تقييم العميل للمحادثة"
+            description={t('metricsDashboardPage.text32')}
             color="text-sky-600"
             bgColor="bg-sky-50"
           />
           <MetricCard
-            title="صافي نقاط الترويج (NPS)"
+            title={t('metricsDashboardPage.text33')}
             value={`${metrics.advanced.npsScore}`}
             icon={<TrendingUp className="h-5 w-5" />}
-            description="احتمالية التوصية بساري"
+            description={t('metricsDashboardPage.text34')}
             color="text-fuchsia-600"
             bgColor="bg-fuchsia-50"
           />
@@ -219,23 +221,23 @@ export default function MetricsDashboard() {
       {/* ملاحظة توضيحية */}
       <Card className="bg-muted/50">
         <CardHeader>
-          <CardTitle className="text-lg">💡 كيف تستفيد من هذه المقاييس؟</CardTitle>
+          <CardTitle className="text-lg">{t('metricsDashboardPage.text35')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div>
-            <strong>معدل التحويل:</strong> إذا كان أقل من 20%، حاول تحسين رسائل ساري لتكون أكثر إقناعاً
+            <strong>{t('metricsDashboardPage.text36')}</strong> {t('metricsDashboardPage.text50')}
           </div>
           <div>
-            <strong>وقت الرد:</strong> الهدف أقل من 3 ثواني - كلما كان أسرع، كانت التجربة أفضل
+            <strong>{t('metricsDashboardPage.text37')}</strong> {t('metricsDashboardPage.text51')}
           </div>
           <div>
-            <strong>معدل التصعيد:</strong> إذا كان أكثر من 10%، قد تحتاج لتحسين قاعدة معرفة ساري
+            <strong>{t('metricsDashboardPage.text38')}</strong> {t('metricsDashboardPage.text52')}
           </div>
           <div>
-            <strong>CSAT Score:</strong> الهدف 4/5 أو أعلى - يعكس رضا العملاء عن جودة المحادثة
+            <strong>CSAT Score:</strong> {t('metricsDashboardPage.text53')}
           </div>
           <div>
-            <strong>NPS:</strong> أي قيمة موجبة جيدة، وفوق +50 ممتاز - يعني أن العملاء سيوصون بساري
+            <strong>NPS:</strong> {t('metricsDashboardPage.text54')}
           </div>
         </CardContent>
       </Card>

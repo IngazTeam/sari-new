@@ -10,8 +10,10 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function SubscriptionAddons() {
+  const { t } = useTranslation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedAddon, setSelectedAddon] = useState<any>(null);
@@ -40,12 +42,12 @@ export default function SubscriptionAddons() {
         ...formData,
         value: parseInt(formData.value),
       });
-      toast.success('تم إنشاء الخدمة الإضافية بنجاح');
+      toast.success(t('adminSubscriptionAddonsPage.text33'));
       setIsCreateDialogOpen(false);
       refetch();
       resetForm();
     } catch (error) {
-      toast.error('فشل إنشاء الخدمة الإضافية');
+      toast.error(t('adminSubscriptionAddonsPage.text34'));
     }
   };
 
@@ -57,23 +59,23 @@ export default function SubscriptionAddons() {
         ...formData,
         value: formData.value ? parseInt(formData.value) : undefined,
       });
-      toast.success('تم تحديث الخدمة الإضافية بنجاح');
+      toast.success(t('adminSubscriptionAddonsPage.text35'));
       setIsEditDialogOpen(false);
       refetch();
       resetForm();
     } catch (error) {
-      toast.error('فشل تحديث الخدمة الإضافية');
+      toast.error(t('adminSubscriptionAddonsPage.text36'));
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('هل أنت متأكد من حذف هذه الخدمة الإضافية؟')) return;
+    if (!confirm(t('adminSubscriptionAddonsPage.text37'))) return;
     try {
       await deleteAddon.mutateAsync({ id });
-      toast.success('تم حذف الخدمة الإضافية بنجاح');
+      toast.success(t('adminSubscriptionAddonsPage.text38'));
       refetch();
     } catch (error) {
-      toast.error('فشل حذف الخدمة الإضافية');
+      toast.error(t('adminSubscriptionAddonsPage.text39'));
     }
   };
 
@@ -83,7 +85,7 @@ export default function SubscriptionAddons() {
       toast.success(isActive ? 'تم تعطيل الخدمة' : 'تم تفعيل الخدمة');
       refetch();
     } catch (error) {
-      toast.error('فشل تغيير حالة الخدمة');
+      toast.error(t('adminSubscriptionAddonsPage.text40'));
     }
   };
 
@@ -143,8 +145,8 @@ export default function SubscriptionAddons() {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">إدارة الخدمات الإضافية</h1>
-          <p className="text-muted-foreground mt-1">إدارة الخدمات الإضافية المتاحة للتجار</p>
+          <h1 className="text-3xl font-bold">{t('adminSubscriptionAddonsPage.text0')}</h1>
+          <p className="text-muted-foreground mt-1">{t('adminSubscriptionAddonsPage.text1')}</p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="ml-2 h-4 w-4" />
@@ -170,24 +172,24 @@ export default function SubscriptionAddons() {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">النوع</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionAddonsPage.text2')}</p>
                   <p className="font-semibold">{getTypeLabel(addon.type)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">القيمة</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionAddonsPage.text3')}</p>
                   <p className="font-semibold">{addon.value}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">السعر الشهري</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionAddonsPage.text4')}</p>
                   <p className="text-2xl font-bold">{addon.monthlyPrice} {addon.currency}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">السعر السنوي</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionAddonsPage.text5')}</p>
                   <p className="text-2xl font-bold">{addon.yearlyPrice} {addon.currency}</p>
                 </div>
                 {addon.description && (
                   <div>
-                    <p className="text-sm text-muted-foreground">الوصف</p>
+                    <p className="text-sm text-muted-foreground">{t('adminSubscriptionAddonsPage.text6')}</p>
                     <p className="text-sm">{addon.description}</p>
                   </div>
                 )}
@@ -219,13 +221,13 @@ export default function SubscriptionAddons() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>إضافة خدمة إضافية جديدة</DialogTitle>
-            <DialogDescription>أدخل تفاصيل الخدمة الإضافية الجديدة</DialogDescription>
+            <DialogTitle>{t('adminSubscriptionAddonsPage.text7')}</DialogTitle>
+            <DialogDescription>{t('adminSubscriptionAddonsPage.text8')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">الاسم بالعربية *</Label>
+                <Label htmlFor="name">{t('adminSubscriptionAddonsPage.text9')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -233,7 +235,7 @@ export default function SubscriptionAddons() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nameEn">الاسم بالإنجليزية *</Label>
+                <Label htmlFor="nameEn">{t('adminSubscriptionAddonsPage.text10')}</Label>
                 <Input
                   id="nameEn"
                   value={formData.nameEn}
@@ -242,20 +244,20 @@ export default function SubscriptionAddons() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="type">نوع الخدمة *</Label>
+              <Label htmlFor="type">{t('adminSubscriptionAddonsPage.text11')}</Label>
               <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="extra_whatsapp">رقم واتساب إضافي</SelectItem>
-                  <SelectItem value="extra_customers">عملاء إضافيين</SelectItem>
-                  <SelectItem value="custom">خدمة مخصصة</SelectItem>
+                  <SelectItem value="extra_whatsapp">{t('adminSubscriptionAddonsPage.text12')}</SelectItem>
+                  <SelectItem value="extra_customers">{t('adminSubscriptionAddonsPage.text13')}</SelectItem>
+                  <SelectItem value="custom">{t('adminSubscriptionAddonsPage.text14')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="value">القيمة *</Label>
+              <Label htmlFor="value">{t('adminSubscriptionAddonsPage.text15')}</Label>
               <Input
                 id="value"
                 type="number"
@@ -270,7 +272,7 @@ export default function SubscriptionAddons() {
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">الوصف بالعربية</Label>
+              <Label htmlFor="description">{t('adminSubscriptionAddonsPage.text16')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -278,7 +280,7 @@ export default function SubscriptionAddons() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="descriptionEn">الوصف بالإنجليزية</Label>
+              <Label htmlFor="descriptionEn">{t('adminSubscriptionAddonsPage.text17')}</Label>
               <Textarea
                 id="descriptionEn"
                 value={formData.descriptionEn}
@@ -287,7 +289,7 @@ export default function SubscriptionAddons() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="monthlyPrice">السعر الشهري (SAR) *</Label>
+                <Label htmlFor="monthlyPrice">{t('adminSubscriptionAddonsPage.text18')}</Label>
                 <Input
                   id="monthlyPrice"
                   type="number"
@@ -296,7 +298,7 @@ export default function SubscriptionAddons() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="yearlyPrice">السعر السنوي (SAR) *</Label>
+                <Label htmlFor="yearlyPrice">{t('adminSubscriptionAddonsPage.text19')}</Label>
                 <Input
                   id="yearlyPrice"
                   type="number"
@@ -321,13 +323,13 @@ export default function SubscriptionAddons() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تعديل الخدمة الإضافية</DialogTitle>
-            <DialogDescription>تحديث تفاصيل الخدمة الإضافية</DialogDescription>
+            <DialogTitle>{t('adminSubscriptionAddonsPage.text20')}</DialogTitle>
+            <DialogDescription>{t('adminSubscriptionAddonsPage.text21')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-name">الاسم بالعربية *</Label>
+                <Label htmlFor="edit-name">{t('adminSubscriptionAddonsPage.text22')}</Label>
                 <Input
                   id="edit-name"
                   value={formData.name}
@@ -335,7 +337,7 @@ export default function SubscriptionAddons() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-nameEn">الاسم بالإنجليزية *</Label>
+                <Label htmlFor="edit-nameEn">{t('adminSubscriptionAddonsPage.text23')}</Label>
                 <Input
                   id="edit-nameEn"
                   value={formData.nameEn}
@@ -344,20 +346,20 @@ export default function SubscriptionAddons() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-type">نوع الخدمة *</Label>
+              <Label htmlFor="edit-type">{t('adminSubscriptionAddonsPage.text24')}</Label>
               <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="extra_whatsapp">رقم واتساب إضافي</SelectItem>
-                  <SelectItem value="extra_customers">عملاء إضافيين</SelectItem>
-                  <SelectItem value="custom">خدمة مخصصة</SelectItem>
+                  <SelectItem value="extra_whatsapp">{t('adminSubscriptionAddonsPage.text25')}</SelectItem>
+                  <SelectItem value="extra_customers">{t('adminSubscriptionAddonsPage.text26')}</SelectItem>
+                  <SelectItem value="custom">{t('adminSubscriptionAddonsPage.text27')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-value">القيمة *</Label>
+              <Label htmlFor="edit-value">{t('adminSubscriptionAddonsPage.text28')}</Label>
               <Input
                 id="edit-value"
                 type="number"
@@ -366,7 +368,7 @@ export default function SubscriptionAddons() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-description">الوصف بالعربية</Label>
+              <Label htmlFor="edit-description">{t('adminSubscriptionAddonsPage.text29')}</Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
@@ -374,7 +376,7 @@ export default function SubscriptionAddons() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-descriptionEn">الوصف بالإنجليزية</Label>
+              <Label htmlFor="edit-descriptionEn">{t('adminSubscriptionAddonsPage.text30')}</Label>
               <Textarea
                 id="edit-descriptionEn"
                 value={formData.descriptionEn}
@@ -383,7 +385,7 @@ export default function SubscriptionAddons() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-monthlyPrice">السعر الشهري (SAR) *</Label>
+                <Label htmlFor="edit-monthlyPrice">{t('adminSubscriptionAddonsPage.text31')}</Label>
                 <Input
                   id="edit-monthlyPrice"
                   type="number"
@@ -392,7 +394,7 @@ export default function SubscriptionAddons() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-yearlyPrice">السعر السنوي (SAR) *</Label>
+                <Label htmlFor="edit-yearlyPrice">{t('adminSubscriptionAddonsPage.text32')}</Label>
                 <Input
                   id="edit-yearlyPrice"
                   type="number"

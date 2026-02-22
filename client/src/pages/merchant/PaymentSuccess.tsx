@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentSuccess() {
+  const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const params = new URLSearchParams(location.split('?')[1]);
   const subscriptionId = parseInt(params.get('subscriptionId') || '0');
@@ -33,9 +35,9 @@ export default function PaymentSuccess() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center space-y-4">
             <Loader2 className="h-16 w-16 animate-spin mx-auto text-primary" />
-            <h2 className="text-2xl font-bold">جاري التحقق من الدفع...</h2>
+            <h2 className="text-2xl font-bold">{t('paymentSuccessPage.text0')}</h2>
             <p className="text-muted-foreground">
-              الرجاء الانتظار بينما نتحقق من عملية الدفع
+              {t('paymentSuccessPage.text3')}
             </p>
           </CardContent>
         </Card>
@@ -52,14 +54,14 @@ export default function PaymentSuccess() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold mb-2">تم الدفع بنجاح!</h2>
+            <h2 className="text-2xl font-bold mb-2">{t('paymentSuccessPage.text1')}</h2>
             <p className="text-muted-foreground">
-              تم تفعيل اشتراكك بنجاح. يمكنك الآن الاستمتاع بجميع ميزات الباقة.
+              {t('paymentSuccessPage.text4')}
             </p>
           </div>
 
           <div className="bg-muted p-4 rounded-lg text-right">
-            <p className="text-sm text-muted-foreground mb-2">رقم الاشتراك</p>
+            <p className="text-sm text-muted-foreground mb-2">{t('paymentSuccessPage.text2')}</p>
             <p className="font-mono font-bold">#{subscriptionId}</p>
           </div>
 
@@ -68,19 +70,19 @@ export default function PaymentSuccess() {
               className="w-full"
               onClick={() => setLocation('/merchant/subscriptions')}
             >
-              عرض الاشتراكات
+              {t('paymentSuccessPage.text5')}
             </Button>
             <Button
               variant="outline"
               className="w-full"
               onClick={() => setLocation('/merchant/dashboard')}
             >
-              العودة إلى لوحة التحكم
+              {t('paymentSuccessPage.text6')}
             </Button>
           </div>
 
           <p className="text-xs text-muted-foreground">
-            سيتم إرسال فاتورة إلكترونية إلى بريدك الإلكتروني
+            {t('paymentSuccessPage.text7')}
           </p>
         </CardContent>
       </Card>

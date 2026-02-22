@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,11 +39,12 @@ import {
 } from 'recharts';
 
 // Date range presets
-const DATE_RANGES = {
-  '7d': { label: 'آخر 7 أيام', days: 7 },
-  '30d': { label: 'آخر 30 يوم', days: 30 },
-  '90d': { label: 'آخر 90 يوم', days: 90 },
-  '1y': { label: 'آخر سنة', days: 365 },
+// Date range keys mapped to days
+const DATE_RANGE_DAYS = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+  '1y': 365,
 };
 
 // Colors for charts
@@ -50,7 +52,15 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 
 export default function AnalyticsDashboard() {
   const { user } = useAuth();
-  const [dateRange, setDateRange] = useState<keyof typeof DATE_RANGES>('30d');
+  const { t, i18n } = useTranslation();
+  const [dateRange, setDateRange] = useState<keyof typeof DATE_RANGE_DAYS>('30d');
+
+  const DATE_RANGES = {
+    '7d': { label: t('analyticsDashboardPage.last7Days'), days: 7 },
+    '30d': { label: t('analyticsDashboardPage.last30Days'), days: 30 },
+    '90d': { label: t('analyticsDashboardPage.last90Days'), days: 90 },
+    '1y': { label: t('analyticsDashboardPage.lastYear'), days: 365 },
+  };
 
   // Get merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery();
@@ -142,7 +152,7 @@ export default function AnalyticsDashboard() {
   );
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat(i18n.language === 'ar' ? 'ar-SA' : i18n.language, {
       style: 'currency',
       currency: 'SAR',
       minimumFractionDigits: 0,
@@ -154,7 +164,7 @@ export default function AnalyticsDashboard() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-SA', {
+    return new Date(dateStr).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language, {
       month: 'short',
       day: 'numeric',
     });
@@ -177,9 +187,9 @@ export default function AnalyticsDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">لوحة التحليلات المتقدمة</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('analyticsDashboardPage.title')}</h1>
           <p className="text-muted-foreground">
-            تحليلات شاملة لأداء متجرك ومبيعاتك وحملاتك
+            {t('analyticsDashboardPage.subtitle')}
           </p>
         </div>
 
@@ -201,51 +211,51 @@ export default function AnalyticsDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsDashboardPage.totalRevenue')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(kpis?.totalRevenue || 0)}</div>
             <div className={`flex items-center gap-1 text-xs ${getGrowthColor(kpis?.revenueGrowth || 0)}`}>
               {getGrowthIcon(kpis?.revenueGrowth || 0)}
-              <span>{formatPercent(Math.abs(kpis?.revenueGrowth || 0))} عن الفترة السابقة</span>
+              <span>{formatPercent(Math.abs(kpis?.revenueGrowth || 0))} {t('analyticsDashboardPage.vsPreviousPeriod')}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsDashboardPage.totalOrders')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{kpis?.totalOrders || 0}</div>
             <div className={`flex items-center gap-1 text-xs ${getGrowthColor(kpis?.ordersGrowth || 0)}`}>
               {getGrowthIcon(kpis?.ordersGrowth || 0)}
-              <span>{formatPercent(Math.abs(kpis?.ordersGrowth || 0))} عن الفترة السابقة</span>
+              <span>{formatPercent(Math.abs(kpis?.ordersGrowth || 0))} {t('analyticsDashboardPage.vsPreviousPeriod')}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">متوسط قيمة الطلب</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsDashboardPage.avgOrderValue')}</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(kpis?.averageOrderValue || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">لكل طلب</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('analyticsDashboardPage.perOrder')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معدل التحويل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('analyticsDashboardPage.conversionRate')}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatPercent(kpis?.conversionRate || 0)}</div>
-            <p className="text-xs text-muted-foreground mt-1">{kpis?.totalCustomers || 0} عميل</p>
+            <p className="text-xs text-muted-foreground mt-1">{kpis?.totalCustomers || 0} {t('analyticsDashboardPage.customer')}</p>
           </CardContent>
         </Card>
       </div>
@@ -253,11 +263,11 @@ export default function AnalyticsDashboard() {
       {/* Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-          <TabsTrigger value="products">المنتجات</TabsTrigger>
-          <TabsTrigger value="campaigns">الحملات</TabsTrigger>
-          <TabsTrigger value="customers">العملاء</TabsTrigger>
-          <TabsTrigger value="time">التحليل الزمني</TabsTrigger>
+          <TabsTrigger value="overview">{t('analyticsDashboardPage.tabOverview')}</TabsTrigger>
+          <TabsTrigger value="products">{t('analyticsDashboardPage.tabProducts')}</TabsTrigger>
+          <TabsTrigger value="campaigns">{t('analyticsDashboardPage.tabCampaigns')}</TabsTrigger>
+          <TabsTrigger value="customers">{t('analyticsDashboardPage.tabCustomers')}</TabsTrigger>
+          <TabsTrigger value="time">{t('analyticsDashboardPage.tabTime')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -265,8 +275,8 @@ export default function AnalyticsDashboard() {
           {/* Revenue Trends */}
           <Card>
             <CardHeader>
-              <CardTitle>اتجاه الإيرادات والطلبات</CardTitle>
-              <CardDescription>تطور الإيرادات والطلبات خلال الفترة المحددة</CardDescription>
+              <CardTitle>{t('analyticsDashboardPage.revenueTrends')}</CardTitle>
+              <CardDescription>{t('analyticsDashboardPage.revenueTrendsDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -279,10 +289,10 @@ export default function AnalyticsDashboard() {
                     labelFormatter={formatDate}
                     formatter={(value: number, name: string) => [
                       name === 'revenue' ? formatCurrency(value) : value,
-                      name === 'revenue' ? 'الإيرادات' : 'الطلبات',
+                      name === 'revenue' ? t('analyticsDashboardPage.revenue') : t('analyticsDashboardPage.orders'),
                     ]}
                   />
-                  <Legend formatter={(value) => (value === 'revenue' ? 'الإيرادات' : 'الطلبات')} />
+                  <Legend formatter={(value) => (value === 'revenue' ? t('analyticsDashboardPage.revenue') : t('analyticsDashboardPage.orders'))} />
                   <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} />
                   <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#10b981" strokeWidth={2} />
                 </LineChart>
@@ -294,8 +304,8 @@ export default function AnalyticsDashboard() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>شرائح العملاء</CardTitle>
-                <CardDescription>توزيع العملاء حسب الفئة</CardDescription>
+                <CardTitle>{t('analyticsDashboardPage.customerSegments')}</CardTitle>
+                <CardDescription>{t('analyticsDashboardPage.customerSegmentsDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -308,7 +318,7 @@ export default function AnalyticsDashboard() {
                       cy="50%"
                       outerRadius={80}
                       label={(entry) => {
-                        const labels = { new: 'جديد', returning: 'عائد', vip: 'VIP' };
+                        const labels = { new: t('analyticsDashboardPage.segmentNew'), returning: t('analyticsDashboardPage.segmentReturning'), vip: t('analyticsDashboardPage.segmentVIP') };
                         return `${labels[entry.segment as keyof typeof labels]}: ${entry.count}`;
                       }}
                     >
@@ -324,13 +334,13 @@ export default function AnalyticsDashboard() {
 
             <Card>
               <CardHeader>
-                <CardTitle>إحصائيات شرائح العملاء</CardTitle>
-                <CardDescription>الإيرادات ومتوسط قيمة الطلب لكل شريحة</CardDescription>
+                <CardTitle>{t('analyticsDashboardPage.segmentStats')}</CardTitle>
+                <CardDescription>{t('analyticsDashboardPage.segmentStatsDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {customerSegments.map((segment, index) => {
-                    const labels = { new: 'عملاء جدد', returning: 'عملاء عائدون', vip: 'عملاء VIP' };
+                    const labels = { new: t('analyticsDashboardPage.newCustomers'), returning: t('analyticsDashboardPage.returningCustomers'), vip: t('analyticsDashboardPage.vipCustomers') };
                     return (
                       <div key={segment.segment} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -340,13 +350,13 @@ export default function AnalyticsDashboard() {
                           />
                           <div>
                             <p className="font-medium">{labels[segment.segment as keyof typeof labels]}</p>
-                            <p className="text-sm text-muted-foreground">{segment.count} عميل</p>
+                            <p className="text-sm text-muted-foreground">{segment.count} {t('analyticsDashboardPage.customer')}</p>
                           </div>
                         </div>
                         <div className="text-left">
                           <p className="font-medium">{formatCurrency(segment.revenue)}</p>
                           <p className="text-sm text-muted-foreground">
-                            {formatCurrency(segment.averageOrderValue)} متوسط
+                            {formatCurrency(segment.averageOrderValue)} {t('analyticsDashboardPage.average')}
                           </p>
                         </div>
                       </div>
@@ -364,25 +374,25 @@ export default function AnalyticsDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                المنتجات الأكثر مبيعاً
+                {t('analyticsDashboardPage.topProducts')}
               </CardTitle>
-              <CardDescription>أفضل 10 منتجات من حيث الإيرادات</CardDescription>
+              <CardDescription>{t('analyticsDashboardPage.topProductsDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               {topProducts.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>لا توجد بيانات مبيعات في هذه الفترة</p>
+                  <p>{t('analyticsDashboardPage.noSalesData')}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>المنتج</TableHead>
-                      <TableHead>المبيعات</TableHead>
-                      <TableHead>الإيرادات</TableHead>
-                      <TableHead>متوسط السعر</TableHead>
-                      <TableHead>المخزون</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.product')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.sales')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.revenueCol')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.avgPrice')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.stock')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -417,26 +427,26 @@ export default function AnalyticsDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Megaphone className="h-5 w-5" />
-                أداء الحملات
+                {t('analyticsDashboardPage.campaignPerformance')}
               </CardTitle>
-              <CardDescription>تحليل شامل لأداء الحملات التسويقية</CardDescription>
+              <CardDescription>{t('analyticsDashboardPage.campaignPerformanceDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               {campaignAnalytics.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>لم يتم إرسال أي حملات في هذه الفترة</p>
+                  <p>{t('analyticsDashboardPage.noCampaigns')}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>الحملة</TableHead>
-                      <TableHead>المرسل</TableHead>
-                      <TableHead>معدل الفتح</TableHead>
-                      <TableHead>معدل النقر</TableHead>
-                      <TableHead>معدل التحويل</TableHead>
-                      <TableHead>الإيرادات</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.campaign')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.sent')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.openRate')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.clickRate')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.conversionRateCol')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.revenueCol')}</TableHead>
                       <TableHead>ROI</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -473,26 +483,26 @@ export default function AnalyticsDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Ticket className="h-5 w-5" />
-                أداء كودات الخصم
+                {t('analyticsDashboardPage.discountCodes')}
               </CardTitle>
-              <CardDescription>تحليل استخدام كودات الخصم</CardDescription>
+              <CardDescription>{t('analyticsDashboardPage.discountCodesDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               {discountAnalytics.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Ticket className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>لم يتم استخدام أي كودات خصم في هذه الفترة</p>
+                  <p>{t('analyticsDashboardPage.noDiscounts')}</p>
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>الكود</TableHead>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>القيمة</TableHead>
-                      <TableHead>الاستخدامات</TableHead>
-                      <TableHead>الإيرادات</TableHead>
-                      <TableHead>متوسط الطلب</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.code')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.type')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.value')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.usages')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.revenueCol')}</TableHead>
+                      <TableHead>{t('analyticsDashboardPage.avgOrder')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -503,7 +513,7 @@ export default function AnalyticsDashboard() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {discount.type === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت'}
+                            {discount.type === 'percentage' ? t('analyticsDashboardPage.percentage') : t('analyticsDashboardPage.fixedAmount')}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -529,18 +539,18 @@ export default function AnalyticsDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                تحليل العملاء
+                {t('analyticsDashboardPage.customerAnalysis')}
               </CardTitle>
-              <CardDescription>فهم سلوك العملاء وتفضيلاتهم</CardDescription>
+              <CardDescription>{t('analyticsDashboardPage.customerAnalysisDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
                 {customerSegments.map((segment, index) => {
-                  const labels = { new: 'عملاء جدد', returning: 'عملاء عائدون', vip: 'عملاء VIP' };
+                  const labels = { new: t('analyticsDashboardPage.newCustomers'), returning: t('analyticsDashboardPage.returningCustomers'), vip: t('analyticsDashboardPage.vipCustomers') };
                   const descriptions = {
-                    new: 'عملاء قاموا بطلب واحد فقط',
-                    returning: 'عملاء قاموا بـ 2-4 طلبات',
-                    vip: 'عملاء قاموا بـ 5 طلبات أو أكثر',
+                    new: t('analyticsDashboardPage.newCustomerDesc'),
+                    returning: t('analyticsDashboardPage.returningCustomerDesc'),
+                    vip: t('analyticsDashboardPage.vipCustomerDesc'),
                   };
                   return (
                     <Card key={segment.segment} className="border-2">
@@ -560,15 +570,15 @@ export default function AnalyticsDashboard() {
                       </CardHeader>
                       <CardContent className="space-y-2">
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">عدد العملاء:</span>
+                          <span className="text-sm text-muted-foreground">{t('analyticsDashboardPage.customerCount')}</span>
                           <span className="font-bold">{segment.count}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">الإيرادات:</span>
+                          <span className="text-sm text-muted-foreground">{t('analyticsDashboardPage.revenueLabel')}</span>
                           <span className="font-bold">{formatCurrency(segment.revenue)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-sm text-muted-foreground">متوسط الطلب:</span>
+                          <span className="text-sm text-muted-foreground">{t('analyticsDashboardPage.avgOrderLabel')}</span>
                           <span className="font-bold">{formatCurrency(segment.averageOrderValue)}</span>
                         </div>
                       </CardContent>
@@ -587,9 +597,9 @@ export default function AnalyticsDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                التحليل حسب الساعة
+                {t('analyticsDashboardPage.hourlyAnalysis')}
               </CardTitle>
-              <CardDescription>ساعات الذروة للطلبات والمبيعات</CardDescription>
+              <CardDescription>{t('analyticsDashboardPage.hourlyAnalysisDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -598,13 +608,13 @@ export default function AnalyticsDashboard() {
                   <XAxis dataKey="hour" tickFormatter={(hour) => `${hour}:00`} />
                   <YAxis />
                   <Tooltip
-                    labelFormatter={(hour) => `الساعة ${hour}:00`}
+                    labelFormatter={(hour) => `${t('analyticsDashboardPage.hour')} ${hour}:00`}
                     formatter={(value: number, name: string) => [
                       name === 'revenue' ? formatCurrency(value) : value,
-                      name === 'revenue' ? 'الإيرادات' : 'الطلبات',
+                      name === 'revenue' ? t('analyticsDashboardPage.revenue') : t('analyticsDashboardPage.orders'),
                     ]}
                   />
-                  <Legend formatter={(value) => (value === 'revenue' ? 'الإيرادات' : 'الطلبات')} />
+                  <Legend formatter={(value) => (value === 'revenue' ? t('analyticsDashboardPage.revenue') : t('analyticsDashboardPage.orders'))} />
                   <Bar dataKey="revenue" fill="#3b82f6" />
                   <Bar dataKey="orders" fill="#10b981" />
                 </BarChart>
@@ -617,9 +627,9 @@ export default function AnalyticsDashboard() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                التحليل حسب أيام الأسبوع
+                {t('analyticsDashboardPage.weekdayAnalysis')}
               </CardTitle>
-              <CardDescription>أفضل أيام الأسبوع للمبيعات</CardDescription>
+              <CardDescription>{t('analyticsDashboardPage.weekdayAnalysisDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -630,10 +640,10 @@ export default function AnalyticsDashboard() {
                   <Tooltip
                     formatter={(value: number, name: string) => [
                       name === 'revenue' ? formatCurrency(value) : value,
-                      name === 'revenue' ? 'الإيرادات' : 'الطلبات',
+                      name === 'revenue' ? t('analyticsDashboardPage.revenue') : t('analyticsDashboardPage.orders'),
                     ]}
                   />
-                  <Legend formatter={(value) => (value === 'revenue' ? 'الإيرادات' : 'الطلبات')} />
+                  <Legend formatter={(value) => (value === 'revenue' ? t('analyticsDashboardPage.revenue') : t('analyticsDashboardPage.orders'))} />
                   <Bar dataKey="revenue" fill="#3b82f6" />
                   <Bar dataKey="orders" fill="#10b981" />
                 </BarChart>
@@ -644,25 +654,25 @@ export default function AnalyticsDashboard() {
           {/* Insights */}
           <Card className="border-primary/30 bg-primary/10/50">
             <CardHeader>
-              <CardTitle className="text-primary">💡 رؤى وتوصيات</CardTitle>
+              <CardTitle className="text-primary">{t('analyticsDashboardPage.insightsTitle')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-primary">
               <div className="flex items-start gap-2">
                 <span className="text-primary font-bold">•</span>
                 <p className="text-sm">
-                  <strong>أفضل وقت للحملات:</strong> أرسل حملاتك في الساعات التي تشهد أعلى نشاط للعملاء
+                  <strong>{t('analyticsDashboardPage.insightCampaignTiming')}</strong> {t('analyticsDashboardPage.insightCampaignTimingDesc')}
                 </p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-primary font-bold">•</span>
                 <p className="text-sm">
-                  <strong>استهدف العملاء VIP:</strong> ركز على العملاء الأوفياء بعروض خاصة لزيادة الإيرادات
+                  <strong>{t('analyticsDashboardPage.insightTargetVIP')}</strong> {t('analyticsDashboardPage.insightTargetVIPDesc')}
                 </p>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-primary font-bold">•</span>
                 <p className="text-sm">
-                  <strong>حسّن المخزون:</strong> تأكد من توفر المنتجات الأكثر مبيعاً لتجنب خسارة المبيعات
+                  <strong>{t('analyticsDashboardPage.insightOptimizeStock')}</strong> {t('analyticsDashboardPage.insightOptimizeStockDesc')}
                 </p>
               </div>
             </CardContent>

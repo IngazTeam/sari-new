@@ -8,8 +8,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Save, Key, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function GoogleOAuthSettings() {
+  const { t } = useTranslation();
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [isEnabled, setIsEnabled] = useState(true);
@@ -30,7 +32,7 @@ export default function GoogleOAuthSettings() {
 
   const handleSave = async () => {
     if (!clientId.trim() || !clientSecret.trim()) {
-      toast.error('يرجى إدخال Client ID و Client Secret');
+      toast.error(t('adminGoogleOAuthSettingsPage.text10'));
       return;
     }
 
@@ -42,7 +44,7 @@ export default function GoogleOAuthSettings() {
         isEnabled,
       });
 
-      toast.success('تم تحديث إعدادات Google OAuth بنجاح');
+      toast.success(t('adminGoogleOAuthSettingsPage.text11'));
       refetch();
     } catch (error: any) {
       toast.error(error.message || 'حدث خطأ أثناء حفظ الإعدادات');
@@ -79,7 +81,7 @@ export default function GoogleOAuthSettings() {
   return (
     <div className="container max-w-4xl py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إعدادات Google OAuth</h1>
+        <h1 className="text-3xl font-bold">{t('adminGoogleOAuthSettingsPage.text0')}</h1>
         <p className="text-muted-foreground mt-2">
           إدارة بيانات اعتماد Google OAuth للتكامل مع Google Sheets و Google Calendar
         </p>
@@ -96,7 +98,7 @@ export default function GoogleOAuthSettings() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">تفعيل Google OAuth</p>
+              <p className="font-medium">{t('adminGoogleOAuthSettingsPage.text1')}</p>
               <p className="text-sm text-muted-foreground">
                 السماح للتجار بربط حساباتهم مع Google
               </p>
@@ -129,7 +131,7 @@ export default function GoogleOAuthSettings() {
       {/* Configuration Card */}
       <Card>
         <CardHeader>
-          <CardTitle>بيانات الاعتماد</CardTitle>
+          <CardTitle>{t('adminGoogleOAuthSettingsPage.text2')}</CardTitle>
           <CardDescription>
             أدخل Client ID و Client Secret من Google Cloud Console
           </CardDescription>
@@ -174,7 +176,7 @@ export default function GoogleOAuthSettings() {
                 size="icon"
                 onClick={() => {
                   navigator.clipboard.writeText(redirectUri);
-                  toast.success('تم نسخ Redirect URI');
+                  toast.success(t('adminGoogleOAuthSettingsPage.text12'));
                 }}
               >
                 <svg
@@ -221,7 +223,7 @@ export default function GoogleOAuthSettings() {
       {/* Setup Guide Card */}
       <Card>
         <CardHeader>
-          <CardTitle>دليل الإعداد</CardTitle>
+          <CardTitle>{t('adminGoogleOAuthSettingsPage.text3')}</CardTitle>
           <CardDescription>
             خطوات الحصول على بيانات الاعتماد من Google Cloud Console
           </CardDescription>
@@ -233,7 +235,7 @@ export default function GoogleOAuthSettings() {
                 1
               </div>
               <div>
-                <p className="font-medium">إنشاء مشروع في Google Cloud Console</p>
+                <p className="font-medium">{t('adminGoogleOAuthSettingsPage.text4')}</p>
                 <p className="text-muted-foreground">
                   اذهب إلى{' '}
                   <a
@@ -255,7 +257,7 @@ export default function GoogleOAuthSettings() {
                 2
               </div>
               <div>
-                <p className="font-medium">تفعيل APIs المطلوبة</p>
+                <p className="font-medium">{t('adminGoogleOAuthSettingsPage.text5')}</p>
                 <p className="text-muted-foreground">
                   فعّل Google Sheets API و Google Calendar API من قسم "APIs & Services"
                 </p>
@@ -267,7 +269,7 @@ export default function GoogleOAuthSettings() {
                 3
               </div>
               <div>
-                <p className="font-medium">إنشاء OAuth Client ID</p>
+                <p className="font-medium">{t('adminGoogleOAuthSettingsPage.text6')}</p>
                 <p className="text-muted-foreground">
                   اذهب إلى "Credentials" → "Create Credentials" → "OAuth client ID"
                 </p>
@@ -279,7 +281,7 @@ export default function GoogleOAuthSettings() {
                 4
               </div>
               <div>
-                <p className="font-medium">تكوين OAuth consent screen</p>
+                <p className="font-medium">{t('adminGoogleOAuthSettingsPage.text7')}</p>
                 <p className="text-muted-foreground">
                   اختر "External" وأضف النطاقات (Scopes) التالية:
                 </p>
@@ -295,7 +297,7 @@ export default function GoogleOAuthSettings() {
                 5
               </div>
               <div>
-                <p className="font-medium">إضافة Redirect URI</p>
+                <p className="font-medium">{t('adminGoogleOAuthSettingsPage.text8')}</p>
                 <p className="text-muted-foreground">
                   انسخ Redirect URI أعلاه وأضفه في "Authorized redirect URIs"
                 </p>
@@ -307,7 +309,7 @@ export default function GoogleOAuthSettings() {
                 6
               </div>
               <div>
-                <p className="font-medium">نسخ البيانات</p>
+                <p className="font-medium">{t('adminGoogleOAuthSettingsPage.text9')}</p>
                 <p className="text-muted-foreground">
                   انسخ Client ID و Client Secret وألصقهما في الحقول أعلاه
                 </p>

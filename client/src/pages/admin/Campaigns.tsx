@@ -22,8 +22,10 @@ import { Search, Filter, Calendar, Users, Send, CheckCircle, XCircle, Clock } fr
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminCampaigns() {
+  const { t } = useTranslation();
   const { data: campaigns, isLoading } = trpc.campaigns.listAll.useQuery();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -97,7 +99,7 @@ export default function AdminCampaigns() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">إدارة الحملات</h1>
+        <h1 className="text-3xl font-bold">{t('adminCampaignsPage.text0')}</h1>
         <p className="text-muted-foreground mt-2">
           عرض وإدارة جميع حملات التجار
         </p>
@@ -107,7 +109,7 @@ export default function AdminCampaigns() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الحملات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminCampaignsPage.text1')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -120,7 +122,7 @@ export default function AdminCampaigns() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المجدولة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminCampaignsPage.text2')}</CardTitle>
             <Calendar className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
@@ -133,7 +135,7 @@ export default function AdminCampaigns() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الإرسال</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminCampaignsPage.text3')}</CardTitle>
             <Send className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
@@ -146,7 +148,7 @@ export default function AdminCampaigns() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المكتملة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminCampaignsPage.text4')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -161,7 +163,7 @@ export default function AdminCampaigns() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>البحث والفلترة</CardTitle>
+          <CardTitle>{t('adminCampaignsPage.text5')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
@@ -170,7 +172,7 @@ export default function AdminCampaigns() {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="ابحث عن حملة أو تاجر..."
+                  placeholder={t('adminCampaignsPage.text6')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pr-10"
@@ -183,16 +185,16 @@ export default function AdminCampaigns() {
               <SelectTrigger className="w-full md:w-[200px]">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4" />
-                  <SelectValue placeholder="حالة الحملة" />
+                  <SelectValue placeholder={t('adminCampaignsPage.text7')} />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="draft">مسودة</SelectItem>
-                <SelectItem value="scheduled">مجدولة</SelectItem>
-                <SelectItem value="sending">قيد الإرسال</SelectItem>
-                <SelectItem value="completed">مكتملة</SelectItem>
-                <SelectItem value="failed">فشلت</SelectItem>
+                <SelectItem value="all">{t('adminCampaignsPage.text8')}</SelectItem>
+                <SelectItem value="draft">{t('adminCampaignsPage.text9')}</SelectItem>
+                <SelectItem value="scheduled">{t('adminCampaignsPage.text10')}</SelectItem>
+                <SelectItem value="sending">{t('adminCampaignsPage.text11')}</SelectItem>
+                <SelectItem value="completed">{t('adminCampaignsPage.text12')}</SelectItem>
+                <SelectItem value="failed">{t('adminCampaignsPage.text13')}</SelectItem>
               </SelectContent>
             </Select>
 
@@ -201,11 +203,11 @@ export default function AdminCampaigns() {
               <SelectTrigger className="w-full md:w-[200px]">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  <SelectValue placeholder="التاجر" />
+                  <SelectValue placeholder={t('adminCampaignsPage.text14')} />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع التجار</SelectItem>
+                <SelectItem value="all">{t('adminCampaignsPage.text15')}</SelectItem>
                 {merchants.map((merchant) => (
                   <SelectItem key={merchant.id} value={merchant.id.toString()}>
                     {merchant.name}
@@ -234,7 +236,7 @@ export default function AdminCampaigns() {
       {/* Campaigns Table */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الحملات ({filteredCampaigns.length})</CardTitle>
+          <CardTitle>{t('adminCampaignsPage.text16', { var0: filteredCampaigns.length })}</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -250,12 +252,12 @@ export default function AdminCampaigns() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>اسم الحملة</TableHead>
-                    <TableHead>التاجر</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>الإرسال</TableHead>
-                    <TableHead>الجدولة</TableHead>
-                    <TableHead>تاريخ الإنشاء</TableHead>
+                    <TableHead>{t('adminCampaignsPage.text17')}</TableHead>
+                    <TableHead>{t('adminCampaignsPage.text18')}</TableHead>
+                    <TableHead>{t('adminCampaignsPage.text19')}</TableHead>
+                    <TableHead>{t('adminCampaignsPage.text20')}</TableHead>
+                    <TableHead>{t('adminCampaignsPage.text21')}</TableHead>
+                    <TableHead>{t('adminCampaignsPage.text22')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -266,7 +268,7 @@ export default function AdminCampaigns() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{campaign.merchantName || 'غير معروف'}</div>
+                          <div className="font-medium">{t('adminCampaignsPage.text23', { var0: campaign.merchantName || 'غير معروف' })}</div>
                           {campaign.merchantPhone && (
                             <div className="text-sm text-muted-foreground">
                               {campaign.merchantPhone}
@@ -298,7 +300,7 @@ export default function AdminCampaigns() {
                             </div>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">غير مجدولة</span>
+                          <span className="text-muted-foreground text-sm">{t('adminCampaignsPage.text24')}</span>
                         )}
                       </TableCell>
                       <TableCell>

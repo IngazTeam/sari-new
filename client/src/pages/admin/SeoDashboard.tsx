@@ -3,17 +3,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { AlertCircle, TrendingUp, Eye, CheckCircle } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function SeoDashboard() {
+  const { t } = useTranslation();
   // Mock data
   const trafficData = [
-    { date: "1 يناير", visitors: 1200, pageViews: 2400, conversions: 240 },
-    { date: "2 يناير", visitors: 1400, pageViews: 2210, conversions: 221 },
-    { date: "3 يناير", visitors: 1100, pageViews: 2290, conversions: 229 },
-    { date: "4 يناير", visitors: 1800, pageViews: 2000, conversions: 200 },
-    { date: "5 يناير", visitors: 1500, pageViews: 2181, conversions: 218 },
-    { date: "6 يناير", visitors: 2000, pageViews: 2500, conversions: 250 },
-    { date: "7 يناير", visitors: 1900, pageViews: 2100, conversions: 210 },
+    { date: t('adminSeoDashboardPage.text0'), visitors: 1200, pageViews: 2400, conversions: 240 },
+    { date: t('adminSeoDashboardPage.text1'), visitors: 1400, pageViews: 2210, conversions: 221 },
+    { date: t('adminSeoDashboardPage.text2'), visitors: 1100, pageViews: 2290, conversions: 229 },
+    { date: t('adminSeoDashboardPage.text3'), visitors: 1800, pageViews: 2000, conversions: 200 },
+    { date: t('adminSeoDashboardPage.text4'), visitors: 1500, pageViews: 2181, conversions: 218 },
+    { date: t('adminSeoDashboardPage.text5'), visitors: 2000, pageViews: 2500, conversions: 250 },
+    { date: t('adminSeoDashboardPage.text6'), visitors: 1900, pageViews: 2100, conversions: 210 },
   ];
 
   const topPages = [
@@ -24,16 +26,16 @@ export default function SeoDashboard() {
   ];
 
   const alerts = [
-    { id: 1, type: "ranking_drop", severity: "high", message: "انخفاض ترتيب الكلمة المفتاحية 'واتساب'", page: "home" },
-    { id: 2, type: "traffic_drop", severity: "medium", message: "انخفاض حركة المرور بنسبة 15%", page: "pricing" },
-    { id: 3, type: "slow_page", severity: "high", message: "سرعة الصفحة أبطأ من المتوقع", page: "features" },
+    { id: 1, type: "ranking_drop", severity: "high", message: t('adminSeoDashboardPage.text7'), page: "home" },
+    { id: 2, type: "traffic_drop", severity: "medium", message: t('adminSeoDashboardPage.text8'), page: "pricing" },
+    { id: 3, type: "slow_page", severity: "high", message: t('adminSeoDashboardPage.text9'), page: "features" },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">لوحة تحكم SEO</h1>
-        <p className="text-gray-600 mt-2">مراقبة أداء SEO وتحسين ترتيب موقعك</p>
+        <h1 className="text-3xl font-bold">{t('adminSeoDashboardPage.text10')}</h1>
+        <p className="text-gray-600 mt-2">{t('adminSeoDashboardPage.text11')}</p>
       </div>
 
       {/* KPI Cards */}
@@ -41,9 +43,9 @@ export default function SeoDashboard() {
         <Card className="p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-600">إجمالي الزيارات</p>
+              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text12')}</p>
               <p className="text-3xl font-bold mt-2">12,540</p>
-              <p className="text-sm text-green-600 mt-2">↑ 12% هذا الشهر</p>
+              <p className="text-sm text-green-600 mt-2">{t('adminSeoDashboardPage.text13')}</p>
             </div>
             <Eye className="w-8 h-8 text-blue-500" />
           </div>
@@ -52,9 +54,9 @@ export default function SeoDashboard() {
         <Card className="p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-600">معدل التحويل</p>
+              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text14')}</p>
               <p className="text-3xl font-bold mt-2">8.2%</p>
-              <p className="text-sm text-green-600 mt-2">↑ 2.1% هذا الشهر</p>
+              <p className="text-sm text-green-600 mt-2">{t('adminSeoDashboardPage.text15')}</p>
             </div>
             <TrendingUp className="w-8 h-8 text-green-500" />
           </div>
@@ -63,9 +65,9 @@ export default function SeoDashboard() {
         <Card className="p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-600">الكلمات المفتاحية</p>
+              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text16')}</p>
               <p className="text-3xl font-bold mt-2">156</p>
-              <p className="text-sm text-blue-600 mt-2">24 في الصفحة الأولى</p>
+              <p className="text-sm text-blue-600 mt-2">{t('adminSeoDashboardPage.text17')}</p>
             </div>
             <CheckCircle className="w-8 h-8 text-blue-500" />
           </div>
@@ -74,9 +76,9 @@ export default function SeoDashboard() {
         <Card className="p-6">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm text-gray-600">الروابط الخارجية</p>
+              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text18')}</p>
               <p className="text-3xl font-bold mt-2">342</p>
-              <p className="text-sm text-orange-600 mt-2">18 جديدة هذا الشهر</p>
+              <p className="text-sm text-orange-600 mt-2">{t('adminSeoDashboardPage.text19')}</p>
             </div>
             <AlertCircle className="w-8 h-8 text-orange-500" />
           </div>
@@ -87,7 +89,7 @@ export default function SeoDashboard() {
       <div className="grid grid-cols-2 gap-6">
         {/* Traffic Chart */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">حركة المرور</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text20')}</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trafficData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -103,7 +105,7 @@ export default function SeoDashboard() {
 
         {/* Conversions Chart */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">التحويلات</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text21')}</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={trafficData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -119,15 +121,15 @@ export default function SeoDashboard() {
 
       {/* Top Pages */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">أفضل الصفحات</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text22')}</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-right text-sm font-semibold">الصفحة</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold">المشاهدات</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold">التحويلات</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold">معدل النقر</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text23')}</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text24')}</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text25')}</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text26')}</th>
               </tr>
             </thead>
             <tbody>
@@ -146,7 +148,7 @@ export default function SeoDashboard() {
 
       {/* Alerts */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">التنبيهات</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text27')}</h2>
         <div className="space-y-3">
           {alerts.map((alert) => (
             <div key={alert.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
@@ -155,7 +157,7 @@ export default function SeoDashboard() {
               }`} />
               <div className="flex-1">
                 <p className="font-medium">{alert.message}</p>
-                <p className="text-sm text-gray-600">الصفحة: {alert.page}</p>
+                <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text28', { var0: alert.page })}</p>
               </div>
               <Badge variant={alert.severity === 'high' ? 'destructive' : 'outline'}>
                 {alert.severity === 'high' ? 'حرج' : 'تحذير'}

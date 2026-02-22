@@ -4,12 +4,14 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, Save } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function SeoMetaTags() {
+  const { t } = useTranslation();
   const [selectedPage, setSelectedPage] = useState("home");
   const [metaTags, setMetaTags] = useState([
-    { id: 1, name: "description", content: "منصة ساري تساعدك في إدارة مبيعاتك عبر الواتساب بذكاء اصطناعي" },
-    { id: 2, name: "keywords", content: "واتساب، مبيعات، ذكاء اصطناعي، تسويق" },
+    { id: 1, name: "description", content: t('adminSeoMetaTagsPage.text0') },
+    { id: 2, name: "keywords", content: t('adminSeoMetaTagsPage.text1') },
     { id: 3, name: "author", content: "Sari Team" },
   ]);
 
@@ -32,13 +34,13 @@ export default function SeoMetaTags() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">محرر Meta Tags</h1>
-        <p className="text-gray-600 mt-2">أدر علامات Meta الخاصة بصفحاتك</p>
+        <h1 className="text-3xl font-bold">{t('adminSeoMetaTagsPage.text2')}</h1>
+        <p className="text-gray-600 mt-2">{t('adminSeoMetaTagsPage.text3')}</p>
       </div>
 
       {/* Page Selector */}
       <Card className="p-6">
-        <label className="block text-sm font-medium mb-3">اختر الصفحة</label>
+        <label className="block text-sm font-medium mb-3">{t('adminSeoMetaTagsPage.text4')}</label>
         <div className="flex gap-2 flex-wrap">
           {pages.map(page => (
             <Button
@@ -56,7 +58,7 @@ export default function SeoMetaTags() {
       {/* Meta Tags Editor */}
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold">Meta Tags للصفحة: {selectedPage}</h2>
+          <h2 className="text-lg font-semibold">{t('adminSeoMetaTagsPage.text5', { var0: selectedPage })}</h2>
           <Button onClick={addMetaTag} className="gap-2">
             <Plus className="w-4 h-4" />
             إضافة Meta Tag
@@ -68,20 +70,20 @@ export default function SeoMetaTags() {
             <div key={tag.id} className="p-4 border rounded-lg space-y-3">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2">الاسم</label>
+                  <label className="block text-sm font-medium mb-2">{t('adminSeoMetaTagsPage.text6')}</label>
                   <Input
                     value={tag.name}
                     onChange={(e) => updateMetaTag(tag.id, "name", e.target.value)}
-                    placeholder="مثال: description"
+                    placeholder={t('adminSeoMetaTagsPage.text7')}
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">المحتوى</label>
+                <label className="block text-sm font-medium mb-2">{t('adminSeoMetaTagsPage.text8')}</label>
                 <Textarea
                   value={tag.content}
                   onChange={(e) => updateMetaTag(tag.id, "content", e.target.value)}
-                  placeholder="أدخل محتوى Meta Tag"
+                  placeholder={t('adminSeoMetaTagsPage.text9')}
                   rows={3}
                 />
               </div>
@@ -103,10 +105,10 @@ export default function SeoMetaTags() {
 
       {/* Preview */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">معاينة</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('adminSeoMetaTagsPage.text10')}</h2>
         <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-          <p className="text-blue-600 text-lg font-semibold">ساري - وكيل مبيعات ذكي</p>
-          <p className="text-gray-600">منصة ساري تساعدك في إدارة مبيعاتك عبر الواتساب بذكاء اصطناعي</p>
+          <p className="text-blue-600 text-lg font-semibold">{t('adminSeoMetaTagsPage.text11')}</p>
+          <p className="text-gray-600">{t('adminSeoMetaTagsPage.text12')}</p>
           <p className="text-gray-500 text-sm">https://sari.app</p>
         </div>
       </Card>

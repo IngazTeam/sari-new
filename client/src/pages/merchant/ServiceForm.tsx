@@ -16,8 +16,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function ServiceForm() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const params = useParams();
   const serviceId = params.id ? parseInt(params.id) : null;
@@ -48,7 +50,7 @@ export default function ServiceForm() {
 
   const createMutation = trpc.services.create.useMutation({
     onSuccess: () => {
-      toast.success('تم إنشاء الخدمة بنجاح');
+      toast.success(t('serviceFormPage.text0'));
       setLocation('/merchant/services');
     },
     onError: (error) => {
@@ -58,7 +60,7 @@ export default function ServiceForm() {
 
   const updateMutation = trpc.services.update.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث الخدمة بنجاح');
+      toast.success(t('serviceFormPage.text1'));
       setLocation('/merchant/services');
     },
     onError: (error) => {
@@ -128,7 +130,7 @@ export default function ServiceForm() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">جاري التحميل...</p>
+            <p className="mt-4 text-muted-foreground">{t('serviceFormPage.text2')}</p>
           </div>
         </div>
       </div>
@@ -145,13 +147,13 @@ export default function ServiceForm() {
           className="mb-4"
         >
           <ArrowLeft className="ml-2 h-4 w-4" />
-          العودة إلى الخدمات
+          {t('serviceFormPage.text40')}
         </Button>
         <h1 className="text-3xl font-bold">
-          {isEdit ? 'تعديل الخدمة' : 'إضافة خدمة جديدة'}
+          {isEdit ? t('serviceFormPage.text34') : t('serviceFormPage.text35')}
         </h1>
         <p className="text-muted-foreground mt-2">
-          {isEdit ? 'تحديث معلومات الخدمة' : 'إضافة خدمة جديدة لنشاطك التجاري'}
+          {isEdit ? t('serviceFormPage.text36') : t('serviceFormPage.text37')}
         </p>
       </div>
 
@@ -159,43 +161,43 @@ export default function ServiceForm() {
         {/* Basic Information */}
         <Card>
           <CardHeader>
-            <CardTitle>المعلومات الأساسية</CardTitle>
-            <CardDescription>معلومات الخدمة الأساسية</CardDescription>
+            <CardTitle>{t('serviceFormPage.text3')}</CardTitle>
+            <CardDescription>{t('serviceFormPage.text4')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="name">اسم الخدمة *</Label>
+              <Label htmlFor="name">{t('serviceFormPage.text5')}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="مثال: قص شعر، استشارة قانونية، صيانة كمبيوتر"
+                placeholder={t('serviceFormPage.text6')}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="description">الوصف</Label>
+              <Label htmlFor="description">{t('serviceFormPage.text7')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="وصف تفصيلي للخدمة"
+                placeholder={t('serviceFormPage.text8')}
                 rows={3}
               />
             </div>
 
             <div>
-              <Label htmlFor="categoryId">التصنيف</Label>
+              <Label htmlFor="categoryId">{t('serviceFormPage.text9')}</Label>
               <Select
                 value={formData.categoryId}
                 onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر التصنيف" />
+                  <SelectValue placeholder={t('serviceFormPage.text10')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">بدون تصنيف</SelectItem>
+                  <SelectItem value="">{t('serviceFormPage.text11')}</SelectItem>
                   {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
@@ -210,12 +212,12 @@ export default function ServiceForm() {
         {/* Pricing */}
         <Card>
           <CardHeader>
-            <CardTitle>التسعير</CardTitle>
-            <CardDescription>حدد نوع التسعير والأسعار</CardDescription>
+            <CardTitle>{t('serviceFormPage.text12')}</CardTitle>
+            <CardDescription>{t('serviceFormPage.text13')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="priceType">نوع التسعير *</Label>
+              <Label htmlFor="priceType">{t('serviceFormPage.text14')}</Label>
               <Select
                 value={formData.priceType}
                 onValueChange={(value: any) => setFormData({ ...formData, priceType: value })}
@@ -224,16 +226,16 @@ export default function ServiceForm() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">سعر ثابت</SelectItem>
-                  <SelectItem value="variable">سعر متغير (من - إلى)</SelectItem>
-                  <SelectItem value="custom">حسب الطلب</SelectItem>
+                  <SelectItem value="fixed">{t('serviceFormPage.text15')}</SelectItem>
+                  <SelectItem value="variable">{t('serviceFormPage.text16')}</SelectItem>
+                  <SelectItem value="custom">{t('serviceFormPage.text17')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {formData.priceType === 'fixed' && (
               <div>
-                <Label htmlFor="basePrice">السعر (ريال) *</Label>
+                <Label htmlFor="basePrice">{t('serviceFormPage.text18')}</Label>
                 <Input
                   id="basePrice"
                   type="number"
@@ -249,7 +251,7 @@ export default function ServiceForm() {
             {formData.priceType === 'variable' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="minPrice">السعر الأدنى (ريال) *</Label>
+                  <Label htmlFor="minPrice">{t('serviceFormPage.text19')}</Label>
                   <Input
                     id="minPrice"
                     type="number"
@@ -261,7 +263,7 @@ export default function ServiceForm() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="maxPrice">السعر الأعلى (ريال) *</Label>
+                  <Label htmlFor="maxPrice">{t('serviceFormPage.text20')}</Label>
                   <Input
                     id="maxPrice"
                     type="number"
@@ -280,13 +282,13 @@ export default function ServiceForm() {
         {/* Time Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات الوقت</CardTitle>
-            <CardDescription>مدة الخدمة والوقت الإضافي</CardDescription>
+            <CardTitle>{t('serviceFormPage.text21')}</CardTitle>
+            <CardDescription>{t('serviceFormPage.text22')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="durationMinutes">مدة الخدمة (دقيقة) *</Label>
+                <Label htmlFor="durationMinutes">{t('serviceFormPage.text23')}</Label>
                 <Input
                   id="durationMinutes"
                   type="number"
@@ -297,7 +299,7 @@ export default function ServiceForm() {
                 />
               </div>
               <div>
-                <Label htmlFor="bufferTimeMinutes">وقت إضافي (دقيقة)</Label>
+                <Label htmlFor="bufferTimeMinutes">{t('serviceFormPage.text24')}</Label>
                 <Input
                   id="bufferTimeMinutes"
                   type="number"
@@ -313,15 +315,15 @@ export default function ServiceForm() {
         {/* Booking Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات الحجز</CardTitle>
-            <CardDescription>إعدادات حجز المواعيد</CardDescription>
+            <CardTitle>{t('serviceFormPage.text25')}</CardTitle>
+            <CardDescription>{t('serviceFormPage.text26')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>يتطلب حجز موعد</Label>
+                <Label>{t('serviceFormPage.text27')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  هل يجب على العميل حجز موعد لهذه الخدمة؟
+                  {t('serviceFormPage.text41')}
                 </p>
               </div>
               <Switch
@@ -335,7 +337,7 @@ export default function ServiceForm() {
             {formData.requiresAppointment && (
               <>
                 <div>
-                  <Label htmlFor="maxBookingsPerDay">الحد الأقصى للحجوزات اليومية</Label>
+                  <Label htmlFor="maxBookingsPerDay">{t('serviceFormPage.text28')}</Label>
                   <Input
                     id="maxBookingsPerDay"
                     type="number"
@@ -343,12 +345,12 @@ export default function ServiceForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, maxBookingsPerDay: e.target.value })
                     }
-                    placeholder="اتركه فارغاً لعدم التحديد"
+                    placeholder={t('serviceFormPage.text29')}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="advanceBookingDays">الحجز المسبق (أيام)</Label>
+                  <Label htmlFor="advanceBookingDays">{t('serviceFormPage.text30')}</Label>
                   <Input
                     id="advanceBookingDays"
                     type="number"
@@ -359,7 +361,7 @@ export default function ServiceForm() {
                     placeholder="30"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    كم يوماً مقدماً يمكن للعميل الحجز؟
+                    {t('serviceFormPage.text42')}
                   </p>
                 </div>
               </>
@@ -370,12 +372,12 @@ export default function ServiceForm() {
         {/* Display Order */}
         <Card>
           <CardHeader>
-            <CardTitle>الترتيب</CardTitle>
-            <CardDescription>ترتيب عرض الخدمة</CardDescription>
+            <CardTitle>{t('serviceFormPage.text31')}</CardTitle>
+            <CardDescription>{t('serviceFormPage.text32')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div>
-              <Label htmlFor="displayOrder">ترتيب العرض</Label>
+              <Label htmlFor="displayOrder">{t('serviceFormPage.text33')}</Label>
               <Input
                 id="displayOrder"
                 type="number"
@@ -384,7 +386,7 @@ export default function ServiceForm() {
                 placeholder="0"
               />
               <p className="text-sm text-muted-foreground mt-1">
-                الخدمات ذات الترتيب الأقل تظهر أولاً
+                {t('serviceFormPage.text43')}
               </p>
             </div>
           </CardContent>
@@ -398,7 +400,7 @@ export default function ServiceForm() {
             onClick={() => setLocation('/merchant/services')}
             className="flex-1"
           >
-            إلغاء
+            {t('serviceFormPage.text44')}
           </Button>
           <Button
             type="submit"
@@ -407,10 +409,9 @@ export default function ServiceForm() {
           >
             <Save className="ml-2 h-4 w-4" />
             {createMutation.isPending || updateMutation.isPending
-              ? 'جاري الحفظ...'
+              ? t('serviceFormPage.text45')
               : isEdit
-              ? 'تحديث الخدمة'
-              : 'إضافة الخدمة'}
+              ? t('serviceFormPage.text38') : t('serviceFormPage.text39')}
           </Button>
         </div>
       </form>

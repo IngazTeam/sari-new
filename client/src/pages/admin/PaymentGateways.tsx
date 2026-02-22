@@ -102,7 +102,7 @@ export default function PaymentGateways() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إعدادات بوابات الدفع</h1>
+        <h1 className="text-3xl font-bold">{t('adminPaymentGatewaysPage.text0')}</h1>
         <p className="text-muted-foreground mt-1">
           قم بإعداد وإدارة بوابات الدفع المتاحة للتجار
         </p>
@@ -117,17 +117,17 @@ export default function PaymentGateways() {
                 <CreditCard className="h-8 w-8 text-primary" />
                 <div>
                   <CardTitle>Tap Payment</CardTitle>
-                  <CardDescription>بوابة الدفع السعودية</CardDescription>
+                  <CardDescription>{t('adminPaymentGatewaysPage.text1')}</CardDescription>
                 </div>
               </div>
               {tapEnabled && (
-                <Badge variant="default">مفعّلة</Badge>
+                <Badge variant="default">{t('adminPaymentGatewaysPage.text2')}</Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="tap-enabled">تفعيل Tap Payment</Label>
+              <Label htmlFor="tap-enabled">{t('adminPaymentGatewaysPage.text3')}</Label>
               <Switch
                 id="tap-enabled"
                 checked={tapEnabled}
@@ -136,7 +136,7 @@ export default function PaymentGateways() {
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="tap-test-mode">وضع الاختبار (Sandbox)</Label>
+              <Label htmlFor="tap-test-mode">{t('adminPaymentGatewaysPage.text4')}</Label>
               <Switch
                 id="tap-test-mode"
                 checked={tapTestMode}
@@ -202,7 +202,7 @@ export default function PaymentGateways() {
             </Button>
 
             <div className="pt-4 border-t">
-              <p className="text-sm font-medium mb-2">روابط مفيدة:</p>
+              <p className="text-sm font-medium mb-2">{t('adminPaymentGatewaysPage.text5')}</p>
               <div className="space-y-1 text-sm text-muted-foreground">
                 <a
                   href="https://tap.company"
@@ -233,17 +233,17 @@ export default function PaymentGateways() {
                 <CreditCard className="h-8 w-8 text-blue-500" />
                 <div>
                   <CardTitle>PayPal</CardTitle>
-                  <CardDescription>بوابة الدفع الدولية</CardDescription>
+                  <CardDescription>{t('adminPaymentGatewaysPage.text6')}</CardDescription>
                 </div>
               </div>
               {paypalEnabled && (
-                <Badge variant="default">مفعّلة</Badge>
+                <Badge variant="default">{t('adminPaymentGatewaysPage.text7')}</Badge>
               )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label htmlFor="paypal-enabled">تفعيل PayPal</Label>
+              <Label htmlFor="paypal-enabled">{t('adminPaymentGatewaysPage.text8')}</Label>
               <Switch
                 id="paypal-enabled"
                 checked={paypalEnabled}
@@ -252,7 +252,7 @@ export default function PaymentGateways() {
             </div>
 
             <div className="flex items-center justify-between">
-              <Label htmlFor="paypal-test-mode">وضع الاختبار (Sandbox)</Label>
+              <Label htmlFor="paypal-test-mode">{t('adminPaymentGatewaysPage.text9')}</Label>
               <Switch
                 id="paypal-test-mode"
                 checked={paypalTestMode}
@@ -318,7 +318,7 @@ export default function PaymentGateways() {
             </Button>
 
             <div className="pt-4 border-t">
-              <p className="text-sm font-medium mb-2">روابط مفيدة:</p>
+              <p className="text-sm font-medium mb-2">{t('adminPaymentGatewaysPage.text10')}</p>
               <div className="space-y-1 text-sm text-muted-foreground">
                 <a
                   href="https://www.paypal.com"
@@ -345,29 +345,29 @@ export default function PaymentGateways() {
       {/* Instructions */}
       <Card>
         <CardHeader>
-          <CardTitle>تعليمات الإعداد</CardTitle>
+          <CardTitle>{t('adminPaymentGatewaysPage.text11')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
             <h3 className="font-medium mb-2">Tap Payment:</h3>
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-              <li>سجل حساب في https://tap.company</li>
-              <li>انتقل إلى "الإعدادات" ثم "API Keys"</li>
-              <li>انسخ Public Key و Secret Key</li>
-              <li>أنشئ Webhook وانسخ Webhook Secret</li>
-              <li>الصق المفاتيح في الحقول أعلاه واحفظ</li>
+              <li>{t('adminPaymentGatewaysPage.text12')}</li>
+              <li>{t('adminPaymentGatewaysPage.text13')}</li>
+              <li>{t('adminPaymentGatewaysPage.text14')}</li>
+              <li>{t('adminPaymentGatewaysPage.text15')}</li>
+              <li>{t('adminPaymentGatewaysPage.text16')}</li>
             </ol>
           </div>
 
           <div>
             <h3 className="font-medium mb-2">PayPal:</h3>
             <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-              <li>سجل حساب PayPal Business</li>
-              <li>انتقل إلى https://developer.paypal.com</li>
-              <li>أنشئ تطبيق جديد (App)</li>
-              <li>انسخ Client ID و Secret</li>
-              <li>أنشئ Webhook وانسخ Webhook ID</li>
-              <li>الصق المفاتيح في الحقول أعلاه واحفظ</li>
+              <li>{t('adminPaymentGatewaysPage.text17')}</li>
+              <li>{t('adminPaymentGatewaysPage.text18')}</li>
+              <li>{t('adminPaymentGatewaysPage.text19')}</li>
+              <li>{t('adminPaymentGatewaysPage.text20')}</li>
+              <li>{t('adminPaymentGatewaysPage.text21')}</li>
+              <li>{t('adminPaymentGatewaysPage.text22')}</li>
             </ol>
           </div>
 

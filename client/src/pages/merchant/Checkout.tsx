@@ -38,9 +38,9 @@ export default function Checkout() {
     onSuccess: (data) => {
       if (data.valid) {
         setAppliedCoupon(data.coupon);
-        toast.success('تم تطبيق الكوبون بنجاح!');
+        toast.success(t('checkoutPage.text0'));
       } else {
-        toast.error(data.message || 'الكوبون غير صالح');
+        toast.error(data.message || t('checkoutPage.text26'));
       }
       setIsValidatingCoupon(false);
     },
@@ -52,7 +52,7 @@ export default function Checkout() {
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
-      toast.error('الرجاء إدخال رمز الكوبون');
+      toast.error(t('checkoutPage.text1'));
       return;
     }
     setIsValidatingCoupon(true);
@@ -95,7 +95,7 @@ export default function Checkout() {
       <div className="p-6">
         <Card>
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">الباقة غير موجودة</p>
+            <p className="text-center text-muted-foreground">{t('checkoutPage.text2')}</p>
           </CardContent>
         </Card>
       </div>
@@ -120,9 +120,9 @@ export default function Checkout() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إتمام الدفع</h1>
+        <h1 className="text-3xl font-bold">{t('checkoutPage.text3')}</h1>
         <p className="text-muted-foreground mt-1">
-          اختر طريقة الدفع المناسبة لك
+          {t('checkoutPage.text27')}
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export default function Checkout() {
         {/* Order Summary */}
         <Card>
           <CardHeader>
-            <CardTitle>ملخص الطلب</CardTitle>
+            <CardTitle>{t('checkoutPage.text4')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -139,13 +139,13 @@ export default function Checkout() {
                 <Badge variant="default">{plan.name}</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
-                اشتراك شهري
+                {t('checkoutPage.text28')}
               </p>
             </div>
 
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between text-sm">
-                <span>السعر الشهري</span>
+                <span>{t('checkoutPage.text5')}</span>
                 <span>{basePrice.toFixed(2)} ريال</span>
               </div>
               
@@ -158,37 +158,37 @@ export default function Checkout() {
               
               {appliedCoupon && (
                 <div className="flex justify-between text-sm">
-                  <span>السعر بعد الخصم</span>
+                  <span>{t('checkoutPage.text9')}</span>
                   <span>{finalPrice.toFixed(2)} ريال</span>
                 </div>
               )}
               
               <div className="flex justify-between text-sm">
-                <span>الضريبة (15%)</span>
+                <span>{t('checkoutPage.text11')}</span>
                 <span>{finalTax.toFixed(2)} ريال</span>
               </div>
               
               <div className="flex justify-between font-bold text-lg border-t pt-2">
-                <span>المجموع</span>
+                <span>{t('checkoutPage.text13')}</span>
                 <span className={appliedCoupon ? 'text-green-600 dark:text-green-400' : ''}>
-                  {totalPrice.toFixed(2)} ريال
+                  {t('checkoutPage.text36', { var0: totalPrice.toFixed(2) })}
                 </span>
               </div>
               
               {appliedCoupon && (
                 <div className="text-xs text-muted-foreground text-center">
-                  وفرت {discount.toFixed(2)} ريال!
+                  {t('checkoutPage.text37', { var0: discount.toFixed(2) })}
                 </div>
               )}
             </div>
 
             {/* Coupon Input */}
             <div className="border-t pt-4">
-              <p className="text-sm font-medium mb-2">هل لديك كوبون خصم؟</p>
+              <p className="text-sm font-medium mb-2">{t('checkoutPage.text14')}</p>
               {!appliedCoupon ? (
                 <div className="flex gap-2">
                   <Input
-                    placeholder="أدخل رمز الكوبون"
+                    placeholder={t('checkoutPage.text15')}
                     value={couponCode}
                     onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                     disabled={isValidatingCoupon}
@@ -226,11 +226,11 @@ export default function Checkout() {
             </div>
 
             <div className="bg-muted p-4 rounded-lg space-y-2">
-              <p className="font-medium text-sm">الميزات المضمنة:</p>
+              <p className="font-medium text-sm">{t('checkoutPage.text16')}</p>
               <ul className="text-sm space-y-1 text-muted-foreground">
                 <li>• {plan.conversationLimit} محادثة شهرياً</li>
-                <li>• {plan.voiceMessageLimit === -1 ? 'رسائل صوتية غير محدودة' : `${plan.voiceMessageLimit} رسالة صوتية`}</li>
-                <li>• دعم فني على مدار الساعة</li>
+                <li>• {plan.voiceMessageLimit === -1 ? 'رسائل صوتية غير محدودة' : t('checkoutPage.text34', { var0: plan.voiceMessageLimit })}</li>
+                <li>{t('checkoutPage.text19')}</li>
               </ul>
             </div>
           </CardContent>
@@ -239,17 +239,17 @@ export default function Checkout() {
         {/* Payment Methods */}
         <Card>
           <CardHeader>
-            <CardTitle>طريقة الدفع</CardTitle>
-            <CardDescription>اختر البوابة المناسبة لك</CardDescription>
+            <CardTitle>{t('checkoutPage.text20')}</CardTitle>
+            <CardDescription>{t('checkoutPage.text21')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {enabledGateways.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-muted-foreground">
-                  لا توجد بوابات دفع متاحة حالياً
+                  {t('checkoutPage.text29')}
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  يرجى التواصل مع الدعم الفني
+                  {t('checkoutPage.text30')}
                 </p>
               </div>
             )}
@@ -267,10 +267,10 @@ export default function Checkout() {
                 <div className="flex-1 text-right">
                   <p className="font-medium">Tap Payment</p>
                   <p className="text-sm text-muted-foreground">
-                    الدفع بالبطاقات السعودية
+                    {t('checkoutPage.text31')}
                   </p>
                 </div>
-                <Badge>موصى به</Badge>
+                <Badge>{t('checkoutPage.text22')}</Badge>
               </div>
             </button>
 
@@ -289,7 +289,7 @@ export default function Checkout() {
                 <div className="flex-1 text-right">
                   <p className="font-medium">PayPal</p>
                   <p className="text-sm text-muted-foreground">
-                    الدفع الدولي
+                    {t('checkoutPage.text32')}
                   </p>
                 </div>
               </div>
@@ -304,18 +304,18 @@ export default function Checkout() {
               {createSessionMutation.isPending ? (
                 <>
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري التحويل...
+                  {t('checkoutPage.text33')}
                 </>
               ) : (
-                `ادفع ${totalPrice.toFixed(2)} ريال`
+                t('checkoutPage.text35', { var0: totalPrice.toFixed(2) })
               )}
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              بالنقر على "ادفع"، أنت توافق على{' '}
-              <a href="#" className="underline">شروط الخدمة</a>
-              {' '}و{' '}
-              <a href="#" className="underline">سياسة الخصوصية</a>
+              {t('checkoutPage.text38', { var0: ' ' })}
+              <a href="#" className="underline">{t('checkoutPage.text23')}</a>
+              {t('checkoutPage.text39', { var0: ' ', var1: ' ' })}
+              <a href="#" className="underline">{t('checkoutPage.text24')}</a>
             </p>
           </CardContent>
         </Card>
@@ -329,9 +329,9 @@ export default function Checkout() {
               <CreditCard className="h-5 w-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
-              <p className="font-medium">دفع آمن ومشفر</p>
+              <p className="font-medium">{t('checkoutPage.text25')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                جميع المعاملات محمية بتشفير SSL. لا نقوم بتخزين معلومات بطاقتك الائتمانية.
+                {t('checkoutPage.text40')}
               </p>
             </div>
           </div>

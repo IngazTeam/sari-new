@@ -19,8 +19,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { useTranslation } from 'react-i18next';
 
 export default function WhatsAppWebhookSetup() {
+  const { t } = useTranslation();
   const [instanceId, setInstanceId] = useState('');
   const [token, setToken] = useState('');
   const [isTestingWebhook, setIsTestingWebhook] = useState(false);
@@ -33,7 +35,7 @@ export default function WhatsAppWebhookSetup() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('تم النسخ إلى الحافظة');
+    toast.success(t('whatsAppWebhookSetupPage.text0'));
   };
 
   const testWebhook = async () => {
@@ -41,9 +43,9 @@ export default function WhatsAppWebhookSetup() {
     try {
       // Simulate webhook test
       await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success('Webhook يعمل بنجاح! 🎉');
+      toast.success(t('whatsAppWebhookSetupPage.text1'));
     } catch (error) {
-      toast.error('فشل اختبار Webhook');
+      toast.error(t('whatsAppWebhookSetupPage.text2'));
     } finally {
       setIsTestingWebhook(false);
     }
@@ -52,9 +54,9 @@ export default function WhatsAppWebhookSetup() {
   return (
     <div className="container max-w-5xl py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">تفعيل Webhook للواتساب</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('whatsAppWebhookSetupPage.text3')}</h1>
         <p className="text-muted-foreground">
-          اتبع الخطوات التالية لربط ساري AI مع رقم الواتساب الخاص بك لاستقبال الرسائل والرد التلقائي
+          {t('whatsAppWebhookSetupPage.text25')}
         </p>
       </div>
 
@@ -68,7 +70,7 @@ export default function WhatsAppWebhookSetup() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Webhook URL</p>
-                <p className="font-semibold text-green-600 dark:text-green-400">جاهز</p>
+                <p className="font-semibold text-green-600 dark:text-green-400">{t('whatsAppWebhookSetupPage.text4')}</p>
               </div>
             </div>
           </CardContent>
@@ -81,8 +83,8 @@ export default function WhatsAppWebhookSetup() {
                 <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">ساري AI</p>
-                <p className="font-semibold text-blue-600 dark:text-blue-400">نشط</p>
+                <p className="text-sm text-muted-foreground">{t('whatsAppWebhookSetupPage.text5')}</p>
+                <p className="font-semibold text-blue-600 dark:text-blue-400">{t('whatsAppWebhookSetupPage.text6')}</p>
               </div>
             </div>
           </CardContent>
@@ -95,8 +97,8 @@ export default function WhatsAppWebhookSetup() {
                 <Zap className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">الرد التلقائي</p>
-                <p className="font-semibold text-purple-600 dark:text-purple-400">مفعّل</p>
+                <p className="text-sm text-muted-foreground">{t('whatsAppWebhookSetupPage.text7')}</p>
+                <p className="font-semibold text-purple-600 dark:text-purple-400">{t('whatsAppWebhookSetupPage.text8')}</p>
               </div>
             </div>
           </CardContent>
@@ -108,10 +110,10 @@ export default function WhatsAppWebhookSetup() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5" />
-            خطوات التفعيل
+            {t('whatsAppWebhookSetupPage.text23')}
           </CardTitle>
           <CardDescription>
-            اتبع هذه الخطوات لربط Green API مع ساري
+            {t('whatsAppWebhookSetupPage.text26')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -123,13 +125,13 @@ export default function WhatsAppWebhookSetup() {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold mb-2">احصل على Instance ID و Token من Green API</h3>
+              <h3 className="font-semibold mb-2">{t('whatsAppWebhookSetupPage.text9')}</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                سجل دخول إلى حسابك في Green API وأنشئ instance جديد أو استخدم واحد موجود
+                {t('whatsAppWebhookSetupPage.text27')}
               </p>
               <Button variant="outline" size="sm" asChild>
                 <a href="https://console.green-api.com" target="_blank" rel="noopener noreferrer">
-                  فتح Green API Console
+                  {t('whatsAppWebhookSetupPage.text28')}
                   <ExternalLink className="h-4 w-4 mr-2" />
                 </a>
               </Button>
@@ -146,9 +148,9 @@ export default function WhatsAppWebhookSetup() {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold mb-2">انسخ Webhook URL</h3>
+              <h3 className="font-semibold mb-2">{t('whatsAppWebhookSetupPage.text10')}</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                هذا هو رابط Webhook الذي سيستقبل الرسائل من Green API
+                {t('whatsAppWebhookSetupPage.text29')}
               </p>
               <div className="flex gap-2">
                 <Input 
@@ -177,9 +179,9 @@ export default function WhatsAppWebhookSetup() {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold mb-2">فعّل Webhook في Green API</h3>
+              <h3 className="font-semibold mb-2">{t('whatsAppWebhookSetupPage.text11')}</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                في إعدادات instance الخاص بك، فعّل الخيارات التالية:
+                {t('whatsAppWebhookSetupPage.text30')}
               </p>
               <div className="space-y-2 mb-3">
                 <div className="flex items-center gap-2 text-sm">
@@ -196,7 +198,7 @@ export default function WhatsAppWebhookSetup() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground mb-3">
-                ثم الصق Webhook URL في حقل "Webhook URL"
+                {t('whatsAppWebhookSetupPage.text31')}
               </p>
             </div>
           </div>
@@ -211,13 +213,13 @@ export default function WhatsAppWebhookSetup() {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold mb-2">أضف Instance في ساري</h3>
+              <h3 className="font-semibold mb-2">{t('whatsAppWebhookSetupPage.text12')}</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                اذهب إلى صفحة إدارة أرقام الواتساب وأضف Instance ID و Token
+                {t('whatsAppWebhookSetupPage.text32')}
               </p>
               <Button variant="outline" size="sm" asChild>
                 <a href="/merchant/whatsapp-instances">
-                  إدارة أرقام الواتساب
+                  {t('whatsAppWebhookSetupPage.text24')}
                   <ArrowRight className="h-4 w-4 mr-2" />
                 </a>
               </Button>
@@ -229,9 +231,9 @@ export default function WhatsAppWebhookSetup() {
       {/* How it Works */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>كيف يعمل النظام؟</CardTitle>
+          <CardTitle>{t('whatsAppWebhookSetupPage.text13')}</CardTitle>
           <CardDescription>
-            فهم آلية عمل ساري AI مع الواتساب
+            {t('whatsAppWebhookSetupPage.text33')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -241,9 +243,9 @@ export default function WhatsAppWebhookSetup() {
                 <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h4 className="font-semibold mb-1">استقبال الرسائل</h4>
+                <h4 className="font-semibold mb-1">{t('whatsAppWebhookSetupPage.text14')}</h4>
                 <p className="text-sm text-muted-foreground">
-                  عندما يرسل عميل رسالة على الواتساب، يرسلها Green API إلى Webhook URL الخاص بساري
+                  {t('whatsAppWebhookSetupPage.text34')}
                 </p>
               </div>
             </div>
@@ -253,9 +255,9 @@ export default function WhatsAppWebhookSetup() {
                 <Bot className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <h4 className="font-semibold mb-1">معالجة ذكية</h4>
+                <h4 className="font-semibold mb-1">{t('whatsAppWebhookSetupPage.text15')}</h4>
                 <p className="text-sm text-muted-foreground">
-                  ساري AI يفهم الرسالة، يبحث في منتجاتك، ويولد رد مخصص باللهجة السعودية
+                  {t('whatsAppWebhookSetupPage.text35')}
                 </p>
               </div>
             </div>
@@ -265,9 +267,9 @@ export default function WhatsAppWebhookSetup() {
                 <Zap className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h4 className="font-semibold mb-1">رد تلقائي</h4>
+                <h4 className="font-semibold mb-1">{t('whatsAppWebhookSetupPage.text16')}</h4>
                 <p className="text-sm text-muted-foreground">
-                  يُرسل الرد للعميل عبر Green API خلال 1-3 ثواني، مع حفظ المحادثة في قاعدة البيانات
+                  {t('whatsAppWebhookSetupPage.text36')}
                 </p>
               </div>
             </div>
@@ -279,13 +281,13 @@ export default function WhatsAppWebhookSetup() {
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>ملاحظات مهمة:</strong>
+          <strong>{t('whatsAppWebhookSetupPage.text17')}</strong>
           <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-            <li>تأكد من أن رقم الواتساب متصل ونشط في Green API</li>
-            <li>Webhook URL يجب أن يكون متاحاً على الإنترنت (HTTPS)</li>
-            <li>ساري يرد تلقائياً على الرسائل النصية والصوتية</li>
-            <li>يتم حفظ جميع المحادثات في قاعدة البيانات لمراجعتها لاحقاً</li>
-            <li>تحقق من حدود باقتك (عدد المحادثات والرسائل الشهرية)</li>
+            <li>{t('whatsAppWebhookSetupPage.text18')}</li>
+            <li>{t('whatsAppWebhookSetupPage.text19')}</li>
+            <li>{t('whatsAppWebhookSetupPage.text20')}</li>
+            <li>{t('whatsAppWebhookSetupPage.text21')}</li>
+            <li>{t('whatsAppWebhookSetupPage.text22')}</li>
           </ul>
         </AlertDescription>
       </Alert>

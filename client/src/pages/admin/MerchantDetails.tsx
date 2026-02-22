@@ -24,8 +24,10 @@ import {
   XCircle,
   Clock
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function MerchantDetails() {
+  const { t } = useTranslation();
   const [, params] = useRoute('/admin/merchants/:id');
   const [, setLocation] = useLocation();
   const merchantId = params?.id ? parseInt(params.id) : 0;
@@ -48,7 +50,7 @@ export default function MerchantDetails() {
   if (merchantLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-muted-foreground">جاري التحميل...</p>
+        <p className="text-muted-foreground">{t('adminMerchantDetailsPage.text0')}</p>
       </div>
     );
   }
@@ -57,7 +59,7 @@ export default function MerchantDetails() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <XCircle className="w-16 h-16 text-muted-foreground" />
-        <p className="text-lg font-medium">التاجر غير موجود</p>
+        <p className="text-lg font-medium">{t('adminMerchantDetailsPage.text1')}</p>
         <Button onClick={() => setLocation('/admin/merchants')}>
           العودة إلى قائمة التجار
         </Button>
@@ -68,11 +70,11 @@ export default function MerchantDetails() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-green-100 text-green-700">نشط</Badge>;
+        return <Badge className="bg-green-100 text-green-700">{t('adminMerchantDetailsPage.text2')}</Badge>;
       case 'suspended':
-        return <Badge className="bg-red-100 text-red-700">معلق</Badge>;
+        return <Badge className="bg-red-100 text-red-700">{t('adminMerchantDetailsPage.text3')}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700">قيد المراجعة</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700">{t('adminMerchantDetailsPage.text4')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -81,13 +83,13 @@ export default function MerchantDetails() {
   const getCampaignStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-100 text-green-700">مكتمل</Badge>;
+        return <Badge className="bg-green-100 text-green-700">{t('adminMerchantDetailsPage.text5')}</Badge>;
       case 'sending':
-        return <Badge className="bg-primary/20 text-primary">جاري الإرسال</Badge>;
+        return <Badge className="bg-primary/20 text-primary">{t('adminMerchantDetailsPage.text6')}</Badge>;
       case 'draft':
-        return <Badge className="bg-gray-100 text-gray-700">مسودة</Badge>;
+        return <Badge className="bg-gray-100 text-gray-700">{t('adminMerchantDetailsPage.text7')}</Badge>;
       case 'scheduled':
-        return <Badge className="bg-yellow-100 text-yellow-700">مجدول</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700">{t('adminMerchantDetailsPage.text8')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -103,7 +105,7 @@ export default function MerchantDetails() {
       case 3:
         return 'Pro (B3) - 845 ريال';
       default:
-        return `باقة ${planId}`;
+        return t('adminMerchantDetailsPage.text9', { var0: planId });
     }
   };
 
@@ -134,13 +136,13 @@ export default function MerchantDetails() {
         {/* Basic Info */}
         <Card>
           <CardHeader>
-            <CardTitle>المعلومات الأساسية</CardTitle>
+            <CardTitle>{t('adminMerchantDetailsPage.text10')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <Store className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">اسم المتجر</p>
+                <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text11')}</p>
                 <p className="font-medium">{merchant.businessName}</p>
               </div>
             </div>
@@ -149,7 +151,7 @@ export default function MerchantDetails() {
               <div className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">رقم الهاتف</p>
+                  <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text12')}</p>
                   <p className="font-medium">{merchant.phone}</p>
                 </div>
               </div>
@@ -160,7 +162,7 @@ export default function MerchantDetails() {
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">تاريخ التسجيل</p>
+                <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text13')}</p>
                 <p className="font-medium">
                   {new Date(merchant.createdAt).toLocaleDateString('ar-SA', {
                     year: 'numeric',
@@ -176,13 +178,13 @@ export default function MerchantDetails() {
         {/* Subscription Info */}
         <Card>
           <CardHeader>
-            <CardTitle>معلومات الاشتراك</CardTitle>
+            <CardTitle>{t('adminMerchantDetailsPage.text14')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-3">
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">الباقة الحالية</p>
+                <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text15')}</p>
                 <p className="font-medium">{getPlanName(null)}</p>
               </div>
             </div>
@@ -192,7 +194,7 @@ export default function MerchantDetails() {
                 <div className="flex items-center gap-3">
                   <Calendar className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">تاريخ بدء الاشتراك</p>
+                    <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text16')}</p>
                     <p className="font-medium">
                       {new Date(subscriptions[0].startDate).toLocaleDateString('ar-SA')}
                     </p>
@@ -202,7 +204,7 @@ export default function MerchantDetails() {
                 <div className="flex items-center gap-3">
                   <Calendar className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-muted-foreground">تاريخ انتهاء الاشتراك</p>
+                    <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text17')}</p>
                     <p className="font-medium">
                       {new Date(subscriptions[0].endDate).toLocaleDateString('ar-SA')}
                     </p>
@@ -216,7 +218,7 @@ export default function MerchantDetails() {
                     <XCircle className="h-5 w-5 text-red-600" />
                   )}
                   <div>
-                    <p className="text-sm text-muted-foreground">حالة الاشتراك</p>
+                    <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text18')}</p>
                     <p className="font-medium">
                       {subscriptions[0].status === 'active' ? 'نشط' : 
                        subscriptions[0].status === 'expired' ? 'منتهي' : 
@@ -228,7 +230,7 @@ export default function MerchantDetails() {
             )}
 
             {subscriptions.length === 0 && (
-              <p className="text-sm text-muted-foreground">لا يوجد اشتراك نشط</p>
+              <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text19')}</p>
             )}
           </CardContent>
         </Card>
@@ -237,15 +239,15 @@ export default function MerchantDetails() {
       {/* Usage Stats */}
       <Card>
         <CardHeader>
-          <CardTitle>إحصائيات الاستخدام</CardTitle>
-          <CardDescription>نظرة عامة على نشاط التاجر</CardDescription>
+          <CardTitle>{t('adminMerchantDetailsPage.text20')}</CardTitle>
+          <CardDescription>{t('adminMerchantDetailsPage.text21')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="p-4 bg-primary/10 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">إجمالي الحملات</p>
+                  <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text22')}</p>
                   <p className="text-2xl font-bold text-primary">{campaigns.length}</p>
                 </div>
                 <MessageSquare className="w-8 h-8 text-primary" />
@@ -255,7 +257,7 @@ export default function MerchantDetails() {
             <div className="p-4 bg-green-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">الحملات المكتملة</p>
+                  <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text23')}</p>
                   <p className="text-2xl font-bold text-green-700">
                     {campaigns.filter((c: any) => c.status === 'completed').length}
                   </p>
@@ -267,7 +269,7 @@ export default function MerchantDetails() {
             <div className="p-4 bg-yellow-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">الحملات الجارية</p>
+                  <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text24')}</p>
                   <p className="text-2xl font-bold text-yellow-700">
                     {campaigns.filter((c: any) => c.status === 'sending' || c.status === 'scheduled').length}
                   </p>
@@ -282,8 +284,8 @@ export default function MerchantDetails() {
       {/* Campaigns Table */}
       <Card>
         <CardHeader>
-          <CardTitle>الحملات التسويقية</CardTitle>
-          <CardDescription>جميع الحملات التي أنشأها التاجر</CardDescription>
+          <CardTitle>{t('adminMerchantDetailsPage.text25')}</CardTitle>
+          <CardDescription>{t('adminMerchantDetailsPage.text26')}</CardDescription>
         </CardHeader>
         <CardContent>
           {campaigns.length > 0 ? (
@@ -291,11 +293,11 @@ export default function MerchantDetails() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>اسم الحملة</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>المستلمون</TableHead>
-                    <TableHead>تم الإرسال</TableHead>
-                    <TableHead>تاريخ الإنشاء</TableHead>
+                    <TableHead>{t('adminMerchantDetailsPage.text27')}</TableHead>
+                    <TableHead>{t('adminMerchantDetailsPage.text28')}</TableHead>
+                    <TableHead>{t('adminMerchantDetailsPage.text29')}</TableHead>
+                    <TableHead>{t('adminMerchantDetailsPage.text30')}</TableHead>
+                    <TableHead>{t('adminMerchantDetailsPage.text31')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -316,7 +318,7 @@ export default function MerchantDetails() {
           ) : (
             <div className="text-center py-12">
               <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-4 text-lg font-medium">لا توجد حملات بعد</p>
+              <p className="mt-4 text-lg font-medium">{t('adminMerchantDetailsPage.text32')}</p>
               <p className="text-sm text-muted-foreground mt-1">
                 لم يقم التاجر بإنشاء أي حملات تسويقية حتى الآن
               </p>

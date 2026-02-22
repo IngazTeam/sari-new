@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Copy, Check, Gift, Users, TrendingUp, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function Referrals() {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   
   // Fetch referral data
@@ -18,10 +20,10 @@ export default function Referrals() {
   
   const claimRewardMutation = trpc.referrals.claimReward.useMutation({
     onSuccess: () => {
-      toast.success('تم استخدام المكافأة بنجاح');
+      toast.success(t('referralsPage.text0'));
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل استخدام المكافأة');
+      toast.error(error.message || t('referralsPage.text21'));
     },
   });
 
@@ -32,7 +34,7 @@ export default function Referrals() {
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
     setCopied(true);
-    toast.success('تم نسخ الرابط');
+    toast.success(t('referralsPage.text1'));
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -52,11 +54,11 @@ export default function Referrals() {
   const getRewardStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">قيد الانتظار</Badge>;
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">{t('referralsPage.text2')}</Badge>;
       case 'claimed':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">مستخدمة</Badge>;
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">{t('referralsPage.text3')}</Badge>;
       case 'expired':
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">منتهية</Badge>;
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">{t('referralsPage.text4')}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -66,9 +68,9 @@ export default function Referrals() {
     <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">نظام الإحالة والمكافآت</h1>
+        <h1 className="text-3xl font-bold">{t('referralsPage.text5')}</h1>
         <p className="text-muted-foreground mt-2">
-          ادعُ أصدقاءك واحصل على مكافآت رائعة عند اشتراكهم
+          {t('referralsPage.text22')}
         </p>
       </div>
 
@@ -76,7 +78,7 @@ export default function Referrals() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الإحالات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('referralsPage.text6')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -90,7 +92,7 @@ export default function Referrals() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الإحالات الناجحة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('referralsPage.text7')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -104,7 +106,7 @@ export default function Referrals() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المكافآت المكتسبة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('referralsPage.text8')}</CardTitle>
             <Gift className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -118,7 +120,7 @@ export default function Referrals() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المكافآت المستخدمة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('referralsPage.text9')}</CardTitle>
             <Award className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -134,9 +136,9 @@ export default function Referrals() {
       {/* Referral Code Section */}
       <Card>
         <CardHeader>
-          <CardTitle>رمز الإحالة الخاص بك</CardTitle>
+          <CardTitle>{t('referralsPage.text10')}</CardTitle>
           <CardDescription>
-            شارك هذا الرابط مع أصدقائك للحصول على مكافآت عند اشتراكهم
+            {t('referralsPage.text23')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -163,9 +165,9 @@ export default function Referrals() {
       {/* Rewards Section */}
       <Card>
         <CardHeader>
-          <CardTitle>المكافآت المتاحة</CardTitle>
+          <CardTitle>{t('referralsPage.text11')}</CardTitle>
           <CardDescription>
-            المكافآت التي حصلت عليها من الإحالات الناجحة
+            {t('referralsPage.text24')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -187,7 +189,7 @@ export default function Referrals() {
                       {reward.description || 'مكافأة من برنامج الإحالة'}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      تنتهي في: {new Date(reward.expiresAt).toLocaleDateString('ar-SA')}
+                      {t('referralsPage.text31', { var0: new Date(reward.expiresAt).toLocaleDateString('ar-SA') })}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -198,7 +200,7 @@ export default function Referrals() {
                         onClick={() => claimRewardMutation.mutate({ rewardId: reward.id })}
                         disabled={claimRewardMutation.isPending}
                       >
-                        استخدام
+                        {t('referralsPage.text25')}
                       </Button>
                     )}
                   </div>
@@ -208,8 +210,8 @@ export default function Referrals() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Gift className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>لا توجد مكافآت حتى الآن</p>
-              <p className="text-sm mt-1">ابدأ بدعوة أصدقائك للحصول على مكافآت</p>
+              <p>{t('referralsPage.text12')}</p>
+              <p className="text-sm mt-1">{t('referralsPage.text13')}</p>
             </div>
           )}
         </CardContent>
@@ -218,9 +220,9 @@ export default function Referrals() {
       {/* Referrals List */}
       <Card>
         <CardHeader>
-          <CardTitle>الإحالات</CardTitle>
+          <CardTitle>{t('referralsPage.text14')}</CardTitle>
           <CardDescription>
-            قائمة الأشخاص الذين قاموا بالتسجيل باستخدام رمز الإحالة الخاص بك
+            {t('referralsPage.text26')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -247,11 +249,11 @@ export default function Referrals() {
                     </div>
                     {referral.orderCompleted ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        مكتمل
+                        {t('referralsPage.text27')}
                       </Badge>
                     ) : (
                       <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
-                        قيد الانتظار
+                        {t('referralsPage.text28')}
                       </Badge>
                     )}
                   </div>
@@ -261,8 +263,8 @@ export default function Referrals() {
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>لا توجد إحالات حتى الآن</p>
-              <p className="text-sm mt-1">شارك رابط الإحالة الخاص بك مع أصدقائك</p>
+              <p>{t('referralsPage.text15')}</p>
+              <p className="text-sm mt-1">{t('referralsPage.text16')}</p>
             </div>
           )}
         </CardContent>
@@ -271,7 +273,7 @@ export default function Referrals() {
       {/* How it Works */}
       <Card>
         <CardHeader>
-          <CardTitle>كيف يعمل نظام الإحالة؟</CardTitle>
+          <CardTitle>{t('referralsPage.text17')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -280,9 +282,9 @@ export default function Referrals() {
                 1
               </div>
               <div>
-                <div className="font-medium">شارك رابط الإحالة</div>
+                <div className="font-medium">{t('referralsPage.text18')}</div>
                 <div className="text-sm text-muted-foreground">
-                  انسخ رابط الإحالة الخاص بك وشاركه مع أصدقائك
+                  {t('referralsPage.text29')}
                 </div>
               </div>
             </div>
@@ -291,9 +293,9 @@ export default function Referrals() {
                 2
               </div>
               <div>
-                <div className="font-medium">صديقك يسجل ويشترك</div>
+                <div className="font-medium">{t('referralsPage.text19')}</div>
                 <div className="text-sm text-muted-foreground">
-                  عندما يسجل صديقك باستخدام رابطك ويشترك في أي باقة
+                  {t('referralsPage.text30')}
                 </div>
               </div>
             </div>
@@ -302,9 +304,9 @@ export default function Referrals() {
                 3
               </div>
               <div>
-                <div className="font-medium">احصل على مكافأتك</div>
+                <div className="font-medium">{t('referralsPage.text20')}</div>
                 <div className="text-sm text-muted-foreground">
-                  ستحصل على مكافأة فورية يمكنك استخدامها (خصم 10%، شهر مجاني، أو تحليلات متقدمة)
+                  {t('referralsPage.text32')}
                 </div>
               </div>
             </div>

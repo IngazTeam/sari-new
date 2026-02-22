@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useTranslation } from 'react-i18next';
 
 const priorityColors = {
   low: 'bg-blue-100 text-blue-800',
@@ -49,6 +50,7 @@ const statusLabels = {
 };
 
 export default function AdminRecommendations() {
+  const { t } = useTranslation();
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
 
@@ -108,7 +110,7 @@ export default function AdminRecommendations() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي التوصيات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminAdminRecommendationsPage.text0')}</CardTitle>
             <Lightbulb className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
@@ -121,7 +123,7 @@ export default function AdminRecommendations() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminAdminRecommendationsPage.text1')}</CardTitle>
             <Clock className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
@@ -134,7 +136,7 @@ export default function AdminRecommendations() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">مكتملة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminAdminRecommendationsPage.text2')}</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
@@ -147,7 +149,7 @@ export default function AdminRecommendations() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">حرجة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminAdminRecommendationsPage.text3')}</CardTitle>
             <AlertCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
@@ -162,38 +164,38 @@ export default function AdminRecommendations() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">الفلاتر</CardTitle>
+          <CardTitle className="text-lg">{t('adminAdminRecommendationsPage.text4')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="text-sm font-medium mb-2 block">الحالة</label>
+              <label className="text-sm font-medium mb-2 block">{t('adminAdminRecommendationsPage.text5')}</label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="pending">قيد الانتظار</SelectItem>
-                  <SelectItem value="in_progress">قيد التنفيذ</SelectItem>
-                  <SelectItem value="completed">مكتملة</SelectItem>
-                  <SelectItem value="dismissed">مرفوضة</SelectItem>
+                  <SelectItem value="all">{t('adminAdminRecommendationsPage.text6')}</SelectItem>
+                  <SelectItem value="pending">{t('adminAdminRecommendationsPage.text7')}</SelectItem>
+                  <SelectItem value="in_progress">{t('adminAdminRecommendationsPage.text8')}</SelectItem>
+                  <SelectItem value="completed">{t('adminAdminRecommendationsPage.text9')}</SelectItem>
+                  <SelectItem value="dismissed">{t('adminAdminRecommendationsPage.text10')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">الأولوية</label>
+              <label className="text-sm font-medium mb-2 block">{t('adminAdminRecommendationsPage.text11')}</label>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="low">منخفضة</SelectItem>
-                  <SelectItem value="medium">متوسطة</SelectItem>
-                  <SelectItem value="high">عالية</SelectItem>
-                  <SelectItem value="critical">حرجة</SelectItem>
+                  <SelectItem value="all">{t('adminAdminRecommendationsPage.text12')}</SelectItem>
+                  <SelectItem value="low">{t('adminAdminRecommendationsPage.text13')}</SelectItem>
+                  <SelectItem value="medium">{t('adminAdminRecommendationsPage.text14')}</SelectItem>
+                  <SelectItem value="high">{t('adminAdminRecommendationsPage.text15')}</SelectItem>
+                  <SelectItem value="critical">{t('adminAdminRecommendationsPage.text16')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -216,7 +218,7 @@ export default function AdminRecommendations() {
         ) : filteredRecommendations.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">لا توجد توصيات</p>
+              <p className="text-muted-foreground">{t('adminAdminRecommendationsPage.text17')}</p>
             </CardContent>
           </Card>
         ) : (
@@ -251,7 +253,7 @@ export default function AdminRecommendations() {
                   {/* Details */}
                   <div className="grid gap-2 md:grid-cols-3 text-sm">
                     <div>
-                      <p className="text-muted-foreground">النوع</p>
+                      <p className="text-muted-foreground">{t('adminAdminRecommendationsPage.text18')}</p>
                       <p className="font-medium">
                         {rec.recommendationType === 'keyword_optimization' && 'تحسين الكلمات المفتاحية'}
                         {rec.recommendationType === 'content_improvement' && 'تحسين المحتوى'}
@@ -262,14 +264,14 @@ export default function AdminRecommendations() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">التأثير المتوقع</p>
+                      <p className="text-muted-foreground">{t('adminAdminRecommendationsPage.text19')}</p>
                       <p className="font-medium flex items-center gap-1">
                         <TrendingUp className="w-4 h-4" />
                         {rec.estimatedImpact || 'غير محدد'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground">صعوبة التنفيذ</p>
+                      <p className="text-muted-foreground">{t('adminAdminRecommendationsPage.text20')}</p>
                       <p className="font-medium">
                         {rec.implementationDifficulty === 'easy' && 'سهلة'}
                         {rec.implementationDifficulty === 'medium' && 'متوسطة'}
@@ -289,10 +291,10 @@ export default function AdminRecommendations() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="pending">قيد الانتظار</SelectItem>
-                        <SelectItem value="in_progress">قيد التنفيذ</SelectItem>
-                        <SelectItem value="completed">مكتملة</SelectItem>
-                        <SelectItem value="dismissed">مرفوضة</SelectItem>
+                        <SelectItem value="pending">{t('adminAdminRecommendationsPage.text21')}</SelectItem>
+                        <SelectItem value="in_progress">{t('adminAdminRecommendationsPage.text22')}</SelectItem>
+                        <SelectItem value="completed">{t('adminAdminRecommendationsPage.text23')}</SelectItem>
+                        <SelectItem value="dismissed">{t('adminAdminRecommendationsPage.text24')}</SelectItem>
                       </SelectContent>
                     </Select>
                     
@@ -314,9 +316,9 @@ export default function AdminRecommendations() {
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="pt-6">
             <p className="text-sm text-blue-900">
-              <strong>ملخص:</strong> عرض {filteredRecommendations.length} من {stats.total} توصية
-              {filterStatus !== 'all' && ` (الحالة: ${filterStatus})`}
-              {filterPriority !== 'all' && ` (الأولوية: ${filterPriority})`}
+              <strong>{t('adminAdminRecommendationsPage.text25')}</strong> عرض {filteredRecommendations.length} من {stats.total} توصية
+              {filterStatus !== 'all' && t('adminAdminRecommendationsPage.text26', { var0: filterStatus })}
+              {filterPriority !== 'all' && t('adminAdminRecommendationsPage.text27', { var0: filterPriority })}
             </p>
           </CardContent>
         </Card>

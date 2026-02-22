@@ -12,7 +12,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { useCurrency } from '@/contexts/CurrencyContext';
 
 export default function MerchantDashboard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { formatCurrency } = useCurrency();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getCurrent.useQuery();
@@ -21,7 +21,7 @@ export default function MerchantDashboard() {
   const { data: subscription, isLoading: subscriptionLoading } = trpc.subscriptions.getCurrent.useQuery();
   const { data: conversations, isLoading: conversationsLoading } = trpc.conversations.list.useQuery();
   const { data: campaigns, isLoading: campaignsLoading } = trpc.campaigns.list.useQuery();
-  
+
   // New analytics queries
   const { data: dashboardStats, isLoading: statsLoading } = trpc.dashboard.getStats.useQuery();
   const { data: comparisonStats, isLoading: comparisonLoading } = trpc.dashboard.getComparisonStats.useQuery({ days: 30 });
@@ -30,8 +30,8 @@ export default function MerchantDashboard() {
   const { data: topProducts, isLoading: topProductsLoading } = trpc.dashboard.getTopProducts.useQuery({ limit: 5 });
   const { data: reviewStats } = trpc.reviews.getStats.useQuery({ merchantId: merchant?.id || 1 });
 
-  const isLoading = merchantLoading || subscriptionLoading || conversationsLoading || campaignsLoading || 
-                     statsLoading || comparisonLoading || ordersTrendLoading || revenueTrendLoading || topProductsLoading;
+  const isLoading = merchantLoading || subscriptionLoading || conversationsLoading || campaignsLoading ||
+    statsLoading || comparisonLoading || ordersTrendLoading || revenueTrendLoading || topProductsLoading;
 
   // Show onboarding wizard for new merchants
   useEffect(() => {
@@ -108,29 +108,22 @@ export default function MerchantDashboard() {
 
   // Order status distribution
   const orderStatusData = [
-    { name: 'مكتمل', value: dashboardStats?.completedOrders || 0, color: '#10b981' },
-    { name: 'قيد المعالجة', value: (dashboardStats?.totalOrders || 0) - (dashboardStats?.completedOrders || 0), color: '#f59e0b' },
+    { name: t('dashboardPage.orderCompleted'), value: dashboardStats?.completedOrders || 0, color: '#10b981' },
+    { name: t('dashboardPage.orderProcessing'), value: (dashboardStats?.totalOrders || 0) - (dashboardStats?.completedOrders || 0), color: '#f59e0b' },
   ];
 
   // Prepare chart data for orders trend
   const ordersChartData = ordersTrend?.map(item => ({
-    date: new Date(item.date).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }),
+    date: new Date(item.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language, { month: 'short', day: 'numeric' }),
     orders: Number(item.count),
   })) || [];
 
   // Prepare chart data for revenue trend
   const revenueChartData = revenueTrend?.map(item => ({
-    date: new Date(item.date).toLocaleDateString('ar-SA', { month: 'short', day: 'numeric' }),
+    date: new Date(item.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language, { month: 'short', day: 'numeric' }),
     revenue: Number(item.revenue),
   })) || [];
 
-  // Recent activity data
-  const recentActivities = [
-    { type: 'order', message: 'طلب جديد من أحمد المالكي', time: 'منذ 5 دقائق', icon: Package, color: 'text-primary' },
-    { type: 'conversation', message: 'محادثة جديدة مع فاطمة', time: 'منذ 15 دقيقة', icon: MessageSquare, color: 'text-blue-600' },
-    { type: 'review', message: 'تقييم جديد 5 نجوم', time: 'منذ ساعة', icon: Star, color: 'text-yellow-600' },
-    { type: 'campaign', message: 'حملة "عروض الصيف" مكتملة', time: 'منذ ساعتين', icon: Send, color: 'text-green-600' },
-  ];
 
   // Show loading skeleton
   if (isLoading) {
@@ -145,23 +138,23 @@ export default function MerchantDashboard() {
           onSkip={handleOnboardingSkip}
         />
       )}
-      
+
       <div className="space-y-8">
         {/* Trial Banner */}
         <TrialBanner />
         {/* Header with Welcome Message */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">مرحباً، {merchant?.businessName || 'التاجر'} 👋</h1>
+            <h1 className="text-3xl font-bold">{t('dashboardPage.welcomeMessage', { name: merchant?.businessName || t('dashboardPage.welcomeDefault') })}</h1>
             <p className="text-muted-foreground mt-2">
-              إليك نظرة سريعة على نشاط متجرك اليوم
+              {t('dashboardPage.welcomeDescription')}
             </p>
           </div>
           <div className="flex gap-3">
             <Link href="/merchant/campaigns/new">
               <Button className="shadow-lg">
                 <Send className="ml-2 h-4 w-4" />
-                حملة جديدة
+                {t('dashboardPage.newCampaign')}
               </Button>
             </Link>
           </div>
@@ -173,7 +166,7 @@ export default function MerchantDashboard() {
             const Icon = stat.icon;
             const isPositiveGrowth = stat.growth >= 0;
             const GrowthIcon = isPositiveGrowth ? ArrowUp : ArrowDown;
-            
+
             return (
               <Link key={stat.title} href={stat.link}>
                 <Card className="hover:shadow-lg transition-all cursor-pointer border-2 hover:border-primary/50">
@@ -192,9 +185,8 @@ export default function MerchantDashboard() {
                         {stat.description}
                       </p>
                       {stat.growth !== 0 && (
-                        <span className={`flex items-center text-xs font-medium ${
-                          isPositiveGrowth ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                        <span className={`flex items-center text-xs font-medium ${isPositiveGrowth ? 'text-green-600' : 'text-red-600'
+                          }`}>
                           <GrowthIcon className="h-3 w-3 ml-1" />
                           {Math.abs(stat.growth).toFixed(1)}%
                         </span>
@@ -214,8 +206,8 @@ export default function MerchantDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>اتجاه الطلبات</CardTitle>
-                  <CardDescription>عدد الطلبات خلال آخر 30 يوم</CardDescription>
+                  <CardTitle>{t('dashboardPage.ordersTrend')}</CardTitle>
+                  <CardDescription>{t('dashboardPage.ordersTrendDesc')}</CardDescription>
                 </div>
                 <Activity className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -225,26 +217,26 @@ export default function MerchantDashboard() {
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={ordersChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis 
-                      dataKey="date" 
+                    <XAxis
+                      dataKey="date"
                       style={{ fontSize: '12px' }}
                     />
                     <YAxis style={{ fontSize: '12px' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                       }}
                     />
                     <Legend />
-                    <Line 
-                      type="monotone" 
-                      dataKey="orders" 
-                      stroke="#10b981" 
+                    <Line
+                      type="monotone"
+                      dataKey="orders"
+                      stroke="#10b981"
                       strokeWidth={3}
-                      name="عدد الطلبات"
+                      name={t('dashboardPage.orderCount')}
                       dot={{ fill: '#10b981', r: 4 }}
                       activeDot={{ r: 6 }}
                     />
@@ -254,7 +246,7 @@ export default function MerchantDashboard() {
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
                     <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>لا توجد بيانات متاحة</p>
+                    <p>{t('dashboardPage.noDataAvailable')}</p>
                   </div>
                 </div>
               )}
@@ -266,8 +258,8 @@ export default function MerchantDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>اتجاه الإيرادات</CardTitle>
-                  <CardDescription>الإيرادات خلال آخر 30 يوم (ريال)</CardDescription>
+                  <CardTitle>{t('dashboardPage.revenueTrend')}</CardTitle>
+                  <CardDescription>{t('dashboardPage.revenueTrendDesc')}</CardDescription>
                 </div>
                 <TrendingUp className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -277,24 +269,24 @@ export default function MerchantDashboard() {
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={revenueChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis 
-                      dataKey="date" 
+                    <XAxis
+                      dataKey="date"
                       style={{ fontSize: '12px' }}
                     />
                     <YAxis style={{ fontSize: '12px' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
                         border: '1px solid #e5e7eb',
                         borderRadius: '8px',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                       }}
                     />
                     <Legend />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="#3b82f6" 
-                      name="الإيرادات (ريال)"
+                    <Bar
+                      dataKey="revenue"
+                      fill="#3b82f6"
+                      name={t('dashboardPage.revenueLabel')}
                       radius={[8, 8, 0, 0]}
                     />
                   </BarChart>
@@ -303,7 +295,7 @@ export default function MerchantDashboard() {
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
                     <TrendingUp className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>لا توجد بيانات متاحة</p>
+                    <p>{t('dashboardPage.noDataAvailable')}</p>
                   </div>
                 </div>
               )}
@@ -318,12 +310,12 @@ export default function MerchantDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>أفضل المنتجات مبيعاً</CardTitle>
-                  <CardDescription>المنتجات الأكثر مبيعاً هذا الشهر</CardDescription>
+                  <CardTitle>{t('dashboardPage.topSellingProducts')}</CardTitle>
+                  <CardDescription>{t('dashboardPage.topSellingProductsDesc')}</CardDescription>
                 </div>
                 <Link href="/merchant/products">
                   <Button variant="ghost" size="sm">
-                    عرض الكل
+                    {t('dashboardPage.viewAll')}
                     <ArrowRight className="mr-2 h-4 w-4" />
                   </Button>
                 </Link>
@@ -340,14 +332,14 @@ export default function MerchantDashboard() {
                       <div className="flex-1">
                         <p className="font-medium">{product.productName}</p>
                         <p className="text-sm text-muted-foreground">
-                          {product.totalSales} مبيعة • {product.totalRevenue} ريال
+                          {product.totalSales} {t('dashboardPage.soldCount')} • {formatCurrency(product.totalRevenue)}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium text-primary">
-                          {product.averagePrice} ريال
+                          {formatCurrency(product.averagePrice)}
                         </p>
-                        <p className="text-xs text-muted-foreground">متوسط السعر</p>
+                        <p className="text-xs text-muted-foreground">{t('dashboardPage.averagePrice')}</p>
                       </div>
                     </div>
                   ))}
@@ -355,10 +347,10 @@ export default function MerchantDashboard() {
               ) : (
                 <div className="text-center py-8">
                   <Package className="h-12 w-12 mx-auto mb-2 opacity-50 text-muted-foreground" />
-                  <p className="text-muted-foreground">لا توجد مبيعات بعد</p>
+                  <p className="text-muted-foreground">{t('dashboardPage.noSalesYet')}</p>
                   <Link href="/merchant/products">
                     <Button variant="outline" size="sm" className="mt-4">
-                      أضف منتجات
+                      {t('dashboardPage.addProducts')}
                     </Button>
                   </Link>
                 </div>
@@ -371,8 +363,8 @@ export default function MerchantDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>النشاط الأخير</CardTitle>
-                  <CardDescription>آخر التحديثات والأنشطة</CardDescription>
+                  <CardTitle>{t('dashboardPage.recentActivity')}</CardTitle>
+                  <CardDescription>{t('dashboardPage.recentActivityDesc')}</CardDescription>
                 </div>
                 <Clock className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -388,15 +380,14 @@ export default function MerchantDashboard() {
                       <div className="flex-1">
                         <p className="font-medium">{conv.customerName || conv.customerPhone}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(conv.lastMessageAt).toLocaleDateString('ar-SA')}
+                          {new Date(conv.lastMessageAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language)}
                         </p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        conv.status === 'active' 
-                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                          : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
-                      }`}>
-                        {conv.status === 'active' ? 'نشط' : 'مغلق'}
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${conv.status === 'active'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                        {conv.status === 'active' ? t('dashboardPage.statusActive') : t('dashboardPage.statusClosed')}
                       </span>
                     </div>
                   ))}
@@ -404,10 +395,10 @@ export default function MerchantDashboard() {
               ) : (
                 <div className="text-center py-8">
                   <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50 text-muted-foreground" />
-                  <p className="text-muted-foreground">لا توجد محادثات بعد</p>
+                  <p className="text-muted-foreground">{t('dashboardPage.noConversationsYet')}</p>
                   <Link href="/merchant/whatsapp">
                     <Button variant="outline" size="sm" className="mt-4">
-                      اربط واتساب
+                      {t('dashboardPage.connectWhatsapp')}
                     </Button>
                   </Link>
                 </div>
@@ -419,33 +410,33 @@ export default function MerchantDashboard() {
         {/* Quick Actions */}
         <Card className="border-2 bg-gradient-to-br from-primary/5 to-blue-50 dark:from-primary/5 dark:to-background">
           <CardHeader>
-            <CardTitle>إجراءات سريعة</CardTitle>
-            <CardDescription>الوصول السريع للميزات الأساسية</CardDescription>
+            <CardTitle>{t('dashboardPage.quickActions')}</CardTitle>
+            <CardDescription>{t('dashboardPage.quickActionsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Link href="/merchant/products">
                 <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
                   <Package className="h-6 w-6" />
-                  <span>إدارة المنتجات</span>
+                  <span>{t('dashboardPage.manageProducts')}</span>
                 </Button>
               </Link>
               <Link href="/merchant/campaigns/new">
                 <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
                   <Send className="h-6 w-6" />
-                  <span>حملة جديدة</span>
+                  <span>{t('dashboardPage.newCampaign')}</span>
                 </Button>
               </Link>
               <Link href="/merchant/conversations">
                 <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
                   <MessageSquare className="h-6 w-6" />
-                  <span>المحادثات</span>
+                  <span>{t('dashboardPage.conversations')}</span>
                 </Button>
               </Link>
               <Link href="/merchant/reports">
                 <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
                   <BarChart className="h-6 w-6" />
-                  <span>التقارير</span>
+                  <span>{t('dashboardPage.reports')}</span>
                 </Button>
               </Link>
             </div>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, Area, AreaChart } from 'recharts';
 import { Download, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface AnalyticsData {
   date: string;
@@ -15,6 +16,7 @@ interface AnalyticsData {
 }
 
 export default function AdvancedAnalytics() {
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
   const [selectedMetric, setSelectedMetric] = useState<'conversations' | 'messages' | 'success'>('conversations');
 
@@ -31,10 +33,10 @@ export default function AdvancedAnalytics() {
 
   // بيانات توزيع الرسائل حسب النوع
   const messageTypeData = [
-    { name: 'نصية', value: 65, color: '#3b82f6' },
-    { name: 'صور', value: 20, color: '#10b981' },
-    { name: 'صوتية', value: 10, color: '#f59e0b' },
-    { name: 'مستندات', value: 5, color: '#ef4444' },
+    { name: t('advancedAnalyticsPage.text21'), value: 65, color: '#3b82f6' },
+    { name: t('advancedAnalyticsPage.text22'), value: 20, color: '#10b981' },
+    { name: t('advancedAnalyticsPage.text23'), value: 10, color: '#f59e0b' },
+    { name: t('advancedAnalyticsPage.text24'), value: 5, color: '#ef4444' },
   ];
 
   // بيانات الأداء حسب الساعة
@@ -72,12 +74,12 @@ export default function AdvancedAnalytics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">التحليلات المتقدمة</h1>
-          <p className="text-gray-500 mt-2">رسوم بيانية متقدمة وتقارير مفصلة عن أداء حملاتك</p>
+          <h1 className="text-3xl font-bold">{t('advancedAnalyticsPage.text0')}</h1>
+          <p className="text-gray-500 mt-2">{t('advancedAnalyticsPage.text1')}</p>
         </div>
         <Button onClick={handleExportPDF} className="gap-2">
           <Download className="h-4 w-4" />
-          تصدير PDF
+          {t('advancedAnalyticsPage.text25')}
         </Button>
       </div>
 
@@ -85,52 +87,52 @@ export default function AdvancedAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">إجمالي المحادثات</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">{t('advancedAnalyticsPage.text2')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalConversations}</div>
             <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
               <TrendingUp className="h-3 w-3" />
-              +12% عن الفترة السابقة
+              {t('advancedAnalyticsPage.text26')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">إجمالي الرسائل</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">{t('advancedAnalyticsPage.text3')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalMessages}</div>
             <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
               <TrendingUp className="h-3 w-3" />
-              +8% عن الفترة السابقة
+              {t('advancedAnalyticsPage.text27')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">متوسط نسبة النجاح</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">{t('advancedAnalyticsPage.text4')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgSuccessRate}%</div>
             <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
               <TrendingUp className="h-3 w-3" />
-              +3% عن الفترة السابقة
+              {t('advancedAnalyticsPage.text28')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">متوسط وقت الرد</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">{t('advancedAnalyticsPage.text5')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.avgResponseTime}s</div>
             <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
               <TrendingDown className="h-3 w-3" />
-              -0.5s عن الفترة السابقة
+              {t('advancedAnalyticsPage.text29')}
             </p>
           </CardContent>
         </Card>
@@ -141,8 +143,8 @@ export default function AdvancedAnalytics() {
         {/* مقارنة المحادثات والرسائل */}
         <Card>
           <CardHeader>
-            <CardTitle>المحادثات والرسائل عبر الزمن</CardTitle>
-            <CardDescription>مقارنة عدد المحادثات والرسائل اليومية</CardDescription>
+            <CardTitle>{t('advancedAnalyticsPage.text6')}</CardTitle>
+            <CardDescription>{t('advancedAnalyticsPage.text7')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -153,8 +155,8 @@ export default function AdvancedAnalytics() {
                 <YAxis yAxisId="right" orientation="right" />
                 <Tooltip />
                 <Legend />
-                <Bar yAxisId="left" dataKey="conversations" fill="#3b82f6" name="المحادثات" />
-                <Line yAxisId="right" type="monotone" dataKey="messages" stroke="#10b981" name="الرسائل" />
+                <Bar yAxisId="left" dataKey="conversations" fill="#3b82f6" name={t('advancedAnalyticsPage.text30')} />
+                <Line yAxisId="right" type="monotone" dataKey="messages" stroke="#10b981" name={t('advancedAnalyticsPage.text31')} />
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
@@ -163,8 +165,8 @@ export default function AdvancedAnalytics() {
         {/* توزيع أنواع الرسائل */}
         <Card>
           <CardHeader>
-            <CardTitle>توزيع أنواع الرسائل</CardTitle>
-            <CardDescription>نسبة كل نوع من أنواع الرسائل</CardDescription>
+            <CardTitle>{t('advancedAnalyticsPage.text8')}</CardTitle>
+            <CardDescription>{t('advancedAnalyticsPage.text9')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -192,8 +194,8 @@ export default function AdvancedAnalytics() {
         {/* نسبة النجاح عبر الزمن */}
         <Card>
           <CardHeader>
-            <CardTitle>نسبة النجاح عبر الزمن</CardTitle>
-            <CardDescription>تطور نسبة نجاح الحملات</CardDescription>
+            <CardTitle>{t('advancedAnalyticsPage.text10')}</CardTitle>
+            <CardDescription>{t('advancedAnalyticsPage.text11')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -214,7 +216,7 @@ export default function AdvancedAnalytics() {
                   stroke="#10b981"
                   fillOpacity={1}
                   fill="url(#colorSuccess)"
-                  name="نسبة النجاح %"
+                  name={t('advancedAnalyticsPage.text32')}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -224,8 +226,8 @@ export default function AdvancedAnalytics() {
         {/* أنماط الاستخدام حسب الساعة */}
         <Card>
           <CardHeader>
-            <CardTitle>أنماط الاستخدام حسب الساعة</CardTitle>
-            <CardDescription>توزيع المحادثات على مدار اليوم</CardDescription>
+            <CardTitle>{t('advancedAnalyticsPage.text12')}</CardTitle>
+            <CardDescription>{t('advancedAnalyticsPage.text13')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -235,8 +237,8 @@ export default function AdvancedAnalytics() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="conversations" fill="#3b82f6" name="المحادثات" />
-                <Bar dataKey="messages" fill="#10b981" name="الرسائل" />
+                <Bar dataKey="conversations" fill="#3b82f6" name={t('advancedAnalyticsPage.text33')} />
+                <Bar dataKey="messages" fill="#10b981" name={t('advancedAnalyticsPage.text34')} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -246,19 +248,19 @@ export default function AdvancedAnalytics() {
       {/* جدول البيانات المفصلة */}
       <Card>
         <CardHeader>
-          <CardTitle>البيانات المفصلة</CardTitle>
-          <CardDescription>تفاصيل كاملة عن الأداء اليومي</CardDescription>
+          <CardTitle>{t('advancedAnalyticsPage.text14')}</CardTitle>
+          <CardDescription>{t('advancedAnalyticsPage.text15')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-right py-2 px-4">التاريخ</th>
-                  <th className="text-right py-2 px-4">المحادثات</th>
-                  <th className="text-right py-2 px-4">الرسائل</th>
-                  <th className="text-right py-2 px-4">نسبة النجاح</th>
-                  <th className="text-right py-2 px-4">متوسط وقت الرد</th>
+                  <th className="text-right py-2 px-4">{t('advancedAnalyticsPage.text16')}</th>
+                  <th className="text-right py-2 px-4">{t('advancedAnalyticsPage.text17')}</th>
+                  <th className="text-right py-2 px-4">{t('advancedAnalyticsPage.text18')}</th>
+                  <th className="text-right py-2 px-4">{t('advancedAnalyticsPage.text19')}</th>
+                  <th className="text-right py-2 px-4">{t('advancedAnalyticsPage.text20')}</th>
                 </tr>
               </thead>
               <tbody>

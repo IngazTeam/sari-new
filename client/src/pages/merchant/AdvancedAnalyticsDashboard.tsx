@@ -51,6 +51,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 // ألوان الرسوم البيانية
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
@@ -112,6 +113,7 @@ function StatCard({ title, value, change, changeLabel, icon, trend, loading }: S
 }
 
 export default function AdvancedAnalyticsDashboard() {
+  const { t } = useTranslation();
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -162,28 +164,28 @@ export default function AdvancedAnalyticsDashboard() {
   const messageTypeData = useMemo(() => {
     if (!messageStats) return [];
     return [
-      { name: 'نصية', value: messageStats.text || 0, color: COLORS[0] },
-      { name: 'صوتية', value: messageStats.voice || 0, color: COLORS[1] },
-      { name: 'صور', value: messageStats.image || 0, color: COLORS[2] },
+      { name: t('advancedAnalyticsDashboardPage.text48'), value: messageStats.text || 0, color: COLORS[0] },
+      { name: t('advancedAnalyticsDashboardPage.text49'), value: messageStats.voice || 0, color: COLORS[1] },
+      { name: t('advancedAnalyticsDashboardPage.text50'), value: messageStats.image || 0, color: COLORS[2] },
     ];
   }, [messageStats]);
 
   const sentimentData = useMemo(() => {
     if (!sentimentStats) return [];
     return [
-      { name: 'إيجابي', value: sentimentStats.positive || 0, fill: '#10B981' },
-      { name: 'محايد', value: sentimentStats.neutral || 0, fill: '#F59E0B' },
-      { name: 'سلبي', value: sentimentStats.negative || 0, fill: '#EF4444' },
+      { name: t('advancedAnalyticsDashboardPage.text51'), value: sentimentStats.positive || 0, fill: '#10B981' },
+      { name: t('advancedAnalyticsDashboardPage.text52'), value: sentimentStats.neutral || 0, fill: '#F59E0B' },
+      { name: t('advancedAnalyticsDashboardPage.text53'), value: sentimentStats.negative || 0, fill: '#EF4444' },
     ];
   }, [sentimentStats]);
 
   const handleRefresh = () => {
     refetchMessages();
-    toast.success('تم تحديث البيانات');
+    toast.success(t('advancedAnalyticsDashboardPage.text0'));
   };
 
   const handleExport = () => {
-    toast.success('جاري تصدير التقرير...');
+    toast.success(t('advancedAnalyticsDashboardPage.text1'));
     // يمكن إضافة منطق التصدير هنا
   };
 
@@ -192,9 +194,9 @@ export default function AdvancedAnalyticsDashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">لوحة التحليلات المتقدمة</h1>
+          <h1 className="text-3xl font-bold">{t('advancedAnalyticsDashboardPage.text2')}</h1>
           <p className="text-muted-foreground mt-1">
-            تحليلات شاملة لأداء متجرك ومحادثاتك
+            {t('advancedAnalyticsDashboardPage.text46')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -204,10 +206,10 @@ export default function AdvancedAnalyticsDashboard() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7d">آخر 7 أيام</SelectItem>
-              <SelectItem value="30d">آخر 30 يوم</SelectItem>
-              <SelectItem value="90d">آخر 90 يوم</SelectItem>
-              <SelectItem value="1y">آخر سنة</SelectItem>
+              <SelectItem value="7d">{t('advancedAnalyticsDashboardPage.text3')}</SelectItem>
+              <SelectItem value="30d">{t('advancedAnalyticsDashboardPage.text4')}</SelectItem>
+              <SelectItem value="90d">{t('advancedAnalyticsDashboardPage.text5')}</SelectItem>
+              <SelectItem value="1y">{t('advancedAnalyticsDashboardPage.text6')}</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline" size="icon" onClick={handleRefresh}>
@@ -215,7 +217,7 @@ export default function AdvancedAnalyticsDashboard() {
           </Button>
           <Button variant="outline" className="gap-2" onClick={handleExport}>
             <Download className="w-4 h-4" />
-            تصدير
+            {t('advancedAnalyticsDashboardPage.text47')}
           </Button>
         </div>
       </div>
@@ -223,7 +225,7 @@ export default function AdvancedAnalyticsDashboard() {
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="إجمالي الرسائل"
+          title={t('advancedAnalyticsDashboardPage.text7')}
           value={messageStats?.total?.toLocaleString() || '0'}
           change={12}
           trend="up"
@@ -231,7 +233,7 @@ export default function AdvancedAnalyticsDashboard() {
           loading={loadingMessages}
         />
         <StatCard
-          title="معدل التحويل"
+          title={t('advancedAnalyticsDashboardPage.text8')}
           value={`${conversionRate?.rate || 0}%`}
           change={5}
           trend="up"
@@ -239,16 +241,16 @@ export default function AdvancedAnalyticsDashboard() {
           loading={loadingConversion}
         />
         <StatCard
-          title="متوسط وقت الرد"
+          title={t('advancedAnalyticsDashboardPage.text9')}
           value="2.5 دقيقة"
           change={-15}
           trend="up"
-          changeLabel="تحسن"
+          changeLabel={t('advancedAnalyticsDashboardPage.text10')}
           icon={<Clock className="h-4 w-4 text-primary" />}
           loading={isLoading}
         />
         <StatCard
-          title="رضا العملاء"
+          title={t('advancedAnalyticsDashboardPage.text11')}
           value={`${sentimentStats?.averageScore?.toFixed(1) || '0'}%`}
           change={8}
           trend="up"
@@ -260,10 +262,10 @@ export default function AdvancedAnalyticsDashboard() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
-          <TabsTrigger value="overview">نظرة عامة</TabsTrigger>
-          <TabsTrigger value="messages">الرسائل</TabsTrigger>
-          <TabsTrigger value="products">المنتجات</TabsTrigger>
-          <TabsTrigger value="customers">العملاء</TabsTrigger>
+          <TabsTrigger value="overview">{t('advancedAnalyticsDashboardPage.text12')}</TabsTrigger>
+          <TabsTrigger value="messages">{t('advancedAnalyticsDashboardPage.text13')}</TabsTrigger>
+          <TabsTrigger value="products">{t('advancedAnalyticsDashboardPage.text14')}</TabsTrigger>
+          <TabsTrigger value="customers">{t('advancedAnalyticsDashboardPage.text15')}</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -272,8 +274,8 @@ export default function AdvancedAnalyticsDashboard() {
             {/* Messages Over Time */}
             <Card className="col-span-2">
               <CardHeader>
-                <CardTitle>الرسائل عبر الوقت</CardTitle>
-                <CardDescription>عدد الرسائل الواردة والصادرة</CardDescription>
+                <CardTitle>{t('advancedAnalyticsDashboardPage.text16')}</CardTitle>
+                <CardDescription>{t('advancedAnalyticsDashboardPage.text17')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingDaily ? (
@@ -305,7 +307,7 @@ export default function AdvancedAnalyticsDashboard() {
                       <Area 
                         type="monotone" 
                         dataKey="incoming" 
-                        name="واردة"
+                        name={t('advancedAnalyticsDashboardPage.text54')}
                         stroke="#10B981" 
                         fillOpacity={1} 
                         fill="url(#colorIncoming)" 
@@ -313,7 +315,7 @@ export default function AdvancedAnalyticsDashboard() {
                       <Area 
                         type="monotone" 
                         dataKey="outgoing" 
-                        name="صادرة"
+                        name={t('advancedAnalyticsDashboardPage.text55')}
                         stroke="#3B82F6" 
                         fillOpacity={1} 
                         fill="url(#colorOutgoing)" 
@@ -327,8 +329,8 @@ export default function AdvancedAnalyticsDashboard() {
             {/* Message Types */}
             <Card>
               <CardHeader>
-                <CardTitle>أنواع الرسائل</CardTitle>
-                <CardDescription>توزيع الرسائل حسب النوع</CardDescription>
+                <CardTitle>{t('advancedAnalyticsDashboardPage.text18')}</CardTitle>
+                <CardDescription>{t('advancedAnalyticsDashboardPage.text19')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingMessages ? (
@@ -360,8 +362,8 @@ export default function AdvancedAnalyticsDashboard() {
             {/* Sentiment Analysis */}
             <Card>
               <CardHeader>
-                <CardTitle>تحليل المشاعر</CardTitle>
-                <CardDescription>مشاعر العملاء في المحادثات</CardDescription>
+                <CardTitle>{t('advancedAnalyticsDashboardPage.text20')}</CardTitle>
+                <CardDescription>{t('advancedAnalyticsDashboardPage.text21')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingSentiment ? (
@@ -396,8 +398,8 @@ export default function AdvancedAnalyticsDashboard() {
             {/* Peak Hours */}
             <Card>
               <CardHeader>
-                <CardTitle>أوقات الذروة</CardTitle>
-                <CardDescription>توزيع الرسائل حسب الساعة</CardDescription>
+                <CardTitle>{t('advancedAnalyticsDashboardPage.text22')}</CardTitle>
+                <CardDescription>{t('advancedAnalyticsDashboardPage.text23')}</CardDescription>
               </CardHeader>
               <CardContent>
                 {loadingPeakHours ? (
@@ -415,7 +417,7 @@ export default function AdvancedAnalyticsDashboard() {
                           borderRadius: '8px',
                         }}
                       />
-                      <Bar dataKey="count" name="الرسائل" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="count" name={t('advancedAnalyticsDashboardPage.text56')} fill="#3B82F6" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -425,36 +427,36 @@ export default function AdvancedAnalyticsDashboard() {
             {/* Response Time Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>توزيع وقت الرد</CardTitle>
-                <CardDescription>سرعة الرد على الرسائل</CardDescription>
+                <CardTitle>{t('advancedAnalyticsDashboardPage.text24')}</CardTitle>
+                <CardDescription>{t('advancedAnalyticsDashboardPage.text25')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950">
                     <div className="flex items-center gap-2">
                       <Zap className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-medium">أقل من دقيقة</span>
+                      <span className="text-sm font-medium">{t('advancedAnalyticsDashboardPage.text26')}</span>
                     </div>
                     <Badge variant="secondary" className="bg-green-100 text-green-700">45%</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium">1-5 دقائق</span>
+                      <span className="text-sm font-medium">{t('advancedAnalyticsDashboardPage.text27')}</span>
                     </div>
                     <Badge variant="secondary" className="bg-blue-100 text-blue-700">35%</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-yellow-600" />
-                      <span className="text-sm font-medium">5-15 دقيقة</span>
+                      <span className="text-sm font-medium">{t('advancedAnalyticsDashboardPage.text28')}</span>
                     </div>
                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-700">15%</Badge>
                   </div>
                   <div className="flex items-center justify-between p-3 rounded-lg bg-red-50 dark:bg-red-950">
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-red-600" />
-                      <span className="text-sm font-medium">أكثر من 15 دقيقة</span>
+                      <span className="text-sm font-medium">{t('advancedAnalyticsDashboardPage.text29')}</span>
                     </div>
                     <Badge variant="secondary" className="bg-red-100 text-red-700">5%</Badge>
                   </div>
@@ -468,8 +470,8 @@ export default function AdvancedAnalyticsDashboard() {
         <TabsContent value="products" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>المنتجات الأكثر طلباً</CardTitle>
-              <CardDescription>أفضل 10 منتجات من حيث الاستفسارات</CardDescription>
+              <CardTitle>{t('advancedAnalyticsDashboardPage.text30')}</CardTitle>
+              <CardDescription>{t('advancedAnalyticsDashboardPage.text31')}</CardDescription>
             </CardHeader>
             <CardContent>
               {loadingProducts ? (
@@ -499,20 +501,20 @@ export default function AdvancedAnalyticsDashboard() {
                           <div>
                             <p className="font-medium">{product.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {product.price ? `${product.price} ريال` : 'السعر غير محدد'}
+                              {product.price ? `${product.price} ريال` : t('advancedAnalyticsDashboardPage.text45')}
                             </p>
                           </div>
                         </div>
                         <div className="text-left">
                           <p className="font-bold">{product.inquiryCount || 0}</p>
-                          <p className="text-xs text-muted-foreground">استفسار</p>
+                          <p className="text-xs text-muted-foreground">{t('advancedAnalyticsDashboardPage.text32')}</p>
                         </div>
                       </div>
                     ))}
                     {(!topProducts || topProducts.length === 0) && (
                       <div className="text-center py-8 text-muted-foreground">
                         <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>لا توجد بيانات متاحة</p>
+                        <p>{t('advancedAnalyticsDashboardPage.text33')}</p>
                       </div>
                     )}
                   </div>
@@ -527,7 +529,7 @@ export default function AdvancedAnalyticsDashboard() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">العملاء الجدد</CardTitle>
+                <CardTitle className="text-base">{t('advancedAnalyticsDashboardPage.text34')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">156</div>
@@ -539,7 +541,7 @@ export default function AdvancedAnalyticsDashboard() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">العملاء المتكررون</CardTitle>
+                <CardTitle className="text-base">{t('advancedAnalyticsDashboardPage.text35')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">89</div>
@@ -551,7 +553,7 @@ export default function AdvancedAnalyticsDashboard() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">معدل الاحتفاظ</CardTitle>
+                <CardTitle className="text-base">{t('advancedAnalyticsDashboardPage.text36')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">67%</div>
@@ -565,28 +567,28 @@ export default function AdvancedAnalyticsDashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>نشاط العملاء</CardTitle>
-              <CardDescription>توزيع العملاء حسب مستوى النشاط</CardDescription>
+              <CardTitle>{t('advancedAnalyticsDashboardPage.text37')}</CardTitle>
+              <CardDescription>{t('advancedAnalyticsDashboardPage.text38')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950 text-center">
                   <Users className="w-8 h-8 mx-auto mb-2 text-green-600" />
                   <p className="text-2xl font-bold text-green-700">234</p>
-                  <p className="text-sm text-green-600">نشط جداً</p>
-                  <p className="text-xs text-muted-foreground mt-1">تفاعل خلال 7 أيام</p>
+                  <p className="text-sm text-green-600">{t('advancedAnalyticsDashboardPage.text39')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('advancedAnalyticsDashboardPage.text40')}</p>
                 </div>
                 <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950 text-center">
                   <Users className="w-8 h-8 mx-auto mb-2 text-yellow-600" />
                   <p className="text-2xl font-bold text-yellow-700">156</p>
-                  <p className="text-sm text-yellow-600">نشط</p>
-                  <p className="text-xs text-muted-foreground mt-1">تفاعل خلال 30 يوم</p>
+                  <p className="text-sm text-yellow-600">{t('advancedAnalyticsDashboardPage.text41')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('advancedAnalyticsDashboardPage.text42')}</p>
                 </div>
                 <div className="p-4 rounded-lg bg-red-50 dark:bg-red-950 text-center">
                   <Users className="w-8 h-8 mx-auto mb-2 text-red-600" />
                   <p className="text-2xl font-bold text-red-700">89</p>
-                  <p className="text-sm text-red-600">غير نشط</p>
-                  <p className="text-xs text-muted-foreground mt-1">لم يتفاعل منذ 30+ يوم</p>
+                  <p className="text-sm text-red-600">{t('advancedAnalyticsDashboardPage.text43')}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{t('advancedAnalyticsDashboardPage.text44')}</p>
                 </div>
               </div>
             </CardContent>

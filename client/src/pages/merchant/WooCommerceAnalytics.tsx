@@ -14,8 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2, TrendingUp, ShoppingCart, Users, DollarSign, Package, Target, RefreshCw } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 export default function WooCommerceAnalytics() {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -68,40 +70,40 @@ export default function WooCommerceAnalytics() {
     <div className="container py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold mb-2">تحليلات WooCommerce</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('wooCommerceAnalyticsPage.text0')}</h1>
           <p className="text-muted-foreground">
-            تتبع أداء متجرك وتحليل المبيعات والعملاء
+            {t('wooCommerceAnalyticsPage.text37')}
           </p>
         </div>
         <Button variant="outline" onClick={handleRefresh}>
           <RefreshCw className="ml-2 h-4 w-4" />
-          تحديث
+          {t('wooCommerceAnalyticsPage.text38')}
         </Button>
       </div>
 
       {/* Filters */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>الفترة الزمنية</CardTitle>
+          <CardTitle>{t('wooCommerceAnalyticsPage.text1')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label>نوع العرض</Label>
+              <Label>{t('wooCommerceAnalyticsPage.text2')}</Label>
               <Select value={period} onValueChange={(value: any) => setPeriod(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">يومي</SelectItem>
-                  <SelectItem value="weekly">أسبوعي</SelectItem>
-                  <SelectItem value="monthly">شهري</SelectItem>
+                  <SelectItem value="daily">{t('wooCommerceAnalyticsPage.text3')}</SelectItem>
+                  <SelectItem value="weekly">{t('wooCommerceAnalyticsPage.text4')}</SelectItem>
+                  <SelectItem value="monthly">{t('wooCommerceAnalyticsPage.text5')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="startDate">من تاريخ</Label>
+              <Label htmlFor="startDate">{t('wooCommerceAnalyticsPage.text6')}</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -111,7 +113,7 @@ export default function WooCommerceAnalytics() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate">إلى تاريخ</Label>
+              <Label htmlFor="endDate">{t('wooCommerceAnalyticsPage.text7')}</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -122,7 +124,7 @@ export default function WooCommerceAnalytics() {
 
             <div className="flex items-end">
               <Button onClick={handleRefresh} className="w-full">
-                تطبيق
+                {t('wooCommerceAnalyticsPage.text39')}
               </Button>
             </div>
           </div>
@@ -133,37 +135,37 @@ export default function WooCommerceAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceAnalyticsPage.text8')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {salesStats?.totalRevenue.toFixed(2)} ر.س
+              {t('wooCommerceAnalyticsPage.text47', { var0: salesStats?.totalRevenue.toFixed(2) })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              من {salesStats?.totalOrders} طلب
+              {t('wooCommerceAnalyticsPage.text48', { var0: salesStats?.totalOrders })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">متوسط قيمة الطلب</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceAnalyticsPage.text9')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {salesStats?.averageOrderValue.toFixed(2)} ر.س
+              {t('wooCommerceAnalyticsPage.text49', { var0: salesStats?.averageOrderValue.toFixed(2) })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              لكل طلب
+              {t('wooCommerceAnalyticsPage.text40')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">معدل التحويل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceAnalyticsPage.text10')}</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -171,14 +173,14 @@ export default function WooCommerceAnalytics() {
               {conversionRate?.conversionRate.toFixed(2)}%
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              من {conversionRate?.totalConversations} محادثة
+              {t('wooCommerceAnalyticsPage.text50', { var0: conversionRate?.totalConversations })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي العملاء</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('wooCommerceAnalyticsPage.text11')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -186,7 +188,7 @@ export default function WooCommerceAnalytics() {
               {customerStats?.totalCustomers}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {customerStats?.newCustomers} جديد | {customerStats?.returningCustomers} متكرر
+              {t('wooCommerceAnalyticsPage.text51', { var0: customerStats?.newCustomers, var1: customerStats?.returningCustomers })}
             </p>
           </CardContent>
         </Card>
@@ -195,19 +197,19 @@ export default function WooCommerceAnalytics() {
       {/* Tabs for detailed analytics */}
       <Tabs defaultValue="sales" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="sales">المبيعات</TabsTrigger>
-          <TabsTrigger value="products">المنتجات</TabsTrigger>
-          <TabsTrigger value="conversion">التحويل</TabsTrigger>
-          <TabsTrigger value="customers">العملاء</TabsTrigger>
+          <TabsTrigger value="sales">{t('wooCommerceAnalyticsPage.text12')}</TabsTrigger>
+          <TabsTrigger value="products">{t('wooCommerceAnalyticsPage.text13')}</TabsTrigger>
+          <TabsTrigger value="conversion">{t('wooCommerceAnalyticsPage.text14')}</TabsTrigger>
+          <TabsTrigger value="customers">{t('wooCommerceAnalyticsPage.text15')}</TabsTrigger>
         </TabsList>
 
         {/* Sales Tab */}
         <TabsContent value="sales" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>رسم بياني للإيرادات</CardTitle>
+              <CardTitle>{t('wooCommerceAnalyticsPage.text16')}</CardTitle>
               <CardDescription>
-                تتبع الإيرادات والطلبات عبر الفترة المحددة
+                {t('wooCommerceAnalyticsPage.text41')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -224,7 +226,7 @@ export default function WooCommerceAnalytics() {
                     type="monotone"
                     dataKey="revenue"
                     stroke="#8884d8"
-                    name="الإيرادات (ر.س)"
+                    name={t('wooCommerceAnalyticsPage.text57')}
                     strokeWidth={2}
                   />
                   <Line
@@ -232,7 +234,7 @@ export default function WooCommerceAnalytics() {
                     type="monotone"
                     dataKey="orders"
                     stroke="#82ca9d"
-                    name="عدد الطلبات"
+                    name={t('wooCommerceAnalyticsPage.text58')}
                     strokeWidth={2}
                   />
                 </LineChart>
@@ -243,7 +245,7 @@ export default function WooCommerceAnalytics() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">الطلبات المكتملة</CardTitle>
+                <CardTitle className="text-sm">{t('wooCommerceAnalyticsPage.text17')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-green-600">
@@ -254,7 +256,7 @@ export default function WooCommerceAnalytics() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">الطلبات قيد المعالجة</CardTitle>
+                <CardTitle className="text-sm">{t('wooCommerceAnalyticsPage.text18')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-blue-600">
@@ -265,7 +267,7 @@ export default function WooCommerceAnalytics() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">الطلبات الملغاة</CardTitle>
+                <CardTitle className="text-sm">{t('wooCommerceAnalyticsPage.text19')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-red-600">
@@ -280,9 +282,9 @@ export default function WooCommerceAnalytics() {
         <TabsContent value="products" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>أكثر المنتجات مبيعاً</CardTitle>
+              <CardTitle>{t('wooCommerceAnalyticsPage.text20')}</CardTitle>
               <CardDescription>
-                أفضل 10 منتجات من حيث الكمية المباعة
+                {t('wooCommerceAnalyticsPage.text42')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -293,7 +295,7 @@ export default function WooCommerceAnalytics() {
                   <YAxis dataKey="name" type="category" width={150} />
                   <Tooltip />
                   <Legend />
-                  <Bar dataKey="quantity" fill="#8884d8" name="الكمية المباعة" />
+                  <Bar dataKey="quantity" fill="#8884d8" name={t('wooCommerceAnalyticsPage.text59')} />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -301,7 +303,7 @@ export default function WooCommerceAnalytics() {
 
           <Card>
             <CardHeader>
-              <CardTitle>تفاصيل المنتجات</CardTitle>
+              <CardTitle>{t('wooCommerceAnalyticsPage.text21')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -314,13 +316,13 @@ export default function WooCommerceAnalytics() {
                       <div>
                         <p className="font-medium">{product.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {product.quantity} وحدة مباعة
+                          {t('wooCommerceAnalyticsPage.text52', { var0: product.quantity })}
                         </p>
                       </div>
                     </div>
                     <div className="text-left">
                       <p className="font-bold text-lg">{product.revenue.toFixed(2)} ر.س</p>
-                      <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
+                      <p className="text-sm text-muted-foreground">{t('wooCommerceAnalyticsPage.text23')}</p>
                     </div>
                   </div>
                 ))}
@@ -334,9 +336,9 @@ export default function WooCommerceAnalytics() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>معدل التحويل من واتساب</CardTitle>
+                <CardTitle>{t('wooCommerceAnalyticsPage.text24')}</CardTitle>
                 <CardDescription>
-                  نسبة تحويل المحادثات إلى طلبات
+                  {t('wooCommerceAnalyticsPage.text43')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -345,15 +347,15 @@ export default function WooCommerceAnalytics() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">إجمالي المحادثات</span>
+                    <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text25')}</span>
                     <span className="font-medium">{conversionRate?.totalConversations}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">إجمالي الطلبات</span>
+                    <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text26')}</span>
                     <span className="font-medium">{conversionRate?.totalOrders}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">الطلبات المكتملة</span>
+                    <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text27')}</span>
                     <span className="font-medium">{conversionRate?.completedOrders}</span>
                   </div>
                 </div>
@@ -362,9 +364,9 @@ export default function WooCommerceAnalytics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>معدل إتمام الطلبات</CardTitle>
+                <CardTitle>{t('wooCommerceAnalyticsPage.text28')}</CardTitle>
                 <CardDescription>
-                  نسبة الطلبات المكتملة من إجمالي الطلبات
+                  {t('wooCommerceAnalyticsPage.text44')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -373,11 +375,11 @@ export default function WooCommerceAnalytics() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">طلبات من واتساب</span>
+                    <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text29')}</span>
                     <span className="font-medium">{conversionRate?.whatsappOrders}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">إيرادات من واتساب</span>
+                    <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text30')}</span>
                     <span className="font-medium">{conversionRate?.whatsappRevenue.toFixed(2)} ر.س</span>
                   </div>
                 </div>
@@ -387,26 +389,26 @@ export default function WooCommerceAnalytics() {
 
           <Card>
             <CardHeader>
-              <CardTitle>تحليل قمع المبيعات</CardTitle>
+              <CardTitle>{t('wooCommerceAnalyticsPage.text32')}</CardTitle>
               <CardDescription>
-                تتبع رحلة العميل من المحادثة إلى الطلب المكتمل
+                {t('wooCommerceAnalyticsPage.text45')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="relative">
                   <div className="h-16 bg-blue-500 flex items-center justify-center text-white font-bold rounded">
-                    محادثات واتساب: {conversionRate?.totalConversations}
+                    {t('wooCommerceAnalyticsPage.text53', { var0: conversionRate?.totalConversations })}
                   </div>
                 </div>
                 <div className="relative mx-8">
                   <div className="h-16 bg-green-500 flex items-center justify-center text-white font-bold rounded">
-                    طلبات تم إنشاؤها: {conversionRate?.totalOrders}
+                    {t('wooCommerceAnalyticsPage.text54', { var0: conversionRate?.totalOrders })}
                   </div>
                 </div>
                 <div className="relative mx-16">
                   <div className="h-16 bg-emerald-600 flex items-center justify-center text-white font-bold rounded">
-                    طلبات مكتملة: {conversionRate?.completedOrders}
+                    {t('wooCommerceAnalyticsPage.text55', { var0: conversionRate?.completedOrders })}
                   </div>
                 </div>
               </div>
@@ -419,7 +421,7 @@ export default function WooCommerceAnalytics() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>إجمالي العملاء</CardTitle>
+                <CardTitle>{t('wooCommerceAnalyticsPage.text33')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-center text-primary">
@@ -430,7 +432,7 @@ export default function WooCommerceAnalytics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>عملاء جدد</CardTitle>
+                <CardTitle>{t('wooCommerceAnalyticsPage.text34')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-center text-blue-600">
@@ -441,7 +443,7 @@ export default function WooCommerceAnalytics() {
 
             <Card>
               <CardHeader>
-                <CardTitle>عملاء متكررين</CardTitle>
+                <CardTitle>{t('wooCommerceAnalyticsPage.text35')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-4xl font-bold text-center text-green-600">
@@ -453,9 +455,9 @@ export default function WooCommerceAnalytics() {
 
           <Card>
             <CardHeader>
-              <CardTitle>معدل العملاء المتكررين</CardTitle>
+              <CardTitle>{t('wooCommerceAnalyticsPage.text36')}</CardTitle>
               <CardDescription>
-                نسبة العملاء الذين قاموا بأكثر من طلب واحد
+                {t('wooCommerceAnalyticsPage.text46')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -463,7 +465,7 @@ export default function WooCommerceAnalytics() {
                 {customerStats?.repeatCustomerRate.toFixed(2)}%
               </div>
               <p className="text-center text-muted-foreground">
-                {customerStats?.returningCustomers} من أصل {customerStats?.totalCustomers} عميل
+                {t('wooCommerceAnalyticsPage.text56', { var0: customerStats?.returningCustomers, var1: customerStats?.totalCustomers })}
               </p>
             </CardContent>
           </Card>

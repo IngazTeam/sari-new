@@ -32,16 +32,16 @@ import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
 // Popular country codes
 const COUNTRY_CODES = [
-  { code: '+966', name: 'السعودية', flag: '🇸🇦' },
-  { code: '+971', name: 'الإمارات', flag: '🇦🇪' },
-  { code: '+965', name: 'الكويت', flag: '🇰🇼' },
-  { code: '+974', name: 'قطر', flag: '🇶🇦' },
-  { code: '+973', name: 'البحرين', flag: '🇧🇭' },
-  { code: '+968', name: 'عمان', flag: '🇴🇲' },
-  { code: '+962', name: 'الأردن', flag: '🇯🇴' },
-  { code: '+20', name: 'مصر', flag: '🇪🇬' },
-  { code: '+212', name: 'المغرب', flag: '🇲🇦' },
-  { code: '+213', name: 'الجزائر', flag: '🇩🇿' },
+  { code: '+966', name: t('whatsAppPage.text45'), flag: '🇸🇦' },
+  { code: '+971', name: t('whatsAppPage.text46'), flag: '🇦🇪' },
+  { code: '+965', name: t('whatsAppPage.text47'), flag: '🇰🇼' },
+  { code: '+974', name: t('whatsAppPage.text48'), flag: '🇶🇦' },
+  { code: '+973', name: t('whatsAppPage.text49'), flag: '🇧🇭' },
+  { code: '+968', name: t('whatsAppPage.text50'), flag: '🇴🇲' },
+  { code: '+962', name: t('whatsAppPage.text51'), flag: '🇯🇴' },
+  { code: '+20', name: t('whatsAppPage.text52'), flag: '🇪🇬' },
+  { code: '+212', name: t('whatsAppPage.text53'), flag: '🇲🇦' },
+  { code: '+213', name: t('whatsAppPage.text54'), flag: '🇩🇿' },
 ];
 
 function WhatsAppConnectionContent() {
@@ -75,7 +75,7 @@ function WhatsAppConnectionContent() {
     if (connectionStatus?.connected && showQRDialog) {
       setShowQRDialog(false);
       setQrCode(null);
-      toast.success('تم ربط الواتساب بنجاح! 🎉');
+      toast.success(t('whatsAppPage.text0'));
       refetchRequest();
     }
   }, [connectionStatus?.connected, showQRDialog, refetchRequest]);
@@ -88,7 +88,7 @@ function WhatsAppConnectionContent() {
       setPhoneNumber('');
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل إرسال الطلب');
+      toast.error(error.message || t('whatsAppPage.text25'));
     },
   });
 
@@ -96,7 +96,7 @@ function WhatsAppConnectionContent() {
   const getQRCodeMutation = trpc.whatsapp.getQRCode.useMutation({
     onSuccess: (data) => {
       if (data.alreadyConnected) {
-        toast.success('الواتساب مربوط بالفعل!');
+        toast.success(t('whatsAppPage.text1'));
         refetchRequest();
         refetchStatus();
       } else if (data.qrCode) {
@@ -105,21 +105,21 @@ function WhatsAppConnectionContent() {
       }
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل جلب QR Code');
+      toast.error(error.message || t('whatsAppPage.text26'));
     },
   });
 
   // Disconnect mutation
   const disconnectMutation = trpc.whatsapp.disconnect.useMutation({
     onSuccess: () => {
-      toast.success('تم فك ربط الواتساب بنجاح');
+      toast.success(t('whatsAppPage.text2'));
       refetchRequest();
       setPhoneNumber('');
       setCountryCode('+966');
       setQrCode(null);
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل فك الربط');
+      toast.error(error.message || t('whatsAppPage.text27'));
     },
   });
 
@@ -173,17 +173,17 @@ function WhatsAppConnectionContent() {
           <AlertDescription className="text-green-800">
             <div className="font-semibold flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4" />
-              الواتساب مربوط ونشط
+              {t('whatsAppPage.text28')}
             </div>
             <div className="text-sm mt-1">
-              رقم الواتساب الخاص بك جاهز لاستقبال الرسائل والرد عليها تلقائياً.
+              {t('whatsAppPage.text29')}
             </div>
             <div className="text-sm mt-2 font-mono">
-              الرقم المربوط: {requestStatus.fullNumber}
+              {t('whatsAppPage.text55', { var0: requestStatus.fullNumber })}
             </div>
             {connectionStatus?.phoneNumber && (
               <div className="text-sm mt-1 font-mono text-green-700">
-                رقم WhatsApp: {connectionStatus.phoneNumber}
+                {t('whatsAppPage.text56', { var0: connectionStatus.phoneNumber })}
               </div>
             )}
           </AlertDescription>
@@ -197,12 +197,12 @@ function WhatsAppConnectionContent() {
           <Alert className="border-yellow-500 bg-yellow-50">
             <Clock className="h-4 w-4 text-yellow-600" />
             <AlertDescription className="text-yellow-800">
-              <div className="font-semibold">قيد المراجعة</div>
+              <div className="font-semibold">{t('whatsAppPage.text3')}</div>
               <div className="text-sm mt-1">
-                طلبك قيد المراجعة من قبل المدير. سيتم إشعارك بالنتيجة قريباً.
+                {t('whatsAppPage.text30')}
               </div>
               <div className="text-sm mt-2 font-mono">
-                الرقم المطلوب: {requestStatus.fullNumber}
+                {t('whatsAppPage.text57', { var0: requestStatus.fullNumber })}
               </div>
             </AlertDescription>
           </Alert>
@@ -212,12 +212,12 @@ function WhatsAppConnectionContent() {
           <Alert className="border-blue-500 bg-blue-50">
             <CheckCircle2 className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800">
-              <div className="font-semibold">تمت الموافقة - جاهز للربط!</div>
+              <div className="font-semibold">{t('whatsAppPage.text4')}</div>
               <div className="text-sm mt-1">
-                تم قبول طلب الربط. اضغط على زر "ربط الواتساب" أدناه لمسح QR Code وإتمام الربط.
+                {t('whatsAppPage.text58')}
               </div>
               <div className="text-sm mt-2 font-mono">
-                الرقم: {requestStatus.fullNumber}
+                {t('whatsAppPage.text59', { var0: requestStatus.fullNumber })}
               </div>
             </AlertDescription>
           </Alert>
@@ -227,12 +227,12 @@ function WhatsAppConnectionContent() {
           <Alert className="border-red-500 bg-red-50">
             <XCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
-              <div className="font-semibold">تم الرفض</div>
+              <div className="font-semibold">{t('whatsAppPage.text5')}</div>
               <div className="text-sm mt-1">
                 {requestStatus.rejectionReason || 'تم رفض طلب الربط'}
               </div>
               <div className="text-sm mt-2 text-muted-foreground">
-                يمكنك تقديم طلب جديد برقم مختلف
+                {t('whatsAppPage.text31')}
               </div>
             </AlertDescription>
           </Alert>
@@ -252,9 +252,9 @@ function WhatsAppConnectionContent() {
         <div className="flex items-center gap-3 mb-6">
           <Smartphone className="w-8 h-8 text-primary" />
           <div>
-            <h1 className="text-3xl font-bold">ربط الواتساب</h1>
+            <h1 className="text-3xl font-bold">{t('whatsAppPage.text6')}</h1>
             <p className="text-muted-foreground">
-              قم بربط رقم الواتساب الخاص بمتجرك لبدء استقبال الرسائل
+              {t('whatsAppPage.text32')}
             </p>
           </div>
         </div>
@@ -275,12 +275,12 @@ function WhatsAppConnectionContent() {
                 {getQRCodeMutation.isPending ? (
                   <>
                     <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                    جاري جلب QR Code...
+                    {t('whatsAppPage.text60')}
                   </>
                 ) : (
                   <>
                     <QrCode className="w-5 h-5 ml-2" />
-                    ربط الواتساب الآن
+                    {t('whatsAppPage.text33')}
                   </>
                 )}
               </Button>
@@ -297,12 +297,12 @@ function WhatsAppConnectionContent() {
                 {isCheckingStatus ? (
                   <>
                     <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    جاري التحقق...
+                    {t('whatsAppPage.text34')}
                   </>
                 ) : (
                   <>
                     <RefreshCcw className="w-4 h-4 ml-2" />
-                    تحقق من حالة الاتصال
+                    {t('whatsAppPage.text35')}
                   </>
                 )}
               </Button>
@@ -320,38 +320,38 @@ function WhatsAppConnectionContent() {
                     {disconnectMutation.isPending ? (
                       <>
                         <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                        جاري فك الربط...
+                        {t('whatsAppPage.text36')}
                       </>
                     ) : (
                       <>
                         <WifiOff className="w-4 h-4 ml-2" />
-                        فك الربط وطلب رقم جديد
+                        {t('whatsAppPage.text37')}
                       </>
                     )}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>تأكيد فك ربط الواتساب</AlertDialogTitle>
+                    <AlertDialogTitle>{t('whatsAppPage.text7')}</AlertDialogTitle>
                     <AlertDialogDescription className="text-right">
                       <div className="space-y-2">
-                        <p>هل أنت متأكد من فك ربط رقم الواتساب الحالي؟</p>
+                        <p>{t('whatsAppPage.text8')}</p>
                         <p className="font-mono text-sm bg-muted p-2 rounded">
                           {requestStatus.fullNumber}
                         </p>
                         <p className="text-red-600">
-                          سيتم إلغاء الربط الحالي وستحتاج لتقديم طلب جديد.
+                          {t('whatsAppPage.text38')}
                         </p>
                       </div>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="flex-row-reverse gap-2">
-                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                    <AlertDialogCancel>{t('whatsAppPage.text9')}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDisconnect}
                       className="bg-red-600 hover:bg-red-700"
                     >
-                      نعم، فك الربط
+                      {t('whatsAppPage.text39')}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -363,15 +363,15 @@ function WhatsAppConnectionContent() {
         {/* Connection Request Form */}
         <Card>
           <CardHeader>
-            <CardTitle>طلب ربط رقم واتساب</CardTitle>
+            <CardTitle>{t('whatsAppPage.text10')}</CardTitle>
             <CardDescription>
-              أدخل رقم الواتساب الذي تريد ربطه بمتجرك
+              {t('whatsAppPage.text40')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="country-code">مفتاح الدولة</Label>
+                <Label htmlFor="country-code">{t('whatsAppPage.text11')}</Label>
                 <Select
                   value={countryCode}
                   onValueChange={setCountryCode}
@@ -395,7 +395,7 @@ function WhatsAppConnectionContent() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone-number">رقم الهاتف</Label>
+                <Label htmlFor="phone-number">{t('whatsAppPage.text12')}</Label>
                 <div className="flex gap-2">
                   <div className="w-24 flex items-center justify-center border rounded-md bg-muted px-3 font-mono">
                     {countryCode}
@@ -412,7 +412,7 @@ function WhatsAppConnectionContent() {
                   />
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  أدخل رقم الهاتف بدون مفتاح الدولة (مثال: 501234567)
+                  {t('whatsAppPage.text41')}
                 </p>
               </div>
 
@@ -425,12 +425,12 @@ function WhatsAppConnectionContent() {
                   {requestConnectionMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                      جاري الإرسال...
+                      {t('whatsAppPage.text42')}
                     </>
                   ) : (
                     <>
                       <Send className="w-4 h-4 ml-2" />
-                      إرسال طلب الربط
+                      {t('whatsAppPage.text43')}
                     </>
                   )}
                 </Button>
@@ -439,7 +439,7 @@ function WhatsAppConnectionContent() {
               {requestStatus?.status === 'pending' && (
                 <Alert>
                   <AlertDescription className="text-sm">
-                    لديك طلب قيد المراجعة حالياً. سيتم إشعارك عند معالجة الطلب.
+                    {t('whatsAppPage.text44')}
                   </AlertDescription>
                 </Alert>
               )}
@@ -450,15 +450,15 @@ function WhatsAppConnectionContent() {
         {/* Instructions */}
         <Card>
           <CardHeader>
-            <CardTitle>معلومات مهمة</CardTitle>
+            <CardTitle>{t('whatsAppPage.text13')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>• يجب أن يكون رقم الواتساب نشطاً ومتاحاً للربط</p>
-            <p>• سيتم مراجعة طلبك من قبل المدير قبل الموافقة</p>
-            <p>• بعد الموافقة، اضغط على "ربط الواتساب" لمسح QR Code</p>
-            <p>• افتح WhatsApp على هاتفك → الإعدادات → الأجهزة المرتبطة → ربط جهاز</p>
-            <p>• امسح QR Code الظاهر على الشاشة</p>
-            <p>• بعد الربط، سيتم الرد التلقائي على جميع الرسائل الواردة</p>
+            <p>{t('whatsAppPage.text14')}</p>
+            <p>{t('whatsAppPage.text15')}</p>
+            <p>{t('whatsAppPage.text16')}</p>
+            <p>{t('whatsAppPage.text17')}</p>
+            <p>{t('whatsAppPage.text18')}</p>
+            <p>{t('whatsAppPage.text19')}</p>
           </CardContent>
         </Card>
 
@@ -466,9 +466,9 @@ function WhatsAppConnectionContent() {
         <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-center">امسح QR Code لربط الواتساب</DialogTitle>
+              <DialogTitle className="text-center">{t('whatsAppPage.text20')}</DialogTitle>
               <DialogDescription className="text-center">
-                افتح WhatsApp على هاتفك → الإعدادات → الأجهزة المرتبطة → ربط جهاز
+                {t('whatsAppPage.text61')}
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center space-y-4 py-4">
@@ -488,7 +488,7 @@ function WhatsAppConnectionContent() {
               
               <div className="text-center space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  ينتهي QR Code خلال دقيقتين
+                  {t('whatsAppPage.text62')}
                 </p>
                 <Button
                   variant="outline"
@@ -501,7 +501,7 @@ function WhatsAppConnectionContent() {
                   ) : (
                     <>
                       <RefreshCcw className="w-4 h-4 ml-2" />
-                      تحديث QR Code
+                      {t('whatsAppPage.text63')}
                     </>
                   )}
                 </Button>
@@ -512,12 +512,12 @@ function WhatsAppConnectionContent() {
                 {connectionStatus?.connected ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
-                    <span className="text-green-600">تم الربط بنجاح!</span>
+                    <span className="text-green-600">{t('whatsAppPage.text21')}</span>
                   </>
                 ) : (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                    <span className="text-blue-600">في انتظار مسح QR Code...</span>
+                    <span className="text-blue-600">{t('whatsAppPage.text22')}</span>
                   </>
                 )}
               </div>
@@ -532,8 +532,8 @@ function WhatsAppConnectionContent() {
 export default function WhatsAppConnection() {
   return (
     <SubscriptionGuard 
-      feature="ربط الواتساب"
-      fallbackMessage="يتطلب ربط الواتساب اشتراكاً نشطاً في إحدى باقاتنا"
+      feature={t('whatsAppPage.text23')}
+      fallbackMessage={t('whatsAppPage.text24')}
     >
       <WhatsAppConnectionContent />
     </SubscriptionGuard>

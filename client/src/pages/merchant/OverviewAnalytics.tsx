@@ -14,8 +14,10 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from 'react-i18next';
 
 export default function OverviewAnalytics() {
+  const { t } = useTranslation();
   const [dateRange] = useState<{ start?: string; end?: string }>({});
 
   // Get current merchant
@@ -60,9 +62,9 @@ export default function OverviewAnalytics() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">نظرة عامة على الأداء</h1>
+        <h1 className="text-3xl font-bold">{t('overviewAnalyticsPage.text0')}</h1>
         <p className="text-muted-foreground mt-2">
-          إحصائيات شاملة عن مبيعاتك وعملائك
+          {t('overviewAnalyticsPage.text21')}
         </p>
       </div>
 
@@ -71,7 +73,7 @@ export default function OverviewAnalytics() {
         {/* Total Revenue */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المبيعات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('overviewAnalyticsPage.text1')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -81,7 +83,7 @@ export default function OverviewAnalytics() {
               <>
                 <div className="text-2xl font-bold">{totalRevenue.toLocaleString('ar-SA')} ر.س</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  متوسط الطلب: {averageOrderValue.toFixed(2)} ر.س
+                  {t('overviewAnalyticsPage.text37', { var0: averageOrderValue.toFixed(2) })}
                 </p>
               </>
             )}
@@ -91,7 +93,7 @@ export default function OverviewAnalytics() {
         {/* Conversion Rate */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معدل التحويل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('overviewAnalyticsPage.text3')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -109,7 +111,7 @@ export default function OverviewAnalytics() {
         {/* Average Rating */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">متوسط التقييم</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('overviewAnalyticsPage.text4')}</CardTitle>
             <Star className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -122,7 +124,7 @@ export default function OverviewAnalytics() {
                   <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  من {totalReviews} تقييم
+                  {t('overviewAnalyticsPage.text38', { var0: totalReviews })}
                 </p>
               </>
             )}
@@ -132,7 +134,7 @@ export default function OverviewAnalytics() {
         {/* Total Referrals */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الإحالات الناجحة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('overviewAnalyticsPage.text5')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -142,7 +144,7 @@ export default function OverviewAnalytics() {
               <>
                 <div className="text-2xl font-bold">{successfulReferrals}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  من {totalReferrals} إحالة
+                  {t('overviewAnalyticsPage.text39', { var0: totalReferrals })}
                 </p>
               </>
             )}
@@ -157,10 +159,10 @@ export default function OverviewAnalytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
-              السلال المهجورة
+              {t('overviewAnalyticsPage.text22')}
             </CardTitle>
             <CardDescription>
-              إحصائيات السلال المتروكة ومعدل الاستعادة
+              {t('overviewAnalyticsPage.text23')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -170,25 +172,24 @@ export default function OverviewAnalytics() {
               <>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">إجمالي السلال المهجورة</span>
+                    <span className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text6')}</span>
                     <Badge variant="destructive">{abandonedCartsCount}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">السلال المستعادة</span>
+                    <span className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text7')}</span>
                     <Badge className="bg-green-600 text-white">{recoveredCarts}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">معدل الاستعادة</span>
+                    <span className="text-sm font-medium">{t('overviewAnalyticsPage.text8')}</span>
                     <span className="text-lg font-bold text-green-600">{recoveryRate.toFixed(1)}%</span>
                   </div>
                 </div>
                 <Progress value={recoveryRate} className="h-2" />
                 <p className="text-xs text-muted-foreground">
-                  {recoveryRate >= 20 
-                    ? '✅ معدل استعادة ممتاز!' 
+                  {recoveryRate >= 20
+                    ? t('overviewAnalyticsPage.text40')
                     : recoveryRate >= 10 
-                    ? '⚠️ معدل استعادة جيد، يمكن تحسينه' 
-                    : '❌ معدل استعادة منخفض، يحتاج تحسين'}
+                    ? t('overviewAnalyticsPage.text19') : t('overviewAnalyticsPage.text20')}
                 </p>
               </>
             )}
@@ -200,16 +201,16 @@ export default function OverviewAnalytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Star className="h-5 w-5" />
-              توزيع التقييمات
+              {t('overviewAnalyticsPage.text24')}
             </CardTitle>
             <CardDescription>
-              تفصيل تقييمات العملاء حسب النجوم
+              {t('overviewAnalyticsPage.text25')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2 text-muted-foreground">
               <AlertCircle className="h-4 w-4" />
-              <span className="text-sm">نظام التقييمات قيد التطوير</span>
+              <span className="text-sm">{t('overviewAnalyticsPage.text9')}</span>
             </div>
           </CardContent>
         </Card>
@@ -222,10 +223,10 @@ export default function OverviewAnalytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
-              إحصائيات الطلبات
+              {t('overviewAnalyticsPage.text26')}
             </CardTitle>
             <CardDescription>
-              ملخص الطلبات حسب الحالة
+              {t('overviewAnalyticsPage.text27')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -235,19 +236,19 @@ export default function OverviewAnalytics() {
               <>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">إجمالي الطلبات</p>
+                    <p className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text10')}</p>
                     <p className="text-2xl font-bold">{orderStats.total}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">الطلبات المكتملة</p>
+                    <p className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text11')}</p>
                     <p className="text-2xl font-bold text-green-600">{orderStats.completed || 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">قيد المعالجة</p>
+                    <p className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text12')}</p>
                     <p className="text-2xl font-bold text-blue-600">{orderStats.processing || 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">الملغية</p>
+                    <p className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text13')}</p>
                     <p className="text-2xl font-bold text-red-600">{orderStats.cancelled || 0}</p>
                   </div>
                 </div>
@@ -255,7 +256,7 @@ export default function OverviewAnalytics() {
             ) : (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <AlertCircle className="h-4 w-4" />
-                <span className="text-sm">لا توجد بيانات</span>
+                <span className="text-sm">{t('overviewAnalyticsPage.text14')}</span>
               </div>
             )}
           </CardContent>
@@ -266,10 +267,10 @@ export default function OverviewAnalytics() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              أداء الإحالات
+              {t('overviewAnalyticsPage.text28')}
             </CardTitle>
             <CardDescription>
-              إحصائيات برنامج الإحالة
+              {t('overviewAnalyticsPage.text29')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -279,15 +280,15 @@ export default function OverviewAnalytics() {
               <>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">إجمالي الإحالات</span>
+                    <span className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text15')}</span>
                     <Badge>{totalReferrals}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">الإحالات الناجحة</span>
+                    <span className="text-sm text-muted-foreground">{t('overviewAnalyticsPage.text16')}</span>
                     <Badge className="bg-green-600 text-white">{successfulReferrals}</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">معدل النجاح</span>
+                    <span className="text-sm font-medium">{t('overviewAnalyticsPage.text17')}</span>
                     <span className="text-lg font-bold text-green-600">
                       {totalReferrals > 0 ? ((successfulReferrals / totalReferrals) * 100).toFixed(1) : 0}%
                     </span>
@@ -302,7 +303,7 @@ export default function OverviewAnalytics() {
             ) : (
               <div className="flex items-center gap-2 text-muted-foreground">
                 <AlertCircle className="h-4 w-4" />
-                <span className="text-sm">لا توجد بيانات</span>
+                <span className="text-sm">{t('overviewAnalyticsPage.text18')}</span>
               </div>
             )}
           </CardContent>
@@ -314,10 +315,10 @@ export default function OverviewAnalytics() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            رؤى وتوصيات
+            {t('overviewAnalyticsPage.text30')}
           </CardTitle>
           <CardDescription>
-            تحليلات ذكية لتحسين أدائك
+            {t('overviewAnalyticsPage.text31')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -330,10 +331,10 @@ export default function OverviewAnalytics() {
                   <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">
-                      معدل التحويل منخفض
+                      {t('overviewAnalyticsPage.text32')}
                     </p>
                     <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                      معدل التحويل الحالي {conversionPercentage.toFixed(1)}%. جرب تحسين الردود الآلية أو إضافة عروض خاصة.
+                      {t('overviewAnalyticsPage.text41', { var0: conversionPercentage.toFixed(1) })}
                     </p>
                   </div>
                 </div>
@@ -344,10 +345,10 @@ export default function OverviewAnalytics() {
                   <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                      فرصة لاستعادة السلال المهجورة
+                      {t('overviewAnalyticsPage.text33')}
                     </p>
                     <p className="text-xs text-blue-700 dark:text-blue-300">
-                      لديك {abandonedCartsCount} سلة مهجورة. أرسل تذكيرات مع كود خصم لزيادة معدل الاستعادة.
+                      {t('overviewAnalyticsPage.text42', { var0: abandonedCartsCount })}
                     </p>
                   </div>
                 </div>
@@ -358,10 +359,10 @@ export default function OverviewAnalytics() {
                   <Star className="h-5 w-5 text-green-600 mt-0.5 fill-green-600" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-green-900 dark:text-green-100">
-                      تقييمات ممتازة!
+                      {t('overviewAnalyticsPage.text34')}
                     </p>
                     <p className="text-xs text-green-700 dark:text-green-300">
-                      متوسط تقييمك {averageRating.toFixed(1)} نجوم. اعرض التقييمات الإيجابية في صفحتك الرئيسية لزيادة الثقة.
+                      {t('overviewAnalyticsPage.text43', { var0: averageRating.toFixed(1) })}
                     </p>
                   </div>
                 </div>
@@ -372,10 +373,10 @@ export default function OverviewAnalytics() {
                   <Users className="h-5 w-5 text-purple-600 mt-0.5" />
                   <div className="space-y-1">
                     <p className="text-sm font-medium text-purple-900 dark:text-purple-100">
-                      فعّل برنامج الإحالة
+                      {t('overviewAnalyticsPage.text35')}
                     </p>
                     <p className="text-xs text-purple-700 dark:text-purple-300">
-                      لم تبدأ بعد في استخدام برنامج الإحالة. شجع عملائك على دعوة أصدقائهم مقابل خصومات.
+                      {t('overviewAnalyticsPage.text36')}
                     </p>
                   </div>
                 </div>

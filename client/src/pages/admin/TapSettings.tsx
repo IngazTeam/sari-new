@@ -8,8 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function TapSettings() {
+  const { t } = useTranslation();
   const { data: settings, isLoading, refetch } = trpc.tapSettings.getTapSettings.useQuery();
   const updateSettings = trpc.tapSettings.updateTapSettings.useMutation();
   const testConnection = trpc.tapSettings.testTapConnection.useMutation();
@@ -39,10 +41,10 @@ export default function TapSettings() {
   const handleSave = async () => {
     try {
       await updateSettings.mutateAsync(formData);
-      toast.success('تم حفظ الإعدادات بنجاح');
+      toast.success(t('adminTapSettingsPage.text22'));
       refetch();
     } catch (error) {
-      toast.error('فشل حفظ الإعدادات');
+      toast.error(t('adminTapSettingsPage.text23'));
     }
   };
 
@@ -50,13 +52,13 @@ export default function TapSettings() {
     try {
       const result = await testConnection.mutateAsync();
       if (result.success) {
-        toast.success('نجح الاتصال بـ Tap');
+        toast.success(t('adminTapSettingsPage.text24'));
       } else {
-        toast.error(`فشل الاتصال: ${result.message}`);
+        toast.error(t('adminTapSettingsPage.text0', { var0: result.message }));
       }
       refetch();
     } catch (error) {
-      toast.error('فشل اختبار الاتصال');
+      toast.error(t('adminTapSettingsPage.text25'));
     }
   };
 
@@ -74,8 +76,8 @@ export default function TapSettings() {
   return (
     <div className="container max-w-4xl py-8">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold">إعدادات Tap Payment</h1>
-        <p className="text-muted-foreground mt-1">إدارة إعدادات بوابة الدفع Tap</p>
+        <h1 className="text-3xl font-bold">{t('adminTapSettingsPage.text1')}</h1>
+        <p className="text-muted-foreground mt-1">{t('adminTapSettingsPage.text2')}</p>
       </div>
 
       {settings?.lastTestAt && (
@@ -104,7 +106,7 @@ export default function TapSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>معلومات الاتصال</CardTitle>
+          <CardTitle>{t('adminTapSettingsPage.text3')}</CardTitle>
           <CardDescription>
             أدخل مفاتيح API الخاصة بحساب Tap الخاص بك
           </CardDescription>
@@ -139,7 +141,7 @@ export default function TapSettings() {
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="isLive">الوضع المباشر (Live Mode)</Label>
+              <Label htmlFor="isLive">{t('adminTapSettingsPage.text4')}</Label>
               <p className="text-sm text-muted-foreground">
                 تفعيل الوضع المباشر للمدفوعات الحقيقية
               </p>
@@ -153,7 +155,7 @@ export default function TapSettings() {
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
-              <Label htmlFor="isActive">تفعيل بوابة الدفع</Label>
+              <Label htmlFor="isActive">{t('adminTapSettingsPage.text5')}</Label>
               <p className="text-sm text-muted-foreground">
                 تمكين/تعطيل بوابة الدفع Tap
               </p>
@@ -223,36 +225,36 @@ export default function TapSettings() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle>معلومات مهمة</CardTitle>
+          <CardTitle>{t('adminTapSettingsPage.text6')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div>
-            <h4 className="font-semibold mb-2">🔑 الحصول على مفاتيح API:</h4>
+            <h4 className="font-semibold mb-2">{t('adminTapSettingsPage.text7')}</h4>
             <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-              <li>سجل الدخول إلى حساب Tap الخاص بك</li>
-              <li>انتقل إلى Settings → API Keys</li>
-              <li>انسخ Secret Key و Public Key</li>
-              <li>الصقهما في الحقول أعلاه</li>
+              <li>{t('adminTapSettingsPage.text8')}</li>
+              <li>{t('adminTapSettingsPage.text9')}</li>
+              <li>{t('adminTapSettingsPage.text10')}</li>
+              <li>{t('adminTapSettingsPage.text11')}</li>
             </ol>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-2">🔔 إعداد Webhook:</h4>
+            <h4 className="font-semibold mb-2">{t('adminTapSettingsPage.text12')}</h4>
             <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-              <li>في لوحة تحكم Tap، انتقل إلى Webhooks</li>
-              <li>أضف Webhook جديد</li>
-              <li>استخدم URL: {window.location.origin}/api/trpc/payment.handleWebhook</li>
-              <li>فعّل الأحداث: charge.captured, charge.failed</li>
+              <li>{t('adminTapSettingsPage.text13')}</li>
+              <li>{t('adminTapSettingsPage.text14')}</li>
+              <li>{t('adminTapSettingsPage.text15', { var0: window.location.origin })}</li>
+              <li>{t('adminTapSettingsPage.text16')}</li>
             </ol>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-2">⚠️ ملاحظات:</h4>
+            <h4 className="font-semibold mb-2">{t('adminTapSettingsPage.text17')}</h4>
             <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-              <li>استخدم مفاتيح Test في البداية للتجربة</li>
-              <li>لا تفعّل Live Mode إلا بعد اختبار شامل</li>
-              <li>احتفظ بنسخة احتياطية من المفاتيح في مكان آمن</li>
-              <li>لا تشارك Secret Key مع أي شخص</li>
+              <li>{t('adminTapSettingsPage.text18')}</li>
+              <li>{t('adminTapSettingsPage.text19')}</li>
+              <li>{t('adminTapSettingsPage.text20')}</li>
+              <li>{t('adminTapSettingsPage.text21')}</li>
             </ul>
           </div>
         </CardContent>

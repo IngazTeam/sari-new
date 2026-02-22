@@ -41,7 +41,7 @@ export default function NewCampaign() {
       setLocation('/merchant/campaigns');
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل إنشاء الحملة');
+      toast.error(error.message || t('newCampaignPage.text26'));
     },
   });
 
@@ -76,12 +76,12 @@ export default function NewCampaign() {
           onClick={() => setLocation('/merchant/campaigns')}
         >
           <ArrowRight className="w-4 h-4 ml-2" />
-          رجوع
+          {t('newCampaignPage.text27')}
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">إنشاء حملة جديدة</h1>
+          <h1 className="text-3xl font-bold">{t('newCampaignPage.text0')}</h1>
           <p className="text-muted-foreground mt-2">
-            أنشئ حملة تسويقية جديدة لإرسالها عبر الواتساب
+            {t('newCampaignPage.text28')}
           </p>
         </div>
       </div>
@@ -90,33 +90,33 @@ export default function NewCampaign() {
         {/* Campaign Details */}
         <Card>
           <CardHeader>
-            <CardTitle>تفاصيل الحملة</CardTitle>
+            <CardTitle>{t('newCampaignPage.text1')}</CardTitle>
             <CardDescription>
-              أدخل المعلومات الأساسية للحملة
+              {t('newCampaignPage.text29')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Campaign Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">اسم الحملة *</Label>
+              <Label htmlFor="name">{t('newCampaignPage.text2')}</Label>
               <Input
                 id="name"
-                placeholder="مثال: عرض الجمعة البيضاء"
+                placeholder={t('newCampaignPage.text3')}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
               <p className="text-sm text-muted-foreground">
-                اسم داخلي للحملة (لن يراه العملاء)
+                {t('newCampaignPage.text30')}
               </p>
             </div>
 
             {/* Message */}
             <div className="space-y-2">
-              <Label htmlFor="message">نص الرسالة *</Label>
+              <Label htmlFor="message">{t('newCampaignPage.text4')}</Label>
               <Textarea
                 id="message"
-                placeholder="مثال: 🎉 عرض خاص! خصم 50% على جميع المنتجات لفترة محدودة..."
+                placeholder={t('newCampaignPage.text5')}
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 rows={6}
@@ -124,14 +124,14 @@ export default function NewCampaign() {
                 className="resize-none"
               />
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>الرسالة التي سيتم إرسالها للعملاء</span>
+                <span>{t('newCampaignPage.text6')}</span>
                 <span>{formData.message.length} حرف</span>
               </div>
             </div>
 
             {/* Image URL */}
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">رابط الصورة (اختياري)</Label>
+              <Label htmlFor="imageUrl">{t('newCampaignPage.text8')}</Label>
               <div className="flex gap-2">
                 <Input
                   id="imageUrl"
@@ -145,7 +145,7 @@ export default function NewCampaign() {
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                أضف رابط صورة لإرفاقها مع الرسالة
+                {t('newCampaignPage.text31')}
               </p>
             </div>
           </CardContent>
@@ -156,16 +156,16 @@ export default function NewCampaign() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Filter className="w-5 h-5" />
-              استهداف العملاء
+              {t('newCampaignPage.text32')}
             </CardTitle>
             <CardDescription>
-              حدد فئة العملاء المستهدفين (اختياري)
+              {t('newCampaignPage.text33')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Last Activity Filter */}
             <div className="space-y-2">
-              <Label>آخر نشاط</Label>
+              <Label>{t('newCampaignPage.text9')}</Label>
               <Select
                 value={filters.lastActivityDays?.toString() || 'all'}
                 onValueChange={(value) => 
@@ -173,23 +173,23 @@ export default function NewCampaign() {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="جميع العملاء" />
+                  <SelectValue placeholder={t('newCampaignPage.text10')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">جميع العملاء</SelectItem>
-                  <SelectItem value="7">نشط خلال 7 أيام</SelectItem>
-                  <SelectItem value="30">نشط خلال 30 يوم</SelectItem>
-                  <SelectItem value="90">نشط خلال 90 يوم</SelectItem>
+                  <SelectItem value="all">{t('newCampaignPage.text11')}</SelectItem>
+                  <SelectItem value="7">{t('newCampaignPage.text12')}</SelectItem>
+                  <SelectItem value="30">{t('newCampaignPage.text13')}</SelectItem>
+                  <SelectItem value="90">{t('newCampaignPage.text14')}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                استهدف العملاء حسب آخر تفاعل
+                {t('newCampaignPage.text34')}
               </p>
             </div>
 
             {/* Purchase Count Filter */}
             <div className="space-y-2">
-              <Label>عدد المشتريات</Label>
+              <Label>{t('newCampaignPage.text15')}</Label>
               <Select
                 value={
                   filters.purchaseCountMin === 0 && filters.purchaseCountMax === 0 ? '0' :
@@ -210,17 +210,17 @@ export default function NewCampaign() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="جميع العملاء" />
+                  <SelectValue placeholder={t('newCampaignPage.text16')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">جميع العملاء</SelectItem>
-                  <SelectItem value="0">لم يشتري بعد (0)</SelectItem>
-                  <SelectItem value="1-5">1-5 مشتريات</SelectItem>
-                  <SelectItem value="5+">5+ مشتريات</SelectItem>
+                  <SelectItem value="all">{t('newCampaignPage.text17')}</SelectItem>
+                  <SelectItem value="0">{t('newCampaignPage.text18')}</SelectItem>
+                  <SelectItem value="1-5">{t('newCampaignPage.text19')}</SelectItem>
+                  <SelectItem value="5+">{t('newCampaignPage.text20')}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                استهدف العملاء حسب عدد مشترياتهم
+                {t('newCampaignPage.text35')}
               </p>
             </div>
 
@@ -231,10 +231,10 @@ export default function NewCampaign() {
                   <Users className="w-5 h-5 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-900">
-                      عدد العملاء المستهدفين
+                      {t('newCampaignPage.text36')}
                     </p>
                     <p className="text-2xl font-bold text-blue-600">
-                      {filteredData.count} عميل
+                      {t('newCampaignPage.text43', { var0: filteredData.count })}
                     </p>
                   </div>
                 </div>
@@ -253,7 +253,7 @@ export default function NewCampaign() {
                   purchaseCountMax: undefined,
                 })}
               >
-                إعادة تعيين الفلاتر
+                {t('newCampaignPage.text37')}
               </Button>
             )}
           </CardContent>
@@ -262,14 +262,14 @@ export default function NewCampaign() {
         {/* Scheduling */}
         <Card>
           <CardHeader>
-            <CardTitle>جدولة الإرسال</CardTitle>
+            <CardTitle>{t('newCampaignPage.text21')}</CardTitle>
             <CardDescription>
-              حدد موعد إرسال الحملة (اختياري)
+              {t('newCampaignPage.text38')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="scheduledAt">تاريخ ووقت الإرسال</Label>
+              <Label htmlFor="scheduledAt">{t('newCampaignPage.text22')}</Label>
               <Input
                 id="scheduledAt"
                 type="datetime-local"
@@ -277,7 +277,7 @@ export default function NewCampaign() {
                 onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })}
               />
               <p className="text-sm text-muted-foreground">
-                اترك فارغاً للحفظ كمسودة، أو حدد موعداً لجدولة الإرسال التلقائي
+                {t('newCampaignPage.text39')}
               </p>
             </div>
           </CardContent>
@@ -286,9 +286,9 @@ export default function NewCampaign() {
         {/* Preview */}
         <Card>
           <CardHeader>
-            <CardTitle>معاينة الرسالة</CardTitle>
+            <CardTitle>{t('newCampaignPage.text23')}</CardTitle>
             <CardDescription>
-              كيف ستظهر الرسالة للعملاء
+              {t('newCampaignPage.text40')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -320,7 +320,7 @@ export default function NewCampaign() {
             onClick={() => setLocation('/merchant/campaigns')}
             disabled={createMutation.isPending}
           >
-            إلغاء
+            {t('newCampaignPage.text41')}
           </Button>
           <Button
             type="button"
@@ -328,14 +328,14 @@ export default function NewCampaign() {
             onClick={(e) => handleSubmit(e, true)}
             disabled={createMutation.isPending}
           >
-            حفظ كمسودة
+            {t('newCampaignPage.text42')}
           </Button>
           <Button
             type="submit"
             disabled={createMutation.isPending || !formData.scheduledAt}
           >
             <Send className="w-4 h-4 ml-2" />
-            {formData.scheduledAt ? 'جدولة الإرسال' : 'إرسال الآن'}
+            {formData.scheduledAt ? t('newCampaignPage.text24') : t('newCampaignPage.text25')}
           </Button>
         </div>
       </form>

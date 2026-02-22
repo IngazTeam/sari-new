@@ -39,6 +39,7 @@ import {
     RefreshCw,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled';
 
@@ -73,6 +74,7 @@ interface InvoiceDetails extends Invoice {
 }
 
 export default function Invoices() {
+  const { t } = useTranslation();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -168,7 +170,7 @@ export default function Invoices() {
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold">الفواتير</h1>
+                    <h1 className="text-3xl font-bold">{t('adminInvoicesPage.text0')}</h1>
                     <p className="text-muted-foreground mt-2">
                         إدارة ومتابعة فواتير الاشتراكات
                     </p>
@@ -183,17 +185,17 @@ export default function Invoices() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">إجمالي الفواتير</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('adminInvoicesPage.text1')}</CardTitle>
                         <FileText className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats?.total || 0}</div>
-                        <p className="text-xs text-muted-foreground">فاتورة</p>
+                        <p className="text-xs text-muted-foreground">{t('adminInvoicesPage.text2')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">المدفوعة</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('adminInvoicesPage.text3')}</CardTitle>
                         <CheckCircle className="h-4 w-4 text-green-600" />
                     </CardHeader>
                     <CardContent>
@@ -205,22 +207,22 @@ export default function Invoices() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">المعلقة</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('adminInvoicesPage.text4')}</CardTitle>
                         <Clock className="h-4 w-4 text-yellow-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-yellow-600">{stats?.pending || 0}</div>
-                        <p className="text-xs text-muted-foreground">في انتظار الدفع</p>
+                        <p className="text-xs text-muted-foreground">{t('adminInvoicesPage.text5')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">الملغاة</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('adminInvoicesPage.text6')}</CardTitle>
                         <XCircle className="h-4 w-4 text-red-600" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-red-600">{stats?.cancelled || 0}</div>
-                        <p className="text-xs text-muted-foreground">فاتورة ملغاة</p>
+                        <p className="text-xs text-muted-foreground">{t('adminInvoicesPage.text7')}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -228,15 +230,15 @@ export default function Invoices() {
             {/* Filters */}
             <Card>
                 <CardHeader>
-                    <CardTitle>قائمة الفواتير</CardTitle>
-                    <CardDescription>جميع فواتير الاشتراكات</CardDescription>
+                    <CardTitle>{t('adminInvoicesPage.text8')}</CardTitle>
+                    <CardDescription>{t('adminInvoicesPage.text9')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col md:flex-row gap-4 mb-6">
                         <div className="relative flex-1">
                             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="بحث برقم الفاتورة..."
+                                placeholder={t('adminInvoicesPage.text10')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pr-10"
@@ -245,14 +247,14 @@ export default function Invoices() {
                         <Select value={statusFilter} onValueChange={setStatusFilter}>
                             <SelectTrigger className="w-full md:w-[180px]">
                                 <Filter className="h-4 w-4 ml-2" />
-                                <SelectValue placeholder="الحالة" />
+                                <SelectValue placeholder={t('adminInvoicesPage.text11')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">جميع الحالات</SelectItem>
-                                <SelectItem value="paid">مدفوعة</SelectItem>
-                                <SelectItem value="sent">مرسلة</SelectItem>
-                                <SelectItem value="draft">مسودة</SelectItem>
-                                <SelectItem value="cancelled">ملغاة</SelectItem>
+                                <SelectItem value="all">{t('adminInvoicesPage.text12')}</SelectItem>
+                                <SelectItem value="paid">{t('adminInvoicesPage.text13')}</SelectItem>
+                                <SelectItem value="sent">{t('adminInvoicesPage.text14')}</SelectItem>
+                                <SelectItem value="draft">{t('adminInvoicesPage.text15')}</SelectItem>
+                                <SelectItem value="cancelled">{t('adminInvoicesPage.text16')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -262,11 +264,11 @@ export default function Invoices() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-right">رقم الفاتورة</TableHead>
-                                    <TableHead className="text-right">المبلغ</TableHead>
-                                    <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-                                    <TableHead className="text-right">الحالة</TableHead>
-                                    <TableHead className="text-right">الإجراءات</TableHead>
+                                    <TableHead className="text-right">{t('adminInvoicesPage.text17')}</TableHead>
+                                    <TableHead className="text-right">{t('adminInvoicesPage.text18')}</TableHead>
+                                    <TableHead className="text-right">{t('adminInvoicesPage.text19')}</TableHead>
+                                    <TableHead className="text-right">{t('adminInvoicesPage.text20')}</TableHead>
+                                    <TableHead className="text-right">{t('adminInvoicesPage.text21')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -326,7 +328,7 @@ export default function Invoices() {
             }}>
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
-                        <DialogTitle>تفاصيل الفاتورة {selectedInvoice?.invoiceNumber}</DialogTitle>
+                        <DialogTitle>{t('adminInvoicesPage.text22', { var0: selectedInvoice?.invoiceNumber })}</DialogTitle>
                         <DialogDescription>
                             معلومات الفاتورة الكاملة
                         </DialogDescription>
@@ -340,30 +342,30 @@ export default function Invoices() {
                             {/* Invoice Info */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-sm text-muted-foreground">التاجر</p>
+                                    <p className="text-sm text-muted-foreground">{t('adminInvoicesPage.text23')}</p>
                                     <p className="font-medium">
                                         {(selectedInvoice as InvoiceDetails).merchant?.businessName || 'غير محدد'}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">الحالة</p>
+                                    <p className="text-sm text-muted-foreground">{t('adminInvoicesPage.text24')}</p>
                                     {getStatusBadge(selectedInvoice.status as InvoiceStatus)}
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">تاريخ الإنشاء</p>
+                                    <p className="text-sm text-muted-foreground">{t('adminInvoicesPage.text25')}</p>
                                     <p className="font-medium">
                                         {new Date(selectedInvoice.createdAt).toLocaleDateString('ar-SA')}
                                     </p>
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">المبلغ</p>
+                                    <p className="text-sm text-muted-foreground">{t('adminInvoicesPage.text26')}</p>
                                     <p className="font-medium text-lg">
                                         {formatAmount(selectedInvoice.amount)} {selectedInvoice.currency}
                                     </p>
                                 </div>
                                 {(selectedInvoice as InvoiceDetails).plan && (
                                     <div>
-                                        <p className="text-sm text-muted-foreground">الباقة</p>
+                                        <p className="text-sm text-muted-foreground">{t('adminInvoicesPage.text27')}</p>
                                         <p className="font-medium">
                                             {(selectedInvoice as InvoiceDetails).plan?.nameAr || (selectedInvoice as InvoiceDetails).plan?.name}
                                         </p>

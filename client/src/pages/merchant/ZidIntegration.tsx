@@ -24,8 +24,10 @@ import {
   Webhook
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function ZidIntegration() {
+  const { t } = useTranslation();
   const [storeUrl, setStoreUrl] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -58,7 +60,7 @@ export default function ZidIntegration() {
   // Mutations
   const connectMutation = trpc.zid.connect.useMutation({
     onSuccess: (data) => {
-      toast.success('تم الربط بنجاح!', {
+      toast.success(t('zidIntegrationPage.text44'), {
         description: data.message,
       });
       setStoreUrl('');
@@ -66,7 +68,7 @@ export default function ZidIntegration() {
       refetch();
     },
     onError: (error) => {
-      toast.error('فشل الربط', {
+      toast.error(t('zidIntegrationPage.text45'), {
         description: error.message,
       });
     },
@@ -77,13 +79,13 @@ export default function ZidIntegration() {
 
   const disconnectMutation = trpc.zid.disconnect.useMutation({
     onSuccess: (data) => {
-      toast.success('تم فصل المتجر', {
+      toast.success(t('zidIntegrationPage.text46'), {
         description: data.message,
       });
       refetch();
     },
     onError: (error) => {
-      toast.error('فشل فصل المتجر', {
+      toast.error(t('zidIntegrationPage.text47'), {
         description: error.message,
       });
     },
@@ -91,13 +93,13 @@ export default function ZidIntegration() {
 
   const syncMutation = trpc.zid.syncNow.useMutation({
     onSuccess: (data) => {
-      toast.success('تمت المزامنة بنجاح!', {
+      toast.success(t('zidIntegrationPage.text48'), {
         description: data.message,
       });
       refetch();
     },
     onError: (error) => {
-      toast.error('فشلت المزامنة', {
+      toast.error(t('zidIntegrationPage.text49'), {
         description: error.message,
       });
     },
@@ -105,10 +107,10 @@ export default function ZidIntegration() {
 
   const updateSettingsMutation = trpc.zid.updateSettings.useMutation({
     onSuccess: () => {
-      toast.success('تم حفظ الإعدادات');
+      toast.success(t('zidIntegrationPage.text0'));
     },
     onError: (error) => {
-      toast.error('فشل حفظ الإعدادات', {
+      toast.error(t('zidIntegrationPage.text50'), {
         description: error.message,
       });
     },
@@ -116,8 +118,8 @@ export default function ZidIntegration() {
 
   const handleConnect = () => {
     if (!storeUrl || !accessToken) {
-      toast.error('بيانات ناقصة', {
-        description: 'يرجى إدخال رابط المتجر والـ Access Token',
+      toast.error(t('zidIntegrationPage.text51'), {
+        description: t('zidIntegrationPage.text43'),
       });
       return;
     }
@@ -131,7 +133,7 @@ export default function ZidIntegration() {
   };
 
   const handleDisconnect = () => {
-    if (confirm('هل أنت متأكد من فصل متجر زد؟')) {
+    if (confirm(t('zidIntegrationPage.text52'))) {
       disconnectMutation.mutate({ merchantId });
     }
   };
@@ -171,9 +173,9 @@ export default function ZidIntegration() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl" dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">تكامل زد (Zid)</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('zidIntegrationPage.text1')}</h1>
         <p className="text-muted-foreground">
-          اربط متجرك على زد لمزامنة المنتجات والطلبات تلقائياً
+          {t('zidIntegrationPage.text28')}
         </p>
       </div>
 
@@ -186,17 +188,17 @@ export default function ZidIntegration() {
                 <Store className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <CardTitle>حالة الاتصال</CardTitle>
+                <CardTitle>{t('zidIntegrationPage.text2')}</CardTitle>
                 <CardDescription>
-                  {connection?.connected ? connection.storeName : 'غير متصل'}
+                  {connection?.connected ? connection.storeName : t('zidIntegrationPage.text27')}
                 </CardDescription>
               </div>
             </div>
             <Badge variant={connection?.connected ? 'default' : 'secondary'}>
               {connection?.connected ? (
-                <><CheckCircle2 className="h-4 w-4 ml-1" /> متصل</>
+                <><CheckCircle2 className="h-4 w-4 ml-1" />{t('zidIntegrationPage.text3')}</>
               ) : (
-                <><XCircle className="h-4 w-4 ml-1" /> غير متصل</>
+                <><XCircle className="h-4 w-4 ml-1" />{t('zidIntegrationPage.text4')}</>
               )}
             </Badge>
           </div>
@@ -207,22 +209,22 @@ export default function ZidIntegration() {
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Package className="h-5 w-5 mx-auto mb-2 text-blue-500" />
                 <div className="text-2xl font-bold">{syncStats?.products || 0}</div>
-                <div className="text-sm text-muted-foreground">منتج</div>
+                <div className="text-sm text-muted-foreground">{t('zidIntegrationPage.text5')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <ShoppingCart className="h-5 w-5 mx-auto mb-2 text-green-500" />
                 <div className="text-2xl font-bold">{syncStats?.orders || 0}</div>
-                <div className="text-sm text-muted-foreground">طلب</div>
+                <div className="text-sm text-muted-foreground">{t('zidIntegrationPage.text6')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Users className="h-5 w-5 mx-auto mb-2 text-orange-500" />
                 <div className="text-2xl font-bold">{syncStats?.customers || 0}</div>
-                <div className="text-sm text-muted-foreground">عميل</div>
+                <div className="text-sm text-muted-foreground">{t('zidIntegrationPage.text7')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <History className="h-5 w-5 mx-auto mb-2 text-purple-500" />
                 <div className="text-2xl font-bold">{syncStats?.lastSync || '-'}</div>
-                <div className="text-sm text-muted-foreground">آخر مزامنة</div>
+                <div className="text-sm text-muted-foreground">{t('zidIntegrationPage.text8')}</div>
               </div>
             </div>
           </CardContent>
@@ -235,7 +237,7 @@ export default function ZidIntegration() {
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 ml-2" />
-              الإعدادات
+              {t('zidIntegrationPage.text29')}
             </TabsTrigger>
             <TabsTrigger value="webhooks">
               <Webhook className="h-4 w-4 ml-2" />
@@ -243,7 +245,7 @@ export default function ZidIntegration() {
             </TabsTrigger>
             <TabsTrigger value="logs">
               <History className="h-4 w-4 ml-2" />
-              سجل المزامنة
+              {t('zidIntegrationPage.text30')}
             </TabsTrigger>
           </TabsList>
 
@@ -251,17 +253,17 @@ export default function ZidIntegration() {
           <TabsContent value="settings">
             <Card>
               <CardHeader>
-                <CardTitle>إعدادات المزامنة</CardTitle>
+                <CardTitle>{t('zidIntegrationPage.text9')}</CardTitle>
                 <CardDescription>
-                  تحكم في البيانات التي تريد مزامنتها من متجر زد
+                  {t('zidIntegrationPage.text31')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">المزامنة التلقائية</Label>
+                    <Label className="text-base">{t('zidIntegrationPage.text10')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      مزامنة البيانات تلقائياً عند حدوث تغييرات
+                      {t('zidIntegrationPage.text32')}
                     </p>
                   </div>
                   <Switch checked={autoSync} onCheckedChange={setAutoSync} />
@@ -269,9 +271,9 @@ export default function ZidIntegration() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">مزامنة المنتجات</Label>
+                    <Label className="text-base">{t('zidIntegrationPage.text11')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      استيراد المنتجات والمخزون من زد
+                      {t('zidIntegrationPage.text33')}
                     </p>
                   </div>
                   <Switch checked={syncProducts} onCheckedChange={setSyncProducts} />
@@ -279,9 +281,9 @@ export default function ZidIntegration() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">مزامنة الطلبات</Label>
+                    <Label className="text-base">{t('zidIntegrationPage.text12')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      استيراد الطلبات الجديدة تلقائياً
+                      {t('zidIntegrationPage.text34')}
                     </p>
                   </div>
                   <Switch checked={syncOrders} onCheckedChange={setSyncOrders} />
@@ -289,9 +291,9 @@ export default function ZidIntegration() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">مزامنة العملاء</Label>
+                    <Label className="text-base">{t('zidIntegrationPage.text13')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      استيراد بيانات العملاء من زد
+                      {t('zidIntegrationPage.text35')}
                     </p>
                   </div>
                   <Switch checked={syncCustomers} onCheckedChange={setSyncCustomers} />
@@ -300,7 +302,7 @@ export default function ZidIntegration() {
                 <div className="flex gap-3 pt-4">
                   <Button onClick={handleSaveSettings} disabled={updateSettingsMutation.isPending}>
                     {updateSettingsMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                    حفظ الإعدادات
+                    {t('zidIntegrationPage.text36')}
                   </Button>
                   <Button variant="outline" onClick={handleSync} disabled={syncMutation.isPending}>
                     {syncMutation.isPending ? (
@@ -308,10 +310,10 @@ export default function ZidIntegration() {
                     ) : (
                       <RefreshCw className="h-4 w-4 ml-2" />
                     )}
-                    مزامنة الآن
+                    {t('zidIntegrationPage.text37')}
                   </Button>
                   <Button variant="destructive" onClick={handleDisconnect}>
-                    فصل المتجر
+                    {t('zidIntegrationPage.text38')}
                   </Button>
                 </div>
               </CardContent>
@@ -322,9 +324,9 @@ export default function ZidIntegration() {
           <TabsContent value="webhooks">
             <Card>
               <CardHeader>
-                <CardTitle>إعدادات Webhooks</CardTitle>
+                <CardTitle>{t('zidIntegrationPage.text14')}</CardTitle>
                 <CardDescription>
-                  قم بإضافة رابط Webhook في لوحة تحكم زد لاستقبال التحديثات الفورية
+                  {t('zidIntegrationPage.text53')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -332,39 +334,39 @@ export default function ZidIntegration() {
                   <Webhook className="h-4 w-4" />
                   <AlertDescription>
                     <div className="space-y-2">
-                      <p className="font-medium">رابط Webhook الخاص بك:</p>
+                      <p className="font-medium">{t('zidIntegrationPage.text15')}</p>
                       <code className="block p-2 bg-muted rounded text-sm break-all">
                         {window.location.origin}/api/webhooks/zid/{merchantId}
                       </code>
                       <p className="text-sm text-muted-foreground mt-2">
-                        انسخ هذا الرابط وأضفه في إعدادات Webhooks في لوحة تحكم زد
+                        {t('zidIntegrationPage.text54')}
                       </p>
                     </div>
                   </AlertDescription>
                 </Alert>
 
                 <div className="space-y-3">
-                  <h4 className="font-medium">الأحداث المدعومة:</h4>
+                  <h4 className="font-medium">{t('zidIntegrationPage.text16')}</h4>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>order.created - طلب جديد</span>
+                      <span>{t('zidIntegrationPage.text17')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>order.updated - تحديث طلب</span>
+                      <span>{t('zidIntegrationPage.text18')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>product.created - منتج جديد</span>
+                      <span>{t('zidIntegrationPage.text19')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>product.updated - تحديث منتج</span>
+                      <span>{t('zidIntegrationPage.text20')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>inventory.updated - تحديث المخزون</span>
+                      <span>{t('zidIntegrationPage.text21')}</span>
                     </li>
                   </ul>
                 </div>
@@ -372,7 +374,7 @@ export default function ZidIntegration() {
                 <Button variant="outline" asChild>
                   <a href="https://docs.zid.sa/webhooks" target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 ml-2" />
-                    دليل إعداد Webhooks في زد
+                    {t('zidIntegrationPage.text55')}
                   </a>
                 </Button>
               </CardContent>
@@ -383,9 +385,9 @@ export default function ZidIntegration() {
           <TabsContent value="logs">
             <Card>
               <CardHeader>
-                <CardTitle>سجل المزامنة</CardTitle>
+                <CardTitle>{t('zidIntegrationPage.text22')}</CardTitle>
                 <CardDescription>
-                  آخر عمليات المزامنة مع متجر زد
+                  {t('zidIntegrationPage.text39')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -413,7 +415,7 @@ export default function ZidIntegration() {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <History className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>لا توجد سجلات مزامنة بعد</p>
+                    <p>{t('zidIntegrationPage.text23')}</p>
                   </div>
                 )}
               </CardContent>
@@ -424,9 +426,9 @@ export default function ZidIntegration() {
         /* Connection Form */
         <Card>
           <CardHeader>
-            <CardTitle>ربط متجر زد</CardTitle>
+            <CardTitle>{t('zidIntegrationPage.text24')}</CardTitle>
             <CardDescription>
-              أدخل بيانات متجرك على زد للبدء في المزامنة
+              {t('zidIntegrationPage.text40')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -439,7 +441,7 @@ export default function ZidIntegration() {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="storeUrl">رابط المتجر</Label>
+                <Label htmlFor="storeUrl">{t('zidIntegrationPage.text25')}</Label>
                 <Input
                   id="storeUrl"
                   placeholder="https://your-store.zid.store"
@@ -454,7 +456,7 @@ export default function ZidIntegration() {
                 <Input
                   id="accessToken"
                   type="password"
-                  placeholder="أدخل الـ Access Token"
+                  placeholder={t('zidIntegrationPage.text26')}
                   value={accessToken}
                   onChange={(e) => setAccessToken(e.target.value)}
                   dir="ltr"
@@ -465,12 +467,12 @@ export default function ZidIntegration() {
             <div className="flex gap-3">
               <Button onClick={handleConnect} disabled={isConnecting}>
                 {isConnecting && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                ربط المتجر
+                {t('zidIntegrationPage.text41')}
               </Button>
               <Button variant="outline" asChild>
                 <a href="https://web.zid.sa/market/app-store" target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 ml-2" />
-                  فتح لوحة تحكم زد
+                  {t('zidIntegrationPage.text42')}
                 </a>
               </Button>
             </div>

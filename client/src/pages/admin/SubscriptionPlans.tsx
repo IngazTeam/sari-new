@@ -9,8 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function SubscriptionPlans() {
+  const { t } = useTranslation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -41,12 +43,12 @@ export default function SubscriptionPlans() {
         maxCustomers: parseInt(formData.maxCustomers),
         maxWhatsAppNumbers: parseInt(formData.maxWhatsAppNumbers),
       });
-      toast.success('تم إنشاء الباقة بنجاح');
+      toast.success(t('adminSubscriptionPlansPage.text31'));
       setIsCreateDialogOpen(false);
       refetch();
       resetForm();
     } catch (error) {
-      toast.error('فشل إنشاء الباقة');
+      toast.error(t('adminSubscriptionPlansPage.text32'));
     }
   };
 
@@ -59,23 +61,23 @@ export default function SubscriptionPlans() {
         maxCustomers: formData.maxCustomers ? parseInt(formData.maxCustomers) : undefined,
         maxWhatsAppNumbers: formData.maxWhatsAppNumbers ? parseInt(formData.maxWhatsAppNumbers) : undefined,
       });
-      toast.success('تم تحديث الباقة بنجاح');
+      toast.success(t('adminSubscriptionPlansPage.text33'));
       setIsEditDialogOpen(false);
       refetch();
       resetForm();
     } catch (error) {
-      toast.error('فشل تحديث الباقة');
+      toast.error(t('adminSubscriptionPlansPage.text34'));
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('هل أنت متأكد من حذف هذه الباقة؟')) return;
+    if (!confirm(t('adminSubscriptionPlansPage.text35'))) return;
     try {
       await deletePlan.mutateAsync({ id });
-      toast.success('تم حذف الباقة بنجاح');
+      toast.success(t('adminSubscriptionPlansPage.text36'));
       refetch();
     } catch (error) {
-      toast.error('فشل حذف الباقة');
+      toast.error(t('adminSubscriptionPlansPage.text37'));
     }
   };
 
@@ -85,7 +87,7 @@ export default function SubscriptionPlans() {
       toast.success(isActive ? 'تم تعطيل الباقة' : 'تم تفعيل الباقة');
       refetch();
     } catch (error) {
-      toast.error('فشل تغيير حالة الباقة');
+      toast.error(t('adminSubscriptionPlansPage.text38'));
     }
   };
 
@@ -138,8 +140,8 @@ export default function SubscriptionPlans() {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold">إدارة الباقات</h1>
-          <p className="text-muted-foreground mt-1">إدارة باقات الاشتراك المتاحة للتجار</p>
+          <h1 className="text-3xl font-bold">{t('adminSubscriptionPlansPage.text0')}</h1>
+          <p className="text-muted-foreground mt-1">{t('adminSubscriptionPlansPage.text1')}</p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
           <Plus className="ml-2 h-4 w-4" />
@@ -165,24 +167,24 @@ export default function SubscriptionPlans() {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">السعر الشهري</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionPlansPage.text2')}</p>
                   <p className="text-2xl font-bold">{plan.monthlyPrice} {plan.currency}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">السعر السنوي</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionPlansPage.text3')}</p>
                   <p className="text-2xl font-bold">{plan.yearlyPrice} {plan.currency}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">الحد الأقصى للعملاء</p>
-                  <p className="font-semibold">{plan.maxCustomers} عميل</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionPlansPage.text4')}</p>
+                  <p className="font-semibold">{t('adminSubscriptionPlansPage.text5', { var0: plan.maxCustomers })}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">أرقام الواتساب</p>
-                  <p className="font-semibold">{plan.maxWhatsAppNumbers} رقم</p>
+                  <p className="text-sm text-muted-foreground">{t('adminSubscriptionPlansPage.text6')}</p>
+                  <p className="font-semibold">{t('adminSubscriptionPlansPage.text7', { var0: plan.maxWhatsAppNumbers })}</p>
                 </div>
                 {plan.description && (
                   <div>
-                    <p className="text-sm text-muted-foreground">الوصف</p>
+                    <p className="text-sm text-muted-foreground">{t('adminSubscriptionPlansPage.text8')}</p>
                     <p className="text-sm">{plan.description}</p>
                   </div>
                 )}
@@ -214,13 +216,13 @@ export default function SubscriptionPlans() {
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>إضافة باقة جديدة</DialogTitle>
-            <DialogDescription>أدخل تفاصيل الباقة الجديدة</DialogDescription>
+            <DialogTitle>{t('adminSubscriptionPlansPage.text9')}</DialogTitle>
+            <DialogDescription>{t('adminSubscriptionPlansPage.text10')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">الاسم بالعربية *</Label>
+                <Label htmlFor="name">{t('adminSubscriptionPlansPage.text11')}</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -228,7 +230,7 @@ export default function SubscriptionPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="nameEn">الاسم بالإنجليزية *</Label>
+                <Label htmlFor="nameEn">{t('adminSubscriptionPlansPage.text12')}</Label>
                 <Input
                   id="nameEn"
                   value={formData.nameEn}
@@ -237,7 +239,7 @@ export default function SubscriptionPlans() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">الوصف بالعربية</Label>
+              <Label htmlFor="description">{t('adminSubscriptionPlansPage.text13')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
@@ -245,7 +247,7 @@ export default function SubscriptionPlans() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="descriptionEn">الوصف بالإنجليزية</Label>
+              <Label htmlFor="descriptionEn">{t('adminSubscriptionPlansPage.text14')}</Label>
               <Textarea
                 id="descriptionEn"
                 value={formData.descriptionEn}
@@ -254,7 +256,7 @@ export default function SubscriptionPlans() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="monthlyPrice">السعر الشهري (SAR) *</Label>
+                <Label htmlFor="monthlyPrice">{t('adminSubscriptionPlansPage.text15')}</Label>
                 <Input
                   id="monthlyPrice"
                   type="number"
@@ -263,7 +265,7 @@ export default function SubscriptionPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="yearlyPrice">السعر السنوي (SAR) *</Label>
+                <Label htmlFor="yearlyPrice">{t('adminSubscriptionPlansPage.text16')}</Label>
                 <Input
                   id="yearlyPrice"
                   type="number"
@@ -274,7 +276,7 @@ export default function SubscriptionPlans() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="maxCustomers">الحد الأقصى للعملاء *</Label>
+                <Label htmlFor="maxCustomers">{t('adminSubscriptionPlansPage.text17')}</Label>
                 <Input
                   id="maxCustomers"
                   type="number"
@@ -283,7 +285,7 @@ export default function SubscriptionPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxWhatsAppNumbers">عدد أرقام الواتساب *</Label>
+                <Label htmlFor="maxWhatsAppNumbers">{t('adminSubscriptionPlansPage.text18')}</Label>
                 <Input
                   id="maxWhatsAppNumbers"
                   type="number"
@@ -293,12 +295,12 @@ export default function SubscriptionPlans() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="features">الميزات (JSON)</Label>
+              <Label htmlFor="features">{t('adminSubscriptionPlansPage.text19')}</Label>
               <Textarea
                 id="features"
                 value={formData.features}
                 onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                placeholder='["ميزة 1", "ميزة 2"]'
+                placeholder={t('adminSubscriptionPlansPage.text39')}
               />
             </div>
           </div>
@@ -317,13 +319,13 @@ export default function SubscriptionPlans() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تعديل الباقة</DialogTitle>
-            <DialogDescription>تحديث تفاصيل الباقة</DialogDescription>
+            <DialogTitle>{t('adminSubscriptionPlansPage.text20')}</DialogTitle>
+            <DialogDescription>{t('adminSubscriptionPlansPage.text21')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-name">الاسم بالعربية *</Label>
+                <Label htmlFor="edit-name">{t('adminSubscriptionPlansPage.text22')}</Label>
                 <Input
                   id="edit-name"
                   value={formData.name}
@@ -331,7 +333,7 @@ export default function SubscriptionPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-nameEn">الاسم بالإنجليزية *</Label>
+                <Label htmlFor="edit-nameEn">{t('adminSubscriptionPlansPage.text23')}</Label>
                 <Input
                   id="edit-nameEn"
                   value={formData.nameEn}
@@ -340,7 +342,7 @@ export default function SubscriptionPlans() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-description">الوصف بالعربية</Label>
+              <Label htmlFor="edit-description">{t('adminSubscriptionPlansPage.text24')}</Label>
               <Textarea
                 id="edit-description"
                 value={formData.description}
@@ -348,7 +350,7 @@ export default function SubscriptionPlans() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-descriptionEn">الوصف بالإنجليزية</Label>
+              <Label htmlFor="edit-descriptionEn">{t('adminSubscriptionPlansPage.text25')}</Label>
               <Textarea
                 id="edit-descriptionEn"
                 value={formData.descriptionEn}
@@ -357,7 +359,7 @@ export default function SubscriptionPlans() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-monthlyPrice">السعر الشهري (SAR) *</Label>
+                <Label htmlFor="edit-monthlyPrice">{t('adminSubscriptionPlansPage.text26')}</Label>
                 <Input
                   id="edit-monthlyPrice"
                   type="number"
@@ -366,7 +368,7 @@ export default function SubscriptionPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-yearlyPrice">السعر السنوي (SAR) *</Label>
+                <Label htmlFor="edit-yearlyPrice">{t('adminSubscriptionPlansPage.text27')}</Label>
                 <Input
                   id="edit-yearlyPrice"
                   type="number"
@@ -377,7 +379,7 @@ export default function SubscriptionPlans() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-maxCustomers">الحد الأقصى للعملاء *</Label>
+                <Label htmlFor="edit-maxCustomers">{t('adminSubscriptionPlansPage.text28')}</Label>
                 <Input
                   id="edit-maxCustomers"
                   type="number"
@@ -386,7 +388,7 @@ export default function SubscriptionPlans() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-maxWhatsAppNumbers">عدد أرقام الواتساب *</Label>
+                <Label htmlFor="edit-maxWhatsAppNumbers">{t('adminSubscriptionPlansPage.text29')}</Label>
                 <Input
                   id="edit-maxWhatsAppNumbers"
                   type="number"
@@ -396,12 +398,12 @@ export default function SubscriptionPlans() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-features">الميزات (JSON)</Label>
+              <Label htmlFor="edit-features">{t('adminSubscriptionPlansPage.text30')}</Label>
               <Textarea
                 id="edit-features"
                 value={formData.features}
                 onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                placeholder='["ميزة 1", "ميزة 2"]'
+                placeholder={t('adminSubscriptionPlansPage.text40')}
               />
             </div>
           </div>

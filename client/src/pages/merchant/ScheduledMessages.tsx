@@ -18,18 +18,20 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { useTranslation } from 'react-i18next';
 
 const DAYS_OF_WEEK = [
-  { value: 0, label: 'الأحد' },
-  { value: 1, label: 'الاثنين' },
-  { value: 2, label: 'الثلاثاء' },
-  { value: 3, label: 'الأربعاء' },
-  { value: 4, label: 'الخميس' },
-  { value: 5, label: 'الجمعة' },
-  { value: 6, label: 'السبت' },
+  { value: 0, label: t('scheduledMessagesPage.text23') },
+  { value: 1, label: t('scheduledMessagesPage.text24') },
+  { value: 2, label: t('scheduledMessagesPage.text25') },
+  { value: 3, label: t('scheduledMessagesPage.text26') },
+  { value: 4, label: t('scheduledMessagesPage.text27') },
+  { value: 5, label: t('scheduledMessagesPage.text28') },
+  { value: 6, label: t('scheduledMessagesPage.text29') },
 ];
 
 export default function ScheduledMessages() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   
   // Get scheduled messages
@@ -49,7 +51,7 @@ export default function ScheduledMessages() {
   // Create mutation
   const createMutation = trpc.scheduledMessages.create.useMutation({
     onSuccess: () => {
-      toast.success('تم إنشاء الرسالة المجدولة بنجاح');
+      toast.success(t('scheduledMessagesPage.text0'));
       utils.scheduledMessages.list.invalidate();
       resetForm();
     },
@@ -61,7 +63,7 @@ export default function ScheduledMessages() {
   // Update mutation
   const updateMutation = trpc.scheduledMessages.update.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث الرسالة بنجاح');
+      toast.success(t('scheduledMessagesPage.text1'));
       utils.scheduledMessages.list.invalidate();
       resetForm();
     },
@@ -73,7 +75,7 @@ export default function ScheduledMessages() {
   // Delete mutation
   const deleteMutation = trpc.scheduledMessages.delete.useMutation({
     onSuccess: () => {
-      toast.success('تم حذف الرسالة بنجاح');
+      toast.success(t('scheduledMessagesPage.text2'));
       utils.scheduledMessages.list.invalidate();
     },
     onError: (error) => {
@@ -126,7 +128,7 @@ export default function ScheduledMessages() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('هل أنت متأكد من حذف هذه الرسالة المجدولة؟')) {
+    if (confirm(t('scheduledMessagesPage.text30'))) {
       deleteMutation.mutate({ id });
     }
   };
@@ -136,15 +138,15 @@ export default function ScheduledMessages() {
   };
 
   if (isLoading) {
-    return <div className="p-6">جاري التحميل...</div>;
+    return <div className="p-6">{t('scheduledMessagesPage.text3')}</div>;
   }
 
   return (
     <div className="container max-w-6xl py-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">الرسائل المجدولة</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('scheduledMessagesPage.text4')}</h1>
         <p className="text-muted-foreground">
-          أنشئ رسائل تُرسل تلقائياً في أيام وأوقات محددة (مثل عروض الخميس الأسبوعية)
+          {t('scheduledMessagesPage.text19')}
         </p>
       </div>
 
@@ -153,7 +155,7 @@ export default function ScheduledMessages() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>{editingId ? 'تعديل الرسالة المجدولة' : 'إضافة رسالة مجدولة جديدة'}</span>
+              <span>{editingId ? t('scheduledMessagesPage.text15') : t('scheduledMessagesPage.text16')}</span>
               <Button variant="ghost" size="sm" onClick={resetForm}>
                 <X className="h-4 w-4" />
               </Button>
@@ -162,23 +164,23 @@ export default function ScheduledMessages() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="title">عنوان الرسالة</Label>
+                <Label htmlFor="title">{t('scheduledMessagesPage.text6')}</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="مثال: عرض الخميس الأسبوعي"
+                  placeholder={t('scheduledMessagesPage.text7')}
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="message">محتوى الرسالة</Label>
+                <Label htmlFor="message">{t('scheduledMessagesPage.text8')}</Label>
                 <Textarea
                   id="message"
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="مثال: عروض الخميس! خصم 20% على جميع المنتجات. العرض ساري حتى نهاية اليوم!"
+                  placeholder={t('scheduledMessagesPage.text9')}
                   rows={4}
                   required
                 />
@@ -186,7 +188,7 @@ export default function ScheduledMessages() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="dayOfWeek">اليوم</Label>
+                  <Label htmlFor="dayOfWeek">{t('scheduledMessagesPage.text10')}</Label>
                   <Select
                     value={formData.dayOfWeek.toString()}
                     onValueChange={(value) => setFormData({ ...formData, dayOfWeek: parseInt(value) })}
@@ -205,7 +207,7 @@ export default function ScheduledMessages() {
                 </div>
 
                 <div>
-                  <Label htmlFor="time">الوقت (24 ساعة)</Label>
+                  <Label htmlFor="time">{t('scheduledMessagesPage.text11')}</Label>
                   <Input
                     id="time"
                     type="time"
@@ -221,16 +223,16 @@ export default function ScheduledMessages() {
                   checked={formData.isActive}
                   onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
                 />
-                <Label>تفعيل الرسالة</Label>
+                <Label>{t('scheduledMessagesPage.text12')}</Label>
               </div>
 
               <div className="flex gap-2">
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                   <Save className="h-4 w-4 ml-2" />
-                  {editingId ? 'تحديث' : 'إضافة'}
+                  {editingId ? t('scheduledMessagesPage.text17') : t('scheduledMessagesPage.text18')}
                 </Button>
                 <Button type="button" variant="outline" onClick={resetForm}>
-                  إلغاء
+                  {t('scheduledMessagesPage.text20')}
                 </Button>
               </div>
             </form>
@@ -242,7 +244,7 @@ export default function ScheduledMessages() {
       {!showForm && (
         <Button onClick={() => setShowForm(true)} className="mb-6">
           <Plus className="h-4 w-4 ml-2" />
-          إضافة رسالة مجدولة
+          {t('scheduledMessagesPage.text21')}
         </Button>
       )}
 
@@ -251,7 +253,7 @@ export default function ScheduledMessages() {
         {messages && messages.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
-              لا توجد رسائل مجدولة. أنشئ رسالتك الأولى!
+              {t('scheduledMessagesPage.text22')}
             </CardContent>
           </Card>
         )}
@@ -264,9 +266,9 @@ export default function ScheduledMessages() {
                   <CardTitle className="flex items-center gap-2">
                     {message.title}
                     {message.isActive ? (
-                      <Badge variant="default">مفعّل</Badge>
+                      <Badge variant="default">{t('scheduledMessagesPage.text13')}</Badge>
                     ) : (
-                      <Badge variant="secondary">معطّل</Badge>
+                      <Badge variant="secondary">{t('scheduledMessagesPage.text14')}</Badge>
                     )}
                   </CardTitle>
                   <CardDescription className="mt-2 flex items-center gap-4">
@@ -308,7 +310,7 @@ export default function ScheduledMessages() {
               <p className="text-sm whitespace-pre-wrap">{message.message}</p>
               {message.lastSentAt && (
                 <p className="text-xs text-muted-foreground mt-3">
-                  آخر إرسال: {new Date(message.lastSentAt).toLocaleString('ar-SA')}
+                  {t('scheduledMessagesPage.text31', { var0: new Date(message.lastSentAt).toLocaleString('ar-SA') })}
                 </p>
               )}
             </CardContent>

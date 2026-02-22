@@ -12,14 +12,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { 
-  Package, 
-  Search, 
-  Filter, 
-  Eye, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import {
+  Package,
+  Search,
+  Filter,
+  Eye,
+  CheckCircle,
+  XCircle,
+  Clock,
   Truck,
   ShoppingBag,
   TrendingUp
@@ -67,7 +67,7 @@ export default function Orders() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل تحديث الحالة');
+      toast.error(error.message || t('ordersPage.failedUpdateStatus'));
     },
   });
 
@@ -79,7 +79,7 @@ export default function Orders() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل إلغاء الطلب');
+      toast.error(error.message || t('ordersPage.failedCancelOrder'));
     },
   });
 
@@ -98,18 +98,18 @@ export default function Orders() {
 
     cancelOrderMutation.mutate({
       orderId: selectedOrder.id,
-      reason: 'تم الإلغاء من لوحة التحكم',
+      reason: t('ordersPage.cancelledFromDashboard'),
     });
   };
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { label: string; variant: any; icon: any }> = {
-      pending: { label: 'معلق', variant: 'secondary', icon: Clock },
-      paid: { label: 'مدفوع', variant: 'default', icon: CheckCircle },
-      processing: { label: 'قيد التنفيذ', variant: 'default', icon: Package },
-      shipped: { label: 'تم الشحن', variant: 'default', icon: Truck },
-      delivered: { label: 'تم التسليم', variant: 'default', icon: CheckCircle },
-      cancelled: { label: 'ملغي', variant: 'destructive', icon: XCircle },
+      pending: { label: t('ordersPage.statusPending'), variant: 'secondary', icon: Clock },
+      paid: { label: t('ordersPage.statusPaid'), variant: 'default', icon: CheckCircle },
+      processing: { label: t('ordersPage.statusProcessing'), variant: 'default', icon: Package },
+      shipped: { label: t('ordersPage.statusShipped'), variant: 'default', icon: Truck },
+      delivered: { label: t('ordersPage.statusDelivered'), variant: 'default', icon: CheckCircle },
+      cancelled: { label: t('ordersPage.statusCancelled'), variant: 'destructive', icon: XCircle },
     };
 
     const config = variants[status] || variants.pending;
@@ -140,9 +140,9 @@ export default function Orders() {
     <div className="container py-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">إدارة الطلبات</h1>
+        <h1 className="text-3xl font-bold">{t('ordersPage.title')}</h1>
         <p className="text-muted-foreground">
-          تتبع وإدارة جميع طلبات عملائك
+          {t('ordersPage.description')}
         </p>
       </div>
 
@@ -151,7 +151,7 @@ export default function Orders() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الطلبات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('ordersPage.totalOrders')}</CardTitle>
               <ShoppingBag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -161,7 +161,7 @@ export default function Orders() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">معلقة</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('ordersPage.pending')}</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -171,7 +171,7 @@ export default function Orders() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">قيد التنفيذ</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('ordersPage.processing')}</CardTitle>
               <Package className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -181,7 +181,7 @@ export default function Orders() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">مكتملة</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('ordersPage.completed')}</CardTitle>
               <CheckCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -191,7 +191,7 @@ export default function Orders() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الإيرادات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('ordersPage.totalRevenue')}</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -204,15 +204,15 @@ export default function Orders() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>الطلبات</CardTitle>
-          <CardDescription>ابحث وفلتر الطلبات</CardDescription>
+          <CardTitle>{t('ordersPage.ordersTitle')}</CardTitle>
+          <CardDescription>{t('ordersPage.ordersDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="ابحث برقم الطلب، اسم العميل، أو رقم الجوال..."
+                placeholder={t('ordersPage.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -222,16 +222,16 @@ export default function Orders() {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full md:w-[200px]">
                 <Filter className="w-4 h-4 ml-2" />
-                <SelectValue placeholder="الحالة" />
+                <SelectValue placeholder={t('ordersPage.statusFilter')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="pending">معلق</SelectItem>
-                <SelectItem value="paid">مدفوع</SelectItem>
-                <SelectItem value="processing">قيد التنفيذ</SelectItem>
-                <SelectItem value="shipped">تم الشحن</SelectItem>
-                <SelectItem value="delivered">تم التسليم</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
+                <SelectItem value="all">{t('ordersPage.allStatuses')}</SelectItem>
+                <SelectItem value="pending">{t('ordersPage.statusPending')}</SelectItem>
+                <SelectItem value="paid">{t('ordersPage.statusPaid')}</SelectItem>
+                <SelectItem value="processing">{t('ordersPage.statusProcessing')}</SelectItem>
+                <SelectItem value="shipped">{t('ordersPage.statusShipped')}</SelectItem>
+                <SelectItem value="delivered">{t('ordersPage.statusDelivered')}</SelectItem>
+                <SelectItem value="cancelled">{t('ordersPage.statusCancelled')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -245,13 +245,13 @@ export default function Orders() {
             <table className="w-full">
               <thead className="bg-muted/50 border-b">
                 <tr>
-                  <th className="text-right p-4 font-medium">رقم الطلب</th>
-                  <th className="text-right p-4 font-medium">العميل</th>
-                  <th className="text-right p-4 font-medium">رقم الجوال</th>
-                  <th className="text-right p-4 font-medium">المبلغ</th>
-                  <th className="text-right p-4 font-medium">الحالة</th>
-                  <th className="text-right p-4 font-medium">التاريخ</th>
-                  <th className="text-right p-4 font-medium">الإجراءات</th>
+                  <th className="text-right p-4 font-medium">{t('ordersPage.orderNumber')}</th>
+                  <th className="text-right p-4 font-medium">{t('ordersPage.customer')}</th>
+                  <th className="text-right p-4 font-medium">{t('ordersPage.phoneNumber')}</th>
+                  <th className="text-right p-4 font-medium">{t('ordersPage.amount')}</th>
+                  <th className="text-right p-4 font-medium">{t('ordersPage.status')}</th>
+                  <th className="text-right p-4 font-medium">{t('ordersPage.date')}</th>
+                  <th className="text-right p-4 font-medium">{t('ordersPage.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -276,7 +276,7 @@ export default function Orders() {
                           }}
                         >
                           <Eye className="w-4 h-4 ml-2" />
-                          عرض
+                          {t('ordersPage.view')}
                         </Button>
                       </td>
                     </tr>
@@ -285,7 +285,7 @@ export default function Orders() {
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-muted-foreground">
                       <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                      <p>لا توجد طلبات</p>
+                      <p>{t('ordersPage.noOrders')}</p>
                     </td>
                   </tr>
                 )}
@@ -299,9 +299,9 @@ export default function Orders() {
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تفاصيل الطلب {selectedOrder?.orderNumber || `ORD-${selectedOrder?.id}`}</DialogTitle>
+            <DialogTitle>{t('ordersPage.orderDetails')} {selectedOrder?.orderNumber || `ORD-${selectedOrder?.id}`}</DialogTitle>
             <DialogDescription>
-              تاريخ الطلب: {selectedOrder && new Date(selectedOrder.createdAt).toLocaleString('ar-SA')}
+              {t('ordersPage.orderDate')}: {selectedOrder && new Date(selectedOrder.createdAt).toLocaleString()}
             </DialogDescription>
           </DialogHeader>
 
@@ -309,25 +309,25 @@ export default function Orders() {
             <div className="space-y-6">
               {/* Customer Info */}
               <div>
-                <h3 className="font-semibold mb-3">معلومات العميل</h3>
+                <h3 className="font-semibold mb-3">{t('ordersPage.customerInfo')}</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">الاسم:</span>
+                    <span className="text-muted-foreground">{t('ordersPage.name')}:</span>
                     <p className="font-medium">{selectedOrder.customerName}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">رقم الجوال:</span>
+                    <span className="text-muted-foreground">{t('ordersPage.phone')}:</span>
                     <p className="font-medium">{selectedOrder.customerPhone}</p>
                   </div>
                   {selectedOrder.customerEmail && (
                     <div className="col-span-2">
-                      <span className="text-muted-foreground">البريد الإلكتروني:</span>
+                      <span className="text-muted-foreground">{t('ordersPage.email')}:</span>
                       <p className="font-medium">{selectedOrder.customerEmail}</p>
                     </div>
                   )}
                   {selectedOrder.address && (
                     <div className="col-span-2">
-                      <span className="text-muted-foreground">العنوان:</span>
+                      <span className="text-muted-foreground">{t('ordersPage.address')}:</span>
                       <p className="font-medium">{selectedOrder.address}</p>
                     </div>
                   )}
@@ -336,13 +336,13 @@ export default function Orders() {
 
               {/* Order Items */}
               <div>
-                <h3 className="font-semibold mb-3">المنتجات</h3>
+                <h3 className="font-semibold mb-3">{t('ordersPage.products')}</h3>
                 <div className="space-y-2">
                   {JSON.parse(selectedOrder.items).map((item: any, index: number) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
                       <div>
                         <p className="font-medium">{item.name}</p>
-                        <p className="text-sm text-muted-foreground">الكمية: {item.quantity}</p>
+                        <p className="text-sm text-muted-foreground">{t('ordersPage.quantity')}: {item.quantity}</p>
                       </div>
                       <p className="font-medium">{formatPrice(item.price * item.quantity)}</p>
                     </div>
@@ -353,7 +353,7 @@ export default function Orders() {
               {/* Order Summary */}
               <div className="border-t pt-4">
                 <div className="flex justify-between items-center text-lg font-bold">
-                  <span>الإجمالي:</span>
+                  <span>{t('ordersPage.total')}:</span>
                   <span>{formatPrice(selectedOrder.totalAmount)}</span>
                 </div>
               </div>
@@ -361,12 +361,12 @@ export default function Orders() {
               {/* Status & Tracking */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm text-muted-foreground">الحالة:</span>
+                  <span className="text-sm text-muted-foreground">{t('ordersPage.statusLabel')}:</span>
                   <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
                 </div>
                 {selectedOrder.trackingNumber && (
                   <div>
-                    <span className="text-sm text-muted-foreground">رقم التتبع:</span>
+                    <span className="text-sm text-muted-foreground">{t('ordersPage.trackingNumber')}:</span>
                     <p className="font-medium mt-1">{selectedOrder.trackingNumber}</p>
                   </div>
                 )}
@@ -375,7 +375,7 @@ export default function Orders() {
               {/* Notes */}
               {selectedOrder.notes && (
                 <div>
-                  <span className="text-sm text-muted-foreground">ملاحظات:</span>
+                  <span className="text-sm text-muted-foreground">{t('ordersPage.notes')}:</span>
                   <p className="mt-1">{selectedOrder.notes}</p>
                 </div>
               )}
@@ -391,18 +391,18 @@ export default function Orders() {
                   disabled={selectedOrder.status === 'cancelled' || selectedOrder.status === 'delivered'}
                   className="flex-1"
                 >
-                  تحديث الحالة
+                  {t('ordersPage.updateStatus')}
                 </Button>
                 {selectedOrder.status !== 'cancelled' && selectedOrder.status !== 'delivered' && (
                   <Button
                     variant="destructive"
                     onClick={() => {
-                      if (confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
+                      if (confirm(t('ordersPage.confirmCancel'))) {
                         handleCancelOrder();
                       }
                     }}
                   >
-                    إلغاء الطلب
+                    {t('ordersPage.cancelOrder')}
                   </Button>
                 )}
               </div>
@@ -415,33 +415,33 @@ export default function Orders() {
       <Dialog open={isUpdateStatusOpen} onOpenChange={setIsUpdateStatusOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تحديث حالة الطلب</DialogTitle>
+            <DialogTitle>{t('ordersPage.updateOrderStatus')}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <Label>الحالة الجديدة</Label>
+              <Label>{t('ordersPage.newStatus')}</Label>
               <Select value={newStatus} onValueChange={setNewStatus}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر الحالة" />
+                  <SelectValue placeholder={t('ordersPage.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">معلق</SelectItem>
-                  <SelectItem value="paid">مدفوع</SelectItem>
-                  <SelectItem value="processing">قيد التنفيذ</SelectItem>
-                  <SelectItem value="shipped">تم الشحن</SelectItem>
-                  <SelectItem value="delivered">تم التسليم</SelectItem>
+                  <SelectItem value="pending">{t('ordersPage.statusPending')}</SelectItem>
+                  <SelectItem value="paid">{t('ordersPage.statusPaid')}</SelectItem>
+                  <SelectItem value="processing">{t('ordersPage.statusProcessing')}</SelectItem>
+                  <SelectItem value="shipped">{t('ordersPage.statusShipped')}</SelectItem>
+                  <SelectItem value="delivered">{t('ordersPage.statusDelivered')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {(newStatus === 'shipped' || newStatus === 'delivered') && (
               <div>
-                <Label>رقم التتبع (اختياري)</Label>
+                <Label>{t('ordersPage.trackingNumberOptional')}</Label>
                 <Input
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="أدخل رقم التتبع"
+                  placeholder={t('ordersPage.enterTrackingNumber')}
                 />
               </div>
             )}
@@ -451,7 +451,7 @@ export default function Orders() {
               disabled={!newStatus || updateStatusMutation.isPending}
               className="w-full"
             >
-              {updateStatusMutation.isPending ? 'جاري التحديث...' : 'تحديث'}
+              {updateStatusMutation.isPending ? t('ordersPage.updating') : t('ordersPage.update')}
             </Button>
           </div>
         </DialogContent>

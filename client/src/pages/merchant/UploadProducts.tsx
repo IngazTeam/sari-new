@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Upload, FileText, Download, ArrowRight, CheckCircle2, XCircle,
   AlertCircle, FileSpreadsheet, Link2, RefreshCw, Clock, Table2, Plus
@@ -11,6 +12,7 @@ import { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
 
 export default function UploadProducts() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -21,22 +23,22 @@ export default function UploadProducts() {
   const uploadCSV = trpc.products.uploadCSV.useMutation({
     onSuccess: (data) => {
       setUploadResult(data);
-      toast.success(`تم استيراد ${data.imported} منتج بنجاح`);
+      toast.success(t('uploadProductsPage.importSuccess', { count: data.imported }));
       resetFile();
     },
     onError: (error) => {
-      toast.error('فشل الرفع: ' + error.message);
+      toast.error(t('uploadProductsPage.uploadFailed') + error.message);
     },
   });
 
   const uploadExcel = trpc.products.uploadExcel.useMutation({
     onSuccess: (data) => {
       setUploadResult(data);
-      toast.success(`تم استيراد ${data.imported} منتج بنجاح`);
+      toast.success(t('uploadProductsPage.importSuccess', { count: data.imported }));
       resetFile();
     },
     onError: (error) => {
-      toast.error('فشل الرفع: ' + error.message);
+      toast.error(t('uploadProductsPage.uploadFailed') + error.message);
     },
   });
 
@@ -52,7 +54,7 @@ export default function UploadProducts() {
       sheetStatus.refetch();
     },
     onError: (error) => {
-      toast.error('فشلت المزامنة: ' + error.message);
+      toast.error(t('uploadProductsPage.syncFailed') + error.message);
     },
   });
 
@@ -69,7 +71,7 @@ export default function UploadProducts() {
 
     const ext = file.name.split('.').pop()?.toLowerCase();
     if (!['csv', 'xlsx', 'xls'].includes(ext || '')) {
-      toast.error('الملف يجب أن يكون بصيغة CSV أو Excel (.xlsx)');
+      toast.error(t('uploadProductsPage.invalidFileFormat'));
       return;
     }
     setSelectedFile(file);
@@ -78,7 +80,7 @@ export default function UploadProducts() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      toast.error('يرجى اختيار ملف أولاً');
+      toast.error(t('uploadProductsPage.selectFileFirst'));
       return;
     }
 
@@ -112,9 +114,9 @@ export default function UploadProducts() {
   const isUploading = uploadCSV.isPending || uploadExcel.isPending;
 
   const tabs = [
-    { id: 'file' as const, label: 'رفع ملف', icon: <FileSpreadsheet className="h-4 w-4" /> },
+    { id: 'file' as const, label: t('uploadProductsPage.tabFile'), icon: <FileSpreadsheet className="h-4 w-4" /> },
     { id: 'sheets' as const, label: 'Google Sheets', icon: <Link2 className="h-4 w-4" /> },
-    { id: 'template' as const, label: 'قالب جاهز', icon: <Table2 className="h-4 w-4" /> },
+    { id: 'template' as const, label: t('uploadProductsPage.tabTemplate'), icon: <Table2 className="h-4 w-4" /> },
   ];
 
   return (
@@ -122,14 +124,14 @@ export default function UploadProducts() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">استيراد المنتجات</h1>
+          <h1 className="text-3xl font-bold">{t('uploadProductsPage.title')}</h1>
           <p className="text-muted-foreground mt-2">
-            رفع المنتجات من ملف Excel أو CSV أو مزامنتها من Google Sheets
+            {t('uploadProductsPage.subtitle')}
           </p>
         </div>
         <Button variant="outline" onClick={() => setLocation('/merchant/products')}>
           <ArrowRight className="h-4 w-4 ml-2" />
-          العودة للمنتجات
+          {t('uploadProductsPage.backToProducts')}
         </Button>
       </div>
 
@@ -140,8 +142,8 @@ export default function UploadProducts() {
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setUploadResult(null); }}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${activeTab === tab.id
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/40'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/40'
               }`}
           >
             {tab.icon}
@@ -157,10 +159,10 @@ export default function UploadProducts() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Upload className="h-5 w-5 text-primary" />
-                رفع ملف CSV أو Excel
+                {t('uploadProductsPage.uploadCsvExcel')}
               </CardTitle>
               <CardDescription>
-                يدعم ملفات .csv و .xlsx — العناوين يمكن أن تكون بالعربي أو الإنجليزي
+                {t('uploadProductsPage.uploadCsvExcelDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -181,37 +183,37 @@ export default function UploadProducts() {
                       <span className="font-medium">{selectedFile.name}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      الحجم: {(selectedFile.size / 1024).toFixed(1)} KB
+                      {t('uploadProductsPage.fileSize', { size: (selectedFile.size / 1024).toFixed(1) })}
                     </p>
                     <div className="flex gap-2 justify-center">
                       <Button onClick={handleUpload} disabled={isUploading}>
                         {isUploading ? (
                           <>
                             <RefreshCw className="h-4 w-4 ml-2 animate-spin" />
-                            جاري الاستيراد...
+                            {t('uploadProductsPage.importing')}
                           </>
                         ) : (
                           <>
                             <Upload className="h-4 w-4 ml-2" />
-                            رفع واستيراد
+                            {t('uploadProductsPage.uploadAndImport')}
                           </>
                         )}
                       </Button>
-                      <Button variant="outline" onClick={resetFile}>إلغاء</Button>
+                      <Button variant="outline" onClick={resetFile}>{t('uploadProductsPage.cancel')}</Button>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground" />
                     <div>
-                      <p className="text-lg font-medium">اختر ملف Excel أو CSV</p>
+                      <p className="text-lg font-medium">{t('uploadProductsPage.selectExcelCsv')}</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        صيغ مدعومة: .xlsx, .csv
+                        {t('uploadProductsPage.supportedFormats')}
                       </p>
                     </div>
                     <Button onClick={() => fileInputRef.current?.click()}>
                       <Plus className="h-4 w-4 ml-2" />
-                      اختيار ملف
+                      {t('uploadProductsPage.chooseFile')}
                     </Button>
                   </div>
                 )}
@@ -220,7 +222,7 @@ export default function UploadProducts() {
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>الأعمدة المدعومة:</strong> الاسم (مطلوب) · السعر · الوصف · الكمية · التصنيف · رابط الصورة
+                  <strong>{t('uploadProductsPage.supportedColumns')}</strong> {t('uploadProductsPage.supportedColumnsList')}
                 </AlertDescription>
               </Alert>
             </CardContent>
@@ -238,10 +240,10 @@ export default function UploadProducts() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Link2 className="h-5 w-5 text-green-600" />
-                مزامنة من Google Sheets
+                {t('uploadProductsPage.syncGoogleSheets')}
               </CardTitle>
               <CardDescription>
-                اربط جدول Google Sheets وزامن منتجاتك تلقائياً
+                {t('uploadProductsPage.syncGoogleSheetsDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -251,11 +253,11 @@ export default function UploadProducts() {
                   <div className="flex items-center gap-3 p-4 rounded-lg bg-green-50 border border-green-200">
                     <CheckCircle2 className="h-6 w-6 text-green-600 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="font-medium text-green-900">متصل بـ Google Sheets</p>
+                      <p className="font-medium text-green-900">{t('uploadProductsPage.connectedSheets')}</p>
                       {sheetStatus.data.lastSync && (
                         <p className="text-sm text-green-700 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          آخر مزامنة: {new Date(sheetStatus.data.lastSync).toLocaleString('ar-SA')}
+                          {t('uploadProductsPage.lastSync')} {new Date(sheetStatus.data.lastSync).toLocaleString('ar-SA')}
                         </p>
                       )}
                     </div>
@@ -265,7 +267,7 @@ export default function UploadProducts() {
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>
-                      تأكد من وجود ورقة باسم <strong>"المنتجات"</strong> أو <strong>"Products"</strong> في الشيت، مع أعمدة: الاسم، السعر، الوصف، الكمية، التصنيف، رابط الصورة
+                      {t('uploadProductsPage.sheetInstructions')}
                     </AlertDescription>
                   </Alert>
 
@@ -279,12 +281,12 @@ export default function UploadProducts() {
                       {syncSheets.isPending ? (
                         <>
                           <RefreshCw className="h-4 w-4 ml-2 animate-spin" />
-                          جاري المزامنة...
+                          {t('uploadProductsPage.syncing')}
                         </>
                       ) : (
                         <>
                           <RefreshCw className="h-4 w-4 ml-2" />
-                          مزامنة الآن
+                          {t('uploadProductsPage.syncNow')}
                         </>
                       )}
                     </Button>
@@ -292,23 +294,23 @@ export default function UploadProducts() {
 
                   {/* Smart sync note */}
                   <p className="text-xs text-muted-foreground text-center">
-                    المزامنة ذكية — المنتجات الموجودة يتم تحديثها والجديدة تُضاف تلقائياً
+                    {t('uploadProductsPage.smartSyncNote')}
                   </p>
                 </div>
               ) : (
                 <div className="text-center py-8 space-y-4">
                   <Link2 className="h-12 w-12 mx-auto text-muted-foreground" />
                   <div>
-                    <p className="text-lg font-medium">Google Sheets غير مربوط</p>
+                    <p className="text-lg font-medium">{t('uploadProductsPage.sheetsNotLinked')}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      اربط حسابك من صفحة التكاملات أولاً
+                      {t('uploadProductsPage.linkFromIntegrations')}
                     </p>
                   </div>
                   <Button
                     variant="outline"
                     onClick={() => setLocation('/merchant/integrations')}
                   >
-                    الذهاب لصفحة التكاملات
+                    {t('uploadProductsPage.goToIntegrations')}
                   </Button>
                 </div>
               )}
@@ -321,26 +323,26 @@ export default function UploadProducts() {
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
-                  <CardTitle className="text-green-900">نتيجة المزامنة</CardTitle>
+                  <CardTitle className="text-green-900">{t('uploadProductsPage.syncResult')}</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div className="p-3 rounded-lg bg-white/60">
                     <p className="text-2xl font-bold text-green-600">{uploadResult.imported || 0}</p>
-                    <p className="text-xs text-muted-foreground">منتج جديد</p>
+                    <p className="text-xs text-muted-foreground">{t('uploadProductsPage.newProduct')}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-white/60">
                     <p className="text-2xl font-bold text-blue-600">{uploadResult.updated || 0}</p>
-                    <p className="text-xs text-muted-foreground">تم تحديثه</p>
+                    <p className="text-xs text-muted-foreground">{t('uploadProductsPage.updated')}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-white/60">
                     <p className="text-2xl font-bold text-gray-500">{uploadResult.skipped || 0}</p>
-                    <p className="text-xs text-muted-foreground">تم تخطيه</p>
+                    <p className="text-xs text-muted-foreground">{t('uploadProductsPage.skipped')}</p>
                   </div>
                 </div>
                 <Button className="w-full mt-4" onClick={() => setLocation('/merchant/products')}>
-                  عرض المنتجات
+                  {t('uploadProductsPage.viewProducts')}
                 </Button>
               </CardContent>
             </Card>
@@ -355,10 +357,10 @@ export default function UploadProducts() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Table2 className="h-5 w-5 text-purple-600" />
-                تحميل قالب جاهز
+                {t('uploadProductsPage.downloadTemplate')}
               </CardTitle>
               <CardDescription>
-                حمّل القالب، عبّي بيانات منتجاتك، ثم ارفعه من تبويب "رفع ملف"
+                {t('uploadProductsPage.downloadTemplateDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -369,13 +371,13 @@ export default function UploadProducts() {
                     <span className="text-sm font-bold text-purple-700">1</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-medium">حمّل القالب</h3>
+                    <h3 className="font-medium">{t('uploadProductsPage.step1Download')}</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      اختر صيغة القالب المناسبة لك
+                      {t('uploadProductsPage.step1DownloadDesc')}
                     </p>
                     <Button variant="outline" size="sm" className="mt-2" onClick={() => downloadTemplate('csv')}>
                       <Download className="h-4 w-4 ml-2" />
-                      تحميل قالب CSV
+                      {t('uploadProductsPage.downloadCsvTemplate')}
                     </Button>
                   </div>
                 </div>
@@ -385,9 +387,9 @@ export default function UploadProducts() {
                     <span className="text-sm font-bold text-purple-700">2</span>
                   </div>
                   <div>
-                    <h3 className="font-medium">أدخل بيانات منتجاتك</h3>
+                    <h3 className="font-medium">{t('uploadProductsPage.step2Fill')}</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      افتح القالب في Excel أو Google Sheets وأدخل بيانات كل منتج في سطر
+                      {t('uploadProductsPage.step2FillDesc')}
                     </p>
                   </div>
                 </div>
@@ -397,13 +399,13 @@ export default function UploadProducts() {
                     <span className="text-sm font-bold text-purple-700">3</span>
                   </div>
                   <div>
-                    <h3 className="font-medium">ارفع الملف</h3>
+                    <h3 className="font-medium">{t('uploadProductsPage.step3Upload')}</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      انتقل لتبويب "رفع ملف" وارفع الملف المعبّأ
+                      {t('uploadProductsPage.step3UploadDesc')}
                     </p>
                     <Button variant="outline" size="sm" className="mt-2" onClick={() => setActiveTab('file')}>
                       <ArrowRight className="h-4 w-4 ml-2" />
-                      الانتقال لرفع ملف
+                      {t('uploadProductsPage.goToFileUpload')}
                     </Button>
                   </div>
                 </div>
@@ -411,32 +413,32 @@ export default function UploadProducts() {
 
               {/* Column reference */}
               <div className="bg-muted/50 p-4 rounded-lg">
-                <h4 className="font-medium mb-3">الأعمدة المتوفرة:</h4>
+                <h4 className="font-medium mb-3">{t('uploadProductsPage.availableColumns')}</h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-right border-b">
-                        <th className="p-2 font-medium">العمود</th>
-                        <th className="p-2 font-medium">مطلوب</th>
-                        <th className="p-2 font-medium">مثال</th>
+                        <th className="p-2 font-medium">{t('uploadProductsPage.column')}</th>
+                        <th className="p-2 font-medium">{t('uploadProductsPage.required')}</th>
+                        <th className="p-2 font-medium">{t('uploadProductsPage.example')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {[
-                        { name: 'الاسم', required: true, example: 'هاتف ذكي' },
-                        { name: 'السعر', required: false, example: '1999.99' },
-                        { name: 'الوصف', required: false, example: 'هاتف بمواصفات عالية' },
-                        { name: 'الكمية', required: false, example: '50' },
-                        { name: 'التصنيف', required: false, example: 'إلكترونيات' },
-                        { name: 'رابط الصورة', required: false, example: 'https://...' },
+                        { name: t('uploadProductsPage.colName'), required: true, example: t('uploadProductsPage.exName') },
+                        { name: t('uploadProductsPage.colPrice'), required: false, example: '1999.99' },
+                        { name: t('uploadProductsPage.colDesc'), required: false, example: t('uploadProductsPage.exDesc') },
+                        { name: t('uploadProductsPage.colQty'), required: false, example: '50' },
+                        { name: t('uploadProductsPage.colCategory'), required: false, example: t('uploadProductsPage.exCategory') },
+                        { name: t('uploadProductsPage.colImage'), required: false, example: 'https://...' },
                       ].map(col => (
                         <tr key={col.name} className="border-b last:border-0">
                           <td className="p-2 font-medium">{col.name}</td>
                           <td className="p-2">
                             {col.required ? (
-                              <span className="text-red-500 text-xs font-medium">مطلوب</span>
+                              <span className="text-red-500 text-xs font-medium">{t('uploadProductsPage.required')}</span>
                             ) : (
-                              <span className="text-muted-foreground text-xs">اختياري</span>
+                              <span className="text-muted-foreground text-xs">{t('uploadProductsPage.optional')}</span>
                             )}
                           </td>
                           <td className="p-2 text-muted-foreground font-mono text-xs">{col.example}</td>
@@ -456,33 +458,34 @@ export default function UploadProducts() {
 
 // ────────── Shared Result Card ──────────
 function ResultCard({ result, onViewProducts }: { result: any; onViewProducts: () => void }) {
+  const { t } = useTranslation();
   return (
     <Card className="border-green-200 bg-green-50/50">
       <CardHeader>
         <div className="flex items-center gap-2">
           <CheckCircle2 className="h-5 w-5 text-green-600" />
-          <CardTitle className="text-green-900">نتيجة الاستيراد</CardTitle>
+          <CardTitle className="text-green-900">{t('uploadProductsPage.importResult')}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
         <div className="grid gap-3">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">إجمالي السجلات:</span>
+            <span className="text-sm font-medium">{t('uploadProductsPage.totalRecords')}</span>
             <span className="text-sm">{result.total}</span>
           </div>
           <div className="flex justify-between items-center text-green-600">
-            <span className="text-sm font-medium">تم الاستيراد بنجاح:</span>
+            <span className="text-sm font-medium">{t('uploadProductsPage.importedSuccess')}</span>
             <span className="text-sm font-bold">{result.imported}</span>
           </div>
           {result.failed > 0 && (
             <div className="flex justify-between items-center text-red-600">
-              <span className="text-sm font-medium">فشل الاستيراد:</span>
+              <span className="text-sm font-medium">{t('uploadProductsPage.importFailed')}</span>
               <span className="text-sm font-bold">{result.failed}</span>
             </div>
           )}
           {result.errors?.length > 0 && (
             <div className="mt-2 p-3 rounded bg-red-50 border border-red-200">
-              <p className="text-xs font-medium text-red-800 mb-1">تفاصيل الأخطاء:</p>
+              <p className="text-xs font-medium text-red-800 mb-1">{t('uploadProductsPage.errorDetails')}</p>
               {result.errors.map((err: string, i: number) => (
                 <p key={i} className="text-xs text-red-600 flex items-start gap-1">
                   <XCircle className="h-3 w-3 mt-0.5 flex-shrink-0" />
@@ -493,7 +496,7 @@ function ResultCard({ result, onViewProducts }: { result: any; onViewProducts: (
           )}
         </div>
         <Button className="w-full mt-4" onClick={onViewProducts}>
-          عرض المنتجات
+          {t('uploadProductsPage.viewProducts')}
         </Button>
       </CardContent>
     </Card>

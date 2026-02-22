@@ -7,8 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Calendar, CreditCard, AlertCircle, Check, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 export default function MySubscription() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   
   const { data: subscription, isLoading, refetch } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
@@ -17,16 +19,16 @@ export default function MySubscription() {
   const cancelSubscription = trpc.merchantSubscription.cancelSubscription.useMutation();
 
   const handleCancel = async () => {
-    if (!confirm('هل أنت متأكد من إلغاء الاشتراك؟ سيتم إيقاف جميع الميزات عند انتهاء الفترة الحالية.')) {
+    if (!confirm(t('mySubscriptionPage.text34'))) {
       return;
     }
 
     try {
       await cancelSubscription.mutateAsync();
-      toast.success('تم إلغاء الاشتراك بنجاح');
+      toast.success(t('mySubscriptionPage.text0'));
       refetch();
     } catch (error: any) {
-      toast.error(error.message || 'فشل إلغاء الاشتراك');
+      toast.error(error.message || t('mySubscriptionPage.text23'));
     }
   };
 
@@ -50,12 +52,12 @@ export default function MySubscription() {
       <div className="container py-8">
         <Card>
           <CardHeader>
-            <CardTitle>لا يوجد اشتراك نشط</CardTitle>
-            <CardDescription>اشترك الآن للاستمتاع بجميع ميزات ساري</CardDescription>
+            <CardTitle>{t('mySubscriptionPage.text1')}</CardTitle>
+            <CardDescription>{t('mySubscriptionPage.text2')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={handleUpgrade}>
-              عرض الباقات
+              {t('mySubscriptionPage.text24')}
             </Button>
           </CardContent>
         </Card>
@@ -65,10 +67,10 @@ export default function MySubscription() {
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
-      trial: { variant: 'secondary', label: 'فترة تجريبية' },
-      active: { variant: 'default', label: 'نشط' },
-      expired: { variant: 'destructive', label: 'منتهي' },
-      cancelled: { variant: 'outline', label: 'ملغي' },
+      trial: { variant: 'secondary', label: t('mySubscriptionPage.text30') },
+      active: { variant: 'default', label: t('mySubscriptionPage.text31') },
+      expired: { variant: 'destructive', label: t('mySubscriptionPage.text32') },
+      cancelled: { variant: 'outline', label: t('mySubscriptionPage.text33') },
     };
     const config = variants[status] || { variant: 'outline', label: status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -80,8 +82,8 @@ export default function MySubscription() {
   return (
     <div className="container py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إدارة الاشتراك</h1>
-        <p className="text-muted-foreground mt-1">تفاصيل اشتراكك الحالي وسجل المدفوعات</p>
+        <h1 className="text-3xl font-bold">{t('mySubscriptionPage.text3')}</h1>
+        <p className="text-muted-foreground mt-1">{t('mySubscriptionPage.text4')}</p>
       </div>
 
       {/* Expiry Warning */}
@@ -89,9 +91,9 @@ export default function MySubscription() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            اشتراكك سينتهي خلال {daysRemaining} يوم. قم بالتجديد الآن لتجنب انقطاع الخدمة.
+            {t('mySubscriptionPage.text35', { var0: daysRemaining })}
             <Button size="sm" className="mr-4" onClick={handleUpgrade}>
-              تجديد الآن
+              {t('mySubscriptionPage.text25')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -101,9 +103,9 @@ export default function MySubscription() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            انتهى اشتراكك. اشترك الآن لاستعادة الوصول إلى جميع الميزات.
+            {t('mySubscriptionPage.text26')}
             <Button size="sm" className="mr-4" onClick={handleUpgrade}>
-              اشترك الآن
+              {t('mySubscriptionPage.text27')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -126,7 +128,7 @@ export default function MySubscription() {
             <div className="p-4 rounded-lg bg-muted">
               <div className="flex items-center gap-2 mb-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">الأيام المتبقية</p>
+                <p className="text-sm text-muted-foreground">{t('mySubscriptionPage.text5')}</p>
               </div>
               <p className="text-3xl font-bold">{daysRemaining || 0}</p>
             </div>
@@ -134,7 +136,7 @@ export default function MySubscription() {
             <div className="p-4 rounded-lg bg-muted">
               <div className="flex items-center gap-2 mb-2">
                 <Check className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">الحد الأقصى للعملاء</p>
+                <p className="text-sm text-muted-foreground">{t('mySubscriptionPage.text6')}</p>
               </div>
               <p className="text-3xl font-bold">{subscription.plan?.maxCustomers.toLocaleString()}</p>
             </div>
@@ -142,10 +144,10 @@ export default function MySubscription() {
             <div className="p-4 rounded-lg bg-muted">
               <div className="flex items-center gap-2 mb-2">
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">دورة الفوترة</p>
+                <p className="text-sm text-muted-foreground">{t('mySubscriptionPage.text7')}</p>
               </div>
               <p className="text-2xl font-bold">
-                {subscription.billingCycle === 'monthly' ? 'شهري' : 'سنوي'}
+                {subscription.billingCycle === 'monthly' ? t('mySubscriptionPage.text17') : t('mySubscriptionPage.text18')}
               </p>
             </div>
           </div>
@@ -153,7 +155,7 @@ export default function MySubscription() {
           {/* Dates */}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <p className="text-sm text-muted-foreground mb-1">تاريخ البدء</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('mySubscriptionPage.text8')}</p>
               <p className="font-semibold">
                 {new Date(subscription.startDate).toLocaleDateString('ar-SA', {
                   year: 'numeric',
@@ -163,7 +165,7 @@ export default function MySubscription() {
               </p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">تاريخ الانتهاء</p>
+              <p className="text-sm text-muted-foreground mb-1">{t('mySubscriptionPage.text9')}</p>
               <p className="font-semibold">
                 {new Date(subscription.endDate).toLocaleDateString('ar-SA', {
                   year: 'numeric',
@@ -178,14 +180,14 @@ export default function MySubscription() {
           <div className="flex gap-3 pt-4">
             <Button onClick={handleUpgrade} className="flex-1">
               <TrendingUp className="ml-2 h-4 w-4" />
-              ترقية الباقة
+              {t('mySubscriptionPage.text28')}
             </Button>
             <Button 
               variant="outline" 
               onClick={() => setLocation('/merchant/subscription/compare')}
               className="flex-1"
             >
-              مقارنة الباقات
+              {t('mySubscriptionPage.text29')}
             </Button>
             {subscription.status === 'active' && (
               <Button
@@ -193,7 +195,7 @@ export default function MySubscription() {
                 onClick={handleCancel}
                 disabled={cancelSubscription.isPending}
               >
-                {cancelSubscription.isPending ? 'جاري الإلغاء...' : 'إلغاء الاشتراك'}
+                {cancelSubscription.isPending ? t('mySubscriptionPage.text19') : t('mySubscriptionPage.text20')}
               </Button>
             )}
           </div>
@@ -203,18 +205,18 @@ export default function MySubscription() {
       {/* Payment History */}
       <Card>
         <CardHeader>
-          <CardTitle>سجل المدفوعات</CardTitle>
-          <CardDescription>آخر 10 معاملات</CardDescription>
+          <CardTitle>{t('mySubscriptionPage.text10')}</CardTitle>
+          <CardDescription>{t('mySubscriptionPage.text11')}</CardDescription>
         </CardHeader>
         <CardContent>
           {transactions && transactions.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead>الوصف</TableHead>
-                  <TableHead>المبلغ</TableHead>
-                  <TableHead>الحالة</TableHead>
+                  <TableHead>{t('mySubscriptionPage.text12')}</TableHead>
+                  <TableHead>{t('mySubscriptionPage.text13')}</TableHead>
+                  <TableHead>{t('mySubscriptionPage.text14')}</TableHead>
+                  <TableHead>{t('mySubscriptionPage.text15')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -230,7 +232,7 @@ export default function MySubscription() {
                     <TableCell>
                       <Badge variant={transaction.status === 'completed' ? 'default' : 'secondary'}>
                         {transaction.status === 'completed' ? 'مكتمل' : 
-                         transaction.status === 'pending' ? 'قيد الانتظار' : 'فشل'}
+                         transaction.status === 'pending' ? t('mySubscriptionPage.text21') : t('mySubscriptionPage.text22')}
                       </Badge>
                     </TableCell>
                   </TableRow>
@@ -238,7 +240,7 @@ export default function MySubscription() {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-center text-muted-foreground py-8">لا توجد معاملات</p>
+            <p className="text-center text-muted-foreground py-8">{t('mySubscriptionPage.text16')}</p>
           )}
         </CardContent>
       </Card>

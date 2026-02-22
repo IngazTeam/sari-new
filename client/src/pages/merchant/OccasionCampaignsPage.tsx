@@ -12,12 +12,12 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 // Occasion names in Arabic
 const OCCASION_NAMES: Record<string, string> = {
-  ramadan: 'رمضان المبارك',
-  eid_fitr: 'عيد الفطر المبارك',
-  eid_adha: 'عيد الأضحى المبارك',
-  national_day: 'اليوم الوطني السعودي',
-  new_year: 'رأس السنة الميلادية',
-  hijri_new_year: 'رأس السنة الهجرية',
+  ramadan: t('occasionCampaignsPagePage.text39'),
+  eid_fitr: t('occasionCampaignsPagePage.text40'),
+  eid_adha: t('occasionCampaignsPagePage.text41'),
+  national_day: t('occasionCampaignsPagePage.text42'),
+  new_year: t('occasionCampaignsPagePage.text43'),
+  hijri_new_year: t('occasionCampaignsPagePage.text44'),
 };
 
 // Occasion emojis
@@ -83,20 +83,20 @@ export default function OccasionCampaignsPage() {
         return (
           <Badge variant="default" className="bg-green-600">
             <CheckCircle2 className="h-3 w-3 ml-1" />
-            تم الإرسال
+            {t('occasionCampaignsPagePage.text29')}
           </Badge>
         );
       case 'pending':
         return (
           <Badge variant="secondary">
             <Clock className="h-3 w-3 ml-1" />
-            قيد الانتظار
+            {t('occasionCampaignsPagePage.text30')}
           </Badge>
         );
       case 'failed':
         return (
           <Badge variant="destructive">
-            فشل
+            {t('occasionCampaignsPagePage.text31')}
           </Badge>
         );
       default:
@@ -107,9 +107,9 @@ export default function OccasionCampaignsPage() {
   return (
     <div className="container mx-auto py-8 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">حملات المناسبات التلقائية</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('occasionCampaignsPagePage.text0')}</h1>
         <p className="text-muted-foreground">
-          أرسل عروضاً خاصة تلقائياً في المناسبات المهمة مع كودات خصم محدودة
+          {t('occasionCampaignsPagePage.text32')}
         </p>
       </div>
 
@@ -117,7 +117,7 @@ export default function OccasionCampaignsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الحملات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('occasionCampaignsPagePage.text1')}</CardTitle>
             <Gift className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -127,7 +127,7 @@ export default function OccasionCampaignsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الحملات المرسلة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('occasionCampaignsPagePage.text2')}</CardTitle>
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -137,7 +137,7 @@ export default function OccasionCampaignsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المستلمين</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('occasionCampaignsPagePage.text3')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -151,17 +151,17 @@ export default function OccasionCampaignsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            المناسبات القادمة (30 يوم)
+            {t('occasionCampaignsPagePage.text33')}
           </CardTitle>
           <CardDescription>
-            سيتم إرسال الحملات تلقائياً في هذه المناسبات إذا كانت مفعّلة
+            {t('occasionCampaignsPagePage.text34')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {upcomingOccasions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>لا توجد مناسبات قادمة في الـ 30 يوم القادمة</p>
+              <p>{t('occasionCampaignsPagePage.text4')}</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -176,11 +176,11 @@ export default function OccasionCampaignsPage() {
                   <CardContent>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">التاريخ:</span>
+                        <span className="text-muted-foreground">{t('occasionCampaignsPagePage.text5')}</span>
                         <span className="font-medium">{formatDate(new Date(occasion.date))}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">بعد:</span>
+                        <span className="text-muted-foreground">{t('occasionCampaignsPagePage.text6')}</span>
                         <Badge variant="outline">{occasion.daysUntil} يوم</Badge>
                       </div>
                     </div>
@@ -195,30 +195,30 @@ export default function OccasionCampaignsPage() {
       {/* Campaigns History */}
       <Card>
         <CardHeader>
-          <CardTitle>سجل الحملات</CardTitle>
+          <CardTitle>{t('occasionCampaignsPagePage.text8')}</CardTitle>
           <CardDescription>
-            عرض جميع حملات المناسبات السابقة والمستقبلية
+            {t('occasionCampaignsPagePage.text35')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {campaigns.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Gift className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>لم يتم إرسال أي حملات بعد</p>
-              <p className="text-sm mt-2">سيتم إنشاء الحملات تلقائياً عند حلول المناسبات</p>
+              <p>{t('occasionCampaignsPagePage.text9')}</p>
+              <p className="text-sm mt-2">{t('occasionCampaignsPagePage.text10')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>المناسبة</TableHead>
-                  <TableHead>السنة</TableHead>
-                  <TableHead>نسبة الخصم</TableHead>
-                  <TableHead>كود الخصم</TableHead>
-                  <TableHead>عدد المستلمين</TableHead>
-                  <TableHead>تاريخ الإرسال</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>مفعّلة</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text11')}</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text12')}</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text13')}</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text14')}</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text15')}</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text16')}</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text17')}</TableHead>
+                  <TableHead>{t('occasionCampaignsPagePage.text18')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -264,7 +264,7 @@ export default function OccasionCampaignsPage() {
       {/* How It Works Section */}
       <Card>
         <CardHeader>
-          <CardTitle>كيف يعمل النظام؟</CardTitle>
+          <CardTitle>{t('occasionCampaignsPagePage.text19')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-start gap-3">
@@ -272,9 +272,9 @@ export default function OccasionCampaignsPage() {
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <div>
-              <p className="font-medium">كشف تلقائي للمناسبات</p>
+              <p className="font-medium">{t('occasionCampaignsPagePage.text20')}</p>
               <p className="text-sm text-muted-foreground">
-                يتحقق النظام يومياً من المناسبات الحالية (رمضان، العيد، اليوم الوطني، إلخ)
+                {t('occasionCampaignsPagePage.text36')}
               </p>
             </div>
           </div>
@@ -284,9 +284,9 @@ export default function OccasionCampaignsPage() {
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <div>
-              <p className="font-medium">إنشاء كود خصم تلقائي</p>
+              <p className="font-medium">{t('occasionCampaignsPagePage.text21')}</p>
               <p className="text-sm text-muted-foreground">
-                يتم إنشاء كود خصم حصري لكل مناسبة بنسبة خصم محددة (15%-25%)
+                {t('occasionCampaignsPagePage.text45')}
               </p>
             </div>
           </div>
@@ -296,9 +296,9 @@ export default function OccasionCampaignsPage() {
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <div>
-              <p className="font-medium">إرسال رسائل احترافية</p>
+              <p className="font-medium">{t('occasionCampaignsPagePage.text22')}</p>
               <p className="text-sm text-muted-foreground">
-                يتم إرسال رسالة تهنئة مع العرض الخاص لجميع عملائك عبر الواتساب
+                {t('occasionCampaignsPagePage.text37')}
               </p>
             </div>
           </div>
@@ -308,9 +308,9 @@ export default function OccasionCampaignsPage() {
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <div>
-              <p className="font-medium">تحكم كامل</p>
+              <p className="font-medium">{t('occasionCampaignsPagePage.text23')}</p>
               <p className="text-sm text-muted-foreground">
-                يمكنك تفعيل أو تعطيل الحملات في أي وقت حسب رغبتك
+                {t('occasionCampaignsPagePage.text38')}
               </p>
             </div>
           </div>
@@ -320,31 +320,31 @@ export default function OccasionCampaignsPage() {
       {/* Tips Section */}
       <Card className="border-primary/30 bg-primary/10/50">
         <CardHeader>
-          <CardTitle className="text-primary">💡 نصائح لزيادة المبيعات</CardTitle>
+          <CardTitle className="text-primary">{t('occasionCampaignsPagePage.text24')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-primary">
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold">•</span>
             <p className="text-sm">
-              <strong>استعد مبكراً:</strong> تأكد من تحديث منتجاتك وأسعارك قبل المناسبات بأسبوع
+              <strong>{t('occasionCampaignsPagePage.text25')}</strong> {t('occasionCampaignsPagePage.text46')}
             </p>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold">•</span>
             <p className="text-sm">
-              <strong>خصومات جذابة:</strong> نسبة الخصم الموصى بها: 20% لرمضان، 25% للعيد، 23% لليوم الوطني
+              <strong>{t('occasionCampaignsPagePage.text26')}</strong> {t('occasionCampaignsPagePage.text47')}
             </p>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold">•</span>
             <p className="text-sm">
-              <strong>تابع الأداء:</strong> راقب عدد المستلمين واستخدام كودات الخصم لتحسين الحملات المستقبلية
+              <strong>{t('occasionCampaignsPagePage.text27')}</strong> {t('occasionCampaignsPagePage.text48')}
             </p>
           </div>
           <div className="flex items-start gap-2">
             <span className="text-primary font-bold">•</span>
             <p className="text-sm">
-              <strong>رد سريع:</strong> كن مستعداً للرد على استفسارات العملاء بسرعة خلال المناسبات
+              <strong>{t('occasionCampaignsPagePage.text28')}</strong> {t('occasionCampaignsPagePage.text49')}
             </p>
           </div>
         </CardContent>

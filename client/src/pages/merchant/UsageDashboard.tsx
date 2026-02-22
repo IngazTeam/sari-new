@@ -15,8 +15,10 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 export default function UsageDashboard() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { data: usage, isLoading } = trpc.usage.getCurrentUsage.useQuery();
 
@@ -41,7 +43,7 @@ export default function UsageDashboard() {
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            لا يمكن تحميل بيانات الاستخدام. يرجى المحاولة لاحقاً.
+            {t('usageDashboardPage.text11')}
           </AlertDescription>
         </Alert>
       </div>
@@ -61,52 +63,52 @@ export default function UsageDashboard() {
   };
 
   const getStatusMessage = (percentage: number, name: string) => {
-    if (percentage >= 100) return `وصلت إلى الحد الأقصى من ${name}`;
-    if (percentage >= 90) return `اقتربت من الحد الأقصى (${percentage.toFixed(0)}%)`;
-    if (percentage >= 70) return `استهلكت ${percentage.toFixed(0)}% من ${name}`;
-    return `استخدام جيد (${percentage.toFixed(0)}%)`;
+    if (percentage >= 100) return t('usageDashboardPage.text27', { var0: name });
+    if (percentage >= 90) return t('usageDashboardPage.text28', { var0: percentage.toFixed(0) });
+    if (percentage >= 70) return t('usageDashboardPage.text29', { var0: percentage.toFixed(0), var1: name });
+    return t('usageDashboardPage.text30', { var0: percentage.toFixed(0) });
   };
 
   const usageItems = [
     {
       icon: Users,
-      title: 'العملاء',
+      title: t('usageDashboardPage.text17'),
       current: usage.customers.current,
       max: usage.customers.max,
       percentage: usage.customers.percentage,
-      description: 'عدد العملاء المسجلين',
+      description: t('usageDashboardPage.text18'),
     },
     {
       icon: MessageSquare,
-      title: 'أرقام الواتساب',
+      title: t('usageDashboardPage.text19'),
       current: usage.whatsappNumbers.current,
       max: usage.whatsappNumbers.max,
       percentage: usage.whatsappNumbers.percentage,
-      description: 'الأرقام المربوطة',
+      description: t('usageDashboardPage.text20'),
     },
     {
       icon: Package,
-      title: 'المنتجات',
+      title: t('usageDashboardPage.text21'),
       current: usage.products.current,
       max: usage.products.max,
       percentage: usage.products.percentage,
-      description: 'المنتجات المضافة',
+      description: t('usageDashboardPage.text22'),
     },
     {
       icon: Send,
-      title: 'الحملات الشهرية',
+      title: t('usageDashboardPage.text23'),
       current: usage.campaigns.current,
       max: usage.campaigns.max,
       percentage: usage.campaigns.percentage,
-      description: 'الحملات هذا الشهر',
+      description: t('usageDashboardPage.text24'),
     },
     {
       icon: Bot,
-      title: 'رسائل AI',
+      title: t('usageDashboardPage.text25'),
       current: usage.aiMessages.current,
       max: usage.aiMessages.max,
       percentage: usage.aiMessages.percentage,
-      description: 'الرسائل الذكية هذا الشهر',
+      description: t('usageDashboardPage.text26'),
     },
   ];
 
@@ -117,14 +119,14 @@ export default function UsageDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">لوحة تحكم الاستخدام</h1>
+          <h1 className="text-3xl font-bold">{t('usageDashboardPage.text0')}</h1>
           <p className="text-muted-foreground mt-1">
-            تتبع استهلاكك من ميزات باقة {usage.plan.name}
+            {t('usageDashboardPage.text31', { var0: usage.plan.name })}
           </p>
         </div>
         <Button onClick={() => setLocation('/merchant/subscription/compare')}>
           <TrendingUp className="ml-2 h-4 w-4" />
-          ترقية الباقة
+          {t('usageDashboardPage.text12')}
         </Button>
       </div>
 
@@ -133,14 +135,14 @@ export default function UsageDashboard() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            أنت تقترب من حدود باقتك الحالية. ننصح بالترقية لتجنب انقطاع الخدمة.
+            {t('usageDashboardPage.text13')}
             <Button 
               size="sm" 
               variant="outline" 
               className="mr-4"
               onClick={() => setLocation('/merchant/subscription/compare')}
             >
-              عرض الباقات
+              {t('usageDashboardPage.text14')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -204,7 +206,7 @@ export default function UsageDashboard() {
 
                 {isUnlimited && (
                   <p className="text-sm text-green-600 font-medium">
-                    ✓ استخدام غير محدود
+                    {t('usageDashboardPage.text32')}
                   </p>
                 )}
               </CardContent>
@@ -216,8 +218,8 @@ export default function UsageDashboard() {
       {/* Plan Info Card */}
       <Card>
         <CardHeader>
-          <CardTitle>معلومات الباقة</CardTitle>
-          <CardDescription>باقتك الحالية ومميزاتها</CardDescription>
+          <CardTitle>{t('usageDashboardPage.text2')}</CardTitle>
+          <CardDescription>{t('usageDashboardPage.text3')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
@@ -225,8 +227,7 @@ export default function UsageDashboard() {
               <h3 className="text-xl font-semibold">{usage.plan.name}</h3>
               <p className="text-sm text-muted-foreground">
                 {usage.plan.billingCycle === 'monthly' ? 'اشتراك شهري' : 
-                 usage.plan.billingCycle === 'yearly' ? 'اشتراك سنوي' : 
-                 'اشتراك لمرة واحدة'}
+                 usage.plan.billingCycle === 'yearly' ? t('usageDashboardPage.text9') : t('usageDashboardPage.text10')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -234,11 +235,11 @@ export default function UsageDashboard() {
                 variant="outline"
                 onClick={() => setLocation('/merchant/subscription')}
               >
-                إدارة الاشتراك
+                {t('usageDashboardPage.text15')}
               </Button>
               <Button onClick={() => setLocation('/merchant/subscription/compare')}>
                 <TrendingUp className="ml-2 h-4 w-4" />
-                ترقية الباقة
+                {t('usageDashboardPage.text16')}
               </Button>
             </div>
           </div>
@@ -248,14 +249,14 @@ export default function UsageDashboard() {
       {/* Tips Card */}
       <Card>
         <CardHeader>
-          <CardTitle>نصائح لتحسين الاستخدام</CardTitle>
+          <CardTitle>{t('usageDashboardPage.text4')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-            <li>راجع قائمة العملاء بانتظام وأرشف العملاء غير النشطين</li>
-            <li>استخدم الرسائل الجماعية بدلاً من الحملات الفردية لتوفير الحصة</li>
-            <li>قم بالترقية قبل الوصول للحد الأقصى لتجنب انقطاع الخدمة</li>
-            <li>استفد من التقارير والإحصائيات لفهم أنماط الاستخدام</li>
+            <li>{t('usageDashboardPage.text5')}</li>
+            <li>{t('usageDashboardPage.text6')}</li>
+            <li>{t('usageDashboardPage.text7')}</li>
+            <li>{t('usageDashboardPage.text8')}</li>
           </ul>
         </CardContent>
       </Card>

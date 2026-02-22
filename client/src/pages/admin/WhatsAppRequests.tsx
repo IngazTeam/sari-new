@@ -66,11 +66,11 @@ export default function WhatsAppRequests() {
 
   const handleApproveConfirm = () => {
     if (!instanceId.trim()) {
-      toast.error('يرجى إدخال Instance ID');
+      toast.error(t('adminWhatsAppRequestsPage.text27'));
       return;
     }
     if (!apiToken.trim()) {
-      toast.error('يرجى إدخال API Token');
+      toast.error(t('adminWhatsAppRequestsPage.text28'));
       return;
     }
 
@@ -156,12 +156,12 @@ export default function WhatsAppRequests() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>رقم الطلب</TableHead>
-            <TableHead>اسم التاجر</TableHead>
-            <TableHead>رقم الواتساب</TableHead>
-            <TableHead>الحالة</TableHead>
-            <TableHead>تاريخ الطلب</TableHead>
-            <TableHead>الإجراءات</TableHead>
+            <TableHead>{t('adminWhatsAppRequestsPage.text0')}</TableHead>
+            <TableHead>{t('adminWhatsAppRequestsPage.text1')}</TableHead>
+            <TableHead>{t('adminWhatsAppRequestsPage.text2')}</TableHead>
+            <TableHead>{t('adminWhatsAppRequestsPage.text3')}</TableHead>
+            <TableHead>{t('adminWhatsAppRequestsPage.text4')}</TableHead>
+            <TableHead>{t('adminWhatsAppRequestsPage.text5')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -169,7 +169,7 @@ export default function WhatsAppRequests() {
             <TableRow key={request.id}>
               <TableCell className="font-mono">#{request.id}</TableCell>
               <TableCell>
-                <div className="font-medium">التاجر #{request.merchantId}</div>
+                <div className="font-medium">{t('adminWhatsAppRequestsPage.text6', { var0: request.merchantId })}</div>
               </TableCell>
               <TableCell>
                 <div className="font-mono" dir="ltr">
@@ -226,7 +226,7 @@ export default function WhatsAppRequests() {
       <div className="flex items-center gap-3 mb-6">
         <Smartphone className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">طلبات ربط الواتساب</h1>
+          <h1 className="text-3xl font-bold">{t('adminWhatsAppRequestsPage.text7')}</h1>
           <p className="text-muted-foreground">
             مراجعة وإدارة طلبات ربط أرقام الواتساب من التجار
           </p>
@@ -237,19 +237,19 @@ export default function WhatsAppRequests() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>قيد المراجعة</CardDescription>
+            <CardDescription>{t('adminWhatsAppRequestsPage.text8')}</CardDescription>
             <CardTitle className="text-3xl">{pendingRequests?.length || 0}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>في انتظار الربط</CardDescription>
+            <CardDescription>{t('adminWhatsAppRequestsPage.text9')}</CardDescription>
             <CardTitle className="text-3xl text-blue-600">{approvedRequests?.length || 0}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>مربوطة</CardDescription>
+            <CardDescription>{t('adminWhatsAppRequestsPage.text10')}</CardDescription>
             <CardTitle className="text-3xl text-green-600">
               {allRequests?.filter((r: any) => r.status === 'connected').length || 0}
             </CardTitle>
@@ -257,7 +257,7 @@ export default function WhatsAppRequests() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>مرفوضة</CardDescription>
+            <CardDescription>{t('adminWhatsAppRequestsPage.text11')}</CardDescription>
             <CardTitle className="text-3xl text-red-600">{rejectedRequests?.length || 0}</CardTitle>
           </CardHeader>
         </Card>
@@ -266,7 +266,7 @@ export default function WhatsAppRequests() {
       {/* Requests Tabs */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الطلبات</CardTitle>
+          <CardTitle>{t('adminWhatsAppRequestsPage.text12')}</CardTitle>
           <CardDescription>
             جميع طلبات ربط الواتساب من التجار
           </CardDescription>
@@ -274,10 +274,10 @@ export default function WhatsAppRequests() {
         <CardContent>
           <Tabs defaultValue="all">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="all">الكل ({allRequests?.length || 0})</TabsTrigger>
-              <TabsTrigger value="pending">قيد المراجعة ({pendingRequests?.length || 0})</TabsTrigger>
-              <TabsTrigger value="approved">مقبولة ({approvedRequests?.length || 0})</TabsTrigger>
-              <TabsTrigger value="rejected">مرفوضة ({rejectedRequests?.length || 0})</TabsTrigger>
+              <TabsTrigger value="all">{t('adminWhatsAppRequestsPage.text13', { var0: allRequests?.length || 0 })}</TabsTrigger>
+              <TabsTrigger value="pending">{t('adminWhatsAppRequestsPage.text14', { var0: pendingRequests?.length || 0 })}</TabsTrigger>
+              <TabsTrigger value="approved">{t('adminWhatsAppRequestsPage.text15', { var0: approvedRequests?.length || 0 })}</TabsTrigger>
+              <TabsTrigger value="rejected">{t('adminWhatsAppRequestsPage.text16', { var0: rejectedRequests?.length || 0 })}</TabsTrigger>
             </TabsList>
             <TabsContent value="all">
               <RequestsTable requests={allRequests} />
@@ -299,7 +299,7 @@ export default function WhatsAppRequests() {
       <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>قبول طلب ربط الواتساب</DialogTitle>
+            <DialogTitle>{t('adminWhatsAppRequestsPage.text17')}</DialogTitle>
             <DialogDescription>
               أدخل بيانات Green API للتاجر لإتمام عملية الربط
             </DialogDescription>
@@ -307,8 +307,8 @@ export default function WhatsAppRequests() {
           <div className="space-y-4 py-4">
             {selectedRequest && (
               <div className="bg-muted p-3 rounded-lg text-sm">
-                <p><strong>رقم الواتساب:</strong> {selectedRequest.fullNumber}</p>
-                <p><strong>التاجر:</strong> #{selectedRequest.merchantId}</p>
+                <p><strong>{t('adminWhatsAppRequestsPage.text18')}</strong> {selectedRequest.fullNumber}</p>
+                <p><strong>{t('adminWhatsAppRequestsPage.text19')}</strong> #{selectedRequest.merchantId}</p>
               </div>
             )}
             <div className="space-y-2">
@@ -317,7 +317,7 @@ export default function WhatsAppRequests() {
                 id="instanceId"
                 value={instanceId}
                 onChange={(e) => setInstanceId(e.target.value)}
-                placeholder="مثال: 7103XXXXXX"
+                placeholder={t('adminWhatsAppRequestsPage.text20')}
                 dir="ltr"
                 className="font-mono"
               />
@@ -331,7 +331,7 @@ export default function WhatsAppRequests() {
                 id="apiToken"
                 value={apiToken}
                 onChange={(e) => setApiToken(e.target.value)}
-                placeholder="مثال: abc123..."
+                placeholder={t('adminWhatsAppRequestsPage.text21')}
                 dir="ltr"
                 className="font-mono"
                 type="password"
@@ -367,7 +367,7 @@ export default function WhatsAppRequests() {
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>رفض طلب ربط الواتساب</DialogTitle>
+            <DialogTitle>{t('adminWhatsAppRequestsPage.text22')}</DialogTitle>
             <DialogDescription>
               يرجى إدخال سبب الرفض لإعلام التاجر
             </DialogDescription>
@@ -375,17 +375,17 @@ export default function WhatsAppRequests() {
           <div className="space-y-4 py-4">
             {selectedRequest && (
               <div className="bg-muted p-3 rounded-lg text-sm">
-                <p><strong>رقم الواتساب:</strong> {selectedRequest.fullNumber}</p>
-                <p><strong>التاجر:</strong> #{selectedRequest.merchantId}</p>
+                <p><strong>{t('adminWhatsAppRequestsPage.text23')}</strong> {selectedRequest.fullNumber}</p>
+                <p><strong>{t('adminWhatsAppRequestsPage.text24')}</strong> #{selectedRequest.merchantId}</p>
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="reason">سبب الرفض</Label>
+              <Label htmlFor="reason">{t('adminWhatsAppRequestsPage.text25')}</Label>
               <Textarea
                 id="reason"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
-                placeholder="أدخل سبب رفض الطلب..."
+                placeholder={t('adminWhatsAppRequestsPage.text26')}
                 rows={3}
               />
             </div>

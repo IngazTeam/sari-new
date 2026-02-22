@@ -10,8 +10,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Plus, Trash2, Star, StarOff, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function WhatsAppInstancesPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -63,7 +65,7 @@ export default function WhatsAppInstancesPage() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "فشل إضافة Instance");
+      toast.error(error.message || t('whatsAppInstancesPagePage.text32'));
     },
   });
 
@@ -76,7 +78,7 @@ export default function WhatsAppInstancesPage() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "فشل تحديث Instance");
+      toast.error(error.message || t('whatsAppInstancesPagePage.text33'));
     },
   });
 
@@ -86,7 +88,7 @@ export default function WhatsAppInstancesPage() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "فشل تعيين Primary");
+      toast.error(error.message || t('whatsAppInstancesPagePage.text34'));
     },
   });
 
@@ -96,7 +98,7 @@ export default function WhatsAppInstancesPage() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "فشل حذف Instance");
+      toast.error(error.message || t('whatsAppInstancesPagePage.text35'));
     },
   });
 
@@ -110,7 +112,7 @@ export default function WhatsAppInstancesPage() {
       setTestingConnection(false);
     },
     onError: (error) => {
-      toast.error(error.message || "فشل اختبار الاتصال");
+      toast.error(error.message || t('whatsAppInstancesPagePage.text36'));
       setTestingConnection(false);
     },
   });
@@ -188,13 +190,13 @@ export default function WhatsAppInstancesPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-500"><CheckCircle2 className="w-3 h-3 ml-1" />نشط</Badge>;
+        return <Badge className="bg-green-500"><CheckCircle2 className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text0')}</Badge>;
       case "inactive":
-        return <Badge variant="secondary"><XCircle className="w-3 h-3 ml-1" />غير نشط</Badge>;
+        return <Badge variant="secondary"><XCircle className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text1')}</Badge>;
       case "pending":
-        return <Badge variant="outline"><Clock className="w-3 h-3 ml-1" />قيد الانتظار</Badge>;
+        return <Badge variant="outline"><Clock className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text2')}</Badge>;
       case "expired":
-        return <Badge variant="destructive"><AlertCircle className="w-3 h-3 ml-1" />منتهي</Badge>;
+        return <Badge variant="destructive"><AlertCircle className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text3')}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -203,7 +205,7 @@ export default function WhatsAppInstancesPage() {
   if (!merchant) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-muted-foreground">جاري التحميل...</p>
+        <p className="text-muted-foreground">{t('whatsAppInstancesPagePage.text4')}</p>
       </div>
     );
   }
@@ -212,14 +214,14 @@ export default function WhatsAppInstancesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">إدارة WhatsApp Instances</h1>
+          <h1 className="text-3xl font-bold">{t('whatsAppInstancesPagePage.text5')}</h1>
           <p className="text-muted-foreground mt-1">
-            إدارة اتصالات الواتساب المتعددة لمتجرك
+            {t('whatsAppInstancesPagePage.text37')}
           </p>
         </div>
         <Button onClick={() => setShowAddDialog(true)}>
           <Plus className="w-4 h-4 ml-2" />
-          إضافة Instance جديد
+          {t('whatsAppInstancesPagePage.text42')}
         </Button>
       </div>
 
@@ -229,7 +231,7 @@ export default function WhatsAppInstancesPage() {
           <CardHeader>
             <CardTitle className="text-red-700 flex items-center gap-2">
               <AlertCircle className="w-5 h-5" />
-              تحذير: Instances قريبة من الانتهاء
+              {t('whatsAppInstancesPagePage.text43')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -238,28 +240,28 @@ export default function WhatsAppInstancesPage() {
                 <div className="flex items-center gap-2 text-red-700">
                   <XCircle className="w-4 h-4" />
                   <span className="font-semibold">{expiringData.expired.length}</span>
-                  <span>instance منتهي - يرجى التجديد فوراً</span>
+                  <span>{t('whatsAppInstancesPagePage.text6')}</span>
                 </div>
               )}
               {expiringData.expiring1Day.length > 0 && (
                 <div className="flex items-center gap-2 text-orange-700">
                   <Clock className="w-4 h-4" />
                   <span className="font-semibold">{expiringData.expiring1Day.length}</span>
-                  <span>instance ينتهي خلال 24 ساعة</span>
+                  <span>{t('whatsAppInstancesPagePage.text7')}</span>
                 </div>
               )}
               {expiringData.expiring3Days.length > 0 && (
                 <div className="flex items-center gap-2 text-yellow-700">
                   <Clock className="w-4 h-4" />
                   <span className="font-semibold">{expiringData.expiring3Days.length}</span>
-                  <span>instance ينتهي خلال 3 أيام</span>
+                  <span>{t('whatsAppInstancesPagePage.text8')}</span>
                 </div>
               )}
               {expiringData.expiring7Days.length > 0 && (
                 <div className="flex items-center gap-2 text-primary">
                   <Clock className="w-4 h-4" />
                   <span className="font-semibold">{expiringData.expiring7Days.length}</span>
-                  <span>instance ينتهي خلال 7 أيام</span>
+                  <span>{t('whatsAppInstancesPagePage.text9')}</span>
                 </div>
               )}
             </div>
@@ -272,7 +274,7 @@ export default function WhatsAppInstancesPage() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي Instances</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text10')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -281,7 +283,7 @@ export default function WhatsAppInstancesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">نشط</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text11')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">{stats.active}</div>
@@ -290,7 +292,7 @@ export default function WhatsAppInstancesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">غير نشط</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text12')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
@@ -299,7 +301,7 @@ export default function WhatsAppInstancesPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">منتهي</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text13')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">{stats.expired}</div>
@@ -311,16 +313,16 @@ export default function WhatsAppInstancesPage() {
       {/* Instances List */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة Instances</CardTitle>
-          <CardDescription>جميع اتصالات الواتساب المسجلة</CardDescription>
+          <CardTitle>{t('whatsAppInstancesPagePage.text14')}</CardTitle>
+          <CardDescription>{t('whatsAppInstancesPagePage.text15')}</CardDescription>
         </CardHeader>
         <CardContent>
           {!instances || instances.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">لا توجد instances مسجلة</p>
+              <p className="text-muted-foreground">{t('whatsAppInstancesPagePage.text16')}</p>
               <Button onClick={() => setShowAddDialog(true)} className="mt-4">
                 <Plus className="w-4 h-4 ml-2" />
-                إضافة Instance الأول
+                {t('whatsAppInstancesPagePage.text44')}
               </Button>
             </div>
           ) : (
@@ -343,7 +345,7 @@ export default function WhatsAppInstancesPage() {
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">رقم الهاتف:</span>
+                            <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text17')}</span>
                             <span className="mr-2 font-medium">{instance.phoneNumber || "غير محدد"}</span>
                           </div>
                           <div>
@@ -351,12 +353,12 @@ export default function WhatsAppInstancesPage() {
                             <span className="mr-2 font-mono text-xs">{instance.apiUrl}</span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">تاريخ الإضافة:</span>
+                            <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text19')}</span>
                             <span className="mr-2">{new Date(instance.createdAt).toLocaleDateString('ar-SA')}</span>
                           </div>
                           {instance.expiresAt && (
                             <div>
-                              <span className="text-muted-foreground">تاريخ الانتهاء:</span>
+                              <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text20')}</span>
                               <span className="mr-2">{new Date(instance.expiresAt).toLocaleDateString('ar-SA')}</span>
                             </div>
                           )}
@@ -371,7 +373,7 @@ export default function WhatsAppInstancesPage() {
                             onClick={() => handleSetPrimary(instance.id)}
                           >
                             <Star className="w-4 h-4 ml-1" />
-                            تعيين كـ Primary
+                            {t('whatsAppInstancesPagePage.text45')}
                           </Button>
                         )}
                         <Button
@@ -379,7 +381,7 @@ export default function WhatsAppInstancesPage() {
                           size="sm"
                           onClick={() => handleEdit(instance)}
                         >
-                          تعديل
+                          {t('whatsAppInstancesPagePage.text38')}
                         </Button>
                         <Button
                           variant="destructive"
@@ -402,9 +404,9 @@ export default function WhatsAppInstancesPage() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>إضافة WhatsApp Instance جديد</DialogTitle>
+            <DialogTitle>{t('whatsAppInstancesPagePage.text21')}</DialogTitle>
             <DialogDescription>
-              أدخل بيانات Green API Instance الخاص بك
+              {t('whatsAppInstancesPagePage.text46')}
             </DialogDescription>
           </DialogHeader>
 
@@ -441,7 +443,7 @@ export default function WhatsAppInstancesPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="phoneNumber">رقم الهاتف (اختياري)</Label>
+              <Label htmlFor="phoneNumber">{t('whatsAppInstancesPagePage.text22')}</Label>
               <Input
                 id="phoneNumber"
                 value={formData.phoneNumber}
@@ -451,7 +453,7 @@ export default function WhatsAppInstancesPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="webhookUrl">Webhook URL (اختياري)</Label>
+              <Label htmlFor="webhookUrl">{t('whatsAppInstancesPagePage.text23')}</Label>
               <Input
                 id="webhookUrl"
                 value={formData.webhookUrl}
@@ -461,7 +463,7 @@ export default function WhatsAppInstancesPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="expiresAt">تاريخ الانتهاء (اختياري)</Label>
+              <Label htmlFor="expiresAt">{t('whatsAppInstancesPagePage.text24')}</Label>
               <Input
                 id="expiresAt"
                 type="date"
@@ -479,7 +481,7 @@ export default function WhatsAppInstancesPage() {
                 className="rounded"
               />
               <Label htmlFor="isPrimary" className="cursor-pointer">
-                تعيين كـ Primary Instance
+                {t('whatsAppInstancesPagePage.text47')}
               </Label>
             </div>
 
@@ -489,19 +491,19 @@ export default function WhatsAppInstancesPage() {
               disabled={!formData.instanceId || !formData.token || testingConnection}
             >
               <RefreshCw className={`w-4 h-4 ml-2 ${testingConnection ? 'animate-spin' : ''}`} />
-              اختبار الاتصال
+              {t('whatsAppInstancesPagePage.text39')}
             </Button>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowAddDialog(false); resetForm(); }}>
-              إلغاء
+              {t('whatsAppInstancesPagePage.text40')}
             </Button>
             <Button
               onClick={handleAdd}
               disabled={!formData.instanceId || !formData.token || createMutation.isPending}
             >
-              {createMutation.isPending ? "جاري الإضافة..." : "إضافة"}
+              {createMutation.isPending ? t('whatsAppInstancesPagePage.text28') : t('whatsAppInstancesPagePage.text29')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -511,9 +513,9 @@ export default function WhatsAppInstancesPage() {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>تعديل WhatsApp Instance</DialogTitle>
+            <DialogTitle>{t('whatsAppInstancesPagePage.text25')}</DialogTitle>
             <DialogDescription>
-              تحديث بيانات Instance
+              {t('whatsAppInstancesPagePage.text48')}
             </DialogDescription>
           </DialogHeader>
 
@@ -538,7 +540,7 @@ export default function WhatsAppInstancesPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-phoneNumber">رقم الهاتف</Label>
+              <Label htmlFor="edit-phoneNumber">{t('whatsAppInstancesPagePage.text26')}</Label>
               <Input
                 id="edit-phoneNumber"
                 value={formData.phoneNumber}
@@ -547,7 +549,7 @@ export default function WhatsAppInstancesPage() {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="edit-expiresAt">تاريخ الانتهاء</Label>
+              <Label htmlFor="edit-expiresAt">{t('whatsAppInstancesPagePage.text27')}</Label>
               <Input
                 id="edit-expiresAt"
                 type="date"
@@ -559,13 +561,13 @@ export default function WhatsAppInstancesPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowEditDialog(false); setSelectedInstance(null); resetForm(); }}>
-              إلغاء
+              {t('whatsAppInstancesPagePage.text41')}
             </Button>
             <Button
               onClick={handleUpdate}
               disabled={updateMutation.isPending}
             >
-              {updateMutation.isPending ? "جاري التحديث..." : "تحديث"}
+              {updateMutation.isPending ? t('whatsAppInstancesPagePage.text30') : t('whatsAppInstancesPagePage.text31')}
             </Button>
           </DialogFooter>
         </DialogContent>

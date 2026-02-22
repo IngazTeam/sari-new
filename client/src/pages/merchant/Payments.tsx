@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,12 +20,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { 
-  CreditCard, 
-  TrendingUp, 
-  DollarSign, 
-  CheckCircle, 
-  XCircle, 
+import {
+  CreditCard,
+  TrendingUp,
+  DollarSign,
+  CheckCircle,
+  XCircle,
   Clock,
   RefreshCw,
   Search,
@@ -34,6 +35,7 @@ import {
 import { Link } from 'wouter';
 
 export default function Payments() {
+  const { t, i18n } = useTranslation();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -53,7 +55,7 @@ export default function Payments() {
 
   // تنسيق التاريخ
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ar-SA', {
+    return new Date(dateString).toLocaleString(i18n.language, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -65,12 +67,12 @@ export default function Payments() {
   // الحصول على badge للحالة
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { variant: any; label: string; icon: any }> = {
-      pending: { variant: 'secondary', label: 'قيد الانتظار', icon: Clock },
-      authorized: { variant: 'default', label: 'مصرح', icon: CheckCircle },
-      captured: { variant: 'default', label: 'مكتمل', icon: CheckCircle },
-      failed: { variant: 'destructive', label: 'فشل', icon: XCircle },
-      cancelled: { variant: 'outline', label: 'ملغي', icon: XCircle },
-      refunded: { variant: 'outline', label: 'مسترجع', icon: RefreshCw },
+      pending: { variant: 'secondary', label: t('paymentsPage.statusPending'), icon: Clock },
+      authorized: { variant: 'default', label: t('paymentsPage.statusAuthorized'), icon: CheckCircle },
+      captured: { variant: 'default', label: t('paymentsPage.statusCaptured'), icon: CheckCircle },
+      failed: { variant: 'destructive', label: t('paymentsPage.statusFailed'), icon: XCircle },
+      cancelled: { variant: 'outline', label: t('paymentsPage.statusCancelled'), icon: XCircle },
+      refunded: { variant: 'outline', label: t('paymentsPage.statusRefunded'), icon: RefreshCw },
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -101,7 +103,7 @@ export default function Payments() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المعاملات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('paymentsPage.totalTransactions')}</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -114,7 +116,7 @@ export default function Payments() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معاملات ناجحة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('paymentsPage.successfulTransactions')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -129,7 +131,7 @@ export default function Payments() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">قيد الانتظار</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('paymentsPage.pendingPayments')}</CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
@@ -141,7 +143,7 @@ export default function Payments() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">فاشلة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('paymentsPage.failedPayments')}</CardTitle>
             <XCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -157,8 +159,8 @@ export default function Payments() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>معاملات الدفع</CardTitle>
-              <CardDescription>إدارة ومتابعة جميع معاملات الدفع</CardDescription>
+              <CardTitle>{t('paymentsPage.paymentTransactions')}</CardTitle>
+              <CardDescription>{t('paymentsPage.paymentTransactionsDesc')}</CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -167,12 +169,12 @@ export default function Payments() {
                 onClick={() => refetch()}
               >
                 <RefreshCw className="h-4 w-4 ml-2" />
-                تحديث
+                {t('paymentsPage.refresh')}
               </Button>
               <Link href="/merchant/payment-links">
                 <Button size="sm">
                   <ExternalLink className="h-4 w-4 ml-2" />
-                  روابط الدفع
+                  {t('paymentsPage.paymentLinks')}
                 </Button>
               </Link>
             </div>
@@ -183,7 +185,7 @@ export default function Payments() {
             <div className="flex-1 relative">
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="البحث بالاسم، الهاتف، أو معرف المعاملة..."
+                placeholder={t('paymentsPage.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -192,16 +194,16 @@ export default function Payments() {
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]">
                 <Filter className="h-4 w-4 ml-2" />
-                <SelectValue placeholder="الحالة" />
+                <SelectValue placeholder={t('paymentsPage.statusFilter')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">جميع الحالات</SelectItem>
-                <SelectItem value="pending">قيد الانتظار</SelectItem>
-                <SelectItem value="captured">مكتمل</SelectItem>
-                <SelectItem value="authorized">مصرح</SelectItem>
-                <SelectItem value="failed">فشل</SelectItem>
-                <SelectItem value="cancelled">ملغي</SelectItem>
-                <SelectItem value="refunded">مسترجع</SelectItem>
+                <SelectItem value="all">{t('paymentsPage.allStatuses')}</SelectItem>
+                <SelectItem value="pending">{t('paymentsPage.statusPending')}</SelectItem>
+                <SelectItem value="captured">{t('paymentsPage.statusCaptured')}</SelectItem>
+                <SelectItem value="authorized">{t('paymentsPage.statusAuthorized')}</SelectItem>
+                <SelectItem value="failed">{t('paymentsPage.statusFailed')}</SelectItem>
+                <SelectItem value="cancelled">{t('paymentsPage.statusCancelled')}</SelectItem>
+                <SelectItem value="refunded">{t('paymentsPage.statusRefunded')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -209,20 +211,20 @@ export default function Payments() {
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
-              جاري التحميل...
+              {t('paymentsPage.loading')}
             </div>
           ) : filteredPayments && filteredPayments.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>المعرف</TableHead>
-                    <TableHead>العميل</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>طريقة الدفع</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead>{t('paymentsPage.transactionId')}</TableHead>
+                    <TableHead>{t('paymentsPage.customer')}</TableHead>
+                    <TableHead>{t('paymentsPage.amount')}</TableHead>
+                    <TableHead>{t('paymentsPage.status')}</TableHead>
+                    <TableHead>{t('paymentsPage.paymentMethod')}</TableHead>
+                    <TableHead>{t('paymentsPage.date')}</TableHead>
+                    <TableHead>{t('paymentsPage.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -244,7 +246,7 @@ export default function Payments() {
                       </TableCell>
                       <TableCell>{getStatusBadge(payment.status)}</TableCell>
                       <TableCell>
-                        {payment.paymentMethod || 'غير محدد'}
+                        {payment.paymentMethod || t('paymentsPage.notSpecified')}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDate(payment.createdAt)}
@@ -252,7 +254,7 @@ export default function Payments() {
                       <TableCell>
                         <Link href={`/merchant/payments/${payment.id}`}>
                           <Button variant="ghost" size="sm">
-                            التفاصيل
+                            {t('paymentsPage.details')}
                           </Button>
                         </Link>
                       </TableCell>
@@ -263,7 +265,7 @@ export default function Payments() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              لا توجد معاملات دفع
+              {t('paymentsPage.noTransactions')}
             </div>
           )}
         </CardContent>

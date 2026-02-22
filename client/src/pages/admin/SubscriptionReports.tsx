@@ -27,8 +27,10 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 
 export default function SubscriptionReports() {
+  const { t } = useTranslation();
   const [dateRange, setDateRange] = useState<'week' | 'month' | 'year'>('month');
 
   const { data: overview, isLoading: overviewLoading } = trpc.subscriptionReports.getOverview.useQuery();
@@ -89,7 +91,7 @@ export default function SubscriptionReports() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">تقارير الاشتراكات</h1>
+          <h1 className="text-3xl font-bold">{t('adminSubscriptionReportsPage.text0')}</h1>
           <p className="text-muted-foreground mt-1">
             تحليل شامل لأداء الاشتراكات والإيرادات
           </p>
@@ -121,7 +123,7 @@ export default function SubscriptionReports() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي الاشتراكات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminSubscriptionReportsPage.text1')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -134,11 +136,11 @@ export default function SubscriptionReports() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الإيرادات الشهرية</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminSubscriptionReportsPage.text2')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{overview?.monthlyRevenue?.toFixed(2) || '0.00'} ريال</div>
+            <div className="text-2xl font-bold">{t('adminSubscriptionReportsPage.text3', { var0: overview?.monthlyRevenue?.toFixed(2) || '0.00' })}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {overview?.yearlyRevenue?.toFixed(2) || '0.00'} ريال سنوياً
             </p>
@@ -147,7 +149,7 @@ export default function SubscriptionReports() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معدل التحويل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminSubscriptionReportsPage.text4')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -164,14 +166,14 @@ export default function SubscriptionReports() {
                   <span className="text-red-600">{conversionRate?.change?.toFixed(1)}%</span>
                 </>
               )}
-              <span className="text-muted-foreground mr-1">عن الفترة السابقة</span>
+              <span className="text-muted-foreground mr-1">{t('adminSubscriptionReportsPage.text5')}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">معدل الإلغاء</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminSubscriptionReportsPage.text6')}</CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -186,8 +188,8 @@ export default function SubscriptionReports() {
       {/* Conversion Rate Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>معدل التحويل من تجربة مجانية إلى اشتراك مدفوع</CardTitle>
-          <CardDescription>تتبع نسبة التحويل خلال الفترة المحددة</CardDescription>
+          <CardTitle>{t('adminSubscriptionReportsPage.text7')}</CardTitle>
+          <CardDescription>{t('adminSubscriptionReportsPage.text8')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -213,8 +215,8 @@ export default function SubscriptionReports() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>الترقيات والتخفيضات</CardTitle>
-            <CardDescription>مقارنة بين الترقيات والتخفيضات</CardDescription>
+            <CardTitle>{t('adminSubscriptionReportsPage.text9')}</CardTitle>
+            <CardDescription>{t('adminSubscriptionReportsPage.text10')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -238,13 +240,13 @@ export default function SubscriptionReports() {
             </ResponsiveContainer>
             <div className="mt-4 space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm">نسبة الترقيات:</span>
+                <span className="text-sm">{t('adminSubscriptionReportsPage.text11')}</span>
                 <Badge variant="default" className="bg-green-600">
                   {upgradeDowngrade?.upgradeRate?.toFixed(1)}%
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm">نسبة التخفيضات:</span>
+                <span className="text-sm">{t('adminSubscriptionReportsPage.text12')}</span>
                 <Badge variant="destructive">
                   {upgradeDowngrade?.downgradeRate?.toFixed(1)}%
                 </Badge>
@@ -256,8 +258,8 @@ export default function SubscriptionReports() {
         {/* Cancellation Reasons */}
         <Card>
           <CardHeader>
-            <CardTitle>أسباب الإلغاء</CardTitle>
-            <CardDescription>تحليل أسباب إلغاء الاشتراكات</CardDescription>
+            <CardTitle>{t('adminSubscriptionReportsPage.text13')}</CardTitle>
+            <CardDescription>{t('adminSubscriptionReportsPage.text14')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -280,8 +282,8 @@ export default function SubscriptionReports() {
       {/* Revenue Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>الإيرادات الشهرية</CardTitle>
-          <CardDescription>تتبع الإيرادات وعدد الاشتراكات شهرياً</CardDescription>
+          <CardTitle>{t('adminSubscriptionReportsPage.text15')}</CardTitle>
+          <CardDescription>{t('adminSubscriptionReportsPage.text16')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
@@ -312,17 +314,17 @@ export default function SubscriptionReports() {
       {/* Revenue Summary Table */}
       <Card>
         <CardHeader>
-          <CardTitle>ملخص الإيرادات</CardTitle>
+          <CardTitle>{t('adminSubscriptionReportsPage.text17')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-right p-2">الشهر</th>
-                  <th className="text-right p-2">عدد الاشتراكات</th>
-                  <th className="text-right p-2">الإيرادات</th>
-                  <th className="text-right p-2">متوسط الإيراد</th>
+                  <th className="text-right p-2">{t('adminSubscriptionReportsPage.text18')}</th>
+                  <th className="text-right p-2">{t('adminSubscriptionReportsPage.text19')}</th>
+                  <th className="text-right p-2">{t('adminSubscriptionReportsPage.text20')}</th>
+                  <th className="text-right p-2">{t('adminSubscriptionReportsPage.text21')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -330,7 +332,7 @@ export default function SubscriptionReports() {
                   <tr key={index} className="border-b hover:bg-muted/50">
                     <td className="p-2">{item.month}</td>
                     <td className="p-2">{item.subscriptions}</td>
-                    <td className="p-2">{item.revenue.toFixed(2)} ريال</td>
+                    <td className="p-2">{t('adminSubscriptionReportsPage.text22', { var0: item.revenue.toFixed(2) })}</td>
                     <td className="p-2">
                       {item.subscriptions > 0 
                         ? (item.revenue / item.subscriptions).toFixed(2) 

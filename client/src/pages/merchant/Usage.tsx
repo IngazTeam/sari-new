@@ -3,8 +3,10 @@ import { Progress } from '@/components/ui/progress';
 import { trpc } from '@/lib/trpc';
 import { MessageSquare, Mic, MessageCircle, Calendar, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslation } from 'react-i18next';
 
 export default function Usage() {
+  const { t } = useTranslation();
   const { data: usage, isLoading } = trpc.subscriptions.getUsage.useQuery();
   
   if (isLoading) {
@@ -28,7 +30,7 @@ export default function Usage() {
         <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            لا توجد باقة نشطة. يرجى الاشتراك في باقة أولاً.
+            {t('usagePage.text8')}
           </AlertDescription>
         </Alert>
       </div>
@@ -55,9 +57,9 @@ export default function Usage() {
     <div className="container py-8 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">استهلاك الباقة</h1>
+        <h1 className="text-3xl font-bold">{t('usagePage.text0')}</h1>
         <p className="text-muted-foreground mt-2">
-          تتبع استخدامك الشهري للمحادثات والرسائل
+          {t('usagePage.text9')}
         </p>
       </div>
       
@@ -68,11 +70,11 @@ export default function Usage() {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            <strong>تنبيه:</strong> أنت تقترب من الحد الأقصى لباقتك الشهرية.
-            {isApproachingLimit(usage.conversations.percentage) && ' المحادثات'}
-            {isApproachingLimit(usage.messages.percentage) && ' الرسائل'}
-            {isApproachingLimit(usage.voiceMessages.percentage) && ' الرسائل الصوتية'}
-            . يرجى الترقية لباقة أعلى لتجنب انقطاع الخدمة.
+            <strong>{t('usagePage.text1')}</strong> {t('usagePage.text25')}
+            {isApproachingLimit(usage.conversations.percentage)  && t('usagePage.text22')}
+            {isApproachingLimit(usage.messages.percentage)  && t('usagePage.text23')}
+            {isApproachingLimit(usage.voiceMessages.percentage)  && t('usagePage.text24')}
+            {t('usagePage.text10')}
           </AlertDescription>
         </Alert>
       )}
@@ -82,7 +84,7 @@ export default function Usage() {
         {/* Conversations */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المحادثات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('usagePage.text2')}</CardTitle>
             <MessageCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -96,7 +98,7 @@ export default function Usage() {
             </div>
             {usage.conversations.unlimited ? (
               <p className="text-xs text-muted-foreground mt-2">
-                غير محدود ∞
+                {t('usagePage.text16')}
               </p>
             ) : (
               <>
@@ -105,7 +107,7 @@ export default function Usage() {
                   className="mt-2"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  {Math.round(usage.conversations.percentage)}% مستخدم
+                  {t('usagePage.text17', { var0: Math.round(usage.conversations.percentage) })}
                 </p>
               </>
             )}
@@ -115,7 +117,7 @@ export default function Usage() {
         {/* Messages */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الرسائل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('usagePage.text3')}</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -129,7 +131,7 @@ export default function Usage() {
             </div>
             {usage.messages.unlimited ? (
               <p className="text-xs text-muted-foreground mt-2">
-                غير محدود ∞
+                {t('usagePage.text18')}
               </p>
             ) : (
               <>
@@ -138,7 +140,7 @@ export default function Usage() {
                   className="mt-2"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  {Math.round(usage.messages.percentage)}% مستخدم
+                  {t('usagePage.text19', { var0: Math.round(usage.messages.percentage) })}
                 </p>
               </>
             )}
@@ -148,7 +150,7 @@ export default function Usage() {
         {/* Voice Messages */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">الرسائل الصوتية</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('usagePage.text4')}</CardTitle>
             <Mic className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -162,7 +164,7 @@ export default function Usage() {
             </div>
             {usage.voiceMessages.unlimited ? (
               <p className="text-xs text-muted-foreground mt-2">
-                غير محدود ∞
+                {t('usagePage.text20')}
               </p>
             ) : (
               <>
@@ -171,7 +173,7 @@ export default function Usage() {
                   className="mt-2"
                 />
                 <p className="text-xs text-muted-foreground mt-2">
-                  {Math.round(usage.voiceMessages.percentage)}% مستخدم
+                  {t('usagePage.text21', { var0: Math.round(usage.voiceMessages.percentage) })}
                 </p>
               </>
             )}
@@ -184,19 +186,19 @@ export default function Usage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            معلومات إعادة التعيين
+            {t('usagePage.text11')}
           </CardTitle>
           <CardDescription>
-            يتم إعادة تعيين الاستخدام الشهري تلقائياً
+            {t('usagePage.text12')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">آخر إعادة تعيين:</span>
+            <span className="text-sm text-muted-foreground">{t('usagePage.text5')}</span>
             <span className="text-sm font-medium">{formatDate(usage.lastResetAt)}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">إعادة التعيين القادمة:</span>
+            <span className="text-sm text-muted-foreground">{t('usagePage.text6')}</span>
             <span className="text-sm font-medium">{formatDate(usage.nextResetAt)}</span>
           </div>
         </CardContent>
@@ -208,20 +210,20 @@ export default function Usage() {
         usage.voiceMessages.percentage >= 80) && (
         <Card className="border-yellow-500 bg-yellow-50">
           <CardHeader>
-            <CardTitle>ترقية الباقة</CardTitle>
+            <CardTitle>{t('usagePage.text7')}</CardTitle>
             <CardDescription>
-              أنت تقترب من الحد الأقصى لباقتك الحالية
+              {t('usagePage.text13')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-sm mb-4">
-              قم بالترقية إلى باقة أعلى للحصول على المزيد من المحادثات والرسائل.
+              {t('usagePage.text14')}
             </p>
             <a
               href="/merchant/plans"
               className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
             >
-              عرض الباقات
+              {t('usagePage.text15')}
             </a>
           </CardContent>
         </Card>

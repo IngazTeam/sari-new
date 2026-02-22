@@ -39,6 +39,7 @@ import {
     RefreshCw,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 interface BookingReview {
     id: number;
@@ -61,6 +62,7 @@ interface BookingReview {
 }
 
 export default function BookingReviews() {
+  const { t } = useTranslation();
     const { toast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [ratingFilter, setRatingFilter] = useState<string>('all');
@@ -76,8 +78,8 @@ export default function BookingReviews() {
     const replyMutation = trpc.bookingReviews.reply.useMutation({
         onSuccess: () => {
             toast({
-                title: 'تم إرسال الرد',
-                description: 'تم الرد على التقييم بنجاح',
+                title: t('bookingReviewsPage.text35'),
+                description: t('bookingReviewsPage.text36'),
                 variant: 'success',
             });
             refetch();
@@ -87,7 +89,7 @@ export default function BookingReviews() {
         },
         onError: (error) => {
             toast({
-                title: 'خطأ',
+                title: t('bookingReviewsPage.text37'),
                 description: error.message,
                 variant: 'destructive',
             });
@@ -151,14 +153,14 @@ export default function BookingReviews() {
             {/* Header */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-3xl font-bold">تقييمات الحجوزات</h1>
+                    <h1 className="text-3xl font-bold">{t('bookingReviewsPage.text0')}</h1>
                     <p className="text-muted-foreground mt-2">
-                        إدارة تقييمات العملاء للخدمات والحجوزات
+                        {t('bookingReviewsPage.text30')}
                     </p>
                 </div>
                 <Button variant="outline" onClick={() => refetch()}>
                     <RefreshCw className="h-4 w-4 ml-2" />
-                    تحديث
+                    {t('bookingReviewsPage.text31')}
                 </Button>
             </div>
 
@@ -166,27 +168,27 @@ export default function BookingReviews() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">إجمالي التقييمات</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('bookingReviewsPage.text1')}</CardTitle>
                         <Star className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.total}</div>
-                        <p className="text-xs text-muted-foreground">تقييم</p>
+                        <p className="text-xs text-muted-foreground">{t('bookingReviewsPage.text2')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">متوسط التقييم</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('bookingReviewsPage.text3')}</CardTitle>
                         <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{stats.averageRating.toFixed(1)}</div>
-                        <p className="text-xs text-muted-foreground">من 5 نجوم</p>
+                        <p className="text-xs text-muted-foreground">{t('bookingReviewsPage.text4')}</p>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">5 نجوم</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('bookingReviewsPage.text5')}</CardTitle>
                         <div className="flex">
                             {[1, 2, 3, 4, 5].map((i) => (
                                 <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
@@ -202,12 +204,12 @@ export default function BookingReviews() {
                 </Card>
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">بانتظار الرد</CardTitle>
+                        <CardTitle className="text-sm font-medium">{t('bookingReviewsPage.text6')}</CardTitle>
                         <MessageSquare className="h-4 w-4 text-orange-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-orange-500">{stats.needsReply}</div>
-                        <p className="text-xs text-muted-foreground">تقييم بحاجة للرد</p>
+                        <p className="text-xs text-muted-foreground">{t('bookingReviewsPage.text7')}</p>
                     </CardContent>
                 </Card>
             </div>
@@ -215,15 +217,15 @@ export default function BookingReviews() {
             {/* Filters and Table */}
             <Card>
                 <CardHeader>
-                    <CardTitle>قائمة التقييمات</CardTitle>
-                    <CardDescription>جميع تقييمات العملاء للحجوزات والخدمات</CardDescription>
+                    <CardTitle>{t('bookingReviewsPage.text8')}</CardTitle>
+                    <CardDescription>{t('bookingReviewsPage.text9')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col md:flex-row gap-4 mb-6">
                         <div className="relative flex-1">
                             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="بحث بالاسم أو رقم الجوال..."
+                                placeholder={t('bookingReviewsPage.text10')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="pr-10"
@@ -232,15 +234,15 @@ export default function BookingReviews() {
                         <Select value={ratingFilter} onValueChange={setRatingFilter}>
                             <SelectTrigger className="w-full md:w-[180px]">
                                 <Filter className="h-4 w-4 ml-2" />
-                                <SelectValue placeholder="التقييم" />
+                                <SelectValue placeholder={t('bookingReviewsPage.text11')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">جميع التقييمات</SelectItem>
-                                <SelectItem value="5">5 نجوم</SelectItem>
-                                <SelectItem value="4">4 نجوم</SelectItem>
-                                <SelectItem value="3">3 نجوم</SelectItem>
-                                <SelectItem value="2">2 نجوم</SelectItem>
-                                <SelectItem value="1">نجمة واحدة</SelectItem>
+                                <SelectItem value="all">{t('bookingReviewsPage.text12')}</SelectItem>
+                                <SelectItem value="5">{t('bookingReviewsPage.text13')}</SelectItem>
+                                <SelectItem value="4">{t('bookingReviewsPage.text14')}</SelectItem>
+                                <SelectItem value="3">{t('bookingReviewsPage.text15')}</SelectItem>
+                                <SelectItem value="2">{t('bookingReviewsPage.text16')}</SelectItem>
+                                <SelectItem value="1">{t('bookingReviewsPage.text17')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -250,12 +252,12 @@ export default function BookingReviews() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-right">العميل</TableHead>
-                                    <TableHead className="text-right">التاريخ</TableHead>
-                                    <TableHead className="text-right">التقييم</TableHead>
-                                    <TableHead className="text-right">التعليق</TableHead>
-                                    <TableHead className="text-right">الحالة</TableHead>
-                                    <TableHead className="text-right">الإجراءات</TableHead>
+                                    <TableHead className="text-right">{t('bookingReviewsPage.text18')}</TableHead>
+                                    <TableHead className="text-right">{t('bookingReviewsPage.text19')}</TableHead>
+                                    <TableHead className="text-right">{t('bookingReviewsPage.text20')}</TableHead>
+                                    <TableHead className="text-right">{t('bookingReviewsPage.text21')}</TableHead>
+                                    <TableHead className="text-right">{t('bookingReviewsPage.text22')}</TableHead>
+                                    <TableHead className="text-right">{t('bookingReviewsPage.text23')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -287,9 +289,9 @@ export default function BookingReviews() {
                                             </TableCell>
                                             <TableCell>
                                                 {review.reply ? (
-                                                    <Badge variant="default">تم الرد</Badge>
+                                                    <Badge variant="default">{t('bookingReviewsPage.text24')}</Badge>
                                                 ) : (
-                                                    <Badge variant="secondary">بانتظار الرد</Badge>
+                                                    <Badge variant="secondary">{t('bookingReviewsPage.text25')}</Badge>
                                                 )}
                                             </TableCell>
                                             <TableCell>
@@ -310,7 +312,7 @@ export default function BookingReviews() {
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                                            لا توجد تقييمات
+                                            {t('bookingReviewsPage.text32')}
                                         </TableCell>
                                     </TableRow>
                                 )}
@@ -330,7 +332,7 @@ export default function BookingReviews() {
             }}>
                 <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>تفاصيل التقييم والرد</DialogTitle>
+                        <DialogTitle>{t('bookingReviewsPage.text26')}</DialogTitle>
                         <DialogDescription>
                             {selectedReview?.customerName || 'عميل'} - {selectedReview?.customerPhone}
                         </DialogDescription>
@@ -350,9 +352,9 @@ export default function BookingReviews() {
 
                             {/* Reply Section */}
                             <div className="space-y-2">
-                                <label className="text-sm font-medium">الرد على التقييم</label>
+                                <label className="text-sm font-medium">{t('bookingReviewsPage.text28')}</label>
                                 <Textarea
-                                    placeholder="اكتب ردك هنا..."
+                                    placeholder={t('bookingReviewsPage.text29')}
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
                                     rows={4}
@@ -360,7 +362,7 @@ export default function BookingReviews() {
                                 />
                                 {selectedReview.reply && (
                                     <p className="text-xs text-muted-foreground">
-                                        تم الرد بتاريخ {new Date(selectedReview.repliedAt || '').toLocaleDateString('ar-SA')}
+                                        {t('bookingReviewsPage.text38', { var0: new Date(selectedReview.repliedAt || '').toLocaleDateString('ar-SA') })}
                                     </p>
                                 )}
                             </div>
@@ -368,7 +370,7 @@ export default function BookingReviews() {
                             {/* Actions */}
                             <div className="flex justify-end gap-2">
                                 <Button variant="outline" onClick={() => setShowReplyDialog(false)}>
-                                    إغلاق
+                                    {t('bookingReviewsPage.text33')}
                                 </Button>
                                 {!selectedReview.reply && (
                                     <Button
@@ -380,7 +382,7 @@ export default function BookingReviews() {
                                         ) : (
                                             <Send className="h-4 w-4 ml-2" />
                                         )}
-                                        إرسال الرد
+                                        {t('bookingReviewsPage.text34')}
                                     </Button>
                                 )}
                             </div>

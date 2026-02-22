@@ -57,13 +57,13 @@ export default function DataSync() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'success':
-        return <Badge className="bg-green-100 text-green-800 border-green-200">نجح</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-200">{t('dataSyncPage.text0')}</Badge>;
       case 'error':
-        return <Badge className="bg-red-100 text-red-800 border-red-200">فشل</Badge>;
+        return <Badge className="bg-red-100 text-red-800 border-red-200">{t('dataSyncPage.text1')}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">قيد الانتظار</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">{t('dataSyncPage.text2')}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">غير معروف</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800 border-gray-200">{t('dataSyncPage.text3')}</Badge>;
     }
   };
 
@@ -71,9 +71,9 @@ export default function DataSync() {
     <div className="container py-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">مزامنة البيانات</h1>
+          <h1 className="text-3xl font-bold">{t('dataSyncPage.text4')}</h1>
           <p className="text-muted-foreground mt-2">
-            تتبع حالة مزامنة بياناتك مع Google Sheets
+            {t('dataSyncPage.text28')}
           </p>
         </div>
         <Button
@@ -84,12 +84,12 @@ export default function DataSync() {
           {syncing || syncMutation.isPending ? (
             <>
               <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              جاري المزامنة...
+              {t('dataSyncPage.text22')}
             </>
           ) : (
             <>
               <RefreshCw className="ml-2 h-4 w-4" />
-              مزامنة الآن
+              {t('dataSyncPage.text23')}
             </>
           )}
         </Button>
@@ -108,7 +108,7 @@ export default function DataSync() {
         <Alert className="bg-green-50 border-green-200">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            تمت المزامنة بنجاح!
+            {t('dataSyncPage.text24')}
           </AlertDescription>
         </Alert>
       )}
@@ -116,9 +116,9 @@ export default function DataSync() {
       {/* Overall Status */}
       <Card>
         <CardHeader>
-          <CardTitle>الحالة العامة</CardTitle>
+          <CardTitle>{t('dataSyncPage.text5')}</CardTitle>
           <CardDescription>
-            آخر تحديث للمزامنة
+            {t('dataSyncPage.text25')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -129,9 +129,9 @@ export default function DataSync() {
                   {getStatusIcon(syncStatus.lastSyncStatus)}
                   <div>
                     <p className="font-medium">
-                      {syncStatus.lastSyncStatus === 'success' && 'تمت المزامنة بنجاح'}
-                      {syncStatus.lastSyncStatus === 'error' && 'فشلت المزامنة'}
-                      {syncStatus.lastSyncStatus === 'pending' && 'المزامنة قيد التنفيذ'}
+                      {syncStatus.lastSyncStatus === 'success'  && t('dataSyncPage.text31')}
+                      {syncStatus.lastSyncStatus === 'error'  && t('dataSyncPage.text32')}
+                      {syncStatus.lastSyncStatus === 'pending'  && t('dataSyncPage.text33')}
                     </p>
                     {syncStatus.lastSyncAt && (
                       <p className="text-sm text-muted-foreground">
@@ -159,7 +159,7 @@ export default function DataSync() {
                       rel="noopener noreferrer"
                     >
                       <ExternalLink className="ml-2 h-4 w-4" />
-                      فتح جدول البيانات
+                      {t('dataSyncPage.text26')}
                     </a>
                   </Button>
                 </div>
@@ -174,8 +174,8 @@ export default function DataSync() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              <p>لم يتم إجراء أي مزامنة بعد</p>
-              <p className="text-sm mt-2">انقر على "مزامنة الآن" لبدء المزامنة</p>
+              <p>{t('dataSyncPage.text6')}</p>
+              <p className="text-sm mt-2">{t('dataSyncPage.text7')}</p>
             </div>
           )}
         </CardContent>
@@ -185,9 +185,9 @@ export default function DataSync() {
       {syncStatus?.history && syncStatus.history.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>سجل المزامنة</CardTitle>
+            <CardTitle>{t('dataSyncPage.text8')}</CardTitle>
             <CardDescription>
-              آخر {syncStatus.history.length} عمليات مزامنة
+              {t('dataSyncPage.text29', { var0: syncStatus.history.length })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -201,9 +201,9 @@ export default function DataSync() {
                     {getStatusIcon(record.status)}
                     <div>
                       <p className="text-sm font-medium">
-                        {record.status === 'success' && 'مزامنة ناجحة'}
-                        {record.status === 'error' && 'مزامنة فاشلة'}
-                        {record.status === 'pending' && 'قيد الانتظار'}
+                        {record.status === 'success'  && t('dataSyncPage.text34')}
+                        {record.status === 'error'  && t('dataSyncPage.text35')}
+                        {record.status === 'pending'  && t('dataSyncPage.text36')}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(record.timestamp), {
@@ -213,7 +213,7 @@ export default function DataSync() {
                       </p>
                       {record.recordsCount && (
                         <p className="text-xs text-muted-foreground">
-                          {record.recordsCount} سجل
+                          {t('dataSyncPage.text30', { var0: record.recordsCount })}
                         </p>
                       )}
                     </div>
@@ -229,32 +229,32 @@ export default function DataSync() {
       {/* Configuration Info */}
       <Card>
         <CardHeader>
-          <CardTitle>معلومات الإعداد</CardTitle>
+          <CardTitle>{t('dataSyncPage.text9')}</CardTitle>
           <CardDescription>
-            تفاصيل إعداد المزامنة الحالية
+            {t('dataSyncPage.text27')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 text-sm">
             <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">حالة التكامل</span>
+              <span className="text-muted-foreground">{t('dataSyncPage.text10')}</span>
               <span className="font-medium">
                 {syncStatus?.isConfigured ? (
-                  <Badge className="bg-green-100 text-green-800">مفعّل</Badge>
+                  <Badge className="bg-green-100 text-green-800">{t('dataSyncPage.text11')}</Badge>
                 ) : (
-                  <Badge className="bg-gray-100 text-gray-800">غير مفعّل</Badge>
+                  <Badge className="bg-gray-100 text-gray-800">{t('dataSyncPage.text12')}</Badge>
                 )}
               </span>
             </div>
             <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">المزامنة التلقائية</span>
+              <span className="text-muted-foreground">{t('dataSyncPage.text13')}</span>
               <span className="font-medium">
-                {syncStatus?.autoSyncEnabled ? 'مفعّلة' : 'معطّلة'}
+                {syncStatus?.autoSyncEnabled ? t('dataSyncPage.text20') : t('dataSyncPage.text21')}
               </span>
             </div>
             {syncStatus?.nextSyncAt && (
               <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">المزامنة التالية</span>
+                <span className="text-muted-foreground">{t('dataSyncPage.text14')}</span>
                 <span className="font-medium">
                   {formatDistanceToNow(new Date(syncStatus.nextSyncAt), {
                     addSuffix: true,
@@ -270,13 +270,13 @@ export default function DataSync() {
       {/* Help Section */}
       <Card className="bg-blue-50 border-blue-200">
         <CardHeader>
-          <CardTitle className="text-blue-900">كيف تعمل المزامنة؟</CardTitle>
+          <CardTitle className="text-blue-900">{t('dataSyncPage.text15')}</CardTitle>
         </CardHeader>
         <CardContent className="text-blue-800 space-y-2 text-sm">
-          <p>• يتم مزامنة بياناتك تلقائياً مع Google Sheets كل ساعة</p>
-          <p>• يمكنك إجراء مزامنة يدوية في أي وقت بالنقر على "مزامنة الآن"</p>
-          <p>• البيانات المزامنة تشمل: الطلبات، العملاء، المنتجات، والمحادثات</p>
-          <p>• يمكنك الوصول إلى جدول البيانات من خلال الرابط أعلاه</p>
+          <p>{t('dataSyncPage.text16')}</p>
+          <p>{t('dataSyncPage.text17')}</p>
+          <p>{t('dataSyncPage.text18')}</p>
+          <p>{t('dataSyncPage.text19')}</p>
         </CardContent>
       </Card>
     </div>

@@ -22,23 +22,23 @@ export default function CampaignDetails() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل إرسال الحملة');
+      toast.error(error.message || t('campaignDetailsPage.text4'));
     },
   });
 
   const handleSend = async () => {
-    if (confirm('هل أنت متأكد من إرسال هذه الحملة؟ لا يمكن التراجع عن هذا الإجراء.')) {
+    if (confirm(t('campaignDetailsPage.text21'))) {
       await sendMutation.mutateAsync({ id: campaignId });
     }
   };
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      draft: { label: 'مسودة', variant: 'secondary' as const, icon: null },
-      scheduled: { label: 'مجدول', variant: 'default' as const, icon: <Calendar className="w-3 h-3 ml-1" /> },
-      sending: { label: 'جاري الإرسال', variant: 'default' as const, icon: <Send className="w-3 h-3 ml-1" /> },
-      completed: { label: 'مكتمل', variant: 'default' as const, icon: <CheckCircle className="w-3 h-3 ml-1" /> },
-      failed: { label: 'فشل', variant: 'destructive' as const, icon: <XCircle className="w-3 h-3 ml-1" /> },
+      draft: { label: t('campaignDetailsPage.text16'), variant: 'secondary' as const, icon: null },
+      scheduled: { label: t('campaignDetailsPage.text17'), variant: 'default' as const, icon: <Calendar className="w-3 h-3 ml-1" /> },
+      sending: { label: t('campaignDetailsPage.text18'), variant: 'default' as const, icon: <Send className="w-3 h-3 ml-1" /> },
+      completed: { label: t('campaignDetailsPage.text19'), variant: 'default' as const, icon: <CheckCircle className="w-3 h-3 ml-1" /> },
+      failed: { label: t('campaignDetailsPage.text20'), variant: 'destructive' as const, icon: <XCircle className="w-3 h-3 ml-1" /> },
     };
 
     const config = statusMap[status as keyof typeof statusMap] || statusMap.draft;
@@ -61,10 +61,10 @@ export default function CampaignDetails() {
   if (!campaign) {
     return (
       <div className="text-center py-12">
-        <h3 className="text-lg font-semibold mb-2">الحملة غير موجودة</h3>
+        <h3 className="text-lg font-semibold mb-2">{t('campaignDetailsPage.text0')}</h3>
         <Button onClick={() => setLocation('/merchant/campaigns')}>
           <ArrowRight className="w-4 h-4 ml-2" />
-          العودة للحملات
+          {t('campaignDetailsPage.text5')}
         </Button>
       </div>
     );
@@ -91,19 +91,19 @@ export default function CampaignDetails() {
             onClick={() => setLocation('/merchant/campaigns')}
           >
             <ArrowRight className="w-4 h-4 ml-2" />
-            العودة
+            {t('campaignDetailsPage.text6')}
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{campaign.name}</h1>
             <p className="text-muted-foreground mt-2">
-              تفاصيل الحملة التسويقية
+              {t('campaignDetailsPage.text7')}
             </p>
           </div>
         </div>
         {campaign.status === 'draft' && (
           <Button onClick={handleSend} disabled={sendMutation.isPending}>
             <Send className="w-4 h-4 ml-2" />
-            إرسال الحملة الآن
+            {t('campaignDetailsPage.text8')}
           </Button>
         )}
       </div>
@@ -113,7 +113,7 @@ export default function CampaignDetails() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              الحالة
+              {t('campaignDetailsPage.text9')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -124,7 +124,7 @@ export default function CampaignDetails() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              إجمالي المستلمين
+              {t('campaignDetailsPage.text10')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -138,7 +138,7 @@ export default function CampaignDetails() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              تم الإرسال
+              {t('campaignDetailsPage.text11')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -151,7 +151,7 @@ export default function CampaignDetails() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              تاريخ الإنشاء
+              {t('campaignDetailsPage.text12')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -171,9 +171,9 @@ export default function CampaignDetails() {
         {/* Message Content */}
         <Card>
           <CardHeader>
-            <CardTitle>محتوى الرسالة</CardTitle>
+            <CardTitle>{t('campaignDetailsPage.text1')}</CardTitle>
             <CardDescription>
-              الرسالة التي سيتم إرسالها للعملاء
+              {t('campaignDetailsPage.text13')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -187,9 +187,9 @@ export default function CampaignDetails() {
         {campaign.imageUrl && (
           <Card>
             <CardHeader>
-              <CardTitle>الصورة المرفقة</CardTitle>
+              <CardTitle>{t('campaignDetailsPage.text2')}</CardTitle>
               <CardDescription>
-                الصورة التي سيتم إرسالها مع الرسالة
+                {t('campaignDetailsPage.text14')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -206,9 +206,9 @@ export default function CampaignDetails() {
       {/* Recipients List */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة المستلمين</CardTitle>
+          <CardTitle>{t('campaignDetailsPage.text3')}</CardTitle>
           <CardDescription>
-            أرقام الهواتف التي سيتم إرسال الحملة لها ({recipients.length} مستلم)
+            {t('campaignDetailsPage.text22', { var0: recipients.length })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -225,7 +225,7 @@ export default function CampaignDetails() {
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
-              لا توجد أرقام مستلمين
+              {t('campaignDetailsPage.text15')}
             </div>
           )}
         </CardContent>

@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Check, Sparkles, AlertCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 export default function SubscriptionPlans() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -25,11 +27,11 @@ export default function SubscriptionPlans() {
       if (result.paymentUrl) {
         window.location.href = result.paymentUrl;
       } else {
-        toast.success('تم الاشتراك بنجاح!');
+        toast.success(t('subscriptionPlansPage.text0'));
         setLocation('/merchant/subscription');
       }
     } catch (error: any) {
-      toast.error(error.message || 'فشل الاشتراك في الباقة');
+      toast.error(error.message || t('subscriptionPlansPage.text18'));
     }
   };
 
@@ -57,10 +59,10 @@ export default function SubscriptionPlans() {
   return (
     <div className="container py-8">
       <div className="text-right mb-8">
-        <h1 className="text-4xl font-bold mb-2">اختر الباقة المناسبة لك</h1>
+        <h1 className="text-4xl font-bold mb-2">{t('subscriptionPlansPage.text1')}</h1>
         <p className="text-muted-foreground text-lg">
           {isTrial
-            ? `أنت في الفترة التجريبية — متبقي ${daysRemaining} ${daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? 'يومين' : 'أيام'}`
+            ? `أنت في الفترة التجريبية — متبقي ${daysRemaining} ${daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? t('subscriptionPlansPage.text10') : t('subscriptionPlansPage.text11')}`
             : 'اشترك في إحدى الباقات لتفعيل جميع الميزات'}
         </p>
       </div>
@@ -73,15 +75,15 @@ export default function SubscriptionPlans() {
             size="sm"
             onClick={() => setSelectedPeriod('monthly')}
           >
-            شهري
+            {t('subscriptionPlansPage.text19')}
           </Button>
           <Button
             variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setSelectedPeriod('yearly')}
           >
-            سنوي
-            <Badge variant="secondary" className="mr-2">وفّر 20%</Badge>
+            {t('subscriptionPlansPage.text20')}
+            <Badge variant="secondary" className="mr-2">{t('subscriptionPlansPage.text2')}</Badge>
           </Button>
         </div>
       </div>
@@ -92,11 +94,11 @@ export default function SubscriptionPlans() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-blue-600" />
-              <CardTitle className="text-blue-900">🎁 أنت في الفترة التجريبية المجانية</CardTitle>
+              <CardTitle className="text-blue-900">{t('subscriptionPlansPage.text3')}</CardTitle>
             </div>
             <CardDescription className="text-blue-700 flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              متبقي {daysRemaining} {daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? 'يومين' : 'أيام'} — اشترك الآن لضمان الاستمرارية
+              متبقي {daysRemaining} {daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? t('subscriptionPlansPage.text12') : t('subscriptionPlansPage.text13')} — اشترك الآن لضمان الاستمرارية
             </CardDescription>
           </CardHeader>
         </Card>
@@ -108,10 +110,10 @@ export default function SubscriptionPlans() {
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-5 w-5 text-red-600" />
-              <CardTitle className="text-red-900">⏰ انتهت الفترة التجريبية</CardTitle>
+              <CardTitle className="text-red-900">{t('subscriptionPlansPage.text4')}</CardTitle>
             </div>
             <CardDescription className="text-red-700">
-              اشترك الآن في إحدى الباقات لمتابعة استخدام جميع ميزات ساري
+              {t('subscriptionPlansPage.text21')}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -131,7 +133,7 @@ export default function SubscriptionPlans() {
             >
               {isCurrentPlan && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge className="bg-primary">الباقة الحالية</Badge>
+                  <Badge className="bg-primary">{t('subscriptionPlansPage.text5')}</Badge>
                 </div>
               )}
 
@@ -148,13 +150,13 @@ export default function SubscriptionPlans() {
                     <span className="text-muted-foreground">{plan.currency}</span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {selectedPeriod === 'monthly' ? 'شهرياً' : 'سنوياً'}
+                    {selectedPeriod === 'monthly' ? t('subscriptionPlansPage.text14') : t('subscriptionPlansPage.text15')}
                   </p>
                 </div>
 
                 {/* Main Feature */}
                 <div className="p-4 rounded-lg bg-muted">
-                  <p className="text-sm text-muted-foreground">الحد الأقصى للعملاء</p>
+                  <p className="text-sm text-muted-foreground">{t('subscriptionPlansPage.text6')}</p>
                   <p className="text-2xl font-bold">{plan.maxCustomers.toLocaleString()} عميل</p>
                 </div>
 
@@ -180,7 +182,7 @@ export default function SubscriptionPlans() {
                   onClick={() => handleSubscribe(plan.id)}
                   disabled={isCurrentPlan || subscribe.isPending}
                 >
-                  {isCurrentPlan ? 'الباقة الحالية' : subscribe.isPending ? 'جاري الاشتراك...' : 'اشترك الآن'}
+                  {isCurrentPlan ? 'الباقة الحالية' : subscribe.isPending ? t('subscriptionPlansPage.text16') : t('subscriptionPlansPage.text17')}
                 </Button>
               </CardFooter>
             </Card>
@@ -190,9 +192,9 @@ export default function SubscriptionPlans() {
 
       {/* Additional Info */}
       <div className="mt-12 text-right text-sm text-muted-foreground">
-        <p>جميع الباقات تشمل:</p>
+        <p>{t('subscriptionPlansPage.text9')}</p>
         <p className="mt-2">
-          ردود ذكية بالذكاء الاصطناعي • إدارة المنتجات • الحملات التسويقية • التقارير والإحصائيات • الدعم الفني
+          {t('subscriptionPlansPage.text22')}
         </p>
       </div>
     </div>

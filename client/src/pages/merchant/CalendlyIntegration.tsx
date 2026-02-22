@@ -25,8 +25,10 @@ import {
   Bell
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function CalendlyIntegration() {
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [autoConfirm, setAutoConfirm] = useState(true);
@@ -63,14 +65,14 @@ export default function CalendlyIntegration() {
   // Mutations
   const connectMutation = trpc.calendly.connect.useMutation({
     onSuccess: (data) => {
-      toast.success('تم الربط بنجاح!', {
+      toast.success(t('calendlyIntegrationPage.text40'), {
         description: data.message,
       });
       setApiKey('');
       refetch();
     },
     onError: (error) => {
-      toast.error('فشل الربط', {
+      toast.error(t('calendlyIntegrationPage.text41'), {
         description: error.message,
       });
     },
@@ -81,13 +83,13 @@ export default function CalendlyIntegration() {
 
   const disconnectMutation = trpc.calendly.disconnect.useMutation({
     onSuccess: (data) => {
-      toast.success('تم فصل الحساب', {
+      toast.success(t('calendlyIntegrationPage.text42'), {
         description: data.message,
       });
       refetch();
     },
     onError: (error) => {
-      toast.error('فشل فصل الحساب', {
+      toast.error(t('calendlyIntegrationPage.text43'), {
         description: error.message,
       });
     },
@@ -95,13 +97,13 @@ export default function CalendlyIntegration() {
 
   const syncMutation = trpc.calendly.syncNow.useMutation({
     onSuccess: (data) => {
-      toast.success('تمت المزامنة بنجاح!', {
+      toast.success(t('calendlyIntegrationPage.text44'), {
         description: data.message,
       });
       refetch();
     },
     onError: (error) => {
-      toast.error('فشلت المزامنة', {
+      toast.error(t('calendlyIntegrationPage.text45'), {
         description: error.message,
       });
     },
@@ -109,10 +111,10 @@ export default function CalendlyIntegration() {
 
   const updateSettingsMutation = trpc.calendly.updateSettings.useMutation({
     onSuccess: () => {
-      toast.success('تم حفظ الإعدادات');
+      toast.success(t('calendlyIntegrationPage.text0'));
     },
     onError: (error) => {
-      toast.error('فشل حفظ الإعدادات', {
+      toast.error(t('calendlyIntegrationPage.text46'), {
         description: error.message,
       });
     },
@@ -120,8 +122,8 @@ export default function CalendlyIntegration() {
 
   const handleConnect = () => {
     if (!apiKey) {
-      toast.error('بيانات ناقصة', {
-        description: 'يرجى إدخال API Key من Calendly',
+      toast.error(t('calendlyIntegrationPage.text47'), {
+        description: t('calendlyIntegrationPage.text39'),
       });
       return;
     }
@@ -134,7 +136,7 @@ export default function CalendlyIntegration() {
   };
 
   const handleDisconnect = () => {
-    if (confirm('هل أنت متأكد من فصل حساب Calendly؟')) {
+    if (confirm(t('calendlyIntegrationPage.text48'))) {
       disconnectMutation.mutate({ merchantId });
     }
   };
@@ -172,9 +174,9 @@ export default function CalendlyIntegration() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl" dir="rtl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">تكامل Calendly</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('calendlyIntegrationPage.text1')}</h1>
         <p className="text-muted-foreground">
-          اربط حسابك على Calendly لإدارة المواعيد وإرسال التذكيرات عبر واتساب
+          {t('calendlyIntegrationPage.text49')}
         </p>
       </div>
 
@@ -187,17 +189,17 @@ export default function CalendlyIntegration() {
                 <Calendar className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <CardTitle>حالة الاتصال</CardTitle>
+                <CardTitle>{t('calendlyIntegrationPage.text2')}</CardTitle>
                 <CardDescription>
-                  {connection?.connected ? connection.userName : 'غير متصل'}
+                  {connection?.connected ? connection.userName : t('calendlyIntegrationPage.text26')}
                 </CardDescription>
               </div>
             </div>
             <Badge variant={connection?.connected ? 'default' : 'secondary'}>
               {connection?.connected ? (
-                <><CheckCircle2 className="h-4 w-4 ml-1" /> متصل</>
+                <><CheckCircle2 className="h-4 w-4 ml-1" />{t('calendlyIntegrationPage.text3')}</>
               ) : (
-                <><XCircle className="h-4 w-4 ml-1" /> غير متصل</>
+                <><XCircle className="h-4 w-4 ml-1" />{t('calendlyIntegrationPage.text4')}</>
               )}
             </Badge>
           </div>
@@ -208,22 +210,22 @@ export default function CalendlyIntegration() {
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Calendar className="h-5 w-5 mx-auto mb-2 text-blue-500" />
                 <div className="text-2xl font-bold">{stats?.totalEvents || 0}</div>
-                <div className="text-sm text-muted-foreground">إجمالي المواعيد</div>
+                <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text5')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Clock className="h-5 w-5 mx-auto mb-2 text-green-500" />
                 <div className="text-2xl font-bold">{stats?.upcomingEvents || 0}</div>
-                <div className="text-sm text-muted-foreground">مواعيد قادمة</div>
+                <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text6')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Users className="h-5 w-5 mx-auto mb-2 text-orange-500" />
                 <div className="text-2xl font-bold">{stats?.eventTypes || 0}</div>
-                <div className="text-sm text-muted-foreground">أنواع المواعيد</div>
+                <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text7')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Bell className="h-5 w-5 mx-auto mb-2 text-purple-500" />
                 <div className="text-2xl font-bold">{stats?.remindersSent || 0}</div>
-                <div className="text-sm text-muted-foreground">تذكيرات مرسلة</div>
+                <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text8')}</div>
               </div>
             </div>
           </CardContent>
@@ -236,11 +238,11 @@ export default function CalendlyIntegration() {
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="events">
               <Calendar className="h-4 w-4 ml-2" />
-              المواعيد
+              {t('calendlyIntegrationPage.text27')}
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="h-4 w-4 ml-2" />
-              الإعدادات
+              {t('calendlyIntegrationPage.text28')}
             </TabsTrigger>
             <TabsTrigger value="webhooks">
               <Webhook className="h-4 w-4 ml-2" />
@@ -248,7 +250,7 @@ export default function CalendlyIntegration() {
             </TabsTrigger>
             <TabsTrigger value="links">
               <Link2 className="h-4 w-4 ml-2" />
-              روابط الحجز
+              {t('calendlyIntegrationPage.text29')}
             </TabsTrigger>
           </TabsList>
 
@@ -256,9 +258,9 @@ export default function CalendlyIntegration() {
           <TabsContent value="events">
             <Card>
               <CardHeader>
-                <CardTitle>المواعيد القادمة</CardTitle>
+                <CardTitle>{t('calendlyIntegrationPage.text9')}</CardTitle>
                 <CardDescription>
-                  المواعيد المجدولة من Calendly
+                  {t('calendlyIntegrationPage.text50')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -287,7 +289,7 @@ export default function CalendlyIntegration() {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Calendar className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>لا توجد مواعيد قادمة</p>
+                    <p>{t('calendlyIntegrationPage.text10')}</p>
                   </div>
                 )}
               </CardContent>
@@ -298,17 +300,17 @@ export default function CalendlyIntegration() {
           <TabsContent value="settings">
             <Card>
               <CardHeader>
-                <CardTitle>إعدادات التكامل</CardTitle>
+                <CardTitle>{t('calendlyIntegrationPage.text11')}</CardTitle>
                 <CardDescription>
-                  تحكم في كيفية التعامل مع المواعيد من Calendly
+                  {t('calendlyIntegrationPage.text51')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">تأكيد تلقائي</Label>
+                    <Label className="text-base">{t('calendlyIntegrationPage.text12')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      تأكيد المواعيد تلقائياً عند الحجز
+                      {t('calendlyIntegrationPage.text30')}
                     </p>
                   </div>
                   <Switch checked={autoConfirm} onCheckedChange={setAutoConfirm} />
@@ -316,9 +318,9 @@ export default function CalendlyIntegration() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">إرسال تذكيرات واتساب</Label>
+                    <Label className="text-base">{t('calendlyIntegrationPage.text13')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      إرسال تذكيرات للعملاء قبل الموعد
+                      {t('calendlyIntegrationPage.text31')}
                     </p>
                   </div>
                   <Switch checked={sendReminders} onCheckedChange={setSendReminders} />
@@ -326,9 +328,9 @@ export default function CalendlyIntegration() {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label className="text-base">مزامنة مع واتساب</Label>
+                    <Label className="text-base">{t('calendlyIntegrationPage.text14')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      إرسال تفاصيل الموعد عبر واتساب للعميل
+                      {t('calendlyIntegrationPage.text32')}
                     </p>
                   </div>
                   <Switch checked={syncToWhatsApp} onCheckedChange={setSyncToWhatsApp} />
@@ -337,7 +339,7 @@ export default function CalendlyIntegration() {
                 <div className="flex gap-3 pt-4">
                   <Button onClick={handleSaveSettings} disabled={updateSettingsMutation.isPending}>
                     {updateSettingsMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                    حفظ الإعدادات
+                    {t('calendlyIntegrationPage.text33')}
                   </Button>
                   <Button variant="outline" onClick={handleSync} disabled={syncMutation.isPending}>
                     {syncMutation.isPending ? (
@@ -345,10 +347,10 @@ export default function CalendlyIntegration() {
                     ) : (
                       <RefreshCw className="h-4 w-4 ml-2" />
                     )}
-                    مزامنة الآن
+                    {t('calendlyIntegrationPage.text34')}
                   </Button>
                   <Button variant="destructive" onClick={handleDisconnect}>
-                    فصل الحساب
+                    {t('calendlyIntegrationPage.text35')}
                   </Button>
                 </div>
               </CardContent>
@@ -359,9 +361,9 @@ export default function CalendlyIntegration() {
           <TabsContent value="webhooks">
             <Card>
               <CardHeader>
-                <CardTitle>إعدادات Webhooks</CardTitle>
+                <CardTitle>{t('calendlyIntegrationPage.text15')}</CardTitle>
                 <CardDescription>
-                  قم بإضافة رابط Webhook في Calendly لاستقبال التحديثات الفورية
+                  {t('calendlyIntegrationPage.text52')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -369,31 +371,31 @@ export default function CalendlyIntegration() {
                   <Webhook className="h-4 w-4" />
                   <AlertDescription>
                     <div className="space-y-2">
-                      <p className="font-medium">رابط Webhook الخاص بك:</p>
+                      <p className="font-medium">{t('calendlyIntegrationPage.text16')}</p>
                       <code className="block p-2 bg-muted rounded text-sm break-all">
                         {window.location.origin}/api/webhooks/calendly/{merchantId}
                       </code>
                       <p className="text-sm text-muted-foreground mt-2">
-                        انسخ هذا الرابط وأضفه في إعدادات Webhooks في Calendly
+                        {t('calendlyIntegrationPage.text53')}
                       </p>
                     </div>
                   </AlertDescription>
                 </Alert>
 
                 <div className="space-y-3">
-                  <h4 className="font-medium">الأحداث المدعومة:</h4>
+                  <h4 className="font-medium">{t('calendlyIntegrationPage.text17')}</h4>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>invitee.created - حجز موعد جديد</span>
+                      <span>{t('calendlyIntegrationPage.text18')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>invitee.canceled - إلغاء موعد</span>
+                      <span>{t('calendlyIntegrationPage.text19')}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>routing_form_submission.created - تقديم نموذج</span>
+                      <span>{t('calendlyIntegrationPage.text20')}</span>
                     </li>
                   </ul>
                 </div>
@@ -401,7 +403,7 @@ export default function CalendlyIntegration() {
                 <Button variant="outline" asChild>
                   <a href="https://developer.calendly.com/api-docs/ZG9jOjQ2NTA5-webhooks" target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 ml-2" />
-                    دليل إعداد Webhooks في Calendly
+                    {t('calendlyIntegrationPage.text54')}
                   </a>
                 </Button>
               </CardContent>
@@ -412,9 +414,9 @@ export default function CalendlyIntegration() {
           <TabsContent value="links">
             <Card>
               <CardHeader>
-                <CardTitle>روابط الحجز</CardTitle>
+                <CardTitle>{t('calendlyIntegrationPage.text21')}</CardTitle>
                 <CardDescription>
-                  أنواع المواعيد المتاحة للحجز
+                  {t('calendlyIntegrationPage.text36')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -434,7 +436,7 @@ export default function CalendlyIntegration() {
                         <Button variant="outline" size="sm" asChild>
                           <a href={eventType.schedulingUrl} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="h-4 w-4 ml-2" />
-                            فتح الرابط
+                            {t('calendlyIntegrationPage.text37')}
                           </a>
                         </Button>
                       </div>
@@ -443,7 +445,7 @@ export default function CalendlyIntegration() {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Link2 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>لا توجد أنواع مواعيد</p>
+                    <p>{t('calendlyIntegrationPage.text23')}</p>
                   </div>
                 )}
               </CardContent>
@@ -454,9 +456,9 @@ export default function CalendlyIntegration() {
         /* Connection Form */
         <Card>
           <CardHeader>
-            <CardTitle>ربط حساب Calendly</CardTitle>
+            <CardTitle>{t('calendlyIntegrationPage.text24')}</CardTitle>
             <CardDescription>
-              أدخل API Key من Calendly للبدء في إدارة المواعيد
+              {t('calendlyIntegrationPage.text55')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -473,7 +475,7 @@ export default function CalendlyIntegration() {
                 <Input
                   id="apiKey"
                   type="password"
-                  placeholder="أدخل الـ Personal Access Token"
+                  placeholder={t('calendlyIntegrationPage.text25')}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
                   dir="ltr"
@@ -484,12 +486,12 @@ export default function CalendlyIntegration() {
             <div className="flex gap-3">
               <Button onClick={handleConnect} disabled={isConnecting}>
                 {isConnecting && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                ربط الحساب
+                {t('calendlyIntegrationPage.text38')}
               </Button>
               <Button variant="outline" asChild>
                 <a href="https://calendly.com/integrations/api_webhooks" target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 ml-2" />
-                  فتح إعدادات Calendly
+                  {t('calendlyIntegrationPage.text56')}
                 </a>
               </Button>
             </div>

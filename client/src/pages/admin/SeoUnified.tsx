@@ -19,14 +19,16 @@ import {
   Key,
   Link2,
 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function SeoUnified() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   return (
     <div className="container py-6 space-y-6">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">إدارة SEO</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('adminSeoUnifiedPage.text0')}</h1>
         <p className="text-muted-foreground">
           إدارة شاملة لتحسين محركات البحث (SEO) لموقعك
         </p>
@@ -36,11 +38,11 @@ export default function SeoUnified() {
         <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 gap-2">
           <TabsTrigger value="dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">لوحة التحكم</span>
+            <span className="hidden sm:inline">{t('adminSeoUnifiedPage.text1')}</span>
           </TabsTrigger>
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">الصفحات</span>
+            <span className="hidden sm:inline">{t('adminSeoUnifiedPage.text2')}</span>
           </TabsTrigger>
           <TabsTrigger value="meta-tags" className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
@@ -52,19 +54,19 @@ export default function SeoUnified() {
           </TabsTrigger>
           <TabsTrigger value="tracking" className="flex items-center gap-2">
             <Code className="h-4 w-4" />
-            <span className="hidden sm:inline">رموز التتبع</span>
+            <span className="hidden sm:inline">{t('adminSeoUnifiedPage.text3')}</span>
           </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">الإحصائيات</span>
+            <span className="hidden sm:inline">{t('adminSeoUnifiedPage.text4')}</span>
           </TabsTrigger>
           <TabsTrigger value="keywords" className="flex items-center gap-2">
             <Key className="h-4 w-4" />
-            <span className="hidden sm:inline">الكلمات المفتاحية</span>
+            <span className="hidden sm:inline">{t('adminSeoUnifiedPage.text5')}</span>
           </TabsTrigger>
           <TabsTrigger value="backlinks" className="flex items-center gap-2">
             <Link2 className="h-4 w-4" />
-            <span className="hidden sm:inline">الروابط الخارجية</span>
+            <span className="hidden sm:inline">{t('adminSeoUnifiedPage.text6')}</span>
           </TabsTrigger>
         </TabsList>
 

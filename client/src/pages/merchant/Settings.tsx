@@ -51,7 +51,7 @@ export default function MerchantSettings() {
       refetchUser();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل تحديث معلومات الحساب');
+      toast.error(error.message || t('settingsPage.failedUpdateAccount'));
     },
   });
 
@@ -61,7 +61,7 @@ export default function MerchantSettings() {
       refetchMerchant();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل تحديث معلومات المتجر');
+      toast.error(error.message || t('settingsPage.failedUpdateStore'));
     },
   });
 
@@ -96,8 +96,8 @@ export default function MerchantSettings() {
       <div className="flex items-center gap-3 mb-6">
         <SettingsIcon className="w-8 h-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">الإعدادات</h1>
-          <p className="text-muted-foreground">إدارة ملفك الشخصي ومعلومات المتجر</p>
+          <h1 className="text-3xl font-bold">{t('settingsPage.title')}</h1>
+          <p className="text-muted-foreground">{t('settingsPage.description')}</p>
         </div>
       </div>
 
@@ -106,26 +106,26 @@ export default function MerchantSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <User className="w-5 h-5" />
-            معلومات الحساب
+            {t('settingsPage.accountInfo')}
           </CardTitle>
           <CardDescription>
-            قم بتحديث معلومات حسابك الشخصية
+            {t('settingsPage.accountInfoDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="user-name">الاسم</Label>
+              <Label htmlFor="user-name">{t('settingsPage.name')}</Label>
               <Input
                 id="user-name"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                placeholder="أدخل اسمك"
+                placeholder={t('settingsPage.namePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="user-email">البريد الإلكتروني</Label>
+              <Label htmlFor="user-email">{t('settingsPage.email')}</Label>
               <Input
                 id="user-email"
                 type="email"
@@ -142,7 +142,7 @@ export default function MerchantSettings() {
               disabled={updateProfileMutation.isPending}
             >
               <Save className="w-4 h-4 ml-2" />
-              {updateProfileMutation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              {updateProfileMutation.isPending ? t('settingsPage.saving') : t('settingsPage.saveChanges')}
             </Button>
           </div>
         </CardContent>
@@ -153,26 +153,26 @@ export default function MerchantSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Store className="w-5 h-5" />
-            معلومات المتجر
+            {t('settingsPage.storeInfo')}
           </CardTitle>
           <CardDescription>
-            قم بتحديث معلومات متجرك التجاري
+            {t('settingsPage.storeInfoDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="business-name">اسم المتجر</Label>
+              <Label htmlFor="business-name">{t('settingsPage.storeName')}</Label>
               <Input
                 id="business-name"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
-                placeholder="أدخل اسم متجرك"
+                placeholder={t('settingsPage.storeNamePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">رقم الهاتف</Label>
+              <Label htmlFor="phone">{t('settingsPage.phone')}</Label>
               <Input
                 id="phone"
                 type="tel"
@@ -184,7 +184,7 @@ export default function MerchantSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="currency">العملة</Label>
+              <Label htmlFor="currency">{t('settingsPage.currency')}</Label>
               <Select value={currency} onValueChange={(value: 'SAR' | 'USD') => setCurrency(value)}>
                 <SelectTrigger id="currency">
                   <SelectValue />
@@ -193,19 +193,19 @@ export default function MerchantSettings() {
                   <SelectItem value="SAR">
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
-                      ريال سعودي (SAR)
+                      {t('settingsPage.sarLabel')}
                     </div>
                   </SelectItem>
                   <SelectItem value="USD">
                     <div className="flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
-                      دولار أمريكي (USD)
+                      {t('settingsPage.usdLabel')}
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                العملة المستخدمة لعرض الأسعار في متجرك
+                {t('settingsPage.currencyDesc')}
               </p>
             </div>
           </div>
@@ -216,7 +216,7 @@ export default function MerchantSettings() {
               disabled={updateMerchantMutation.isPending}
             >
               <Save className="w-4 h-4 ml-2" />
-              {updateMerchantMutation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              {updateMerchantMutation.isPending ? t('settingsPage.saving') : t('settingsPage.saveChanges')}
             </Button>
           </div>
         </CardContent>
@@ -227,18 +227,18 @@ export default function MerchantSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bot className="w-5 h-5" />
-            إعدادات الرد الآلي
+            {t('settingsPage.autoReplySettings')}
           </CardTitle>
           <CardDescription>
-            تفعيل أو تعطيل الرد التلقائي على رسائل العملاء باستخدام الذكاء الاصطناعي
+            {t('settingsPage.autoReplyDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border rounded-lg">
             <div className="space-y-1">
-              <div className="font-medium">تفعيل الرد الآلي</div>
+              <div className="font-medium">{t('settingsPage.enableAutoReply')}</div>
               <div className="text-sm text-muted-foreground">
-                عند التفعيل، سيقوم "ساري" بالرد تلقائياً على استفسارات العملاء باللهجة السعودية
+                {t('settingsPage.autoReplyDetail')}
               </div>
             </div>
             <Switch
@@ -249,12 +249,12 @@ export default function MerchantSettings() {
 
           {autoReplyEnabled && (
             <div className="bg-primary/10 dark:bg-blue-950 p-4 rounded-lg">
-              <h4 className="font-semibold text-primary dark:text-blue-100 mb-2">ميزات الرد الآلي:</h4>
+              <h4 className="font-semibold text-primary dark:text-blue-100 mb-2">{t('settingsPage.autoReplyFeatures')}</h4>
               <ul className="text-sm text-primary dark:text-blue-200 space-y-1">
-                <li>• الرد على استفسارات العملاء باللهجة السعودية</li>
-                <li>• البحث في منتجاتك واقتراح المنتجات المناسبة</li>
-                <li>• توضيح الأسعار والمواصفات</li>
-                <li>• مساعدة العملاء في اتخاذ قرار الشراء</li>
+                <li>• {t('settingsPage.feature1')}</li>
+                <li>• {t('settingsPage.feature2')}</li>
+                <li>• {t('settingsPage.feature3')}</li>
+                <li>• {t('settingsPage.feature4')}</li>
               </ul>
             </div>
           )}
@@ -265,7 +265,7 @@ export default function MerchantSettings() {
               disabled={updateMerchantMutation.isPending}
             >
               <Save className="w-4 h-4 ml-2" />
-              {updateMerchantMutation.isPending ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              {updateMerchantMutation.isPending ? t('settingsPage.saving') : t('settingsPage.saveChanges')}
             </Button>
           </div>
         </CardContent>
@@ -276,18 +276,18 @@ export default function MerchantSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="w-5 h-5" />
-            طرق الدفع
+            {t('settingsPage.paymentMethods')}
           </CardTitle>
           <CardDescription>
-            إدارة حسابات الدفع المرتبطة بمتجرك
+            {t('settingsPage.paymentMethodsDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-12">
             <CreditCard className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">قريباً</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('settingsPage.comingSoon')}</h3>
             <p className="text-muted-foreground mb-4">
-              سيتم إضافة إمكانية ربط حسابات الدفع (Tap، PayPal، Link) قريباً
+              {t('settingsPage.comingSoonDesc')}
             </p>
             <div className="flex flex-wrap justify-center gap-4 mt-6">
               <div className="px-4 py-2 bg-muted rounded-lg">

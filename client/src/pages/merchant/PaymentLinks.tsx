@@ -34,8 +34,10 @@ import {
   Clock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentLinks() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newLink, setNewLink] = useState({
@@ -54,8 +56,8 @@ export default function PaymentLinks() {
   const createLinkMutation = trpc.payments.createLink.useMutation({
     onSuccess: (data) => {
       toast({
-        title: 'تم إنشاء الرابط بنجاح',
-        description: 'يمكنك الآن مشاركة رابط الدفع مع العملاء',
+        title: t('paymentLinksPage.text30'),
+        description: t('paymentLinksPage.text31'),
       });
       setIsCreateDialogOpen(false);
       setNewLink({ title: '', description: '', amount: '', maxUsageCount: '' });
@@ -65,14 +67,14 @@ export default function PaymentLinks() {
       if (data.paymentUrl) {
         navigator.clipboard.writeText(data.paymentUrl);
         toast({
-          title: 'تم نسخ الرابط',
-          description: 'تم نسخ رابط الدفع إلى الحافظة',
+          title: t('paymentLinksPage.text32'),
+          description: t('paymentLinksPage.text33'),
         });
       }
     },
     onError: (error) => {
       toast({
-        title: 'خطأ',
+        title: t('paymentLinksPage.text34'),
         description: error.message,
         variant: 'destructive',
       });
@@ -83,14 +85,14 @@ export default function PaymentLinks() {
   const disableLinkMutation = trpc.payments.disableLink.useMutation({
     onSuccess: () => {
       toast({
-        title: 'تم تعطيل الرابط',
-        description: 'لن يتمكن العملاء من استخدام هذا الرابط بعد الآن',
+        title: t('paymentLinksPage.text35'),
+        description: t('paymentLinksPage.text36'),
       });
       refetch();
     },
     onError: (error) => {
       toast({
-        title: 'خطأ',
+        title: t('paymentLinksPage.text37'),
         description: error.message,
         variant: 'destructive',
       });
@@ -101,8 +103,8 @@ export default function PaymentLinks() {
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(url);
     toast({
-      title: 'تم نسخ الرابط',
-      description: 'تم نسخ رابط الدفع إلى الحافظة',
+      title: t('paymentLinksPage.text38'),
+      description: t('paymentLinksPage.text39'),
     });
   };
 
@@ -110,8 +112,8 @@ export default function PaymentLinks() {
   const handleCreateLink = () => {
     if (!newLink.title || !newLink.amount) {
       toast({
-        title: 'خطأ',
-        description: 'يرجى ملء جميع الحقول المطلوبة',
+        title: t('paymentLinksPage.text40'),
+        description: t('paymentLinksPage.text41'),
         variant: 'destructive',
       });
       return;
@@ -149,7 +151,7 @@ export default function PaymentLinks() {
       return (
         <Badge variant="outline" className="flex items-center gap-1 w-fit">
           <Ban className="h-3 w-3" />
-          معطل
+          {t('paymentLinksPage.text19')}
         </Badge>
       );
     }
@@ -158,7 +160,7 @@ export default function PaymentLinks() {
       return (
         <Badge variant="default" className="flex items-center gap-1 w-fit">
           <CheckCircle className="h-3 w-3" />
-          مكتمل
+          {t('paymentLinksPage.text20')}
         </Badge>
       );
     }
@@ -167,7 +169,7 @@ export default function PaymentLinks() {
       return (
         <Badge variant="destructive" className="flex items-center gap-1 w-fit">
           <XCircle className="h-3 w-3" />
-          منتهي
+          {t('paymentLinksPage.text21')}
         </Badge>
       );
     }
@@ -175,7 +177,7 @@ export default function PaymentLinks() {
     return (
       <Badge variant="secondary" className="flex items-center gap-1 w-fit">
         <Clock className="h-3 w-3" />
-        نشط
+        {t('paymentLinksPage.text22')}
       </Badge>
     );
   };
@@ -186,47 +188,47 @@ export default function PaymentLinks() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>روابط الدفع</CardTitle>
+              <CardTitle>{t('paymentLinksPage.text0')}</CardTitle>
               <CardDescription>
-                إنشاء وإدارة روابط الدفع السريعة لمشاركتها مع العملاء
+                {t('paymentLinksPage.text23')}
               </CardDescription>
             </div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="h-4 w-4 ml-2" />
-                  إنشاء رابط جديد
+                  {t('paymentLinksPage.text24')}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                  <DialogTitle>إنشاء رابط دفع جديد</DialogTitle>
+                  <DialogTitle>{t('paymentLinksPage.text1')}</DialogTitle>
                   <DialogDescription>
-                    أنشئ رابط دفع سريع لمشاركته مع العملاء عبر واتساب أو أي قناة أخرى
+                    {t('paymentLinksPage.text25')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="title">عنوان الرابط *</Label>
+                    <Label htmlFor="title">{t('paymentLinksPage.text2')}</Label>
                     <Input
                       id="title"
-                      placeholder="مثال: دفعة الاشتراك الشهري"
+                      placeholder={t('paymentLinksPage.text3')}
                       value={newLink.title}
                       onChange={(e) => setNewLink({ ...newLink, title: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="description">الوصف</Label>
+                    <Label htmlFor="description">{t('paymentLinksPage.text4')}</Label>
                     <Textarea
                       id="description"
-                      placeholder="وصف اختياري للرابط"
+                      placeholder={t('paymentLinksPage.text5')}
                       value={newLink.description}
                       onChange={(e) => setNewLink({ ...newLink, description: e.target.value })}
                       rows={3}
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="amount">المبلغ (ريال سعودي) *</Label>
+                    <Label htmlFor="amount">{t('paymentLinksPage.text6')}</Label>
                     <Input
                       id="amount"
                       type="number"
@@ -237,11 +239,11 @@ export default function PaymentLinks() {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="maxUsage">الحد الأقصى للاستخدام (اختياري)</Label>
+                    <Label htmlFor="maxUsage">{t('paymentLinksPage.text7')}</Label>
                     <Input
                       id="maxUsage"
                       type="number"
-                      placeholder="اتركه فارغاً لاستخدام غير محدود"
+                      placeholder={t('paymentLinksPage.text8')}
                       value={newLink.maxUsageCount}
                       onChange={(e) => setNewLink({ ...newLink, maxUsageCount: e.target.value })}
                     />
@@ -252,13 +254,13 @@ export default function PaymentLinks() {
                     variant="outline"
                     onClick={() => setIsCreateDialogOpen(false)}
                   >
-                    إلغاء
+                    {t('paymentLinksPage.text26')}
                   </Button>
                   <Button
                     onClick={handleCreateLink}
                     disabled={createLinkMutation.isPending}
                   >
-                    {createLinkMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء الرابط'}
+                    {createLinkMutation.isPending ? t('paymentLinksPage.text17') : t('paymentLinksPage.text18')}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -268,20 +270,20 @@ export default function PaymentLinks() {
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
-              جاري التحميل...
+              {t('paymentLinksPage.text27')}
             </div>
           ) : links && links.length > 0 ? (
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>العنوان</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>الاستخدام</TableHead>
-                    <TableHead>المدفوعات</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الإجراءات</TableHead>
+                    <TableHead>{t('paymentLinksPage.text9')}</TableHead>
+                    <TableHead>{t('paymentLinksPage.text10')}</TableHead>
+                    <TableHead>{t('paymentLinksPage.text11')}</TableHead>
+                    <TableHead>{t('paymentLinksPage.text12')}</TableHead>
+                    <TableHead>{t('paymentLinksPage.text13')}</TableHead>
+                    <TableHead>{t('paymentLinksPage.text14')}</TableHead>
+                    <TableHead>{t('paymentLinksPage.text15')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -356,13 +358,13 @@ export default function PaymentLinks() {
           ) : (
             <div className="text-center py-12">
               <LinkIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد روابط دفع</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('paymentLinksPage.text16')}</h3>
               <p className="text-muted-foreground mb-4">
-                ابدأ بإنشاء رابط دفع لمشاركته مع عملائك
+                {t('paymentLinksPage.text28')}
               </p>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 ml-2" />
-                إنشاء أول رابط
+                {t('paymentLinksPage.text29')}
               </Button>
             </div>
           )}

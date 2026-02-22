@@ -42,9 +42,9 @@ export default function SariPersonality() {
         brandVoice,
       });
       
-      toast.success("تم تحديث إعدادات شخصية ساري بنجاح");
+      toast.success(t('sariPersonalityPage.text0'));
     } catch (error) {
-      toast.error("فشل حفظ الإعدادات");
+      toast.error(t('sariPersonalityPage.text1'));
     }
   };
   
@@ -61,10 +61,10 @@ export default function SariPersonality() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Sparkles className="h-8 w-8 text-primary" />
-          إعدادات شخصية ساري
+          {t('sariPersonalityPage.text21')}
         </h1>
         <p className="text-muted-foreground mt-2">
-          خصص طريقة تفاعل ساري مع عملائك لتتناسب مع هوية علامتك التجارية
+          {t('sariPersonalityPage.text22')}
         </p>
       </div>
       
@@ -74,32 +74,32 @@ export default function SariPersonality() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-primary" />
-              نبرة الصوت
+              {t('sariPersonalityPage.text23')}
             </CardTitle>
             <CardDescription>
-              اختر النبرة التي تريد أن يستخدمها ساري في المحادثات
+              {t('sariPersonalityPage.text24')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>النبرة</Label>
+                <Label>{t('sariPersonalityPage.text2')}</Label>
                 <Select value={tone} onValueChange={setTone}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="friendly">ودود 😊</SelectItem>
-                    <SelectItem value="professional">احترافي 💼</SelectItem>
-                    <SelectItem value="casual">عادي 👋</SelectItem>
-                    <SelectItem value="enthusiastic">متحمس 🎉</SelectItem>
+                    <SelectItem value="friendly">{t('sariPersonalityPage.text3')}</SelectItem>
+                    <SelectItem value="professional">{t('sariPersonalityPage.text4')}</SelectItem>
+                    <SelectItem value="casual">{t('sariPersonalityPage.text5')}</SelectItem>
+                    <SelectItem value="enthusiastic">{t('sariPersonalityPage.text6')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {tone === "friendly" && "نبرة دافئة وترحيبية تناسب معظم الأعمال"}
-                  {tone === "professional" && "نبرة احترافية ومحترمة للشركات الكبيرة"}
-                  {tone === "casual" && "نبرة مريحة وغير رسمية للتواصل اليومي"}
-                  {tone === "enthusiastic" && "نبرة متحمسة ومليئة بالطاقة"}
+                  {tone === "friendly"  && t('sariPersonalityPage.text34')}
+                  {tone === "professional"  && t('sariPersonalityPage.text35')}
+                  {tone === "casual"  && t('sariPersonalityPage.text36')}
+                  {tone === "enthusiastic"  && t('sariPersonalityPage.text37')}
                 </p>
               </div>
             </div>
@@ -111,32 +111,32 @@ export default function SariPersonality() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <MessageCircle className="h-5 w-5 text-primary" />
-              أسلوب الردود
+              {t('sariPersonalityPage.text25')}
             </CardTitle>
             <CardDescription>
-              حدد كيف تريد أن يكون طول وشكل الردود
+              {t('sariPersonalityPage.text26')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>الأسلوب</Label>
+                <Label>{t('sariPersonalityPage.text7')}</Label>
                 <Select value={style} onValueChange={setStyle}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="saudi_dialect">لهجة سعودية 🇸🇦</SelectItem>
-                    <SelectItem value="formal_arabic">عربية فصحى 📚</SelectItem>
-                    <SelectItem value="english">إنجليزي 🇬🇧</SelectItem>
-                    <SelectItem value="bilingual">ثنائي اللغة 🌍</SelectItem>
+                    <SelectItem value="saudi_dialect">{t('sariPersonalityPage.text8')}</SelectItem>
+                    <SelectItem value="formal_arabic">{t('sariPersonalityPage.text9')}</SelectItem>
+                    <SelectItem value="english">{t('sariPersonalityPage.text10')}</SelectItem>
+                    <SelectItem value="bilingual">{t('sariPersonalityPage.text11')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {style === "saudi_dialect" && "استخدام اللهجة السعودية الشعبية في المحادثات"}
-                  {style === "formal_arabic" && "استخدام اللغة العربية الفصحى الرسمية"}
-                  {style === "english" && "التحدث باللغة الإنجليزية فقط"}
-                  {style === "bilingual" && "التبديل بين العربية والإنجليزية حسب العميل"}
+                  {style === "saudi_dialect"  && t('sariPersonalityPage.text38')}
+                  {style === "formal_arabic"  && t('sariPersonalityPage.text39')}
+                  {style === "english"  && t('sariPersonalityPage.text40')}
+                  {style === "bilingual"  && t('sariPersonalityPage.text41')}
                 </p>
               </div>
             </div>
@@ -148,32 +148,32 @@ export default function SariPersonality() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Smile className="h-5 w-5 text-primary" />
-              مستوى الإيموجي
+              {t('sariPersonalityPage.text27')}
             </CardTitle>
             <CardDescription>
-              حدد كمية الإيموجي التي تريد استخدامها في الردود
+              {t('sariPersonalityPage.text28')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>مستوى الإيموجي</Label>
+                <Label>{t('sariPersonalityPage.text12')}</Label>
                 <Select value={emojiUsage} onValueChange={setEmojiUsage}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">بدون إيموجي</SelectItem>
-                    <SelectItem value="minimal">قليل 😊</SelectItem>
-                    <SelectItem value="moderate">متوسط 😊✨</SelectItem>
-                    <SelectItem value="frequent">كثير 😊✨🎉</SelectItem>
+                    <SelectItem value="none">{t('sariPersonalityPage.text13')}</SelectItem>
+                    <SelectItem value="minimal">{t('sariPersonalityPage.text14')}</SelectItem>
+                    <SelectItem value="moderate">{t('sariPersonalityPage.text15')}</SelectItem>
+                    <SelectItem value="frequent">{t('sariPersonalityPage.text16')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {emojiUsage === "none" && "لا يستخدم إيموجي نهائياً، مناسب للأعمال الرسمية"}
-                  {emojiUsage === "minimal" && "إيموجي قليل جداً، فقط عند الضرورة"}
-                  {emojiUsage === "moderate" && "إيموجي معتدل، يضيف لمسة ودية"}
-                  {emojiUsage === "frequent" && "إيموجي كثير، يجعل المحادثة حيوية ومرحة"}
+                  {emojiUsage === "none"  && t('sariPersonalityPage.text42')}
+                  {emojiUsage === "minimal"  && t('sariPersonalityPage.text43')}
+                  {emojiUsage === "moderate"  && t('sariPersonalityPage.text44')}
+                  {emojiUsage === "frequent"  && t('sariPersonalityPage.text45')}
                 </p>
               </div>
             </div>
@@ -183,21 +183,21 @@ export default function SariPersonality() {
         {/* Custom Instructions */}
         <Card>
           <CardHeader>
-            <CardTitle>تعليمات مخصصة</CardTitle>
+            <CardTitle>{t('sariPersonalityPage.text17')}</CardTitle>
             <CardDescription>
-              أضف تعليمات خاصة تريد من ساري اتباعها في المحادثات
+              {t('sariPersonalityPage.text29')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
               value={customInstructions}
               onChange={(e) => setCustomInstructions(e.target.value)}
-              placeholder="مثال: دائماً اذكر اسم المتجر في بداية المحادثة، لا تعد بتوصيل مجاني إلا إذا كان الطلب أكثر من 500 ريال..."
+              placeholder={t('sariPersonalityPage.text18')}
               rows={5}
               className="resize-none"
             />
             <p className="text-sm text-muted-foreground mt-2">
-              يمكنك إضافة قواعد خاصة، معلومات عن سياسات المتجر، أو أي شيء تريد من ساري تذكره
+              {t('sariPersonalityPage.text30')}
             </p>
           </CardContent>
         </Card>
@@ -205,21 +205,21 @@ export default function SariPersonality() {
         {/* Brand Voice */}
         <Card>
           <CardHeader>
-            <CardTitle>صوت العلامة التجارية</CardTitle>
+            <CardTitle>{t('sariPersonalityPage.text19')}</CardTitle>
             <CardDescription>
-              صف شخصية علامتك التجارية وكيف تريد أن يتحدث ساري
+              {t('sariPersonalityPage.text31')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Textarea
               value={brandVoice}
               onChange={(e) => setBrandVoice(e.target.value)}
-              placeholder="مثال: نحن علامة تجارية شبابية عصرية، نستخدم لغة بسيطة وقريبة من الشباب، نركز على الجودة والسرعة..."
+              placeholder={t('sariPersonalityPage.text20')}
               rows={5}
               className="resize-none"
             />
             <p className="text-sm text-muted-foreground mt-2">
-              ساري سيحاول محاكاة شخصية علامتك التجارية في جميع المحادثات
+              {t('sariPersonalityPage.text32')}
             </p>
           </CardContent>
         </Card>
@@ -234,7 +234,7 @@ export default function SariPersonality() {
             {updateMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            حفظ الإعدادات
+            {t('sariPersonalityPage.text33')}
           </Button>
         </div>
       </div>

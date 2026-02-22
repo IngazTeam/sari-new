@@ -35,11 +35,11 @@ export default function InsightsDashboard() {
     refetchKeywords();
     refetchReports();
     refetchTests();
-    toast.success("تم تحديث البيانات");
+    toast.success(t('insightsDashboardPage.text0'));
   };
 
   const handleExportCSV = () => {
-    toast.info("جاري تصدير البيانات...");
+    toast.info(t('insightsDashboardPage.text1'));
     // TODO: Implement CSV export
   };
 
@@ -87,17 +87,17 @@ export default function InsightsDashboard() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">لوحة الرؤى التحليلية</h1>
-          <p className="text-muted-foreground">تحليل شامل للكلمات المفتاحية والمشاعر واختبارات A/B</p>
+          <h1 className="text-3xl font-bold">{t('insightsDashboardPage.text2')}</h1>
+          <p className="text-muted-foreground">{t('insightsDashboardPage.text3')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleRefresh}>
             <RefreshCw className="ml-2 h-4 w-4" />
-            تحديث
+            {t('insightsDashboardPage.text37')}
           </Button>
           <Button variant="outline" onClick={handleExportCSV}>
             <Download className="ml-2 h-4 w-4" />
-            تصدير CSV
+            {t('insightsDashboardPage.text43')}
           </Button>
         </div>
       </div>
@@ -105,9 +105,9 @@ export default function InsightsDashboard() {
       {/* Period Filter */}
       <div className="flex gap-2">
         {[
-          { value: '7d', label: 'آخر 7 أيام' },
-          { value: '30d', label: 'آخر 30 يوم' },
-          { value: '90d', label: 'آخر 90 يوم' }
+          { value: '7d', label: t('insightsDashboardPage.text40') },
+          { value: '30d', label: t('insightsDashboardPage.text41') },
+          { value: '90d', label: t('insightsDashboardPage.text42') }
         ].map(period => (
           <Button
             key={period.value}
@@ -124,15 +124,15 @@ export default function InsightsDashboard() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="keywords">
             <MessageSquare className="ml-2 h-4 w-4" />
-            الكلمات المفتاحية
+            {t('insightsDashboardPage.text38')}
           </TabsTrigger>
           <TabsTrigger value="sentiment">
             <TrendingUp className="ml-2 h-4 w-4" />
-            تحليل المشاعر
+            {t('insightsDashboardPage.text39')}
           </TabsTrigger>
           <TabsTrigger value="abtests">
             <Target className="ml-2 h-4 w-4" />
-            اختبارات A/B
+            {t('insightsDashboardPage.text44')}
           </TabsTrigger>
         </TabsList>
 
@@ -142,34 +142,34 @@ export default function InsightsDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">إجمالي الكلمات</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('insightsDashboardPage.text4')}</CardTitle>
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{keywordStats?.total ?? 0}</div>
-                <p className="text-xs text-muted-foreground">كلمة مفتاحية مكتشفة</p>
+                <p className="text-xs text-muted-foreground">{t('insightsDashboardPage.text5')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">ردود مقترحة</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('insightsDashboardPage.text6')}</CardTitle>
                 <Lightbulb className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{keywordStats?.suggested ?? 0}</div>
-                <p className="text-xs text-muted-foreground">رد سريع مقترح</p>
+                <p className="text-xs text-muted-foreground">{t('insightsDashboardPage.text7')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">ردود مطبقة</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('insightsDashboardPage.text8')}</CardTitle>
                 <Award className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{keywordStats?.applied ?? 0}</div>
-                <p className="text-xs text-muted-foreground">رد تم تطبيقه</p>
+                <p className="text-xs text-muted-foreground">{t('insightsDashboardPage.text9')}</p>
               </CardContent>
             </Card>
           </div>
@@ -179,8 +179,8 @@ export default function InsightsDashboard() {
             {/* Category Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>توزيع الفئات</CardTitle>
-                <CardDescription>الكلمات المفتاحية حسب الفئة</CardDescription>
+                <CardTitle>{t('insightsDashboardPage.text10')}</CardTitle>
+                <CardDescription>{t('insightsDashboardPage.text11')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -208,8 +208,8 @@ export default function InsightsDashboard() {
             {/* Top Keywords Table */}
             <Card>
               <CardHeader>
-                <CardTitle>أكثر 10 كلمات تكراراً</CardTitle>
-                <CardDescription>الكلمات الأكثر ظهوراً في المحادثات</CardDescription>
+                <CardTitle>{t('insightsDashboardPage.text12')}</CardTitle>
+                <CardDescription>{t('insightsDashboardPage.text13')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
@@ -224,7 +224,7 @@ export default function InsightsDashboard() {
                         <span className="text-sm text-muted-foreground">{kw.count} مرة</span>
                       </div>
                     </div>
-                  )) || <p className="text-center text-muted-foreground py-8">لا توجد بيانات</p>}
+                  )) || <p className="text-center text-muted-foreground py-8">{t('insightsDashboardPage.text15')}</p>}
                 </div>
               </CardContent>
             </Card>
@@ -237,53 +237,53 @@ export default function InsightsDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">متوسط الرضا</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('insightsDashboardPage.text16')}</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
                   {weeklyReports?.[0]?.averageSatisfaction?.toFixed(1) ?? '0.0'}%
                 </div>
-                <p className="text-xs text-muted-foreground">آخر أسبوع</p>
+                <p className="text-xs text-muted-foreground">{t('insightsDashboardPage.text17')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">إيجابي</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('insightsDashboardPage.text18')}</CardTitle>
                 <div className="h-3 w-3 rounded-full bg-green-500"></div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
                   {weeklyReports?.[0]?.positiveCount ?? 0}
                 </div>
-                <p className="text-xs text-muted-foreground">محادثة</p>
+                <p className="text-xs text-muted-foreground">{t('insightsDashboardPage.text19')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">محايد</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('insightsDashboardPage.text20')}</CardTitle>
                 <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-yellow-600">
                   {weeklyReports?.[0]?.neutralCount ?? 0}
                 </div>
-                <p className="text-xs text-muted-foreground">محادثة</p>
+                <p className="text-xs text-muted-foreground">{t('insightsDashboardPage.text21')}</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">سلبي</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('insightsDashboardPage.text22')}</CardTitle>
                 <div className="h-3 w-3 rounded-full bg-red-500"></div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600">
                   {weeklyReports?.[0]?.negativeCount ?? 0}
                 </div>
-                <p className="text-xs text-muted-foreground">محادثة</p>
+                <p className="text-xs text-muted-foreground">{t('insightsDashboardPage.text23')}</p>
               </CardContent>
             </Card>
           </div>
@@ -291,8 +291,8 @@ export default function InsightsDashboard() {
           {/* Sentiment Trend Chart */}
           <Card>
             <CardHeader>
-              <CardTitle>تطور المشاعر</CardTitle>
-              <CardDescription>اتجاه المشاعر خلال الأسابيع الماضية</CardDescription>
+              <CardTitle>{t('insightsDashboardPage.text24')}</CardTitle>
+              <CardDescription>{t('insightsDashboardPage.text25')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
@@ -302,9 +302,9 @@ export default function InsightsDashboard() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="positive" stroke="#22c55e" name="إيجابي" strokeWidth={2} />
-                  <Line type="monotone" dataKey="neutral" stroke="#f59e0b" name="محايد" strokeWidth={2} />
-                  <Line type="monotone" dataKey="negative" stroke="#ef4444" name="سلبي" strokeWidth={2} />
+                  <Line type="monotone" dataKey="positive" stroke="#22c55e" name={t('insightsDashboardPage.text49')} strokeWidth={2} />
+                  <Line type="monotone" dataKey="neutral" stroke="#f59e0b" name={t('insightsDashboardPage.text50')} strokeWidth={2} />
+                  <Line type="monotone" dataKey="negative" stroke="#ef4444" name={t('insightsDashboardPage.text51')} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
@@ -313,8 +313,8 @@ export default function InsightsDashboard() {
           {/* Recent Reports Table */}
           <Card>
             <CardHeader>
-              <CardTitle>آخر التقارير الأسبوعية</CardTitle>
-              <CardDescription>ملخص التقارير الأربعة الأخيرة</CardDescription>
+              <CardTitle>{t('insightsDashboardPage.text26')}</CardTitle>
+              <CardDescription>{t('insightsDashboardPage.text27')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -325,19 +325,19 @@ export default function InsightsDashboard() {
                         {new Date(report.weekStart).toLocaleDateString('ar-SA')} - {new Date(report.weekEnd).toLocaleDateString('ar-SA')}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {report.totalConversations} محادثة
+                        {t('insightsDashboardPage.text45', { var0: report.totalConversations })}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={report.averageSatisfaction >= 70 ? 'default' : 'destructive'}>
-                        {report.averageSatisfaction.toFixed(1)}% رضا
+                        {t('insightsDashboardPage.text46', { var0: report.averageSatisfaction.toFixed(1) })}
                       </Badge>
                       {report.emailSent && (
-                        <Badge variant="outline">تم الإرسال</Badge>
+                        <Badge variant="outline">{t('insightsDashboardPage.text28')}</Badge>
                       )}
                     </div>
                   </div>
-                )) || <p className="text-center text-muted-foreground py-8">لا توجد تقارير</p>}
+                )) || <p className="text-center text-muted-foreground py-8">{t('insightsDashboardPage.text29')}</p>}
               </div>
             </CardContent>
           </Card>
@@ -348,8 +348,8 @@ export default function InsightsDashboard() {
           {/* Active Tests */}
           <Card>
             <CardHeader>
-              <CardTitle>الاختبارات النشطة</CardTitle>
-              <CardDescription>مقارنة أداء النسخ المختلفة</CardDescription>
+              <CardTitle>{t('insightsDashboardPage.text30')}</CardTitle>
+              <CardDescription>{t('insightsDashboardPage.text31')}</CardDescription>
             </CardHeader>
             <CardContent>
               {abTests && abTests.length > 0 ? (
@@ -361,8 +361,8 @@ export default function InsightsDashboard() {
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Bar dataKey="versionA" fill="#22c55e" name="النسخة A" />
-                      <Bar dataKey="versionB" fill="#3b82f6" name="النسخة B" />
+                      <Bar dataKey="versionA" fill="#22c55e" name={t('insightsDashboardPage.text52')} />
+                      <Bar dataKey="versionB" fill="#3b82f6" name={t('insightsDashboardPage.text53')} />
                     </BarChart>
                   </ResponsiveContainer>
 
@@ -371,24 +371,24 @@ export default function InsightsDashboard() {
                       <div key={test.id} className="p-4 rounded-lg border">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
-                            <p className="font-medium mb-1">النسخة A</p>
+                            <p className="font-medium mb-1">{t('insightsDashboardPage.text32')}</p>
                             <p className="text-sm text-muted-foreground">{test.responseA}</p>
                           </div>
                           <Badge variant="outline">{test.usageCountA} استخدام</Badge>
                         </div>
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
-                            <p className="font-medium mb-1">النسخة B</p>
+                            <p className="font-medium mb-1">{t('insightsDashboardPage.text34')}</p>
                             <p className="text-sm text-muted-foreground">{test.responseB}</p>
                           </div>
                           <Badge variant="outline">{test.usageCountB} استخدام</Badge>
                         </div>
                         <div className="flex gap-2 mt-3">
                           <Badge variant={test.successRateA > test.successRateB ? 'default' : 'secondary'}>
-                            A: {test.successRateA?.toFixed(1) || 0}% نجاح
+                            {t('insightsDashboardPage.text47', { var0: test.successRateA?.toFixed(1) || 0 })}
                           </Badge>
                           <Badge variant={test.successRateB > test.successRateA ? 'default' : 'secondary'}>
-                            B: {test.successRateB?.toFixed(1) || 0}% نجاح
+                            {t('insightsDashboardPage.text48', { var0: test.successRateB?.toFixed(1) || 0 })}
                           </Badge>
                         </div>
                       </div>
@@ -398,7 +398,7 @@ export default function InsightsDashboard() {
               ) : (
                 <div className="text-center py-12">
                   <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">لا توجد اختبارات A/B نشطة حالياً</p>
+                  <p className="text-muted-foreground">{t('insightsDashboardPage.text36')}</p>
                 </div>
               )}
             </CardContent>

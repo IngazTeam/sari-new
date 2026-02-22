@@ -5,8 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Save, Copy, Eye, EyeOff } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 
 export default function SeoTracking() {
+  const { t } = useTranslation();
   const [trackingCodes, setTrackingCodes] = useState([
     {
       id: 1,
@@ -50,14 +52,14 @@ export default function SeoTracking() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إدارة رموز التتبع</h1>
-        <p className="text-gray-600 mt-2">أدر رموز Google Analytics و Facebook Pixel والخدمات الأخرى</p>
+        <h1 className="text-3xl font-bold">{t('adminSeoTrackingPage.text0')}</h1>
+        <p className="text-gray-600 mt-2">{t('adminSeoTrackingPage.text1')}</p>
       </div>
 
       {/* Add New Code */}
       <Card className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold">رموز التتبع النشطة</h2>
+          <h2 className="text-lg font-semibold">{t('adminSeoTrackingPage.text2')}</h2>
           <Button className="gap-2">
             <Plus className="w-4 h-4" />
             إضافة رمز تتبع
@@ -71,11 +73,11 @@ export default function SeoTracking() {
                 <div className="flex items-center gap-3">
                   <div>
                     <h3 className="font-semibold">{code.type}</h3>
-                    <p className="text-sm text-gray-600">معرّف: {code.trackingId}</p>
+                    <p className="text-sm text-gray-600">{t('adminSeoTrackingPage.text3', { var0: code.trackingId })}</p>
                   </div>
                 </div>
                 <Badge variant={code.isActive ? "default" : "outline"}>
-                  {code.isActive ? "نشط" : "معطل"}
+                  {code.isActive ? t('adminSeoTrackingPage.text4') : t('adminSeoTrackingPage.text5')}
                 </Badge>
               </div>
 
@@ -83,7 +85,7 @@ export default function SeoTracking() {
                 {showCode === code.id ? (
                   <pre className="whitespace-pre-wrap break-words text-xs">{code.code}</pre>
                 ) : (
-                  <p className="text-gray-500">انقر لعرض الرمز</p>
+                  <p className="text-gray-500">{t('adminSeoTrackingPage.text6')}</p>
                 )}
               </div>
 
@@ -122,7 +124,7 @@ export default function SeoTracking() {
                   size="sm"
                   onClick={() => toggleActive(code.id)}
                 >
-                  {code.isActive ? "تعطيل" : "تفعيل"}
+                  {code.isActive ? t('adminSeoTrackingPage.text7') : t('adminSeoTrackingPage.text8')}
                 </Button>
 
                 <Button
@@ -141,11 +143,11 @@ export default function SeoTracking() {
 
       {/* Integration Guide */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">دليل التكامل</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('adminSeoTrackingPage.text9')}</h2>
         <div className="space-y-4">
           <div>
             <h3 className="font-semibold mb-2">Google Analytics 4</h3>
-            <p className="text-sm text-gray-600 mb-2">أضف هذا الرمز في قسم &lt;head&gt; من موقعك:</p>
+            <p className="text-sm text-gray-600 mb-2">{t('adminSeoTrackingPage.text10')}</p>
             <div className="bg-gray-50 p-3 rounded-lg text-xs font-mono overflow-x-auto">
               &lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"&gt;&lt;/script&gt;
             </div>
@@ -153,7 +155,7 @@ export default function SeoTracking() {
 
           <div>
             <h3 className="font-semibold mb-2">Facebook Pixel</h3>
-            <p className="text-sm text-gray-600 mb-2">أضف هذا الرمز في قسم &lt;head&gt; من موقعك:</p>
+            <p className="text-sm text-gray-600 mb-2">{t('adminSeoTrackingPage.text11')}</p>
             <div className="bg-gray-50 p-3 rounded-lg text-xs font-mono overflow-x-auto">
               &lt;img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=..."&gt;
             </div>

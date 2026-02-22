@@ -12,8 +12,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Languages, Plus, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function TemplateTranslations() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
@@ -99,7 +101,7 @@ export default function TemplateTranslations() {
   };
 
   const handleDelete = async (translationId: number) => {
-    if (!confirm('هل أنت متأكد من حذف هذه الترجمة؟')) return;
+    if (!confirm(t('adminTemplateTranslationsPage.text29'))) return;
 
     try {
       await deleteMutation.mutateAsync({ id: translationId });
@@ -131,7 +133,7 @@ export default function TemplateTranslations() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">جاري التحميل...</p>
+          <p className="text-muted-foreground">{t('adminTemplateTranslationsPage.text0')}</p>
         </div>
       </div>
     );
@@ -155,7 +157,7 @@ export default function TemplateTranslations() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">إجمالي القوالب</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminTemplateTranslationsPage.text1')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{templates?.length || 0}</div>
@@ -163,7 +165,7 @@ export default function TemplateTranslations() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">مترجمة بالكامل</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminTemplateTranslationsPage.text2')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -173,7 +175,7 @@ export default function TemplateTranslations() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">تحتاج ترجمة عربية</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminTemplateTranslationsPage.text3')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
@@ -183,7 +185,7 @@ export default function TemplateTranslations() {
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">تحتاج ترجمة إنجليزية</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('adminTemplateTranslationsPage.text4')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
@@ -196,20 +198,20 @@ export default function TemplateTranslations() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>الفلاتر</CardTitle>
+          <CardTitle>{t('adminTemplateTranslationsPage.text5')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
             <div className="flex-1">
-              <Label>حالة الترجمة</Label>
+              <Label>{t('adminTemplateTranslationsPage.text6')}</Label>
               <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">جميع القوالب</SelectItem>
-                  <SelectItem value="translated">مترجمة بالكامل</SelectItem>
-                  <SelectItem value="untranslated">تحتاج ترجمة</SelectItem>
+                  <SelectItem value="all">{t('adminTemplateTranslationsPage.text7')}</SelectItem>
+                  <SelectItem value="translated">{t('adminTemplateTranslationsPage.text8')}</SelectItem>
+                  <SelectItem value="untranslated">{t('adminTemplateTranslationsPage.text9')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -220,7 +222,7 @@ export default function TemplateTranslations() {
       {/* Templates Table */}
       <Card>
         <CardHeader>
-          <CardTitle>القوالب</CardTitle>
+          <CardTitle>{t('adminTemplateTranslationsPage.text10')}</CardTitle>
           <CardDescription>
             إدارة الترجمات لكل قالب
           </CardDescription>
@@ -229,11 +231,11 @@ export default function TemplateTranslations() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>اسم القالب</TableHead>
-                <TableHead>نوع العمل</TableHead>
-                <TableHead className="text-center">الترجمة العربية</TableHead>
-                <TableHead className="text-center">الترجمة الإنجليزية</TableHead>
-                <TableHead className="text-center">الإجراءات</TableHead>
+                <TableHead>{t('adminTemplateTranslationsPage.text11')}</TableHead>
+                <TableHead>{t('adminTemplateTranslationsPage.text12')}</TableHead>
+                <TableHead className="text-center">{t('adminTemplateTranslationsPage.text13')}</TableHead>
+                <TableHead className="text-center">{t('adminTemplateTranslationsPage.text14')}</TableHead>
+                <TableHead className="text-center">{t('adminTemplateTranslationsPage.text15')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -302,7 +304,7 @@ export default function TemplateTranslations() {
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl">
                             <DialogHeader>
-                              <DialogTitle>إدارة الترجمات - {template.templateName}</DialogTitle>
+                              <DialogTitle>{t('adminTemplateTranslationsPage.text16', { var0: template.templateName })}</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-4">
                               {template.translations.map((translation: any) => (
@@ -332,12 +334,12 @@ export default function TemplateTranslations() {
                                   </CardHeader>
                                   <CardContent className="space-y-2">
                                     <div>
-                                      <Label className="text-xs text-muted-foreground">اسم القالب</Label>
+                                      <Label className="text-xs text-muted-foreground">{t('adminTemplateTranslationsPage.text17')}</Label>
                                       <p className="text-sm">{translation.templateName}</p>
                                     </div>
                                     {translation.description && (
                                       <div>
-                                        <Label className="text-xs text-muted-foreground">الوصف</Label>
+                                        <Label className="text-xs text-muted-foreground">{t('adminTemplateTranslationsPage.text18')}</Label>
                                         <p className="text-sm">{translation.description}</p>
                                       </div>
                                     )}
@@ -370,7 +372,7 @@ export default function TemplateTranslations() {
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="language">اللغة</Label>
+              <Label htmlFor="language">{t('adminTemplateTranslationsPage.text19')}</Label>
               <Select
                 value={formData.language}
                 onValueChange={(value: 'ar' | 'en') => setFormData({ ...formData, language: value })}
@@ -380,47 +382,47 @@ export default function TemplateTranslations() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ar">🇸🇦 العربية</SelectItem>
-                  <SelectItem value="en">🇬🇧 الإنجليزية</SelectItem>
+                  <SelectItem value="ar">{t('adminTemplateTranslationsPage.text20')}</SelectItem>
+                  <SelectItem value="en">{t('adminTemplateTranslationsPage.text21')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="templateName">اسم القالب *</Label>
+              <Label htmlFor="templateName">{t('adminTemplateTranslationsPage.text22')}</Label>
               <Input
                 id="templateName"
                 value={formData.templateName}
                 onChange={(e) => setFormData({ ...formData, templateName: e.target.value })}
-                placeholder="مثال: متجر إلكتروني"
+                placeholder={t('adminTemplateTranslationsPage.text23')}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="description">الوصف</Label>
+              <Label htmlFor="description">{t('adminTemplateTranslationsPage.text24')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="وصف القالب..."
+                placeholder={t('adminTemplateTranslationsPage.text25')}
                 rows={3}
               />
             </div>
 
             <div>
-              <Label htmlFor="suitableFor">مناسب لـ</Label>
+              <Label htmlFor="suitableFor">{t('adminTemplateTranslationsPage.text26')}</Label>
               <Textarea
                 id="suitableFor"
                 value={formData.suitableFor}
                 onChange={(e) => setFormData({ ...formData, suitableFor: e.target.value })}
-                placeholder="مثال: المتاجر الإلكترونية، محلات الملابس، إلخ..."
+                placeholder={t('adminTemplateTranslationsPage.text27')}
                 rows={2}
               />
             </div>
 
             <div>
-              <Label htmlFor="botPersonality">شخصية البوت (JSON)</Label>
+              <Label htmlFor="botPersonality">{t('adminTemplateTranslationsPage.text28')}</Label>
               <Textarea
                 id="botPersonality"
                 value={formData.botPersonality}

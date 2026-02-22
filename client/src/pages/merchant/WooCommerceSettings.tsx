@@ -14,8 +14,10 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, CheckCircle2, XCircle, ExternalLink, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 export default function WooCommerceSettings() {
+  const { t } = useTranslation();
   const [storeUrl, setStoreUrl] = useState("");
   const [consumerKey, setConsumerKey] = useState("");
   const [consumerSecret, setConsumerSecret] = useState("");
@@ -43,11 +45,11 @@ export default function WooCommerceSettings() {
   // Save settings mutation
   const saveSettingsMutation = trpc.woocommerce.saveSettings.useMutation({
     onSuccess: () => {
-      toast.success("تم حفظ الإعدادات بنجاح");
+      toast.success(t('wooCommerceSettingsPage.text0'));
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || "فشل حفظ الإعدادات");
+      toast.error(error.message || t('wooCommerceSettingsPage.text25'));
     },
   });
 
@@ -55,11 +57,11 @@ export default function WooCommerceSettings() {
   const testConnectionMutation = trpc.woocommerce.testConnection.useMutation({
     onSuccess: (data) => {
       setTestResult({ success: true, message: data.message });
-      toast.success("تم الاتصال بنجاح!");
+      toast.success(t('wooCommerceSettingsPage.text1'));
     },
     onError: (error) => {
       setTestResult({ success: false, message: error.message });
-      toast.error("فشل الاتصال");
+      toast.error(t('wooCommerceSettingsPage.text2'));
     },
     onSettled: () => {
       setIsTesting(false);
@@ -69,25 +71,25 @@ export default function WooCommerceSettings() {
   // Manual sync mutations
   const syncProductsMutation = trpc.woocommerce.syncProducts.useMutation({
     onSuccess: (data) => {
-      toast.success(`تم مزامنة ${data.count} منتج بنجاح`);
+      toast.success(t('wooCommerceSettingsPage.text3'));
     },
     onError: (error) => {
-      toast.error(error.message || "فشلت المزامنة");
+      toast.error(error.message || t('wooCommerceSettingsPage.text26'));
     },
   });
 
   const syncOrdersMutation = trpc.woocommerce.syncOrders.useMutation({
     onSuccess: (data) => {
-      toast.success(`تم مزامنة ${data.count} طلب بنجاح`);
+      toast.success(t('wooCommerceSettingsPage.text5'));
     },
     onError: (error) => {
-      toast.error(error.message || "فشلت المزامنة");
+      toast.error(error.message || t('wooCommerceSettingsPage.text27'));
     },
   });
 
   const handleSaveSettings = () => {
     if (!storeUrl || !consumerKey || !consumerSecret) {
-      toast.error("يرجى إدخال جميع البيانات المطلوبة");
+      toast.error(t('wooCommerceSettingsPage.text7'));
       return;
     }
 
@@ -104,7 +106,7 @@ export default function WooCommerceSettings() {
 
   const handleTestConnection = () => {
     if (!settings) {
-      toast.error("يرجى حفظ الإعدادات أولاً");
+      toast.error(t('wooCommerceSettingsPage.text8'));
       return;
     }
     setIsTesting(true);
@@ -131,9 +133,9 @@ export default function WooCommerceSettings() {
   return (
     <div className="container py-8 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">إعدادات WooCommerce</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('wooCommerceSettingsPage.text9')}</h1>
         <p className="text-muted-foreground">
-          قم بربط متجر WooCommerce الخاص بك مع ساري لمزامنة المنتجات والطلبات تلقائياً
+          {t('wooCommerceSettingsPage.text32')}
         </p>
       </div>
 
@@ -142,7 +144,7 @@ export default function WooCommerceSettings() {
         <Alert className="mb-6 border-green-500 bg-green-50 dark:bg-green-950">
           <CheckCircle2 className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800 dark:text-green-200">
-            متصل بنجاح - آخر مزامنة: {settings.lastSyncAt ? new Date(settings.lastSyncAt).toLocaleString('ar-SA') : 'لم يتم بعد'}
+            متصل بنجاح - آخر مزامنة: {settings.lastSyncAt ? new Date(settings.lastSyncAt).toLocaleString('ar-SA') : t('wooCommerceSettingsPage.text24')}
           </AlertDescription>
         </Alert>
       )}
@@ -150,14 +152,14 @@ export default function WooCommerceSettings() {
       {/* Connection Settings */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>بيانات الاتصال</CardTitle>
+          <CardTitle>{t('wooCommerceSettingsPage.text10')}</CardTitle>
           <CardDescription>
-            أدخل بيانات API الخاصة بمتجر WooCommerce
+            {t('wooCommerceSettingsPage.text33')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="storeUrl">رابط المتجر</Label>
+            <Label htmlFor="storeUrl">{t('wooCommerceSettingsPage.text11')}</Label>
             <Input
               id="storeUrl"
               type="url"
@@ -167,7 +169,7 @@ export default function WooCommerceSettings() {
               dir="ltr"
             />
             <p className="text-sm text-muted-foreground">
-              مثال: https://yourstore.com
+              {t('wooCommerceSettingsPage.text34')}
             </p>
           </div>
 
@@ -200,13 +202,13 @@ export default function WooCommerceSettings() {
               <div className="flex items-start gap-2">
                 <ExternalLink className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium mb-1">كيفية الحصول على API Keys:</p>
+                  <p className="font-medium mb-1">{t('wooCommerceSettingsPage.text12')}</p>
                   <ol className="text-sm space-y-1 list-decimal list-inside">
-                    <li>اذهب إلى لوحة تحكم WooCommerce</li>
+                    <li>{t('wooCommerceSettingsPage.text13')}</li>
                     <li>WooCommerce → Settings → Advanced → REST API</li>
-                    <li>اضغط "Add Key" وأنشئ مفتاح جديد</li>
-                    <li>اختر صلاحيات "Read/Write"</li>
-                    <li>انسخ Consumer Key و Consumer Secret</li>
+                    <li>{t('wooCommerceSettingsPage.text14')}</li>
+                    <li>{t('wooCommerceSettingsPage.text15')}</li>
+                    <li>{t('wooCommerceSettingsPage.text16')}</li>
                   </ol>
                 </div>
               </div>
@@ -219,7 +221,7 @@ export default function WooCommerceSettings() {
               disabled={saveSettingsMutation.isPending}
             >
               {saveSettingsMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              حفظ الإعدادات
+              {t('wooCommerceSettingsPage.text28')}
             </Button>
 
             <Button
@@ -228,7 +230,7 @@ export default function WooCommerceSettings() {
               disabled={!settings || isTesting}
             >
               {isTesting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              اختبار الاتصال
+              {t('wooCommerceSettingsPage.text29')}
             </Button>
           </div>
 
@@ -251,17 +253,17 @@ export default function WooCommerceSettings() {
       {/* Sync Settings */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>إعدادات المزامنة التلقائية</CardTitle>
+          <CardTitle>{t('wooCommerceSettingsPage.text17')}</CardTitle>
           <CardDescription>
-            تحكم في المزامنة التلقائية للبيانات من WooCommerce
+            {t('wooCommerceSettingsPage.text35')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>مزامنة المنتجات تلقائياً</Label>
+              <Label>{t('wooCommerceSettingsPage.text18')}</Label>
               <p className="text-sm text-muted-foreground">
-                تحديث المنتجات من WooCommerce بشكل دوري
+                {t('wooCommerceSettingsPage.text36')}
               </p>
             </div>
             <Switch
@@ -272,9 +274,9 @@ export default function WooCommerceSettings() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>مزامنة الطلبات تلقائياً</Label>
+              <Label>{t('wooCommerceSettingsPage.text19')}</Label>
               <p className="text-sm text-muted-foreground">
-                تحديث الطلبات من WooCommerce بشكل دوري
+                {t('wooCommerceSettingsPage.text37')}
               </p>
             </div>
             <Switch
@@ -285,9 +287,9 @@ export default function WooCommerceSettings() {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>مزامنة العملاء تلقائياً</Label>
+              <Label>{t('wooCommerceSettingsPage.text20')}</Label>
               <p className="text-sm text-muted-foreground">
-                تحديث بيانات العملاء من WooCommerce
+                {t('wooCommerceSettingsPage.text38')}
               </p>
             </div>
             <Switch
@@ -297,7 +299,7 @@ export default function WooCommerceSettings() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="syncInterval">فترة المزامنة (بالدقائق)</Label>
+            <Label htmlFor="syncInterval">{t('wooCommerceSettingsPage.text21')}</Label>
             <Input
               id="syncInterval"
               type="number"
@@ -307,7 +309,7 @@ export default function WooCommerceSettings() {
               onChange={(e) => setSyncInterval(parseInt(e.target.value))}
             />
             <p className="text-sm text-muted-foreground">
-              الحد الأدنى: 15 دقيقة | الحد الأقصى: 1440 دقيقة (24 ساعة)
+              {t('wooCommerceSettingsPage.text39')}
             </p>
           </div>
         </CardContent>
@@ -316,9 +318,9 @@ export default function WooCommerceSettings() {
       {/* Manual Sync */}
       <Card>
         <CardHeader>
-          <CardTitle>مزامنة يدوية</CardTitle>
+          <CardTitle>{t('wooCommerceSettingsPage.text22')}</CardTitle>
           <CardDescription>
-            قم بمزامنة البيانات يدوياً من WooCommerce
+            {t('wooCommerceSettingsPage.text40')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -330,7 +332,7 @@ export default function WooCommerceSettings() {
             >
               {syncProductsMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               <RefreshCw className="ml-2 h-4 w-4" />
-              مزامنة المنتجات
+              {t('wooCommerceSettingsPage.text30')}
             </Button>
 
             <Button
@@ -340,14 +342,14 @@ export default function WooCommerceSettings() {
             >
               {syncOrdersMutation.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               <RefreshCw className="ml-2 h-4 w-4" />
-              مزامنة الطلبات
+              {t('wooCommerceSettingsPage.text31')}
             </Button>
           </div>
 
           <Alert>
             <AlertDescription>
               <p className="text-sm">
-                💡 <strong>نصيحة:</strong> استخدم المزامنة اليدوية عند إضافة منتجات جديدة أو تحديث الطلبات في WooCommerce
+                💡 <strong>{t('wooCommerceSettingsPage.text23')}</strong> {t('wooCommerceSettingsPage.text41')}
               </p>
             </AlertDescription>
           </Alert>

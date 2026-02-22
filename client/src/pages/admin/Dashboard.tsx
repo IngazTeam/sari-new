@@ -1,41 +1,43 @@
 import { trpc } from '@/lib/trpc';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Store, MessageSquare, TrendingUp, DollarSign } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const { t, i18n } = useTranslation();
   const { data: merchants } = trpc.merchants.list.useQuery();
   const { data: campaigns } = trpc.campaigns.listAll.useQuery();
 
   const stats = [
     {
-      title: 'إجمالي التجار',
+      title: t('dashboardPage.totalMerchants'),
       value: merchants?.length || 0,
       icon: Store,
-      description: 'عدد التجار المسجلين',
+      description: t('dashboardPage.totalMerchantsDesc'),
       color: 'text-primary',
       bgColor: 'bg-primary/10',
     },
     {
-      title: 'التجار النشطون',
+      title: t('dashboardPage.activeMerchants'),
       value: merchants?.filter(m => m.status === 'active').length || 0,
       icon: Users,
-      description: 'التجار ذوي الحسابات النشطة',
+      description: t('dashboardPage.activeMerchantsDesc'),
       color: 'text-green-600',
       bgColor: 'bg-green-50',
     },
     {
-      title: 'الحملات',
+      title: t('dashboardPage.campaignsCount'),
       value: campaigns?.length || 0,
       icon: MessageSquare,
-      description: 'إجمالي الحملات التسويقية',
+      description: t('dashboardPage.campaignsCountDesc'),
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
     },
     {
-      title: 'الحملات المكتملة',
+      title: t('dashboardPage.completedCampaigns'),
       value: campaigns?.filter(c => c.status === 'completed').length || 0,
       icon: TrendingUp,
-      description: 'الحملات التي تم إرسالها',
+      description: t('dashboardPage.completedCampaignsDesc'),
       color: 'text-orange-600',
       bgColor: 'bg-orange-50',
     },
@@ -45,9 +47,9 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">لوحة تحكم المدير</h1>
+        <h1 className="text-3xl font-bold">{t('dashboardPage.adminDashboardTitle')}</h1>
         <p className="text-muted-foreground mt-2">
-          نظرة شاملة على نشاط المنصة
+          {t('dashboardPage.adminDashboardDesc')}
         </p>
       </div>
 
@@ -81,8 +83,8 @@ export default function AdminDashboard() {
         {/* Recent Merchants */}
         <Card>
           <CardHeader>
-            <CardTitle>أحدث التجار</CardTitle>
-            <CardDescription>التجار المسجلون مؤخراً</CardDescription>
+            <CardTitle>{t('dashboardPage.recentMerchants')}</CardTitle>
+            <CardDescription>{t('dashboardPage.recentMerchantsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             {merchants && merchants.length > 0 ? (
@@ -92,23 +94,22 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium">{merchant.businessName}</p>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(merchant.createdAt).toLocaleDateString('ar-SA')}
+                        {new Date(merchant.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language)}
                       </p>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      merchant.status === 'active' ? 'bg-green-100 text-green-700' :
-                      merchant.status === 'suspended' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {merchant.status === 'active' ? 'نشط' :
-                       merchant.status === 'suspended' ? 'معلق' : 'قيد المراجعة'}
+                    <span className={`px-2 py-1 rounded-full text-xs ${merchant.status === 'active' ? 'bg-green-100 text-green-700' :
+                        merchant.status === 'suspended' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                      }`}>
+                      {merchant.status === 'active' ? t('dashboardPage.statusActive') :
+                        merchant.status === 'suspended' ? t('dashboardPage.statusSuspended') : t('dashboardPage.statusPendingReview')}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">
-                لا يوجد تجار بعد
+                {t('dashboardPage.noMerchantsYet')}
               </p>
             )}
           </CardContent>
@@ -117,8 +118,8 @@ export default function AdminDashboard() {
         {/* Recent Campaigns */}
         <Card>
           <CardHeader>
-            <CardTitle>أحدث الحملات</CardTitle>
-            <CardDescription>الحملات التسويقية الأخيرة</CardDescription>
+            <CardTitle>{t('dashboardPage.recentCampaigns')}</CardTitle>
+            <CardDescription>{t('dashboardPage.recentCampaignsDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             {campaigns && campaigns.length > 0 ? (
@@ -128,25 +129,24 @@ export default function AdminDashboard() {
                     <div>
                       <p className="font-medium">{campaign.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {campaign.sentCount} / {campaign.totalRecipients} مرسل
+                        {campaign.sentCount} / {campaign.totalRecipients} {t('dashboardPage.sentLabel')}
                       </p>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      campaign.status === 'completed' ? 'bg-green-100 text-green-700' :
-                      campaign.status === 'sending' ? 'bg-primary/20 text-primary' :
-                      campaign.status === 'draft' ? 'bg-gray-100 text-gray-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {campaign.status === 'completed' ? 'مكتمل' :
-                       campaign.status === 'sending' ? 'جاري الإرسال' :
-                       campaign.status === 'draft' ? 'مسودة' : 'مجدول'}
+                    <span className={`px-2 py-1 rounded-full text-xs ${campaign.status === 'completed' ? 'bg-green-100 text-green-700' :
+                        campaign.status === 'sending' ? 'bg-primary/20 text-primary' :
+                          campaign.status === 'draft' ? 'bg-gray-100 text-gray-700' :
+                            'bg-yellow-100 text-yellow-700'
+                      }`}>
+                      {campaign.status === 'completed' ? t('dashboardPage.statusCompleted') :
+                        campaign.status === 'sending' ? t('dashboardPage.statusSending') :
+                          campaign.status === 'draft' ? t('dashboardPage.statusDraft') : t('dashboardPage.statusScheduled')}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">
-                لا توجد حملات بعد
+                {t('dashboardPage.noCampaignsYet')}
               </p>
             )}
           </CardContent>
@@ -156,15 +156,15 @@ export default function AdminDashboard() {
       {/* Merchants Status Distribution */}
       <Card>
         <CardHeader>
-          <CardTitle>توزيع حالات التجار</CardTitle>
-          <CardDescription>نظرة عامة على حالات حسابات التجار</CardDescription>
+          <CardTitle>{t('dashboardPage.merchantStatusDistribution')}</CardTitle>
+          <CardDescription>{t('dashboardPage.merchantStatusDistributionDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="p-4 bg-green-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">نشط</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboardPage.statusActive')}</p>
                   <p className="text-2xl font-bold text-green-700">
                     {merchants?.filter((m: any) => m.status === 'active').length || 0}
                   </p>
@@ -176,7 +176,7 @@ export default function AdminDashboard() {
             <div className="p-4 bg-yellow-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">قيد المراجعة</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboardPage.statusPendingReview')}</p>
                   <p className="text-2xl font-bold text-yellow-700">
                     {merchants?.filter((m: any) => m.status === 'pending').length || 0}
                   </p>
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
             <div className="p-4 bg-red-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">معلق</p>
+                  <p className="text-sm text-muted-foreground">{t('dashboardPage.statusSuspended')}</p>
                   <p className="text-2xl font-bold text-red-700">
                     {merchants?.filter((m: any) => m.status === 'suspended').length || 0}
                   </p>

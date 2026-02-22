@@ -29,74 +29,65 @@ interface Scenario {
   messages: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-const EXAMPLE_SCENARIOS: Scenario[] = [
-  {
-    id: "price-inquiry",
-    title: "استفسار عن سعر",
-    description: "عميل يسأل عن سعر منتج معين",
-    messages: [
-      { role: "user", content: "مرحباً، كم سعر الساعة الذكية؟" },
-    ],
-  },
-  {
-    id: "product-search",
-    title: "البحث عن منتج",
-    description: "عميل يبحث عن نوع معين من المنتجات",
-    messages: [
-      { role: "user", content: "عندك عطور رجالية؟" },
-    ],
-  },
-  {
-    id: "order-inquiry",
-    title: "استفسار عن الطلب",
-    description: "عميل يسأل عن التوصيل والدفع",
-    messages: [
-      { role: "user", content: "كيف أطلب؟ وكم يستغرق التوصيل؟" },
-    ],
-  },
-  {
-    id: "greeting",
-    title: "ترحيب وتعريف",
-    description: "عميل جديد يريد التعرف على المتجر",
-    messages: [
-      { role: "user", content: "السلام عليكم، أول مرة أتعامل معكم" },
-    ],
-  },
-  {
-    id: "recommendations",
-    title: "طلب توصيات",
-    description: "عميل يطلب اقتراحات لهدية",
-    messages: [
-      { role: "user", content: "أبغى هدية لصديقي، شو تقترح؟" },
-    ],
-  },
-  {
-    id: "complaint",
-    title: "شكوى أو استفسار",
-    description: "عميل لديه مشكلة أو سؤال",
-    messages: [
-      { role: "user", content: "المنتج اللي طلبته ما وصل، شو السالفة؟" },
-    ],
-  },
-  {
-    id: "multi-turn",
-    title: "محادثة متعددة",
-    description: "محادثة طويلة مع عدة أسئلة",
-    messages: [
-      { role: "user", content: "مرحباً" },
-      { role: "assistant", content: "أهلاً وسهلاً! أنا ساري، مساعدك الشخصي 😊 كيف أقدر أساعدك اليوم؟" },
-      { role: "user", content: "عندك ساعات ذكية؟" },
-    ],
-  },
-];
+
 
 export default function TestSari() {
   const { t } = useTranslation();
+
+  const EXAMPLE_SCENARIOS: Scenario[] = [
+    {
+      id: 'price-inquiry',
+      title: t('testSariPage.scenarioPriceTitle'),
+      description: t('testSariPage.scenarioPriceDesc'),
+      messages: [{ role: 'user', content: 'مرحباً، كم سعر الساعة الذكية؟' }],
+    },
+    {
+      id: 'product-search',
+      title: t('testSariPage.scenarioSearchTitle'),
+      description: t('testSariPage.scenarioSearchDesc'),
+      messages: [{ role: 'user', content: 'عندك عطور رجالية؟' }],
+    },
+    {
+      id: 'order-inquiry',
+      title: t('testSariPage.scenarioOrderTitle'),
+      description: t('testSariPage.scenarioOrderDesc'),
+      messages: [{ role: 'user', content: 'كيف أطلب؟ وكم يستغرق التوصيل؟' }],
+    },
+    {
+      id: 'greeting',
+      title: t('testSariPage.scenarioGreetingTitle'),
+      description: t('testSariPage.scenarioGreetingDesc'),
+      messages: [{ role: 'user', content: 'السلام عليكم، أول مرة أتعامل معكم' }],
+    },
+    {
+      id: 'recommendations',
+      title: t('testSariPage.scenarioRecommendTitle'),
+      description: t('testSariPage.scenarioRecommendDesc'),
+      messages: [{ role: 'user', content: 'أبغى هدية لصديقي، شو تقترح؟' }],
+    },
+    {
+      id: 'complaint',
+      title: t('testSariPage.scenarioComplaintTitle'),
+      description: t('testSariPage.scenarioComplaintDesc'),
+      messages: [{ role: 'user', content: 'المنتج اللي طلبته ما وصل، شو السالفة؟' }],
+    },
+    {
+      id: 'multi-turn',
+      title: t('testSariPage.scenarioMultiTitle'),
+      description: t('testSariPage.scenarioMultiDesc'),
+      messages: [
+        { role: 'user', content: 'مرحباً' },
+        { role: 'assistant', content: 'أهلاً وسهلاً! أنا ساري، مساعدك الشخصي 😊 كيف أقدر أساعدك اليوم؟' },
+        { role: 'user', content: 'عندك ساعات ذكية؟' },
+      ],
+    },
+  ];
+
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "مرحباً! أنا ساري، مساعدك الذكي. جرّب أن تسألني عن منتجاتك أو أي شيء تحتاجه! 👋",
+      content: t('testSariPage.welcomeMsg'),
       timestamp: new Date(),
     },
   ]);
@@ -163,7 +154,7 @@ export default function TestSari() {
         {
           id: "welcome",
           role: "assistant",
-          content: "مرحباً! أنا ساري، مساعدك الذكي. جرّب أن تسألني عن منتجاتك أو أي شيء تحتاجه! 👋",
+          content: t('testSariPage.welcomeMsg'),
           timestamp: new Date(),
         },
       ]);
@@ -171,8 +162,8 @@ export default function TestSari() {
       setDealValue("");
       setRatings({ positive: 0, negative: 0 });
       setRatingHistory([]);
-      toast.success("تم إعادة تعيين المحادثة");
-      
+      toast.success(t('testSariPage.resetSuccess'));
+
       // Create new conversation
       createConversationMutation.mutate();
     },
@@ -216,13 +207,13 @@ export default function TestSari() {
 
   const handleMarkAsDeal = () => {
     if (!dealValue || parseFloat(dealValue) <= 0) {
-      toast.error("يرجى إدخال قيمة صحيحة للصفقة");
+      toast.error(t('testSariPage.invalidDealValue'));
       return;
     }
 
     setHasDeal(true);
     setShowDealDialog(false);
-    toast.success(`✅ تم تسجيل الاتفاق بقيمة ${dealValue} ريال`);
+    toast.success(t('testSariPage.dealRecorded', { value: dealValue }));
 
     // Save to database
     const timeToConversion = Math.floor((new Date().getTime() - conversationStartTime.getTime()) / 1000);
@@ -242,7 +233,7 @@ export default function TestSari() {
     const welcomeMessage: Message = {
       id: "welcome",
       role: "assistant",
-      content: "مرحباً! أنا ساري، مساعدك الذكي. جرّب أن تسألني عن منتجاتك أو أي شيء تحتاجه! 👋",
+      content: t('testSariPage.welcomeMsg'),
       timestamp: new Date(),
     };
 
@@ -265,7 +256,7 @@ export default function TestSari() {
       });
     }
 
-    toast.success(`تم تطبيق سيناريو: ${scenario.title}`);
+    toast.success(t('testSariPage.scenarioApplied', { title: scenario.title }));
   };
 
   const handleRating = (messageId: string, rating: "positive" | "negative") => {
@@ -343,14 +334,14 @@ export default function TestSari() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold">اختبار ساري AI</h1>
+            <h1 className="text-3xl font-bold">{t('testSariPage.title')}</h1>
             <p className="text-muted-foreground mt-2">
-              جرّب المحادثة مع ساري قبل ربط WhatsApp الحقيقي
+              {t('testSariPage.subtitle')}
             </p>
             {hasDeal && (
               <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-sm font-medium">
                 <CheckCircle2 className="h-4 w-4" />
-                تم الاتفاق - {dealValue} ريال
+                {t('testSariPage.dealAgreed', { value: dealValue })}
               </div>
             )}
           </div>
@@ -363,23 +354,23 @@ export default function TestSari() {
                   className={hasDeal ? "bg-green-600 hover:bg-green-700" : ""}
                 >
                   <CheckCircle2 className="h-4 w-4 ml-2" />
-                  {hasDeal ? "تم الاتفاق ✅" : "تم الاتفاق"}
+                  {hasDeal ? t('testSariPage.dealDone') : t('testSariPage.dealButton')}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>تسجيل اتفاق ناجح</DialogTitle>
+                  <DialogTitle>{t('testSariPage.dealDialogTitle')}</DialogTitle>
                   <DialogDescription>
-                    أدخل قيمة الصفقة لتتبع معدل التحويل والإيرادات
+                    {t('testSariPage.dealDialogDesc')}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
-                    <Label htmlFor="dealValue">قيمة الصفقة (ريال)</Label>
+                    <Label htmlFor="dealValue">{t('testSariPage.dealValueLabel')}</Label>
                     <Input
                       id="dealValue"
                       type="number"
-                      placeholder="مثال: 250"
+                      placeholder={t('testSariPage.dealValuePlaceholder')}
                       value={dealValue}
                       onChange={(e) => setDealValue(e.target.value)}
                       min="0"
@@ -389,16 +380,16 @@ export default function TestSari() {
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setShowDealDialog(false)}>
-                    إلغاء
+                    {t('testSariPage.cancel')}
                   </Button>
-                  <Button onClick={handleMarkAsDeal}>تأكيد</Button>
+                  <Button onClick={handleMarkAsDeal}>{t('testSariPage.confirm')}</Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
 
             <Button onClick={handleReset} variant="outline" disabled={resetMutation.isPending}>
               <RotateCcw className="h-4 w-4 ml-2" />
-              إعادة تعيين
+              {t('testSariPage.reset')}
             </Button>
           </div>
         </div>
@@ -406,14 +397,14 @@ export default function TestSari() {
         <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg">
           <Sparkles className="h-5 w-5 text-primary" />
           <div className="flex-1">
-            <p className="text-sm font-medium">جرّب أمثلة جاهزة</p>
+            <p className="text-sm font-medium">{t('testSariPage.tryExamples')}</p>
             <p className="text-xs text-muted-foreground">
-              اختر سيناريو محادثة لتجربة ساري بسرعة
+              {t('testSariPage.chooseScenario')}
             </p>
           </div>
           <Select onValueChange={handleApplyScenario}>
             <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="اختر سيناريو..." />
+              <SelectValue placeholder={t('testSariPage.selectScenario')} />
             </SelectTrigger>
             <SelectContent>
               {EXAMPLE_SCENARIOS.map((scenario) => (
@@ -440,8 +431,8 @@ export default function TestSari() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold">ساري AI</h3>
-              <p className="text-xs text-muted-foreground">مساعدك الذكي للمبيعات</p>
+              <h3 className="font-semibold">{t('testSariPage.sariAI')}</h3>
+              <p className="text-xs text-muted-foreground">{t('testSariPage.sariDesc')}</p>
             </div>
           </div>
         </CardHeader>
@@ -451,9 +442,8 @@ export default function TestSari() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex gap-3 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
+                className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
               >
                 {message.role === "assistant" && (
                   <Avatar className="h-8 w-8">
@@ -464,11 +454,10 @@ export default function TestSari() {
                 )}
                 <div className="flex flex-col gap-1 max-w-[80%]">
                   <div
-                    className={`rounded-lg px-4 py-2 ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
+                    className={`rounded-lg px-4 py-2 ${message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                      }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                   </div>
@@ -487,18 +476,17 @@ export default function TestSari() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className={`h-6 w-6 p-0 ${
-                                  message.rating === "positive"
-                                    ? "text-green-600 bg-green-100 dark:bg-green-900/30"
-                                    : "text-muted-foreground hover:text-green-600"
-                                }`}
+                                className={`h-6 w-6 p-0 ${message.rating === "positive"
+                                  ? "text-green-600 bg-green-100 dark:bg-green-900/30"
+                                  : "text-muted-foreground hover:text-green-600"
+                                  }`}
                                 onClick={() => handleRating(message.id, "positive")}
                               >
                                 <ThumbsUp className="h-3 w-3" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>رد مفيد</p>
+                              <p>{t('testSariPage.helpfulResponse')}</p>
                             </TooltipContent>
                           </Tooltip>
 
@@ -507,18 +495,17 @@ export default function TestSari() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className={`h-6 w-6 p-0 ${
-                                  message.rating === "negative"
-                                    ? "text-red-600 bg-red-100 dark:bg-red-900/30"
-                                    : "text-muted-foreground hover:text-red-600"
-                                }`}
+                                className={`h-6 w-6 p-0 ${message.rating === "negative"
+                                  ? "text-red-600 bg-red-100 dark:bg-red-900/30"
+                                  : "text-muted-foreground hover:text-red-600"
+                                  }`}
                                 onClick={() => handleRating(message.id, "negative")}
                               >
                                 <ThumbsDown className="h-3 w-3" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>رد غير مفيد</p>
+                              <p>{t('testSariPage.unhelpfulResponse')}</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -561,7 +548,7 @@ export default function TestSari() {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-              placeholder="اكتب رسالتك هنا..."
+              placeholder={t('testSariPage.typePlaceholder')}
               disabled={sendMessageMutation.isPending}
               className="flex-1"
             />
@@ -584,10 +571,10 @@ export default function TestSari() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
-              <span>إحصائيات التقييم</span>
+              <span>{t('testSariPage.ratingStatsTitle')}</span>
             </CardTitle>
             <CardDescription>
-              تحليل شامل لتقييمات ردود ساري AI
+              {t('testSariPage.ratingStatsDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -596,9 +583,9 @@ export default function TestSari() {
                 <div className="rounded-full bg-muted p-4 mb-4">
                   <BarChart3 className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">لا توجد تقييمات بعد</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('testSariPage.noRatingsYet')}</h3>
                 <p className="text-sm text-muted-foreground max-w-sm">
-                  ابدأ بتقييم ردود ساري باستخدام أزرار 👍/👎 لرؤية الإحصائيات هنا
+                  {t('testSariPage.startRating')}
                 </p>
               </div>
             ) : (
@@ -611,7 +598,7 @@ export default function TestSari() {
                         <ThumbsUp className="h-5 w-5 text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">تقييمات إيجابية</p>
+                        <p className="text-sm text-muted-foreground">{t('testSariPage.positiveRatings')}</p>
                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                           {ratings.positive}
                         </p>
@@ -625,7 +612,7 @@ export default function TestSari() {
                         <ThumbsDown className="h-5 w-5 text-red-600 dark:text-red-400" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">تقييمات سلبية</p>
+                        <p className="text-sm text-muted-foreground">{t('testSariPage.negativeRatings')}</p>
                         <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                           {ratings.negative}
                         </p>
@@ -639,7 +626,7 @@ export default function TestSari() {
                         <TrendingUp className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground">نسبة الرضا</p>
+                        <p className="text-sm text-muted-foreground">{t('testSariPage.satisfactionRate')}</p>
                         <p className="text-2xl font-bold text-primary">
                           {Math.round(
                             (ratings.positive / (ratings.positive + ratings.negative)) * 100
@@ -659,8 +646,8 @@ export default function TestSari() {
                       <PieChart>
                         <Pie
                           data={[
-                            { name: "إيجابي", value: ratings.positive, color: "#22c55e" },
-                            { name: "سلبي", value: ratings.negative, color: "#ef4444" },
+                            { name: t('testSariPage.positive'), value: ratings.positive, color: "#22c55e" },
+                            { name: t('testSariPage.negative'), value: ratings.negative, color: "#ef4444" },
                           ]}
                           cx="50%"
                           cy="50%"
@@ -673,8 +660,8 @@ export default function TestSari() {
                           dataKey="value"
                         >
                           {[
-                            { name: "إيجابي", value: ratings.positive, color: "#22c55e" },
-                            { name: "سلبي", value: ratings.negative, color: "#ef4444" },
+                            { name: t('testSariPage.positive'), value: ratings.positive, color: "#22c55e" },
+                            { name: t('testSariPage.negative'), value: ratings.negative, color: "#ef4444" },
                           ].map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -688,8 +675,8 @@ export default function TestSari() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={[
-                          { name: "إيجابي", value: ratings.positive },
-                          { name: "سلبي", value: ratings.negative },
+                          { name: t('testSariPage.positive'), value: ratings.positive },
+                          { name: t('testSariPage.negative'), value: ratings.negative },
                         ]}
                       >
                         <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
@@ -713,10 +700,10 @@ export default function TestSari() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                <span>تطور نسبة الرضا</span>
+                <span>{t('testSariPage.satisfactionTrend')}</span>
               </CardTitle>
               <CardDescription>
-                تتبع تحسن أو تراجع أداء ساري عبر الوقت
+                {t('testSariPage.satisfactionTrendDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -729,7 +716,7 @@ export default function TestSari() {
                         hour: "2-digit",
                         minute: "2-digit",
                       }),
-                      نسبة_الرضا: item.satisfactionRate,
+                      نسبة_الرضا: item.rating,
                     }))}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
@@ -757,10 +744,10 @@ export default function TestSari() {
               <div className="mt-4 flex items-center justify-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-primary" />
-                  <span>نسبة الرضا (%)</span>
+                  <span>{t('testSariPage.satisfactionPercent')}</span>
                 </div>
                 <span>•</span>
-                <span>عدد التقييمات: {ratingHistory.length}</span>
+                <span>{t('testSariPage.totalRatings')} {ratingHistory.length}</span>
               </div>
             </CardContent>
           </Card>
@@ -768,22 +755,22 @@ export default function TestSari() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">💡 نصيحة</CardTitle>
+            <CardTitle className="text-sm">{t('testSariPage.tipTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              جرّب أن تسأل ساري عن منتجاتك: "عندك عطور؟" أو "كم سعر الساعة؟"
+              {t('testSariPage.tipDesc')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">🚀 الخطوة التالية</CardTitle>
+            <CardTitle className="text-sm">{t('testSariPage.nextStepTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              بعد التأكد من جودة الردود، اربط رقم WhatsApp الحقيقي
+              {t('testSariPage.nextStepDesc')}
             </p>
           </CardContent>
         </Card>

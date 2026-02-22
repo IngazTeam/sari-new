@@ -25,7 +25,7 @@ export default function Conversations() {
 
   const { data: conversations, isLoading } = trpc.conversations.list.useQuery();
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
-  
+
   const { data: messages } = trpc.conversations.getMessages.useQuery(
     { conversationId: selectedConversationId! },
     { enabled: selectedConversationId !== null }
@@ -47,9 +47,9 @@ export default function Conversations() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">المحادثات</h1>
+        <h1 className="text-3xl font-bold">{t('conversationsPage.title')}</h1>
         <p className="text-muted-foreground mt-2">
-          سجل المحادثات مع العملاء والرسائل المتبادلة مع البوت الذكي
+          {t('conversationsPage.description')}
         </p>
       </div>
 
@@ -57,38 +57,38 @@ export default function Conversations() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">إجمالي المحادثات</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('conversationsPage.totalConversations')}</CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{conversations?.length || 0}</div>
-            <p className="text-xs text-muted-foreground">جميع المحادثات</p>
+            <p className="text-xs text-muted-foreground">{t('conversationsPage.allConversations')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المحادثات النشطة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('conversationsPage.activeConversations')}</CardTitle>
             <MessageSquare className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               {conversations?.filter(c => c.status === 'active').length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">محادثات جارية</p>
+            <p className="text-xs text-muted-foreground">{t('conversationsPage.ongoingConversations')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المحادثات المكتملة</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('conversationsPage.completedConversations')}</CardTitle>
             <MessageSquare className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-primary">
               {conversations?.filter(c => c.status === 'closed').length || 0}
             </div>
-            <p className="text-xs text-muted-foreground">تم إغلاقها</p>
+            <p className="text-xs text-muted-foreground">{t('conversationsPage.closedConversations')}</p>
           </CardContent>
         </Card>
       </div>
@@ -98,12 +98,12 @@ export default function Conversations() {
         {/* Conversations List */}
         <Card className="md:col-span-1">
           <CardHeader>
-            <CardTitle>قائمة المحادثات</CardTitle>
-            <CardDescription>اختر محادثة لعرض الرسائل</CardDescription>
+            <CardTitle>{t('conversationsPage.conversationList')}</CardTitle>
+            <CardDescription>{t('conversationsPage.selectConversation')}</CardDescription>
             <div className="relative mt-4">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="بحث برقم الهاتف أو الاسم..."
+                placeholder={t('conversationsPage.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -114,16 +114,15 @@ export default function Conversations() {
             <ScrollArea className="h-[600px]">
               {isLoading ? (
                 <div className="p-4 text-center text-muted-foreground">
-                  جاري التحميل...
+                  {t('conversationsPage.loading')}
                 </div>
               ) : filteredConversations && filteredConversations.length > 0 ? (
                 <div className="space-y-1">
                   {filteredConversations.map((conversation) => (
                     <div
                       key={conversation.id}
-                      className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
-                        selectedConversationId === conversation.id ? 'bg-muted' : ''
-                      }`}
+                      className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${selectedConversationId === conversation.id ? 'bg-muted' : ''
+                        }`}
                       onClick={() => setSelectedConversationId(conversation.id)}
                     >
                       <div className="flex items-start gap-3">
@@ -135,21 +134,21 @@ export default function Conversations() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-medium truncate">
-                              {conversation.customerName || 'عميل'}
+                              {conversation.customerName || t('conversationsPage.customer')}
                             </p>
                             <Badge
                               variant={
                                 conversation.status === 'active'
                                   ? 'default'
                                   : conversation.status === 'closed'
-                                  ? 'secondary'
-                                  : 'outline'
+                                    ? 'secondary'
+                                    : 'outline'
                               }
                               className="text-xs"
                             >
-                              {conversation.status === 'active' && 'نشط'}
-                              {conversation.status === 'closed' && 'مغلق'}
-                              {conversation.status === 'archived' && 'مؤرشف'}
+                              {conversation.status === 'active' && t('conversationsPage.statusActive')}
+                              {conversation.status === 'closed' && t('conversationsPage.statusClosed')}
+                              {conversation.status === 'archived' && t('conversationsPage.statusArchived')}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground truncate">
@@ -172,7 +171,7 @@ export default function Conversations() {
               ) : (
                 <div className="p-8 text-center text-muted-foreground">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>لا توجد محادثات بعد</p>
+                  <p>{t('conversationsPage.noConversations')}</p>
                 </div>
               )}
             </ScrollArea>
@@ -192,7 +191,7 @@ export default function Conversations() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle>{selectedConversation.customerName || 'عميل'}</CardTitle>
+                      <CardTitle>{selectedConversation.customerName || t('conversationsPage.customer')}</CardTitle>
                       <CardDescription>{selectedConversation.customerPhone}</CardDescription>
                     </div>
                   </div>
@@ -200,7 +199,7 @@ export default function Conversations() {
                     {messages && messages.length > 0 && (
                       <ConversationPreviewMode
                         messages={messages}
-                        customerName={selectedConversation.customerName || 'عميل'}
+                        customerName={selectedConversation.customerName || t('conversationsPage.customer')}
                         customerPhone={selectedConversation.customerPhone}
                         isOnline={selectedConversation.status === 'active'}
                       />
@@ -210,13 +209,13 @@ export default function Conversations() {
                         selectedConversation.status === 'active'
                           ? 'default'
                           : selectedConversation.status === 'closed'
-                          ? 'secondary'
-                          : 'outline'
+                            ? 'secondary'
+                            : 'outline'
                       }
                     >
-                      {selectedConversation.status === 'active' && 'نشط'}
-                      {selectedConversation.status === 'closed' && 'مغلق'}
-                      {selectedConversation.status === 'archived' && 'مؤرشف'}
+                      {selectedConversation.status === 'active' && t('conversationsPage.statusActive')}
+                      {selectedConversation.status === 'closed' && t('conversationsPage.statusClosed')}
+                      {selectedConversation.status === 'archived' && t('conversationsPage.statusArchived')}
                     </Badge>
                   </div>
                 </div>
@@ -229,9 +228,8 @@ export default function Conversations() {
                       {messages.map((message) => (
                         <div
                           key={message.id}
-                          className={`flex gap-3 ${
-                            message.direction === 'incoming' ? 'flex-row' : 'flex-row-reverse'
-                          }`}
+                          className={`flex gap-3 ${message.direction === 'incoming' ? 'flex-row' : 'flex-row-reverse'
+                            }`}
                         >
                           <Avatar className="h-8 w-8 flex-shrink-0">
                             <AvatarFallback>
@@ -243,21 +241,19 @@ export default function Conversations() {
                             </AvatarFallback>
                           </Avatar>
                           <div
-                            className={`flex-1 max-w-[70%] ${
-                              message.direction === 'incoming' ? 'items-start' : 'items-end'
-                            }`}
+                            className={`flex-1 max-w-[70%] ${message.direction === 'incoming' ? 'items-start' : 'items-end'
+                              }`}
                           >
                             <div
-                              className={`rounded-lg p-3 ${
-                                message.direction === 'incoming'
+                              className={`rounded-lg p-3 ${message.direction === 'incoming'
                                   ? 'bg-muted'
                                   : 'bg-primary text-primary-foreground'
-                              }`}
+                                }`}
                             >
                               {message.messageType === 'voice' && (
                                 <div className="flex items-center gap-2 mb-1">
                                   <Badge variant="outline" className="text-xs">
-                                    رسالة صوتية
+                                    {t('conversationsPage.voiceMessage')}
                                   </Badge>
                                 </div>
                               )}
@@ -281,7 +277,7 @@ export default function Conversations() {
                               </span>
                               {message.direction === 'outgoing' && (
                                 <Badge variant="outline" className="text-xs">
-                                  ساري
+                                  {t('conversationsPage.sari')}
                                 </Badge>
                               )}
                             </div>
@@ -293,7 +289,7 @@ export default function Conversations() {
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center">
                         <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>لا توجد رسائل في هذه المحادثة</p>
+                        <p>{t('conversationsPage.noMessages')}</p>
                       </div>
                     </div>
                   )}
@@ -312,7 +308,7 @@ export default function Conversations() {
                     customerName={selectedConversation.customerName || undefined}
                     onSelectSuggestion={(text) => {
                       // يمكن إضافة النص إلى حقل الإدخال أو إرساله مباشرة
-                      toast.success(`تم اختيار: ${text.substring(0, 30)}...`);
+                      toast.success(`${t('conversationsPage.selected')}: ${text.substring(0, 30)}...`);
                     }}
                     compact
                   />
@@ -326,7 +322,7 @@ export default function Conversations() {
                   conversationId={selectedConversationId!}
                   customerPhone={selectedConversation.customerPhone}
                   onActionComplete={(action, data) => {
-                    toast.success(`تم تنفيذ: ${action}`);
+                    toast.success(`${t('conversationsPage.actionExecuted')}: ${action}`);
                   }}
                 />
               </CardContent>
@@ -344,7 +340,7 @@ export default function Conversations() {
                         const base64 = reader.result as string;
                         const audioBase64 = base64.split(',')[1]; // إزالة data:audio/webm;base64,
 
-                        toast.loading('جاري رفع التسجيل...');
+                        toast.loading(t('conversationsPage.uploadingRecording'));
 
                         // رفع الملف إلى S3
                         const uploadResult = await uploadAudioMutation.mutateAsync({
@@ -378,8 +374,8 @@ export default function Conversations() {
             <div className="flex items-center justify-center h-full min-h-[700px]">
               <div className="text-center text-muted-foreground">
                 <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-medium">اختر محادثة لعرض الرسائل</p>
-                <p className="text-sm mt-2">اضغط على أي محادثة من القائمة</p>
+                <p className="text-lg font-medium">{t('conversationsPage.selectToView')}</p>
+                <p className="text-sm mt-2">{t('conversationsPage.clickToView')}</p>
               </div>
             </div>
           )}

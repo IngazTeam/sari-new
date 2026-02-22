@@ -30,7 +30,7 @@ export default function SMTPSettings() {
 
   const updateSettingsMutation = trpc.smtp.updateSettings.useMutation({
     onSuccess: () => {
-      toast.success('تم حفظ إعدادات SMTP2GO API بنجاح');
+      toast.success(t('adminSMTPSettingsPage.text40'));
     },
     onError: (error: any) => {
       toast.error(error.message);
@@ -43,14 +43,14 @@ export default function SMTPSettings() {
         success: true,
         message: 'تم إرسال البريد التجريبي بنجاح! تحقق من صندوق الوارد.',
       });
-      toast.success('تم إرسال البريد التجريبي بنجاح');
+      toast.success(t('adminSMTPSettingsPage.text41'));
       // Refresh logs
       setTimeout(() => refetchLogs(), 1000);
     },
     onError: (error: any) => {
       setTestResult({
         success: false,
-        message: `فشل الإرسال: ${error.message}`,
+        message: t('adminSMTPSettingsPage.text0', { var0: error.message }),
       });
       toast.error(error.message);
     },
@@ -58,7 +58,7 @@ export default function SMTPSettings() {
 
   const handleSaveSettings = () => {
     if (!apiKey) {
-      toast.error('يرجى إدخال API Key');
+      toast.error(t('adminSMTPSettingsPage.text42'));
       return;
     }
     
@@ -70,7 +70,7 @@ export default function SMTPSettings() {
 
   const handleTestEmail = async () => {
     if (!testEmail) {
-      toast.error('يرجى إدخال عنوان بريد إلكتروني');
+      toast.error(t('adminSMTPSettingsPage.text43'));
       return;
     }
 
@@ -87,7 +87,7 @@ export default function SMTPSettings() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إعدادات SMTP2GO API</h1>
+        <h1 className="text-3xl font-bold">{t('adminSMTPSettingsPage.text1')}</h1>
         <p className="text-muted-foreground mt-2">
           قم بإعداد SMTP2GO API لإرسال رسائل البريد الإلكتروني التلقائية
         </p>
@@ -97,13 +97,13 @@ export default function SMTPSettings() {
       <Alert>
         <Key className="h-4 w-4" />
         <AlertDescription>
-          <strong>كيفية الحصول على SMTP2GO API Key:</strong>
+          <strong>{t('adminSMTPSettingsPage.text2')}</strong>
           <ol className="list-decimal mr-6 mt-2 space-y-1">
-            <li>سجل حساب مجاني في <a href="https://www.smtp2go.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">SMTP2GO <ExternalLink className="h-3 w-3" /></a></li>
-            <li>من لوحة التحكم، اذهب إلى <strong>Settings → API Keys</strong></li>
-            <li>اضغط على <strong>"Create API Key"</strong></li>
-            <li>اختر الصلاحيات: <strong>Send Email</strong></li>
-            <li>انسخ الـ API Key واحفظه في مكان آمن</li>
+            <li>{t('adminSMTPSettingsPage.text3')}<a href="https://www.smtp2go.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">SMTP2GO <ExternalLink className="h-3 w-3" /></a></li>
+            <li>{t('adminSMTPSettingsPage.text4')}<strong>Settings → API Keys</strong></li>
+            <li>{t('adminSMTPSettingsPage.text5')}<strong>"Create API Key"</strong></li>
+            <li>{t('adminSMTPSettingsPage.text6')}<strong>Send Email</strong></li>
+            <li>{t('adminSMTPSettingsPage.text7')}</li>
           </ol>
         </AlertDescription>
       </Alert>
@@ -112,7 +112,7 @@ export default function SMTPSettings() {
         {/* بطاقة الإعدادات */}
         <Card>
           <CardHeader>
-            <CardTitle>إعدادات API</CardTitle>
+            <CardTitle>{t('adminSMTPSettingsPage.text8')}</CardTitle>
             <CardDescription>
               أدخل SMTP2GO API Key الخاص بك
             </CardDescription>
@@ -162,7 +162,7 @@ export default function SMTPSettings() {
 
             <Alert variant="default" className="mt-4">
               <AlertDescription className="text-xs">
-                <strong>ملاحظة:</strong> بعد حفظ الإعدادات، يجب إضافة المتغيرات في <strong>Settings → Secrets</strong>:
+                <strong>{t('adminSMTPSettingsPage.text9')}</strong>{t('adminSMTPSettingsPage.text10')}<strong>Settings → Secrets</strong>:
                 <ul className="list-disc mr-4 mt-1">
                   <li><code>SMTP2GO_API_KEY</code></li>
                   <li><code>SMTP_FROM</code></li>
@@ -176,14 +176,14 @@ export default function SMTPSettings() {
         {/* بطاقة الاختبار */}
         <Card>
           <CardHeader>
-            <CardTitle>اختبار الإرسال</CardTitle>
+            <CardTitle>{t('adminSMTPSettingsPage.text11')}</CardTitle>
             <CardDescription>
               أرسل بريداً تجريبياً للتحقق من الإعدادات
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="testEmail">البريد الإلكتروني للاختبار</Label>
+              <Label htmlFor="testEmail">{t('adminSMTPSettingsPage.text12')}</Label>
               <Input
                 id="testEmail"
                 type="email"
@@ -223,12 +223,12 @@ export default function SMTPSettings() {
             )}
 
             <div className="pt-4 border-t">
-              <h4 className="font-semibold mb-2">ملاحظات هامة:</h4>
+              <h4 className="font-semibold mb-2">{t('adminSMTPSettingsPage.text13')}</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• احفظ الإعدادات وأضفها في Secrets أولاً</li>
-                <li>• أعد تشغيل الخادم بعد إضافة Secrets</li>
-                <li>• تحقق من صندوق البريد المزعج (Spam)</li>
-                <li>• الحد المجاني: 1,000 رسالة/شهر</li>
+                <li>{t('adminSMTPSettingsPage.text14')}</li>
+                <li>{t('adminSMTPSettingsPage.text15')}</li>
+                <li>{t('adminSMTPSettingsPage.text16')}</li>
+                <li>{t('adminSMTPSettingsPage.text17')}</li>
               </ul>
             </div>
           </CardContent>
@@ -238,7 +238,7 @@ export default function SMTPSettings() {
       {/* بطاقة الاستخدامات */}
       <Card>
         <CardHeader>
-          <CardTitle>استخدامات البريد الإلكتروني في النظام</CardTitle>
+          <CardTitle>{t('adminSMTPSettingsPage.text18')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
@@ -247,7 +247,7 @@ export default function SMTPSettings() {
                 <Mail className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold">الفواتير</h4>
+                <h4 className="font-semibold">{t('adminSMTPSettingsPage.text19')}</h4>
                 <p className="text-sm text-muted-foreground">
                   إرسال الفواتير تلقائياً بعد كل عملية دفع ناجحة
                 </p>
@@ -259,7 +259,7 @@ export default function SMTPSettings() {
                 <Mail className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold">التقارير الأسبوعية</h4>
+                <h4 className="font-semibold">{t('adminSMTPSettingsPage.text20')}</h4>
                 <p className="text-sm text-muted-foreground">
                   إرسال تقارير المشاعر والإحصائيات كل أحد صباحاً
                 </p>
@@ -271,7 +271,7 @@ export default function SMTPSettings() {
                 <Mail className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h4 className="font-semibold">الإشعارات</h4>
+                <h4 className="font-semibold">{t('adminSMTPSettingsPage.text21')}</h4>
                 <p className="text-sm text-muted-foreground">
                   إشعارات الاشتراكات والتحديثات الهامة
                 </p>
@@ -288,7 +288,7 @@ export default function SMTPSettings() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">{emailStats.total}</div>
-                <div className="text-sm text-muted-foreground mt-1">إجمالي الرسائل</div>
+                <div className="text-sm text-muted-foreground mt-1">{t('adminSMTPSettingsPage.text22')}</div>
               </div>
             </CardContent>
           </Card>
@@ -296,7 +296,7 @@ export default function SMTPSettings() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">{emailStats.sent}</div>
-                <div className="text-sm text-muted-foreground mt-1">تم إرسالها</div>
+                <div className="text-sm text-muted-foreground mt-1">{t('adminSMTPSettingsPage.text23')}</div>
               </div>
             </CardContent>
           </Card>
@@ -304,7 +304,7 @@ export default function SMTPSettings() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-red-600">{emailStats.failed}</div>
-                <div className="text-sm text-muted-foreground mt-1">فشلت</div>
+                <div className="text-sm text-muted-foreground mt-1">{t('adminSMTPSettingsPage.text24')}</div>
               </div>
             </CardContent>
           </Card>
@@ -312,7 +312,7 @@ export default function SMTPSettings() {
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-yellow-600">{emailStats.pending}</div>
-                <div className="text-sm text-muted-foreground mt-1">قيد الإرسال</div>
+                <div className="text-sm text-muted-foreground mt-1">{t('adminSMTPSettingsPage.text25')}</div>
               </div>
             </CardContent>
           </Card>
@@ -325,13 +325,13 @@ export default function SMTPSettings() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <History className="h-5 w-5 text-primary" />
-              <CardTitle>سجل الرسائل المرسلة</CardTitle>
+              <CardTitle>{t('adminSMTPSettingsPage.text26')}</CardTitle>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetchLogs()}>
               تحديث
             </Button>
           </div>
-          <CardDescription>آخر 10 رسائل بريد إلكتروني تم إرسالها</CardDescription>
+          <CardDescription>{t('adminSMTPSettingsPage.text27')}</CardDescription>
         </CardHeader>
         <CardContent>
           {logsLoading ? (
@@ -343,11 +343,11 @@ export default function SMTPSettings() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>المستلم</TableHead>
-                    <TableHead>الموضوع</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>التاريخ</TableHead>
+                    <TableHead>{t('adminSMTPSettingsPage.text28')}</TableHead>
+                    <TableHead>{t('adminSMTPSettingsPage.text29')}</TableHead>
+                    <TableHead>{t('adminSMTPSettingsPage.text30')}</TableHead>
+                    <TableHead>{t('adminSMTPSettingsPage.text31')}</TableHead>
+                    <TableHead>{t('adminSMTPSettingsPage.text32')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -406,33 +406,33 @@ export default function SMTPSettings() {
       {/* بطاقة المميزات */}
       <Card>
         <CardHeader>
-          <CardTitle>✨ مميزات SMTP2GO API</CardTitle>
+          <CardTitle>{t('adminSMTPSettingsPage.text33')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm">سهولة الإعداد - API Key واحد فقط</span>
+              <span className="text-sm">{t('adminSMTPSettingsPage.text34')}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm">لا حاجة لإعدادات DNS معقدة</span>
+              <span className="text-sm">{t('adminSMTPSettingsPage.text35')}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm">1,000 رسالة مجاناً شهرياً</span>
+              <span className="text-sm">{t('adminSMTPSettingsPage.text36')}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm">تتبع حالة الرسائل في الوقت الفعلي</span>
+              <span className="text-sm">{t('adminSMTPSettingsPage.text37')}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm">دعم فني متاح 24/7</span>
+              <span className="text-sm">{t('adminSMTPSettingsPage.text38')}</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-sm">معدل توصيل عالي (99%+)</span>
+              <span className="text-sm">{t('adminSMTPSettingsPage.text39')}</span>
             </div>
           </div>
         </CardContent>

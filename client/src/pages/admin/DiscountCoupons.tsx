@@ -11,8 +11,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, TrendingUp, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function DiscountCoupons() {
+  const { t } = useTranslation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<any>(null);
 
@@ -69,10 +71,10 @@ export default function DiscountCoupons() {
 
       if (editingCoupon) {
         await updateCoupon.mutateAsync({ id: editingCoupon.id, ...data });
-        toast.success('تم تحديث الكوبون بنجاح');
+        toast.success(t('adminDiscountCouponsPage.text32'));
       } else {
         await createCoupon.mutateAsync(data);
-        toast.success('تم إنشاء الكوبون بنجاح');
+        toast.success(t('adminDiscountCouponsPage.text33'));
       }
 
       refetch();
@@ -84,11 +86,11 @@ export default function DiscountCoupons() {
   };
 
   const handleDeactivate = async (id: number) => {
-    if (!confirm('هل أنت متأكد من تعطيل هذا الكوبون؟')) return;
+    if (!confirm(t('adminDiscountCouponsPage.text34'))) return;
 
     try {
       await deactivateCoupon.mutateAsync({ id });
-      toast.success('تم تعطيل الكوبون');
+      toast.success(t('adminDiscountCouponsPage.text35'));
       refetch();
     } catch (error: any) {
       toast.error(error.message || 'فشل تعطيل الكوبون');
@@ -128,8 +130,8 @@ export default function DiscountCoupons() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">إدارة كوبونات الخصم</h1>
-          <p className="text-muted-foreground mt-1">إنشاء وإدارة كوبونات الخصم للباقات</p>
+          <h1 className="text-3xl font-bold">{t('adminDiscountCouponsPage.text0')}</h1>
+          <p className="text-muted-foreground mt-1">{t('adminDiscountCouponsPage.text1')}</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
           setIsCreateDialogOpen(open);
@@ -143,7 +145,7 @@ export default function DiscountCoupons() {
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editingCoupon ? 'تعديل الكوبون' : 'إنشاء كوبون جديد'}</DialogTitle>
+              <DialogTitle>{t('adminDiscountCouponsPage.text2', { var0: editingCoupon ? 'تعديل الكوبون' : 'إنشاء كوبون جديد' })}</DialogTitle>
               <DialogDescription>
                 أدخل تفاصيل الكوبون. سيتم تطبيقه على جميع الباقات.
               </DialogDescription>
@@ -151,7 +153,7 @@ export default function DiscountCoupons() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">كود الكوبون *</Label>
+                  <Label htmlFor="code">{t('adminDiscountCouponsPage.text3')}</Label>
                   <Input
                     id="code"
                     value={formData.code}
@@ -163,7 +165,7 @@ export default function DiscountCoupons() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="discountType">نوع الخصم *</Label>
+                  <Label htmlFor="discountType">{t('adminDiscountCouponsPage.text4')}</Label>
                   <Select
                     value={formData.discountType}
                     onValueChange={(value: 'percentage' | 'fixed') =>
@@ -174,20 +176,20 @@ export default function DiscountCoupons() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="percentage">نسبة مئوية (%)</SelectItem>
-                      <SelectItem value="fixed">مبلغ ثابت (ريال)</SelectItem>
+                      <SelectItem value="percentage">{t('adminDiscountCouponsPage.text5')}</SelectItem>
+                      <SelectItem value="fixed">{t('adminDiscountCouponsPage.text6')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">الوصف</Label>
+                <Label htmlFor="description">{t('adminDiscountCouponsPage.text7')}</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="خصم الصيف - 20% على جميع الباقات"
+                  placeholder={t('adminDiscountCouponsPage.text8')}
                   rows={2}
                 />
               </div>
@@ -209,7 +211,7 @@ export default function DiscountCoupons() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="minPurchaseAmount">الحد الأدنى (ريال)</Label>
+                  <Label htmlFor="minPurchaseAmount">{t('adminDiscountCouponsPage.text9')}</Label>
                   <Input
                     id="minPurchaseAmount"
                     type="number"
@@ -222,7 +224,7 @@ export default function DiscountCoupons() {
 
                 {formData.discountType === 'percentage' && (
                   <div className="space-y-2">
-                    <Label htmlFor="maxDiscountAmount">الحد الأقصى (ريال)</Label>
+                    <Label htmlFor="maxDiscountAmount">{t('adminDiscountCouponsPage.text10')}</Label>
                     <Input
                       id="maxDiscountAmount"
                       type="number"
@@ -237,7 +239,7 @@ export default function DiscountCoupons() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="validFrom">تاريخ البداية *</Label>
+                  <Label htmlFor="validFrom">{t('adminDiscountCouponsPage.text11')}</Label>
                   <Input
                     id="validFrom"
                     type="datetime-local"
@@ -248,7 +250,7 @@ export default function DiscountCoupons() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="validUntil">تاريخ الانتهاء *</Label>
+                  <Label htmlFor="validUntil">{t('adminDiscountCouponsPage.text12')}</Label>
                   <Input
                     id="validUntil"
                     type="datetime-local"
@@ -261,18 +263,18 @@ export default function DiscountCoupons() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="maxUsageCount">عدد الاستخدامات الكلي</Label>
+                  <Label htmlFor="maxUsageCount">{t('adminDiscountCouponsPage.text13')}</Label>
                   <Input
                     id="maxUsageCount"
                     type="number"
                     value={formData.maxUsageCount}
                     onChange={(e) => setFormData({ ...formData, maxUsageCount: e.target.value })}
-                    placeholder="غير محدود"
+                    placeholder={t('adminDiscountCouponsPage.text14')}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="maxUsagePerMerchant">عدد الاستخدامات لكل تاجر *</Label>
+                  <Label htmlFor="maxUsagePerMerchant">{t('adminDiscountCouponsPage.text15')}</Label>
                   <Input
                     id="maxUsagePerMerchant"
                     type="number"
@@ -300,14 +302,14 @@ export default function DiscountCoupons() {
       {/* Coupons Table */}
       <Card>
         <CardHeader>
-          <CardTitle>قائمة الكوبونات</CardTitle>
-          <CardDescription>جميع كوبونات الخصم المتاحة</CardDescription>
+          <CardTitle>{t('adminDiscountCouponsPage.text16')}</CardTitle>
+          <CardDescription>{t('adminDiscountCouponsPage.text17')}</CardDescription>
         </CardHeader>
         <CardContent>
           {!coupons || coupons.length === 0 ? (
             <div className="text-center py-12">
               <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-muted-foreground">لا توجد كوبونات حالياً</p>
+              <p className="mt-4 text-muted-foreground">{t('adminDiscountCouponsPage.text18')}</p>
               <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="ml-2 h-4 w-4" />
                 إنشاء أول كوبون
@@ -317,13 +319,13 @@ export default function DiscountCoupons() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الكود</TableHead>
-                  <TableHead>النوع</TableHead>
-                  <TableHead>القيمة</TableHead>
-                  <TableHead>الصلاحية</TableHead>
-                  <TableHead>الاستخدام</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>الإجراءات</TableHead>
+                  <TableHead>{t('adminDiscountCouponsPage.text19')}</TableHead>
+                  <TableHead>{t('adminDiscountCouponsPage.text20')}</TableHead>
+                  <TableHead>{t('adminDiscountCouponsPage.text21')}</TableHead>
+                  <TableHead>{t('adminDiscountCouponsPage.text22')}</TableHead>
+                  <TableHead>{t('adminDiscountCouponsPage.text23')}</TableHead>
+                  <TableHead>{t('adminDiscountCouponsPage.text24')}</TableHead>
+                  <TableHead>{t('adminDiscountCouponsPage.text25')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -342,7 +344,7 @@ export default function DiscountCoupons() {
                       <TableCell>
                         {coupon.discountType === 'percentage'
                           ? `${coupon.discountValue}%`
-                          : `${coupon.discountValue} ريال`}
+                          : t('adminDiscountCouponsPage.text26', { var0: coupon.discountValue })}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-sm">
@@ -356,15 +358,15 @@ export default function DiscountCoupons() {
                       </TableCell>
                       <TableCell>
                         {!coupon.isActive ? (
-                          <Badge variant="outline">معطل</Badge>
+                          <Badge variant="outline">{t('adminDiscountCouponsPage.text27')}</Badge>
                         ) : isExpired ? (
-                          <Badge variant="destructive">منتهي</Badge>
+                          <Badge variant="destructive">{t('adminDiscountCouponsPage.text28')}</Badge>
                         ) : isNotStarted ? (
-                          <Badge variant="secondary">لم يبدأ</Badge>
+                          <Badge variant="secondary">{t('adminDiscountCouponsPage.text29')}</Badge>
                         ) : isMaxedOut ? (
-                          <Badge variant="outline">مستنفذ</Badge>
+                          <Badge variant="outline">{t('adminDiscountCouponsPage.text30')}</Badge>
                         ) : (
-                          <Badge variant="default">نشط</Badge>
+                          <Badge variant="default">{t('adminDiscountCouponsPage.text31')}</Badge>
                         )}
                       </TableCell>
                       <TableCell>

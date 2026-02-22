@@ -18,7 +18,7 @@ interface Language {
 }
 
 const languages: Language[] = [
-  { code: 'ar', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', currency: 'SAR', currencySymbol: 'ر.س', dir: 'rtl' },
+  { code: 'ar', name: 'Arabic', nativeName: t('languageSettingsPage.text17'), flag: '🇸🇦', currency: 'SAR', currencySymbol: t('languageSettingsPage.text18'), dir: 'rtl' },
   { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧', currency: 'USD', currencySymbol: '$', dir: 'ltr' },
   { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
   { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', currency: 'TRY', currencySymbol: '₺', dir: 'ltr' },
@@ -28,10 +28,10 @@ const languages: Language[] = [
 
 const sampleMessages = {
   ar: {
-    welcome: 'مرحباً! أنا ساري، مساعدك الذكي. كيف أقدر أساعدك اليوم؟',
-    product: 'عندنا منتجات رائعة، تقدر تشوف الكتالوج كامل',
-    order: 'تمام! بسجل لك الطلب الآن. ممكن تعطيني عنوان التوصيل؟',
-    thanks: 'شكراً لك! طلبك وصل وبنتواصل معك قريب 🎉',
+    welcome: t('languageSettingsPage.text19'),
+    product: t('languageSettingsPage.text20'),
+    order: t('languageSettingsPage.text21'),
+    thanks: t('languageSettingsPage.text22'),
   },
   en: {
     welcome: 'Hello! I\'m Sari, your smart assistant. How can I help you today?',
@@ -93,9 +93,9 @@ export default function LanguageSettings() {
       document.documentElement.lang = lang.code;
       localStorage.setItem('i18nextLng', lang.code);
 
-      toast.success('تم حفظ إعدادات اللغة بنجاح');
+      toast.success(t('languageSettingsPage.text0'));
     } catch (error) {
-      toast.error('فشل حفظ الإعدادات');
+      toast.error(t('languageSettingsPage.text1'));
       console.error('Failed to save language settings:', error);
     } finally {
       setIsSaving(false);
@@ -107,9 +107,9 @@ export default function LanguageSettings() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">إعدادات اللغة</h1>
+        <h1 className="text-3xl font-bold">{t('languageSettingsPage.text2')}</h1>
         <p className="text-muted-foreground mt-2">
-          اختر اللغة التي سيستخدمها البوت للتواصل مع عملائك
+          {t('languageSettingsPage.text3')}
         </p>
       </div>
 
@@ -120,10 +120,10 @@ export default function LanguageSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Globe className="w-5 h-5" />
-                اختر اللغة
+                {t('languageSettingsPage.text4')}
               </CardTitle>
               <CardDescription>
-                حدد اللغة الأساسية لرسائل البوت
+                {t('languageSettingsPage.text5')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -171,12 +171,12 @@ export default function LanguageSettings() {
                 {isSaving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    جاري الحفظ...
+                    {t('languageSettingsPage.text6')}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    حفظ التغييرات
+                    {t('languageSettingsPage.text7')}
                   </>
                 )}
               </Button>
@@ -190,17 +190,17 @@ export default function LanguageSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5" />
-                معاينة رسائل البوت
+                {t('languageSettingsPage.text8')}
               </CardTitle>
               <CardDescription>
-                شاهد كيف ستظهر رسائل البوت للعملاء
+                {t('languageSettingsPage.text9')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Welcome Message */}
               <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
                 <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
-                  رسالة الترحيب
+                  {t('languageSettingsPage.text10')}
                 </p>
                 <p className="text-sm text-green-800 dark:text-green-200">
                   {currentMessages.welcome}
@@ -210,7 +210,7 @@ export default function LanguageSettings() {
               {/* Product Message */}
               <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                 <p className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">
-                  رسالة المنتجات
+                  {t('languageSettingsPage.text11')}
                 </p>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
                   {currentMessages.product}
@@ -220,7 +220,7 @@ export default function LanguageSettings() {
               {/* Order Message */}
               <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
                 <p className="text-sm font-medium text-purple-900 dark:text-purple-100 mb-1">
-                  رسالة الطلب
+                  {t('languageSettingsPage.text12')}
                 </p>
                 <p className="text-sm text-purple-800 dark:text-purple-200">
                   {currentMessages.order}
@@ -230,7 +230,7 @@ export default function LanguageSettings() {
               {/* Thanks Message */}
               <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
                 <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-1">
-                  رسالة الشكر
+                  {t('languageSettingsPage.text13')}
                 </p>
                 <p className="text-sm text-amber-800 dark:text-amber-200">
                   {currentMessages.thanks}
@@ -245,11 +245,11 @@ export default function LanguageSettings() {
                 <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <h4 className="font-medium text-blue-900 dark:text-blue-100">
-                    ملاحظة مهمة
+                    {t('languageSettingsPage.text14')}
                   </h4>
                   <p className="text-sm text-blue-800 dark:text-blue-200">
-                    سيتم تطبيق اللغة المختارة على جميع رسائل البوت التلقائية. 
-                    العملة المرتبطة باللغة سيتم استخدامها في عرض الأسعار والفواتير.
+                    {t('languageSettingsPage.text15')}
+                    {t('languageSettingsPage.text16')}
                   </p>
                 </div>
               </div>

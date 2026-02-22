@@ -205,7 +205,7 @@ export default function Settings() {
       {/* Plans Management */}
       <Card>
         <CardHeader>
-          <CardTitle>إدارة الباقات</CardTitle>
+          <CardTitle>{t('adminSettingsPage.text0')}</CardTitle>
           <CardDescription>
             الباقات المتاحة للتجار مع الأسعار والحدود
           </CardDescription>
@@ -215,13 +215,13 @@ export default function Settings() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الرمز</TableHead>
-                  <TableHead>الاسم العربي</TableHead>
-                  <TableHead>السعر الشهري</TableHead>
-                  <TableHead>حد المحادثات</TableHead>
-                  <TableHead>حد الرسائل الصوتية</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead className="text-left">الإجراءات</TableHead>
+                  <TableHead>{t('adminSettingsPage.text1')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text2')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text3')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text4')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text5')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text6')}</TableHead>
+                  <TableHead className="text-left">{t('adminSettingsPage.text7')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -240,7 +240,7 @@ export default function Settings() {
                     <TableCell>
                       {plan.voiceMessageLimit === -1
                         ? 'غير محدود'
-                        : `${plan.voiceMessageLimit.toLocaleString('ar-SA')} رسالة`}
+                        : t('adminSettingsPage.text8', { var0: plan.voiceMessageLimit.toLocaleString('ar-SA') })}
                     </TableCell>
                     <TableCell>
                       {plan.isActive ? (
@@ -271,7 +271,7 @@ export default function Settings() {
           ) : (
             <div className="text-center py-12">
               <SettingsIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد باقات بعد</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('adminSettingsPage.text9')}</h3>
               <p className="text-muted-foreground mb-4">
                 ابدأ بإضافة الباقات الثلاث الأساسية
               </p>
@@ -287,7 +287,7 @@ export default function Settings() {
       {/* Suggested Plans Info */}
       <Card>
         <CardHeader>
-          <CardTitle>الباقات المقترحة</CardTitle>
+          <CardTitle>{t('adminSettingsPage.text10')}</CardTitle>
           <CardDescription>
             الباقات الثلاث الأساسية للنظام
           </CardDescription>
@@ -298,18 +298,18 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle className="text-center">B1 - Starter</CardTitle>
                 <div className="text-center">
-                  <span className="text-3xl font-bold text-green-600">90 ريال</span>
-                  <span className="text-muted-foreground">/شهرياً</span>
+                  <span className="text-3xl font-bold text-green-600">{t('adminSettingsPage.text11')}</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text12')}</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">المحادثات:</span>
-                  <span className="font-semibold">150 محادثة</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text13')}</span>
+                  <span className="font-semibold">{t('adminSettingsPage.text14')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">الرسائل الصوتية:</span>
-                  <span className="font-semibold">50 رسالة</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text15')}</span>
+                  <span className="font-semibold">{t('adminSettingsPage.text16')}</span>
                 </div>
               </CardContent>
             </Card>
@@ -318,18 +318,18 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle className="text-center">B2 - Growth</CardTitle>
                 <div className="text-center">
-                  <span className="text-3xl font-bold text-green-600">230 ريال</span>
-                  <span className="text-muted-foreground">/شهرياً</span>
+                  <span className="text-3xl font-bold text-green-600">{t('adminSettingsPage.text17')}</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text18')}</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">المحادثات:</span>
-                  <span className="font-semibold">600 محادثة</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text19')}</span>
+                  <span className="font-semibold">{t('adminSettingsPage.text20')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">الرسائل الصوتية:</span>
-                  <span className="font-semibold">غير محدود</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text21')}</span>
+                  <span className="font-semibold">{t('adminSettingsPage.text22')}</span>
                 </div>
               </CardContent>
             </Card>
@@ -338,18 +338,18 @@ export default function Settings() {
               <CardHeader>
                 <CardTitle className="text-center">B3 - Pro</CardTitle>
                 <div className="text-center">
-                  <span className="text-3xl font-bold text-green-600">845 ريال</span>
-                  <span className="text-muted-foreground">/شهرياً</span>
+                  <span className="text-3xl font-bold text-green-600">{t('adminSettingsPage.text23')}</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text24')}</span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">المحادثات:</span>
-                  <span className="font-semibold">2000 محادثة</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text25')}</span>
+                  <span className="font-semibold">{t('adminSettingsPage.text26')}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">الرسائل الصوتية:</span>
-                  <span className="font-semibold">غير محدود</span>
+                  <span className="text-muted-foreground">{t('adminSettingsPage.text27')}</span>
+                  <span className="font-semibold">{t('adminSettingsPage.text28')}</span>
                 </div>
               </CardContent>
             </Card>
@@ -373,20 +373,20 @@ export default function Settings() {
           <div className="mb-6 p-4 bg-muted/50 rounded-lg space-y-4">
             <div className="flex items-center gap-2 mb-3">
               <Filter className="w-4 h-4" />
-              <h4 className="font-semibold">فلترة السجل</h4>
+              <h4 className="font-semibold">{t('adminSettingsPage.text29')}</h4>
             </div>
             
             <div className="grid gap-4 md:grid-cols-4">
               {/* Plan Filter */}
               <div className="space-y-2">
-                <Label htmlFor="filter-plan">الباقة</Label>
+                <Label htmlFor="filter-plan">{t('adminSettingsPage.text30')}</Label>
                 <select
                   id="filter-plan"
                   className="w-full h-10 px-3 rounded-md border border-input bg-background"
                   value={filterPlanId}
                   onChange={(e) => setFilterPlanId(e.target.value === 'all' ? 'all' : parseInt(e.target.value))}
                 >
-                  <option value="all">جميع الباقات</option>
+                  <option value="all">{t('adminSettingsPage.text31')}</option>
                   {plans?.map((plan) => (
                     <option key={plan.id} value={plan.id}>
                       {plan.name} - {plan.nameAr}
@@ -397,26 +397,26 @@ export default function Settings() {
 
               {/* Field Filter */}
               <div className="space-y-2">
-                <Label htmlFor="filter-field">نوع الحقل</Label>
+                <Label htmlFor="filter-field">{t('adminSettingsPage.text32')}</Label>
                 <select
                   id="filter-field"
                   className="w-full h-10 px-3 rounded-md border border-input bg-background"
                   value={filterFieldName}
                   onChange={(e) => setFilterFieldName(e.target.value)}
                 >
-                  <option value="all">جميع الحقول</option>
-                  <option value="priceMonthly">السعر الشهري</option>
-                  <option value="conversationLimit">حد المحادثات</option>
-                  <option value="voiceMessageLimit">حد الرسائل الصوتية</option>
-                  <option value="name">الرمز</option>
-                  <option value="nameAr">الاسم العربي</option>
-                  <option value="isActive">الحالة</option>
+                  <option value="all">{t('adminSettingsPage.text33')}</option>
+                  <option value="priceMonthly">{t('adminSettingsPage.text34')}</option>
+                  <option value="conversationLimit">{t('adminSettingsPage.text35')}</option>
+                  <option value="voiceMessageLimit">{t('adminSettingsPage.text36')}</option>
+                  <option value="name">{t('adminSettingsPage.text37')}</option>
+                  <option value="nameAr">{t('adminSettingsPage.text38')}</option>
+                  <option value="isActive">{t('adminSettingsPage.text39')}</option>
                 </select>
               </div>
 
               {/* Date From Filter */}
               <div className="space-y-2">
-                <Label htmlFor="filter-date-from">من تاريخ</Label>
+                <Label htmlFor="filter-date-from">{t('adminSettingsPage.text40')}</Label>
                 <Input
                   id="filter-date-from"
                   type="date"
@@ -427,7 +427,7 @@ export default function Settings() {
 
               {/* Date To Filter */}
               <div className="space-y-2">
-                <Label htmlFor="filter-date-to">إلى تاريخ</Label>
+                <Label htmlFor="filter-date-to">{t('adminSettingsPage.text41')}</Label>
                 <Input
                   id="filter-date-to"
                   type="date"
@@ -466,11 +466,11 @@ export default function Settings() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>الباقة</TableHead>
-                  <TableHead>الحقل</TableHead>
-                  <TableHead>القيمة القديمة</TableHead>
-                  <TableHead>القيمة الجديدة</TableHead>
-                  <TableHead>التاريخ</TableHead>
+                  <TableHead>{t('adminSettingsPage.text42')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text43')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text44')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text45')}</TableHead>
+                  <TableHead>{t('adminSettingsPage.text46')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -517,7 +517,7 @@ export default function Settings() {
           ) : (
             <div className="text-center py-12">
               <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد تغييرات بعد</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('adminSettingsPage.text47')}</h3>
               <p className="text-muted-foreground">
                 سيتم عرض جميع التعديلات التي تتم على الباقات هنا
               </p>
@@ -541,7 +541,7 @@ export default function Settings() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="name">الرمز (مثال: B1)</Label>
+                <Label htmlFor="name">{t('adminSettingsPage.text48')}</Label>
                 <Input
                   id="name"
                   value={editingPlan?.name || ''}
@@ -554,7 +554,7 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nameAr">الاسم العربي</Label>
+                <Label htmlFor="nameAr">{t('adminSettingsPage.text49')}</Label>
                 <Input
                   id="nameAr"
                   value={editingPlan?.nameAr || ''}
@@ -567,7 +567,7 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="priceMonthly">السعر الشهري (ريال)</Label>
+                <Label htmlFor="priceMonthly">{t('adminSettingsPage.text50')}</Label>
                 <Input
                   id="priceMonthly"
                   type="number"
@@ -583,7 +583,7 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="conversationLimit">حد المحادثات</Label>
+                <Label htmlFor="conversationLimit">{t('adminSettingsPage.text51')}</Label>
                 <Input
                   id="conversationLimit"
                   type="number"
@@ -617,7 +617,7 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="isActive">الحالة</Label>
+                <Label htmlFor="isActive">{t('adminSettingsPage.text52')}</Label>
                 <select
                   id="isActive"
                   className="w-full h-10 px-3 rounded-md border border-input bg-background"
@@ -628,14 +628,14 @@ export default function Settings() {
                     )
                   }
                 >
-                  <option value="true">نشط</option>
-                  <option value="false">غير نشط</option>
+                  <option value="true">{t('adminSettingsPage.text53')}</option>
+                  <option value="false">{t('adminSettingsPage.text54')}</option>
                 </select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="features">الميزات (JSON)</Label>
+              <Label htmlFor="features">{t('adminSettingsPage.text55')}</Label>
               <Textarea
                 id="features"
                 value={editingPlan?.features || ''}

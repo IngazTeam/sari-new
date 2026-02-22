@@ -11,8 +11,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Eye, Edit, RotateCcw, Send, Loader2, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function EmailTemplates() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -88,7 +90,7 @@ export default function EmailTemplates() {
   };
 
   const handleReset = (templateId: number) => {
-    if (confirm('هل أنت متأكد من استعادة القالب الافتراضي؟ سيتم حذف جميع التعديلات.')) {
+    if (confirm(t('adminEmailTemplatesPage.text19'))) {
       resetMutation.mutate({ id: templateId });
     }
   };
@@ -136,7 +138,7 @@ export default function EmailTemplates() {
   return (
     <div className="container mx-auto py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">إدارة قوالب الإيميلات</h1>
+        <h1 className="text-3xl font-bold mb-2">{t('adminEmailTemplatesPage.text0')}</h1>
         <p className="text-muted-foreground">
           إدارة وتخصيص قوالب البريد الإلكتروني المستخدمة في النظام
         </p>
@@ -156,11 +158,11 @@ export default function EmailTemplates() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>اسم القالب</TableHead>
-                <TableHead>الموضوع</TableHead>
-                <TableHead>الوصف</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead className="text-left">الإجراءات</TableHead>
+                <TableHead>{t('adminEmailTemplatesPage.text1')}</TableHead>
+                <TableHead>{t('adminEmailTemplatesPage.text2')}</TableHead>
+                <TableHead>{t('adminEmailTemplatesPage.text3')}</TableHead>
+                <TableHead>{t('adminEmailTemplatesPage.text4')}</TableHead>
+                <TableHead className="text-left">{t('adminEmailTemplatesPage.text5')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -173,9 +175,9 @@ export default function EmailTemplates() {
                   </TableCell>
                   <TableCell>
                     {template.isCustom ? (
-                      <Badge variant="secondary">معدّل</Badge>
+                      <Badge variant="secondary">{t('adminEmailTemplatesPage.text6')}</Badge>
                     ) : (
-                      <Badge variant="outline">افتراضي</Badge>
+                      <Badge variant="outline">{t('adminEmailTemplatesPage.text7')}</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-left">
@@ -230,9 +232,9 @@ export default function EmailTemplates() {
           
           <Tabs defaultValue="html" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="html">معاينة HTML</TabsTrigger>
-              <TabsTrigger value="text">نص عادي</TabsTrigger>
-              <TabsTrigger value="variables">المتغيرات</TabsTrigger>
+              <TabsTrigger value="html">{t('adminEmailTemplatesPage.text8')}</TabsTrigger>
+              <TabsTrigger value="text">{t('adminEmailTemplatesPage.text9')}</TabsTrigger>
+              <TabsTrigger value="variables">{t('adminEmailTemplatesPage.text10')}</TabsTrigger>
             </TabsList>
             
             <TabsContent value="html" className="mt-4">
@@ -249,7 +251,7 @@ export default function EmailTemplates() {
             
             <TabsContent value="variables" className="mt-4">
               <div className="border rounded-lg p-4">
-                <h4 className="font-semibold mb-2">المتغيرات المتاحة:</h4>
+                <h4 className="font-semibold mb-2">{t('adminEmailTemplatesPage.text11')}</h4>
                 <div className="flex flex-wrap gap-2">
                   {selectedTemplate?.variables && JSON.parse(selectedTemplate.variables).map((variable: string) => (
                     <Badge key={variable} variant="secondary">
@@ -267,7 +269,7 @@ export default function EmailTemplates() {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>تعديل القالب: {selectedTemplate?.displayName}</DialogTitle>
+            <DialogTitle>{t('adminEmailTemplatesPage.text12', { var0: selectedTemplate?.displayName })}</DialogTitle>
             <DialogDescription>
               قم بتعديل محتوى القالب. استخدم {`{{variableName}}`} للمتغيرات.
             </DialogDescription>
@@ -275,7 +277,7 @@ export default function EmailTemplates() {
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="subject">الموضوع</Label>
+              <Label htmlFor="subject">{t('adminEmailTemplatesPage.text13')}</Label>
               <Input
                 id="subject"
                 value={selectedTemplate?.subject || ''}
@@ -284,7 +286,7 @@ export default function EmailTemplates() {
             </div>
             
             <div>
-              <Label htmlFor="htmlContent">محتوى HTML</Label>
+              <Label htmlFor="htmlContent">{t('adminEmailTemplatesPage.text14')}</Label>
               <Textarea
                 id="htmlContent"
                 rows={10}
@@ -295,7 +297,7 @@ export default function EmailTemplates() {
             </div>
             
             <div>
-              <Label htmlFor="textContent">النص العادي</Label>
+              <Label htmlFor="textContent">{t('adminEmailTemplatesPage.text15')}</Label>
               <Textarea
                 id="textContent"
                 rows={6}
@@ -305,7 +307,7 @@ export default function EmailTemplates() {
             </div>
             
             <div className="border rounded-lg p-4 bg-muted">
-              <h4 className="font-semibold mb-2 text-sm">المتغيرات المتاحة:</h4>
+              <h4 className="font-semibold mb-2 text-sm">{t('adminEmailTemplatesPage.text16')}</h4>
               <div className="flex flex-wrap gap-2">
                 {selectedTemplate?.variables && JSON.parse(selectedTemplate.variables).map((variable: string) => (
                   <Badge key={variable} variant="secondary" className="text-xs">
@@ -332,7 +334,7 @@ export default function EmailTemplates() {
       <Dialog open={testOpen} onOpenChange={setTestOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>اختبار القالب: {selectedTemplate?.displayName}</DialogTitle>
+            <DialogTitle>{t('adminEmailTemplatesPage.text17', { var0: selectedTemplate?.displayName })}</DialogTitle>
             <DialogDescription>
               أدخل البريد الإلكتروني لإرسال رسالة تجريبية
             </DialogDescription>
@@ -340,7 +342,7 @@ export default function EmailTemplates() {
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="testEmail">البريد الإلكتروني</Label>
+              <Label htmlFor="testEmail">{t('adminEmailTemplatesPage.text18')}</Label>
               <Input
                 id="testEmail"
                 type="email"

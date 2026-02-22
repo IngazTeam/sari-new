@@ -25,7 +25,7 @@ export default function Campaigns() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل حذف الحملة');
+      toast.error(error.message || t('campaignsPage.failedDelete'));
     },
   });
 
@@ -35,23 +35,23 @@ export default function Campaigns() {
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل إرسال الحملة');
+      toast.error(error.message || t('campaignsPage.failedSend'));
     },
   });
 
   const handleDelete = async (id: number) => {
-    if (confirm('هل أنت متأكد من حذف هذه الحملة؟')) {
+    if (confirm(t('campaignsPage.confirmDelete'))) {
       await deleteMutation.mutateAsync({ id });
     }
   };
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
-      draft: { label: 'مسودة', variant: 'secondary' as const },
-      scheduled: { label: 'مجدول', variant: 'default' as const },
-      sending: { label: 'جاري الإرسال', variant: 'default' as const },
-      completed: { label: 'مكتمل', variant: 'default' as const },
-      failed: { label: 'فشل', variant: 'destructive' as const },
+      draft: { label: t('campaignsPage.statusDraft'), variant: 'secondary' as const },
+      scheduled: { label: t('campaignsPage.statusScheduled'), variant: 'default' as const },
+      sending: { label: t('campaignsPage.statusSending'), variant: 'default' as const },
+      completed: { label: t('campaignsPage.statusCompleted'), variant: 'default' as const },
+      failed: { label: t('campaignsPage.statusFailed'), variant: 'destructive' as const },
     };
 
     const config = statusMap[status as keyof typeof statusMap] || statusMap.draft;
@@ -71,14 +71,14 @@ export default function Campaigns() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">الحملات التسويقية</h1>
+          <h1 className="text-3xl font-bold">{t('campaignsPage.title')}</h1>
           <p className="text-muted-foreground mt-2">
-            إدارة وإنشاء الحملات التسويقية عبر الواتساب
+            {t('campaignsPage.description')}
           </p>
         </div>
         <Button onClick={() => setLocation('/merchant/campaigns/new')}>
           <Plus className="w-4 h-4 ml-2" />
-          حملة جديدة
+          {t('campaignsPage.newCampaign')}
         </Button>
       </div>
 
@@ -87,7 +87,7 @@ export default function Campaigns() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              إجمالي الحملات
+              {t('campaignsPage.totalCampaigns')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -98,7 +98,7 @@ export default function Campaigns() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              مكتملة
+              {t('campaignsPage.completed')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -111,7 +111,7 @@ export default function Campaigns() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              قيد التنفيذ
+              {t('campaignsPage.inProgress')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -124,7 +124,7 @@ export default function Campaigns() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              مسودات
+              {t('campaignsPage.drafts')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -138,9 +138,9 @@ export default function Campaigns() {
       {/* Campaigns Table */}
       <Card>
         <CardHeader>
-          <CardTitle>جميع الحملات</CardTitle>
+          <CardTitle>{t('campaignsPage.allCampaigns')}</CardTitle>
           <CardDescription>
-            قائمة بجميع الحملات التسويقية الخاصة بك
+            {t('campaignsPage.allCampaignsDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,12 +148,12 @@ export default function Campaigns() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>اسم الحملة</TableHead>
-                  <TableHead>الحالة</TableHead>
-                  <TableHead>المرسل</TableHead>
-                  <TableHead>الإجمالي</TableHead>
-                  <TableHead>التاريخ</TableHead>
-                  <TableHead className="text-left">الإجراءات</TableHead>
+                  <TableHead>{t('campaignsPage.campaignName')}</TableHead>
+                  <TableHead>{t('campaignsPage.status')}</TableHead>
+                  <TableHead>{t('campaignsPage.sent')}</TableHead>
+                  <TableHead>{t('campaignsPage.total')}</TableHead>
+                  <TableHead>{t('campaignsPage.date')}</TableHead>
+                  <TableHead className="text-left">{t('campaignsPage.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -164,7 +164,7 @@ export default function Campaigns() {
                     <TableCell>{campaign.sentCount}</TableCell>
                     <TableCell>{campaign.totalRecipients}</TableCell>
                     <TableCell>
-                      {new Date(campaign.createdAt).toLocaleDateString('ar-SA')}
+                      {new Date(campaign.createdAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -172,22 +172,22 @@ export default function Campaigns() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setLocation(`/merchant/campaigns/${campaign.id}`)}
-                          title="عرض التفاصيل"
+                          title={t('campaignsPage.viewDetails')}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
-                        
+
                         {campaign.status === 'completed' && (
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => setLocation(`/merchant/campaigns/${campaign.id}/report`)}
-                            title="عرض التقرير"
+                            title={t('campaignsPage.viewReport')}
                           >
                             <FileText className="w-4 h-4 text-blue-600" />
                           </Button>
                         )}
-                        
+
                         {campaign.status === 'draft' && (
                           <>
                             <Button
@@ -195,7 +195,7 @@ export default function Campaigns() {
                               variant="ghost"
                               onClick={() => sendMutation.mutateAsync({ id: campaign.id })}
                               disabled={sendMutation.isPending}
-                              title="إرسال الحملة الآن"
+                              title={t('campaignsPage.sendNow')}
                             >
                               <Send className="w-4 h-4 text-green-600" />
                             </Button>
@@ -225,13 +225,13 @@ export default function Campaigns() {
           ) : (
             <div className="text-center py-12">
               <Send className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد حملات بعد</h3>
+              <h3 className="text-lg font-semibold mb-2">{t('campaignsPage.noCampaigns')}</h3>
               <p className="text-muted-foreground mb-4">
-                ابدأ بإنشاء حملتك التسويقية الأولى
+                {t('campaignsPage.noCampaignsDesc')}
               </p>
               <Button onClick={() => setLocation('/merchant/campaigns/new')}>
                 <Plus className="w-4 h-4 ml-2" />
-                إنشاء حملة جديدة
+                {t('campaignsPage.createNew')}
               </Button>
             </div>
           )}

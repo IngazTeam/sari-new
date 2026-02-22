@@ -8,13 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  CreditCard, 
-  Eye, 
-  EyeOff, 
-  Save, 
-  TestTube, 
-  CheckCircle2, 
+import {
+  CreditCard,
+  Eye,
+  EyeOff,
+  Save,
+  TestTube,
+  CheckCircle2,
   XCircle,
   Loader2,
   ExternalLink,
@@ -24,8 +24,10 @@ import {
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 export default function PaymentSettings() {
+  const { t } = useTranslation();
   const [showSecretKey, setShowSecretKey] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -45,21 +47,21 @@ export default function PaymentSettings() {
   // Mutations
   const saveMutation = trpc.merchantPayments.saveSettings.useMutation({
     onSuccess: () => {
-      toast.success('تم حفظ الإعدادات بنجاح');
+      toast.success(t('paymentSettingsPage.text0'));
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || 'حدث خطأ أثناء حفظ الإعدادات');
+      toast.error(error.message || t('paymentSettingsPage.text18'));
     },
   });
 
   const testMutation = trpc.merchantPayments.testConnection.useMutation({
     onSuccess: () => {
-      toast.success('تم التحقق من الاتصال بنجاح');
+      toast.success(t('paymentSettingsPage.text1'));
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || 'فشل التحقق من الاتصال');
+      toast.error(error.message || t('paymentSettingsPage.text19'));
     },
   });
 
@@ -120,16 +122,16 @@ export default function PaymentSettings() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <CreditCard className="h-6 w-6" />
-            إعدادات الدفع الإلكتروني
+            {t('paymentSettingsPage.text20')}
           </h1>
           <p className="text-muted-foreground mt-1">
-            قم بإعداد بوابة الدفع Tap لاستقبال المدفوعات من عملائك عبر واتساب
+            {t('paymentSettingsPage.text30')}
           </p>
         </div>
         {settings?.isVerified && (
           <Badge variant="default" className="bg-green-600">
             <CheckCircle2 className="h-4 w-4 ml-1" />
-            تم التحقق
+            {t('paymentSettingsPage.text21')}
           </Badge>
         )}
       </div>
@@ -137,10 +139,10 @@ export default function PaymentSettings() {
       {/* Info Alert */}
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>كيف يعمل؟</AlertTitle>
+        <AlertTitle>{t('paymentSettingsPage.text2')}</AlertTitle>
         <AlertDescription>
-          بعد تفعيل Tap، سيتمكن ساري من إرسال روابط دفع آمنة لعملائك عبر واتساب عند إنشاء الطلبات.
-          العميل يضغط على الرابط ويدفع مباشرة، وتصلك الأموال في حسابك.
+          {t('paymentSettingsPage.text31')}
+          {t('paymentSettingsPage.text22')}
         </AlertDescription>
       </Alert>
 
@@ -148,9 +150,9 @@ export default function PaymentSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <img 
-              src="https://www.tap.company/assets/images/logo.svg" 
-              alt="Tap" 
+            <img
+              src="https://www.tap.company/assets/images/logo.svg"
+              alt="Tap"
               className="h-6"
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -159,16 +161,16 @@ export default function PaymentSettings() {
             Tap Payments
           </CardTitle>
           <CardDescription>
-            بوابة الدفع الإلكتروني الأكثر استخداماً في المنطقة
+            {t('paymentSettingsPage.text23')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Enable/Disable */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="tap-enabled" className="text-base">تفعيل Tap Payment</Label>
+              <Label htmlFor="tap-enabled" className="text-base">{t('paymentSettingsPage.text3')}</Label>
               <p className="text-sm text-muted-foreground">
-                تفعيل استقبال المدفوعات عبر Tap
+                {t('paymentSettingsPage.text32')}
               </p>
             </div>
             <Switch
@@ -183,9 +185,9 @@ export default function PaymentSettings() {
           {/* Test Mode */}
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label htmlFor="tap-test-mode" className="text-base">وضع الاختبار (Sandbox)</Label>
+              <Label htmlFor="tap-test-mode" className="text-base">{t('paymentSettingsPage.text4')}</Label>
               <p className="text-sm text-muted-foreground">
-                استخدم وضع الاختبار للتجربة قبل التفعيل الفعلي
+                {t('paymentSettingsPage.text24')}
               </p>
             </div>
             <Switch
@@ -199,8 +201,8 @@ export default function PaymentSettings() {
 
           {/* API Keys */}
           <div className="space-y-4">
-            <h3 className="font-semibold">مفاتيح API</h3>
-            
+            <h3 className="font-semibold">{t('paymentSettingsPage.text5')}</h3>
+
             <div className="space-y-2">
               <Label htmlFor="tap-public-key">Public Key</Label>
               <Input
@@ -211,7 +213,7 @@ export default function PaymentSettings() {
                 dir="ltr"
               />
               <p className="text-xs text-muted-foreground">
-                المفتاح العام من لوحة تحكم Tap
+                {t('paymentSettingsPage.text33')}
               </p>
             </div>
 
@@ -237,7 +239,7 @@ export default function PaymentSettings() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                المفتاح السري - احتفظ به بشكل آمن
+                {t('paymentSettingsPage.text25')}
               </p>
             </div>
           </div>
@@ -248,14 +250,14 @@ export default function PaymentSettings() {
           <div className="space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              إعدادات واتساب
+              {t('paymentSettingsPage.text26')}
             </h3>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
-                <Label htmlFor="auto-send" className="text-base">إرسال رابط الدفع تلقائياً</Label>
+                <Label htmlFor="auto-send" className="text-base">{t('paymentSettingsPage.text6')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  إرسال رابط الدفع للعميل تلقائياً عند إنشاء طلب جديد
+                  {t('paymentSettingsPage.text27')}
                 </p>
               </div>
               <Switch
@@ -266,16 +268,16 @@ export default function PaymentSettings() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="payment-message">رسالة رابط الدفع</Label>
+              <Label htmlFor="payment-message">{t('paymentSettingsPage.text7')}</Label>
               <Textarea
                 id="payment-message"
-                placeholder="مرحباً {customer_name}! يمكنك إتمام الدفع من خلال الرابط التالي: {payment_link}"
+                placeholder={t('paymentSettingsPage.text8')}
                 value={paymentLinkMessage}
                 onChange={(e) => setPaymentLinkMessage(e.target.value)}
                 rows={3}
               />
               <p className="text-xs text-muted-foreground">
-                المتغيرات المتاحة: {'{customer_name}'}, {'{amount}'}, {'{payment_link}'}, {'{order_number}'}
+                {t('paymentSettingsPage.text34')}
               </p>
             </div>
           </div>
@@ -290,11 +292,11 @@ export default function PaymentSettings() {
               ) : (
                 <Save className="h-4 w-4 ml-2" />
               )}
-              حفظ الإعدادات
+              {t('paymentSettingsPage.text28')}
             </Button>
 
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleTestConnection}
               disabled={isTesting || !tapSecretKey}
             >
@@ -303,7 +305,7 @@ export default function PaymentSettings() {
               ) : (
                 <TestTube className="h-4 w-4 ml-2" />
               )}
-              اختبار الاتصال
+              {t('paymentSettingsPage.text29')}
             </Button>
           </div>
         </CardContent>
@@ -314,16 +316,16 @@ export default function PaymentSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings2 className="h-5 w-5" />
-            كيفية الحصول على مفاتيح Tap
+            {t('paymentSettingsPage.text35')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <ol className="list-decimal list-inside space-y-2 text-sm text-muted-foreground">
             <li>
-              سجل حساب في{' '}
-              <a 
-                href="https://tap.company" 
-                target="_blank" 
+              {t('paymentSettingsPage.text36', { var0: ' ' })}
+              <a
+                href="https://tap.company"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline inline-flex items-center gap-1"
               >
@@ -331,18 +333,18 @@ export default function PaymentSettings() {
                 <ExternalLink className="h-3 w-3" />
               </a>
             </li>
-            <li>أكمل عملية التحقق من الهوية والنشاط التجاري</li>
-            <li>انتقل إلى "الإعدادات" ثم "API Keys" في لوحة التحكم</li>
-            <li>انسخ Public Key و Secret Key</li>
-            <li>الصق المفاتيح في الحقول أعلاه واحفظ</li>
-            <li>اختبر الاتصال للتأكد من صحة المفاتيح</li>
+            <li>{t('paymentSettingsPage.text9')}</li>
+            <li>{t('paymentSettingsPage.text10')}</li>
+            <li>{t('paymentSettingsPage.text11')}</li>
+            <li>{t('paymentSettingsPage.text12')}</li>
+            <li>{t('paymentSettingsPage.text13')}</li>
           </ol>
 
           <div className="mt-4 p-3 bg-muted rounded-lg">
-            <p className="text-sm font-medium">ملاحظة:</p>
+            <p className="text-sm font-medium">{t('paymentSettingsPage.text14')}</p>
             <p className="text-sm text-muted-foreground">
-              للاختبار، استخدم مفاتيح Sandbox (تبدأ بـ pk_test_ و sk_test_).
-              للتفعيل الفعلي، استخدم مفاتيح Live (تبدأ بـ pk_live_ و sk_live_).
+              {t('paymentSettingsPage.text37')}
+              {t('paymentSettingsPage.text38')}
             </p>
           </div>
         </CardContent>
@@ -352,7 +354,7 @@ export default function PaymentSettings() {
       {settings && (
         <Card>
           <CardHeader>
-            <CardTitle>حالة التكامل</CardTitle>
+            <CardTitle>{t('paymentSettingsPage.text15')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -362,7 +364,7 @@ export default function PaymentSettings() {
                 ) : (
                   <XCircle className="h-5 w-5 text-muted-foreground" />
                 )}
-                <span className="text-sm">الدفع مفعل</span>
+                <span className="text-sm">{t('paymentSettingsPage.text16')}</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -389,13 +391,13 @@ export default function PaymentSettings() {
                 ) : (
                   <XCircle className="h-5 w-5 text-muted-foreground" />
                 )}
-                <span className="text-sm">تم التحقق</span>
+                <span className="text-sm">{t('paymentSettingsPage.text17')}</span>
               </div>
             </div>
 
             {settings.lastVerifiedAt && (
               <p className="text-xs text-muted-foreground mt-4">
-                آخر تحقق: {new Date(settings.lastVerifiedAt).toLocaleString('ar-SA')}
+                {t('paymentSettingsPage.text39', { var0: new Date(settings.lastVerifiedAt).toLocaleString('ar-SA') })}
               </p>
             )}
           </CardContent>

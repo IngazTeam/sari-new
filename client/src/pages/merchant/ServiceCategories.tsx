@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Edit, Trash2, ArrowLeft, Grid3x3 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 export default function ServiceCategories() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -36,7 +38,7 @@ export default function ServiceCategories() {
   
   const createMutation = trpc.serviceCategories.create.useMutation({
     onSuccess: () => {
-      toast.success('تم إنشاء التصنيف بنجاح');
+      toast.success(t('serviceCategoriesPage.text0'));
       refetch();
       setDialogOpen(false);
       resetForm();
@@ -48,7 +50,7 @@ export default function ServiceCategories() {
 
   const updateMutation = trpc.serviceCategories.update.useMutation({
     onSuccess: () => {
-      toast.success('تم تحديث التصنيف بنجاح');
+      toast.success(t('serviceCategoriesPage.text1'));
       refetch();
       setDialogOpen(false);
       resetForm();
@@ -60,7 +62,7 @@ export default function ServiceCategories() {
 
   const deleteMutation = trpc.serviceCategories.delete.useMutation({
     onSuccess: () => {
-      toast.success('تم حذف التصنيف بنجاح');
+      toast.success(t('serviceCategoriesPage.text2'));
       refetch();
       setDeleteDialogOpen(false);
     },
@@ -133,7 +135,7 @@ export default function ServiceCategories() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">جاري التحميل...</p>
+            <p className="mt-4 text-muted-foreground">{t('serviceCategoriesPage.text3')}</p>
           </div>
         </div>
       </div>
@@ -150,18 +152,18 @@ export default function ServiceCategories() {
           className="mb-4"
         >
           <ArrowLeft className="ml-2 h-4 w-4" />
-          العودة إلى الخدمات
+          {t('serviceCategoriesPage.text22')}
         </Button>
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">تصنيفات الخدمات</h1>
+            <h1 className="text-3xl font-bold">{t('serviceCategoriesPage.text4')}</h1>
             <p className="text-muted-foreground mt-2">
-              إدارة تصنيفات الخدمات لتنظيم خدماتك
+              {t('serviceCategoriesPage.text23')}
             </p>
           </div>
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="ml-2 h-4 w-4" />
-            إضافة تصنيف جديد
+            {t('serviceCategoriesPage.text24')}
           </Button>
         </div>
       </div>
@@ -172,16 +174,16 @@ export default function ServiceCategories() {
           <CardContent className="py-12">
             <div className="text-center">
               <Grid3x3 className="mx-auto h-12 w-12 text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-semibold">لا توجد تصنيفات</h3>
+              <h3 className="mt-4 text-lg font-semibold">{t('serviceCategoriesPage.text5')}</h3>
               <p className="text-muted-foreground mt-2">
-                ابدأ بإضافة أول تصنيف لتنظيم خدماتك
+                {t('serviceCategoriesPage.text25')}
               </p>
               <Button
                 className="mt-4"
                 onClick={() => handleOpenDialog()}
               >
                 <Plus className="ml-2 h-4 w-4" />
-                إضافة تصنيف جديد
+                {t('serviceCategoriesPage.text26')}
               </Button>
             </div>
           </CardContent>
@@ -226,7 +228,7 @@ export default function ServiceCategories() {
                       onClick={() => handleOpenDialog(category)}
                     >
                       <Edit className="ml-2 h-4 w-4" />
-                      تعديل
+                      {t('serviceCategoriesPage.text27')}
                     </Button>
                     <Button
                       variant="destructive"
@@ -248,28 +250,27 @@ export default function ServiceCategories() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingCategory ? 'تعديل التصنيف' : 'إضافة تصنيف جديد'}
+              {editingCategory ? t('serviceCategoriesPage.text14') : t('serviceCategoriesPage.text15')}
             </DialogTitle>
             <DialogDescription>
               {editingCategory
-                ? 'تحديث معلومات التصنيف'
-                : 'إضافة تصنيف جديد لتنظيم خدماتك'}
+                ? t('serviceCategoriesPage.text16') : t('serviceCategoriesPage.text17')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="name">الاسم بالعربي *</Label>
+              <Label htmlFor="name">{t('serviceCategoriesPage.text6')}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="مثال: قص الشعر، الاستشارات، الصيانة"
+                placeholder={t('serviceCategoriesPage.text7')}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="nameEn">الاسم بالإنجليزي</Label>
+              <Label htmlFor="nameEn">{t('serviceCategoriesPage.text8')}</Label>
               <Input
                 id="nameEn"
                 value={formData.nameEn}
@@ -279,19 +280,19 @@ export default function ServiceCategories() {
             </div>
 
             <div>
-              <Label htmlFor="description">الوصف</Label>
+              <Label htmlFor="description">{t('serviceCategoriesPage.text9')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="وصف مختصر للتصنيف"
+                placeholder={t('serviceCategoriesPage.text10')}
                 rows={2}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="icon">الأيقونة (Emoji)</Label>
+                <Label htmlFor="icon">{t('serviceCategoriesPage.text11')}</Label>
                 <Input
                   id="icon"
                   value={formData.icon}
@@ -301,7 +302,7 @@ export default function ServiceCategories() {
                 />
               </div>
               <div>
-                <Label htmlFor="color">اللون</Label>
+                <Label htmlFor="color">{t('serviceCategoriesPage.text12')}</Label>
                 <Input
                   id="color"
                   type="color"
@@ -320,17 +321,16 @@ export default function ServiceCategories() {
                   resetForm();
                 }}
               >
-                إلغاء
+                {t('serviceCategoriesPage.text28')}
               </Button>
               <Button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
               >
                 {createMutation.isPending || updateMutation.isPending
-                  ? 'جاري الحفظ...'
+                  ? t('serviceCategoriesPage.text31')
                   : editingCategory
-                  ? 'تحديث'
-                  : 'إضافة'}
+                  ? t('serviceCategoriesPage.text18') : t('serviceCategoriesPage.text19')}
               </Button>
             </DialogFooter>
           </form>
@@ -341,9 +341,9 @@ export default function ServiceCategories() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد الحذف</DialogTitle>
+            <DialogTitle>{t('serviceCategoriesPage.text13')}</DialogTitle>
             <DialogDescription>
-              هل أنت متأكد من حذف هذا التصنيف؟ لن يتم حذفه نهائياً بل سيتم تعطيله فقط.
+              {t('serviceCategoriesPage.text29')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -351,14 +351,14 @@ export default function ServiceCategories() {
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
             >
-              إلغاء
+              {t('serviceCategoriesPage.text30')}
             </Button>
             <Button
               variant="destructive"
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف'}
+              {deleteMutation.isPending ? t('serviceCategoriesPage.text20') : t('serviceCategoriesPage.text21')}
             </Button>
           </DialogFooter>
         </DialogContent>

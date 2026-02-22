@@ -5,8 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Loader2, Bell, BellOff, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from 'react-i18next';
 
 export default function PushNotificationsSettings() {
+  const { t } = useTranslation();
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
@@ -35,12 +37,12 @@ export default function PushNotificationsSettings() {
 
   const handleSubscribe = async () => {
     if (!isSupported) {
-      toast.error("المتصفح لا يدعم الإشعارات الفورية");
+      toast.error(t('pushNotificationsSettingsPage.text0'));
       return;
     }
 
     if (!vapidKey) {
-      toast.error("فشل تحميل مفتاح VAPID");
+      toast.error(t('pushNotificationsSettingsPage.text1'));
       return;
     }
 
@@ -50,7 +52,7 @@ export default function PushNotificationsSettings() {
       setPermission(permission);
 
       if (permission !== "granted") {
-        toast.error("يجب السماح بالإشعارات لتفعيل الخدمة");
+        toast.error(t('pushNotificationsSettingsPage.text2'));
         return;
       }
 
@@ -75,10 +77,10 @@ export default function PushNotificationsSettings() {
       });
 
       setIsSubscribed(true);
-      toast.success("تم تفعيل الإشعارات الفورية بنجاح!");
+      toast.success(t('pushNotificationsSettingsPage.text3'));
     } catch (error) {
       console.error("Failed to subscribe:", error);
-      toast.error("فشل تفعيل الإشعارات الفورية");
+      toast.error(t('pushNotificationsSettingsPage.text4'));
     }
   };
 
@@ -91,11 +93,11 @@ export default function PushNotificationsSettings() {
         await unsubscribe.mutateAsync({ endpoint: subscription.endpoint });
         await subscription.unsubscribe();
         setIsSubscribed(false);
-        toast.success("تم إلغاء الاشتراك في الإشعارات الفورية");
+        toast.success(t('pushNotificationsSettingsPage.text5'));
       }
     } catch (error) {
       console.error("Failed to unsubscribe:", error);
-      toast.error("فشل إلغاء الاشتراك");
+      toast.error(t('pushNotificationsSettingsPage.text6'));
     }
   };
 
@@ -103,12 +105,12 @@ export default function PushNotificationsSettings() {
     try {
       const result = await sendTest.mutateAsync();
       if (result.success > 0) {
-        toast.success(`تم إرسال ${result.success} إشعار تجريبي بنجاح!`);
+        toast.success(t('pushNotificationsSettingsPage.text7'));
       } else {
-        toast.error("فشل إرسال الإشعار التجريبي");
+        toast.error(t('pushNotificationsSettingsPage.text9'));
       }
     } catch (error) {
-      toast.error("فشل إرسال الإشعار التجريبي");
+      toast.error(t('pushNotificationsSettingsPage.text10'));
     }
   };
 
@@ -117,8 +119,8 @@ export default function PushNotificationsSettings() {
       <div className="flex items-center gap-3">
         <Bell className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">إعدادات الإشعارات الفورية</h1>
-          <p className="text-muted-foreground">إدارة الإشعارات الفورية للمتصفح</p>
+          <h1 className="text-3xl font-bold">{t('pushNotificationsSettingsPage.text11')}</h1>
+          <p className="text-muted-foreground">{t('pushNotificationsSettingsPage.text12')}</p>
         </div>
       </div>
 
@@ -127,7 +129,7 @@ export default function PushNotificationsSettings() {
         <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">إجمالي الإشعارات</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('pushNotificationsSettingsPage.text13')}</CardTitle>
               <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -136,7 +138,7 @@ export default function PushNotificationsSettings() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">تم الإرسال</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('pushNotificationsSettingsPage.text14')}</CardTitle>
               <CheckCircle2 className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
@@ -145,7 +147,7 @@ export default function PushNotificationsSettings() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">فشل</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('pushNotificationsSettingsPage.text15')}</CardTitle>
               <AlertCircle className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
@@ -154,7 +156,7 @@ export default function PushNotificationsSettings() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">معلق</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('pushNotificationsSettingsPage.text16')}</CardTitle>
               <Loader2 className="h-4 w-4 text-yellow-600" />
             </CardHeader>
             <CardContent>
@@ -167,27 +169,26 @@ export default function PushNotificationsSettings() {
       {/* Subscription Card */}
       <Card>
         <CardHeader>
-          <CardTitle>حالة الاشتراك</CardTitle>
+          <CardTitle>{t('pushNotificationsSettingsPage.text17')}</CardTitle>
           <CardDescription>
             {isSupported
-              ? "المتصفح يدعم الإشعارات الفورية"
-              : "المتصفح لا يدعم الإشعارات الفورية"}
+              ? t('pushNotificationsSettingsPage.text27') : t('pushNotificationsSettingsPage.text28')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <p className="font-medium">حالة الإشعارات</p>
+              <p className="font-medium">{t('pushNotificationsSettingsPage.text18')}</p>
               <div className="flex items-center gap-2">
                 {isSubscribed ? (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-sm text-green-600">مفعّل</span>
+                    <span className="text-sm text-green-600">{t('pushNotificationsSettingsPage.text19')}</span>
                   </>
                 ) : (
                   <>
                     <BellOff className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">غير مفعّل</span>
+                    <span className="text-sm text-muted-foreground">{t('pushNotificationsSettingsPage.text20')}</span>
                   </>
                 )}
               </div>
@@ -204,12 +205,12 @@ export default function PushNotificationsSettings() {
                     {sendTest.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        جاري الإرسال...
+                        {t('pushNotificationsSettingsPage.text35')}
                       </>
                     ) : (
                       <>
                         <Send className="mr-2 h-4 w-4" />
-                        إرسال إشعار تجريبي
+                        {t('pushNotificationsSettingsPage.text36')}
                       </>
                     )}
                   </Button>
@@ -221,12 +222,12 @@ export default function PushNotificationsSettings() {
                     {unsubscribe.isPending ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        جاري الإلغاء...
+                        {t('pushNotificationsSettingsPage.text37')}
                       </>
                     ) : (
                       <>
                         <BellOff className="mr-2 h-4 w-4" />
-                        إلغاء الاشتراك
+                        {t('pushNotificationsSettingsPage.text38')}
                       </>
                     )}
                   </Button>
@@ -239,12 +240,12 @@ export default function PushNotificationsSettings() {
                   {subscribe.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      جاري التفعيل...
+                      {t('pushNotificationsSettingsPage.text39')}
                     </>
                   ) : (
                     <>
                       <Bell className="mr-2 h-4 w-4" />
-                      تفعيل الإشعارات
+                      {t('pushNotificationsSettingsPage.text40')}
                     </>
                   )}
                 </Button>
@@ -253,16 +254,15 @@ export default function PushNotificationsSettings() {
           </div>
 
           <div className="rounded-lg border p-4 bg-muted/50">
-            <h4 className="font-medium mb-2">معلومات المتصفح</h4>
+            <h4 className="font-medium mb-2">{t('pushNotificationsSettingsPage.text21')}</h4>
             <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>• دعم Service Worker: {isSupported ? "نعم ✅" : "لا ❌"}</li>
+              <li>• دعم Service Worker: {isSupported ? t('pushNotificationsSettingsPage.text29') : t('pushNotificationsSettingsPage.text30')}</li>
               <li>
-                • صلاحية الإشعارات:{" "}
+                {t('pushNotificationsSettingsPage.text41', { var0: " " })}
                 {permission === "granted"
-                  ? "ممنوحة ✅"
+                  ? t('pushNotificationsSettingsPage.text42')
                   : permission === "denied"
-                  ? "مرفوضة ❌"
-                  : "غير محددة ⏳"}
+                  ? t('pushNotificationsSettingsPage.text31') : t('pushNotificationsSettingsPage.text32')}
               </li>
             </ul>
           </div>
@@ -272,8 +272,8 @@ export default function PushNotificationsSettings() {
       {/* Logs Card */}
       <Card>
         <CardHeader>
-          <CardTitle>سجل الإشعارات</CardTitle>
-          <CardDescription>آخر 20 إشعار تم إرساله</CardDescription>
+          <CardTitle>{t('pushNotificationsSettingsPage.text23')}</CardTitle>
+          <CardDescription>{t('pushNotificationsSettingsPage.text24')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
@@ -295,7 +295,7 @@ export default function PushNotificationsSettings() {
                             : "secondary"
                         }
                       >
-                        {log.status === "sent" ? "تم الإرسال" : log.status === "failed" ? "فشل" : "معلق"}
+                        {log.status === "sent" ? "تم الإرسال" : log.status === "failed" ? t('pushNotificationsSettingsPage.text33') : t('pushNotificationsSettingsPage.text34')}
                       </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
@@ -310,7 +310,7 @@ export default function PushNotificationsSettings() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Bell className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p>لا توجد إشعارات مسجلة</p>
+                <p>{t('pushNotificationsSettingsPage.text26')}</p>
               </div>
             )}
           </div>
