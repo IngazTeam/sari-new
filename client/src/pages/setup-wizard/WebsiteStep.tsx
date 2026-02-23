@@ -29,6 +29,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<any>(wizardData.websiteAnalysis || null);
     const [extractedProducts, setExtractedProducts] = useState<any[]>(wizardData.extractedProducts || []);
+    const [productPollCount, setProductPollCount] = useState(0);
     const [error, setError] = useState('');
 
     const analyzeWebsite = trpc.websiteAnalysis.analyze.useMutation();
@@ -39,10 +40,12 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
             refetchInterval: isAnalyzing ? 2000 : false,
         }
     );
+    const shouldPollProducts = !!analysisResult?.analysisId && !isAnalyzing && analysisResult?.status === 'completed' && extractedProducts.length === 0 && productPollCount < 5;
     const getProducts = trpc.websiteAnalysis.getExtractedProducts.useQuery(
         { analysisId: analysisResult?.analysisId },
         {
             enabled: !!analysisResult?.analysisId && !isAnalyzing && analysisResult?.status === 'completed',
+            refetchInterval: shouldPollProducts ? 3000 : false,
         }
     );
 
@@ -61,12 +64,16 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
 
     // Load extracted products when analysis is complete
     useEffect(() => {
-        if (getProducts.data && getProducts.data.length > 0 && extractedProducts.length === 0) {
-            setExtractedProducts(getProducts.data);
-            updateWizardData({
-                extractedProducts: getProducts.data,
-                websiteAnalysis: analysisResult,
-            });
+        if (getProducts.data) {
+            if (getProducts.data.length > 0 && extractedProducts.length === 0) {
+                setExtractedProducts(getProducts.data);
+                updateWizardData({
+                    extractedProducts: getProducts.data,
+                    websiteAnalysis: analysisResult,
+                });
+            } else if (getProducts.data.length === 0 && shouldPollProducts) {
+                setProductPollCount(prev => prev + 1);
+            }
         }
     }, [getProducts.data]);
 
@@ -86,6 +93,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
         setIsAnalyzing(true);
         setExtractedProducts([]);
         setAnalysisResult(null);
+        setProductPollCount(0);
 
         try {
             const result = await analyzeWebsite.mutateAsync({ url: finalUrl });
@@ -271,11 +279,31 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                         <Card className="p-4 bg-amber-50 border-amber-200">
                             <div className="flex items-center gap-3">
                                 <AlertCircle className="w-5 h-5 text-amber-600" />
-                                <div>
+                                <div className="flex-1">
                                     <p className="font-medium text-amber-900">{t('wizardWebsiteStepPage.text3')}</p>
                                     <p className="text-sm text-amber-700">{t('wizardWebsiteStepPage.text4')}</p>
                                 </div>
                             </div>
+                            {shouldPollProducts && (
+                                <div className="mt-3 flex items-center gap-2 text-sm text-amber-700">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    جاري البحث عن المنتجات...
+                                </div>
+                            )}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-3 w-full"
+                                onClick={() => {
+                                    setAnalysisResult(null);
+                                    setExtractedProducts([]);
+                                    setProductPollCount(0);
+                                    setIsAnalyzing(false);
+                                }}
+                            >
+                                <Search className="w-4 h-4 ml-2" />
+                                إعادة التحليل
+                            </Button>
                         </Card>
                     )}
                 </div>
