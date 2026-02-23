@@ -518,67 +518,57 @@ function isSallaStore(html: string): boolean {
 async function discoverZidStoreId(url: string): Promise<string | null> {
   const baseUrl = new URL(url).origin;
 
-  // Try fetching the main page with Googlebot (often bypasses Cloudflare)
-  const attempts = [
-    { url: url, ua: 'Googlebot/2.1 (+http://www.google.com/bot.html)' },
-    { url: `${baseUrl}/manifest.json`, ua: 'Mozilla/5.0' },
-  ];
-
-  for (const attempt of attempts) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const response = await fetch(attempt.url, {
-        headers: {
-          'User-Agent': attempt.ua,
-          'Accept': '*/*',
-        },
-        signal: controller.signal,
-        redirect: 'follow',
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) continue;
-
-      const text = await response.text();
-      const storeId = extractZidStoreId(text);
-      if (storeId) {
-        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from ${attempt.url}: ${storeId}`);
-        return storeId;
-      }
-    } catch {
-      // Skip failed attempts
+  // Strategy 1: Use curl to fetch the page (bypasses Cloudflare TLS fingerprinting)
+  console.log('[WebsiteAnalyzer] Trying curl to fetch page for store-id discovery...');
+  const curlPage = await curlFetch(url, {
+    'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    'Accept': 'text/html',
+  });
+  if (curlPage.ok && curlPage.body) {
+    const storeId = extractZidStoreId(curlPage.body);
+    if (storeId) {
+      console.log(`[WebsiteAnalyzer] Discovered Zid store-id from curl page: ${storeId}`);
+      return storeId;
     }
   }
 
-  // Last resort: try Zid API without store-id to see if it auto-resolves
+  // Strategy 2: Try Zid API via curl — extract store-id UUID from image URLs in response
+  console.log('[WebsiteAnalyzer] Trying curl to Zid API for store-id discovery...');
+  const curlApi = await curlFetch(`${baseUrl}/api/v1/products`, {
+    'Accept': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  });
+  if (curlApi.ok && curlApi.body) {
+    try {
+      const data = JSON.parse(curlApi.body);
+      // Extract store-id UUID from media.zid.store image URLs
+      const imageUrl = JSON.stringify(data).match(/media\.zid\.store\/thumbs\/([a-f0-9-]{36})\//);
+      if (imageUrl?.[1]) {
+        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from API image URLs: ${imageUrl[1]}`);
+        return imageUrl[1];
+      }
+    } catch { /* skip */ }
+  }
+
+  // Strategy 3: Fallback to fetch (in case Cloudflare is not blocking)
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(`${baseUrl}/api/v1/products`, {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)', 'Accept': '*/*' },
       signal: controller.signal,
+      redirect: 'follow',
     });
-
     clearTimeout(timeoutId);
-
-    // If we get a JSON response with store info, extract store-id from headers or response
     if (response.ok) {
-      const storeIdHeader = response.headers.get('x-store-id') || response.headers.get('store-id');
-      if (storeIdHeader) {
-        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from API response headers: ${storeIdHeader}`);
-        return storeIdHeader;
+      const text = await response.text();
+      const storeId = extractZidStoreId(text);
+      if (storeId) {
+        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from fetch: ${storeId}`);
+        return storeId;
       }
     }
-  } catch {
-    // Skip
-  }
+  } catch { /* skip */ }
 
   console.log('[WebsiteAnalyzer] Could not discover Zid store-id');
   return null;
