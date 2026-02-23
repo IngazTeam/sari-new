@@ -1141,12 +1141,6 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
       }
 
       for (const p of rawProducts.slice(0, 50)) {
-        // Debug: dump the FULL first product to see image format
-        if (products.length === 0) {
-          console.log(`[WebsiteAnalyzer] === FIRST RAW PRODUCT DUMP (${endpoint.platform}) ===`);
-          console.log(JSON.stringify(p).substring(0, 2000));
-          console.log(`[WebsiteAnalyzer] === END RAW PRODUCT DUMP ===`);
-        }
 
         // Helper: resolve a value to a URL string (handles objects/strings/arrays)
         const resolveUrl = (val: any): string | undefined => {
