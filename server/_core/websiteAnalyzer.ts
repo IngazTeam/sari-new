@@ -1141,16 +1141,34 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
       }
 
       for (const p of rawProducts.slice(0, 50)) {
+        // Debug: log image structure for first product
+        if (products.length === 0) {
+          console.log(`[WebsiteAnalyzer] First product image debug — image:`, JSON.stringify(p.image)?.substring(0, 200),
+            'images[0]:', JSON.stringify(p.images?.[0])?.substring(0, 200),
+            'thumbnail:', JSON.stringify(p.thumbnail)?.substring(0, 200),
+            'main_image:', JSON.stringify(p.main_image)?.substring(0, 200));
+        }
+
+        // Helper: resolve a value to a URL string (handles objects/strings/arrays)
+        const resolveUrl = (val: any): string | undefined => {
+          if (!val) return undefined;
+          if (typeof val === 'string' && val.startsWith('http')) return val;
+          if (typeof val === 'object' && !Array.isArray(val)) {
+            return val.url || val.src || val.original_url || val.href || val.image?.url || undefined;
+          }
+          return undefined;
+        };
+
         // Get image URL from various platform formats
-        const imageUrl = p.image?.src ||           // Shopify
-          p.images?.[0]?.src ||                      // Shopify array
-          p.images?.[0]?.url ||                      // Salla
-          p.images?.[0]?.original_url ||             // Zid images
-          p.images?.[0]?.image?.url ||               // Zid nested image
-          p.thumbnail?.src ||                         // Zid thumbnail
-          p.thumbnail ||                              // Generic
-          p.main_image ||                             // Zid alt
-          p.featured_image ||                         // Generic
+        const imageUrl =
+          resolveUrl(p.image) ||                       // Shopify / generic
+          resolveUrl(p.images?.[0]) ||                 // Array of images
+          resolveUrl(p.thumbnail) ||                    // Zid thumbnail
+          resolveUrl(p.main_image) ||                   // Zid alt
+          resolveUrl(p.featured_image) ||               // Generic
+          (typeof p.image === 'string' ? p.image : undefined) ||
+          (typeof p.thumbnail === 'string' ? p.thumbnail : undefined) ||
+          (typeof p.main_image === 'string' ? p.main_image : undefined) ||
           undefined;
 
         // Get description — strip HTML tags
@@ -1186,12 +1204,14 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
         // Get product URL
         let productUrl = p.url || p.permalink || p.slug || undefined;
-        if (productUrl && !productUrl.startsWith('http')) {
+        if (productUrl && typeof productUrl === 'string' && !productUrl.startsWith('http')) {
           if (productUrl.startsWith('/')) {
             productUrl = `${baseUrl}${productUrl}`;
           } else {
             productUrl = `${baseUrl}/products/${productUrl}`;
           }
+        } else if (productUrl && typeof productUrl !== 'string') {
+          productUrl = resolveUrl(productUrl);
         }
 
         // Determine stock status
@@ -1208,8 +1228,8 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
           description,
           price,
           currency,
-          imageUrl,
-          productUrl,
+          imageUrl: typeof imageUrl === 'string' ? imageUrl : undefined,
+          productUrl: typeof productUrl === 'string' ? productUrl : undefined,
           category,
           inStock,
           confidence: 90,
