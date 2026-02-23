@@ -67,7 +67,7 @@ export const websiteAnalysisRouter = router({
             });
           } catch (analysisError) {
             console.error('[WebsiteAnalysis] Analysis phase failed:', analysisError);
-            // Mark as extracting — don't block product extraction
+            // Keep status as analyzing — don't block product extraction
             await db.updateWebsiteAnalysis(analysisId, {
               status: 'analyzing',
               title: new URL(input.url).hostname,
@@ -90,25 +90,33 @@ export const websiteAnalysisRouter = router({
 
             // Extract products — works even with empty HTML for Zid/Salla via API strategy
             const products = await analyzer.extractProducts(input.url, scrapedHtml, scrapedText);
+            console.log(`[WebsiteAnalysis] extractProducts returned ${products.length} products, saving to DB...`);
 
+            let savedCount = 0;
             for (const product of products) {
-              await db.createExtractedProduct({
-                analysisId,
-                merchantId: merchant.id,
-                name: product.name,
-                description: product.description,
-                price: product.price,
-                currency: product.currency,
-                imageUrl: product.imageUrl,
-                productUrl: product.productUrl,
-                category: product.category,
-                tags: product.tags,
-                inStock: product.inStock,
-                confidence: product.confidence,
-              });
+              try {
+                // Truncate fields to fit DB varchar limits
+                await db.createExtractedProduct({
+                  analysisId,
+                  merchantId: merchant.id,
+                  name: (product.name || 'Unknown').substring(0, 500),
+                  description: (product.description || '').substring(0, 2000),
+                  price: product.price,
+                  currency: (product.currency || 'SAR').substring(0, 10),
+                  imageUrl: product.imageUrl ? product.imageUrl.substring(0, 500) : undefined,
+                  productUrl: product.productUrl ? product.productUrl.substring(0, 500) : undefined,
+                  category: product.category ? product.category.substring(0, 255) : undefined,
+                  tags: product.tags,
+                  inStock: product.inStock,
+                  confidence: product.confidence || 70,
+                });
+                savedCount++;
+              } catch (saveError) {
+                console.error(`[WebsiteAnalysis] Failed to save product "${product.name}":`, saveError instanceof Error ? saveError.message : saveError);
+              }
             }
 
-            console.log(`[WebsiteAnalysis] Extracted ${products.length} products for analysis ${analysisId}`);
+            console.log(`[WebsiteAnalysis] Saved ${savedCount}/${products.length} products for analysis ${analysisId}`);
           } catch (productError) {
             console.error('[WebsiteAnalysis] Product extraction failed:', productError);
           }
@@ -162,7 +170,11 @@ export const websiteAnalysisRouter = router({
           // Final: Mark analysis as completed after all phases finish
           await db.updateWebsiteAnalysis(analysisId, { status: 'completed' });
           console.log('[WebsiteAnalysis] Analysis pipeline completed:', analysisId);
-        })();
+        })().catch(err => {
+          console.error('[WebsiteAnalysis] Background pipeline crashed:', err);
+          // Try to mark as failed so frontend doesn't poll forever
+          db.updateWebsiteAnalysis(analysisId, { status: 'failed', errorMessage: String(err) }).catch(() => { });
+        });
 
         return { analysisId, status: 'analyzing' };
       } catch (error) {
