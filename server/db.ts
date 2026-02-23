@@ -3652,7 +3652,8 @@ export async function generateReferralCode(merchantId: number, referrerName: str
   let isUnique = false;
 
   while (!isUnique) {
-    code = 'REF' + Math.floor(10000000 + Math.random() * 90000000);
+    const { randomInt } = await import('crypto');
+    code = 'REF' + randomInt(10000000, 99999999);
     const check = await getReferralCodeByCode(code);
     if (!check) isUnique = true;
   }

@@ -9,7 +9,7 @@ import * as db from '../db';
 import { sendTextMessage } from '../whatsapp';
 
 // Occasion types
-export type OccasionType = 
+export type OccasionType =
   | 'ramadan'
   | 'eid_fitr'
   | 'eid_adha'
@@ -76,7 +76,8 @@ export async function generateOccasionDiscount(
 ): Promise<string> {
   const prefix = getOccasionPrefix(occasionType);
   const year = new Date().getFullYear();
-  const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+  const { randomInt } = await import('crypto');
+  const random = randomInt(10000).toString().padStart(4, '0');
   const code = `${prefix}${year}${random}`;
 
   // Create discount code in database

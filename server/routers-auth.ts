@@ -86,7 +86,8 @@ export const authRouter = router({
             const hashedPassword = await bcrypt.hash(input.password, 10);
 
             // Generate unique openId
-            const openId = `local_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+            const crypto = await import('crypto');
+            const openId = `local_${crypto.randomBytes(16).toString('hex')}`;
 
             // Create user
             const user = await db.createUser({

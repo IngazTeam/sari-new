@@ -1,6 +1,7 @@
 import * as db from '../db';
 import { sendTextMessage } from '../whatsapp';
 import { createDiscountCode, generateDiscountMessage } from './discount-system';
+import { randomInt } from 'crypto';
 
 /**
  * توليد كود إحالة فريد
@@ -10,11 +11,11 @@ export function generateReferralCode(customerPhone: string): string {
   const phoneDigits = customerPhone.replace(/\D/g, '').slice(-4);
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   let randomPart = '';
-  
+
   for (let i = 0; i < 4; i++) {
-    randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+    randomPart += chars.charAt(randomInt(chars.length));
   }
-  
+
   return `REF${phoneDigits}${randomPart}`;
 }
 
@@ -32,24 +33,24 @@ export async function createReferralCodeForCustomer(
     if (existing) {
       return { success: true, code: existing.code };
     }
-    
+
     // توليد كود فريد
     let code = generateReferralCode(customerPhone);
     let attempts = 0;
-    
+
     // التأكد من أن الكود فريد
     while (attempts < 5) {
       const existingCode = await db.getReferralCodeByCode(code);
       if (!existingCode) break;
-      
+
       code = generateReferralCode(customerPhone);
       attempts++;
     }
-    
+
     if (attempts >= 5) {
       return { success: false, error: 'فشل في توليد كود فريد' };
     }
-    
+
     // إنشاء كود الإحالة
     const referralCode = await db.createReferralCode({
       merchantId,
@@ -59,7 +60,7 @@ export async function createReferralCodeForCustomer(
       referralCount: 0,
       rewardGiven: false,
     });
-    
+
     if (referralCode) {
       console.log(`[Referral System] Created referral code ${code} for ${customerPhone}`);
       return { success: true, code };
@@ -84,26 +85,26 @@ export async function trackReferral(
   try {
     // الحصول على كود الإحالة
     const code = await db.getReferralCodeByCode(referralCode);
-    
+
     if (!code) {
       return { success: false, error: 'كود الإحالة غير صحيح' };
     }
-    
+
     if (code.merchantId !== merchantId) {
       return { success: false, error: 'كود الإحالة غير صحيح' };
     }
-    
+
     // التحقق من أن المُحال ليس نفس المُحيل
     if (code.referrerPhone === referredPhone) {
       return { success: false, error: 'لا يمكنك استخدام كود الإحالة الخاص بك' };
     }
-    
+
     // التحقق من عدم استخدام نفس الشخص للكود مسبقاً
     const existingReferral = await db.getReferralByPhone(code.id, referredPhone);
     if (existingReferral) {
       return { success: false, error: 'تم استخدام كود الإحالة مسبقاً' };
     }
-    
+
     // تسجيل الإحالة
     await db.createReferral({
       referralCodeId: code.id,
@@ -111,9 +112,9 @@ export async function trackReferral(
       referredName,
       orderCompleted: false,
     });
-    
+
     console.log(`[Referral System] Tracked referral: ${referredPhone} referred by ${code.referrerPhone}`);
-    
+
     return { success: true, milestone: false };
   } catch (error: any) {
     console.error('[Referral System] Error tracking referral:', error);
@@ -131,22 +132,22 @@ export async function completeReferral(
   try {
     // البحث عن الإحالة
     const referrals = await db.getReferralsByReferredPhone(referredPhone);
-    
+
     for (const referral of referrals) {
       if (referral.orderCompleted) continue;
-      
+
       // الحصول على كود الإحالة
       const code = await db.getReferralCodeById(referral.referralCodeId);
       if (!code || code.merchantId !== merchantId) continue;
-      
+
       // تحديث الإحالة
       await db.updateReferralStatus(referral.id, true);
-      
+
       // زيادة عدد الإحالات الناجحة
       const newCount = await db.incrementReferralCount(code.id);
-      
+
       console.log(`[Referral System] Completed referral for ${referredPhone}, referrer now has ${newCount} referrals`);
-      
+
       // التحقق من الوصول إلى 5 إحالات
       if (newCount >= 5 && !code.rewardGiven) {
         return {
@@ -159,10 +160,10 @@ export async function completeReferral(
           },
         };
       }
-      
+
       return { success: true, milestone: false };
     }
-    
+
     return { success: false };
   } catch (error: any) {
     console.error('[Referral System] Error completing referral:', error);
@@ -183,7 +184,7 @@ export async function rewardReferrer(
     // إنشاء كود خصم 15%
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 60); // صالح لمدة 60 يوم
-    
+
     const result = await createDiscountCode({
       merchantId,
       type: 'percentage',
@@ -191,25 +192,25 @@ export async function rewardReferrer(
       usageLimit: 1,
       expiresAt,
     });
-    
+
     if (!result.success || !result.code) {
       return { success: false, error: 'فشل في إنشاء كود الخصم' };
     }
-    
+
     // تحديث حالة المكافأة
     await db.markReferralRewardGiven(referralCodeId);
-    
+
     // إرسال رسالة واتساب
     const message = generateReferralRewardMessage(
       referrerName,
       result.code.code,
       expiresAt
     );
-    
+
     await sendTextMessage(referrerPhone, message);
-    
+
     console.log(`[Referral System] Rewarded ${referrerPhone} with discount code ${result.code.code}`);
-    
+
     return { success: true, discountCode: result.code.code };
   } catch (error: any) {
     console.error('[Referral System] Error rewarding referrer:', error);
@@ -272,7 +273,7 @@ export function generateReferralProgressMessage(
   remaining: number
 ): string {
   const emoji = currentCount >= 3 ? '🔥' : '👏';
-  
+
   return `رائع ${name}! ${emoji}
 
 لديك الآن ${currentCount} إحالة ناجحة! 
@@ -289,19 +290,19 @@ export function extractReferralCodeFromMessage(message: string): string | null {
   // البحث عن كود بصيغة REF + أرقام + أحرف
   const codePattern = /\bREF\d{4}[A-Z]{4}\b/g;
   const matches = message.match(codePattern);
-  
+
   if (matches && matches.length > 0) {
     return matches[0];
   }
-  
+
   // البحث عن كلمة "إحالة" أو "دعوة" متبوعة بنص
   const arabicPattern = /(?:إحالة|دعوة|كود\s+صديق)\s*[:=]?\s*(REF[A-Z0-9]{8})/i;
   const arabicMatch = message.match(arabicPattern);
-  
+
   if (arabicMatch && arabicMatch[1]) {
     return arabicMatch[1].toUpperCase();
   }
-  
+
   return null;
 }
 
@@ -316,8 +317,8 @@ export async function shouldSendProgressMessage(
   if (![2, 3, 4].includes(currentCount)) {
     return false;
   }
-  
+
   // TODO: التحقق من عدم إرسال رسالة مؤخراً (خلال آخر 24 ساعة)
-  
+
   return true;
 }

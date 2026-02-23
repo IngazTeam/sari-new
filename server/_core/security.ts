@@ -66,7 +66,7 @@ export const corsConfig = cors({
  * Adds unique ID to each request for tracing
  */
 export function requestId(req: Request, res: Response, next: NextFunction): void {
-    const id = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `req_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}`;
     req.headers['x-request-id'] = id;
     res.setHeader('X-Request-ID', id);
     next();

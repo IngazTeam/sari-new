@@ -18,7 +18,11 @@ export const invoicesRouter = router({
             offset: z.number().min(0).optional().default(0),
         }))
         .query(async ({ ctx, input }) => {
-            // Get all invoices using db function
+            // SECURITY: Only admins can see all invoices
+            if (ctx.user.role !== 'admin') {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+            }
+
             const allInvoices = await db.getAllInvoices({
                 status: input.status !== 'all' ? input.status : undefined,
                 limit: input.limit,
@@ -31,7 +35,7 @@ export const invoicesRouter = router({
     // Get invoice by ID
     getById: protectedProcedure
         .input(z.object({ id: z.number() }))
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
             const invoice = await db.getInvoiceById(input.id);
 
             if (!invoice) {
@@ -39,6 +43,14 @@ export const invoicesRouter = router({
                     code: 'NOT_FOUND',
                     message: 'Invoice not found',
                 });
+            }
+
+            // SECURITY: Check ownership — user must own the merchant OR be admin
+            if (ctx.user.role !== 'admin') {
+                const merchant = await db.getMerchantByUserId(ctx.user.id);
+                if (!merchant || merchant.id !== invoice.merchantId) {
+                    throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+                }
             }
 
             // Get related data
@@ -72,8 +84,12 @@ export const invoicesRouter = router({
         return await db.getInvoicesByMerchantId(merchant.id);
     }),
 
-    // Get invoice statistics
-    getStats: protectedProcedure.query(async () => {
+    // Get invoice statistics (admin only)
+    getStats: protectedProcedure.query(async ({ ctx }) => {
+        // SECURITY: Only admins can see global stats
+        if (ctx.user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
         const stats = await db.getInvoiceStats();
         return stats;
     }),

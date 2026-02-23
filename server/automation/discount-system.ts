@@ -1,4 +1,5 @@
 import * as db from '../db';
+import { randomInt } from 'crypto';
 
 /**
  * توليد كود خصم عشوائي
@@ -6,11 +7,11 @@ import * as db from '../db';
 export function generateDiscountCode(prefix: string = 'SARI'): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = prefix;
-  
+
   for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += chars.charAt(randomInt(chars.length));
   }
-  
+
   return code;
 }
 
@@ -31,13 +32,13 @@ export async function createDiscountCode(data: {
   try {
     // توليد كود إذا لم يتم تقديمه
     const code = data.code || generateDiscountCode();
-    
+
     // التحقق من عدم وجود الكود مسبقاً
     const existing = await db.getDiscountCodeByCode(code);
     if (existing) {
       return { success: false, error: 'الكود موجود مسبقاً' };
     }
-    
+
     // إنشاء الكود
     const discountCode = await db.createDiscountCode({
       merchantId: data.merchantId,
@@ -50,7 +51,7 @@ export async function createDiscountCode(data: {
       isActive: true,
       expiresAt: data.expiresAt,
     });
-    
+
     return { success: true, code: discountCode };
   } catch (error: any) {
     console.error('[Discount System] Error creating discount code:', error);
@@ -75,31 +76,31 @@ export async function validateDiscountCode(
   try {
     // الحصول على الكود
     const discountCode = await db.getDiscountCodeByCode(code);
-    
+
     // التحقق من أن الكود يخص هذا التاجر
     if (discountCode && discountCode.merchantId !== merchantId) {
       return { valid: false, error: 'كود الخصم غير صحيح' };
     }
-    
+
     if (!discountCode) {
       return { valid: false, error: 'كود الخصم غير صحيح' };
     }
-    
+
     // التحقق من أن الكود نشط
     if (!discountCode.isActive) {
       return { valid: false, error: 'كود الخصم غير نشط' };
     }
-    
+
     // التحقق من تاريخ الانتهاء
     if (discountCode.expiresAt && new Date(discountCode.expiresAt) < new Date()) {
       return { valid: false, error: 'كود الخصم منتهي الصلاحية' };
     }
-    
+
     // التحقق من عدد مرات الاستخدام
     if (discountCode.maxUses && discountCode.usedCount >= discountCode.maxUses) {
       return { valid: false, error: 'تم استخدام كود الخصم بالكامل' };
     }
-    
+
     // التحقق من الحد الأدنى للشراء
     if (discountCode.minOrderAmount && orderAmount < discountCode.minOrderAmount) {
       return {
@@ -107,7 +108,7 @@ export async function validateDiscountCode(
         error: `الحد الأدنى للشراء هو ${discountCode.minOrderAmount} ريال`,
       };
     }
-    
+
     // حساب قيمة الخصم
     let discount = 0;
     if (discountCode.type === 'percentage') {
@@ -116,9 +117,9 @@ export async function validateDiscountCode(
       // fixed amount
       discount = Math.min(discountCode.value, orderAmount);
     }
-    
+
     const finalAmount = Math.max(0, orderAmount - discount);
-    
+
     return {
       valid: true,
       discount,
@@ -145,21 +146,21 @@ export async function applyDiscountCode(
     if (!order) {
       return { success: false, error: 'الطلب غير موجود' };
     }
-    
+
     // التحقق من الكود
     const validation = await validateDiscountCode(merchantId, code, order.totalAmount);
-    
+
     if (!validation.valid) {
       return { success: false, error: validation.error };
     }
-    
+
     // TODO: تحديث الطلب بالخصم (سيتم تطبيقه عند إنشاء الطلب)
-    
+
     // زيادة عدد مرات استخدام الكود
     await db.incrementDiscountCodeUsage(code);
-    
+
     console.log(`[Discount System] Applied discount ${code} to order ${orderId}: ${validation.discount} SAR`);
-    
+
     return { success: true };
   } catch (error: any) {
     console.error('[Discount System] Error applying discount code:', error);
@@ -181,17 +182,17 @@ export async function createPostPurchaseDiscount(
     const customerOrders = orders.filter(
       o => o.customerPhone === customerPhone && o.status === 'delivered'
     );
-    
+
     if (customerOrders.length !== 1) {
       // ليس أول طلب أو لم يتم توصيل أي طلب بعد
       return { success: false, error: 'ليس أول طلب' };
     }
-    
+
     // إنشاء كود خصم 10%
     const code = generateDiscountCode('WELCOME');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30); // صالح لمدة 30 يوم
-    
+
     const result = await createDiscountCode({
       merchantId,
       code,
@@ -201,7 +202,7 @@ export async function createPostPurchaseDiscount(
       expiresAt,
       description: `كود ترحيبي للعميل ${customerName}`,
     });
-    
+
     if (result.success) {
       console.log(`[Discount System] Created post-purchase discount ${code} for ${customerPhone}`);
       return { success: true, code };
@@ -226,7 +227,7 @@ export function generateDiscountMessage(
   const expiryText = expiresAt
     ? `\nصالح حتى: ${expiresAt.toLocaleDateString('ar-SA')}`
     : '';
-  
+
   return `مرحباً ${customerName}! 🎉
 
 شكراً لك على طلبك الأول! 💙
@@ -251,7 +252,7 @@ export function calculateFinalPrice(
   maxDiscount?: number
 ): { discount: number; finalPrice: number } {
   let discount = 0;
-  
+
   if (discountType === 'percentage') {
     discount = (originalPrice * discountValue) / 100;
     if (maxDiscount && discount > maxDiscount) {
@@ -260,9 +261,9 @@ export function calculateFinalPrice(
   } else {
     discount = Math.min(discountValue, originalPrice);
   }
-  
+
   const finalPrice = Math.max(0, originalPrice - discount);
-  
+
   return { discount, finalPrice };
 }
 
@@ -273,18 +274,18 @@ export function extractDiscountCodeFromMessage(message: string): string | null {
   // البحث عن كود بصيغة SARI + 6 أحرف/أرقام
   const codePattern = /\b[A-Z]{4,}[A-Z0-9]{4,8}\b/g;
   const matches = message.match(codePattern);
-  
+
   if (matches && matches.length > 0) {
     return matches[0];
   }
-  
+
   // البحث عن كلمة "كود" أو "خصم" متبوعة بنص
   const arabicPattern = /(?:كود|خصم|كوبون)\s*[:=]?\s*([A-Z0-9]{6,})/i;
   const arabicMatch = message.match(arabicPattern);
-  
+
   if (arabicMatch && arabicMatch[1]) {
     return arabicMatch[1].toUpperCase();
   }
-  
+
   return null;
 }
