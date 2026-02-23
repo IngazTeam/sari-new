@@ -63,13 +63,13 @@ export const websiteAnalysisRouter = router({
               imageCount: result.imageCount,
               videoCount: result.videoCount,
               overallScore: result.overallScore,
-              status: 'completed',
+              status: 'analyzing',
             });
           } catch (analysisError) {
             console.error('[WebsiteAnalysis] Analysis phase failed:', analysisError);
-            // Mark as completed with minimal data — don't block product extraction
+            // Mark as extracting — don't block product extraction
             await db.updateWebsiteAnalysis(analysisId, {
-              status: 'completed',
+              status: 'analyzing',
               title: new URL(input.url).hostname,
               description: 'تعذر تحليل الموقع بسبب حماية Cloudflare — تم استخراج المنتجات عبر API',
               overallScore: 0,
@@ -159,6 +159,8 @@ export const websiteAnalysisRouter = router({
             console.error('[WebsiteAnalysis] Insights generation failed:', insightsError);
           }
 
+          // Final: Mark analysis as completed after all phases finish
+          await db.updateWebsiteAnalysis(analysisId, { status: 'completed' });
           console.log('[WebsiteAnalysis] Analysis pipeline completed:', analysisId);
         })();
 
