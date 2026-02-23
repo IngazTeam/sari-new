@@ -114,7 +114,7 @@ export default function Login() {
               </div>
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">{t('loginPage.text0')}</CardTitle>
+              <CardTitle className="text-3xl font-bold">تسجيل الدخول</CardTitle>
               <CardDescription className="text-base mt-2">
                 وكيل المبيعات الذكي على الواتساب
               </CardDescription>
@@ -129,7 +129,7 @@ export default function Login() {
                 </Alert>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">{t('loginPage.text1')}</Label>
+                <Label htmlFor="email">{t('loginPage.text6')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -144,7 +144,7 @@ export default function Login() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">{t('loginPage.text2')}</Label>
+                  <Label htmlFor="password">{t('loginPage.text7')}</Label>
                   <a href="/forgot-password" className="text-sm text-primary hover:underline">
                     نسيت كلمة المرور؟
                   </a>
@@ -196,7 +196,7 @@ export default function Login() {
               </Button>
             </form>
             <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">{t('loginPage.text3')}</span>
+              <span className="text-muted-foreground">{t('loginPage.text8')}</span>
               <a href="/signup" className="text-primary hover:underline font-medium">
                 سجل الآن
               </a>
