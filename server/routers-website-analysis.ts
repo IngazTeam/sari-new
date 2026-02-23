@@ -194,7 +194,13 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      return analysis;
+      // Include products when analysis is completed
+      let extractedProductsList: any[] = [];
+      if (analysis.status === 'completed') {
+        extractedProductsList = await db.getExtractedProductsByAnalysisId(input.id);
+      }
+
+      return { ...analysis, extractedProducts: extractedProductsList };
     }),
 
   /**
