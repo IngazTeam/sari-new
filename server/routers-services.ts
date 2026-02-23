@@ -167,7 +167,9 @@ export const servicesRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const services = await db.getServicesByCategory(input.categoryId);
+            const allServices = await db.getServicesByCategory(input.categoryId);
+            // Filter to only return services belonging to this merchant
+            const services = allServices.filter((s: any) => s.merchantId === merchant.id);
             return { services };
         }),
 });

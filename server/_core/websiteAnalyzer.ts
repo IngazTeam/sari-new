@@ -7,20 +7,53 @@
 
 import { invokeLLM } from "./llm";
 import { JSDOM } from "jsdom";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
+
+/**
+ * Validate URL to prevent SSRF attacks (internal IP, metadata endpoints, etc.)
+ */
+function isUrlSafe(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr);
+    // Only allow HTTP/HTTPS
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+
+    const hostname = parsed.hostname.toLowerCase();
+    // Block internal/private IPs
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return false;
+    if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return false;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return false;
+    // Block AWS/GCP/Azure metadata endpoints
+    if (hostname === '169.254.169.254' || hostname === 'metadata.google.internal') return false;
+    // Block file:// and other schemes
+    if (hostname === '' || hostname.includes('..')) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Fetch URL using curl as fallback when Node.js fetch is blocked by Cloudflare.
- * Cloudflare's TLS fingerprinting blocks Node.js fetch but allows curl.
+ * Uses execFileSync (no shell) to prevent command injection.
  */
 async function curlFetch(url: string, headers?: Record<string, string>): Promise<{ ok: boolean; status: number; body: string }> {
   try {
-    const headerArgs = Object.entries(headers || {})
-      .map(([k, v]) => `-H "${k}: ${v}"`)
-      .join(' ');
+    // Validate URL to prevent SSRF
+    if (!isUrlSafe(url)) {
+      console.warn('[WebsiteAnalyzer] Blocked unsafe URL:', url);
+      return { ok: false, status: 0, body: '' };
+    }
 
-    const cmd = `curl -4 -s --max-time 15 -w "\\n__HTTP_STATUS__%{http_code}" ${headerArgs} "${url}"`;
-    const output = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+    // Build args as array (safe — no shell interpolation)
+    const args: string[] = ['-4', '-s', '--max-time', '15', '-w', '\n__HTTP_STATUS__%{http_code}'];
+    for (const [k, v] of Object.entries(headers || {})) {
+      args.push('-H', `${k}: ${v}`);
+    }
+    args.push(url);
+
+    const output = execFileSync('curl', args, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
 
     // Extract HTTP status from the last line
     const statusMatch = output.match(/__HTTP_STATUS__(\d+)$/);

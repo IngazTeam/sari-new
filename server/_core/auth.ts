@@ -9,8 +9,8 @@ import { ENV } from "./env";
 
 // JWT Secret - uses JWT_SECRET from environment
 const getJwtSecret = (): string => {
-  if (!ENV.cookieSecret) {
-    throw new Error('JWT_SECRET is not configured. Set it in your environment variables.');
+  if (!ENV.cookieSecret || ENV.cookieSecret.length < 32) {
+    throw new Error('JWT_SECRET must be at least 32 characters. Set it in your environment variables.');
   }
   return ENV.cookieSecret;
 };
@@ -56,7 +56,7 @@ export async function verifySession(
   }
 
   try {
-    const decoded = jwt.verify(token, getJwtSecret()) as any;
+    const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as any;
 
     const userId = decoded.userId || decoded.id;
     if (!userId) {

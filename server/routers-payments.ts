@@ -60,12 +60,17 @@ export const paymentsRouter = router({
 
     verifyPayment: protectedProcedure
         .input(z.object({ chargeId: z.string() }))
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
             const tapPayments = await import('./_core/tapPayments');
             const dbPayments = await import('./db_payments');
 
-            const verification = await tapPayments.verifyPayment(input.chargeId);
+            // Verify ownership: payment must belong to this merchant
             const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
+            if (payment && payment.merchantId !== ctx.merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const verification = await tapPayments.verifyPayment(input.chargeId);
             if (payment) {
                 await dbPayments.updateOrderPaymentStatus(payment.id, verification.status.toLowerCase() as any);
             }
@@ -159,6 +164,11 @@ export const paymentsRouter = router({
         .query(async ({ ctx, input }) => {
             const dbPayments = await import('./db_payments');
             if (input.paymentId) {
+                // Verify ownership: payment must belong to this merchant
+                const payment = await dbPayments.getOrderPaymentById(input.paymentId);
+                if (!payment || payment.merchantId !== ctx.merchant.id) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
+                }
                 return await dbPayments.getPaymentRefundsByPaymentId(input.paymentId);
             }
             return await dbPayments.getPaymentRefundsByMerchant(ctx.merchant.id, { status: input.status, limit: input.limit });
@@ -178,7 +188,8 @@ export const paymentsRouter = router({
         }))
         .mutation(async ({ ctx, input }) => {
             const dbPayments = await import('./db_payments');
-            const linkId = `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const crypto = await import('crypto');
+            const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;
             const tapPaymentUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL}/pay/${linkId}`;
 
             const link = await dbPayments.createPaymentLink({
@@ -246,16 +257,24 @@ export const paymentsRouter = router({
         .mutation(async ({ input }) => {
             const tapWebhook = await import('./webhooks/tap-webhook');
 
-            if (input.signature && process.env.TAP_WEBHOOK_SECRET) {
-                const isValid = tapWebhook.verifyTapSignature(
-                    JSON.stringify(input.payload),
-                    input.signature,
-                    process.env.TAP_WEBHOOK_SECRET
-                );
+            // SECURITY: Webhook signature verification is MANDATORY
+            if (!process.env.TAP_WEBHOOK_SECRET) {
+                console.error('[Webhook] TAP_WEBHOOK_SECRET not configured — rejecting webhook');
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Webhook not configured' });
+            }
 
-                if (!isValid) {
-                    throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid webhook signature' });
-                }
+            if (!input.signature) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Missing webhook signature' });
+            }
+
+            const isValid = tapWebhook.verifyTapSignature(
+                JSON.stringify(input.payload),
+                input.signature,
+                process.env.TAP_WEBHOOK_SECRET
+            );
+
+            if (!isValid) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid webhook signature' });
             }
 
             const result = await tapWebhook.processTapWebhook(input.payload);
