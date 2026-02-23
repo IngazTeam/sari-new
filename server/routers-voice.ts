@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import crypto from 'node:crypto';
 import { protectedProcedure, router } from "./_core/trpc";
 
 export const voiceRouter = router({
@@ -32,7 +33,7 @@ export const voiceRouter = router({
 
                 const extension = input.mimeType.includes('webm') ? 'webm' : 'mp3';
                 const timestamp = Date.now();
-                const randomStr = require('crypto').randomBytes(4).toString('hex');
+                const randomStr = crypto.randomBytes(4).toString('hex');
                 const fileName = `voice-${ctx.user.id}-${timestamp}-${randomStr}.${extension}`;
 
                 const { storagePut } = await import('./storage');

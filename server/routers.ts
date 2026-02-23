@@ -3906,7 +3906,7 @@ export const appRouter = router({
           // تحديد امتداد الملف
           const extension = input.mimeType.includes('webm') ? 'webm' : 'mp3';
           const timestamp = Date.now();
-          const randomStr = require('crypto').randomBytes(4).toString('hex');
+          const randomStr = (await import('node:crypto')).randomBytes(4).toString('hex');
           const fileName = `voice-${ctx.user.id}-${timestamp}-${randomStr}.${extension}`;
 
           // رفع الملف إلى S3

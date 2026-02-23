@@ -1,5 +1,5 @@
 import * as db from '../db';
-import { randomInt } from 'crypto';
+import { randomInt } from 'node:crypto';
 
 /**
  * توليد كود خصم عشوائي

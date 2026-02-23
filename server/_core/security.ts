@@ -4,6 +4,7 @@
  */
 import helmet from 'helmet';
 import cors from 'cors';
+import crypto from 'node:crypto';
 import type { Express, Request, Response, NextFunction } from 'express';
 
 /**
@@ -66,7 +67,7 @@ export const corsConfig = cors({
  * Adds unique ID to each request for tracing
  */
 export function requestId(req: Request, res: Response, next: NextFunction): void {
-    const id = `req_${Date.now()}_${require('crypto').randomBytes(6).toString('hex')}`;
+    const id = `req_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
     req.headers['x-request-id'] = id;
     res.setHeader('X-Request-ID', id);
     next();

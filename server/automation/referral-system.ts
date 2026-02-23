@@ -1,7 +1,7 @@
 import * as db from '../db';
 import { sendTextMessage } from '../whatsapp';
 import { createDiscountCode, generateDiscountMessage } from './discount-system';
-import { randomInt } from 'crypto';
+import { randomInt } from 'node:crypto';
 
 /**
  * توليد كود إحالة فريد
