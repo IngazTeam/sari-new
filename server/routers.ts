@@ -3906,7 +3906,7 @@ export const appRouter = router({
           // تحديد امتداد الملف
           const extension = input.mimeType.includes('webm') ? 'webm' : 'mp3';
           const timestamp = Date.now();
-          const randomStr = Math.random().toString(36).substring(7);
+          const randomStr = require('crypto').randomBytes(4).toString('hex');
           const fileName = `voice-${ctx.user.id}-${timestamp}-${randomStr}.${extension}`;
 
           // رفع الملف إلى S3
@@ -4466,7 +4466,21 @@ export const appRouter = router({
         ipAddress: z.string().optional(),
         userAgent: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // SECURITY: Rate limit public AI chat to prevent cost abuse
+        const { checkRateLimit, TRPC_LIMITS } = await import('./_core/rateLimiter');
+        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+
+        const ipCheck = checkRateLimit(`chat_ip:${clientIp}`, TRPC_LIMITS.CHAT_PER_IP.max, TRPC_LIMITS.CHAT_PER_IP.windowMs);
+        if (!ipCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من الرسائل. حاول مرة أخرى بعد قليل.' });
+        }
+
+        const sessionCheck = checkRateLimit(`chat_session:${input.sessionId}`, TRPC_LIMITS.CHAT_PER_SESSION.max, TRPC_LIMITS.CHAT_PER_SESSION.windowMs);
+        if (!sessionCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'وصلت للحد الأقصى من الرسائل في هذه الجلسة. سجل حساب لتجربة كاملة!' });
+        }
+
         // Use a demo merchant for public testing
         const demoMerchant = await db.getMerchantById(1);
 

@@ -92,3 +92,62 @@ export const aiLimiter = rateLimit({
 });
 
 console.log('[Rate Limiter] Rate limiting middleware initialized');
+
+// ─── tRPC-Compatible In-Memory Rate Limiter ───────────────────────
+// For use inside tRPC procedures (publicProcedure) where Express middleware doesn't apply
+
+interface InMemoryEntry {
+    count: number;
+    resetAt: number;
+}
+
+const inMemoryStore = new Map<string, InMemoryEntry>();
+
+// Cleanup expired entries every 5 minutes
+setInterval(() => {
+    const now = Date.now();
+    inMemoryStore.forEach((entry, key) => {
+        if (now > entry.resetAt) {
+            inMemoryStore.delete(key);
+        }
+    });
+}, 5 * 60 * 1000);
+
+/**
+ * Check rate limit for a given key (IP, sessionId, etc.)
+ * Works inside tRPC procedures without Express middleware.
+ *
+ * @returns { allowed, remaining, retryAfterMs }
+ */
+export function checkRateLimit(
+    key: string,
+    maxRequests: number,
+    windowMs: number
+): { allowed: boolean; remaining: number; retryAfterMs: number } {
+    const now = Date.now();
+    const entry = inMemoryStore.get(key);
+
+    if (!entry || now > entry.resetAt) {
+        inMemoryStore.set(key, { count: 1, resetAt: now + windowMs });
+        return { allowed: true, remaining: maxRequests - 1, retryAfterMs: 0 };
+    }
+
+    if (entry.count < maxRequests) {
+        entry.count++;
+        return { allowed: true, remaining: maxRequests - entry.count, retryAfterMs: 0 };
+    }
+
+    return {
+        allowed: false,
+        remaining: 0,
+        retryAfterMs: entry.resetAt - now,
+    };
+}
+
+/** Rate limit presets */
+export const TRPC_LIMITS = {
+    /** Public AI chat: 20 messages / minute / IP */
+    CHAT_PER_IP: { max: 20, windowMs: 60_000 },
+    /** Public AI chat: 50 messages / hour / session */
+    CHAT_PER_SESSION: { max: 50, windowMs: 3_600_000 },
+} as const;

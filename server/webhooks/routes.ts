@@ -26,13 +26,16 @@ router.post('/tap', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Tap gateway not configured' });
     }
 
-    // Verify signature (optional for testing, required in production)
-    if (signature) {
-      const isValid = await verifyTapSignature(payload, signature, ENV.tapSecretKey);
-      if (!isValid) {
-        console.error('[Tap Webhook] Invalid signature');
-        return res.status(401).json({ error: 'Invalid signature' });
-      }
+    // SECURITY: Webhook signature verification is MANDATORY
+    if (!signature) {
+      console.error('[Tap Webhook] Missing signature — rejecting');
+      return res.status(401).json({ error: 'Missing webhook signature' });
+    }
+
+    const isValid = await verifyTapSignature(payload, signature, ENV.tapSecretKey);
+    if (!isValid) {
+      console.error('[Tap Webhook] Invalid signature');
+      return res.status(401).json({ error: 'Invalid signature' });
     }
 
     // Process webhook
@@ -138,22 +141,24 @@ router.post('/zid/:merchantId', async (req: Request, res: Response) => {
 
     console.log(`[Zid Webhook] Merchant ${merchantId} - Received webhook event`);
 
-    // Verify webhook signature (HMAC-SHA256)
+    // SECURITY: Verify webhook signature (HMAC-SHA256) — mandatory
     const signature = req.headers['x-zid-signature'] as string;
     const zidSecret = process.env.ZID_WEBHOOK_SECRET;
-    if (zidSecret) {
-      if (!signature) {
-        console.warn(`[Zid Webhook] Merchant ${merchantId} - Missing signature`);
-        return res.status(401).json({ error: 'Missing webhook signature' });
-      }
-      const expectedSignature = crypto
-        .createHmac('sha256', zidSecret)
-        .update(JSON.stringify(req.body))
-        .digest('hex');
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
-        console.warn(`[Zid Webhook] Merchant ${merchantId} - Invalid signature`);
-        return res.status(401).json({ error: 'Invalid webhook signature' });
-      }
+    if (!zidSecret) {
+      console.error(`[Zid Webhook] ZID_WEBHOOK_SECRET not configured — rejecting`);
+      return res.status(500).json({ error: 'Webhook not configured' });
+    }
+    if (!signature) {
+      console.warn(`[Zid Webhook] Merchant ${merchantId} - Missing signature`);
+      return res.status(401).json({ error: 'Missing webhook signature' });
+    }
+    const expectedSignature = crypto
+      .createHmac('sha256', zidSecret)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
+      console.warn(`[Zid Webhook] Merchant ${merchantId} - Invalid signature`);
+      return res.status(401).json({ error: 'Invalid webhook signature' });
     }
 
     // Extract event type from payload
@@ -184,33 +189,35 @@ router.post('/calendly/:merchantId', async (req: Request, res: Response) => {
 
     console.log(`[Calendly Webhook] Merchant ${merchantId} - Received webhook event`);
 
-    // Verify webhook signature (HMAC-SHA256)
+    // SECURITY: Verify webhook signature (HMAC-SHA256) — mandatory
     const signature = req.headers['calendly-webhook-signature'] as string;
     const calendlySecret = process.env.CALENDLY_WEBHOOK_SECRET;
-    if (calendlySecret) {
-      if (!signature) {
-        console.warn(`[Calendly Webhook] Merchant ${merchantId} - Missing signature`);
-        return res.status(401).json({ error: 'Missing webhook signature' });
-      }
-      // Calendly signature format: t=timestamp,v1=signature
-      const parts = signature.split(',');
-      const timestampPart = parts.find(p => p.startsWith('t='));
-      const signaturePart = parts.find(p => p.startsWith('v1='));
-      if (!timestampPart || !signaturePart) {
-        console.warn(`[Calendly Webhook] Merchant ${merchantId} - Malformed signature`);
-        return res.status(401).json({ error: 'Malformed webhook signature' });
-      }
-      const timestamp = timestampPart.replace('t=', '');
-      const receivedSig = signaturePart.replace('v1=', '');
-      const payload = `${timestamp}.${JSON.stringify(req.body)}`;
-      const expectedSig = crypto
-        .createHmac('sha256', calendlySecret)
-        .update(payload)
-        .digest('hex');
-      if (!crypto.timingSafeEqual(Buffer.from(receivedSig), Buffer.from(expectedSig))) {
-        console.warn(`[Calendly Webhook] Merchant ${merchantId} - Invalid signature`);
-        return res.status(401).json({ error: 'Invalid webhook signature' });
-      }
+    if (!calendlySecret) {
+      console.error(`[Calendly Webhook] CALENDLY_WEBHOOK_SECRET not configured — rejecting`);
+      return res.status(500).json({ error: 'Webhook not configured' });
+    }
+    if (!signature) {
+      console.warn(`[Calendly Webhook] Merchant ${merchantId} - Missing signature`);
+      return res.status(401).json({ error: 'Missing webhook signature' });
+    }
+    // Calendly signature format: t=timestamp,v1=signature
+    const parts = signature.split(',');
+    const timestampPart = parts.find(p => p.startsWith('t='));
+    const signaturePart = parts.find(p => p.startsWith('v1='));
+    if (!timestampPart || !signaturePart) {
+      console.warn(`[Calendly Webhook] Merchant ${merchantId} - Malformed signature`);
+      return res.status(401).json({ error: 'Malformed webhook signature' });
+    }
+    const timestamp = timestampPart.replace('t=', '');
+    const receivedSig = signaturePart.replace('v1=', '');
+    const calPayload = `${timestamp}.${JSON.stringify(req.body)}`;
+    const expectedSig = crypto
+      .createHmac('sha256', calendlySecret)
+      .update(calPayload)
+      .digest('hex');
+    if (!crypto.timingSafeEqual(Buffer.from(receivedSig), Buffer.from(expectedSig))) {
+      console.warn(`[Calendly Webhook] Merchant ${merchantId} - Invalid signature`);
+      return res.status(401).json({ error: 'Invalid webhook signature' });
     }
 
     // Extract event type from payload
@@ -240,10 +247,22 @@ router.get('/status/:platform/:merchantId', async (req: Request, res: Response) 
       return res.status(400).json({ error: 'Invalid merchant ID' });
     }
 
-    // Require API key or authorization header for status checks
+    // SECURITY: Validate JWT token — not just header presence
     const authHeader = req.headers.authorization;
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ error: 'Authorization required' });
+    }
+
+    try {
+      const jwt = await import('jsonwebtoken');
+      const token = authHeader.replace('Bearer ', '');
+      const jwtSecret = process.env.JWT_SECRET;
+      if (!jwtSecret) {
+        return res.status(500).json({ error: 'Server configuration error' });
+      }
+      jwt.default.verify(token, jwtSecret, { algorithms: ['HS256'] });
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid or expired token' });
     }
 
     const validPlatforms = ['zid', 'calendly', 'salla'];

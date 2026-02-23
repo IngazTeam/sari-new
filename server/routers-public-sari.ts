@@ -20,7 +20,21 @@ export const publicSariRouter = router({
             ipAddress: z.string().optional(),
             userAgent: z.string().optional(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            // SECURITY: Rate limit public AI chat to prevent cost abuse
+            const { checkRateLimit, TRPC_LIMITS } = await import('./_core/rateLimiter');
+            const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+
+            const ipCheck = checkRateLimit(`chat_ip:${clientIp}`, TRPC_LIMITS.CHAT_PER_IP.max, TRPC_LIMITS.CHAT_PER_IP.windowMs);
+            if (!ipCheck.allowed) {
+                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من الرسائل. حاول مرة أخرى بعد قليل.' });
+            }
+
+            const sessionCheck = checkRateLimit(`chat_session:${input.sessionId}`, TRPC_LIMITS.CHAT_PER_SESSION.max, TRPC_LIMITS.CHAT_PER_SESSION.windowMs);
+            if (!sessionCheck.allowed) {
+                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'وصلت للحد الأقصى من الرسائل في هذه الجلسة. سجل حساب لتجربة كاملة!' });
+            }
+
             const demoMerchant = await db.getMerchantById(1);
 
             if (!demoMerchant) {

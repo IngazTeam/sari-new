@@ -32,7 +32,7 @@ export const voiceRouter = router({
 
                 const extension = input.mimeType.includes('webm') ? 'webm' : 'mp3';
                 const timestamp = Date.now();
-                const randomStr = Math.random().toString(36).substring(7);
+                const randomStr = require('crypto').randomBytes(4).toString('hex');
                 const fileName = `voice-${ctx.user.id}-${timestamp}-${randomStr}.${extension}`;
 
                 const { storagePut } = await import('./storage');
