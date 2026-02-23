@@ -308,7 +308,7 @@ export default function UploadProducts() {
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() => setLocation('/merchant/integrations')}
+                    onClick={() => setLocation('/merchant/platform-integrations')}
                   >
                     {t('uploadProductsPage.goToIntegrations')}
                   </Button>
