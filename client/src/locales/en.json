@@ -1443,48 +1443,48 @@
     "confirmDelete": "Are you sure you want to delete the product",
     "sar": "SAR",
     "dollar": "$",
-    "text0": "الرد الآلي الذكي",
-    "text1": "مساعد ذكي يرد على استفسارات عملائك باللهجة السعودية على مدار الساعة",
-    "text2": "رد تلقائي على الاستفسارات",
-    "text3": "فهم اللهجة السعودية",
-    "text4": "البحث في المنتجات",
-    "text5": "اقتراح المنتجات المناسبة",
-    "text6": "متاح 24/7",
-    "text7": "إدارة المحادثات",
-    "text8": "نظام متقدم لإدارة جميع محادثاتك مع العملاء في مكان واحد",
-    "text9": "عرض جميع المحادثات",
-    "text10": "تصنيف المحادثات",
-    "text11": "البحث في المحادثات",
-    "text12": "الرد اليدوي عند الحاجة",
-    "text13": "تاريخ كامل للمحادثات",
-    "text14": "إدارة المنتجات",
-    "text15": "أضف وأدر منتجاتك بسهولة ليتعرف عليها ساري",
-    "text16": "إضافة منتجات غير محدودة",
-    "text17": "تصنيف المنتجات",
-    "text18": "إدارة المخزون",
-    "text19": "تحديث الأسعار",
-    "text20": "صور المنتجات",
-    "text21": "الحملات التسويقية",
-    "text22": "أرسل حملات تسويقية مستهدفة لعملائك عبر الواتساب",
-    "text23": "إنشاء حملات مخصصة",
-    "text24": "جدولة الحملات",
-    "text25": "استهداف العملاء",
-    "text26": "تتبع الأداء",
-    "text27": "رسائل صوتية وصور",
-    "text28": "التقارير والتحليلات",
-    "text29": "تقارير مفصلة عن أداء متجرك ومحادثاتك",
-    "text30": "إحصائيات المحادثات",
-    "text31": "تحليل أداء المبيعات",
-    "text32": "تقارير الحملات",
-    "text33": "معدلات التحويل",
-    "text34": "رضا العملاء",
-    "text35": "الدعم الفني",
-    "text36": "دعم فني متواصل لمساعدتك في أي وقت",
-    "text37": "دعم عبر الواتساب",
-    "text38": "دعم عبر البريد",
-    "text39": "قاعدة معرفية شاملة",
-    "text40": "فيديوهات تعليمية",
-    "text41": "استجابة سريعة"
+    "text0": "Product name is required",
+    "text1": "Product price must be a positive number",
+    "text2": "Product description must not exceed 500 characters",
+    "text3": "Category name is required",
+    "text4": "Products",
+    "text5": "Manage your products and inventory",
+    "text6": "Add Product",
+    "text7": "Product Name",
+    "text8": "Description",
+    "text9": "Price",
+    "text10": "Category",
+    "text11": "Status",
+    "text12": "Actions",
+    "text13": "Search products...",
+    "text14": "All",
+    "text15": "Active",
+    "text16": "Inactive",
+    "text17": "Out of stock",
+    "text18": "Add New Product",
+    "text19": "Update product details",
+    "text20": "Product Name *",
+    "text21": "e.g. Samsung Galaxy S24",
+    "text22": "Description",
+    "text23": "Product description and features...",
+    "text24": "Price *",
+    "text25": "Currency",
+    "text26": "Category",
+    "text27": "Select a category",
+    "text28": "Tags",
+    "text29": "Enter tags separated by commas",
+    "text30": "Product Image",
+    "text31": "Stock Quantity",
+    "text32": "In Stock",
+    "text33": "SKU",
+    "text34": "Barcode",
+    "text35": "Weight (kg)",
+    "text36": "Active",
+    "text37": "Display the product in the store",
+    "text38": "No products yet",
+    "text39": "Start adding your products",
+    "text40": "Product added successfully",
+    "text41": "Product updated successfully"
   },
   "campaignsPage": {
     "title": "Marketing Campaigns",
@@ -3312,52 +3312,52 @@
     "text31": "? 'Saving...'"
   },
   "serviceFormPage": {
-    "text0": "تم إنشاء الخدمة بنجاح",
-    "text1": "تم تحديث الخدمة بنجاح",
-    "text2": "جاري التحميل...",
-    "text3": "المعلومات الأساسية",
-    "text4": "معلومات الخدمة الأساسية",
-    "text5": "اسم الخدمة *",
-    "text6": "مثال: قص شعر، استشارة قانونية، صيانة كمبيوتر",
-    "text7": "الوصف",
-    "text8": "وصف تفصيلي للخدمة",
-    "text9": "التصنيف",
-    "text10": "اختر التصنيف",
-    "text11": "بدون تصنيف",
-    "text12": "التسعير",
-    "text13": "حدد نوع التسعير والأسعار",
-    "text14": "نوع التسعير *",
-    "text15": "سعر ثابت",
-    "text16": "سعر متغير (من - إلى)",
-    "text17": "حسب الطلب",
-    "text18": "السعر (ريال) *",
-    "text19": "السعر الأدنى (ريال) *",
-    "text20": "السعر الأعلى (ريال) *",
-    "text21": "إعدادات الوقت",
-    "text22": "مدة الخدمة والوقت الإضافي",
-    "text23": "مدة الخدمة (دقيقة) *",
-    "text24": "وقت إضافي (دقيقة)",
-    "text25": "إعدادات الحجز",
-    "text26": "إعدادات حجز المواعيد",
-    "text27": "يتطلب حجز موعد",
-    "text28": "الحد الأقصى للحجوزات اليومية",
-    "text29": "اتركه فارغاً لعدم التحديد",
-    "text30": "الحجز المسبق (أيام)",
-    "text31": "الترتيب",
-    "text32": "ترتيب عرض الخدمة",
-    "text33": "ترتيب العرض",
-    "text34": "تعديل الخدمة",
-    "text35": "إضافة خدمة جديدة",
-    "text36": "تحديث معلومات الخدمة",
-    "text37": "إضافة خدمة جديدة لنشاطك التجاري",
-    "text38": "تحديث الخدمة",
-    "text39": "إضافة الخدمة",
-    "text40": "العودة إلى الخدمات",
-    "text41": "هل يجب على العميل حجز موعد لهذه الخدمة؟",
-    "text42": "كم يوماً مقدماً يمكن للعميل الحجز؟",
-    "text43": "الخدمات ذات الترتيب الأقل تظهر أولاً",
-    "text44": "إلغاء",
-    "text45": "? 'جاري الحفظ...'"
+    "text0": "Service added successfully",
+    "text1": "Error",
+    "text2": "Failed to add service",
+    "text3": "Service updated successfully",
+    "text4": "Error",
+    "text5": "Failed to update service",
+    "text6": "Add New Service",
+    "text7": "Update Service",
+    "text8": "Update service details",
+    "text9": "Basic Information",
+    "text10": "Service Name (Arabic) *",
+    "text11": "e.g. Home Worker Recruitment",
+    "text12": "Service Name (English)",
+    "text13": "Description (Arabic)",
+    "text14": "Describe the service, its duration and terms...",
+    "text15": "Description (English)",
+    "text16": "Pricing",
+    "text17": "Price (SAR) *",
+    "text18": "per session/visit",
+    "text19": "Duration",
+    "text20": "e.g. 30 minutes",
+    "text21": "Category *",
+    "text22": "Select a category",
+    "text23": "General",
+    "text24": "Consultation",
+    "text25": "Maintenance",
+    "text26": "Beauty",
+    "text27": "Health",
+    "text28": "Education",
+    "text29": "Technology",
+    "text30": "Service Image",
+    "text31": "Drag and drop an image or click to select",
+    "text32": "Other",
+    "text33": "Service Options",
+    "text34": "Add options like sizes or packages",
+    "text35": "Add Option",
+    "text36": "Option Name",
+    "text37": "Option Price",
+    "text38": "Additional Information",
+    "text39": "Service Terms",
+    "text40": "Enter the service terms and conditions...",
+    "text41": "Availability",
+    "text42": "Available for booking",
+    "text43": "Featured",
+    "text44": "Show in featured section",
+    "text45": "Save Service"
   },
   "servicePackagesPage": {
     "text0": "Package created successfully",
@@ -3459,41 +3459,41 @@
     "text22": "AI smart responses • Product management • Marketing campaigns • Reports & Statistics • Technical support"
   },
   "subscriptionsPage": {
-    "text0": "الباقات والاشتراكات",
-    "text1": "الاستخدام الحالي",
-    "text2": "الباقة الحالية",
-    "text3": "{plan.features || 'باقة شاملة لجميع احتياجاتك'}",
-    "text4": "ريال / شهرياً",
-    "text5": "مقارنة الباقات",
-    "text6": "قارن بين الباقات المختلفة لاختيار الأنسب لك",
-    "text7": "الميزة",
-    "text8": "السعر الشهري",
-    "text9": "عدد المحادثات",
-    "text10": "الرسائل الصوتية",
-    "text11": "الحملات التسويقية",
-    "text12": "الدعم الفني",
-    "text13": "التحليلات المتقدمة",
-    "text14": "أولوية الدعم",
-    "text15": "الأسئلة الشائعة",
-    "text16": "هل يمكنني الترقية في أي وقت؟",
-    "text17": "ماذا يحدث عند انتهاء الاشتراك؟",
-    "text18": "هل يمكنني استرداد المبلغ؟",
-    "text19": "ترقية الباقة",
-    "text20": "اختيار الباقة",
-    "text21": "اختر الباقة المناسبة لاحتياجات عملك",
-    "text22": "باقتك الحالية",
-    "text23": "حملات تسويقية غير محدودة",
-    "text24": "دعم فني على مدار الساعة",
-    "text25": "تحليلات متقدمة",
-    "text26": "أولوية في الدعم الفني",
-    "text27": "نعم، يمكنك الترقية إلى باقة أعلى في أي وقت وسيتم تطبيق التغيير فوراً.",
-    "text28": "سيتم تجديد اشتراكك تلقائياً ما لم تقم بإلغاء التجديد التلقائي من الإعدادات.",
-    "text29": "نعم، يمكنك طلب استرداد المبلغ خلال 14 يوم من تاريخ الاشتراك.",
-    "text30": "}\r\n                    </span>\r\n                  </div>\r\n                  <div className=\"flex items-start gap-2\">\r\n                    <Check className=\"h-5 w-5 text-green-500 mt-0.5 flex-shrink-0\" />\r\n                    <span className=\"text-sm\">\r\n                      {plan.voiceMessageLimit === -1 ? 'رسائل صوتية غير محدودة' : ",
-    "text31": "{{var0}} ريال / شهرياً",
-    "text32": "{{var0}} / {{var1}} محادثة",
-    "text33": "{{var0}} / {{var1}} رسالة صوتية",
-    "text34": "{{var0}} ريال"
+    "text0": "Subscriptions Management",
+    "text1": "Manage all subscriptions in the system",
+    "text2": "Total Subscriptions",
+    "text3": "Active",
+    "text4": "Trial",
+    "text5": "Expired",
+    "text6": "Revenue",
+    "text7": "Merchant",
+    "text8": "Plan",
+    "text9": "Status",
+    "text10": "Start Date",
+    "text11": "End Date",
+    "text12": "Amount",
+    "text13": "Actions",
+    "text14": "Active",
+    "text15": "Trial",
+    "text16": "Expired",
+    "text17": "Cancelled",
+    "text18": "Search...",
+    "text19": "All Status",
+    "text20": "All Plans",
+    "text21": "No subscriptions found",
+    "text22": "Subscription Details",
+    "text23": "Merchant Information",
+    "text24": "Plan Details",
+    "text25": "Payment History",
+    "text26": "Renew",
+    "text27": "Cancel Subscription",
+    "text28": "Extend Trial",
+    "text29": "Are you sure you want to cancel this subscription?",
+    "text30": "Subscription cancelled successfully",
+    "text31": "Subscription renewed successfully",
+    "text32": "Error",
+    "text33": "Failed to update subscription",
+    "text34": "Monthly Revenue"
   },
   "usagePage": {
     "text0": "Plan Usage",
@@ -3720,77 +3720,77 @@
     "text41": "⏱️ The code expires in two minutes. If expired, click \"Refresh Code\""
   },
   "whatsAppTestPage": {
-    "text0": "تم حفظ بيانات WhatsApp بنجاح! ✅",
-    "text1": "فشل حفظ البيانات: ${error.message}",
-    "text2": "فشل حفظ البيانات: {{var0}}",
-    "text3": "تم حذف البيانات المحفوظة",
-    "text4": "فشل حذف البيانات: ${error.message}",
-    "text5": "فشل حذف البيانات: {{var0}}",
-    "text6": "تم إرسال الرسالة بنجاح! ✅",
-    "text7": "فشل إرسال الرسالة: ${error.message}",
-    "text8": "فشل إرسال الرسالة: {{var0}}",
-    "text9": "تم إرسال الصورة بنجاح! ✅",
-    "text10": "فشل إرسال الصورة: ${error.message}",
-    "text11": "فشل إرسال الصورة: {{var0}}",
-    "text12": "الاتصال ناجح! ✅\\nالحالة: ${data.status}",
-    "text13": "الاتصال ناجح! ✅\\nالحالة: {{var0}}",
-    "text14": "خطأ غير متوقع: ${error.message}",
-    "text15": "خطأ غير متوقع: {{var0}}",
-    "text16": "يرجى إدخال Instance ID",
-    "text17": "يرجى إدخال API Token",
-    "text18": "يرجى إدخال Instance ID",
-    "text19": "يرجى إدخال API Token",
-    "text20": "يرجى إدخال بيانات Green API أولاً",
-    "text21": "يرجى إدخال رقم الجوال",
-    "text22": "يرجى إدخال نص الرسالة",
-    "text23": "يرجى إدخال بيانات Green API أولاً",
-    "text24": "يرجى إدخال رقم الجوال",
-    "text25": "يرجى إدخال رابط الصورة",
-    "text26": "تم النسخ!",
-    "text27": "اختبار WhatsApp",
-    "text28": "أدخل API Token",
-    "text29": "رقم الجوال (مع رمز الدولة)",
-    "text30": "نص الرسالة",
-    "text31": "اكتب رسالتك هنا...",
-    "text32": "رابط الصورة",
-    "text33": "نص مرفق (اختياري)",
-    "text34": "وصف الصورة...",
-    "text35": "رقم الواتساب المتصل:",
-    "text36": "لم يتم إجراء أي اختبار بعد",
-    "text37": "ابدأ باختبار الاتصال أولاً",
-    "text38": "نصائح سريعة",
-    "text39": "خطوة 1:",
-    "text40": "خطوة 2:",
-    "text41": "خطوة 3:",
-    "text42": "خطوة 4:",
-    "text43": "نجح",
-    "text44": "فشل",
-    "text45": "نجح",
-    "text46": "فشل",
-    "text47": "دليل الإعداد",
-    "text48": "اختبار الاتصال",
-    "text49": "حفظ البيانات",
-    "text50": "حذف",
-    "text51": "إرسال رسالة نصية",
-    "text52": "إرسال الرسالة",
-    "text53": "إرسال صورة",
-    "text54": "إرسال الصورة",
-    "text55": "نتائج الاختبار",
-    "text56": "نتائج تفصيلية لجميع العمليات",
-    "text57": "اختبار الاتصال",
-    "text58": "إرسال رسالة نصية",
-    "text59": "إرسال صورة",
-    "text60": "فشل الاتصال ❌\\nالحالة: {{var0}}",
-    "text61": " • رقم الهاتف: {{var0}}",
-    "text62": "اختبر الاتصال بـ Green API وإرسال الرسائل",
-    "text63": "بيانات Green API",
-    "text64": "أدخل Instance ID و Token من لوحة تحكم Green API",
-    "text65": "البيانات محفوظة! Instance: {{var0}}",
-    "text66": "مثال: 966501234567 (بدون + أو 00)",
-    "text67": "اختبر الاتصال أولاً للتأكد من صحة البيانات",
-    "text68": "احفظ البيانات بعد نجاح الاتصال",
-    "text69": "جرب إرسال رسالة لرقمك الشخصي",
-    "text70": "أرسل رسالة من رقمك لرقم المتجر لاختبار ساري"
+    "text0": "Test WhatsApp Integration",
+    "text1": "Test your WhatsApp bot responses",
+    "text2": "Send a test message",
+    "text3": "Test Message",
+    "text4": "Enter your test message...",
+    "text5": "Send",
+    "text6": "Response",
+    "text7": "Test Results",
+    "text8": "Success",
+    "text9": "Message sent successfully",
+    "text10": "Error",
+    "text11": "Failed to send message",
+    "text12": "Connection Status",
+    "text13": "Connected",
+    "text14": "Disconnected",
+    "text15": "Connecting...",
+    "text16": "Phone Number",
+    "text17": "Instance ID",
+    "text18": "Last Activity",
+    "text19": "Messages Sent",
+    "text20": "Messages Received",
+    "text21": "Quick Test Messages",
+    "text22": "Hello",
+    "text23": "Show me the products",
+    "text24": "I want to order",
+    "text25": "What are the prices?",
+    "text26": "Working hours",
+    "text27": "Bot Response Time",
+    "text28": "Average",
+    "text29": "Fast",
+    "text30": "Slow",
+    "text31": "Test History",
+    "text32": "Message",
+    "text33": "Response",
+    "text34": "Time",
+    "text35": "Status",
+    "text36": "No tests yet",
+    "text37": "Start by sending a test message",
+    "text38": "Clear History",
+    "text39": "Export Results",
+    "text40": "Test Settings",
+    "text41": "Auto-respond",
+    "text42": "Response Delay (ms)",
+    "text43": "Test Mode",
+    "text44": "Enable test mode",
+    "text45": "Test mode active",
+    "text46": "Messages will not be sent to real customers",
+    "text47": "Simulate Customer",
+    "text48": "Customer Name",
+    "text49": "Customer Phone",
+    "text50": "Start Simulation",
+    "text51": "End Simulation",
+    "text52": "Simulation Active",
+    "text53": "Response Analysis",
+    "text54": "Accuracy",
+    "text55": "Relevance",
+    "text56": "Tone",
+    "text57": "Language",
+    "text58": "Suggestions",
+    "text59": "No suggestions",
+    "text60": "Bot Knowledge Base",
+    "text61": "Products loaded",
+    "text62": "Services loaded",
+    "text63": "FAQs loaded",
+    "text64": "Custom responses",
+    "text65": "Refresh Knowledge Base",
+    "text66": "Knowledge base refreshed",
+    "text67": "Debugging",
+    "text68": "Show raw response",
+    "text69": "Show prompt",
+    "text70": "Show context"
   },
   "whatsAppWebhookSetupPage": {
     "text0": "Copied to clipboard",
@@ -4227,27 +4227,27 @@
     "text35": "Cancelled"
   },
   "adminMerchantsPage": {
-    "text0": "نشط",
-    "text1": "معلق",
-    "text2": "قيد المراجعة",
-    "text3": "باقة {{var0}}",
-    "text4": "إدارة التجار",
-    "text5": "إجمالي التجار",
-    "text6": "التجار النشطون",
-    "text7": "قيد المراجعة",
-    "text8": "قائمة التجار",
-    "text9": "جاري التحميل...",
-    "text10": "عرض التفاصيل",
-    "text17": "معلق",
-    "text20": "لا يوجد تجار بعد",
-    "text19": "معلق",
-    "text11": "اسم المتجر",
-    "text12": "معلومات الاتصال",
-    "text13": "الباقة",
-    "text14": "الحالة",
-    "text15": "تاريخ التسجيل",
-    "text16": "تغيير الحالة",
-    "text18": "نشط"
+    "text0": "Merchants Management",
+    "text1": "View and manage all merchants",
+    "text2": "Total Merchants",
+    "text3": "Active",
+    "text4": "Inactive",
+    "text5": "New This Month",
+    "text6": "Merchant",
+    "text7": "Email",
+    "text8": "Plan",
+    "text9": "Status",
+    "text10": "Joined",
+    "text17": "Activate",
+    "text20": "Are you sure you want to delete this merchant?",
+    "text19": "Delete",
+    "text11": "Actions",
+    "text12": "Search merchants...",
+    "text13": "All Status",
+    "text14": "All Plans",
+    "text15": "No merchants found",
+    "text16": "View Details",
+    "text18": "Deactivate"
   },
   "adminNotificationManagementPage": {
     "text0": "Resend failed: {{var0}}",
@@ -5181,113 +5181,113 @@
     "text12": "Join the Sari Family"
   },
   "comparePlansPage": {
-    "text0": "تم تحديث الباقة بنجاح",
-    "text1": "لا يوجد اشتراك نشط",
-    "text2": "هذه هي باقتك الحالية",
-    "text3": "لا توجد باقات متاحة حالياً",
-    "text4": "عدد العملاء",
-    "text5": "أرقام الواتساب",
-    "text6": "عدد المنتجات",
-    "text7": "الحملات الشهرية",
-    "text8": "رسائل AI شهرياً",
-    "text9": "مستوى الدعم",
-    "text10": "بريد إلكتروني",
-    "text11": "محادثة مباشرة",
-    "text12": "دعم أولوية",
-    "text13": "دعم مخصص 24/7",
-    "text14": "التحليلات والتقارير",
-    "text15": "الأتمتة",
-    "text16": "تكامل التقويم",
-    "text17": "تكامل Sheets",
-    "text18": "برنامج الولاء",
-    "text19": "اختبار A/B",
-    "text20": "علامة تجارية مخصصة",
-    "text21": "الوصول لـ API",
-    "text22": "مقارنة الباقات",
-    "text23": "الباقة الحالية",
-    "text24": "لمرة واحدة",
-    "text25": "هل تحتاج مساعدة في اختيار الباقة المناسبة؟",
-    "text26": "{{plan.price.toLocaleString()}} ر.س",
-    "text27": "شهرياً",
-    "text28": "سنوياً"
+    "text0": "Compare Plans",
+    "text1": "Choose the plan that suits your business",
+    "text2": "Monthly",
+    "text3": "Yearly",
+    "text4": "Save",
+    "text5": "Free",
+    "text6": "Starter",
+    "text7": "Professional",
+    "text8": "Enterprise",
+    "text9": "month",
+    "text10": "year",
+    "text11": "Current Plan",
+    "text12": "Upgrade",
+    "text13": "Contact Us",
+    "text14": "Get Started",
+    "text15": "Features",
+    "text16": "Products",
+    "text17": "Orders",
+    "text18": "WhatsApp Messages",
+    "text19": "Team Members",
+    "text20": "Analytics",
+    "text21": "Custom Bot",
+    "text22": "API Access",
+    "text23": "Priority Support",
+    "text24": "Unlimited",
+    "text25": "Basic",
+    "text26": "Advanced",
+    "text27": "Custom",
+    "text28": "Most Popular"
   },
   "competitorAnalysisPage": {
-    "text0": "تم إضافة المنافس وبدء التحليل",
-    "text1": "تم حذف المنافس",
-    "text2": "الرجاء إدخال جميع الحقول",
-    "text3": "الرجاء إدخال رابط صحيح",
-    "text4": "هل أنت متأكد من حذف هذا المنافس؟",
-    "text5": "تحليل المنافسين",
-    "text6": "إضافة منافس جديد",
-    "text7": "اسم المنافس",
-    "text8": "مثال: متجر المنافس",
-    "text9": "رابط الموقع",
-    "text10": "جاري التحليل...",
-    "text11": "مكتمل",
-    "text12": "فشل",
-    "text13": "قيد الانتظار",
-    "text14": "النقاط الإجمالية",
-    "text15": "الأداء:",
-    "text16": "المحتوى:",
-    "text17": "متوسط السعر:",
-    "text18": "النطاق:",
-    "text19": "لا يوجد منافسون بعد"
+    "text0": "Competitor Analysis",
+    "text1": "Analyze your competitors' websites",
+    "text2": "Enter competitor URL",
+    "text3": "Analyze",
+    "text4": "Analyzing...",
+    "text5": "Comparison Results",
+    "text6": "Your Score",
+    "text7": "Competitor Score",
+    "text8": "SEO Score",
+    "text9": "Performance",
+    "text10": "Content Quality",
+    "text11": "Mobile Friendly",
+    "text12": "Strengths",
+    "text13": "Weaknesses",
+    "text14": "Opportunities",
+    "text15": "Recommendations",
+    "text16": "Previous Analyses",
+    "text17": "No analyses yet",
+    "text18": "Date",
+    "text19": "URL"
   },
   "currencySettingsPage": {
-    "text0": "تم تحديث العملة بنجاح",
-    "text1": "يرجى اختيار العملة",
-    "text2": "إعدادات العملة",
-    "text3": "دولار أمريكي",
-    "text4": "اختر العملة",
-    "text5": "اختر العملة",
-    "text6": "ريال سعودي",
-    "text7": "دولار أمريكي",
-    "text8": "معلومات العملة المختارة:",
-    "text9": "الرمز:",
-    "text10": "الكود:",
-    "text11": "الاسم:",
-    "text12": "دولار أمريكي",
-    "text13": "ملاحظات هامة",
-    "text14": "سيتم عرض جميع المنتجات والطلبات الجديدة بالعملة المختارة",
-    "text15": "المنتجات والطلبات الموجودة ستحتفظ بعملتها الأصلية",
-    "text16": "يمكنك تغيير العملة في أي وقت",
-    "text17": "يمكنك تحديد عملة مختلفة لكل منتج عند إضافته"
+    "text0": "Currency Settings",
+    "text1": "Manage your store currency",
+    "text2": "Primary Currency",
+    "text3": "Select the main currency for your store",
+    "text4": "Saudi Riyal (SAR)",
+    "text5": "US Dollar (USD)",
+    "text6": "Emirati Dirham (AED)",
+    "text7": "Kuwaiti Dinar (KWD)",
+    "text8": "Bahraini Dinar (BHD)",
+    "text9": "Qatari Riyal (QAR)",
+    "text10": "Omani Rial (OMR)",
+    "text11": "Egyptian Pound (EGP)",
+    "text12": "Currency Display",
+    "text13": "Show currency symbol",
+    "text14": "All new products and orders will be displayed in the selected currency",
+    "text15": "Existing products and orders will keep their original currency",
+    "text16": "You can change the currency at any time",
+    "text17": "You can set a different currency for each product when adding it"
   },
   "customerDetailsPage": {
-    "text0": "جاري التحميل...",
-    "text1": "العميل غير موجود",
-    "text2": "نشط",
-    "text3": "جديد",
-    "text4": "غير نشط",
-    "text5": "قيد الانتظار",
-    "text6": "مؤكد",
-    "text7": "جاري التحضير",
-    "text8": "تم الشحن",
-    "text9": "تم التوصيل",
-    "text10": "ملغي",
-    "text11": "رقم الجوال",
-    "text12": "عدد الطلبات",
-    "text13": "طلب إجمالي",
-    "text14": "إجمالي المشتريات",
-    "text15": "القيمة الإجمالية",
-    "text16": "نقاط الولاء",
-    "text17": "نقطة متاحة",
-    "text18": "معلومات التفاعل",
-    "text19": "تاريخ التسجيل",
-    "text20": "آخر تفاعل",
-    "text21": "سجل الطلبات",
-    "text22": "جميع طلبات العميل",
-    "text23": "رقم الطلب",
-    "text24": "التاريخ",
-    "text25": "المنتجات",
-    "text26": "الإجمالي",
-    "text27": "الحالة",
-    "text28": "الإجراءات",
-    "text29": "لا توجد طلبات",
-    "text30": "تاريخ المحادثات",
-    "text31": "جميع محادثات العميل",
-    "text32": "لا توجد محادثات",
-    "text33": "محادثة #{{conv.id}}"
+    "text0": "Loading...",
+    "text1": "Customer not found",
+    "text2": "Active",
+    "text3": "New",
+    "text4": "Inactive",
+    "text5": "Pending",
+    "text6": "Confirmed",
+    "text7": "Preparing",
+    "text8": "Shipped",
+    "text9": "Delivered",
+    "text10": "Cancelled",
+    "text11": "Phone Number",
+    "text12": "Total Orders",
+    "text13": "total orders",
+    "text14": "Total Purchases",
+    "text15": "Total Value",
+    "text16": "Loyalty Points",
+    "text17": "available points",
+    "text18": "Interaction Info",
+    "text19": "Registration Date",
+    "text20": "Last Interaction",
+    "text21": "Order History",
+    "text22": "All customer orders",
+    "text23": "Order Number",
+    "text24": "Date",
+    "text25": "Products",
+    "text26": "Total",
+    "text27": "Status",
+    "text28": "Actions",
+    "text29": "No orders",
+    "text30": "Conversation History",
+    "text31": "All customer conversations",
+    "text32": "No conversations",
+    "text33": "Conversation #{{conv.id}}"
   },
   "customerLoyaltyPage": {
     "text0": "Redeemed successfully! 🎉",
@@ -5468,155 +5468,155 @@
     "text8": "Don't have an account?"
   },
   "loyaltyCustomersPage": {
-    "text0": "تم إضافة النقاط بنجاح",
-    "text1": "خطأ",
-    "text2": "فشل إضافة النقاط",
-    "text3": "تم خصم النقاط بنجاح",
-    "text4": "خطأ",
-    "text5": "عملاء نظام الولاء",
-    "text6": "عرض وإدارة نقاط العملاء",
-    "text7": "إجمالي العملاء",
-    "text8": "النقاط الموزعة",
-    "text9": "النقاط المستبدلة",
-    "text10": "إجمالي الاستبدالات",
-    "text11": "قائمة العملاء",
-    "text12": "جميع العملاء المسجلين في نظام الولاء",
-    "text13": "العميل",
-    "text14": "رقم الجوال",
-    "text15": "النقاط الحالية",
-    "text16": "إجمالي النقاط",
-    "text17": "المستوى",
-    "text18": "آخر نشاط",
-    "text19": "إجراءات",
-    "text20": "لا يوجد",
-    "text21": "إضافة نقاط",
-    "text22": "عدد النقاط",
-    "text23": "السبب (بالعربي)",
-    "text24": "مثال: مكافأة خاصة",
-    "text25": "السبب (بالإنجليزي)",
-    "text26": "خصم نقاط",
-    "text27": "عدد النقاط",
-    "text28": "السبب (بالعربي)",
-    "text29": "مثال: تعديل يدوي",
-    "text30": "السبب (بالإنجليزي)",
-    "text31": "تم إضافة {{pointsForm.points}} نقطة لـ {{selectedCustomer.customerName}}",
-    "text32": "تم خصم {{pointsForm.points}} نقطة من {{selectedCustomer.customerName}}"
+    "text0": "Points added successfully",
+    "text1": "Error",
+    "text2": "Failed to add points",
+    "text3": "Points deducted successfully",
+    "text4": "Error",
+    "text5": "Loyalty System Customers",
+    "text6": "View and manage customer points",
+    "text7": "Total Customers",
+    "text8": "Points Distributed",
+    "text9": "Points Redeemed",
+    "text10": "Total Redemptions",
+    "text11": "Customer List",
+    "text12": "All customers enrolled in the loyalty program",
+    "text13": "Customer",
+    "text14": "Phone Number",
+    "text15": "Current Points",
+    "text16": "Total Points",
+    "text17": "Tier",
+    "text18": "Last Activity",
+    "text19": "Actions",
+    "text20": "None",
+    "text21": "Add Points",
+    "text22": "Number of Points",
+    "text23": "Reason (Arabic)",
+    "text24": "e.g. Special reward",
+    "text25": "Reason (English)",
+    "text26": "Deduct Points",
+    "text27": "Number of Points",
+    "text28": "Reason (Arabic)",
+    "text29": "e.g. Manual adjustment",
+    "text30": "Reason (English)",
+    "text31": "{{pointsForm.points}} points added to {{selectedCustomer.customerName}}",
+    "text32": "{{pointsForm.points}} points deducted from {{selectedCustomer.customerName}}"
   },
   "loyaltyRewardsPage": {
-    "text0": "تم الإنشاء بنجاح",
-    "text1": "تم إضافة المكافأة الجديدة",
-    "text2": "خطأ",
-    "text3": "فشل إنشاء المكافأة",
-    "text4": "تم التحديث بنجاح",
-    "text5": "تم تحديث المكافأة",
-    "text6": "خطأ",
-    "text7": "فشل تحديث المكافأة",
-    "text8": "هل أنت متأكد من حذف هذه المكافأة؟",
-    "text9": "تم الحذف بنجاح",
-    "text10": "تم حذف المكافأة",
-    "text11": "خطأ",
-    "text12": "فشل حذف المكافأة",
-    "text13": "خصم",
-    "text14": "منتج مجاني",
-    "text15": "شحن مجاني",
-    "text16": "هدية",
-    "text17": "المكافآت",
-    "text18": "إدارة المكافآت المتاحة للعملاء",
-    "text19": "إضافة مكافأة جديدة",
-    "text20": "معطل",
-    "text21": "النوع",
-    "text22": "قيمة الخصم",
-    "text23": "ريال",
-    "text24": "عدد الاستبدالات",
-    "text25": " / غير محدود",
-    "text26": "لا توجد مكافآت حتى الآن",
-    "text27": "ابدأ بإضافة مكافأة جديدة",
-    "text28": "تعديل المكافأة",
-    "text29": "تحديث بيانات المكافأة",
-    "text30": "العنوان بالعربي *",
-    "text31": "خصم 10 ريال",
-    "text32": "العنوان بالإنجليزي *",
-    "text33": "الوصف بالعربي",
-    "text34": "احصل على خصم 10 ريال على طلبك القادم",
-    "text35": "الوصف بالإنجليزي",
-    "text36": "نوع المكافأة *",
-    "text37": "خصم",
-    "text38": "منتج مجاني",
-    "text39": "شحن مجاني",
-    "text40": "هدية",
-    "text41": "تكلفة النقاط *",
-    "text42": "قيمة الخصم *",
-    "text43": "نوع الخصم *",
-    "text44": "مبلغ ثابت (ريال)",
-    "text45": "نسبة مئوية (%)",
-    "text46": "الحد الأقصى للاستبدالات",
-    "text47": "0 = غير محدود",
-    "text48": "الحالة",
-    "text49": "معطل"
+    "text0": "Created successfully",
+    "text1": "New reward added",
+    "text2": "Error",
+    "text3": "Failed to create reward",
+    "text4": "Updated successfully",
+    "text5": "Reward updated",
+    "text6": "Error",
+    "text7": "Failed to update reward",
+    "text8": "Are you sure you want to delete this reward?",
+    "text9": "Deleted successfully",
+    "text10": "Reward deleted",
+    "text11": "Error",
+    "text12": "Failed to delete reward",
+    "text13": "Discount",
+    "text14": "Free Product",
+    "text15": "Free Shipping",
+    "text16": "Gift",
+    "text17": "Rewards",
+    "text18": "Manage rewards available to customers",
+    "text19": "Add New Reward",
+    "text20": "Disabled",
+    "text21": "Type",
+    "text22": "Discount Value",
+    "text23": "SAR",
+    "text24": "Redemptions",
+    "text25": " / Unlimited",
+    "text26": "No rewards yet",
+    "text27": "Start by adding a new reward",
+    "text28": "Edit Reward",
+    "text29": "Update reward details",
+    "text30": "Title (Arabic) *",
+    "text31": "10 SAR discount",
+    "text32": "Title (English) *",
+    "text33": "Description (Arabic)",
+    "text34": "Get 10 SAR off your next order",
+    "text35": "Description (English)",
+    "text36": "Reward Type *",
+    "text37": "Discount",
+    "text38": "Free Product",
+    "text39": "Free Shipping",
+    "text40": "Gift",
+    "text41": "Points Cost *",
+    "text42": "Discount Value *",
+    "text43": "Discount Type *",
+    "text44": "Fixed Amount (SAR)",
+    "text45": "Percentage (%)",
+    "text46": "Max Redemptions",
+    "text47": "0 = Unlimited",
+    "text48": "Status",
+    "text49": "Disabled"
   },
   "loyaltySettingsPage": {
-    "text0": "تم الحفظ بنجاح",
-    "text1": "تم تحديث إعدادات نظام الولاء",
-    "text2": "خطأ",
-    "text3": "فشل حفظ الإعدادات",
-    "text4": "إعدادات نظام الولاء",
-    "text5": "إدارة برنامج النقاط والمكافآت",
-    "text6": "تفعيل نظام الولاء",
-    "text7": "تشغيل أو إيقاف برنامج النقاط للعملاء",
-    "text8": "تفعيل النظام",
-    "text9": "إعدادات النقاط",
-    "text10": "تحديد قيمة النقاط وطريقة حسابها",
-    "text11": "نقاط لكل 1 ريال",
-    "text12": "ريال لكل 1 نقطة",
-    "text13": "مدة صلاحية النقاط (بالأيام)",
-    "text14": "مكافآت إضافية",
-    "text15": "نقاط إضافية للأنشطة المختلفة",
-    "text16": "نقاط الإحالة",
-    "text17": "نقاط التقييم",
-    "text18": "نقاط عيد الميلاد"
+    "text0": "Saved successfully",
+    "text1": "Loyalty system settings updated",
+    "text2": "Error",
+    "text3": "Failed to save settings",
+    "text4": "Loyalty System Settings",
+    "text5": "Manage the points and rewards program",
+    "text6": "Enable Loyalty System",
+    "text7": "Enable or disable the points program for customers",
+    "text8": "Enable System",
+    "text9": "Points Settings",
+    "text10": "Set the points value and calculation method",
+    "text11": "Points per 1 SAR",
+    "text12": "SAR per 1 Point",
+    "text13": "Points Expiry (days)",
+    "text14": "Additional Rewards",
+    "text15": "Bonus points for various activities",
+    "text16": "Referral Points",
+    "text17": "Review Points",
+    "text18": "Birthday Points"
   },
   "loyaltyTiersPage": {
-    "text0": "تم الحفظ بنجاح",
-    "text1": "خطأ",
-    "text2": "فشل حفظ المستوى",
-    "text3": "مستويات الولاء",
-    "text4": "إدارة مستويات العملاء ومزاياهم",
-    "text5": "الحد الأدنى من النقاط",
-    "text6": "نسبة الخصم (%)",
-    "text7": "الأولوية",
-    "text8": "اللون",
-    "text9": "المزايا:",
-    "text10": "شحن مجاني",
-    "text11": "تم تحديث مستوى {{tierData.nameAr}}",
-    "text12": "خصم {{displayTier.discountPercentage}}% على جميع المشتريات",
-    "text13": "أولوية في الخدمة (مستوى {{displayTier.priority}})"
+    "text0": "Saved successfully",
+    "text1": "Error",
+    "text2": "Failed to save tier",
+    "text3": "Loyalty Tiers",
+    "text4": "Manage customer tiers and benefits",
+    "text5": "Minimum Points",
+    "text6": "Discount (%)",
+    "text7": "Priority",
+    "text8": "Color",
+    "text9": "Benefits:",
+    "text10": "Free shipping",
+    "text11": "Tier {{tierData.nameAr}} updated",
+    "text12": "{{displayTier.discountPercentage}}% discount on all purchases",
+    "text13": "Service priority (Level {{displayTier.priority}})"
   },
   "notificationSettingsPage": {
-    "text0": "تم حفظ إعدادات الإشعارات بنجاح",
-    "text1": "إعدادات الإشعارات",
-    "text2": "تخصيص تفضيلات الإشعارات وساعات الهدوء",
-    "text3": "طريقة الإرسال المفضلة",
-    "text4": "اختر كيف تريد استلام الإشعارات",
-    "text5": "أنواع الإشعارات",
-    "text6": "اختر الإشعارات التي تريد استلامها",
-    "text7": "الطلبات الجديدة",
-    "text8": "الرسائل الجديدة",
-    "text9": "المواعيد",
-    "text10": "تحديثات حالة الطلب",
-    "text11": "الرسائل الفائتة",
-    "text12": "فك ربط واتساب",
-    "text13": "ساعات الهدوء",
-    "text14": "إيقاف الإشعارات خلال فترة معينة",
-    "text15": "تفعيل ساعات الهدوء",
-    "text16": "من الساعة",
-    "text17": "إلى الساعة",
-    "text18": "إعدادات إضافية",
-    "text19": "خيارات متقدمة للإشعارات",
-    "text20": "إشعارات فورية",
-    "text21": "إرسال الإشعارات فوراً",
-    "text22": "تجميع الإشعارات",
-    "text23": "تجميع الإشعارات المتعددة",
-    "text24": "فترة التجميع (دقائق)"
+    "text0": "Notification settings saved successfully",
+    "text1": "Notification Settings",
+    "text2": "Customize notification preferences and quiet hours",
+    "text3": "Preferred Delivery Method",
+    "text4": "Choose how you want to receive notifications",
+    "text5": "Notification Types",
+    "text6": "Choose which notifications you want to receive",
+    "text7": "New Orders",
+    "text8": "New Messages",
+    "text9": "Appointments",
+    "text10": "Order Status Updates",
+    "text11": "Missed Messages",
+    "text12": "WhatsApp Disconnection",
+    "text13": "Quiet Hours",
+    "text14": "Pause notifications during a specific period",
+    "text15": "Enable Quiet Hours",
+    "text16": "From",
+    "text17": "To",
+    "text18": "Additional Settings",
+    "text19": "Advanced notification options",
+    "text20": "Instant Notifications",
+    "text21": "Send notifications immediately",
+    "text22": "Group Notifications",
+    "text23": "Group multiple notifications together",
+    "text24": "Grouping Interval (minutes)"
   },
   "paymentDetailsPage": {
     "text0": "Transaction not found",
