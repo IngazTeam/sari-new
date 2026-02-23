@@ -485,6 +485,80 @@ function isSallaStore(html: string): boolean {
 }
 
 /**
+ * Try to discover Zid store-id by fetching the page with a lightweight request.
+ * Cloudflare may block the main page but allow API-like requests.
+ * Also tries common Zid JS asset URLs that contain the store config.
+ */
+async function discoverZidStoreId(url: string): Promise<string | null> {
+  const baseUrl = new URL(url).origin;
+
+  // Try fetching the main page with Googlebot (often bypasses Cloudflare)
+  const attempts = [
+    { url: url, ua: 'Googlebot/2.1 (+http://www.google.com/bot.html)' },
+    { url: `${baseUrl}/manifest.json`, ua: 'Mozilla/5.0' },
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(attempt.url, {
+        headers: {
+          'User-Agent': attempt.ua,
+          'Accept': '*/*',
+        },
+        signal: controller.signal,
+        redirect: 'follow',
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) continue;
+
+      const text = await response.text();
+      const storeId = extractZidStoreId(text);
+      if (storeId) {
+        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from ${attempt.url}: ${storeId}`);
+        return storeId;
+      }
+    } catch {
+      // Skip failed attempts
+    }
+  }
+
+  // Last resort: try Zid API without store-id to see if it auto-resolves
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(`${baseUrl}/api/v1/products`, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    // If we get a JSON response with store info, extract store-id from headers or response
+    if (response.ok) {
+      const storeIdHeader = response.headers.get('x-store-id') || response.headers.get('store-id');
+      if (storeIdHeader) {
+        console.log(`[WebsiteAnalyzer] Discovered Zid store-id from API response headers: ${storeIdHeader}`);
+        return storeIdHeader;
+      }
+    }
+  } catch {
+    // Skip
+  }
+
+  console.log('[WebsiteAnalyzer] Could not discover Zid store-id');
+  return null;
+}
+
+/**
  * استخراج المنتجات من الموقع — multi-strategy with enrichment
  * 1. JSON-LD structured data (most e-commerce platforms embed this)
  * 2. HTML product patterns (price + title selectors)
@@ -497,22 +571,40 @@ function isSallaStore(html: string): boolean {
 export async function extractProducts(url: string, html: string, text: string): Promise<ExtractedProduct[]> {
   try {
     console.log('[WebsiteAnalyzer] Extracting products from:', url);
+    console.log(`[WebsiteAnalyzer] HTML length: ${html.length}, Text length: ${text.length}`);
 
     // Detect platform and extract store metadata
     const zidStoreId = extractZidStoreId(html);
     const isZid = isZidStore(html);
     const isSalla = isSallaStore(html);
+    const htmlEmpty = html.length < 500; // Scraping likely failed (Cloudflare)
 
     if (isZid) console.log('[WebsiteAnalyzer] Detected Zid platform', zidStoreId ? `(store-id: ${zidStoreId})` : '');
     if (isSalla) console.log('[WebsiteAnalyzer] Detected Salla platform');
+    if (htmlEmpty) console.log('[WebsiteAnalyzer] HTML is empty/minimal — scraping likely blocked, trying API-only extraction');
 
-    // Strategy 1: For SPA platforms (Zid/Salla), try API first since HTML won't have products
-    if (isZid || isSalla) {
-      console.log('[WebsiteAnalyzer] SPA platform detected — trying API first');
+    // Strategy 1: For SPA platforms OR when scraping failed, try API first
+    if (isZid || isSalla || htmlEmpty) {
+      console.log('[WebsiteAnalyzer] Trying API-first extraction...');
+
+      // If we don't have a store-id from HTML, try to discover it from the API
       const apiProducts = await tryProductsAPI(url, zidStoreId);
       if (apiProducts.length > 0) {
         console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via platform API`);
         return apiProducts;
+      }
+
+      // If scraping completely failed and API didn't work, try discovering store-id from the page
+      if (htmlEmpty && !zidStoreId) {
+        console.log('[WebsiteAnalyzer] API without auth failed, trying store-id discovery...');
+        const discoveredStoreId = await discoverZidStoreId(url);
+        if (discoveredStoreId) {
+          const retryProducts = await tryProductsAPI(url, discoveredStoreId);
+          if (retryProducts.length > 0) {
+            console.log(`[WebsiteAnalyzer] Found ${retryProducts.length} products via discovered store-id`);
+            return retryProducts;
+          }
+        }
       }
     }
 

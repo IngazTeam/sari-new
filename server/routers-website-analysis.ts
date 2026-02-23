@@ -35,8 +35,11 @@ export const websiteAnalysisRouter = router({
 
         // Start analysis in background
         (async () => {
+          let scrapedHtml = '';
+          let scrapedText = '';
+
+          // Phase 1: Analyze website
           try {
-            // Analyze website
             const result = await analyzer.analyzeWebsite(input.url);
 
             // Update analysis with results
@@ -62,11 +65,32 @@ export const websiteAnalysisRouter = router({
               overallScore: result.overallScore,
               status: 'completed',
             });
+          } catch (analysisError) {
+            console.error('[WebsiteAnalysis] Analysis phase failed:', analysisError);
+            // Mark as completed with minimal data — don't block product extraction
+            await db.updateWebsiteAnalysis(analysisId, {
+              status: 'completed',
+              title: new URL(input.url).hostname,
+              description: 'تعذر تحليل الموقع بسبب حماية Cloudflare — تم استخراج المنتجات عبر API',
+              overallScore: 0,
+            });
+          }
 
-            // Extract products
-            const { html, text } = await analyzer.scrapeWebsite(input.url);
-            const products = await analyzer.extractProducts(input.url, html, text);
-            
+          // Phase 2: Extract products (independent from analysis)
+          try {
+            // Try scraping first
+            try {
+              const scraped = await analyzer.scrapeWebsite(input.url);
+              scrapedHtml = scraped.html;
+              scrapedText = scraped.text;
+            } catch (scrapeError) {
+              console.warn('[WebsiteAnalysis] Scrape failed (likely Cloudflare), trying API-only extraction:',
+                scrapeError instanceof Error ? scrapeError.message : 'unknown');
+            }
+
+            // Extract products — works even with empty HTML for Zid/Salla via API strategy
+            const products = await analyzer.extractProducts(input.url, scrapedHtml, scrapedText);
+
             for (const product of products) {
               await db.createExtractedProduct({
                 analysisId,
@@ -84,32 +108,58 @@ export const websiteAnalysisRouter = router({
               });
             }
 
-            // Generate insights
-            const insights = await analyzer.generateInsights(result);
-            
-            for (const insight of insights) {
-              await db.createWebsiteInsight({
-                analysisId,
-                merchantId: merchant.id,
-                category: insight.category,
-                type: insight.type,
-                priority: insight.priority,
-                title: insight.title,
-                description: insight.description,
-                recommendation: insight.recommendation,
-                impact: insight.impact,
-                confidence: insight.confidence,
-              });
-            }
-
-            console.log('[WebsiteAnalysis] Analysis completed:', analysisId);
-          } catch (error) {
-            console.error('[WebsiteAnalysis] Analysis failed:', error);
-            await db.updateWebsiteAnalysis(analysisId, {
-              status: 'failed',
-              errorMessage: error instanceof Error ? error.message : 'Unknown error',
-            });
+            console.log(`[WebsiteAnalysis] Extracted ${products.length} products for analysis ${analysisId}`);
+          } catch (productError) {
+            console.error('[WebsiteAnalysis] Product extraction failed:', productError);
           }
+
+          // Phase 3: Generate insights (only if we have analysis data)
+          try {
+            const analysis = await db.getWebsiteAnalysisById(analysisId);
+            if (analysis && analysis.overallScore > 0) {
+              const insightsData: analyzer.WebsiteAnalysisResult = {
+                title: analysis.title || '',
+                description: analysis.description || '',
+                industry: analysis.industry || '',
+                language: analysis.language || '',
+                seoScore: analysis.seoScore,
+                seoIssues: analysis.seoIssues || [],
+                metaTags: analysis.metaTags || {},
+                performanceScore: analysis.performanceScore,
+                loadTime: analysis.loadTime || 0,
+                pageSize: analysis.pageSize || 0,
+                uxScore: analysis.uxScore,
+                mobileOptimized: analysis.mobileOptimized,
+                hasContactInfo: analysis.hasContactInfo,
+                hasWhatsapp: analysis.hasWhatsapp,
+                contentQuality: analysis.contentQuality,
+                wordCount: analysis.wordCount,
+                imageCount: analysis.imageCount,
+                videoCount: analysis.videoCount,
+                overallScore: analysis.overallScore,
+              };
+              const insights = await analyzer.generateInsights(insightsData);
+
+              for (const insight of insights) {
+                await db.createWebsiteInsight({
+                  analysisId,
+                  merchantId: merchant.id,
+                  category: insight.category,
+                  type: insight.type,
+                  priority: insight.priority,
+                  title: insight.title,
+                  description: insight.description,
+                  recommendation: insight.recommendation,
+                  impact: insight.impact,
+                  confidence: insight.confidence,
+                });
+              }
+            }
+          } catch (insightsError) {
+            console.error('[WebsiteAnalysis] Insights generation failed:', insightsError);
+          }
+
+          console.log('[WebsiteAnalysis] Analysis pipeline completed:', analysisId);
         })();
 
         return { analysisId, status: 'analyzing' };
@@ -131,7 +181,7 @@ export const websiteAnalysisRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       const analysis = await db.getWebsiteAnalysisById(input.id);
-      
+
       if (!analysis) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
@@ -266,7 +316,7 @@ export const websiteAnalysisRouter = router({
             // Extract competitor products
             const { html, text } = await analyzer.scrapeWebsite(input.url);
             const products = await analyzer.extractProducts(input.url, html, text);
-            
+
             let totalPrice = 0;
             let minPrice = Infinity;
             let maxPrice = 0;
@@ -344,7 +394,7 @@ export const websiteAnalysisRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       const competitor = await db.getCompetitorAnalysisById(input.id);
-      
+
       if (!competitor) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
       }
