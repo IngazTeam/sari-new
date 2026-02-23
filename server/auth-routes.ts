@@ -141,6 +141,7 @@ router.post('/verify', async (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
 
+    // SECURITY: Strip sensitive fields before returning
     return res.json({
       user: {
         id: user.id,
@@ -170,6 +171,21 @@ router.get('/oauth/google/calendar/callback', async (req, res) => {
     return res.status(400).send('Invalid merchant ID');
   }
 
+  // SECURITY: Verify the requesting user owns this merchant
+  try {
+    const sessionToken = req.cookies?.[COOKIE_NAME];
+    const session = await verifySession(sessionToken);
+    if (!session) {
+      return res.status(401).send('Authentication required');
+    }
+    const merchant = await db.getMerchantById(merchantId);
+    if (!merchant || merchant.userId !== Number(session.userId)) {
+      return res.status(403).send('Access denied');
+    }
+  } catch {
+    return res.status(401).send('Authentication required');
+  }
+
   try {
     const googleCalendar = await import('./_core/googleCalendar');
     const result = await googleCalendar.handleOAuthCallback(code as string, merchantId);
@@ -181,7 +197,7 @@ router.get('/oauth/google/calendar/callback', async (req, res) => {
     }
   } catch (error: any) {
     console.error('[OAuth Callback] Error:', error);
-    res.redirect(`/merchant/calendar/settings?error=${encodeURIComponent(error.message || 'حدث خطأ')}`);
+    res.redirect(`/merchant/calendar/settings?error=${encodeURIComponent('حدث خطأ')}`);
   }
 });
 
@@ -198,6 +214,21 @@ router.get('/oauth/google/sheets/callback', async (req, res) => {
     return res.status(400).send('Invalid merchant ID');
   }
 
+  // SECURITY: Verify the requesting user owns this merchant
+  try {
+    const sessionToken = (req as any).cookies?.[COOKIE_NAME];
+    const session = await verifySession(sessionToken);
+    if (!session) {
+      return res.status(401).send('Authentication required');
+    }
+    const merchant = await db.getMerchantById(merchantId);
+    if (!merchant || merchant.userId !== Number(session.userId)) {
+      return res.status(403).send('Access denied');
+    }
+  } catch {
+    return res.status(401).send('Authentication required');
+  }
+
   try {
     const googleSheets = await import('./_core/googleSheets');
     const result = await googleSheets.handleOAuthCallback(code as string, merchantId);
@@ -209,6 +240,6 @@ router.get('/oauth/google/sheets/callback', async (req, res) => {
     }
   } catch (error: any) {
     console.error('[OAuth Callback] Error:', error);
-    res.redirect(`/merchant/sheets/settings?error=${encodeURIComponent(error.message || 'حدث خطأ')}`);
+    res.redirect(`/merchant/sheets/settings?error=${encodeURIComponent('حدث خطأ')}`);
   }
 });

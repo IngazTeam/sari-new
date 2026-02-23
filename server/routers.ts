@@ -208,7 +208,8 @@ export const appRouter = router({
         const hashedPassword = await bcrypt.hash(input.password, 10);
 
         // Generate unique openId for the user
-        const openId = `local_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        const crypto = await import('crypto');
+        const openId = `local_${crypto.randomBytes(16).toString('hex')}`;
 
         // Create user
         const user = await db.createUser({
@@ -7017,17 +7018,24 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const tapWebhook = await import('./webhooks/tap-webhook');
 
-        // التحقق من التوقيع (إذا كان موجوداً)
-        if (input.signature && process.env.TAP_WEBHOOK_SECRET) {
-          const isValid = tapWebhook.verifyTapSignature(
-            JSON.stringify(input.payload),
-            input.signature,
-            process.env.TAP_WEBHOOK_SECRET
-          );
+        // SECURITY: Webhook signature verification is MANDATORY
+        if (!process.env.TAP_WEBHOOK_SECRET) {
+          console.error('[Webhook] TAP_WEBHOOK_SECRET not configured — rejecting webhook');
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Webhook not configured' });
+        }
 
-          if (!isValid) {
-            throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid webhook signature' });
-          }
+        if (!input.signature) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Missing webhook signature' });
+        }
+
+        const isValid = tapWebhook.verifyTapSignature(
+          JSON.stringify(input.payload),
+          input.signature,
+          process.env.TAP_WEBHOOK_SECRET
+        );
+
+        if (!isValid) {
+          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid webhook signature' });
         }
 
         // معالجة الـ webhook
