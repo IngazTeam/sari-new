@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { ArrowRight, Plus, Trash2, Package, Briefcase, Lightbulb, AlertCircle, Globe, ImageIcon } from 'lucide-react';
+import { ArrowRight, Plus, Trash2, Package, Briefcase, Lightbulb, AlertCircle, Globe, ImageIcon, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface ProductsServicesStepProps {
@@ -226,6 +226,59 @@ export default function ProductsServicesStep({
     );
   };
 
+  // Card view for scraped products
+  const renderScrapedCard = (item: Item, type: 'products' | 'services') => {
+    return (
+      <Card key={item.id} className="group overflow-hidden border hover:border-emerald-300 hover:shadow-md transition-all duration-200 relative">
+        {/* Delete button */}
+        <button
+          onClick={() => removeItem(type, item.id)}
+          className="absolute top-1.5 left-1.5 z-10 w-6 h-6 rounded-full bg-red-500/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+
+        {/* Product Image */}
+        <div className="aspect-square bg-muted relative overflow-hidden">
+          {item.imageUrl && item.imageUrl.trim() ? (
+            <img
+              src={item.imageUrl}
+              alt={item.name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+                const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                if (fallback) (fallback as HTMLElement).style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div
+            className={`absolute inset-0 bg-gradient-to-br from-emerald-50 to-emerald-100 items-center justify-center ${item.imageUrl && item.imageUrl.trim() ? 'hidden' : 'flex'}`}
+          >
+            <Package className="w-10 h-10 text-emerald-300" />
+          </div>
+          {/* Price badge */}
+          {item.price && parseFloat(item.price) > 0 && (
+            <div className="absolute bottom-2 left-2 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-xs font-bold text-emerald-700 shadow-sm">
+              {item.price} {item.currency === 'SAR' || !item.currency ? 'ر.س' : item.currency}
+            </div>
+          )}
+        </div>
+        {/* Product Info */}
+        <div className="p-2.5">
+          <p className="font-medium text-sm leading-tight line-clamp-2 min-h-[2.5rem]">
+            {item.name}
+          </p>
+          {item.category && (
+            <span className="text-[10px] text-muted-foreground bg-muted rounded-full px-2 py-0.5 mt-1 inline-block">
+              {item.category}
+            </span>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
   const renderEmptyState = (type: 'products' | 'services') => {
     const isProducts = type === 'products';
     const suggestions = isProducts ? PRODUCT_SUGGESTIONS : SERVICE_SUGGESTIONS;
@@ -366,9 +419,15 @@ export default function ProductsServicesStep({
 
             {renderEmptyState('products')}
 
-            <div className="space-y-3">
-              {products.map((product, index) => renderItemForm(product, 'products', index))}
-            </div>
+            {hasScrapedProducts ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {products.map((product) => renderScrapedCard(product, 'products'))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {products.map((product, index) => renderItemForm(product, 'products', index))}
+              </div>
+            )}
           </div>
         )}
 
