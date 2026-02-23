@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
@@ -28,7 +28,7 @@ export async function createSessionToken(
   userId: string,
   options: { expiresInMs?: number; name?: string; email?: string } = {}
 ): Promise<string> {
-  const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
+  const expiresInMs = options.expiresInMs ?? THIRTY_DAYS_MS;
   const expiresInSeconds = Math.floor(expiresInMs / 1000);
 
   const token = jwt.sign(

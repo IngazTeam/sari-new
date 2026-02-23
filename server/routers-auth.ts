@@ -12,7 +12,7 @@ import bcrypt from 'bcryptjs';
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { createSessionToken } from "./_core/auth";
 import { getSessionCookieOptions } from "./_core/cookies";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";
 import * as db from "./db";
 
 export const authRouter = router({
@@ -46,12 +46,12 @@ export const authRouter = router({
             const sessionToken = await createSessionToken(String(user.id), {
                 name: user.name || '',
                 email: user.email || '',
-                expiresInMs: ONE_YEAR_MS,
+                expiresInMs: THIRTY_DAYS_MS,
             });
 
             const cookieOptions = getSessionCookieOptions(ctx.req);
 
-            ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+            ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
             console.log('🟢 [AUTH] Login successful for:', user.email);
             return {
@@ -135,11 +135,11 @@ export const authRouter = router({
             const sessionToken = await createSessionToken(String(user.id), {
                 name: user.name || '',
                 email: user.email || '',
-                expiresInMs: ONE_YEAR_MS,
+                expiresInMs: THIRTY_DAYS_MS,
             });
 
             const cookieOptions = getSessionCookieOptions(ctx.req);
-            ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+            ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
             return {
                 success: true,

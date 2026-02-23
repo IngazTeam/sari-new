@@ -79,8 +79,12 @@ export const publicSariRouter = router({
             return { success: true };
         }),
 
-    // Get demo stats (for admin)
-    getDemoStats: publicProcedure.query(async () => {
+    // Get demo stats (admin only — not public)
+    getDemoStats: publicProcedure.query(async ({ ctx }) => {
+        // Only allow authenticated admin users to see stats
+        if (!(ctx as any).user || (ctx as any).user.role !== 'admin') {
+            throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
         return await db.getTrySariStats();
     }),
 });

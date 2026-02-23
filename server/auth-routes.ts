@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import * as db from './db';
 import { createSessionToken, verifySession } from './_core/auth';
-import { ONE_YEAR_MS, COOKIE_NAME } from '@shared/const';
+import { THIRTY_DAYS_MS, COOKIE_NAME } from '@shared/const';
 import { getSessionCookieOptions } from './_core/cookies';
 
 const router = Router();
@@ -81,7 +81,7 @@ router.post('/login', async (req, res) => {
       sessionToken = await createSessionToken(String(user.id), {
         name: user.name || '',
         email: user.email || '',
-        expiresInMs: ONE_YEAR_MS,
+        expiresInMs: THIRTY_DAYS_MS,
       });
     } catch (tokenError: any) {
       console.error('🔴 [AUTH] Token creation error:', tokenError);
@@ -94,7 +94,7 @@ router.post('/login', async (req, res) => {
 
     // Set cookie
     const cookieOptions = getSessionCookieOptions(req);
-    res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+    res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
     console.log('🟢 [AUTH] Login successful for:', user.email);
 

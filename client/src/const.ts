@@ -1,1 +1,1 @@
-export { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+export { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";

@@ -52,7 +52,7 @@ import * as db from './db';
 import * as seoDb from './seo-functions';
 import bcrypt from 'bcryptjs';
 import { createSessionToken } from './_core/auth';
-import { ONE_YEAR_MS } from '@shared/const';
+import { THIRTY_DAYS_MS } from '@shared/const';
 import { z } from 'zod';
 
 // Admin-only procedure
@@ -69,7 +69,10 @@ export const appRouter = router({
   system: systemRouter,
 
   auth: router({
-    me: protectedProcedure.query(opts => opts.ctx.user),
+    me: protectedProcedure.query(opts => {
+      const { password, openId, ...safeUser } = opts.ctx.user as any;
+      return safeUser;
+    }),
 
     // Login with email and password
     login: publicProcedure
@@ -97,17 +100,17 @@ export const appRouter = router({
         const sessionToken = await createSessionToken(String(user.id), {
           name: user.name || '',
           email: user.email || '',
-          expiresInMs: ONE_YEAR_MS,
+          expiresInMs: THIRTY_DAYS_MS,
         });
 
         const cookieOptions = getSessionCookieOptions(ctx.req);
 
         // Set cookie using both methods to ensure it works
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
         // Also set via header as backup
         const securePart = cookieOptions.secure ? '; Secure' : '';
-        const cookieString = `${COOKIE_NAME}=${sessionToken}; Path=${cookieOptions.path}; HttpOnly; SameSite=${cookieOptions.sameSite}${securePart}; Max-Age=${Math.floor(ONE_YEAR_MS / 1000)}`;
+        const cookieString = `${COOKIE_NAME}=${sessionToken}; Path=${cookieOptions.path}; HttpOnly; SameSite=${cookieOptions.sameSite}${securePart}; Max-Age=${Math.floor(THIRTY_DAYS_MS / 1000)}`;
         const existingCookies = ctx.res.getHeader('Set-Cookie');
         if (existingCookies) {
           const cookieArray = Array.isArray(existingCookies) ? existingCookies : [String(existingCookies)];
@@ -131,21 +134,34 @@ export const appRouter = router({
 
     // Email Verification
     emailVerification: router({
-      sendVerificationEmail: publicProcedure
-        .input(z.object({ email: z.string().email(), userId: z.number() }))
-        .mutation(async ({ input }) => {
-          const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      sendVerificationEmail: protectedProcedure
+        .input(z.object({ email: z.string().email() }))
+        .mutation(async ({ input, ctx }) => {
+          const crypto = await import('crypto');
+          const token = crypto.randomBytes(32).toString('hex');
           const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
           await db.createEmailVerificationToken({
-            userId: input.userId,
+            userId: ctx.user.id,
             email: input.email,
             token,
             expiresAt,
           });
 
-          // In production, send email here
-          return { token, expiresAt };
+          // Send verification email (token is NOT returned to client)
+          try {
+            const { sendEmail } = await import('./reports/email-sender');
+            const verifyLink = `${process.env.VITE_APP_URL || 'https://sari.sa'}/verify-email?token=${token}`;
+            await sendEmail({
+              to: input.email,
+              subject: 'تأكيد البريد الإلكتروني - ساري',
+              html: `<div dir="rtl"><h2>تأكيد البريد الإلكتروني</h2><p>اضغط على الرابط التالي لتأكيد بريدك الإلكتروني:</p><a href="${verifyLink}">${verifyLink}</a><p>ينتهي هذا الرابط خلال 24 ساعة.</p></div>`,
+            });
+          } catch (error) {
+            console.error('[Email Verification] Failed to send email:', error);
+          }
+
+          return { success: true, message: 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني' };
         }),
 
       verifyEmail: publicProcedure
@@ -242,11 +258,11 @@ export const appRouter = router({
         const sessionToken = await createSessionToken(String(user.id), {
           name: user.name || '',
           email: user.email || '',
-          expiresInMs: ONE_YEAR_MS,
+          expiresInMs: THIRTY_DAYS_MS,
         });
 
         const cookieOptions = getSessionCookieOptions(ctx.req);
-        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
         return {
           success: true,
@@ -280,10 +296,9 @@ export const appRouter = router({
           return { success: true, message: 'إذا كان البريد الإلكتروني موجوداً، سيتم إرسال رابط إعادة التعيين' };
         }
 
-        // Generate secure token
-        const token = Math.random().toString(36).substring(2, 15) +
-          Math.random().toString(36).substring(2, 15) +
-          Date.now().toString(36);
+        // Generate cryptographically secure token
+        const crypto = await import('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
 
         // Token expires in 24 hours
         const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -415,8 +430,9 @@ export const appRouter = router({
           return { success: true, message: 'If an account exists with this email, a password reset link has been sent.' };
         }
 
-        // Generate unique token
-        const token = `${Date.now()}_${Math.random().toString(36).substring(2)}_${Math.random().toString(36).substring(2)}`;
+        // Generate cryptographically secure token
+        const crypto = await import('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
 
         // Token expires in 1 hour
         const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
@@ -778,6 +794,12 @@ export const appRouter = router({
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+        // Verify product belongs to this merchant (prevent IDOR)
+        const product = await db.getProductById(input.productId);
+        if (!product || product.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not own this product' });
+        }
+
         const { productId, ...updates } = input;
         await db.updateProduct(productId, updates);
         return { success: true };
@@ -789,6 +811,12 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+        // Verify product belongs to this merchant (prevent IDOR)
+        const product = await db.getProductById(input.productId);
+        if (!product || product.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not own this product' });
+        }
 
         await db.deleteProduct(input.productId);
         return { success: true };

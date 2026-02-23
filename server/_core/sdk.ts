@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";
 import { ForbiddenError } from "@shared/_core/errors";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
@@ -56,7 +56,7 @@ class SDKServer {
     options: { expiresInMs?: number } = {}
   ): Promise<string> {
     const issuedAt = Date.now();
-    const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
+    const expiresInMs = options.expiresInMs ?? THIRTY_DAYS_MS;
     const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
     const secretKey = this.getSessionSecret();
 
@@ -105,7 +105,7 @@ class SDKServer {
     // Regular authentication flow
     // Try multiple sources for the session token
     let sessionCookie = (req as any).cookies?.[COOKIE_NAME];
-    
+
     // Fallback to Authorization header
     if (!sessionCookie) {
       const authHeader = req.headers.authorization;
@@ -113,7 +113,7 @@ class SDKServer {
         sessionCookie = authHeader.substring(7);
       }
     }
-    
+
     // Fallback to cookie header
     if (!sessionCookie && req.headers.cookie) {
       const cookies = this.parseCookies(req.headers.cookie);
