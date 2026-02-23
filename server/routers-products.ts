@@ -70,6 +70,12 @@ export const productsRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+            // Verify product belongs to this merchant (prevent IDOR)
+            const product = await db.getProductById(input.productId);
+            if (!product || product.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not own this product' });
+            }
+
             const { productId, ...updates } = input;
             await db.updateProduct(productId, updates);
             return { success: true };
@@ -81,6 +87,12 @@ export const productsRouter = router({
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            // Verify product belongs to this merchant (prevent IDOR)
+            const product = await db.getProductById(input.productId);
+            if (!product || product.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not own this product' });
+            }
 
             await db.deleteProduct(input.productId);
             return { success: true };
