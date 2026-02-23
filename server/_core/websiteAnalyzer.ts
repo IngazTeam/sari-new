@@ -7,6 +7,32 @@
 
 import { invokeLLM } from "./llm";
 import { JSDOM } from "jsdom";
+import { execSync } from "child_process";
+
+/**
+ * Fetch URL using curl as fallback when Node.js fetch is blocked by Cloudflare.
+ * Cloudflare's TLS fingerprinting blocks Node.js fetch but allows curl.
+ */
+async function curlFetch(url: string, headers?: Record<string, string>): Promise<{ ok: boolean; status: number; body: string }> {
+  try {
+    const headerArgs = Object.entries(headers || {})
+      .map(([k, v]) => `-H "${k}: ${v}"`)
+      .join(' ');
+
+    const cmd = `curl -4 -s --max-time 15 -w "\\n__HTTP_STATUS__%{http_code}" ${headerArgs} "${url}"`;
+    const output = execSync(cmd, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+
+    // Extract HTTP status from the last line
+    const statusMatch = output.match(/__HTTP_STATUS__(\d+)$/);
+    const status = statusMatch ? parseInt(statusMatch[1]) : 0;
+    const body = output.replace(/__HTTP_STATUS__\d+$/, '').trim();
+
+    return { ok: status >= 200 && status < 300, status, body };
+  } catch (error) {
+    console.warn('[WebsiteAnalyzer] curlFetch failed:', error instanceof Error ? error.message : 'unknown');
+    return { ok: false, status: 0, body: '' };
+  }
+}
 
 // ============================================
 // Types & Interfaces
@@ -1064,9 +1090,6 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
   for (const endpoint of apiEndpoints) {
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-
       const headers: Record<string, string> = {
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -1075,22 +1098,49 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
       console.log(`[WebsiteAnalyzer] Trying API: ${endpoint.url} (${endpoint.platform})${endpoint.headers ? ' [with auth]' : ''}`);
 
-      const response = await fetch(endpoint.url, {
-        headers,
-        signal: controller.signal,
-      });
+      // Try Node.js fetch first
+      let responseBody: string | null = null;
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-      clearTimeout(timeoutId);
+        const response = await fetch(endpoint.url, {
+          headers,
+          signal: controller.signal,
+        });
 
-      if (!response.ok) {
-        console.log(`[WebsiteAnalyzer] API ${endpoint.url} returned ${response.status}`);
-        continue;
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.log(`[WebsiteAnalyzer] API ${endpoint.url} returned ${response.status}`);
+          throw new Error(`HTTP ${response.status}`); // Fall through to curl
+        }
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('json')) throw new Error('Not JSON');
+
+        responseBody = await response.text();
+      } catch (fetchError) {
+        // Fetch failed (likely Cloudflare) — try curl as fallback
+        console.log(`[WebsiteAnalyzer] fetch failed for ${endpoint.url}, trying curl fallback...`);
+        const curlResult = await curlFetch(endpoint.url, headers);
+        if (curlResult.ok && curlResult.body) {
+          responseBody = curlResult.body;
+          console.log(`[WebsiteAnalyzer] curl succeeded for ${endpoint.url} (${curlResult.body.length} bytes)`);
+        } else {
+          console.log(`[WebsiteAnalyzer] curl also failed for ${endpoint.url} (status: ${curlResult.status})`);
+          continue;
+        }
       }
 
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('json')) continue;
+      if (!responseBody) continue;
 
-      const data = await response.json() as any;
+      let data: any;
+      try {
+        data = JSON.parse(responseBody);
+      } catch {
+        continue; // Not valid JSON
+      }
 
       // Extract products array from various response formats
       const rawProducts = data.results || data.products || data.data || (Array.isArray(data) ? data : []);
