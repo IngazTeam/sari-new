@@ -440,10 +440,55 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
 }
 
 /**
+ * Extract Zid store-id from HTML shell.
+ * Zid SPAs always include the store-id in the initial HTML (in JS variables or headers).
+ */
+function extractZidStoreId(html: string): string | null {
+  // Pattern 1: store-id in JavaScript headers/config
+  const storeIdPatterns = [
+    /["']store-id["']\s*:\s*["']([a-f0-9-]{36})["']/i,
+    /store[_-]?id\s*[=:]\s*["']([a-f0-9-]{36})["']/i,
+    /RaqeebStoreId\s*[=:]\s*["']([a-f0-9-]{36})["']/i,
+    /store_uuid\s*[=:]\s*["']([a-f0-9-]{36})["']/i,
+  ];
+
+  for (const pattern of storeIdPatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      console.log(`[WebsiteAnalyzer] Found Zid store-id: ${match[1]}`);
+      return match[1];
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Detect if a website is built on Zid platform
+ */
+function isZidStore(html: string): boolean {
+  return html.includes('zid.store') ||
+    html.includes('zid.sa') ||
+    html.includes('static.zid.store') ||
+    html.includes('zidStore') ||
+    html.includes('window.zid');
+}
+
+/**
+ * Detect if a website is built on Salla platform
+ */
+function isSallaStore(html: string): boolean {
+  return html.includes('salla.sa') ||
+    html.includes('cdn.salla.sa') ||
+    html.includes('s-product-card') ||
+    html.includes('salla.network');
+}
+
+/**
  * استخراج المنتجات من الموقع — multi-strategy with enrichment
  * 1. JSON-LD structured data (most e-commerce platforms embed this)
  * 2. HTML product patterns (price + title selectors)
- * 3. Salla/Zid/Shopify API endpoints
+ * 3. Salla/Zid/Shopify API endpoints (with platform detection)
  * 4. AI extraction from text as fallback
  * 
  * If early strategies return sparse data (no description/images),
@@ -453,21 +498,41 @@ export async function extractProducts(url: string, html: string, text: string): 
   try {
     console.log('[WebsiteAnalyzer] Extracting products from:', url);
 
-    // Strategy 1: Extract from JSON-LD structured data
+    // Detect platform and extract store metadata
+    const zidStoreId = extractZidStoreId(html);
+    const isZid = isZidStore(html);
+    const isSalla = isSallaStore(html);
+
+    if (isZid) console.log('[WebsiteAnalyzer] Detected Zid platform', zidStoreId ? `(store-id: ${zidStoreId})` : '');
+    if (isSalla) console.log('[WebsiteAnalyzer] Detected Salla platform');
+
+    // Strategy 1: For SPA platforms (Zid/Salla), try API first since HTML won't have products
+    if (isZid || isSalla) {
+      console.log('[WebsiteAnalyzer] SPA platform detected — trying API first');
+      const apiProducts = await tryProductsAPI(url, zidStoreId);
+      if (apiProducts.length > 0) {
+        console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via platform API`);
+        return apiProducts;
+      }
+    }
+
+    // Strategy 2: Extract from JSON-LD structured data
     const jsonLdProducts = extractFromJsonLD(html, url);
     if (jsonLdProducts.length > 0) {
       console.log(`[WebsiteAnalyzer] Found ${jsonLdProducts.length} products via JSON-LD`);
       return jsonLdProducts; // JSON-LD is the most complete source
     }
 
-    // Strategy 2: Try Salla/Zid/Shopify API endpoints
-    const apiProducts = await tryProductsAPI(url);
-    if (apiProducts.length > 0) {
-      console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via API`);
-      return apiProducts;
+    // Strategy 3: Try API endpoints (non-SPA sites)
+    if (!isZid && !isSalla) {
+      const apiProducts = await tryProductsAPI(url, null);
+      if (apiProducts.length > 0) {
+        console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via API`);
+        return apiProducts;
+      }
     }
 
-    // Strategy 3: Extract from HTML product patterns
+    // Strategy 4: Extract from HTML product patterns
     const htmlProducts = extractFromHTMLPatterns(html, url);
     if (htmlProducts.length > 0) {
       console.log(`[WebsiteAnalyzer] Found ${htmlProducts.length} products via HTML patterns`);
@@ -484,7 +549,7 @@ export async function extractProducts(url: string, html: string, text: string): 
       return htmlProducts;
     }
 
-    // Strategy 4: Fall back to AI extraction if we have enough text
+    // Strategy 5: Fall back to AI extraction if we have enough text
     if (text.length < 100) {
       console.warn('[WebsiteAnalyzer] Not enough text content for AI extraction');
       return [];
@@ -874,36 +939,61 @@ function extractFromHTMLPatterns(html: string, baseUrl: string): ExtractedProduc
 
 /**
  * Try common e-commerce API endpoints (Salla, Zid, Shopify, WooCommerce)
+ * Enhanced: supports Zid store-id header for authenticated API access
  */
-async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
+async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<ExtractedProduct[]> {
   const products: ExtractedProduct[] = [];
   const baseUrl = new URL(url).origin;
 
-  // API endpoints for major Saudi and global platforms
-  const apiEndpoints = [
+  // Build API endpoints — prioritize platform-specific ones when detected
+  const apiEndpoints: { url: string; platform: string; headers?: Record<string, string> }[] = [];
+
+  // If we have a Zid store-id, prioritize Zid API with auth
+  if (zidStoreId) {
+    apiEndpoints.push({
+      url: `${baseUrl}/api/v1/products`,
+      platform: 'zid',
+      headers: {
+        'store-id': zidStoreId,
+        'Accept-Language': 'ar',
+        'Content-Type': 'application/json',
+      },
+    });
+  }
+
+  // Standard API endpoints
+  apiEndpoints.push(
     { url: `${baseUrl}/api/products`, platform: 'salla' },
     { url: `${baseUrl}/products.json`, platform: 'shopify' },
     { url: `${baseUrl}/api/v1/products`, platform: 'zid' },
     { url: `${baseUrl}/wp-json/wc/v3/products`, platform: 'woocommerce' },
     { url: `${baseUrl}/wp-json/wc/store/v1/products`, platform: 'woocommerce-store' },
-  ];
+  );
 
   for (const endpoint of apiEndpoints) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ...(endpoint.headers || {}),
+      };
+
+      console.log(`[WebsiteAnalyzer] Trying API: ${endpoint.url} (${endpoint.platform})${endpoint.headers ? ' [with auth]' : ''}`);
 
       const response = await fetch(endpoint.url, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        },
+        headers,
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
-      if (!response.ok) continue;
+      if (!response.ok) {
+        console.log(`[WebsiteAnalyzer] API ${endpoint.url} returned ${response.status}`);
+        continue;
+      }
 
       const contentType = response.headers.get('content-type') || '';
       if (!contentType.includes('json')) continue;
@@ -911,14 +1001,21 @@ async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
       const data = await response.json() as any;
 
       // Extract products array from various response formats
-      const rawProducts = data.products || data.data || (Array.isArray(data) ? data : []);
+      const rawProducts = data.results || data.products || data.data || (Array.isArray(data) ? data : []);
+
+      if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
+        console.log(`[WebsiteAnalyzer] API ${endpoint.url} returned no products`);
+        continue;
+      }
 
       for (const p of rawProducts.slice(0, 50)) {
         // Get image URL from various platform formats
         const imageUrl = p.image?.src ||           // Shopify
           p.images?.[0]?.src ||                      // Shopify array
           p.images?.[0]?.url ||                      // Salla
-          p.images?.[0]?.original_url ||             // Zid
+          p.images?.[0]?.original_url ||             // Zid images
+          p.images?.[0]?.image?.url ||               // Zid nested image
+          p.thumbnail?.src ||                         // Zid thumbnail
           p.thumbnail ||                              // Generic
           p.main_image ||                             // Zid alt
           p.featured_image ||                         // Generic
@@ -926,7 +1023,9 @@ async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
 
         // Get description — strip HTML tags
         const rawDesc = p.body_html || p.description || p.short_description || p.content || '';
-        const description = rawDesc.replace(/<[^>]*>/g, '').trim().substring(0, 300);
+        const description = typeof rawDesc === 'string'
+          ? rawDesc.replace(/<[^>]*>/g, '').trim().substring(0, 300)
+          : '';
 
         // Get category
         const category = p.category?.name ||
@@ -935,18 +1034,32 @@ async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
           p.type ||
           undefined;
 
-        // Get price from variants or direct
-        const price = parseFloat(
-          p.price || p.variants?.[0]?.price || p.sale_price || p.regular_price || '0'
-        );
+        // Get price from variants or direct — handle Zid nested price objects
+        let price = 0;
+        if (typeof p.price === 'object' && p.price !== null) {
+          price = parseFloat(p.price.amount || p.price.value || p.price.price || '0');
+        } else {
+          price = parseFloat(
+            p.price || p.variants?.[0]?.price || p.sale_price || p.regular_price || '0'
+          );
+        }
 
-        // Get currency
-        const currency = p.currency || p.price_currency || 'SAR';
+        // Get currency — handle Zid nested currency
+        let currency = 'SAR';
+        if (typeof p.price === 'object' && p.price?.currency?.code) {
+          currency = p.price.currency.code;
+        } else {
+          currency = p.currency || p.price_currency || 'SAR';
+        }
 
         // Get product URL
         let productUrl = p.url || p.permalink || p.slug || undefined;
-        if (productUrl && !productUrl.startsWith('http') && productUrl.startsWith('/')) {
-          productUrl = `${baseUrl}${productUrl}`;
+        if (productUrl && !productUrl.startsWith('http')) {
+          if (productUrl.startsWith('/')) {
+            productUrl = `${baseUrl}${productUrl}`;
+          } else {
+            productUrl = `${baseUrl}/products/${productUrl}`;
+          }
         }
 
         // Determine stock status
@@ -955,8 +1068,11 @@ async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
           p.quantity !== 0 &&
           p.status !== 'out_of_stock';
 
+        const name = p.title || p.name || '';
+        if (!name) continue; // Skip products without names
+
         products.push({
-          name: p.title || p.name || '',
+          name,
           description,
           price,
           currency,
@@ -972,8 +1088,9 @@ async function tryProductsAPI(url: string): Promise<ExtractedProduct[]> {
         console.log(`[WebsiteAnalyzer] Got ${products.length} products from ${endpoint.url} (${endpoint.platform})`);
         return products;
       }
-    } catch {
+    } catch (err) {
       // Endpoint doesn't exist or not accessible, skip
+      console.log(`[WebsiteAnalyzer] API ${endpoint.url} failed:`, err instanceof Error ? err.message : 'unknown');
     }
   }
 
