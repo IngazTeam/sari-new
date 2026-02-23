@@ -36,8 +36,6 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      console.log('🔵 Starting login with:', { email, password });
-
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -48,49 +46,27 @@ export default function Login() {
       });
 
       if (!response.ok) {
-        // التحقق من نوع المحتوى قبل محاولة تحويله إلى JSON
-        const contentType = response.headers.get('content-type');
-        let errorData: any = {};
-
-        if (contentType && contentType.includes('application/json')) {
-          try {
-            errorData = await response.json();
-          } catch (parseError) {
-            console.error('🔴 Failed to parse error response as JSON:', parseError);
-          }
-        } else {
-          // الخادم أرسل HTML بدلاً من JSON (مشكلة في الخادم أو proxy)
-          console.error('🔴 Server returned non-JSON response:', contentType);
-        }
-
-        // رسائل خطأ أكثر تفصيلاً
-        let errorMessage = 'فشل تسجيل الدخول';
-        if (response.status === 401) {
-          errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى التحقق من بياناتك والمحاولة مرة أخرى.';
-        } else if (response.status === 404) {
-          errorMessage = 'الحساب غير موجود. يرجى التحقق من البريد الإلكتروني أو إنشاء حساب جديد.';
+        // SECURITY: رسالة موحدة لمنع كشف وجود الحسابات (User Enumeration)
+        let errorMessage = '';
+        if (response.status === 401 || response.status === 404) {
+          errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
         } else if (response.status === 429) {
           errorMessage = 'تم تجاوز عدد محاولات تسجيل الدخول. يرجى المحاولة بعد قليل.';
-        } else if (response.status === 500 || response.status === 502 || response.status === 503 || response.status === 504) {
-          errorMessage = 'حدث خطأ في الخادم. يرجى المحاولة لاحقاً أو التواصل مع الدعم الفني.';
-        } else if (errorData.errorAr) {
-          errorMessage = errorData.errorAr;
-        } else if (errorData.error) {
-          errorMessage = errorData.error;
+        } else if (response.status >= 500) {
+          errorMessage = 'حدث خطأ في الخادم. يرجى المحاولة لاحقاً.';
+        } else {
+          errorMessage = 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى.';
         }
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      console.log('🟢 Login successful:', data);
 
       // حفظ أو حذف بيانات "تذكرني" (البريد فقط - بدون كلمة المرور لأسباب أمنية)
       if (rememberMe) {
         localStorage.setItem('sari_remember_email', email);
-        console.log('🟢 Remember me email saved (password NOT saved for security)');
       } else {
         localStorage.removeItem('sari_remember_email');
-        console.log('🟢 Remember me data cleared');
       }
 
       // تأكد من عدم حفظ كلمة المرور أبداً
@@ -99,32 +75,27 @@ export default function Login() {
       // Store token
       if (data.token) {
         localStorage.setItem('auth_token', data.token);
-        console.log('🟢 Token saved to localStorage');
       }
 
       // Store user info
       if (data.user) {
         localStorage.setItem('user-info', JSON.stringify(data.user));
-        console.log('🟢 User info saved to localStorage');
       }
 
       // حذف بيانات الدخول من الخانات
       setEmail("");
       setPassword("");
-      console.log('🟢 Form fields cleared');
 
       // Redirect
       setTimeout(() => {
         if (data.user.role === 'admin') {
-          console.log('🟢 Redirecting to admin dashboard');
           setLocation('/admin/dashboard');
         } else {
-          console.log('🟢 Redirecting to merchant dashboard');
           setLocation('/merchant/dashboard');
         }
       }, 500);
     } catch (err: any) {
-      console.error('🔴 Login error:', err);
+      console.error('Login error:', err);
       setError(err?.message || 'فشل تسجيل الدخول');
     } finally {
       setIsLoading(false);
