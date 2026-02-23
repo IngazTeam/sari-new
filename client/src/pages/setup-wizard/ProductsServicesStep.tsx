@@ -288,10 +288,16 @@ export default function ProductsServicesStep({
     <div className="space-y-6">
       <div className="text-center mb-6">
         <p className="text-gray-600">
-          أضف {isStore && isServices ? 'المنتجات والخدمات' : isStore ? 'المنتجات' : 'الخدمات'} التي تقدمها
+          {hasScrapedProducts
+            ? `راجع ${isStore && isServices ? 'المنتجات والخدمات' : isStore ? 'المنتجات' : 'الخدمات'} المستوردة من موقعك`
+            : `أضف ${isStore && isServices ? 'المنتجات والخدمات' : isStore ? 'المنتجات' : 'الخدمات'} التي تقدمها`
+          }
         </p>
         <p className="text-sm text-gray-500 mt-1">
-          سيستخدمها ساري للرد على عملائك تلقائياً عبر واتساب
+          {hasScrapedProducts
+            ? 'يمكنك تعديل أو حذف أي منتج قبل المتابعة'
+            : 'سيستخدمها ساري للرد على عملائك تلقائياً عبر واتساب'
+          }
         </p>
       </div>
 
@@ -306,28 +312,30 @@ export default function ProductsServicesStep({
         </div>
       )}
 
-      {/* Tips Banner */}
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
-        <Lightbulb className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-amber-800 space-y-1">
-          <p className="font-medium">💡 نصائح لإضافة {isStore ? 'المنتجات' : 'الخدمات'}:</p>
-          <ul className="list-disc list-inside space-y-0.5 text-xs text-amber-700">
-            {isStore ? (
-              <>
-                <li>{t('wizardProductsServicesStepPage.text3')}</li>
-                <li>{t('wizardProductsServicesStepPage.text4')}</li>
-                <li>{t('wizardProductsServicesStepPage.text5')}</li>
-              </>
-            ) : (
-              <>
-                <li>{t('wizardProductsServicesStepPage.text6')}</li>
-                <li>{t('wizardProductsServicesStepPage.text7')}</li>
-                <li>{t('wizardProductsServicesStepPage.text8')}</li>
-              </>
-            )}
-          </ul>
+      {/* Tips Banner — only show when not scraped */}
+      {!hasScrapedProducts && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+          <Lightbulb className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-amber-800 space-y-1">
+            <p className="font-medium">💡 نصائح لإضافة {isStore ? 'المنتجات' : 'الخدمات'}:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-xs text-amber-700">
+              {isStore ? (
+                <>
+                  <li>{t('wizardProductsServicesStepPage.text3')}</li>
+                  <li>{t('wizardProductsServicesStepPage.text4')}</li>
+                  <li>{t('wizardProductsServicesStepPage.text5')}</li>
+                </>
+              ) : (
+                <>
+                  <li>{t('wizardProductsServicesStepPage.text6')}</li>
+                  <li>{t('wizardProductsServicesStepPage.text7')}</li>
+                  <li>{t('wizardProductsServicesStepPage.text8')}</li>
+                </>
+              )}
+            </ul>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
         {/* Products Section */}

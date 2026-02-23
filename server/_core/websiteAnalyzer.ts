@@ -1141,12 +1141,11 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
       }
 
       for (const p of rawProducts.slice(0, 50)) {
-        // Debug: log image structure for first product
+        // Debug: dump the FULL first product to see image format
         if (products.length === 0) {
-          console.log(`[WebsiteAnalyzer] First product image debug — image:`, JSON.stringify(p.image)?.substring(0, 200),
-            'images[0]:', JSON.stringify(p.images?.[0])?.substring(0, 200),
-            'thumbnail:', JSON.stringify(p.thumbnail)?.substring(0, 200),
-            'main_image:', JSON.stringify(p.main_image)?.substring(0, 200));
+          console.log(`[WebsiteAnalyzer] === FIRST RAW PRODUCT DUMP (${endpoint.platform}) ===`);
+          console.log(JSON.stringify(p).substring(0, 2000));
+          console.log(`[WebsiteAnalyzer] === END RAW PRODUCT DUMP ===`);
         }
 
         // Helper: resolve a value to a URL string (handles objects/strings/arrays)
