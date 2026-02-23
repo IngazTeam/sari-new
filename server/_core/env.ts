@@ -1,17 +1,19 @@
+// Use getters so process.env is read at access time, not at module init
+// (the inline .env loader in index.ts runs after ESM imports are evaluated)
 export const ENV = {
-  cookieSecret: process.env.JWT_SECRET ?? "",
-  databaseUrl: process.env.DATABASE_URL ?? "",
-  isProduction: process.env.NODE_ENV === "production",
-  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
-  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
-  tapSecretKey: process.env.TAP_SECRET_KEY ?? "",
-  tapPublicKey: process.env.TAP_PUBLIC_KEY ?? "",
-  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+  get cookieSecret() { return process.env.JWT_SECRET ?? ""; },
+  get databaseUrl() { return process.env.DATABASE_URL ?? ""; },
+  get isProduction() { return process.env.NODE_ENV === "production"; },
+  get forgeApiUrl() { return process.env.BUILT_IN_FORGE_API_URL ?? ""; },
+  get forgeApiKey() { return process.env.BUILT_IN_FORGE_API_KEY ?? ""; },
+  get tapSecretKey() { return process.env.TAP_SECRET_KEY ?? ""; },
+  get tapPublicKey() { return process.env.TAP_PUBLIC_KEY ?? ""; },
+  get openaiApiKey() { return process.env.OPENAI_API_KEY ?? ""; },
   // SMTP2GO API Configuration
-  smtp2goApiKey: process.env.SMTP2GO_API_KEY ?? "",
-  smtpFrom: process.env.SMTP_FROM ?? "noreply@sary.live",
+  get smtp2goApiKey() { return process.env.SMTP2GO_API_KEY ?? ""; },
+  get smtpFrom() { return process.env.SMTP_FROM ?? "noreply@sary.live"; },
   // Google OAuth Configuration
-  googleClientId: process.env.VITE_GOOGLE_CLIENT_ID ?? "",
-  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  get googleClientId() { return process.env.VITE_GOOGLE_CLIENT_ID ?? ""; },
+  get googleClientSecret() { return process.env.GOOGLE_CLIENT_SECRET ?? ""; },
 };
 
