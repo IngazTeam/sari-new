@@ -95,17 +95,28 @@ export const websiteAnalysisRouter = router({
             let savedCount = 0;
             for (const product of products) {
               try {
-                // Truncate fields to fit DB varchar limits
+                // Safely extract string values — Zid API may return objects for URLs
+                const safeStr = (val: any, maxLen: number): string | undefined => {
+                  if (!val) return undefined;
+                  if (typeof val === 'string') return val.substring(0, maxLen);
+                  if (typeof val === 'object') {
+                    // Try common nested URL formats (Zid/Salla)
+                    const str = val.url || val.src || val.original_url || val.href || '';
+                    return typeof str === 'string' ? str.substring(0, maxLen) : undefined;
+                  }
+                  return String(val).substring(0, maxLen);
+                };
+
                 await db.createExtractedProduct({
                   analysisId,
                   merchantId: merchant.id,
-                  name: (product.name || 'Unknown').substring(0, 500),
-                  description: (product.description || '').substring(0, 2000),
+                  name: typeof product.name === 'string' ? product.name.substring(0, 500) : (String(product.name || 'Unknown')).substring(0, 500),
+                  description: typeof product.description === 'string' ? product.description.substring(0, 2000) : '',
                   price: product.price,
-                  currency: (product.currency || 'SAR').substring(0, 10),
-                  imageUrl: product.imageUrl ? product.imageUrl.substring(0, 500) : undefined,
-                  productUrl: product.productUrl ? product.productUrl.substring(0, 500) : undefined,
-                  category: product.category ? product.category.substring(0, 255) : undefined,
+                  currency: typeof product.currency === 'string' ? product.currency.substring(0, 10) : 'SAR',
+                  imageUrl: safeStr(product.imageUrl, 500),
+                  productUrl: safeStr(product.productUrl, 500),
+                  category: typeof product.category === 'string' ? product.category.substring(0, 255) : undefined,
                   tags: product.tags,
                   inStock: product.inStock,
                   confidence: product.confidence || 70,
@@ -113,6 +124,7 @@ export const websiteAnalysisRouter = router({
                 savedCount++;
               } catch (saveError) {
                 console.error(`[WebsiteAnalysis] Failed to save product "${product.name}":`, saveError instanceof Error ? saveError.message : saveError);
+                console.error(`[WebsiteAnalysis] Product data types — imageUrl: ${typeof product.imageUrl}, productUrl: ${typeof product.productUrl}`);
               }
             }
 
