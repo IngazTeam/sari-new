@@ -301,7 +301,7 @@ export default function SetupWizard() {
             <p className="text-sm font-semibold text-emerald-700 mb-2 text-center">
               {STEP_TITLES[currentStep - 1]}
             </p>
-            <div className="flex justify-center items-center gap-1.5">
+            <div className="flex flex-row-reverse justify-center items-center gap-1.5">
               {STEP_TITLES.map((_, index) => {
                 const stepNum = index + 1;
                 const isCompleted = completedSteps.includes(stepNum);
@@ -331,7 +331,7 @@ export default function SetupWizard() {
           </div>
 
           {/* Desktop: Full step labels (clickable) */}
-          <div className="hidden md:flex justify-between mt-2">
+          <div className="hidden md:flex flex-row-reverse justify-between mt-2">
             {STEP_TITLES.map((title, index) => {
               const stepNum = index + 1;
               const isCompleted = completedSteps.includes(stepNum);
@@ -351,7 +351,7 @@ export default function SetupWizard() {
                         : 'text-gray-400 cursor-default'
                     }`}
                 >
-                  {isCurrent && '→ '}
+                  {isCurrent && '← '}
                   {isCompleted && <Check className="inline h-3 w-3 mr-0.5" />}
                   {title}
                 </button>
