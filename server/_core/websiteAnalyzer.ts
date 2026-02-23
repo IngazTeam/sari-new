@@ -1153,7 +1153,15 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
           if (!val) return undefined;
           if (typeof val === 'string' && val.startsWith('http')) return val;
           if (typeof val === 'object' && !Array.isArray(val)) {
-            return val.url || val.src || val.original_url || val.href || val.image?.url || undefined;
+            // Standard keys
+            const direct = val.url || val.src || val.original_url || val.href;
+            if (typeof direct === 'string' && direct.startsWith('http')) return direct;
+            // Zid-specific keys: full_size, large, medium, small, thumbnail
+            const zid = val.full_size || val.large || val.medium || val.small || val.thumbnail;
+            if (typeof zid === 'string' && zid.startsWith('http')) return zid;
+            // Nested image object
+            if (val.image) return resolveUrl(val.image);
+            return undefined;
           }
           return undefined;
         };
