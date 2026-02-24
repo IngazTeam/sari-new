@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { createWebhookSecurityLog } from "../db-notifications";
 import { getIntegrationByType } from "../db";
 

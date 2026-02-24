@@ -7,7 +7,7 @@
  * - REFUNDED: استرجاع المبلغ
  */
 
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import * as db from '../db';
 import * as dbPayments from '../db_payments';
 // import { sendWhatsAppMessage } from '../greenapi-wrapper';
@@ -112,7 +112,7 @@ export async function processTapWebhook(
 
     // البحث عن المعاملة في قاعدة البيانات
     const payment = await dbPayments.getPaymentByTapChargeId(chargeId);
-    
+
     if (!payment) {
       console.warn(`[TapWebhook] Payment not found for charge ${chargeId}`);
       return { success: false, message: 'Payment not found' };
@@ -202,7 +202,7 @@ async function handleOrderPayment(
     if (status === 'CAPTURED') {
       // دفع ناجح
       await db.updateOrderStatus(orderId, 'paid');
-      
+
       // إرسال إشعار للعميل
       const successMessage = `✅ *تم استلام الدفع بنجاح!*
 
@@ -220,7 +220,7 @@ async function handleOrderPayment(
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
       await db.updateOrderStatus(orderId, 'payment_failed');
-      
+
       const failureMessage = `❌ *فشلت عملية الدفع*
 
 📦 *رقم الطلب:* ${order.orderNumber}
@@ -259,7 +259,7 @@ async function handleBookingPayment(
     if (status === 'CAPTURED') {
       // دفع ناجح
       await db.updateBookingStatus(bookingId, 'confirmed');
-      
+
       const successMessage = `✅ *تم تأكيد حجزك!*
 
 📅 *الخدمة:* ${serviceName}
@@ -278,7 +278,7 @@ async function handleBookingPayment(
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
       await db.updateBookingStatus(bookingId, 'cancelled');
-      
+
       const failureMessage = `❌ *فشلت عملية الدفع*
 
 📅 *الحجز:* ${serviceName}

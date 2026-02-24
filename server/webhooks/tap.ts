@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { getPaymentGatewayByName, updatePaymentStatus, getPaymentById, updateSubscription, createInvoice, generateInvoiceNumber, updateInvoice } from '../db';
 import { notifyOwner } from '../_core/notification';
 import { generateInvoicePDF } from '../invoices/generator';
@@ -18,7 +18,7 @@ export async function verifyTapSignature(
       .createHmac('sha256', secretKey)
       .update(payload)
       .digest('hex');
-    
+
     return hash === signature;
   } catch (error) {
     console.error('[Tap Webhook] Signature verification failed:', error);
@@ -47,7 +47,7 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
     }
 
     const paymentId = parseInt(reference.number || reference);
-    
+
     // Get payment from database
     const payment = await getPaymentById(paymentId);
     if (!payment) {
@@ -66,11 +66,11 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
     if (status === 'CAPTURED' || status === 'AUTHORIZED') {
       // Payment successful
       await updatePaymentStatus(paymentId, 'completed', tapId);
-      
+
       // Update subscription status
       if (payment.subscriptionId) {
         await updateSubscription(payment.subscriptionId, { status: 'active' });
-        
+
         // Notify owner
         await notifyOwner({
           title: '✅ دفع ناجح - Tap',
@@ -127,7 +127,7 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // Payment failed
       await updatePaymentStatus(paymentId, 'failed', tapId);
-      
+
       // Notify owner
       await notifyOwner({
         title: '❌ فشل الدفع - Tap',
@@ -138,7 +138,7 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
     } else if (status === 'REFUNDED') {
       // Payment refunded
       await updatePaymentStatus(paymentId, 'refunded', tapId);
-      
+
       // Update subscription status to cancelled
       if (payment.subscriptionId) {
         await updateSubscription(payment.subscriptionId, { status: 'cancelled' });

@@ -129,15 +129,15 @@ export interface TapRefundResponse {
 
 async function getTapSettings() {
 	const settings = await db.getTapSettings();
-	
+
 	if (!settings) {
 		throw new Error('Tap settings not configured. Please configure Tap settings in admin panel.');
 	}
-	
+
 	if (!settings.isActive) {
 		throw new Error('Tap payment gateway is currently disabled.');
 	}
-	
+
 	return settings;
 }
 
@@ -146,8 +146,8 @@ async function getTapSettings() {
 // ============================================
 
 function getApiBaseUrl(isLive: boolean): string {
-	return isLive 
-		? 'https://api.tap.company/v2' 
+	return isLive
+		? 'https://api.tap.company/v2'
 		: 'https://api.tap.company/v2'; // Tap uses same URL for both
 }
 
@@ -164,7 +164,7 @@ function getApiBaseUrl(isLive: boolean): string {
 export async function createCharge(request: TapChargeRequest): Promise<TapChargeResponse> {
 	const settings = await getTapSettings();
 	const baseUrl = getApiBaseUrl(settings.isLive);
-	
+
 	try {
 		const response = await fetch(`${baseUrl}/charges`, {
 			method: 'POST',
@@ -174,12 +174,12 @@ export async function createCharge(request: TapChargeRequest): Promise<TapCharge
 			},
 			body: JSON.stringify(request),
 		});
-		
+
 		if (!response.ok) {
 			const errorData = await response.json();
 			throw new Error(`Tap API Error: ${errorData.message || response.statusText}`);
 		}
-		
+
 		const data: TapChargeResponse = await response.json();
 		return data;
 	} catch (error) {
@@ -201,7 +201,7 @@ export async function createCharge(request: TapChargeRequest): Promise<TapCharge
 export async function retrieveCharge(chargeId: string): Promise<TapChargeResponse> {
 	const settings = await getTapSettings();
 	const baseUrl = getApiBaseUrl(settings.isLive);
-	
+
 	try {
 		const response = await fetch(`${baseUrl}/charges/${chargeId}`, {
 			method: 'GET',
@@ -210,12 +210,12 @@ export async function retrieveCharge(chargeId: string): Promise<TapChargeRespons
 				'Content-Type': 'application/json',
 			},
 		});
-		
+
 		if (!response.ok) {
 			const errorData = await response.json();
 			throw new Error(`Tap API Error: ${errorData.message || response.statusText}`);
 		}
-		
+
 		const data: TapChargeResponse = await response.json();
 		return data;
 	} catch (error) {
@@ -237,7 +237,7 @@ export async function retrieveCharge(chargeId: string): Promise<TapChargeRespons
 export async function refundCharge(request: TapRefundRequest): Promise<TapRefundResponse> {
 	const settings = await getTapSettings();
 	const baseUrl = getApiBaseUrl(settings.isLive);
-	
+
 	try {
 		const response = await fetch(`${baseUrl}/refunds`, {
 			method: 'POST',
@@ -247,12 +247,12 @@ export async function refundCharge(request: TapRefundRequest): Promise<TapRefund
 			},
 			body: JSON.stringify(request),
 		});
-		
+
 		if (!response.ok) {
 			const errorData = await response.json();
 			throw new Error(`Tap API Error: ${errorData.message || response.statusText}`);
 		}
-		
+
 		const data: TapRefundResponse = await response.json();
 		return data;
 	} catch (error) {
@@ -274,20 +274,20 @@ export async function refundCharge(request: TapRefundRequest): Promise<TapRefund
  */
 export async function verifyWebhook(payload: string, signature: string): Promise<boolean> {
 	const settings = await getTapSettings();
-	
+
 	if (!settings.webhookSecret) {
-		console.warn('[Tap] Webhook secret not configured, skipping verification');
-		return true; // Allow webhook if secret not configured (for testing)
+		console.error('[Tap] Webhook secret not configured — rejecting webhook for security');
+		return false; // SECURITY: Never allow unverified webhooks
 	}
-	
+
 	try {
 		// Tap uses HMAC SHA256 for webhook signature
-		const crypto = await import('crypto');
+		const crypto = await import('node:crypto');
 		const expectedSignature = crypto
 			.createHmac('sha256', settings.webhookSecret)
 			.update(payload)
 			.digest('hex');
-		
+
 		return signature === expectedSignature;
 	} catch (error) {
 		console.error('[Tap] Webhook verification error:', error);
@@ -308,7 +308,7 @@ export async function testConnection(): Promise<{ success: boolean; message: str
 	try {
 		const settings = await getTapSettings();
 		const baseUrl = getApiBaseUrl(settings.isLive);
-		
+
 		// Try to retrieve a charge (will fail if no charges exist, but will confirm API key is valid)
 		const response = await fetch(`${baseUrl}/charges?limit=1`, {
 			method: 'GET',
@@ -317,7 +317,7 @@ export async function testConnection(): Promise<{ success: boolean; message: str
 				'Content-Type': 'application/json',
 			},
 		});
-		
+
 		if (response.ok) {
 			return {
 				success: true,

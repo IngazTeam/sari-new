@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { handleTapWebhook, verifyTapSignature } from './tap';
 import { handlePayPalWebhook, verifyPayPalSignature } from './paypal';
 import { handleGreenAPIWebhook } from './greenapi';

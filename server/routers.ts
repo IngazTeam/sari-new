@@ -138,7 +138,7 @@ export const appRouter = router({
       sendVerificationEmail: protectedProcedure
         .input(z.object({ email: z.string().email() }))
         .mutation(async ({ input, ctx }) => {
-          const crypto = await import('crypto');
+          const crypto = await import('node:crypto');
           const token = crypto.randomBytes(32).toString('hex');
           const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
@@ -209,7 +209,7 @@ export const appRouter = router({
         const hashedPassword = await bcrypt.hash(input.password, 10);
 
         // Generate unique openId for the user
-        const crypto = await import('crypto');
+        const crypto = await import('node:crypto');
         const openId = `local_${crypto.randomBytes(16).toString('hex')}`;
 
         // Create user
@@ -299,7 +299,7 @@ export const appRouter = router({
         }
 
         // Generate cryptographically secure token
-        const crypto = await import('crypto');
+        const crypto = await import('node:crypto');
         const token = crypto.randomBytes(32).toString('hex');
 
         // Token expires in 24 hours
@@ -433,7 +433,7 @@ export const appRouter = router({
         }
 
         // Generate cryptographically secure token
-        const crypto = await import('crypto');
+        const crypto = await import('node:crypto');
         const token = crypto.randomBytes(32).toString('hex');
 
         // Token expires in 1 hour
@@ -6836,7 +6836,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const dbPayments = await import('./db_payments');
-        const crypto = await import('crypto');
+        const crypto = await import('node:crypto');
         const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;
         const tapPaymentUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL}/pay/${linkId}`;
 

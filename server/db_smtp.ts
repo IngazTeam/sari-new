@@ -1,7 +1,7 @@
 import { getDb } from "./db";
 import { smtpSettings, emailLogs } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 // Encryption key (should be in env in production)
 const ENCRYPTION_KEY = process.env.SMTP_ENCRYPTION_KEY || "sari-smtp-encryption-key-32ch";
@@ -33,7 +33,7 @@ export async function getSmtpSettings() {
   const db = await getDb();
   const settings = await db.select().from(smtpSettings).where(eq(smtpSettings.isActive, true)).limit(1);
   if (settings.length === 0) return null;
-  
+
   const setting = settings[0];
   return {
     ...setting,
@@ -52,7 +52,7 @@ export async function upsertSmtpSettings(data: {
 }) {
   const db = await getDb();
   const existing = await db.select().from(smtpSettings).limit(1);
-  
+
   const settingsData: any = {
     host: data.host,
     port: data.port,
@@ -120,7 +120,7 @@ export async function getEmailLogs(limit: number = 50) {
 export async function getEmailStats() {
   const db = await getDb();
   const logs = await db.select().from(emailLogs);
-  
+
   return {
     totalEmails: logs.length,
     sentEmails: logs.filter((log) => log.status === "sent").length,

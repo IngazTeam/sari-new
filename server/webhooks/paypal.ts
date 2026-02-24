@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { getPaymentGatewayByName, updatePaymentStatus, getPaymentById, updateSubscription, createInvoice, generateInvoiceNumber, updateInvoice } from '../db';
 import { notifyOwner } from '../_core/notification';
 import { generateInvoicePDF } from '../invoices/generator';
@@ -28,7 +28,7 @@ export async function verifyPayPalSignature(
 
     // TODO: Implement full PayPal signature verification
     // https://developer.paypal.com/api/rest/webhooks/rest/#verify-webhook-signature
-    
+
     return true; // Simplified for now
   } catch (error) {
     console.error('[PayPal Webhook] Signature verification failed:', error);
@@ -48,7 +48,7 @@ export async function handlePayPalWebhook(payload: any): Promise<{ success: bool
     }
 
     const paymentId = parseInt(resource.custom_id);
-    
+
     // Get payment from database
     const payment = await getPaymentById(paymentId);
     if (!payment) {
@@ -60,11 +60,11 @@ export async function handlePayPalWebhook(payload: any): Promise<{ success: bool
       // Payment successful
       const paypalId = resource.id;
       await updatePaymentStatus(paymentId, 'completed', paypalId);
-      
+
       // Update subscription status
       if (payment.subscriptionId) {
         await updateSubscription(payment.subscriptionId, { status: 'active' });
-        
+
         // Notify owner
         await notifyOwner({
           title: '✅ دفع ناجح - PayPal',
@@ -116,7 +116,7 @@ export async function handlePayPalWebhook(payload: any): Promise<{ success: bool
       // Payment failed
       const paypalId = resource.id;
       await updatePaymentStatus(paymentId, 'failed', paypalId);
-      
+
       // Notify owner
       await notifyOwner({
         title: '❌ فشل الدفع - PayPal',
@@ -128,7 +128,7 @@ export async function handlePayPalWebhook(payload: any): Promise<{ success: bool
       // Payment refunded
       const paypalId = resource.id;
       await updatePaymentStatus(paymentId, 'refunded', paypalId);
-      
+
       // Update subscription status to cancelled
       if (payment.subscriptionId) {
         await updateSubscription(payment.subscriptionId, { status: 'cancelled' });

@@ -100,7 +100,7 @@ async function makeZidRequest(
   options: RequestInit = {}
 ): Promise<any> {
   const url = `${ZID_API_BASE}${endpoint}`;
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${config.accessToken}`,
@@ -301,7 +301,7 @@ export async function verifyZidWebhookSignature(
   secret: string
 ): Promise<boolean> {
   // Zid uses HMAC SHA256 for webhook signatures
-  const crypto = await import('crypto');
+  const crypto = await import('node:crypto');
   const expectedSignature = crypto
     .createHmac('sha256', secret)
     .update(payload)
@@ -324,7 +324,7 @@ export async function importAllZidProducts(
   while (hasMore) {
     const { products, total, hasMore: more } = await getZidProducts(config, page, 50);
     allProducts.push(...products);
-    
+
     if (onProgress) {
       onProgress(allProducts.length, total);
     }

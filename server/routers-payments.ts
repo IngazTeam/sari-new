@@ -188,7 +188,7 @@ export const paymentsRouter = router({
         }))
         .mutation(async ({ ctx, input }) => {
             const dbPayments = await import('./db_payments');
-            const crypto = await import('crypto');
+            const crypto = await import('node:crypto');
             const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;
             const tapPaymentUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL}/pay/${linkId}`;
 
