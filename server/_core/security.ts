@@ -11,6 +11,8 @@ import type { Express, Request, Response, NextFunction } from 'express';
  * Configure Helmet security headers
  * Protects against common web vulnerabilities
  */
+const isDev = process.env.NODE_ENV === 'development';
+
 export const securityHeaders = helmet({
     // Content Security Policy
     contentSecurityPolicy: {
@@ -19,8 +21,13 @@ export const securityHeaders = helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "https:", "blob:"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Required for Vite HMR in dev
-            connectSrc: ["'self'", "https://api.openai.com", "wss:", "ws:"],
+            // unsafe-inline/unsafe-eval only in development (Vite HMR)
+            scriptSrc: isDev
+                ? ["'self'", "'unsafe-inline'", "'unsafe-eval'"]
+                : ["'self'"],
+            connectSrc: isDev
+                ? ["'self'", "https://api.openai.com", "wss:", "ws:"]
+                : ["'self'", "https://api.openai.com"],
             frameSrc: ["'self'", "https://checkout.tap.company"], // For Tap payment iframe
         },
     },

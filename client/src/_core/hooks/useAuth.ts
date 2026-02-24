@@ -36,6 +36,8 @@ export function useAuth(options?: UseAuthOptions) {
         console.error("Logout error:", error);
       }
     } finally {
+      // SECURITY: Clear all auth data on logout
+      localStorage.removeItem("auth_token");
       localStorage.removeItem("user-info");
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();

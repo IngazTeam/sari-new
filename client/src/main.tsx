@@ -18,7 +18,7 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
-  
+
   // Don't redirect if we have a token in localStorage (user just logged in)
   const hasToken = localStorage.getItem('auth_token');
   if (hasToken) {
@@ -28,6 +28,10 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   // Don't redirect if already on login page
   if (window.location.pathname === '/login') return;
+
+  // SECURITY: Clear all auth data before redirecting
+  localStorage.removeItem('auth_token');
+  localStorage.removeItem('user-info');
 
   window.location.href = "/login";
 };
@@ -56,11 +60,11 @@ const trpcClient = trpc.createClient({
       fetch(input, init) {
         const token = localStorage.getItem('auth_token');
         const headers = new Headers(init?.headers || {});
-        
+
         if (token) {
           headers.set('Authorization', `Bearer ${token}`);
         }
-        
+
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",

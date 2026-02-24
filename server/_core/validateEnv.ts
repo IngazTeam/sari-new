@@ -33,6 +33,10 @@ const ENV_CONFIGS: EnvConfig[] = [
     // Optional
     { name: 'PORT', required: false, description: 'Server port (default: 3000)' },
     { name: 'NODE_ENV', required: false, description: 'Environment mode (development/production)' },
+
+    // Push Notifications - Required for push notification functionality
+    { name: 'VAPID_PUBLIC_KEY', required: false, description: 'VAPID public key for push notifications (generate: npx web-push generate-vapid-keys)' },
+    { name: 'VAPID_PRIVATE_KEY', required: false, description: 'VAPID private key for push notifications' },
 ];
 
 /**
