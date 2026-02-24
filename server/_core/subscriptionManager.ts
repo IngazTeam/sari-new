@@ -5,7 +5,7 @@
  * including proration calculations, expiry checks, and auto-renewal.
  */
 
-import { db } from "../db";
+import * as db from "../db";
 import { createCharge } from "./tap";
 
 // ============================================
@@ -44,46 +44,46 @@ export async function calculateProration(
 	if (!subscription) {
 		throw new Error('Subscription not found');
 	}
-	
+
 	// Get current plan
 	const currentPlan = await db.getSubscriptionPlanById(subscription.planId!);
 	if (!currentPlan) {
 		throw new Error('Current plan not found');
 	}
-	
+
 	// Get new plan
 	const newPlan = await db.getSubscriptionPlanById(newPlanId);
 	if (!newPlan) {
 		throw new Error('New plan not found');
 	}
-	
+
 	// Calculate days used and remaining
 	const now = new Date();
 	const startDate = new Date(subscription.startDate);
 	const endDate = new Date(subscription.endDate);
-	
+
 	const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 	const daysUsed = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 	const daysRemaining = totalDays - daysUsed;
-	
+
 	// Calculate daily rates
-	const oldPlanPrice = subscription.billingCycle === 'monthly' 
-		? parseFloat(currentPlan.monthlyPrice) 
+	const oldPlanPrice = subscription.billingCycle === 'monthly'
+		? parseFloat(currentPlan.monthlyPrice)
 		: parseFloat(currentPlan.yearlyPrice);
 	const oldPlanDailyRate = oldPlanPrice / totalDays;
-	
-	const newPlanPrice = newBillingCycle === 'monthly' 
-		? parseFloat(newPlan.monthlyPrice) 
+
+	const newPlanPrice = newBillingCycle === 'monthly'
+		? parseFloat(newPlan.monthlyPrice)
 		: parseFloat(newPlan.yearlyPrice);
 	const newPlanDays = newBillingCycle === 'monthly' ? 30 : 365;
 	const newPlanDailyRate = newPlanPrice / newPlanDays;
-	
+
 	// Calculate credit for unused days
 	const creditAmount = oldPlanDailyRate * daysRemaining;
-	
+
 	// Calculate charge for new plan
 	const chargeAmount = Math.max(0, newPlanPrice - creditAmount);
-	
+
 	return {
 		proratedAmount: chargeAmount,
 		daysUsed,
@@ -108,36 +108,36 @@ export async function calculateProration(
 export async function checkExpiredSubscriptions(): Promise<number> {
 	try {
 		console.log('[Subscription Manager] Checking expired subscriptions...');
-		
+
 		const expiredSubscriptions = await db.getExpiredSubscriptions();
-		
+
 		if (expiredSubscriptions.length === 0) {
 			console.log('[Subscription Manager] No expired subscriptions found');
 			return 0;
 		}
-		
+
 		let updatedCount = 0;
-		
+
 		for (const subscription of expiredSubscriptions) {
 			try {
 				// Update subscription status to expired
 				await db.updateMerchantSubscription(subscription.id, {
 					status: 'expired',
 				});
-				
+
 				// Update merchant subscription status
 				await db.updateMerchantSubscriptionStatus(subscription.merchantId, 'expired');
-				
+
 				// Send notification to merchant
 				await sendExpiryNotification(subscription.merchantId, 'expired');
-				
+
 				updatedCount++;
 				console.log(`[Subscription Manager] Subscription ${subscription.id} marked as expired`);
 			} catch (error) {
 				console.error(`[Subscription Manager] Error updating subscription ${subscription.id}:`, error);
 			}
 		}
-		
+
 		console.log(`[Subscription Manager] Updated ${updatedCount} expired subscriptions`);
 		return updatedCount;
 	} catch (error) {
@@ -160,16 +160,16 @@ export async function checkExpiredSubscriptions(): Promise<number> {
 export async function sendExpiryReminders(daysBefore: number): Promise<number> {
 	try {
 		console.log(`[Subscription Manager] Sending ${daysBefore}-day expiry reminders...`);
-		
+
 		const expiringSubscriptions = await db.getExpiringSubscriptions(daysBefore);
-		
+
 		if (expiringSubscriptions.length === 0) {
 			console.log(`[Subscription Manager] No subscriptions expiring in ${daysBefore} days`);
 			return 0;
 		}
-		
+
 		let sentCount = 0;
-		
+
 		for (const subscription of expiringSubscriptions) {
 			try {
 				await sendExpiryNotification(subscription.merchantId, 'reminder', daysBefore);
@@ -179,7 +179,7 @@ export async function sendExpiryReminders(daysBefore: number): Promise<number> {
 				console.error(`[Subscription Manager] Error sending reminder to merchant ${subscription.merchantId}:`, error);
 			}
 		}
-		
+
 		console.log(`[Subscription Manager] Sent ${sentCount} expiry reminders`);
 		return sentCount;
 	} catch (error) {
@@ -204,14 +204,14 @@ async function sendExpiryNotification(
 			console.warn(`[Subscription Manager] Merchant ${merchantId} has no phone number`);
 			return;
 		}
-		
+
 		// Get WhatsApp connection
-		const whatsappConnection = await db.getWhatsAppConnectionByMerchantId(merchantId);
+		const whatsappConnection = await db.getWhatsappConnectionByMerchantId(merchantId);
 		if (!whatsappConnection) {
 			console.warn(`[Subscription Manager] Merchant ${merchantId} has no WhatsApp connection`);
 			return;
 		}
-		
+
 		// Prepare message
 		let message = '';
 		if (type === 'reminder') {
@@ -219,11 +219,11 @@ async function sendExpiryNotification(
 		} else {
 			message = `⚠️ انتهى اشتراكك في ساري.\n\nلتجديد اشتراكك واستعادة الوصول إلى جميع الميزات، يرجى زيارة لوحة التحكم.\n\nنحن هنا لمساعدتك! 💙`;
 		}
-		
+
 		// Send WhatsApp message
 		// TODO: Implement WhatsApp notification
 		// await sendWhatsAppMessage(whatsappConnection.instanceId, whatsappConnection.token, merchant.phone, message);
-		
+
 		console.log(`[Subscription Manager] ${type} notification sent to merchant ${merchantId}`);
 	} catch (error) {
 		console.error(`[Subscription Manager] Error sending notification to merchant ${merchantId}:`, error);
@@ -244,19 +244,19 @@ async function sendExpiryNotification(
 export async function autoRenewSubscriptions(): Promise<{ success: number; failed: number }> {
 	try {
 		console.log('[Subscription Manager] Processing auto-renewals...');
-		
+
 		// Get subscriptions expiring in the next 24 hours with auto-renewal enabled
 		const expiringSubscriptions = await db.getExpiringSubscriptions(1);
 		const autoRenewSubscriptions = expiringSubscriptions.filter(s => s.autoRenew);
-		
+
 		if (autoRenewSubscriptions.length === 0) {
 			console.log('[Subscription Manager] No subscriptions to auto-renew');
 			return { success: 0, failed: 0 };
 		}
-		
+
 		let successCount = 0;
 		let failedCount = 0;
-		
+
 		for (const subscription of autoRenewSubscriptions) {
 			try {
 				// Get plan details
@@ -264,22 +264,22 @@ export async function autoRenewSubscriptions(): Promise<{ success: number; faile
 				if (!plan) {
 					throw new Error('Plan not found');
 				}
-				
+
 				// Get merchant details
 				const merchant = await db.getMerchantById(subscription.merchantId);
 				if (!merchant) {
 					throw new Error('Merchant not found');
 				}
-				
+
 				// Calculate amount
-				const amount = subscription.billingCycle === 'monthly' 
-					? parseFloat(plan.monthlyPrice) 
+				const amount = subscription.billingCycle === 'monthly'
+					? parseFloat(plan.monthlyPrice)
 					: parseFloat(plan.yearlyPrice);
-				
+
 				// Create charge in Tap
 				// Note: In production, you would need to store customer payment method ID
 				// For now, we'll create a transaction record and send a payment link
-				
+
 				const transaction = await db.createPaymentTransaction({
 					merchantId: subscription.merchantId,
 					subscriptionId: subscription.id,
@@ -293,16 +293,16 @@ export async function autoRenewSubscriptions(): Promise<{ success: number; faile
 						billingCycle: subscription.billingCycle,
 					}),
 				});
-				
+
 				// TODO: Create Tap charge and send payment link to merchant
 				// For now, we'll just log it
 				console.log(`[Subscription Manager] Auto-renewal initiated for subscription ${subscription.id}`);
-				
+
 				successCount++;
 			} catch (error) {
 				console.error(`[Subscription Manager] Error auto-renewing subscription ${subscription.id}:`, error);
 				failedCount++;
-				
+
 				// Send failure notification to merchant
 				try {
 					await sendAutoRenewalFailureNotification(subscription.merchantId);
@@ -311,7 +311,7 @@ export async function autoRenewSubscriptions(): Promise<{ success: number; faile
 				}
 			}
 		}
-		
+
 		console.log(`[Subscription Manager] Auto-renewal completed: ${successCount} success, ${failedCount} failed`);
 		return { success: successCount, failed: failedCount };
 	} catch (error) {
@@ -331,16 +331,16 @@ async function sendAutoRenewalFailureNotification(merchantId: number): Promise<v
 		if (!merchant || !merchant.phone) {
 			return;
 		}
-		
+
 		// Get WhatsApp connection
-		const whatsappConnection = await db.getWhatsAppConnectionByMerchantId(merchantId);
+		const whatsappConnection = await db.getWhatsappConnectionByMerchantId(merchantId);
 		if (!whatsappConnection) {
 			return;
 		}
-		
+
 		// Prepare message
 		const message = `⚠️ فشل تجديد اشتراكك تلقائياً.\n\nيرجى تحديث معلومات الدفع في لوحة التحكم لتجديد اشتراكك.\n\nإذا كنت بحاجة إلى مساعدة، نحن هنا من أجلك! 💙`;
-		
+
 		// Send WhatsApp message
 		// TODO: Implement WhatsApp notification
 		// await sendWhatsAppMessage(whatsappConnection.instanceId, whatsappConnection.token, merchant.phone, message);
@@ -381,13 +381,13 @@ export function isSubscriptionActive(subscription: any): boolean {
 	if (!subscription) {
 		return false;
 	}
-	
+
 	if (subscription.status === 'cancelled' || subscription.status === 'expired') {
 		return false;
 	}
-	
+
 	const now = new Date();
 	const endDate = new Date(subscription.endDate);
-	
+
 	return now <= endDate;
 }

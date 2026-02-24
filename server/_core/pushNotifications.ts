@@ -11,15 +11,23 @@ import {
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
 
+let pushEnabled = false;
+
 if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
   console.warn("[Push] ⚠️ VAPID keys not set. Push notifications will not work. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env");
+} else {
+  try {
+    webpush.setVapidDetails(
+      "mailto:support@sari.app",
+      VAPID_PUBLIC_KEY,
+      VAPID_PRIVATE_KEY
+    );
+    pushEnabled = true;
+    console.log("[Push] ✅ VAPID keys configured successfully");
+  } catch (error) {
+    console.error("[Push] ❌ Failed to set VAPID details:", error);
+  }
 }
-
-webpush.setVapidDetails(
-  "mailto:support@sari.app",
-  VAPID_PUBLIC_KEY,
-  VAPID_PRIVATE_KEY
-);
 
 export interface PushNotificationPayload {
   title: string;
@@ -36,6 +44,10 @@ export async function sendPushNotification(
   merchantId: number,
   payload: PushNotificationPayload
 ): Promise<{ success: number; failed: number }> {
+  if (!pushEnabled) {
+    return { success: 0, failed: 0 };
+  }
+
   const subscriptions = await getActivePushSubscriptions(merchantId);
 
   if (subscriptions.length === 0) {
