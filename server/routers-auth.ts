@@ -23,19 +23,21 @@ export const authRouter = router({
     login: publicProcedure
         .input(z.object({
             email: z.string().email(),
-            password: z.string().min(6),
+            password: z.string().min(1),
         }))
         .mutation(async ({ input, ctx }) => {
             console.log('🔵 [AUTH] Login attempt:', input.email);
             const user = await db.getUserByEmail(input.email);
 
             if (!user || !user.password) {
+                console.warn(`[Auth] ❌ Failed login: email=${input.email} ip=${ctx.req.ip} reason=user_not_found`);
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
             }
 
             const isValidPassword = await bcrypt.compare(input.password, user.password);
 
             if (!isValidPassword) {
+                console.warn(`[Auth] ❌ Failed login: email=${input.email} ip=${ctx.req.ip} reason=wrong_password`);
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
             }
 
@@ -71,15 +73,18 @@ export const authRouter = router({
         .input(z.object({
             name: z.string().min(2),
             email: z.string().email(),
-            password: z.string().min(6),
+            password: z.string().min(8, 'Password must be at least 8 characters')
+                .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+                .regex(/[0-9]/, 'Password must contain at least one number'),
             businessName: z.string().min(2),
             phone: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            // Check if email already exists
+            // Check if email already exists (generic message to prevent enumeration)
             const existingUser = await db.getUserByEmail(input.email);
             if (existingUser) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Email already registered' });
+                console.warn(`[Auth] Signup attempt with existing email: ${input.email} ip=${ctx.req.ip}`);
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unable to create account. Please try again or use a different email.' });
             }
 
             // Hash password
