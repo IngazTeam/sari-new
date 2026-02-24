@@ -53,8 +53,18 @@ export default function SignUp() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+    if (formData.password.length < 8) {
+      setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل');
+      return;
+    }
+
+    if (!/[A-Z]/.test(formData.password)) {
+      setError('كلمة المرور يجب أن تحتوي على حرف كبير واحد على الأقل');
+      return;
+    }
+
+    if (!/[0-9]/.test(formData.password)) {
+      setError('كلمة المرور يجب أن تحتوي على رقم واحد على الأقل');
       return;
     }
 
@@ -179,7 +189,7 @@ export default function SignUp() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    minLength={6}
+                    minLength={8}
                     className="pr-10 pl-10"
                     disabled={signupMutation.isPending}
                   />
@@ -192,6 +202,19 @@ export default function SignUp() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                {formData.password && (
+                  <div className="text-xs space-y-1 mt-1">
+                    <p className={formData.password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                      {formData.password.length >= 8 ? '✅' : '○'} 8 أحرف على الأقل
+                    </p>
+                    <p className={/[A-Z]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
+                      {/[A-Z]/.test(formData.password) ? '✅' : '○'} حرف كبير واحد (A-Z)
+                    </p>
+                    <p className={/[0-9]/.test(formData.password) ? 'text-green-600' : 'text-muted-foreground'}>
+                      {/[0-9]/.test(formData.password) ? '✅' : '○'} رقم واحد على الأقل
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -206,7 +229,7 @@ export default function SignUp() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    minLength={6}
+                    minLength={8}
                     className="pr-10 pl-10"
                     disabled={signupMutation.isPending}
                   />
