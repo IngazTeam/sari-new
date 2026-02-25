@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Send, Bot, User, Sparkles, RefreshCw } from 'lucide-react';
+import { Send, Bot, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { trpc } from '@/lib/trpc';
 
 interface Message {
   id: number;
@@ -20,61 +21,15 @@ interface PreviewChatProps {
   services?: Array<{ name: string; price?: number; duration?: string }>;
   welcomeMessage?: string;
   className?: string;
+  useAI?: boolean;
 }
 
-// Sample responses based on tone
-const RESPONSES = {
-  friendly: {
-    greeting: 'أهلاً وسهلاً! 😊 أنا ساري، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟',
-    productsListHeader: 'عندنا منتجات حلوة! 🛍️ هذي أبرزها:\n',
-    productItem: (name: string, price: number) => `• ${name} — ${price} ريال`,
-    productsListFooter: '\n\nأي منتج يهمك أكثر؟ 😊',
-    singleProduct: (name: string, price: number) => `نعم متوفر! ${name} بسعر ${price} ريال فقط 💰 تبي تطلب؟`,
-    servicesListHeader: 'عندنا خدمات ممتازة! 🌟\n',
-    serviceItem: (name: string) => `• ${name}`,
-    servicesListFooter: '\n\nأي خدمة تبي تحجز؟ 🔥',
-    singleService: (name: string) => `عندنا خدمة ${name} وهي من أفضل خدماتنا! 🔥 تبي تحجز موعد؟`,
-    notFound: 'للأسف ما لقيت اللي تدور عليه 😅 بس خليني أساعدك بشيء ثاني!',
-    thanks: 'العفو! 😊 أي شيء ثاني أقدر أساعدك فيه؟',
-    bye: 'تشرفنا! 👋 لا تتردد تراسلنا أي وقت',
-  },
-  professional: {
-    greeting: 'مرحباً بك. أنا ساري، المساعد الافتراضي. كيف يمكنني خدمتك؟',
-    productsListHeader: 'لدينا المنتجات التالية:\n',
-    productItem: (name: string, price: number) => `• ${name} — ${price} ريال`,
-    productsListFooter: '\n\nهل تودّ الاستفسار عن منتج محدد؟',
-    singleProduct: (name: string, price: number) => `نعم، ${name} متوفر لدينا بسعر ${price} ريال. هل ترغب في الطلب؟`,
-    servicesListHeader: 'نقدم الخدمات التالية:\n',
-    serviceItem: (name: string) => `• ${name}`,
-    servicesListFooter: '\n\nهل تود حجز موعد لإحداها؟',
-    singleService: (name: string) => `نقدم خدمة ${name}. هل تود حجز موعد؟`,
-    notFound: 'عذراً، لم أجد ما تبحث عنه. هل يمكنني مساعدتك بشيء آخر؟',
-    thanks: 'على الرحب والسعة. هل هناك شيء آخر يمكنني مساعدتك به؟',
-    bye: 'شكراً لتواصلك معنا. نتطلع لخدمتك مجدداً.',
-  },
-  casual: {
-    greeting: 'هلا! أنا ساري 👋 شو تحتاج؟',
-    productsListHeader: 'عندنا كذا شي:\n',
-    productItem: (name: string, price: number) => `• ${name} — ${price} ريال`,
-    productsListFooter: '\n\nشو يعجبك؟',
-    singleProduct: (name: string, price: number) => `إيه عندنا ${name} بـ ${price} ريال. تبيه؟`,
-    servicesListHeader: 'عندنا:\n',
-    serviceItem: (name: string) => `• ${name}`,
-    servicesListFooter: '\n\nأي وحدة تبي؟',
-    singleService: (name: string) => `عندنا ${name}، تبي تحجز؟`,
-    notFound: 'ما لقيت شي 😕 بس قولي شو تبي بالضبط',
-    thanks: 'ولا يهمك! شي ثاني؟',
-    bye: 'باي! 👋',
-  },
-};
-
-// Sample user queries to simulate
+// Quick reply suggestions
 const SAMPLE_QUERIES = [
   'السلام عليكم',
-  'عندكم منتجات؟',
+  'وش عندكم؟',
   'وش الأسعار؟',
   'أبي أحجز موعد',
-  'شكراً',
 ];
 
 export default function PreviewChat({
@@ -85,6 +40,7 @@ export default function PreviewChat({
   services = [],
   welcomeMessage,
   className = '',
+  useAI = true,
 }: PreviewChatProps) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -92,144 +48,143 @@ export default function PreviewChat({
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [messageCounter, setMessageCounter] = useState(1);
 
-  const responses = RESPONSES[botTone];
+  // Real AI mutation
+  const sendMessageMutation = trpc.testSari.sendMessage.useMutation({
+    onSuccess: (data) => {
+      const botMessage: Message = {
+        id: Date.now(),
+        sender: 'bot',
+        text: data.response,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, botMessage]);
+      setIsTyping(false);
+    },
+    onError: (error) => {
+      console.error('AI chat error:', error);
+      // Fallback to simple response on error
+      const botMessage: Message = {
+        id: Date.now(),
+        sender: 'bot',
+        text: 'عذراً، حصل خطأ. حاول مرة ثانية 🙏',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, botMessage]);
+      setIsTyping(false);
+    },
+  });
+
+  // Welcome greeting based on tone
+  const getGreeting = () => {
+    if (welcomeMessage) return welcomeMessage;
+    switch (botTone) {
+      case 'professional':
+        return 'مرحباً بك. أنا ساري، المساعد الافتراضي. كيف يمكنني خدمتك؟';
+      case 'casual':
+        return 'هلا! أنا ساري 👋 شو تحتاج؟';
+      default:
+        return 'أهلاً وسهلاً! 😊 أنا ساري، مساعدك الذكي. كيف يمكنني مساعدتك اليوم؟';
+    }
+  };
 
   // Initialize with welcome message
   useEffect(() => {
-    const initialMessage: Message = {
+    setMessages([{
       id: 1,
       sender: 'bot',
-      text: welcomeMessage || responses.greeting,
+      text: getGreeting(),
       timestamp: new Date(),
-    };
-    setMessages([initialMessage]);
+    }]);
+    setMessageCounter(2);
   }, [welcomeMessage, botTone]);
 
-  // Auto scroll to bottom — scroll within container only (prevents page jitter)
+  // Auto scroll to bottom
   useEffect(() => {
     if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // Search products by keyword
-  const findMatchingProducts = (query: string) => {
-    const keywords = query.split(/\s+/).filter(k => k.length > 1);
-    const matched = products.filter(p => {
-      const text = `${p.name} ${p.description || ''}`.toLowerCase();
-      return keywords.some(k => text.includes(k));
-    });
-    return matched.length > 0 ? matched.slice(0, 5) : null;
-  };
-
-  // Format products list
-  const formatProductsList = (items: typeof products) => {
-    if (items.length === 1) {
-      return responses.singleProduct(items[0].name, items[0].price);
-    }
-    const list = items.map(p => responses.productItem(p.name, p.price)).join('\n');
-    return responses.productsListHeader + list + responses.productsListFooter;
-  };
-
-  // Format services list
-  const formatServicesList = (items: typeof services) => {
-    if (items.length === 1) {
-      return responses.singleService(items[0].name);
-    }
-    const list = items.map(s => responses.serviceItem(s.name)).join('\n');
-    return responses.servicesListHeader + list + responses.servicesListFooter;
-  };
-
-  // Simulate bot response
-  const generateBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-
-    // Greeting detection
-    if (lowerMessage.match(/سلام|هلا|مرحبا|أهل/)) {
-      return welcomeMessage || responses.greeting;
-    }
-
-    // Product inquiry — broad keyword matching
-    if (lowerMessage.match(/منتج|سعر|عندكم|عندك|وش عند|ابي|أبي|أبغى|فيه|اسعار|أسعار|كم سعر|products|price/)) {
-      if (products.length > 0) {
-        // Check if user asked about a specific product
-        const matched = findMatchingProducts(lowerMessage);
-        if (matched) {
-          return formatProductsList(matched);
-        }
-        // General inquiry — show up to 5 products
-        return formatProductsList(products.slice(0, 5));
-      }
-      return responses.notFound;
-    }
-
-    // Service/booking inquiry
-    if (lowerMessage.match(/خدم|حجز|موعد|booking|service/)) {
-      if (services.length > 0) {
-        return formatServicesList(services.slice(0, 5));
-      }
-      return responses.notFound;
-    }
-
-    // Thanks
-    if (lowerMessage.match(/شكر|thanks|مشكور/)) {
-      return responses.thanks;
-    }
-
-    // Goodbye
-    if (lowerMessage.match(/باي|bye|مع السلامة|في أمان/)) {
-      return responses.bye;
-    }
-
-    // Default — show products if available
-    if (products.length > 0) {
-      return formatProductsList(products.slice(0, 5));
-    }
-
-    return welcomeMessage || responses.greeting;
-  };
-
   const handleSendMessage = () => {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isTyping) return;
 
     const userMessage: Message = {
-      id: messages.length + 1,
+      id: messageCounter,
       sender: 'user',
       text: inputValue,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
+    setMessageCounter(c => c + 1);
+    const currentInput = inputValue;
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate typing delay
-    setTimeout(() => {
-      const botResponse: Message = {
-        id: messages.length + 2,
-        sender: 'bot',
-        text: generateBotResponse(inputValue),
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    if (useAI) {
+      // Use real AI
+      sendMessageMutation.mutate({
+        message: currentInput,
+      });
+    } else {
+      // Fallback: simple local response
+      setTimeout(() => {
+        const botMessage: Message = {
+          id: Date.now(),
+          sender: 'bot',
+          text: getGreeting(),
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, botMessage]);
+        setIsTyping(false);
+      }, 1000);
+    }
   };
 
   const handleQuickReply = (query: string) => {
+    if (isTyping) return;
     setInputValue(query);
-    setTimeout(() => handleSendMessage(), 100);
+    // Use a microtask to ensure state is updated before sending
+    setTimeout(() => {
+      const userMessage: Message = {
+        id: messageCounter,
+        sender: 'user',
+        text: query,
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, userMessage]);
+      setMessageCounter(c => c + 1);
+      setInputValue('');
+      setIsTyping(true);
+
+      if (useAI) {
+        sendMessageMutation.mutate({ message: query });
+      } else {
+        setTimeout(() => {
+          const botMessage: Message = {
+            id: Date.now(),
+            sender: 'bot',
+            text: getGreeting(),
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, botMessage]);
+          setIsTyping(false);
+        }, 1000);
+      }
+    }, 50);
   };
 
   const resetChat = () => {
-    const initialMessage: Message = {
+    setMessages([{
       id: 1,
       sender: 'bot',
-      text: welcomeMessage || responses.greeting,
+      text: getGreeting(),
       timestamp: new Date(),
-    };
-    setMessages([initialMessage]);
+    }]);
+    setMessageCounter(2);
   };
 
   return (
@@ -261,7 +216,7 @@ export default function PreviewChat({
       </div>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="h-64 overflow-y-auto p-4 bg-gray-50 space-y-4">
+      <div ref={messagesContainerRef} className="h-72 overflow-y-auto p-4 bg-gray-50 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -312,6 +267,7 @@ export default function PreviewChat({
               size="sm"
               className="whitespace-nowrap text-xs"
               onClick={() => handleQuickReply(query)}
+              disabled={isTyping}
             >
               {query}
             </Button>
@@ -326,16 +282,21 @@ export default function PreviewChat({
             placeholder={t('compPreviewChatPage.text0')}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
             className="flex-1"
             dir="rtl"
+            disabled={isTyping}
           />
           <Button
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isTyping}
             className="bg-green-600 hover:bg-green-700"
           >
-            <Send className="h-4 w-4" />
+            {isTyping ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
@@ -343,7 +304,7 @@ export default function PreviewChat({
       {/* Preview Badge */}
       <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-center py-2 text-xs">
         <Sparkles className="h-3 w-3 inline-block ml-1" />
-        وضع المعاينة - جرب كيف سيتفاعل ساري مع عملائك
+        {useAI ? 'ذكاء اصطناعي حقيقي — جرب كيف سيتفاعل ساري مع عملائك' : 'وضع المعاينة — جرب كيف سيتفاعل ساري مع عملائك'}
       </div>
     </Card>
   );
