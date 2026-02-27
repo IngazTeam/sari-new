@@ -4,7 +4,7 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 try {
   const __dirname2 = typeof __dirname !== 'undefined' ? __dirname : dirname(fileURLToPath(import.meta.url));
-  const envPath = resolve(__dirname2, '../.env');
+  const envPath = resolve(__dirname2, '../../.env');
   const envContent = readFileSync(envPath, 'utf-8');
   for (const line of envContent.split('\n')) {
     const trimmed = line.trim();

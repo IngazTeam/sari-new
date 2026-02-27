@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Store, CheckCircle2, XCircle, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
+import { Loader2, Store, CheckCircle2, XCircle, RefreshCw, ExternalLink, AlertCircle, Copy, CheckCheck, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useTranslation } from 'react-i18next';
@@ -16,6 +16,23 @@ export default function SallaIntegration() {
   const [storeUrl, setStoreUrl] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Dynamic URLs based on current domain
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const callbackUrl = `${baseUrl}/api/auth/salla/callback`;
+  const webhookUrl = `${baseUrl}/api/webhooks/salla`;
+
+  const handleCopy = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedField(field);
+      toast.success('تم النسخ بنجاح');
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch {
+      toast.error('فشل النسخ');
+    }
+  };
 
   // Get merchant ID from localStorage or context
   const merchantId = parseInt(localStorage.getItem('merchantId') || '0');
@@ -135,9 +152,9 @@ export default function SallaIntegration() {
                 <div>
                   <CardTitle>{t('sallaIntegrationPage.text1')}</CardTitle>
                   <CardDescription className="flex items-center gap-2 mt-1">
-                    <a 
-                      href={connection.storeUrl} 
-                      target="_blank" 
+                    <a
+                      href={connection.storeUrl}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline flex items-center gap-1"
                     >
@@ -147,16 +164,16 @@ export default function SallaIntegration() {
                   </CardDescription>
                 </div>
               </div>
-              <Badge 
+              <Badge
                 variant={connection.syncStatus === 'active' ? 'default' : 'destructive'}
                 className="gap-1"
               >
                 {connection.syncStatus === 'active' && <CheckCircle2 className="h-3 w-3" />}
                 {connection.syncStatus === 'error' && <XCircle className="h-3 w-3" />}
                 {connection.syncStatus === 'syncing' && <Loader2 className="h-3 w-3 animate-spin" />}
-                {connection.syncStatus === 'active' ? 'نشط' : 
-                 connection.syncStatus === 'error' ? 'خطأ' :
-                 connection.syncStatus === 'syncing' ? 'جاري المزامنة' : 'متوقف'}
+                {connection.syncStatus === 'active' ? 'نشط' :
+                  connection.syncStatus === 'error' ? 'خطأ' :
+                    connection.syncStatus === 'syncing' ? 'جاري المزامنة' : 'متوقف'}
               </Badge>
             </div>
           </CardHeader>
@@ -299,8 +316,8 @@ export default function SallaIntegration() {
                     <div>
                       <div className="font-medium">
                         {log.syncType === 'full_sync' ? 'مزامنة كاملة' :
-                         log.syncType === 'stock_sync' ? 'مزامنة المخزون' :
-                         'تحديث منتج'}
+                          log.syncType === 'stock_sync' ? 'مزامنة المخزون' :
+                            'تحديث منتج'}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {new Date(log.startedAt).toLocaleString('ar-SA')}
@@ -326,6 +343,80 @@ export default function SallaIntegration() {
           </CardContent>
         </Card>
       )}
+
+      {/* OAuth & Webhook URLs Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+              <Link2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <CardTitle>روابط OAuth & Webhook</CardTitle>
+              <CardDescription>
+                استخدم هذه الروابط عند إعداد تطبيقك في لوحة تحكم سلة
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="callbackUrl">Callback URL (OAuth Redirect)</Label>
+            <div className="flex gap-2">
+              <Input
+                id="callbackUrl"
+                readOnly
+                value={callbackUrl}
+                className="font-mono text-sm bg-muted"
+                dir="ltr"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleCopy(callbackUrl, 'callback')}
+                title="نسخ الرابط"
+              >
+                {copiedField === 'callback' ? (
+                  <CheckCheck className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              أضف هذا الرابط كـ Redirect URI في إعدادات تطبيق سلة
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="webhookUrl">Webhook URL</Label>
+            <div className="flex gap-2">
+              <Input
+                id="webhookUrl"
+                readOnly
+                value={webhookUrl}
+                className="font-mono text-sm bg-muted"
+                dir="ltr"
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleCopy(webhookUrl, 'webhook')}
+                title="نسخ الرابط"
+              >
+                {copiedField === 'webhook' ? (
+                  <CheckCheck className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              أضف هذا الرابط في إعدادات Webhook في لوحة تحكم سلة لاستقبال التحديثات الفورية
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Info Card */}
       <Card>
