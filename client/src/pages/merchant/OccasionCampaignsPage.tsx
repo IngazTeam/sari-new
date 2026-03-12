@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,19 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar, Gift, TrendingUp, Send, Clock, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-
 import { useTranslation } from 'react-i18next';
-// Occasion names in Arabic
-const OCCASION_NAMES: Record<string, string> = {
-  ramadan: t('occasionCampaignsPagePage.text39'),
-  eid_fitr: t('occasionCampaignsPagePage.text40'),
-  eid_adha: t('occasionCampaignsPagePage.text41'),
-  national_day: t('occasionCampaignsPagePage.text42'),
-  new_year: t('occasionCampaignsPagePage.text43'),
-  hijri_new_year: t('occasionCampaignsPagePage.text44'),
-};
 
-// Occasion emojis
+// Occasion emojis (no t() needed - static data)
 const OCCASION_EMOJIS: Record<string, string> = {
   ramadan: '🌙',
   eid_fitr: '🎉',
@@ -32,13 +22,21 @@ const OCCASION_EMOJIS: Record<string, string> = {
 
 export default function OccasionCampaignsPage() {
   const { t } = useTranslation();
-
   const { user } = useAuth();
+
+  // Occasion names - inside component where t() is available
+  const OCCASION_NAMES: Record<string, string> = {
+    ramadan: t('occasionCampaignsPagePage.text39'),
+    eid_fitr: t('occasionCampaignsPagePage.text40'),
+    eid_adha: t('occasionCampaignsPagePage.text41'),
+    national_day: t('occasionCampaignsPagePage.text42'),
+    new_year: t('occasionCampaignsPagePage.text43'),
+    hijri_new_year: t('occasionCampaignsPagePage.text44'),
+  };
 
   // Get merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery();
 
-  // Get occasion campaigns
   const { data: campaigns = [], refetch: refetchCampaigns } = trpc.occasionCampaigns.list.useQuery(
     { merchantId: merchant?.id || 0 },
     { enabled: !!merchant }

@@ -17,58 +17,59 @@ interface Language {
   dir: 'ltr' | 'rtl';
 }
 
-const languages: Language[] = [
-  { code: 'ar', name: 'Arabic', nativeName: t('languageSettingsPage.text17'), flag: '🇸🇦', currency: 'SAR', currencySymbol: t('languageSettingsPage.text18'), dir: 'rtl' },
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧', currency: 'USD', currencySymbol: '$', dir: 'ltr' },
-  { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
-  { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', currency: 'TRY', currencySymbol: '₺', dir: 'ltr' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
-  { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
-];
-
-const sampleMessages = {
-  ar: {
-    welcome: t('languageSettingsPage.text19'),
-    product: t('languageSettingsPage.text20'),
-    order: t('languageSettingsPage.text21'),
-    thanks: t('languageSettingsPage.text22'),
-  },
-  en: {
-    welcome: 'Hello! I\'m Sari, your smart assistant. How can I help you today?',
-    product: 'We have amazing products, you can check our full catalog',
-    order: 'Perfect! I\'ll register your order now. Can you provide the delivery address?',
-    thanks: 'Thank you! Your order has been received and we\'ll contact you soon 🎉',
-  },
-  fr: {
-    welcome: 'Bonjour ! Je suis Sari, votre assistant intelligent. Comment puis-je vous aider aujourd\'hui ?',
-    product: 'Nous avons des produits incroyables, vous pouvez consulter notre catalogue complet',
-    order: 'Parfait ! Je vais enregistrer votre commande maintenant. Pouvez-vous fournir l\'adresse de livraison ?',
-    thanks: 'Merci ! Votre commande a été reçue et nous vous contacterons bientôt 🎉',
-  },
-  tr: {
-    welcome: 'Merhaba! Ben Sari, akıllı asistanınız. Bugün size nasıl yardımcı olabilirim?',
-    product: 'Harika ürünlerimiz var, tam kataloğumuzu inceleyebilirsiniz',
-    order: 'Mükemmel! Şimdi siparişinizi kaydedeceğim. Teslimat adresini verebilir misiniz?',
-    thanks: 'Teşekkürler! Siparişiniz alındı ve yakında sizinle iletişime geçeceğiz 🎉',
-  },
-  es: {
-    welcome: '¡Hola! Soy Sari, tu asistente inteligente. ¿Cómo puedo ayudarte hoy?',
-    product: 'Tenemos productos increíbles, puedes ver nuestro catálogo completo',
-    order: '¡Perfecto! Voy a registrar tu pedido ahora. ¿Puedes proporcionar la dirección de entrega?',
-    thanks: '¡Gracias! Tu pedido ha sido recibido y te contactaremos pronto 🎉',
-  },
-  it: {
-    welcome: 'Ciao! Sono Sari, il tuo assistente intelligente. Come posso aiutarti oggi?',
-    product: 'Abbiamo prodotti fantastici, puoi vedere il nostro catalogo completo',
-    order: 'Perfetto! Registrerò il tuo ordine ora. Puoi fornire l\'indirizzo di consegna?',
-    thanks: 'Grazie! Il tuo ordine è stato ricevuto e ti contatteremo presto 🎉',
-  },
-};
-
 export default function LanguageSettings() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'ar');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Languages - inside component where t() is available
+  const languages: Language[] = [
+    { code: 'ar', name: 'Arabic', nativeName: t('languageSettingsPage.text17'), flag: '🇸🇦', currency: 'SAR', currencySymbol: t('languageSettingsPage.text18'), dir: 'rtl' },
+    { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧', currency: 'USD', currencySymbol: '$', dir: 'ltr' },
+    { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
+    { code: 'tr', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', currency: 'TRY', currencySymbol: '₺', dir: 'ltr' },
+    { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
+    { code: 'it', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹', currency: 'EUR', currencySymbol: '€', dir: 'ltr' },
+  ];
+
+  const sampleMessages = {
+    ar: {
+      welcome: t('languageSettingsPage.text19'),
+      product: t('languageSettingsPage.text20'),
+      order: t('languageSettingsPage.text21'),
+      thanks: t('languageSettingsPage.text22'),
+    },
+    en: {
+      welcome: 'Hello! I\'m Sari, your smart assistant. How can I help you today?',
+      product: 'We have amazing products, you can check our full catalog',
+      order: 'Perfect! I\'ll register your order now. Can you provide the delivery address?',
+      thanks: 'Thank you! Your order has been received and we\'ll contact you soon 🎉',
+    },
+    fr: {
+      welcome: 'Bonjour ! Je suis Sari, votre assistant intelligent. Comment puis-je vous aider aujourd\'hui ?',
+      product: 'Nous avons des produits incroyables, vous pouvez consulter notre catalogue complet',
+      order: 'Parfait ! Je vais enregistrer votre commande maintenant. Pouvez-vous fournir l\'adresse de livraison ?',
+      thanks: 'Merci ! Votre commande a été reçue et nous vous contacterons bientôt 🎉',
+    },
+    tr: {
+      welcome: 'Merhaba! Ben Sari, akıllı asistanınız. Bugün size nasıl yardımcı olabilirim?',
+      product: 'Harika ürünlerimiz var, tam kataloğumuzu inceleyebilirsiniz',
+      order: 'Mükemmel! Şimdi siparişinizi kaydedeceğim. Teslimat adresini verebilir misiniz?',
+      thanks: 'Teşekkürler! Siparişiniz alındı ve yakında sizinle iletişime geçeceğiz 🎉',
+    },
+    es: {
+      welcome: '¡Hola! Soy Sari, tu asistente inteligente. ¿Cómo puedo ayudarte hoy?',
+      product: 'Tenemos productos increíbles, puedes ver nuestro catálogo completo',
+      order: '¡Perfecto! Voy a registrar tu pedido ahora. ¿Puedes proporcionar la dirección de entrega?',
+      thanks: '¡Gracias! Tu pedido ha sido recibido y te contactaremos pronto 🎉',
+    },
+    it: {
+      welcome: 'Ciao! Sono Sari, il tuo assistente intelligente. Come posso aiutarti oggi?',
+      product: 'Abbiamo prodotti fantastici, puoi vedere il nostro catalogo completo',
+      order: 'Perfetto! Registrerò il tuo ordine ora. Puoi fornire l\'indirizzo di consegna?',
+      thanks: 'Grazie! Il tuo ordine è stato ricevuto e ti contatteremo presto 🎉',
+    },
+  };
 
   const updateSettingsMutation = trpc.settings.update.useMutation();
 

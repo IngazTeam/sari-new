@@ -20,19 +20,20 @@ import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { useTranslation } from 'react-i18next';
 
-const DAYS_OF_WEEK = [
-  { value: 0, label: t('scheduledMessagesPage.text23') },
-  { value: 1, label: t('scheduledMessagesPage.text24') },
-  { value: 2, label: t('scheduledMessagesPage.text25') },
-  { value: 3, label: t('scheduledMessagesPage.text26') },
-  { value: 4, label: t('scheduledMessagesPage.text27') },
-  { value: 5, label: t('scheduledMessagesPage.text28') },
-  { value: 6, label: t('scheduledMessagesPage.text29') },
-];
-
 export default function ScheduledMessages() {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
+
+  // Days of week — must be inside component where t() is available
+  const DAYS_OF_WEEK = [
+    { value: 0, label: t('scheduledMessagesPage.text23') },
+    { value: 1, label: t('scheduledMessagesPage.text24') },
+    { value: 2, label: t('scheduledMessagesPage.text25') },
+    { value: 3, label: t('scheduledMessagesPage.text26') },
+    { value: 4, label: t('scheduledMessagesPage.text27') },
+    { value: 5, label: t('scheduledMessagesPage.text28') },
+    { value: 6, label: t('scheduledMessagesPage.text29') },
+  ];
   
   // Get scheduled messages
   const { data: messages, isLoading } = trpc.scheduledMessages.list.useQuery();

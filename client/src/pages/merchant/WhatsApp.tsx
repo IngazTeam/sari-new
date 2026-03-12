@@ -30,22 +30,22 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { SubscriptionGuard } from '@/components/SubscriptionGuard';
 
-// Popular country codes
-const COUNTRY_CODES = [
-  { code: '+966', name: t('whatsAppPage.text45'), flag: '🇸🇦' },
-  { code: '+971', name: t('whatsAppPage.text46'), flag: '🇦🇪' },
-  { code: '+965', name: t('whatsAppPage.text47'), flag: '🇰🇼' },
-  { code: '+974', name: t('whatsAppPage.text48'), flag: '🇶🇦' },
-  { code: '+973', name: t('whatsAppPage.text49'), flag: '🇧🇭' },
-  { code: '+968', name: t('whatsAppPage.text50'), flag: '🇴🇲' },
-  { code: '+962', name: t('whatsAppPage.text51'), flag: '🇯🇴' },
-  { code: '+20', name: t('whatsAppPage.text52'), flag: '🇪🇬' },
-  { code: '+212', name: t('whatsAppPage.text53'), flag: '🇲🇦' },
-  { code: '+213', name: t('whatsAppPage.text54'), flag: '🇩🇿' },
-];
-
 function WhatsAppConnectionContent() {
   const { t } = useTranslation();
+
+  // Popular country codes - inside component where t() is available
+  const COUNTRY_CODES = [
+    { code: '+966', name: t('whatsAppPage.text45'), flag: '🇸🇦' },
+    { code: '+971', name: t('whatsAppPage.text46'), flag: '🇦🇪' },
+    { code: '+965', name: t('whatsAppPage.text47'), flag: '🇰🇼' },
+    { code: '+974', name: t('whatsAppPage.text48'), flag: '🇶🇦' },
+    { code: '+973', name: t('whatsAppPage.text49'), flag: '🇧🇭' },
+    { code: '+968', name: t('whatsAppPage.text50'), flag: '🇴🇲' },
+    { code: '+962', name: t('whatsAppPage.text51'), flag: '🇯🇴' },
+    { code: '+20', name: t('whatsAppPage.text52'), flag: '🇪🇬' },
+    { code: '+212', name: t('whatsAppPage.text53'), flag: '🇲🇦' },
+    { code: '+213', name: t('whatsAppPage.text54'), flag: '🇩🇿' },
+  ];
 
   const [countryCode, setCountryCode] = useState('+966');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -530,6 +530,7 @@ function WhatsAppConnectionContent() {
 }
 
 export default function WhatsAppConnection() {
+  const { t } = useTranslation();
   return (
     <SubscriptionGuard 
       feature={t('whatsAppPage.text23')}

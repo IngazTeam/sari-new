@@ -754,6 +754,43 @@ function Router() {
         </DashboardLayout>
       </Route>
 
+      {/* Missing sidebar routes — alias to existing pages */}
+      <Route path="/merchant/ai-suggestions">
+        <DashboardLayout><InsightsDashboard /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/keywords">
+        <DashboardLayout><SmartAnalysis /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/voice-messages">
+        <DashboardLayout><Analytics /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/analysis">
+        <DashboardLayout><AdvancedAnalytics /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/weekly-reports">
+        <DashboardLayout><Reports /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/ab-tests">
+        <DashboardLayout><AdvancedAnalyticsDashboard /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/try-sari-analytics">
+        <DashboardLayout><SariAnalytics /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/merchant-payments">
+        <DashboardLayout><Payments /></DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/my-subscription">
+        <DashboardLayout><MySubscription /></DashboardLayout>
+      </Route>
+
       {/* Admin Routes */}
       <Route path="/admin/dashboard">
         <DashboardLayout>
