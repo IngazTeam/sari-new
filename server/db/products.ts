@@ -74,3 +74,10 @@ export async function bulkCreateProducts(productList: InsertProduct[]): Promise<
 
     await db.insert(products).values(productList);
 }
+
+export async function deleteAllProductsByMerchantId(merchantId: number): Promise<void> {
+    const db = await getDb();
+    if (!db) return;
+
+    await db.delete(products).where(eq(products.merchantId, merchantId));
+}
