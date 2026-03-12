@@ -143,8 +143,9 @@ export const setupWizardRouter = router({
                 });
             }
 
-            // Save products to DB
+            // Save products to DB (delete old ones first to avoid duplicates from template)
             if (input.products && input.products.length > 0) {
+                await db.deleteAllProductsByMerchantId(merchant.id);
                 for (const product of input.products) {
                     if (!product.name.trim()) continue;
                     await db.createProduct({
@@ -206,6 +207,9 @@ export const setupWizardRouter = router({
             const products = template.products ? JSON.parse(template.products) : [];
             const workingHours = template.working_hours ? JSON.parse(template.working_hours) : {};
             const botPersonality = template.bot_personality ? JSON.parse(template.bot_personality) : {};
+
+            // Clear existing products/services before applying template
+            await db.deleteAllProductsByMerchantId(merchant.id);
 
             for (const service of services) {
                 await db.createService({
