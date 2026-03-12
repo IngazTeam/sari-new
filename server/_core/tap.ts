@@ -288,7 +288,7 @@ export async function verifyWebhook(payload: string, signature: string): Promise
 			.update(payload)
 			.digest('hex');
 
-		return signature === expectedSignature;
+		return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
 	} catch (error) {
 		console.error('[Tap] Webhook verification error:', error);
 		return false;

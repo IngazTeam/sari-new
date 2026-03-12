@@ -22,7 +22,7 @@ function verifyWebhookSignature(
       .update(payload)
       .digest('base64');
 
-    return hash === signature;
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature));
   } catch (error) {
     console.error('[WooCommerce Webhook] Error verifying signature:', error);
     return false;
@@ -65,8 +65,12 @@ export async function handleWooCommerceWebhook(req: Request, res: Response) {
       return res.status(404).json({ error: 'WooCommerce settings not found' });
     }
 
-    // Verify signature if webhook secret is configured
-    if (settings.webhookSecret && signature) {
+    // SECURITY: Verify signature — mandatory when webhook secret is configured
+    if (settings.webhookSecret) {
+      if (!signature) {
+        console.error('[WooCommerce Webhook] Missing signature — rejecting (secret is configured)');
+        return res.status(401).json({ error: 'Missing webhook signature' });
+      }
       const isValid = verifyWebhookSignature(payloadString, signature, settings.webhookSecret);
 
       if (!isValid) {

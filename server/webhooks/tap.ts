@@ -19,7 +19,7 @@ export async function verifyTapSignature(
       .update(payload)
       .digest('hex');
 
-    return hash === signature;
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature));
   } catch (error) {
     console.error('[Tap Webhook] Signature verification failed:', error);
     return false;
