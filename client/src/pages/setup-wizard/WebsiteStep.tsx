@@ -41,6 +41,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
     const [error, setError] = useState('');
 
     const analyzeWebsite = trpc.websiteAnalysis.analyze.useMutation();
+    const saveProductsMutation = trpc.setupWizard.saveProducts.useMutation();
     const getAnalysis = trpc.websiteAnalysis.getAnalysis.useQuery(
         { id: analysisResult?.analysisId },
         {
@@ -62,6 +63,19 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                     updateWizardData({
                         extractedProducts: products,
                         websiteAnalysis: { ...getAnalysis.data, status: 'completed' },
+                    });
+                    // Save scraped products to DB immediately (replaces template products)
+                    // This ensures the AI bot uses scraped data, not template data
+                    saveProductsMutation.mutate({
+                        products: products.map((p: any) => ({
+                            name: p.name || '',
+                            description: p.description || '',
+                            price: p.price?.toString() || '0',
+                            currency: p.currency || 'SAR',
+                            imageUrl: p.imageUrl || '',
+                            productUrl: p.productUrl || '',
+                            category: p.category || '',
+                        })),
                     });
                 }
             } else if (getAnalysis.data.status === 'failed') {
@@ -117,6 +131,18 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 websiteUrl: url,
                 websiteAnalysis: analysisResult,
                 extractedProducts,
+            });
+            // Also save to DB as safety net (in case auto-save on analysis complete didn't fire)
+            saveProductsMutation.mutate({
+                products: products.map((p: any) => ({
+                    name: p.name,
+                    description: p.description || '',
+                    price: p.price || '0',
+                    currency: p.currency || 'SAR',
+                    imageUrl: p.imageUrl || '',
+                    productUrl: p.productUrl || '',
+                    category: p.category || '',
+                })),
             });
         }
         goToNextStep();
