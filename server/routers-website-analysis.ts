@@ -142,7 +142,7 @@ export const websiteAnalysisRouter = router({
                       merchantId: merchant.id,
                       name: typeof product.name === 'string' ? product.name.substring(0, 500) : String(product.name),
                       description: typeof product.description === 'string' ? product.description.substring(0, 2000) : '',
-                      price: Math.round((product.price || 0) * 100),
+                      price: Math.round(product.price || 0), // scraped prices are already in base currency
                       currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
                       imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : null,
                       productUrl: typeof product.productUrl === 'string' ? product.productUrl : null,
