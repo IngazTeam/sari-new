@@ -105,7 +105,14 @@ export const notificationsRouter = router({
       includeAppointments: z.boolean().optional(),
       isActive: z.boolean().optional()
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // IDOR-1 FIX: Verify ownership
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new Error("Merchant not found");
+      const report = await getScheduledReports(merchant.id);
+      const owns = report.find((r: any) => r.id === input.id);
+      if (!owns) throw new Error("Access denied");
+
       const { id, ...data } = input;
       await updateScheduledReport(id, data);
       return { success: true };
@@ -113,7 +120,14 @@ export const notificationsRouter = router({
 
   deleteScheduledReport: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // IDOR-1 FIX: Verify ownership
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new Error("Merchant not found");
+      const reports = await getScheduledReports(merchant.id);
+      const owns = reports.find((r: any) => r.id === input.id);
+      if (!owns) throw new Error("Access denied");
+
       await deleteScheduledReport(input.id);
       return { success: true };
     }),
@@ -147,7 +161,14 @@ export const notificationsRouter = router({
       isActive: z.boolean().optional(),
       delayMinutes: z.number().optional()
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // IDOR-1 FIX: Verify ownership
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new Error("Merchant not found");
+      const notifications = await getWhatsappAutoNotifications(merchant.id);
+      const owns = notifications.find((n: any) => n.id === input.id);
+      if (!owns) throw new Error("Access denied");
+
       const { id, ...data } = input;
       await updateWhatsappAutoNotification(id, data);
       return { success: true };
@@ -155,7 +176,14 @@ export const notificationsRouter = router({
 
   deleteWhatsappAutoNotification: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // IDOR-1 FIX: Verify ownership
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new Error("Merchant not found");
+      const notifications = await getWhatsappAutoNotifications(merchant.id);
+      const owns = notifications.find((n: any) => n.id === input.id);
+      if (!owns) throw new Error("Access denied");
+
       await deleteWhatsappAutoNotification(input.id);
       return { success: true };
     }),
@@ -187,7 +215,14 @@ export const notificationsRouter = router({
 
   resolveError: protectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // IDOR-1 FIX: Verify ownership
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new Error("Merchant not found");
+      const errors = await getUnresolvedErrors(merchant.id);
+      const owns = errors.find((e: any) => e.id === input.id);
+      if (!owns) throw new Error("Access denied");
+
       await resolveIntegrationError(input.id);
       return { success: true };
     }),
@@ -206,7 +241,14 @@ export const notificationsRouter = router({
 
   generateWebhookSecret: protectedProcedure
     .input(z.object({ integrationId: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // IDOR-1 FIX: Verify ownership
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new Error("Merchant not found");
+      const integrations = await getIntegrationsByMerchant(merchant.id);
+      const owns = integrations.find((i: any) => i.id === input.integrationId);
+      if (!owns) throw new Error("Access denied");
+
       const secret = generateWebhookSecret();
       await updateIntegrationSettings(input.integrationId, { webhook_secret: secret });
       return { secret };

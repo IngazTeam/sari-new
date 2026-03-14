@@ -59,6 +59,12 @@ export const quickResponsesRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
+            // IDOR-2 FIX: Verify response belongs to this merchant
+            const response = await db.getQuickResponseById(input.id);
+            if (!response || response.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
             const { id, ...data } = input;
             return await db.updateQuickResponse(id, data);
         }),
@@ -70,6 +76,12 @@ export const quickResponsesRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            // IDOR-2 FIX: Verify response belongs to this merchant
+            const response = await db.getQuickResponseById(input.id);
+            if (!response || response.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
             await db.deleteQuickResponse(input.id);

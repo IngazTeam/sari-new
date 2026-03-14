@@ -188,9 +188,10 @@ export const analyticsRouter = router({
           size: pdfBuffer.length,
         };
       } catch (error) {
+        console.error('[Analytics] PDF generation failed:', error);
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: `Failed to generate PDF: ${error}`,
+          message: 'فشل إنشاء تقرير PDF. حاول مرة أخرى.',
         });
       }
     }),
