@@ -158,12 +158,11 @@ export const authRouter = router({
             // Activate trial period (7 days)
             await db.activateUserTrial(user.id);
 
-            // Create merchant profile
             await db.createMerchant({
                 userId: user.id,
                 businessName: input.businessName,
                 phone: input.phone || null,
-                status: 'pending',
+                status: 'active', // LAUNCH-FIX: Set active immediately (was 'pending' with no activation path)
             });
 
             // Send welcome email
@@ -211,6 +210,138 @@ export const authRouter = router({
         ctx.res.clearCookie(COOKIE_NAME);
         return { success: true };
     }),
+
+    // LAUNCH-FIX: Forgot password — sends reset link via email
+    forgotPassword: publicProcedure
+        .input(z.object({
+            email: z.string().email(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+            // Rate limit by IP
+            const { checkRateLimit } = await import('./_core/rateLimiter');
+            const clientIp = ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown';
+            const check = checkRateLimit(`forgot_ip:${clientIp}`, 5, 3600000); // 5 per hour
+            if (!check.allowed) {
+                // Always return success to prevent email enumeration
+                return { success: true, message: 'إذا كان البريد مسجلاً، ستصلك رسالة بالتعليمات.' };
+            }
+
+            // Log attempt
+            await db.trackResetAttempt({ email: input.email, ipAddress: clientIp });
+
+            const user = await db.getUserByEmail(input.email);
+            if (!user) {
+                // Don't reveal if email exists — return same message
+                return { success: true, message: 'إذا كان البريد مسجلاً، ستصلك رسالة بالتعليمات.' };
+            }
+
+            // Delete old tokens for this user
+            await db.deletePasswordResetTokensByUserId(user.id);
+
+            // Generate reset token
+            const crypto = await import('node:crypto');
+            const token = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+            await db.createPasswordResetToken({
+                userId: user.id,
+                email: input.email,
+                token,
+                expiresAt,
+            });
+
+            // Send email
+            const appUrl = process.env.VITE_APP_URL || process.env.APP_URL || 'https://sary.live';
+            const resetUrl = `${appUrl}/reset-password?token=${token}`;
+
+            try {
+                const { sendEmail } = await import('./_core/smtpEmail');
+                await sendEmail({
+                    to: input.email,
+                    subject: '🔐 إعادة تعيين كلمة المرور — ساري',
+                    html: `
+                        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px 12px 0 0; text-align: center; color: white;">
+                                <h1 style="margin: 0;">🔐 إعادة تعيين كلمة المرور</h1>
+                            </div>
+                            <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                                <p style="font-size: 16px; color: #333;">مرحباً ${user.name}،</p>
+                                <p style="font-size: 16px; color: #666;">تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بك.</p>
+                                <div style="text-align: center; margin: 30px 0;">
+                                    <a href="${resetUrl}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: bold;">إعادة تعيين كلمة المرور</a>
+                                </div>
+                                <p style="font-size: 14px; color: #999;">الرابط صالح لمدة ساعة واحدة فقط.</p>
+                                <p style="font-size: 14px; color: #999;">إذا لم تطلب هذا، تجاهل هذه الرسالة.</p>
+                            </div>
+                        </div>
+                    `,
+                });
+            } catch (error) {
+                console.error('[Auth] Failed to send password reset email:', error);
+            }
+
+            return { success: true, message: 'إذا كان البريد مسجلاً، ستصلك رسالة بالتعليمات.' };
+        }),
+
+    // LAUNCH-FIX: Reset password with token
+    resetPassword: publicProcedure
+        .input(z.object({
+            token: z.string().min(1),
+            newPassword: z.string().min(8)
+                .regex(/[A-Z]/, 'يجب أن تحتوي على حرف كبير')
+                .regex(/[0-9]/, 'يجب أن تحتوي على رقم'),
+        }))
+        .mutation(async ({ input }) => {
+            const validation = await db.validatePasswordResetToken(input.token);
+            if (!validation.valid || !validation.token) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: validation.reason || 'رابط إعادة التعيين غير صالح أو منتهي.',
+                });
+            }
+
+            // Hash new password
+            const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+
+            // Update password
+            await db.updateUser(validation.token.userId, { password: hashedPassword });
+
+            // Mark token as used
+            await db.markPasswordResetTokenAsUsed(validation.token.id);
+
+            // Delete all tokens for this user (invalidate any other reset links)
+            await db.deletePasswordResetTokensByUserId(validation.token.userId);
+
+            return { success: true, message: 'تم تغيير كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن.' };
+        }),
+
+    // LAUNCH-FIX: Change password for logged-in user
+    changePassword: protectedProcedure
+        .input(z.object({
+            currentPassword: z.string().min(1),
+            newPassword: z.string().min(8)
+                .regex(/[A-Z]/, 'يجب أن تحتوي على حرف كبير')
+                .regex(/[0-9]/, 'يجب أن تحتوي على رقم'),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const user = await db.getUserById(ctx.user.id);
+            if (!user || !user.password) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكن تغيير كلمة المرور لهذا الحساب.' });
+            }
+
+            const isValid = await bcrypt.compare(input.currentPassword, user.password);
+            if (!isValid) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'كلمة المرور الحالية غير صحيحة.' });
+            }
+
+            const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+            await db.updateUser(ctx.user.id, { password: hashedPassword });
+
+            // Clear cookie to force re-login with new password (session invalidation)
+            ctx.res.clearCookie(COOKIE_NAME);
+
+            return { success: true, message: 'تم تغيير كلمة المرور. يرجى تسجيل الدخول مرة أخرى.' };
+        }),
 });
 
 export type AuthRouter = typeof authRouter;
