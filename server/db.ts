@@ -947,6 +947,22 @@ export async function updateCampaign(id: number, data: Partial<InsertCampaign>):
   await db.update(campaigns).set(data).where(eq(campaigns.id, id));
 }
 
+export async function deleteCampaign(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // Delete logs first (foreign key cascade may not be set)
+  await deleteCampaignLogsByCampaignId(id);
+  await db.delete(campaigns).where(eq(campaigns.id, id));
+}
+
+export async function deleteCampaignLogsByCampaignId(campaignId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(campaignLogs).where(eq(campaignLogs.campaignId, campaignId));
+}
+
 // ============================================
 // Campaign Logs Management
 // ============================================

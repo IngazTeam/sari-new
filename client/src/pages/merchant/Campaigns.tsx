@@ -11,9 +11,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Pencil, Trash2, Send, FileText } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Send, FileText, Loader2 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
 
 export default function Campaigns() {
   const { t } = useTranslation();
@@ -44,6 +45,31 @@ export default function Campaigns() {
       await deleteMutation.mutateAsync({ id });
     }
   };
+
+  // FIX #7: Confirmation before send
+  const handleSend = async (id: number, name: string) => {
+    const confirmed = confirm(t('campaignsPage.confirmSend', `هل أنت متأكد من إرسال حملة "${name}"؟ سيتم إرسالها لجميع العملاء المستهدفين.`));
+    if (confirmed) {
+      await sendMutation.mutateAsync({ id });
+    }
+  };
+
+  // FIX #9: Poll progress for sending campaigns
+  const sendingCampaign = campaigns?.find(c => c.status === 'sending');
+  const { data: sendProgress } = trpc.campaigns.getSendProgress.useQuery(
+    { id: sendingCampaign?.id || 0 },
+    {
+      enabled: !!sendingCampaign,
+      refetchInterval: sendingCampaign ? 3000 : false, // Poll every 3 seconds
+    }
+  );
+
+  // Auto-refetch when campaign completes
+  useEffect(() => {
+    if (sendProgress?.status === 'completed') {
+      refetch();
+    }
+  }, [sendProgress?.status]);
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
@@ -164,7 +190,24 @@ export default function Campaigns() {
                     <TableCell>{campaign.sentCount}</TableCell>
                     <TableCell>{campaign.totalRecipients}</TableCell>
                     <TableCell>
-                      {new Date(campaign.createdAt).toLocaleDateString()}
+                      {campaign.status === 'sending' && sendProgress && sendProgress.progress !== undefined ? (
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="w-3 h-3 animate-spin text-primary" />
+                          <div className="flex-1">
+                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary rounded-full transition-all duration-500"
+                                style={{ width: `${sendProgress.progress}%` }}
+                              />
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {sendProgress.sentCount}/{sendProgress.totalRecipients}
+                          </span>
+                        </div>
+                      ) : (
+                        new Date(campaign.createdAt).toLocaleDateString()
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -193,7 +236,7 @@ export default function Campaigns() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => sendMutation.mutateAsync({ id: campaign.id })}
+                              onClick={() => handleSend(campaign.id, campaign.name)}
                               disabled={sendMutation.isPending}
                               title={t('campaignsPage.sendNow')}
                             >

@@ -58,10 +58,15 @@ export default function NewCampaign() {
       return;
     }
 
+    // FIX #1/#5: Serialize targeting filters as JSON so backend can apply them during send
+    const hasFilters = Object.values(filters).some(v => v !== undefined);
+    const targetAudience = hasFilters ? JSON.stringify(filters) : undefined;
+
     await createMutation.mutateAsync({
       name: formData.name,
       message: formData.message,
       imageUrl: formData.imageUrl || undefined,
+      targetAudience,
       scheduledAt: formData.scheduledAt ? new Date(formData.scheduledAt) : undefined,
     });
   };
@@ -125,7 +130,7 @@ export default function NewCampaign() {
               />
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span>{t('newCampaignPage.text6')}</span>
-                <span>{formData.message.length} حرف</span>
+                <span>{formData.message.length} {t('common.characters', 'حرف')}</span>
               </div>
             </div>
 
@@ -283,7 +288,7 @@ export default function NewCampaign() {
           </CardContent>
         </Card>
 
-        {/* Preview */}
+        {/* Preview — WhatsApp-style bubble (#10) */}
         <Card>
           <CardHeader>
             <CardTitle>{t('newCampaignPage.text23')}</CardTitle>
@@ -292,21 +297,26 @@ export default function NewCampaign() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              {formData.imageUrl && (
-                <div className="mb-4">
-                  <img
-                    src={formData.imageUrl}
-                    alt="Preview"
-                    className="max-w-full h-auto rounded-lg"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
+            <div className="flex justify-end">
+              <div className="bg-[#dcf8c6] rounded-xl rounded-tr-none p-3 max-w-[85%] shadow-sm border border-[#b5dba5]">
+                {formData.imageUrl && (
+                  <div className="mb-2">
+                    <img
+                      src={formData.imageUrl}
+                      alt="Preview"
+                      className="max-w-full h-auto rounded-lg"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+                <div className="whitespace-pre-wrap text-sm">
+                  {formData.message || t('newCampaignPage.previewPlaceholder', 'سيظهر نص الرسالة هنا...')}
                 </div>
-              )}
-              <div className="whitespace-pre-wrap">
-                {formData.message || 'سيظهر نص الرسالة هنا...'}
+                <div className="text-[10px] text-gray-500 text-left mt-1">
+                  {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ✓✓
+                </div>
               </div>
             </div>
           </CardContent>

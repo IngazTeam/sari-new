@@ -872,8 +872,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN' });
         }
 
-        // Mark campaign as failed to hide it (soft delete)
-        await db.updateCampaign(input.id, { status: 'failed' });
+        // FIX #4: Real delete instead of soft-delete
+        if (campaign.status === 'sending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot delete a campaign that is currently being sent' });
+        }
+        await db.deleteCampaign(input.id);
         return { success: true };
       }),
 
@@ -903,14 +906,39 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active WhatsApp instance found. Please connect WhatsApp first.' });
         }
 
-        // Get all customers from conversations
+        // FIX #1: Apply targeting filters from campaign's targetAudience
         const conversations = await db.getConversationsByMerchantId(merchant.id);
-        const recipients = conversations
-          .filter(c => c.customerPhone)
-          .map(c => c.customerPhone);
+        let targeted = conversations;
+        if (campaign.targetAudience) {
+          try {
+            const filters = JSON.parse(campaign.targetAudience);
+            if (filters.lastActivityDays) {
+              const cutoff = new Date();
+              cutoff.setDate(cutoff.getDate() - filters.lastActivityDays);
+              targeted = targeted.filter(c => c.lastActivityAt && new Date(c.lastActivityAt) >= cutoff);
+            }
+            if (filters.purchaseCountMin !== undefined) {
+              targeted = targeted.filter(c => c.purchaseCount >= filters.purchaseCountMin);
+            }
+            if (filters.purchaseCountMax !== undefined) {
+              targeted = targeted.filter(c => c.purchaseCount <= filters.purchaseCountMax);
+            }
+          } catch { /* backward compat - non-JSON targetAudience */ }
+        }
+
+        // FIX #11: Deduplicate phone numbers
+        const phoneSet = new Set<string>();
+        const uniqueRecipients: typeof targeted = [];
+        for (const conv of targeted) {
+          if (conv.customerPhone && !phoneSet.has(conv.customerPhone)) {
+            phoneSet.add(conv.customerPhone);
+            uniqueRecipients.push(conv);
+          }
+        }
+        const recipients = uniqueRecipients.map(c => c.customerPhone);
 
         if (recipients.length === 0) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No customers found to send campaign' });
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'No customers match the targeting criteria' });
         }
 
         // Update status to sending and set total recipients
@@ -924,60 +952,63 @@ export const appRouter = router({
         const instancePrefix = instance.instanceId.substring(0, 4);
         const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${instance.instanceId}`;
 
-        // Send messages asynchronously
-        Promise.all(
-          recipients.map(async (phone, index) => {
-            // Find conversation for this phone
-            const conversation = conversations.find(c => c.customerPhone === phone);
+        // FIX #2: Send with rate-limited sequential batching
+        const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+        const BATCH_SIZE = 10;
+        const BATCH_DELAY = 1200;
 
-            try {
-              // Send message
-              if (campaign.imageUrl) {
-                await axios.default.post(`${baseURL}/sendFileByUrl/${instance.token}`, {
-                  chatId: `${phone}@c.us`,
-                  urlFile: campaign.imageUrl,
-                  fileName: 'campaign.jpg',
-                  caption: campaign.message,
-                });
-              } else {
-                await axios.default.post(`${baseURL}/sendMessage/${instance.token}`, {
-                  chatId: `${phone}@c.us`,
-                  message: campaign.message,
-                });
-              }
-
-              // Log success
-              await db.createCampaignLog({
-                campaignId: input.id,
-                customerId: conversation?.id || null,
-                customerPhone: phone,
-                customerName: conversation?.customerName || null,
-                status: 'success',
-                errorMessage: null,
-                sentAt: new Date(),
-              });
-
-              return { phone, success: true };
-            } catch (error: any) {
-              console.error(`Failed to send to ${phone}:`, error.message);
-
-              // Log failure
-              await db.createCampaignLog({
-                campaignId: input.id,
-                customerId: conversation?.id || null,
-                customerPhone: phone,
-                customerName: conversation?.customerName || null,
-                status: 'failed',
-                errorMessage: error.message || 'Unknown error',
-                sentAt: new Date(),
-              });
-
-              return { phone, success: false, error: error.message };
+        (async () => {
+          let successCount = 0;
+          for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+            const batch = recipients.slice(i, i + BATCH_SIZE);
+            const results = await Promise.allSettled(
+              batch.map(async (phone) => {
+                const conversation = conversations.find(c => c.customerPhone === phone);
+                try {
+                  if (campaign.imageUrl) {
+                    await axios.default.post(`${baseURL}/sendFileByUrl/${instance.token}`, {
+                      chatId: `${phone}@c.us`,
+                      urlFile: campaign.imageUrl,
+                      fileName: 'campaign.jpg',
+                      caption: campaign.message,
+                    });
+                  } else {
+                    await axios.default.post(`${baseURL}/sendMessage/${instance.token}`, {
+                      chatId: `${phone}@c.us`,
+                      message: campaign.message,
+                    });
+                  }
+                  await db.createCampaignLog({
+                    campaignId: input.id,
+                    customerId: conversation?.id || null,
+                    customerPhone: phone,
+                    customerName: conversation?.customerName || null,
+                    status: 'success',
+                    errorMessage: null,
+                    sentAt: new Date(),
+                  });
+                  return true;
+                } catch (error: any) {
+                  await db.createCampaignLog({
+                    campaignId: input.id,
+                    customerId: conversation?.id || null,
+                    customerPhone: phone,
+                    customerName: conversation?.customerName || null,
+                    status: 'failed',
+                    errorMessage: error.message || 'Unknown error',
+                    sentAt: new Date(),
+                  });
+                  return false;
+                }
+              })
+            );
+            for (const r of results) {
+              if (r.status === 'fulfilled' && r.value) successCount++;
             }
-          })
-        ).then(async (results) => {
-          // Count successes
-          const successCount = results.filter(r => r.success).length;
+            // Update progress
+            await db.updateCampaign(input.id, { sentCount: successCount });
+            if (i + BATCH_SIZE < recipients.length) await sleep(BATCH_DELAY);
+          }
 
           // Update campaign status
           await db.updateCampaign(input.id, {
@@ -1003,7 +1034,7 @@ export const appRouter = router({
           } catch (error) {
             console.error('Failed to send campaign notification:', error);
           }
-        }).catch(async (error) => {
+        })().catch(async (error) => {
           console.error('Error sending campaign:', error);
           await db.updateCampaign(input.id, { status: 'failed' });
         });
@@ -1032,18 +1063,14 @@ export const appRouter = router({
       const totalSent = completedCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
       const totalRecipients = completedCampaigns.reduce((sum, c) => sum + (c.totalRecipients || 0), 0);
 
-      // Calculate delivery rate (assuming sentCount is successful deliveries)
+      // FIX #3: Real delivery rate, no fake readRate
       const deliveryRate = totalRecipients > 0 ? (totalSent / totalRecipients) * 100 : 0;
-
-      // For demo purposes, simulate read rate (in real app, track this from WhatsApp API)
-      const readRate = deliveryRate > 0 ? deliveryRate * 0.75 : 0; // Assume 75% of delivered messages are read
 
       return {
         totalCampaigns,
         completedCampaigns: completedCampaigns.length,
         totalSent,
         deliveryRate: Math.round(deliveryRate * 10) / 10,
-        readRate: Math.round(readRate * 10) / 10,
       };
     }),
 
@@ -1080,8 +1107,8 @@ export const appRouter = router({
             const existing = dateMap.get(dateStr);
             if (existing) {
               existing.sent += campaign.sentCount || 0;
-              existing.delivered += campaign.sentCount || 0; // Assume all sent are delivered for demo
-              existing.read += Math.round((campaign.sentCount || 0) * 0.75); // Simulate 75% read rate
+              existing.delivered += campaign.sentCount || 0;
+              existing.read += 0; // No real read tracking available from WhatsApp API
             }
           }
         });
