@@ -57,17 +57,28 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 setIsAnalyzing(false);
                 setAnalysisResult((prev: any) => ({ ...prev, ...getAnalysis.data, status: 'completed' }));
                 // Products come directly from getAnalysis response
-                const products = getAnalysis.data.extractedProducts || [];
-                if (products.length > 0 && extractedProducts.length === 0) {
-                    setExtractedProducts(products);
+                const rawProducts = getAnalysis.data.extractedProducts || [];
+                if (rawProducts.length > 0 && extractedProducts.length === 0) {
+                    setExtractedProducts(rawProducts);
+                    // Convert to wizard format immediately so they persist in wizardData
+                    const wizardProducts = rawProducts.map((p: any) => ({
+                        id: crypto.randomUUID(),
+                        name: p.name || '',
+                        description: p.description || '',
+                        price: p.price?.toString() || '',
+                        currency: p.currency || 'SAR',
+                        imageUrl: p.imageUrl || '',
+                        productUrl: p.productUrl || '',
+                        category: p.category || '',
+                    }));
                     updateWizardData({
-                        extractedProducts: products,
+                        products: wizardProducts,
+                        extractedProducts: rawProducts,
                         websiteAnalysis: { ...getAnalysis.data, status: 'completed' },
                     });
                     // Save scraped products to DB immediately (replaces template products)
-                    // This ensures the AI bot uses scraped data, not template data
                     saveProductsMutation.mutate({
-                        products: products.map((p: any) => ({
+                        products: wizardProducts.map((p: any) => ({
                             name: p.name || '',
                             description: p.description || '',
                             price: p.price?.toString() || '0',
@@ -113,8 +124,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
         }
     };
 
-    const handleContinue = () => {
-        // Save extracted products to wizard data for ProductsServicesStep
+    const handleContinue = async () => {
+        // Save extracted products to wizard data & DB for ProductsServicesStep and AI chat
         if (extractedProducts.length > 0) {
             const products = extractedProducts.map((p: any) => ({
                 id: crypto.randomUUID(),
@@ -132,18 +143,22 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 websiteAnalysis: analysisResult,
                 extractedProducts,
             });
-            // Also save to DB as safety net (in case auto-save on analysis complete didn't fire)
-            saveProductsMutation.mutate({
-                products: products.map((p: any) => ({
-                    name: p.name,
-                    description: p.description || '',
-                    price: p.price || '0',
-                    currency: p.currency || 'SAR',
-                    imageUrl: p.imageUrl || '',
-                    productUrl: p.productUrl || '',
-                    category: p.category || '',
-                })),
-            });
+            // Save to DB with await — MUST complete before navigating
+            try {
+                await saveProductsMutation.mutateAsync({
+                    products: products.map((p: any) => ({
+                        name: p.name,
+                        description: p.description || '',
+                        price: p.price || '0',
+                        currency: p.currency || 'SAR',
+                        imageUrl: p.imageUrl || '',
+                        productUrl: p.productUrl || '',
+                        category: p.category || '',
+                    })),
+                });
+            } catch (err) {
+                console.error('Failed to save scraped products to DB:', err);
+            }
         }
         goToNextStep();
     };

@@ -143,22 +143,29 @@ export const setupWizardRouter = router({
                 });
             }
 
-            // Save products to DB (delete old ones first to avoid duplicates from template)
+            // Save products to DB — only overwrite if we have products from the wizard
+            // If products array is empty, DO NOT delete existing DB products
+            // (they may have been saved by saveProducts from website scraping or template)
             if (input.products && input.products.length > 0) {
-                await db.deleteAllProductsByMerchantId(merchant.id);
-                for (const product of input.products) {
-                    if (!product.name.trim()) continue;
-                    await db.createProduct({
-                        merchantId: merchant.id,
-                        name: product.name,
-                        description: product.description || '',
-                        price: Math.round(parseFloat(product.price || '0') * 100), // convert to cents
-                        currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
-                        imageUrl: product.imageUrl || null,
-                        productUrl: product.productUrl || null,
-                        category: product.category || null,
-                    });
+                const validProducts = input.products.filter(p => p.name.trim());
+                if (validProducts.length > 0) {
+                    await db.deleteAllProductsByMerchantId(merchant.id);
+                    for (const product of validProducts) {
+                        await db.createProduct({
+                            merchantId: merchant.id,
+                            name: product.name,
+                            description: product.description || '',
+                            price: Math.round(parseFloat(product.price || '0') * 100), // convert to cents
+                            currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
+                            imageUrl: product.imageUrl || null,
+                            productUrl: product.productUrl || null,
+                            category: product.category || null,
+                        });
+                    }
+                    console.log(`[Wizard] completeSetup: saved ${validProducts.length} products to DB`);
                 }
+            } else {
+                console.log('[Wizard] completeSetup: no products in wizard data, keeping existing DB products');
             }
 
             // Save services to DB
