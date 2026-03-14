@@ -398,7 +398,7 @@ function DashboardLayoutContent({
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           collapsible="icon"
-          className="border-r-0"
+          className="border-l-0"
           disableTransition={isResizing}
         >
           <SidebarHeader className="h-16 justify-center">
@@ -475,7 +475,7 @@ function DashboardLayoutContent({
 
                       {/* Group Items */}
                       {(isExpanded || isCollapsed) && (
-                        <div className={`${!isCollapsed ? 'mr-2 border-r border-border/50' : ''}`}>
+                        <div className={`${!isCollapsed ? 'ml-2 border-l border-border/50' : ''}`}>
                           {groupItems.map((item) => {
                             const isActive = location === item.path;
                             return (
@@ -484,7 +484,7 @@ function DashboardLayoutContent({
                                   isActive={isActive}
                                   onClick={() => setLocation(item.path)}
                                   tooltip={item.label}
-                                  className={`h-9 transition-all font-normal ${!isCollapsed ? 'mr-2' : ''}`}
+                                  className={`h-9 transition-all font-normal ${!isCollapsed ? 'ml-2' : ''}`}
                                 >
                                   <item.icon
                                     className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
@@ -506,7 +506,7 @@ function DashboardLayoutContent({
 
         </Sidebar>
         <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
+          className={`absolute top-0 left-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
           onMouseDown={() => {
             if (isCollapsed) return;
             setIsResizing(true);
@@ -550,7 +550,7 @@ function DashboardLayoutContent({
                     onClick={handleLogout}
                     className="cursor-pointer text-destructive focus:text-destructive"
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="ml-2 h-4 w-4" />
                     <span>{t('common.logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -559,7 +559,7 @@ function DashboardLayoutContent({
           </div>
         )}
         {!isMobile && (
-          <div className="flex border-b h-14 items-center justify-end bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
+          <div className="flex border-b h-14 items-center justify-start bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-3">
               <SubscriptionBadge />
               <ThemeSwitcher variant="compact" />
@@ -582,7 +582,7 @@ function DashboardLayoutContent({
                     onClick={handleLogout}
                     className="cursor-pointer text-destructive focus:text-destructive"
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="ml-2 h-4 w-4" />
                     <span>{t('common.logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
