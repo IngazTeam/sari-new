@@ -25,9 +25,9 @@ const TOTAL_STEPS = 10;
 const STEP_TITLES = [
   'مرحباً بك!',
   'نوع نشاطك',
-  'اختر قالب جاهز',
   'معلومات النشاط',
   'ربط موقعك',
+  'اختر قالب جاهز',
   'المنتجات والخدمات',
   'التكاملات',
   'شخصية ساري',
@@ -143,9 +143,20 @@ export default function SetupWizard() {
         newCompletedSteps.push(currentStep);
       }
       setCompletedSteps(newCompletedSteps);
-      setCurrentStep(currentStep + 1);
+
+      // Auto-skip Templates (step 5) if products were scraped from website
+      let nextStep = currentStep + 1;
+      if (nextStep === 5 && wizardData.extractedProducts?.length > 0) {
+        // Mark templates step as completed too
+        if (!newCompletedSteps.includes(5)) {
+          newCompletedSteps.push(5);
+        }
+        nextStep = 6; // Jump to Products/Services
+      }
+
+      setCurrentStep(nextStep);
       // Immediate save (not debounced) when explicitly moving forward
-      saveProgress({ step: currentStep + 1, completed: newCompletedSteps });
+      saveProgress({ step: nextStep, completed: newCompletedSteps });
     }
   };
 
@@ -163,7 +174,12 @@ export default function SetupWizard() {
   // Navigate to previous step
   const goToPreviousStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      let prevStep = currentStep - 1;
+      // Skip Templates (step 5) going back if products were scraped from website
+      if (prevStep === 5 && wizardData.extractedProducts?.length > 0) {
+        prevStep = 4; // Jump back to Website
+      }
+      setCurrentStep(prevStep);
     }
   };
 
@@ -238,11 +254,11 @@ export default function SetupWizard() {
       case 2:
         return <BusinessTypeStep {...stepProps} />;
       case 3:
-        return <TemplatesStep {...stepProps} />;
-      case 4:
         return <BasicInfoStep {...stepProps} />;
-      case 5:
+      case 4:
         return <WebsiteStep {...stepProps} />;
+      case 5:
+        return <TemplatesStep {...stepProps} />;
       case 6:
         return <ProductsServicesStep {...stepProps} />;
       case 7:
