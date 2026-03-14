@@ -113,7 +113,9 @@
     "perWeek": "في الأسبوع",
     "perMonth": "في الشهر",
     "perYear": "في السنة",
-    "currency": "ر.س"
+    "currency": "ر.س",
+    "times": "مرة",
+    "usages": "استخدام"
   },
   "nav": {
     "home": "الرئيسية",
@@ -369,7 +371,9 @@
     "last30Days": "آخر 30 يوم",
     "averageOrder": "متوسط الطلب",
     "successfulOrders": "طلبات ناجحة",
-    "reviews": "تقييم"
+    "reviews": "تقييم",
+    "last7Days": "آخر 7 أيام",
+    "last90Days": "آخر 90 يوم"
   },
   "conversations": {
     "title": "المحادثات",

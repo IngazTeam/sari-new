@@ -21,15 +21,18 @@ export default function InsightsDashboard() {
   const { t } = useTranslation();
   const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d'>('30d');
 
-  // Fetch data
+  // Get current merchant dynamically instead of hardcoded merchantId: 1
+  const { data: merchant } = trpc.merchants.getCurrent.useQuery();
+
+  // Fetch data using merchant's actual ID
   const { data: keywordStats, isLoading: loadingKeywords, refetch: refetchKeywords } = 
-    trpc.insights.getKeywordStats.useQuery({ merchantId: 1, period: selectedPeriod });
+    trpc.insights.getKeywordStats.useQuery({ merchantId: merchant?.id || 0, period: selectedPeriod }, { enabled: !!merchant });
   
   const { data: weeklyReports, isLoading: loadingReports, refetch: refetchReports } = 
-    trpc.insights.getWeeklyReports.useQuery({ merchantId: 1, limit: 4 });
+    trpc.insights.getWeeklyReports.useQuery({ merchantId: merchant?.id || 0, limit: 4 }, { enabled: !!merchant });
   
   const { data: abTests, isLoading: loadingTests, refetch: refetchTests } = 
-    trpc.insights.getActiveABTests.useQuery({ merchantId: 1 });
+    trpc.insights.getActiveABTests.useQuery({ merchantId: merchant?.id || 0 }, { enabled: !!merchant });
 
   const handleRefresh = () => {
     refetchKeywords();
@@ -221,7 +224,7 @@ export default function InsightsDashboard() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge>{kw.category}</Badge>
-                        <span className="text-sm text-muted-foreground">{kw.count} مرة</span>
+                        <span className="text-sm text-muted-foreground">{kw.count} {t('common.times', 'مرة')}</span>
                       </div>
                     </div>
                   )) || <p className="text-center text-muted-foreground py-8">{t('insightsDashboardPage.text15')}</p>}
@@ -374,14 +377,14 @@ export default function InsightsDashboard() {
                             <p className="font-medium mb-1">{t('insightsDashboardPage.text32')}</p>
                             <p className="text-sm text-muted-foreground">{test.responseA}</p>
                           </div>
-                          <Badge variant="outline">{test.usageCountA} استخدام</Badge>
+                          <Badge variant="outline">{test.usageCountA} {t('common.usages', 'استخدام')}</Badge>
                         </div>
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
                             <p className="font-medium mb-1">{t('insightsDashboardPage.text34')}</p>
                             <p className="text-sm text-muted-foreground">{test.responseB}</p>
                           </div>
-                          <Badge variant="outline">{test.usageCountB} استخدام</Badge>
+                          <Badge variant="outline">{test.usageCountB} {t('common.usages', 'استخدام')}</Badge>
                         </div>
                         <div className="flex gap-2 mt-3">
                           <Badge variant={test.successRateA > test.successRateB ? 'default' : 'secondary'}>

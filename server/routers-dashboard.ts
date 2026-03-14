@@ -82,6 +82,22 @@ export const dashboardRouter = router({
             const { getDashboardStats } = await import('./dashboard-analytics');
             return await getDashboardStats(merchant.id);
         }),
+
+    // Combined dashboard summary - reduces 5 requests to 1
+    getSummary: protectedProcedure
+        .input(z.object({
+            days: z.number().optional().default(30),
+            topProductsLimit: z.number().optional().default(5),
+        }))
+        .query(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+            }
+
+            const { getDashboardSummary } = await import('./dashboard-analytics');
+            return await getDashboardSummary(merchant.id, input.days, input.topProductsLimit);
+        }),
 });
 
 export type DashboardRouter = typeof dashboardRouter;

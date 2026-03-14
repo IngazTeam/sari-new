@@ -4,7 +4,8 @@ import { Link } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone } from 'lucide-react';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
 import { TrialBanner } from '@/components/TrialBanner';
@@ -15,6 +16,7 @@ export default function MerchantDashboard() {
   const { t, i18n } = useTranslation();
   const { formatCurrency } = useCurrency();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [dateRange, setDateRange] = useState(30);
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getCurrent.useQuery();
   const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery();
   const completeOnboarding = trpc.merchants.completeOnboarding.useMutation();
@@ -22,16 +24,16 @@ export default function MerchantDashboard() {
   const { data: conversations, isLoading: conversationsLoading } = trpc.conversations.list.useQuery();
   const { data: campaigns, isLoading: campaignsLoading } = trpc.campaigns.list.useQuery();
 
-  // New analytics queries
-  const { data: dashboardStats, isLoading: statsLoading } = trpc.dashboard.getStats.useQuery();
-  const { data: comparisonStats, isLoading: comparisonLoading } = trpc.dashboard.getComparisonStats.useQuery({ days: 30 });
-  const { data: ordersTrend, isLoading: ordersTrendLoading } = trpc.dashboard.getOrdersTrend.useQuery({ days: 30 });
-  const { data: revenueTrend, isLoading: revenueTrendLoading } = trpc.dashboard.getRevenueTrend.useQuery({ days: 30 });
-  const { data: topProducts, isLoading: topProductsLoading } = trpc.dashboard.getTopProducts.useQuery({ limit: 5 });
+  // Combined dashboard summary - reduces 5 requests to 1
+  const { data: dashboardSummary, isLoading: summaryLoading } = trpc.dashboard.getSummary.useQuery({ days: dateRange, topProductsLimit: 5 });
+  const dashboardStats = dashboardSummary?.stats;
+  const comparisonStats = dashboardSummary?.comparison;
+  const ordersTrend = dashboardSummary?.ordersTrend;
+  const revenueTrend = dashboardSummary?.revenueTrend;
+  const topProducts = dashboardSummary?.topProducts;
   const { data: reviewStats } = trpc.reviews.getStats.useQuery({ merchantId: merchant?.id || 1 });
 
-  const isLoading = merchantLoading || subscriptionLoading || conversationsLoading || campaignsLoading ||
-    statsLoading || comparisonLoading || ordersTrendLoading || revenueTrendLoading || topProductsLoading;
+  const isLoading = merchantLoading || subscriptionLoading || conversationsLoading || campaignsLoading || summaryLoading;
 
   // Show onboarding wizard for new merchants
   useEffect(() => {
@@ -77,8 +79,8 @@ export default function MerchantDashboard() {
     {
       title: t('dashboard.averageOrderValue'),
       value: formatCurrency(dashboardStats?.averageOrderValue || 0),
-      growth: 0,
-      icon: MessageSquare,
+      growth: comparisonStats?.growth.aov || 0,
+      icon: DollarSign,
       description: t('dashboard.averageOrder'),
       color: 'text-purple-600',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
@@ -150,13 +152,39 @@ export default function MerchantDashboard() {
               {t('dashboardPage.welcomeDescription')}
             </p>
           </div>
-          <div className="flex gap-3">
-            <Link href="/merchant/campaigns/new">
-              <Button className="shadow-lg">
-                <Send className="ml-2 h-4 w-4" />
-                {t('dashboardPage.newCampaign')}
-              </Button>
-            </Link>
+          <div className="flex items-center gap-3">
+            <Select value={String(dateRange)} onValueChange={(v) => setDateRange(Number(v))}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">{t('dashboard.last7Days', 'آخر 7 أيام')}</SelectItem>
+                <SelectItem value="30">{t('dashboard.last30Days')}</SelectItem>
+                <SelectItem value="90">{t('dashboard.last90Days', 'آخر 90 يوم')}</SelectItem>
+              </SelectContent>
+            </Select>
+            {(!conversations || conversations.length === 0) ? (
+              <Link href="/merchant/whatsapp">
+                <Button className="shadow-lg">
+                  <Smartphone className="ml-2 h-4 w-4" />
+                  {t('dashboardPage.connectWhatsapp')}
+                </Button>
+              </Link>
+            ) : (!topProducts || topProducts.length === 0) ? (
+              <Link href="/merchant/products">
+                <Button className="shadow-lg">
+                  <Package className="ml-2 h-4 w-4" />
+                  {t('dashboardPage.addProducts')}
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/merchant/campaigns/new">
+                <Button className="shadow-lg">
+                  <Send className="ml-2 h-4 w-4" />
+                  {t('dashboardPage.newCampaign')}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 
@@ -214,6 +242,7 @@ export default function MerchantDashboard() {
             </CardHeader>
             <CardContent>
               {ordersChartData.length > 0 ? (
+                <div dir="ltr">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={ordersChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -242,6 +271,7 @@ export default function MerchantDashboard() {
                     />
                   </LineChart>
                 </ResponsiveContainer>
+                </div>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                   <div className="text-center">
@@ -266,6 +296,7 @@ export default function MerchantDashboard() {
             </CardHeader>
             <CardContent>
               {revenueChartData.length > 0 ? (
+                <div dir="ltr">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={revenueChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -291,6 +322,7 @@ export default function MerchantDashboard() {
                     />
                   </BarChart>
                 </ResponsiveContainer>
+                </div>
               ) : (
                 <div className="h-[300px] flex items-center justify-center text-muted-foreground">
                   <div className="text-center">

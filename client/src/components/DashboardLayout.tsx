@@ -84,7 +84,7 @@ import {
   ChevronRight,
   Languages
 } from "lucide-react";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
@@ -312,7 +312,8 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['main']);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(['main', 'sales', 'sari']);
+  const [sidebarSearch, setSidebarSearch] = useState('');
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
@@ -345,6 +346,18 @@ function DashboardLayoutContent({
     acc[group].push(item);
     return acc;
   }, {} as Record<string, MenuItem[]>);
+
+  // Filter menu items based on search
+  const filteredGroupedItems = useMemo(() => {
+    if (!sidebarSearch.trim()) return groupedMenuItems;
+    const query = sidebarSearch.toLowerCase();
+    const filtered: Record<string, MenuItem[]> = {};
+    for (const [group, items] of Object.entries(groupedMenuItems)) {
+      const matched = items.filter(item => item.label.toLowerCase().includes(query));
+      if (matched.length > 0) filtered[group] = matched;
+    }
+    return filtered;
+  }, [groupedMenuItems, sidebarSearch]);
 
   // Auto-expand group containing active item
   useEffect(() => {
@@ -417,6 +430,21 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0 overflow-y-auto">
+            {/* Sidebar Search */}
+            {!isCollapsed && (
+              <div className="px-3 py-2">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={sidebarSearch}
+                    onChange={(e) => setSidebarSearch(e.target.value)}
+                    placeholder={t('sidebar.search', 'بحث في القائمة...')}
+                    className="w-full h-9 pr-9 pl-3 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+            )}
             <SidebarMenu className="px-2 py-1">
               {user?.role === 'admin' ? (
                 // Admin: flat list
@@ -441,10 +469,10 @@ function DashboardLayoutContent({
               ) : (
                 // Merchant: grouped with collapsible sections
                 menuGroups.map((group) => {
-                  const groupItems = groupedMenuItems[group.id] || [];
+                  const groupItems = (sidebarSearch.trim() ? filteredGroupedItems : groupedMenuItems)[group.id] || [];
                   if (groupItems.length === 0) return null;
-
-                  const isExpanded = expandedGroups.includes(group.id);
+                  const isSearching = sidebarSearch.trim().length > 0;
+                  const isExpanded = isSearching || expandedGroups.includes(group.id);
                   const hasActiveItem = groupItems.some(item => item.path === location);
                   const GroupIcon = group.icon;
 

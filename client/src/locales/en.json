@@ -113,7 +113,9 @@
     "perWeek": "Per Week",
     "perMonth": "Per Month",
     "perYear": "Per Year",
-    "currency": "SAR"
+    "currency": "SAR",
+    "times": "times",
+    "usages": "usages"
   },
   "nav": {
     "home": "Home",
@@ -370,7 +372,9 @@
     "last30Days": "Last 30 Days",
     "averageOrder": "Average Order",
     "successfulOrders": "Successful Orders",
-    "reviews": "review"
+    "reviews": "review",
+    "last7Days": "Last 7 Days",
+    "last90Days": "Last 90 Days"
   },
   "conversations": {
     "title": "Conversations",

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { trpc } from '@/lib/trpc';
 import { useAuth } from '@/_core/hooks/useAuth';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -151,13 +152,7 @@ export default function AnalyticsDashboard() {
     { enabled: !!merchant }
   );
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat(i18n.language === 'ar' ? 'ar-SA' : i18n.language, {
-      style: 'currency',
-      currency: 'SAR',
-      minimumFractionDigits: 0,
-    }).format(value);
-  };
+  const { formatCurrency } = useCurrency();
 
   const formatPercent = (value: number) => {
     return `${value.toFixed(1)}%`;

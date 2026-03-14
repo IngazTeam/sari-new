@@ -65,9 +65,9 @@ export async function getRevenueTrend(merchantId: number, days: number = 30) {
 export async function getComparisonStats(merchantId: number, days: number = 30) {
   const db = await getDb();
   if (!db) return {
-    current: { totalOrders: 0, totalRevenue: 0, completedOrders: 0 },
-    previous: { totalOrders: 0, totalRevenue: 0, completedOrders: 0 },
-    growth: { orders: 0, revenue: 0, completed: 0 },
+    current: { totalOrders: 0, totalRevenue: 0, completedOrders: 0, averageOrderValue: 0 },
+    previous: { totalOrders: 0, totalRevenue: 0, completedOrders: 0, averageOrderValue: 0 },
+    growth: { orders: 0, revenue: 0, completed: 0, aov: 0 },
   };
 
   const now = new Date();
@@ -121,88 +121,126 @@ export async function getComparisonStats(merchantId: number, days: number = 30) 
     ? ((current.completedOrders - previous.completedOrders) / previous.completedOrders) * 100
     : current.completedOrders > 0 ? 100 : 0;
 
+  const currentAOV = Number(current.totalOrders) > 0
+    ? Number(current.totalRevenue) / Number(current.totalOrders)
+    : 0;
+  const previousAOV = Number(previous.totalOrders) > 0
+    ? Number(previous.totalRevenue) / Number(previous.totalOrders)
+    : 0;
+  const aovGrowth = previousAOV > 0
+    ? ((currentAOV - previousAOV) / previousAOV) * 100
+    : currentAOV > 0 ? 100 : 0;
+
   return {
     current: {
       totalOrders: Number(current.totalOrders),
       totalRevenue: Number(current.totalRevenue),
       completedOrders: Number(current.completedOrders),
+      averageOrderValue: Math.round(currentAOV * 100) / 100,
     },
     previous: {
       totalOrders: Number(previous.totalOrders),
       totalRevenue: Number(previous.totalRevenue),
       completedOrders: Number(previous.completedOrders),
+      averageOrderValue: Math.round(previousAOV * 100) / 100,
     },
     growth: {
       orders: Math.round(ordersGrowth * 10) / 10,
       revenue: Math.round(revenueGrowth * 10) / 10,
       completed: Math.round(completedGrowth * 10) / 10,
+      aov: Math.round(aovGrowth * 10) / 10,
     },
   };
 }
 
 /**
  * الحصول على أفضل المنتجات مبيعاً
- * ملاحظة: جدول orders لا يحتوي على productId، لذا سنستخدم items JSON
+ * محسّن: يستخدم JSON_TABLE في MySQL للتجميع على مستوى قاعدة البيانات
+ * بدلاً من تحميل جميع الطلبات في الذاكرة
  */
 export async function getTopProducts(merchantId: number, limit: number = 5) {
   const db = await getDb();
   if (!db) return [];
 
-  // الحصول على جميع الطلبات المكتملة
-  const allOrders = await db
-    .select({
-      items: orders.items,
-      totalAmount: orders.totalAmount,
-    })
-    .from(orders)
-    .where(
-      and(
-        eq(orders.merchantId, merchantId),
-        sql`${orders.status} = 'completed'`
-      )
-    );
+  const last90Days = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
-  // تحليل items JSON وحساب المبيعات
-  const productStats: Record<string, {
-    productName: string;
-    totalSales: number;
-    totalRevenue: number;
-  }> = {};
+  try {
+    // محاولة استخدام JSON_TABLE (MySQL 8.0+) للتجميع على مستوى DB
+    const results = await db.execute(sql`
+      SELECT 
+        item_name AS productName,
+        SUM(item_qty) AS totalSales,
+        ROUND(SUM(item_price * item_qty), 2) AS totalRevenue,
+        ROUND(AVG(item_price), 2) AS averagePrice
+      FROM ${orders},
+      JSON_TABLE(${orders.items}, '$[*]' COLUMNS (
+        item_name VARCHAR(255) PATH '$.name' DEFAULT '"Unknown"' ON EMPTY,
+        item_qty INT PATH '$.quantity' DEFAULT '1' ON EMPTY,
+        item_price DECIMAL(10,2) PATH '$.price' DEFAULT '0' ON EMPTY
+      )) AS jt
+      WHERE ${orders.merchantId} = ${merchantId}
+        AND ${orders.status} = 'completed'
+        AND ${orders.createdAt} >= ${last90Days.toISOString()}
+      GROUP BY item_name
+      ORDER BY totalSales DESC
+      LIMIT ${limit}
+    `);
 
-  for (const order of allOrders) {
-    try {
-      const items = JSON.parse(order.items);
-      for (const item of items) {
-        const key = item.name || item.productName || 'Unknown';
-        if (!productStats[key]) {
-          productStats[key] = {
-            productName: key,
-            totalSales: 0,
-            totalRevenue: 0,
-          };
-        }
-        productStats[key].totalSales += item.quantity || 1;
-        productStats[key].totalRevenue += (item.price || 0) * (item.quantity || 1);
-      }
-    } catch (e) {
-      // تجاهل الأخطاء في parsing
-    }
-  }
-
-  // تحويل إلى مصفوفة وترتيب حسب المبيعات
-  const result = Object.values(productStats)
-    .sort((a, b) => b.totalSales - a.totalSales)
-    .slice(0, limit)
-    .map(item => ({
-      productName: item.productName,
-      totalSales: item.totalSales,
-      totalRevenue: Math.round(item.totalRevenue * 100) / 100,
-      averagePrice: item.totalSales > 0
-        ? Math.round((item.totalRevenue / item.totalSales) * 100) / 100
-        : 0,
+    const rows = (results as any)[0] || [];
+    return rows.map((row: any) => ({
+      productName: row.productName || 'Unknown',
+      totalSales: Number(row.totalSales) || 0,
+      totalRevenue: Number(row.totalRevenue) || 0,
+      averagePrice: Number(row.averagePrice) || 0,
     }));
+  } catch (e) {
+    // Fallback: الطريقة القديمة (لـ MySQL < 8.0 أو مشاكل التوافق)
+    // محدود لآخر 90 يوم لتقليل حجم البيانات
+    const allOrders = await db
+      .select({
+        items: orders.items,
+      })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.merchantId, merchantId),
+          sql`${orders.status} = 'completed'`,
+          sql`${orders.createdAt} >= ${last90Days.toISOString()}`
+        )
+      );
 
-  return result;
+    const productStats: Record<string, {
+      productName: string;
+      totalSales: number;
+      totalRevenue: number;
+    }> = {};
+
+    for (const order of allOrders) {
+      try {
+        const items = JSON.parse(order.items);
+        for (const item of items) {
+          const key = item.name || item.productName || 'Unknown';
+          if (!productStats[key]) {
+            productStats[key] = { productName: key, totalSales: 0, totalRevenue: 0 };
+          }
+          productStats[key].totalSales += item.quantity || 1;
+          productStats[key].totalRevenue += (item.price || 0) * (item.quantity || 1);
+        }
+      } catch { /* ignore JSON parse errors */ }
+    }
+
+    return Object.values(productStats)
+      .sort((a, b) => b.totalSales - a.totalSales)
+      .slice(0, limit)
+      .map(item => ({
+        productName: item.productName,
+        totalSales: item.totalSales,
+        totalRevenue: Math.round(item.totalRevenue * 100) / 100,
+        averagePrice: item.totalSales > 0
+          ? Math.round((item.totalRevenue / item.totalSales) * 100) / 100
+          : 0,
+      }));
+  }
 }
 
 /**
@@ -256,5 +294,27 @@ export async function getDashboardStats(merchantId: number) {
     averageOrderValue: result.totalOrders > 0
       ? Math.round((Number(result.totalRevenue) / Number(result.totalOrders)) * 100) / 100
       : 0,
+  };
+}
+
+/**
+ * ملخص لوحة التحكم - يجمع كل البيانات في استدعاء واحد
+ * يقلل عدد الطلبات المتزامنة من 5 إلى 1
+ */
+export async function getDashboardSummary(merchantId: number, days: number = 30, topProductsLimit: number = 5) {
+  const [stats, comparison, ordersTrend, revenueTrend, topProducts] = await Promise.all([
+    getDashboardStats(merchantId),
+    getComparisonStats(merchantId, days),
+    getOrdersTrend(merchantId, days),
+    getRevenueTrend(merchantId, days),
+    getTopProducts(merchantId, topProductsLimit),
+  ]);
+
+  return {
+    stats,
+    comparison,
+    ordersTrend,
+    revenueTrend,
+    topProducts,
   };
 }
