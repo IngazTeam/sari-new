@@ -78,6 +78,11 @@ export const referralsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
+            // FIX #12: Prevent self-referral
+            if (referralCode.merchantId === input.referredMerchantId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك إحالة نفسك' });
+            }
+
             const referral = await db.createReferral({
                 referralCodeId: referralCode.id,
                 referredPhone: referredMerchant.phone || '',

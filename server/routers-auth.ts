@@ -15,6 +15,38 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";
 import * as db from "./db";
 
+// FIX #11: In-memory rate limiting for login
+const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+function checkLoginRateLimit(ip: string): void {
+    const now = Date.now();
+    const record = loginAttempts.get(ip);
+    if (record) {
+        // Reset window if expired
+        if (now - record.firstAttempt > LOGIN_WINDOW_MS) {
+            loginAttempts.set(ip, { count: 1, firstAttempt: now });
+            return;
+        }
+        if (record.count >= MAX_LOGIN_ATTEMPTS) {
+            const remainingMs = LOGIN_WINDOW_MS - (now - record.firstAttempt);
+            const remainingMin = Math.ceil(remainingMs / 60000);
+            throw new TRPCError({
+                code: 'TOO_MANY_REQUESTS',
+                message: `تم تجاوز عدد محاولات تسجيل الدخول. حاول بعد ${remainingMin} دقيقة.`,
+            });
+        }
+        record.count++;
+    } else {
+        loginAttempts.set(ip, { count: 1, firstAttempt: now });
+    }
+}
+
+function clearLoginAttempts(ip: string): void {
+    loginAttempts.delete(ip);
+}
+
 export const authRouter = router({
     // Get current user
     me: protectedProcedure.query(opts => opts.ctx.user),
@@ -27,6 +59,11 @@ export const authRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
             console.log('🔵 [AUTH] Login attempt:', input.email);
+
+            // FIX #11: Rate limit login attempts by IP
+            const clientIp = ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown';
+            checkLoginRateLimit(clientIp);
+
             const user = await db.getUserByEmail(input.email);
 
             if (!user || !user.password) {
@@ -56,6 +93,8 @@ export const authRouter = router({
             ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
             console.log('🟢 [AUTH] Login successful for:', user.email);
+            // Clear rate limit on successful login
+            clearLoginAttempts(clientIp);
             return {
                 success: true,
                 token: sessionToken,

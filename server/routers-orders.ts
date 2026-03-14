@@ -203,23 +203,27 @@ export const ordersRouter = router({
 
             await db.updateOrderStatus(input.orderId, input.status, input.trackingNumber);
 
-            // Send notification to customer
-            const { sendOrderNotification } = await import('./notifications/order-notifications');
-            await sendOrderNotification(
-                input.orderId,
-                order.merchantId,
-                order.customerPhone,
-                input.status,
-                {
-                    customerName: order.customerName || 'عزيزي العميل',
-                    storeName: merchant.businessName,
-                    orderNumber: order.orderNumber || `ORD-${order.id}`,
-                    total: order.totalAmount,
-                    trackingNumber: input.trackingNumber,
-                }
-            );
+            // FIX #9: Wrap notification in try/catch so notification error doesn't break order update
+            try {
+                const { sendOrderNotification } = await import('./notifications/order-notifications');
+                await sendOrderNotification(
+                    input.orderId,
+                    order.merchantId,
+                    order.customerPhone,
+                    input.status,
+                    {
+                        customerName: order.customerName || 'عزيزي العميل',
+                        storeName: merchant.businessName,
+                        orderNumber: order.orderNumber || `ORD-${order.id}`,
+                        total: order.totalAmount,
+                        trackingNumber: input.trackingNumber,
+                    }
+                );
+            } catch (error) {
+                console.error('[Order] Failed to send status notification:', error);
+            }
 
-            return { success: true, message: 'تم تحديث حالة الطلب وإرسال الإشعار' };
+            return { success: true, message: 'تم تحديث حالة الطلب' };
         }),
 });
 

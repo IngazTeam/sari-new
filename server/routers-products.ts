@@ -107,19 +107,43 @@ export const productsRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            // Parse CSV data
+            // FIX #7: Proper CSV parsing that handles quoted values with commas
+            function parseCSVLine(line: string): string[] {
+                const result: string[] = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            }
+
             const lines = input.csvData.split('\n').filter(line => line.trim());
             if (lines.length < 2) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'CSV file is empty or invalid' });
             }
 
-            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            // FIX #14: Limit import size
+            if (lines.length > 5001) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى للاستيراد 5000 منتج' });
+            }
+
+            const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
             let successCount = 0;
             let errorCount = 0;
 
             for (let i = 1; i < lines.length; i++) {
                 try {
-                    const values = lines[i].split(',').map(v => v.trim());
+                    const values = parseCSVLine(lines[i]);
                     const product: any = {};
 
                     headers.forEach((header, index) => {
@@ -216,13 +240,17 @@ export const productsRouter = router({
                 }
             });
 
-            // Actually import products
-            for (const item of preview) {
+            // FIX #14: Limit import size
+            if (preview.length > 5000) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى للاستيراد 5000 منتج' });
+            }
+
+            // Actually import products — FIX #8: use index i instead of indexOf to avoid duplicate-name bug
+            for (let i = 0; i < preview.length; i++) {
                 try {
-                    const idx = preview.indexOf(item);
                     const row: Record<string, any> = {};
-                    // Re-read from worksheet
-                    const wsRow = worksheet.getRow(idx + 2);
+                    // Re-read from worksheet using i directly
+                    const wsRow = worksheet.getRow(i + 2);
                     wsRow.eachCell((cell, colNumber) => {
                         const key = columnMap[colNumber];
                         if (key) {
@@ -243,11 +271,11 @@ export const productsRouter = router({
                         successCount++;
                     } else {
                         errorCount++;
-                        errors.push(`سطر ${idx + 2}: اسم أو سعر مفقود`);
+                        errors.push(`سطر ${i + 2}: اسم أو سعر مفقود`);
                     }
                 } catch (error: any) {
                     errorCount++;
-                    errors.push(`سطر ${preview.indexOf(item) + 2}: ${error.message}`);
+                    errors.push(`سطر ${i + 2}: ${error.message}`);
                 }
             }
 

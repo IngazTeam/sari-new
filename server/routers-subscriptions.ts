@@ -65,7 +65,7 @@ export const subscriptionsRouter = router({
             const subscription = await db.createSubscription({
                 merchantId: merchant.id,
                 planId: input.planId,
-                status: 'pending',
+                status: 'active', // FIX #6: was 'pending' with no activation path
                 conversationsUsed: 0,
                 voiceMessagesUsed: 0,
                 startDate,
@@ -74,6 +74,53 @@ export const subscriptionsRouter = router({
             });
 
             return subscription;
+        }),
+
+    // FIX #15: Cancel subscription
+    cancel: protectedProcedure
+        .mutation(async ({ ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            if (!subscription) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
+            }
+
+            await db.updateSubscription(subscription.id, {
+                status: 'cancelled',
+                autoRenew: false,
+            });
+
+            return { success: true, message: 'تم إلغاء الاشتراك' };
+        }),
+
+    // FIX #15: Upgrade/change plan
+    changePlan: protectedProcedure
+        .input(z.object({ planId: z.number() }))
+        .mutation(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            const plan = await db.getPlanById(input.planId);
+            if (!plan) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+            }
+
+            const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            if (!subscription) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
+            }
+
+            await db.updateSubscription(subscription.id, {
+                planId: input.planId,
+            });
+
+            return { success: true, message: 'تم تغيير الخطة' };
         }),
 });
 

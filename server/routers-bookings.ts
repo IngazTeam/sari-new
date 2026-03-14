@@ -109,6 +109,12 @@ export const bookingsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
+            // FIX #5: Verify service belongs to this merchant
+            const service = await db.getServiceById(input.serviceId);
+            if (!service || service.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
             const bookings = await db.getBookingsByService(input.serviceId, input);
             return { bookings };
         }),
@@ -223,7 +229,17 @@ export const bookingsRouter = router({
             startTime: z.string(),
             endTime: z.string(),
         }))
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
+            // FIX #13: Verify service ownership
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+            const service = await db.getServiceById(input.serviceId);
+            if (!service || service.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
             const hasConflict = await db.checkBookingConflict(
                 input.serviceId,
                 input.staffId || null,

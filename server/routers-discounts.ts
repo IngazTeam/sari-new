@@ -28,6 +28,13 @@ export const discountsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
+            // FIX #10: Check for duplicate code
+            const existingCodes = await db.getDiscountCodesByMerchantId(input.merchantId);
+            const duplicate = existingCodes.find(c => c.code === input.code.toUpperCase());
+            if (duplicate) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'كود الخصم موجود مسبقاً' });
+            }
+
             const discountCode = await db.createDiscountCode({
                 merchantId: input.merchantId,
                 code: input.code.toUpperCase(),

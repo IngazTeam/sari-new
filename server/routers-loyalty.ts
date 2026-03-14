@@ -71,7 +71,18 @@ export const loyaltyRouter = router({
         benefits: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
+      }
+
+      // FIX #2: Verify tier belongs to this merchant
+      const tier = await loyaltyDb.getLoyaltyTierById(input.id);
+      if (!tier || tier.merchantId !== merchant.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+
       const { id, ...data } = input;
       return loyaltyDb.updateLoyaltyTier(id, data);
     }),
@@ -288,7 +299,18 @@ export const loyaltyRouter = router({
         termsAndConditionsAr: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
+      }
+
+      // FIX #2: Verify reward belongs to this merchant
+      const reward = await loyaltyDb.getLoyaltyRewardById(input.id);
+      if (!reward || reward.merchantId !== merchant.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+
       const { id, ...data } = input;
       return loyaltyDb.updateLoyaltyReward(id, data);
     }),
@@ -299,7 +321,18 @@ export const loyaltyRouter = router({
         id: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
+      }
+
+      // FIX #2: Verify reward belongs to this merchant
+      const reward = await loyaltyDb.getLoyaltyRewardById(input.id);
+      if (!reward || reward.merchantId !== merchant.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+
       await loyaltyDb.deleteLoyaltyReward(input.id);
       return { success: true };
     }),
@@ -364,7 +397,18 @@ export const loyaltyRouter = router({
         notes: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
+      }
+
+      // FIX #3: Verify redemption belongs to this merchant
+      const redemption = await loyaltyDb.getLoyaltyRedemptionById(input.id);
+      if (!redemption || redemption.merchantId !== merchant.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+      }
+
       const { id, ...data } = input;
       return loyaltyDb.updateLoyaltyRedemption(id, data);
     }),

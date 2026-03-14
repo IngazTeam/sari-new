@@ -3,6 +3,9 @@
  * Handles customer management and statistics
  * 
  * This is a standalone module following the "Parallel Coexistence" pattern.
+ * 
+ * FIX #4: All endpoints now use merchantId (via getMerchantByUserId) instead of
+ * directly passing ctx.user.id to DB functions that expect merchantId.
  */
 
 import { z } from "zod";
@@ -18,11 +21,17 @@ export const customersRouter = router({
             status: z.enum(['all', 'active', 'new', 'inactive']).optional(),
         }))
         .query(async ({ ctx, input }) => {
-            let customers = await db.getCustomersByMerchant(ctx.user.id);
+            // FIX #4: Use merchantId, not userId
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            let customers = await db.getCustomersByMerchant(merchant.id);
 
             // Apply search filter
             if (input.search) {
-                customers = await db.searchCustomers(ctx.user.id, input.search);
+                customers = await db.searchCustomers(merchant.id, input.search);
             }
 
             // Apply status filter
@@ -37,7 +46,12 @@ export const customersRouter = router({
     getByPhone: protectedProcedure
         .input(z.object({ customerPhone: z.string() }))
         .query(async ({ ctx, input }) => {
-            const customer = await db.getCustomerByPhone(ctx.user.id, input.customerPhone);
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            const customer = await db.getCustomerByPhone(merchant.id, input.customerPhone);
             if (!customer) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'العميل غير موجود' });
             }
@@ -46,12 +60,21 @@ export const customersRouter = router({
 
     // Get customer statistics
     getStats: protectedProcedure.query(async ({ ctx }) => {
-        return await db.getCustomerStats(ctx.user.id);
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        return await db.getCustomerStats(merchant.id);
     }),
 
     // Export customers data
     export: protectedProcedure.query(async ({ ctx }) => {
-        const customers = await db.getCustomersByMerchant(ctx.user.id);
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const customers = await db.getCustomersByMerchant(merchant.id);
         return customers.map(c => ({
             الاسم: c.customerName || 'غير معروف',
             'رقم الجوال': c.customerPhone,
