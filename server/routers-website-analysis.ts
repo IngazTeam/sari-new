@@ -129,6 +129,35 @@ export const websiteAnalysisRouter = router({
             }
 
             console.log(`[WebsiteAnalysis] Saved ${savedCount}/${products.length} products for analysis ${analysisId}`);
+
+            // ✅ ALSO save to main products table so the AI bot can use them immediately
+            if (savedCount > 0) {
+              try {
+                await db.deleteAllProductsByMerchantId(merchant.id);
+                let mainSavedCount = 0;
+                for (const product of products) {
+                  if (!product.name || (typeof product.name === 'string' && !product.name.trim())) continue;
+                  try {
+                    await db.createProduct({
+                      merchantId: merchant.id,
+                      name: typeof product.name === 'string' ? product.name.substring(0, 500) : String(product.name),
+                      description: typeof product.description === 'string' ? product.description.substring(0, 2000) : '',
+                      price: Math.round((product.price || 0) * 100),
+                      currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
+                      imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : null,
+                      productUrl: typeof product.productUrl === 'string' ? product.productUrl : null,
+                      category: typeof product.category === 'string' ? product.category : null,
+                    });
+                    mainSavedCount++;
+                  } catch (err: any) {
+                    console.error(`[WebsiteAnalysis] Failed to save to main products: ${product.name}`, err.message);
+                  }
+                }
+                console.log(`[WebsiteAnalysis] ✅ Saved ${mainSavedCount} products to MAIN products table for merchant ${merchant.id}`);
+              } catch (mainErr: any) {
+                console.error('[WebsiteAnalysis] Failed to save to main products table:', mainErr.message);
+              }
+            }
           } catch (productError) {
             console.error('[WebsiteAnalysis] Product extraction failed:', productError);
           }
