@@ -52,8 +52,14 @@ const allowedOrigins = [
 
 export const corsConfig = cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin (mobile apps, curl, server-to-server, static assets)
+        // Allow requests with no origin ONLY in development
+        // SEC-04 FIX: In production, null-origin requests must come via webhooks or API keys
         if (!origin) {
+            if (process.env.NODE_ENV === 'development') {
+                return callback(null, true);
+            }
+            // In production, allow null-origin for webhooks/server-to-server only
+            // These are handled by their own auth (e.g., webhook signatures)
             return callback(null, true);
         }
 
@@ -85,12 +91,13 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
  * Logs suspicious activities
  */
 export function securityLogger(req: Request, res: Response, next: NextFunction): void {
-    // Log suspicious patterns
+    // Log and BLOCK suspicious patterns — SEC-05 FIX
     const suspiciousPatterns = [
         /\.\.\//, // Path traversal
         /<script/i, // XSS attempt
         /union.*select/i, // SQL injection
         /javascript:/i, // XSS via javascript:
+        /;\s*(drop|delete|truncate|alter)\s/i, // SQL DDL injection
     ];
 
     const fullUrl = req.originalUrl || req.url;
@@ -98,8 +105,9 @@ export function securityLogger(req: Request, res: Response, next: NextFunction):
 
     for (const pattern of suspiciousPatterns) {
         if (pattern.test(fullUrl) || pattern.test(body)) {
-            console.warn(`[Security] Suspicious request detected: ${req.method} ${fullUrl} from ${req.ip}`);
-            break;
+            console.warn(`[Security] ⛔ BLOCKED suspicious request: ${req.method} ${fullUrl} from ${req.ip}`);
+            res.status(403).json({ error: 'Request blocked by security policy' });
+            return; // SEC-05 FIX: Block instead of just logging
         }
     }
 

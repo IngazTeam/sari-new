@@ -129,9 +129,11 @@ export const merchantsRouter = router({
                 );
                 return result;
             } catch (error) {
+                // SEC-06 FIX: Don't expose raw error details
+                console.error('[Merchants] Green API sync failed:', error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
-                    message: `Failed to sync Green API data: ${error}`,
+                    message: 'فشل مزامنة بيانات Green API. تحقق من بيانات الاتصال.',
                 });
             }
         }),

@@ -2,10 +2,16 @@ import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc";
 import { verifyGoogleToken, findOrCreateGoogleUser } from "./google-auth";
 import { TRPCError } from "@trpc/server";
+import { createSessionToken } from "./_core/auth";
+import { getSessionCookieOptions } from "./_core/cookies";
+import { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";
+import * as db from "./db";
 
 export const googleAuthRouter = router({
   /**
    * تسجيل الدخول عبر Google
+   * SEC-02 FIX: Now creates a proper session token and sets cookie,
+   * just like the email login endpoint.
    */
   googleLogin: publicProcedure
     .input(
@@ -28,17 +34,21 @@ export const googleAuthRouter = router({
           });
         }
 
-        // تعيين المستخدم في السياق (سيتم حفظه في الجلسة)
-        ctx.user = {
-          id: user.id,
-          email: user.email,
-          name: user.name || "",
-          role: user.role,
-          openId: "",
-        };
+        // SEC-02 FIX: Create proper session token (matching routers-auth.ts login)
+        await db.updateUserLastSignedIn(user.id);
+
+        const sessionToken = await createSessionToken(String(user.id), {
+          name: user.name || '',
+          email: user.email || '',
+          expiresInMs: THIRTY_DAYS_MS,
+        });
+
+        const cookieOptions = getSessionCookieOptions((ctx as any).req);
+        (ctx as any).res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
         return {
           success: true,
+          token: sessionToken,
           user: {
             id: user.id,
             email: user.email,
@@ -54,12 +64,10 @@ export const googleAuthRouter = router({
           throw error;
         }
 
+        // SEC-11 FIX: Don't expose internal error details
         throw new TRPCError({
           code: "UNAUTHORIZED",
-          message:
-            error instanceof Error
-              ? error.message
-              : "فشل تسجيل الدخول عبر Google",
+          message: "فشل تسجيل الدخول عبر Google. حاول مرة أخرى.",
         });
       }
     }),

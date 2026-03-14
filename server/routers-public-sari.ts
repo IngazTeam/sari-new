@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, adminProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
 export const publicSariRouter = router({
@@ -73,32 +73,36 @@ export const publicSariRouter = router({
             return { response };
         }),
 
-    // Track signup prompt shown
+    // Track signup prompt shown — SEC-10 FIX: Rate limited
     trackSignupPrompt: publicProcedure
         .input(z.object({
-            sessionId: z.string(),
+            sessionId: z.string().max(100),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            const { checkRateLimit } = await import('./_core/rateLimiter');
+            const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+            const check = checkRateLimit(`track_prompt:${clientIp}`, 30, 60000);
+            if (!check.allowed) return { success: true }; // Silent drop
             await db.markSignupPromptShown(input.sessionId);
             return { success: true };
         }),
 
-    // Track conversion to signup
+    // Track conversion to signup — SEC-10 FIX: Rate limited
     trackConversion: publicProcedure
         .input(z.object({
-            sessionId: z.string(),
+            sessionId: z.string().max(100),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            const { checkRateLimit } = await import('./_core/rateLimiter');
+            const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+            const check = checkRateLimit(`track_convert:${clientIp}`, 30, 60000);
+            if (!check.allowed) return { success: true }; // Silent drop
             await db.markTrySariConverted(input.sessionId);
             return { success: true };
         }),
 
-    // Get demo stats (admin only — not public)
-    getDemoStats: publicProcedure.query(async ({ ctx }) => {
-        // Only allow authenticated admin users to see stats
-        if (!(ctx as any).user || (ctx as any).user.role !== 'admin') {
-            throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-        }
+    // Get demo stats — SEC-09 FIX: Use proper adminProcedure
+    getDemoStats: adminProcedure.query(async () => {
         return await db.getTrySariStats();
     }),
 });

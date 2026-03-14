@@ -119,6 +119,14 @@ export const authRouter = router({
             phone: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
+            // SEC-07 FIX: Rate limit signup attempts by IP
+            const { checkRateLimit } = await import('./_core/rateLimiter');
+            const clientIp = ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown';
+            const signupCheck = checkRateLimit(`signup_ip:${clientIp}`, 10, 3600000); // 10 per hour
+            if (!signupCheck.allowed) {
+                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز عدد محاولات التسجيل. حاول لاحقاً.' });
+            }
+
             // Check if email already exists (generic message to prevent enumeration)
             const existingUser = await db.getUserByEmail(input.email);
             if (existingUser) {

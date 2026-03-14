@@ -65,21 +65,28 @@ export const offersRouter = router({
       return await db.getRandomSignupPromptVariant();
     }),
     
-    // Record test result
+    // Record test result — SEC-03: Add rate limiting to prevent DB flooding
     recordResult: publicProcedure
       .input(z.object({
-        sessionId: z.string(),
-        variantId: z.string(),
+        sessionId: z.string().max(100),
+        variantId: z.string().max(50),
         shown: z.boolean().optional(),
         clicked: z.boolean().optional(),
         converted: z.boolean().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
+        // Rate limit by IP
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const check = checkRateLimit(`offers_record:${clientIp}`, 30, 60000); // 30 per minute
+        if (!check.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many requests' });
+        }
         return await db.recordSignupPromptTestResult(input);
       }),
     
-    // Update test result
-    updateResult: publicProcedure
+    // Update test result — SEC-03 FIX: Changed from publicProcedure to protectedProcedure
+    updateResult: protectedProcedure
       .input(z.object({
         id: z.number(),
         shown: z.boolean().optional(),
