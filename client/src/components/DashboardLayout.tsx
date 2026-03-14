@@ -145,7 +145,6 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Sparkles, label: t('sidebar.merchant.sariPersonality'), path: "/merchant/sari-personality", group: 'sari' },
   { icon: Zap, label: t('sidebar.merchant.quickResponses'), path: "/merchant/quick-responses", group: 'sari' },
   { icon: Sparkles, label: t('sidebar.merchant.aiSuggestions'), path: "/merchant/ai-suggestions", group: 'sari' },
-  { icon: TrendingUp, label: t('sidebar.merchant.sentimentAnalysis'), path: "/merchant/sentiment-analysis", group: 'sari' },
   { icon: Key, label: t('sidebar.merchant.keywords'), path: "/merchant/keywords", group: 'sari' },
 
   // واتساب
@@ -229,9 +228,6 @@ const getAdminMenuItems = (t: any) => [
   { icon: Zap, label: t('sidebar.admin.googleOAuth'), path: "/admin/google-oauth" },
   { icon: Database, label: t('sidebar.admin.dataSync'), path: "/admin/data-sync" },
   { icon: BarChart3, label: t('sidebar.admin.seoManagement'), path: "/admin/seo" },
-  { icon: BellRing, label: t('sidebar.admin.notificationPreferences'), path: "/admin/notification-preferences" },
-  { icon: FileText, label: t('sidebar.admin.weeklyReport'), path: "/admin/weekly-report" },
-  { icon: Bell, label: t('sidebar.admin.pushNotifications'), path: "/admin/push-notifications" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
