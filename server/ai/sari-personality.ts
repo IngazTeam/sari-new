@@ -555,6 +555,7 @@ ${result.message}
 
     // Get all products
     const allProducts = await db.getProductsByMerchantId(params.merchantId);
+    console.log(`[chatWithSari] merchantId=${params.merchantId}, products in DB: ${allProducts.length}`, allProducts.length > 0 ? allProducts.map(p => p.name).join(', ') : 'NONE');
     
     // Smart product search based on customer message
     const relevantProducts = await searchRelevantProducts(

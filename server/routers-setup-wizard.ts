@@ -69,28 +69,39 @@ export const setupWizardRouter = router({
             })).default([]),
         }))
         .mutation(async ({ ctx, input }) => {
+            console.log(`[Wizard saveProducts] Called with ${input.products.length} products`);
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+            console.log(`[Wizard saveProducts] Merchant ID: ${merchant.id}`);
+
             // Delete existing products (avoid duplicates if user re-runs wizard)
             await db.deleteAllProductsByMerchantId(merchant.id);
+            console.log(`[Wizard saveProducts] Deleted old products for merchant ${merchant.id}`);
 
             // Save new products
+            let savedCount = 0;
             for (const product of input.products) {
                 if (!product.name.trim()) continue;
-                await db.createProduct({
-                    merchantId: merchant.id,
-                    name: product.name,
-                    description: product.description || '',
-                    price: Math.round(parseFloat(product.price || '0') * 100),
-                    currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
-                    imageUrl: product.imageUrl || null,
-                    productUrl: product.productUrl || null,
-                    category: product.category || null,
-                });
+                try {
+                    await db.createProduct({
+                        merchantId: merchant.id,
+                        name: product.name,
+                        description: product.description || '',
+                        price: Math.round(parseFloat(product.price || '0') * 100),
+                        currency: (product.currency === 'USD' ? 'USD' : 'SAR') as 'SAR' | 'USD',
+                        imageUrl: product.imageUrl || null,
+                        productUrl: product.productUrl || null,
+                        category: product.category || null,
+                    });
+                    savedCount++;
+                } catch (err: any) {
+                    console.error(`[Wizard saveProducts] Failed to create product "${product.name}":`, err.message);
+                }
             }
 
-            return { success: true, count: input.products.filter(p => p.name.trim()).length };
+            console.log(`[Wizard saveProducts] ✅ Saved ${savedCount}/${input.products.length} products for merchant ${merchant.id}`);
+            return { success: true, count: savedCount };
         }),
 
     // Complete setup

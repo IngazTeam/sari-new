@@ -117,7 +117,7 @@ export default function ProductsServicesStep({
 
   const saveProductsMutation = trpc.setupWizard.saveProducts.useMutation();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const data: any = {};
 
     if (isStore) {
@@ -132,17 +132,22 @@ export default function ProductsServicesStep({
 
     // Save products to DB immediately so the test chat can access them
     if (filledProducts.length > 0) {
-      saveProductsMutation.mutate({
-        products: filledProducts.map(p => ({
-          name: p.name,
-          description: p.description || '',
-          price: p.price || '0',
-          currency: p.currency || 'SAR',
-          imageUrl: p.imageUrl || '',
-          productUrl: p.productUrl || '',
-          category: p.category || '',
-        })),
-      });
+      try {
+        const result = await saveProductsMutation.mutateAsync({
+          products: filledProducts.map(p => ({
+            name: p.name,
+            description: p.description || '',
+            price: p.price || '0',
+            currency: p.currency || 'SAR',
+            imageUrl: p.imageUrl || '',
+            productUrl: p.productUrl || '',
+            category: p.category || '',
+          })),
+        });
+        console.log('[ProductsStep] Saved products to DB:', result);
+      } catch (err: any) {
+        console.error('[ProductsStep] Failed to save products:', err);
+      }
     }
 
     goToNextStep();
