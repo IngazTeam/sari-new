@@ -71,6 +71,25 @@ async function curlFetch(url: string, headers?: Record<string, string>): Promise
 // Types & Interfaces
 // ============================================
 
+export interface ContactInfo {
+  phones: string[];
+  emails: string[];
+  whatsappNumber: string | null;
+  address: string | null;
+}
+
+export interface DiscoveredPage {
+  pageType: 'about' | 'shipping' | 'returns' | 'faq' | 'contact' | 'privacy' | 'terms' | 'other';
+  title: string;
+  url: string;
+}
+
+export interface ExtractedFAQ {
+  question: string;
+  answer: string;
+  category?: string;
+}
+
 export interface WebsiteAnalysisResult {
   // Basic Info
   title: string;
@@ -109,6 +128,11 @@ export interface WebsiteAnalysisResult {
 
   // Overall Score
   overallScore: number;
+
+  // Enriched data from multi-page crawling
+  contactInfo?: ContactInfo;
+  faqs?: ExtractedFAQ[];
+  discoveredPages?: DiscoveredPage[];
 }
 
 export interface ExtractedProduct {
@@ -153,8 +177,24 @@ export async function scrapeWebsite(url: string): Promise<{
     'Googlebot/2.1 (+http://www.google.com/bot.html)',
   ];
 
+  /** Helper: parse raw HTML into { html, dom, text } */
+  const parseHtml = (html: string) => {
+    const dom = new JSDOM(html);
+    const document = dom.window.document;
+    document.querySelectorAll('script, style, noscript').forEach(el => el.remove());
+    const text = (document.body?.textContent || '').replace(/\s+/g, ' ').trim();
+    return { html, dom, text };
+  };
+
+  /** Helper: detect Cloudflare challenge page */
+  const isCloudflareChallenge = (html: string) =>
+    html.includes('cf-browser-verification') ||
+    html.includes('challenge-platform') ||
+    (html.length < 1000 && html.includes('Just a moment'));
+
   let lastError: Error | null = null;
 
+  // Strategy 1: Node.js fetch with multiple User-Agents
   for (const ua of userAgents) {
     try {
       const controller = new AbortController();
@@ -182,30 +222,43 @@ export async function scrapeWebsite(url: string): Promise<{
 
       const html = await response.text();
 
-      // If we got a Cloudflare challenge page, try next UA
-      if (html.includes('cf-browser-verification') || html.includes('challenge-platform') ||
-        (html.length < 1000 && html.includes('Just a moment'))) {
+      if (isCloudflareChallenge(html)) {
         console.warn(`[WebsiteAnalyzer] Cloudflare challenge detected with UA: ${ua.substring(0, 30)}...`);
         lastError = new Error('Cloudflare challenge detected');
         continue;
       }
 
-      const dom = new JSDOM(html);
-      const document = dom.window.document;
-
-      // Remove script/style tags for cleaner text
-      document.querySelectorAll('script, style, noscript').forEach(el => el.remove());
-      const text = (document.body?.textContent || '').replace(/\s+/g, ' ').trim();
-
-      console.log(`[WebsiteAnalyzer] Scraped ${url} — ${html.length} bytes, ${text.length} chars text`);
-      return { html, dom, text };
+      const result = parseHtml(html);
+      console.log(`[WebsiteAnalyzer] Scraped ${url} — ${html.length} bytes, ${result.text.length} chars text`);
+      return result;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(`[WebsiteAnalyzer] Fetch attempt failed (${ua.substring(0, 20)}...):`, lastError.message);
     }
   }
 
-  throw new Error(`Failed to scrape website after ${userAgents.length} attempts: ${lastError?.message}`);
+  // Strategy 2: curl fallback — bypasses TLS fingerprinting that Cloudflare uses
+  console.log(`[WebsiteAnalyzer] All fetch attempts failed, trying curl fallback for ${url}...`);
+  const curlUAs = [
+    'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  ];
+
+  for (const ua of curlUAs) {
+    const curlResult = await curlFetch(url, {
+      'User-Agent': ua,
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'ar,en;q=0.9',
+    });
+
+    if (curlResult.ok && curlResult.body.length > 500 && !isCloudflareChallenge(curlResult.body)) {
+      const result = parseHtml(curlResult.body);
+      console.log(`[WebsiteAnalyzer] ✅ curl fallback succeeded for ${url} — ${curlResult.body.length} bytes, ${result.text.length} chars text`);
+      return result;
+    }
+  }
+
+  throw new Error(`Failed to scrape website after all attempts (fetch + curl): ${lastError?.message}`);
 }
 
 
@@ -337,11 +390,63 @@ export function analyzePerformance(html: string, dom: JSDOM): {
 /**
  * تحليل تجربة المستخدم (UX)
  */
-export function analyzeUX(dom: JSDOM, text: string): {
+/**
+ * Extract actual contact details from text and HTML
+ */
+export function extractContactInfo(dom: JSDOM, text: string, html: string): ContactInfo {
+  const document = dom.window.document;
+
+  // Phone regex — supports Saudi (05xxxxxxxx, +966xxxxxxxx), international, and generic formats
+  const phoneRegex = /(?:\+?966[\s-]?)?0?5\d[\s-]?\d{3}[\s-]?\d{4}|(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+  const phones = Array.from(new Set((text.match(phoneRegex) || []).map(p => p.replace(/[\s-]/g, '').trim()).filter(p => p.length >= 9)));
+
+  // Email regex
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const emails = Array.from(new Set((text.match(emailRegex) || []).filter(e => !e.includes('example.') && !e.includes('sentry'))));
+
+  // WhatsApp — extract actual number from wa.me links
+  let whatsappNumber: string | null = null;
+  const waLinks = document.querySelectorAll('a[href*="wa.me"], a[href*="whatsapp"]');
+  waLinks.forEach((el: any) => {
+    const href = el.getAttribute('href') || '';
+    const waMatch = href.match(/wa\.me\/(\d+)/);
+    if (waMatch && !whatsappNumber) {
+      whatsappNumber = waMatch[1];
+    }
+    const apiMatch = href.match(/api\.whatsapp\.com\/send\?phone=(\d+)/);
+    if (apiMatch && !whatsappNumber) {
+      whatsappNumber = apiMatch[1];
+    }
+  });
+  // Also check in raw HTML for wa.me links (in case DOM didn't parse them)
+  if (!whatsappNumber) {
+    const htmlWaMatch = html.match(/wa\.me\/(\d+)/);
+    if (htmlWaMatch) whatsappNumber = htmlWaMatch[1];
+  }
+
+  // Address detection — look for common Arabic/English patterns in text
+  let address: string | null = null;
+  const addressPatterns = [
+    /(?:العنوان|الموقع|عنوان)[:\s]+([^\n.]{10,80})/,
+    /(?:address|location)[:\s]+([^\n.]{10,80})/i,
+  ];
+  for (const pattern of addressPatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      address = match[1].trim();
+      break;
+    }
+  }
+
+  return { phones, emails, whatsappNumber, address };
+}
+
+export function analyzeUX(dom: JSDOM, text: string, html?: string): {
   score: number;
   mobileOptimized: boolean;
   hasContactInfo: boolean;
   hasWhatsapp: boolean;
+  contactInfo: ContactInfo;
 } {
   const document = dom.window.document;
   let score = 100;
@@ -353,12 +458,9 @@ export function analyzeUX(dom: JSDOM, text: string): {
     score -= 20;
   }
 
-  // Check for contact information
-  const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
-  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const hasPhone = phoneRegex.test(text);
-  const hasEmail = emailRegex.test(text);
-  const hasContactInfo = hasPhone || hasEmail;
+  // Extract detailed contact info
+  const contactInfo = extractContactInfo(dom, text, html || '');
+  const hasContactInfo = contactInfo.phones.length > 0 || contactInfo.emails.length > 0;
 
   if (!hasContactInfo) {
     score -= 15;
@@ -366,7 +468,8 @@ export function analyzeUX(dom: JSDOM, text: string): {
 
   // Check for WhatsApp
   const whatsappRegex = /whatsapp|واتساب|واتس اب/gi;
-  const hasWhatsapp = whatsappRegex.test(text) ||
+  const hasWhatsapp = !!contactInfo.whatsappNumber ||
+    whatsappRegex.test(text) ||
     !!document.querySelector('a[href*="wa.me"]') ||
     !!document.querySelector('a[href*="whatsapp"]');
 
@@ -390,7 +493,8 @@ export function analyzeUX(dom: JSDOM, text: string): {
     score: Math.max(0, score),
     mobileOptimized,
     hasContactInfo,
-    hasWhatsapp
+    hasWhatsapp,
+    contactInfo,
   };
 }
 
@@ -433,8 +537,153 @@ export function analyzeContent(dom: JSDOM, text: string): {
   };
 }
 
+// ============================================
+// Page Discovery & Multi-Page Crawling
+// ============================================
+
+/** Keywords used to classify discovered pages */
+const PAGE_TYPE_KEYWORDS: Record<string, string[]> = {
+  about: ['about', 'من نحن', 'عن', 'عنا', 'من-نحن', 'about-us'],
+  shipping: ['shipping', 'delivery', 'شحن', 'توصيل', 'الشحن', 'التوصيل'],
+  returns: ['return', 'refund', 'استرجاع', 'استبدال', 'الاسترجاع', 'الاستبدال'],
+  faq: ['faq', 'questions', 'أسئلة', 'الأسئلة', 'شائعة'],
+  contact: ['contact', 'اتصل', 'تواصل', 'الاتصال', 'التواصل'],
+  privacy: ['privacy', 'خصوصية', 'الخصوصية'],
+  terms: ['terms', 'conditions', 'شروط', 'الشروط', 'أحكام'],
+};
+
 /**
- * تحليل شامل للموقع
+ * Discover important sub-pages from the homepage HTML
+ */
+export function discoverPages(dom: JSDOM, baseUrl: string): DiscoveredPage[] {
+  const document = dom.window.document;
+  const pages: DiscoveredPage[] = [];
+  const seenUrls = new Set<string>();
+
+  document.querySelectorAll('a[href]').forEach((el: any) => {
+    const href = el.getAttribute('href') || '';
+    const text = (el.textContent || '').trim().toLowerCase();
+
+    if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.startsWith('mailto:') || href.startsWith('tel:')) return;
+
+    // Normalize URL
+    let fullUrl: string;
+    try {
+      if (href.startsWith('http')) {
+        fullUrl = href;
+      } else {
+        fullUrl = new URL(href, baseUrl).href;
+      }
+    } catch {
+      return;
+    }
+
+    // Only same-origin pages
+    try {
+      if (new URL(fullUrl).origin !== new URL(baseUrl).origin) return;
+    } catch {
+      return;
+    }
+
+    if (seenUrls.has(fullUrl)) return;
+
+    // Classify page type
+    for (const [type, keywords] of Object.entries(PAGE_TYPE_KEYWORDS)) {
+      for (const keyword of keywords) {
+        if (text.includes(keyword) || href.toLowerCase().includes(keyword)) {
+          seenUrls.add(fullUrl);
+          pages.push({
+            pageType: type as DiscoveredPage['pageType'],
+            title: (el.textContent || '').trim() || type,
+            url: fullUrl,
+          });
+          return;
+        }
+      }
+    }
+  });
+
+  return pages;
+}
+
+/**
+ * Crawl discovered pages and extract FAQs + contact info
+ * Limits to max 5 pages to avoid being blocked
+ */
+async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: ContactInfo): Promise<{
+  faqs: ExtractedFAQ[];
+  contactInfo: ContactInfo;
+  enrichedText: string;
+}> {
+  const faqs: ExtractedFAQ[] = [];
+  let enrichedText = '';
+  const mergedContact: ContactInfo = { ...existingContactInfo };
+
+  // Prioritize high-value pages: contact, faq, about, then others
+  const priorityOrder = ['contact', 'faq', 'about', 'shipping', 'returns', 'terms', 'privacy'];
+  const sorted = [...pages].sort((a, b) => {
+    const aIdx = priorityOrder.indexOf(a.pageType);
+    const bIdx = priorityOrder.indexOf(b.pageType);
+    return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+  });
+
+  for (const page of sorted.slice(0, 5)) {
+    try {
+      console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
+      const { dom, text, html } = await scrapeWebsite(page.url);
+
+      enrichedText += ' ' + text;
+
+      // Extract contact info from contact pages
+      if (page.pageType === 'contact' || page.pageType === 'about') {
+        const pageContact = extractContactInfo(dom, text, html);
+        // Merge unique values
+        mergedContact.phones = Array.from(new Set([...mergedContact.phones, ...pageContact.phones]));
+        mergedContact.emails = Array.from(new Set([...mergedContact.emails, ...pageContact.emails]));
+        if (!mergedContact.whatsappNumber && pageContact.whatsappNumber) {
+          mergedContact.whatsappNumber = pageContact.whatsappNumber;
+        }
+        if (!mergedContact.address && pageContact.address) {
+          mergedContact.address = pageContact.address;
+        }
+      }
+
+      // Extract FAQs from FAQ-like pages
+      if (page.pageType === 'faq' || page.pageType === 'shipping' || page.pageType === 'returns') {
+        const document = dom.window.document;
+
+        // Try FAQ sections with common selectors
+        document.querySelectorAll('.faq, .faqs, [class*="faq"], [class*="question"], .accordion, details, [class*="accordion"]').forEach((el: any) => {
+          const question = (el.querySelector('h1, h2, h3, h4, h5, summary, [class*="question"], button')?.textContent || '').trim();
+          const answer = (el.querySelector('p, [class*="answer"], .content, .panel, dd')?.textContent || '').trim();
+          if (question && answer && question.length > 5 && answer.length > 10) {
+            faqs.push({ question, answer: answer.substring(0, 500), category: page.pageType });
+          }
+        });
+
+        // Also try <dt>/<dd> FAQ patterns
+        const dtElements = document.querySelectorAll('dt');
+        dtElements.forEach((dt: any) => {
+          const question = (dt.textContent || '').trim();
+          const dd = dt.nextElementSibling;
+          if (dd && dd.tagName === 'DD') {
+            const answer = (dd.textContent || '').trim();
+            if (question && answer) {
+              faqs.push({ question, answer: answer.substring(0, 500), category: page.pageType });
+            }
+          }
+        });
+      }
+    } catch (err) {
+      console.warn(`[WebsiteAnalyzer] Failed to crawl ${page.url}:`, err instanceof Error ? err.message : 'unknown');
+    }
+  }
+
+  return { faqs, contactInfo: mergedContact, enrichedText };
+}
+
+/**
+ * تحليل شامل للموقع — مع multi-page crawling
  */
 export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult> {
   try {
@@ -452,7 +701,7 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
     // Run all analyses
     const seoAnalysis = analyzeSEO(dom);
     const performanceAnalysis = analyzePerformance(html, dom);
-    const uxAnalysis = analyzeUX(dom, text);
+    const uxAnalysis = analyzeUX(dom, text, html);
     const contentAnalysis = analyzeContent(dom, text);
 
     // Detect language
@@ -460,12 +709,54 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
     const isArabic = /[\u0600-\u06FF]/.test(text);
     const language = isArabic ? 'ar' : (htmlLang || 'en');
 
-    // Calculate overall score
+    // Discover sub-pages
+    const discoveredPages = discoverPages(dom, url);
+    console.log(`[WebsiteAnalyzer] Discovered ${discoveredPages.length} sub-pages`);
+
+    // Multi-page crawling for richer data
+    let faqs: ExtractedFAQ[] = [];
+    let contactInfo = uxAnalysis.contactInfo;
+    let totalWordCount = contentAnalysis.wordCount;
+
+    if (discoveredPages.length > 0) {
+      try {
+        const crawled = await crawlAndExtract(discoveredPages, contactInfo);
+        faqs = crawled.faqs;
+        contactInfo = crawled.contactInfo;
+        // Update word count with enriched text
+        const extraWords = crawled.enrichedText.trim().split(/\s+/).length;
+        totalWordCount += extraWords;
+        console.log(`[WebsiteAnalyzer] Crawling complete: ${faqs.length} FAQs, ${contactInfo.phones.length} phones, ${contactInfo.emails.length} emails, +${extraWords} words`);
+      } catch (crawlErr) {
+        console.warn('[WebsiteAnalyzer] Multi-page crawling failed:', crawlErr instanceof Error ? crawlErr.message : 'unknown');
+      }
+    }
+
+    // Recalculate content score with enriched word count
+    let enrichedContentScore = contentAnalysis.score;
+    if (totalWordCount >= 500 && contentAnalysis.wordCount < 500) {
+      enrichedContentScore = Math.min(100, contentAnalysis.score + 20);
+    } else if (totalWordCount >= 300 && contentAnalysis.wordCount < 300) {
+      enrichedContentScore = Math.min(100, contentAnalysis.score + 10);
+    }
+
+    // Recalculate UX score if contact info was found during crawling
+    let enrichedUxScore = uxAnalysis.score;
+    const hasContactAfterCrawl = contactInfo.phones.length > 0 || contactInfo.emails.length > 0;
+    const hasWhatsappAfterCrawl = !!contactInfo.whatsappNumber || uxAnalysis.hasWhatsapp;
+    if (hasContactAfterCrawl && !uxAnalysis.hasContactInfo) {
+      enrichedUxScore = Math.min(100, enrichedUxScore + 15);
+    }
+    if (hasWhatsappAfterCrawl && !uxAnalysis.hasWhatsapp) {
+      enrichedUxScore = Math.min(100, enrichedUxScore + 10);
+    }
+
+    // Calculate overall score with enriched data
     const overallScore = Math.round(
       (seoAnalysis.score * 0.3) +
       (performanceAnalysis.score * 0.25) +
-      (uxAnalysis.score * 0.25) +
-      (contentAnalysis.score * 0.2)
+      (enrichedUxScore * 0.25) +
+      (enrichedContentScore * 0.2)
     );
 
     // Detect industry using AI
@@ -482,15 +773,19 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       performanceScore: performanceAnalysis.score,
       loadTime: performanceAnalysis.loadTime,
       pageSize: performanceAnalysis.pageSize,
-      uxScore: uxAnalysis.score,
+      uxScore: enrichedUxScore,
       mobileOptimized: uxAnalysis.mobileOptimized,
-      hasContactInfo: uxAnalysis.hasContactInfo,
-      hasWhatsapp: uxAnalysis.hasWhatsapp,
-      contentQuality: contentAnalysis.score,
-      wordCount: contentAnalysis.wordCount,
+      hasContactInfo: hasContactAfterCrawl,
+      hasWhatsapp: hasWhatsappAfterCrawl,
+      contentQuality: enrichedContentScore,
+      wordCount: totalWordCount,
       imageCount: contentAnalysis.imageCount,
       videoCount: contentAnalysis.videoCount,
-      overallScore
+      overallScore,
+      // Enriched data
+      contactInfo,
+      faqs: faqs.length > 0 ? faqs : undefined,
+      discoveredPages: discoveredPages.length > 0 ? discoveredPages : undefined,
     };
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error analyzing website:', error);
@@ -541,6 +836,18 @@ function isSallaStore(html: string): boolean {
     html.includes('cdn.salla.sa') ||
     html.includes('s-product-card') ||
     html.includes('salla.network');
+}
+
+/**
+ * Detect the e-commerce platform from URL and HTML content.
+ * Exported for use by the analysis router.
+ */
+export function detectPlatform(url: string, html: string): 'salla' | 'zid' | 'shopify' | 'woocommerce' | 'custom' | 'unknown' {
+  if (isSallaStore(html) || /salla\.sa/i.test(url)) return 'salla';
+  if (isZidStore(html) || /zid\.sa/i.test(url)) return 'zid';
+  if (/shopify\.com/i.test(url) || /cdn\.shopify\.com/i.test(html) || html.includes('Shopify.theme')) return 'shopify';
+  if (/woocommerce/i.test(html) || html.includes('wp-content/plugins/woocommerce')) return 'woocommerce';
+  return 'custom';
 }
 
 /**
@@ -624,27 +931,24 @@ export async function extractProducts(url: string, html: string, text: string): 
 
     // Detect platform and extract store metadata
     const zidStoreId = extractZidStoreId(html);
-    const isZid = isZidStore(html);
-    const isSalla = isSallaStore(html);
+    const platform = detectPlatform(url, html);
     const htmlEmpty = html.length < 500; // Scraping likely failed (Cloudflare)
 
-    if (isZid) console.log('[WebsiteAnalyzer] Detected Zid platform', zidStoreId ? `(store-id: ${zidStoreId})` : '');
-    if (isSalla) console.log('[WebsiteAnalyzer] Detected Salla platform');
+    console.log(`[WebsiteAnalyzer] Detected platform: ${platform}${zidStoreId ? ` (Zid store-id: ${zidStoreId})` : ''}`);
     if (htmlEmpty) console.log('[WebsiteAnalyzer] HTML is empty/minimal — scraping likely blocked, trying API-only extraction');
 
-    // Strategy 1: For SPA platforms OR when scraping failed, try API first
-    if (isZid || isSalla || htmlEmpty) {
-      console.log('[WebsiteAnalyzer] Trying API-first extraction...');
+    // Strategy 1: For known e-commerce platforms OR when scraping failed, try API first
+    if (platform !== 'custom' || htmlEmpty) {
+      console.log(`[WebsiteAnalyzer] Trying API-first extraction for ${platform} platform...`);
 
-      // If we don't have a store-id from HTML, try to discover it from the API
       const apiProducts = await tryProductsAPI(url, zidStoreId);
       if (apiProducts.length > 0) {
-        console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via platform API`);
+        console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via ${platform} API`);
         return apiProducts;
       }
 
-      // If scraping completely failed and API didn't work, try discovering store-id from the page
-      if (htmlEmpty && !zidStoreId) {
+      // If scraping completely failed and API didn't work, try discovering store-id from the page (Zid)
+      if (htmlEmpty && !zidStoreId && (platform === 'zid' || platform === 'custom')) {
         console.log('[WebsiteAnalyzer] API without auth failed, trying store-id discovery...');
         const discoveredStoreId = await discoverZidStoreId(url);
         if (discoveredStoreId) {
@@ -664,8 +968,8 @@ export async function extractProducts(url: string, html: string, text: string): 
       return jsonLdProducts; // JSON-LD is the most complete source
     }
 
-    // Strategy 3: Try API endpoints (non-SPA sites)
-    if (!isZid && !isSalla) {
+    // Strategy 3: Try API endpoints (for sites where platform wasn't detected from HTML)
+    if (platform === 'custom') {
       const apiProducts = await tryProductsAPI(url, null);
       if (apiProducts.length > 0) {
         console.log(`[WebsiteAnalyzer] Found ${apiProducts.length} products via API`);
@@ -1080,207 +1384,455 @@ function extractFromHTMLPatterns(html: string, baseUrl: string): ExtractedProduc
 
 /**
  * Try common e-commerce API endpoints (Salla, Zid, Shopify, WooCommerce)
- * Enhanced: supports Zid store-id header for authenticated API access
+ * Enhanced with platform-specific response parsers and fallbacks
  */
 async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<ExtractedProduct[]> {
-  const products: ExtractedProduct[] = [];
   const baseUrl = new URL(url).origin;
 
-  // Build API endpoints — prioritize platform-specific ones when detected
-  const apiEndpoints: { url: string; platform: string; headers?: Record<string, string> }[] = [];
+  // =============================================
+  // Platform-specific API scrapers
+  // =============================================
 
-  // If we have a Zid store-id, prioritize Zid API with auth
-  if (zidStoreId) {
-    apiEndpoints.push({
-      url: `${baseUrl}/api/v1/products`,
-      platform: 'zid',
-      headers: {
-        'store-id': zidStoreId,
-        'Accept-Language': 'ar',
-        'Content-Type': 'application/json',
-      },
-    });
-  }
+  // --- Salla ---
+  const trySallaAPI = async (): Promise<ExtractedProduct[]> => {
+    // Salla storefront API paths — try multiple known endpoints
+    const sallaEndpoints = [
+      `${baseUrl}/api/products`,
+      `${baseUrl}/api/v1/products`,
+      `${baseUrl}/api/products/search`,
+    ];
 
-  // Standard API endpoints
-  apiEndpoints.push(
-    { url: `${baseUrl}/api/products`, platform: 'salla' },
-    { url: `${baseUrl}/products.json`, platform: 'shopify' },
-    { url: `${baseUrl}/api/v1/products`, platform: 'zid' },
-    { url: `${baseUrl}/wp-json/wc/v3/products`, platform: 'woocommerce' },
-    { url: `${baseUrl}/wp-json/wc/store/v1/products`, platform: 'woocommerce-store' },
-  );
-
-  for (const endpoint of apiEndpoints) {
-    try {
-      const headers: Record<string, string> = {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        ...(endpoint.headers || {}),
-      };
-
-      console.log(`[WebsiteAnalyzer] Trying API: ${endpoint.url} (${endpoint.platform})${endpoint.headers ? ' [with auth]' : ''}`);
-
-      // Try Node.js fetch first
-      let responseBody: string | null = null;
+    for (const endpoint of sallaEndpoints) {
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
-
-        const response = await fetch(endpoint.url, {
-          headers,
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          console.log(`[WebsiteAnalyzer] API ${endpoint.url} returned ${response.status}`);
-          throw new Error(`HTTP ${response.status}`); // Fall through to curl
-        }
-
-        const contentType = response.headers.get('content-type') || '';
-        if (!contentType.includes('json')) throw new Error('Not JSON');
-
-        responseBody = await response.text();
-      } catch (fetchError) {
-        // Fetch failed (likely Cloudflare) — try curl as fallback
-        console.log(`[WebsiteAnalyzer] fetch failed for ${endpoint.url}, trying curl fallback...`);
-        const curlResult = await curlFetch(endpoint.url, headers);
-        if (curlResult.ok && curlResult.body) {
-          responseBody = curlResult.body;
-          console.log(`[WebsiteAnalyzer] curl succeeded for ${endpoint.url} (${curlResult.body.length} bytes)`);
-        } else {
-          console.log(`[WebsiteAnalyzer] curl also failed for ${endpoint.url} (status: ${curlResult.status})`);
-          continue;
-        }
-      }
-
-      if (!responseBody) continue;
-
-      let data: any;
-      try {
-        data = JSON.parse(responseBody);
-      } catch {
-        continue; // Not valid JSON
-      }
-
-      // Extract products array from various response formats
-      const rawProducts = data.results || data.products || data.data || (Array.isArray(data) ? data : []);
-
-      if (!Array.isArray(rawProducts) || rawProducts.length === 0) {
-        console.log(`[WebsiteAnalyzer] API ${endpoint.url} returned no products`);
-        continue;
-      }
-
-      for (const p of rawProducts.slice(0, 50)) {
-
-        // Helper: resolve a value to a URL string (handles objects/strings/arrays)
-        const resolveUrl = (val: any): string | undefined => {
-          if (!val) return undefined;
-          if (typeof val === 'string' && val.startsWith('http')) return val;
-          if (typeof val === 'object' && !Array.isArray(val)) {
-            // Standard keys
-            const direct = val.url || val.src || val.original_url || val.href;
-            if (typeof direct === 'string' && direct.startsWith('http')) return direct;
-            // Zid-specific keys: full_size, large, medium, small, thumbnail
-            const zid = val.full_size || val.large || val.medium || val.small || val.thumbnail;
-            if (typeof zid === 'string' && zid.startsWith('http')) return zid;
-            // Nested image object
-            if (val.image) return resolveUrl(val.image);
-            return undefined;
-          }
-          return undefined;
+        console.log(`[WebsiteAnalyzer] Trying Salla API: ${endpoint}`);
+        const headers = {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept-Language': 'ar',
         };
 
-        // Get image URL from various platform formats
-        const imageUrl =
-          resolveUrl(p.image) ||                       // Shopify / generic
-          resolveUrl(p.images?.[0]) ||                 // Array of images
-          resolveUrl(p.thumbnail) ||                    // Zid thumbnail
-          resolveUrl(p.main_image) ||                   // Zid alt
-          resolveUrl(p.featured_image) ||               // Generic
-          (typeof p.image === 'string' ? p.image : undefined) ||
-          (typeof p.thumbnail === 'string' ? p.thumbnail : undefined) ||
-          (typeof p.main_image === 'string' ? p.main_image : undefined) ||
-          undefined;
-
-        // Get description — strip HTML tags
-        const rawDesc = p.body_html || p.description || p.short_description || p.content || '';
-        const description = typeof rawDesc === 'string'
-          ? rawDesc.replace(/<[^>]*>/g, '').trim().substring(0, 300)
-          : '';
-
-        // Get category
-        const category = p.category?.name ||
-          p.categories?.[0]?.name ||
-          p.product_type ||
-          p.type ||
-          undefined;
-
-        // Get price from variants or direct — handle Zid nested price objects
-        let price = 0;
-        if (typeof p.price === 'object' && p.price !== null) {
-          price = parseFloat(p.price.amount || p.price.value || p.price.price || '0');
-        } else {
-          price = parseFloat(
-            p.price || p.variants?.[0]?.price || p.sale_price || p.regular_price || '0'
-          );
-        }
-
-        // Get currency — handle Zid nested currency
-        let currency = 'SAR';
-        if (typeof p.price === 'object' && p.price?.currency?.code) {
-          currency = p.price.currency.code;
-        } else {
-          currency = p.currency || p.price_currency || 'SAR';
-        }
-
-        // Get product URL
-        let productUrl = p.url || p.permalink || p.slug || undefined;
-        if (productUrl && typeof productUrl === 'string' && !productUrl.startsWith('http')) {
-          if (productUrl.startsWith('/')) {
-            productUrl = `${baseUrl}${productUrl}`;
-          } else {
-            productUrl = `${baseUrl}/products/${productUrl}`;
+        // Try fetch first, then curl
+        let body: string | null = null;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const response = await fetch(endpoint, { headers, signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
+            body = await response.text();
           }
-        } else if (productUrl && typeof productUrl !== 'string') {
-          productUrl = resolveUrl(productUrl);
+        } catch {
+          const curlResult = await curlFetch(endpoint, headers);
+          if (curlResult.ok) body = curlResult.body;
         }
 
-        // Determine stock status
-        const inStock = p.in_stock !== false &&
-          p.available !== false &&
-          p.quantity !== 0 &&
-          p.status !== 'out_of_stock';
+        if (!body) continue;
+        const data = JSON.parse(body);
 
-        const name = p.title || p.name || '';
-        if (!name) continue; // Skip products without names
+        // Salla response format: { data: [...products], cursor: {...} }
+        // or { products: [...] } or just an array
+        const rawProducts = data.data || data.products || (Array.isArray(data) ? data : []);
+        if (!Array.isArray(rawProducts) || rawProducts.length === 0) continue;
+
+        const products: ExtractedProduct[] = [];
+        for (const p of rawProducts.slice(0, 50)) {
+          const name = p.name || p.title || '';
+          if (!name) continue;
+
+          // Salla price format: { amount: number, currency: "SAR" } or just a number
+          let price = 0;
+          let currency = 'SAR';
+          if (typeof p.price === 'object' && p.price !== null) {
+            price = parseFloat(p.price.amount || p.price.value || '0');
+            currency = p.price.currency || 'SAR';
+          } else {
+            price = parseFloat(p.price || p.sale_price || p.regular_price || '0');
+          }
+
+          // Salla image format: { url: string, alt: string } or string or thumbnail object
+          let imageUrl: string | undefined;
+          if (p.image) {
+            imageUrl = typeof p.image === 'string' ? p.image : p.image.url || p.image.src;
+          } else if (p.thumbnail) {
+            imageUrl = typeof p.thumbnail === 'string' ? p.thumbnail : p.thumbnail.url;
+          } else if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+            const firstImg = p.images[0];
+            imageUrl = typeof firstImg === 'string' ? firstImg : firstImg.url || firstImg.src || firstImg.original_url;
+          }
+
+          const description = (p.description || p.short_description || '')
+            .replace(/<[^>]*>/g, '').trim().substring(0, 300);
+
+          const productUrl = p.url || p.share_url || (p.slug ? `${baseUrl}/p/${p.slug}` : undefined);
+
+          products.push({
+            name,
+            description,
+            price,
+            currency,
+            imageUrl,
+            productUrl,
+            category: p.category?.name || p.categories?.[0]?.name,
+            inStock: p.status !== 'out' && p.quantity !== 0 && p.availability !== 'out',
+            confidence: 90,
+          });
+        }
+
+        if (products.length > 0) {
+          console.log(`[WebsiteAnalyzer] ✅ Salla API: Got ${products.length} products from ${endpoint}`);
+          return products;
+        }
+      } catch (err) {
+        console.log(`[WebsiteAnalyzer] Salla API ${endpoint} failed:`, err instanceof Error ? err.message : 'unknown');
+      }
+    }
+    return [];
+  };
+
+  // --- Shopify ---
+  const tryShopifyAPI = async (): Promise<ExtractedProduct[]> => {
+    const endpoint = `${baseUrl}/products.json?limit=50`;
+    console.log(`[WebsiteAnalyzer] Trying Shopify API: ${endpoint}`);
+
+    const headers = {
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    };
+
+    let body: string | null = null;
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(endpoint, { headers, signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
+        body = await response.text();
+      }
+    } catch {
+      const curlResult = await curlFetch(endpoint, headers);
+      if (curlResult.ok) body = curlResult.body;
+    }
+
+    if (!body) return [];
+
+    try {
+      const data = JSON.parse(body);
+      const rawProducts = data.products;
+      if (!Array.isArray(rawProducts) || rawProducts.length === 0) return [];
+
+      const products: ExtractedProduct[] = [];
+      for (const p of rawProducts.slice(0, 50)) {
+        const name = p.title || '';
+        if (!name) continue;
+
+        // Shopify format: variants[].price, images[].src
+        let price = 0;
+        let currency = 'USD'; // Shopify default
+        if (p.variants && Array.isArray(p.variants) && p.variants.length > 0) {
+          // Get the lowest price from variants
+          const prices = p.variants
+            .map((v: any) => parseFloat(v.price || '0'))
+            .filter((pr: number) => pr > 0);
+          price = prices.length > 0 ? Math.min(...prices) : 0;
+        }
+
+        // Shopify images format: images[].src
+        let imageUrl: string | undefined;
+        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+          imageUrl = p.images[0].src || p.images[0].url;
+        } else if (p.image?.src) {
+          imageUrl = p.image.src;
+        }
+
+        // Strip HTML from body_html for description
+        const description = (p.body_html || '')
+          .replace(/<[^>]*>/g, '').trim().substring(0, 300);
+
+        const productUrl = p.handle ? `${baseUrl}/products/${p.handle}` : undefined;
+
+        // Build tags list
+        const tags = typeof p.tags === 'string'
+          ? p.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+          : Array.isArray(p.tags) ? p.tags : undefined;
+
+        // Variant info for description enrichment
+        const variantInfo = p.variants?.length > 1
+          ? ` | ${p.variants.length} خيارات متاحة`
+          : '';
 
         products.push({
           name,
-          description,
+          description: description + variantInfo,
           price,
           currency,
-          imageUrl: typeof imageUrl === 'string' ? imageUrl : undefined,
-          productUrl: typeof productUrl === 'string' ? productUrl : undefined,
-          category,
-          inStock,
-          confidence: 90,
+          imageUrl,
+          productUrl,
+          category: p.product_type || undefined,
+          tags,
+          inStock: p.variants?.some((v: any) => v.available !== false) ?? true,
+          confidence: 95,
         });
       }
 
       if (products.length > 0) {
-        console.log(`[WebsiteAnalyzer] Got ${products.length} products from ${endpoint.url} (${endpoint.platform})`);
-        return products;
+        console.log(`[WebsiteAnalyzer] ✅ Shopify API: Got ${products.length} products`);
       }
+      return products;
     } catch (err) {
-      // Endpoint doesn't exist or not accessible, skip
-      console.log(`[WebsiteAnalyzer] API ${endpoint.url} failed:`, err instanceof Error ? err.message : 'unknown');
+      console.log(`[WebsiteAnalyzer] Shopify API parsing failed:`, err instanceof Error ? err.message : 'unknown');
+      return [];
     }
+  };
+
+  // --- WooCommerce ---
+  const tryWooCommerceAPI = async (): Promise<ExtractedProduct[]> => {
+    // WooCommerce Store API v1 is PUBLIC (no auth needed!)
+    const wcEndpoints = [
+      `${baseUrl}/wp-json/wc/store/v1/products?per_page=50`,
+      `${baseUrl}/wp-json/wc/store/products?per_page=50`,
+      `${baseUrl}/wp-json/wc/v3/products?per_page=50`, // May require auth but try anyway
+    ];
+
+    for (const endpoint of wcEndpoints) {
+      try {
+        console.log(`[WebsiteAnalyzer] Trying WooCommerce API: ${endpoint}`);
+        const headers = {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        };
+
+        let body: string | null = null;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const response = await fetch(endpoint, { headers, signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
+            body = await response.text();
+          }
+        } catch {
+          const curlResult = await curlFetch(endpoint, headers);
+          if (curlResult.ok) body = curlResult.body;
+        }
+
+        if (!body) continue;
+        const rawProducts = JSON.parse(body);
+        if (!Array.isArray(rawProducts) || rawProducts.length === 0) continue;
+
+        const products: ExtractedProduct[] = [];
+        for (const p of rawProducts.slice(0, 50)) {
+          const name = p.name || p.title || '';
+          if (!name) continue;
+
+          // WC Store API v1 price format: prices.price is in minor units (cents)
+          // e.g., "1500" = 15.00 SAR when currency_minor_unit = 2
+          let price = 0;
+          let currency = 'SAR';
+          if (p.prices) {
+            const minorUnit = p.prices.currency_minor_unit || 2;
+            const divisor = Math.pow(10, minorUnit);
+            price = parseFloat(p.prices.sale_price || p.prices.price || '0') / divisor;
+            currency = p.prices.currency_code || 'SAR';
+          } else {
+            price = parseFloat(p.price || p.regular_price || p.sale_price || '0');
+          }
+
+          // WC Store API images format: images[].src or images[].thumbnail
+          let imageUrl: string | undefined;
+          if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+            imageUrl = p.images[0].src || p.images[0].thumbnail;
+          }
+
+          // Description — WC Store API uses short_description or description
+          const rawDesc = p.short_description || p.description || '';
+          const description = rawDesc.replace(/<[^>]*>/g, '').trim().substring(0, 300);
+
+          // Product URL
+          const productUrl = p.permalink || (p.slug ? `${baseUrl}/product/${p.slug}` : undefined);
+
+          // Categories
+          const categories = p.categories?.map((c: any) => c.name).filter(Boolean) || [];
+
+          products.push({
+            name: name.replace(/<[^>]*>/g, '').trim(), // WC sometimes has HTML in names
+            description,
+            price,
+            currency,
+            imageUrl,
+            productUrl,
+            category: categories[0] || undefined,
+            inStock: p.is_in_stock !== false && p.is_purchasable !== false,
+            confidence: 90,
+          });
+        }
+
+        if (products.length > 0) {
+          console.log(`[WebsiteAnalyzer] ✅ WooCommerce API: Got ${products.length} products from ${endpoint}`);
+          return products;
+        }
+      } catch (err) {
+        console.log(`[WebsiteAnalyzer] WooCommerce API ${endpoint} failed:`, err instanceof Error ? err.message : 'unknown');
+      }
+    }
+    return [];
+  };
+
+  // --- Zid (existing, enhanced) ---
+  const tryZidAPI = async (): Promise<ExtractedProduct[]> => {
+    const products: ExtractedProduct[] = [];
+
+    const zidEndpoints: { url: string; headers?: Record<string, string> }[] = [];
+
+    // If we have a store-id, prioritize authenticated API
+    if (zidStoreId) {
+      zidEndpoints.push({
+        url: `${baseUrl}/api/v1/products`,
+        headers: {
+          'store-id': zidStoreId,
+          'Accept-Language': 'ar',
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    // Standard endpoints
+    zidEndpoints.push(
+      { url: `${baseUrl}/api/v1/products` },
+      { url: `${baseUrl}/api/products` },
+    );
+
+    for (const endpoint of zidEndpoints) {
+      try {
+        console.log(`[WebsiteAnalyzer] Trying Zid API: ${endpoint.url}${endpoint.headers ? ' [with store-id]' : ''}`);
+        const headers: Record<string, string> = {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          ...(endpoint.headers || {}),
+        };
+
+        let body: string | null = null;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000);
+          const response = await fetch(endpoint.url, { headers, signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
+            body = await response.text();
+          }
+        } catch {
+          const curlResult = await curlFetch(endpoint.url, headers);
+          if (curlResult.ok) body = curlResult.body;
+        }
+
+        if (!body) continue;
+        const data = JSON.parse(body);
+        const rawProducts = data.results || data.products || data.data || (Array.isArray(data) ? data : []);
+        if (!Array.isArray(rawProducts) || rawProducts.length === 0) continue;
+
+        for (const p of rawProducts.slice(0, 50)) {
+          const name = p.title || p.name || '';
+          if (!name) continue;
+
+          // Zid price: { amount: number, currency: { code: "SAR" } } or direct number
+          let price = 0;
+          let currency = 'SAR';
+          if (typeof p.price === 'object' && p.price !== null) {
+            price = parseFloat(p.price.amount || p.price.value || p.price.price || '0');
+            if (p.price.currency?.code) currency = p.price.currency.code;
+          } else {
+            price = parseFloat(p.price || p.sale_price || p.regular_price || '0');
+          }
+
+          // Zid image: thumbnail object with full_size/large/medium/small
+          const resolveZidImage = (val: any): string | undefined => {
+            if (!val) return undefined;
+            if (typeof val === 'string' && val.startsWith('http')) return val;
+            if (typeof val === 'object') {
+              return val.full_size || val.large || val.medium || val.small || val.thumbnail || val.url || val.src || val.original_url;
+            }
+            return undefined;
+          };
+
+          const imageUrl = resolveZidImage(p.image) || resolveZidImage(p.images?.[0]) ||
+            resolveZidImage(p.thumbnail) || resolveZidImage(p.main_image);
+
+          const description = (p.body_html || p.description || p.short_description || p.content || '')
+            .replace(/<[^>]*>/g, '').trim().substring(0, 300);
+
+          let productUrl = p.url || p.permalink || (p.slug ? `${baseUrl}/products/${p.slug}` : undefined);
+          if (productUrl && typeof productUrl === 'string' && !productUrl.startsWith('http')) {
+            productUrl = productUrl.startsWith('/') ? `${baseUrl}${productUrl}` : `${baseUrl}/${productUrl}`;
+          }
+
+          products.push({
+            name,
+            description,
+            price,
+            currency,
+            imageUrl: typeof imageUrl === 'string' ? imageUrl : undefined,
+            productUrl: typeof productUrl === 'string' ? productUrl : undefined,
+            category: p.category?.name || p.categories?.[0]?.name,
+            inStock: p.in_stock !== false && p.available !== false && p.quantity !== 0,
+            confidence: 90,
+          });
+        }
+
+        if (products.length > 0) {
+          console.log(`[WebsiteAnalyzer] ✅ Zid API: Got ${products.length} products from ${endpoint.url}`);
+          return products;
+        }
+      } catch (err) {
+        console.log(`[WebsiteAnalyzer] Zid API ${endpoint.url} failed:`, err instanceof Error ? err.message : 'unknown');
+      }
+    }
+    return products;
+  };
+
+  // =============================================
+  // Execute platform-specific scrapers
+  // =============================================
+
+  // Detect platform from URL patterns for prioritization
+  const urlLower = url.toLowerCase();
+  const isSallaUrl = urlLower.includes('salla.sa') || urlLower.includes('salla.network');
+  const isShopifyUrl = urlLower.includes('shopify') || urlLower.includes('myshopify');
+  const isZidUrl = urlLower.includes('zid.sa') || urlLower.includes('zid.store');
+
+  // Run platform-specific scraper first based on URL hints
+  if (isSallaUrl) {
+    const sallaProducts = await trySallaAPI();
+    if (sallaProducts.length > 0) return sallaProducts;
+  }
+  if (isShopifyUrl) {
+    const shopifyProducts = await tryShopifyAPI();
+    if (shopifyProducts.length > 0) return shopifyProducts;
+  }
+  if (isZidUrl) {
+    const zidProducts = await tryZidAPI();
+    if (zidProducts.length > 0) return zidProducts;
   }
 
-  return products;
+  // If no platform-specific match from URL, try all in priority order
+  console.log('[WebsiteAnalyzer] No platform detected from URL, trying all APIs...');
+
+  // Try Shopify first (most likely to have public products.json)
+  const shopifyProducts = await tryShopifyAPI();
+  if (shopifyProducts.length > 0) return shopifyProducts;
+
+  // Try WooCommerce Store API (public, no auth)
+  const wooProducts = await tryWooCommerceAPI();
+  if (wooProducts.length > 0) return wooProducts;
+
+  // Try Salla API
+  const sallaProducts = await trySallaAPI();
+  if (sallaProducts.length > 0) return sallaProducts;
+
+  // Try Zid
+  const zidProducts = await tryZidAPI();
+  if (zidProducts.length > 0) return zidProducts;
+
+  return [];
 }
 
 
