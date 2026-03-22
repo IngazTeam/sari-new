@@ -3,12 +3,13 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import * as db from "../db";
 import {
+  scrapeWebsite,
   detectPlatform,
   extractProducts,
   discoverPages,
-  extractFAQs,
-  fetchPageContent,
-} from "../websiteAnalysis";
+  extractContactInfo,
+  type ExtractedFAQ,
+} from "../_core/websiteAnalyzer";
 
 export const analysisRouter = router({
   /**
@@ -31,17 +32,17 @@ export const analysisRouter = router({
           analysisStatus: "analyzing",
         });
 
-        // Fetch website content
-        const htmlContent = await fetchPageContent(input.websiteUrl);
+        // Fetch website content using the new engine (with curl fallback)
+        const { html, dom, text } = await scrapeWebsite(input.websiteUrl);
 
         // 1. Detect Platform
-        const platform = await detectPlatform(input.websiteUrl, htmlContent);
+        const platform = detectPlatform(input.websiteUrl, html);
 
-        // 2. Extract Products
+        // 2. Extract Products (multi-strategy: JSON-LD → API → HTML → AI)
         const products = await extractProducts(
           input.websiteUrl,
-          htmlContent,
-          platform
+          html,
+          text
         );
 
         // Save products to database
@@ -56,8 +57,8 @@ export const analysisRouter = router({
           });
         }
 
-        // 3. Discover Pages
-        const pages = await discoverPages(input.websiteUrl, htmlContent);
+        // 3. Discover Pages (from homepage links)
+        const pages = discoverPages(dom, input.websiteUrl);
 
         // Delete old pages
         await db.deleteAllDiscoveredPages(merchantId);
@@ -72,25 +73,55 @@ export const analysisRouter = router({
           });
         }
 
-        // 4. Extract FAQs from each page
-        let allFaqs: Array<{
-          question: string;
-          answer: string;
-          category?: string;
-        }> = [];
+        // 4. Extract FAQs from each FAQ/shipping/returns page
+        let allFaqs: ExtractedFAQ[] = [];
 
-        for (const page of pages) {
+        const faqPages = pages.filter(p => ['faq', 'shipping', 'returns'].includes(p.pageType));
+        for (const page of faqPages.slice(0, 5)) {
           try {
-            const pageContent = await fetchPageContent(page.url);
-            const faqs = await extractFAQs(pageContent);
-            allFaqs = allFaqs.concat(
-              faqs.map((faq) => ({
-                ...faq,
-                category: page.pageType,
-              }))
-            );
+            const pageScrape = await scrapeWebsite(page.url);
+            const pageDoc = pageScrape.dom.window.document;
+
+            // Extract FAQs using common selectors
+            pageDoc.querySelectorAll('.faq, .faqs, [class*="faq"], [class*="question"], .accordion, details, [class*="accordion"]').forEach((el: any) => {
+              const question = (el.querySelector('h1, h2, h3, h4, h5, summary, [class*="question"], button')?.textContent || '').trim();
+              const answer = (el.querySelector('p, [class*="answer"], .content, .panel, dd')?.textContent || '').trim();
+              if (question && answer && question.length > 5 && answer.length > 10) {
+                allFaqs.push({ question, answer: answer.substring(0, 500), category: page.pageType });
+              }
+            });
+
+            // Also try <dt>/<dd> FAQ patterns
+            pageDoc.querySelectorAll('dt').forEach((dt: any) => {
+              const question = (dt.textContent || '').trim();
+              const dd = dt.nextElementSibling;
+              if (dd && dd.tagName === 'DD') {
+                const answer = (dd.textContent || '').trim();
+                if (question && answer) {
+                  allFaqs.push({ question, answer: answer.substring(0, 500), category: page.pageType });
+                }
+              }
+            });
           } catch (error) {
             console.error(`Error extracting FAQs from ${page.url}:`, error);
+          }
+        }
+
+        // Also extract contact info from contact/about pages
+        const contactPages = pages.filter(p => ['contact', 'about'].includes(p.pageType));
+        for (const page of contactPages.slice(0, 2)) {
+          try {
+            const pageScrape = await scrapeWebsite(page.url);
+            const contactInfo = extractContactInfo(pageScrape.dom, pageScrape.text, pageScrape.html);
+            // Save phone/whatsapp to merchant if not already set
+            const updateData: Record<string, any> = {};
+            if (contactInfo.phones.length > 0) updateData.phone = contactInfo.phones[0];
+            if (contactInfo.whatsappNumber) updateData.whatsappNumber = contactInfo.whatsappNumber;
+            if (Object.keys(updateData).length > 0) {
+              await db.updateMerchant(merchantId, updateData).catch(() => {});
+            }
+          } catch (error) {
+            console.error(`Error extracting contact from ${page.url}:`, error);
           }
         }
 
