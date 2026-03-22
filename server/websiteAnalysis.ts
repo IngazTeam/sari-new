@@ -1,3 +1,9 @@
+/**
+ * @deprecated This module has been superseded by `_core/websiteAnalyzer.ts`.
+ * All consumers have been migrated to the new unified engine.
+ * This file is kept temporarily for reference and can be safely deleted.
+ * Migration date: March 2026
+ */
 import { invokeLLM } from "./_core/llm";
 import * as cheerio from "cheerio";
 
