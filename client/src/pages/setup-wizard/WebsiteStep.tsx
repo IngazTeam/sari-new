@@ -22,6 +22,9 @@ import {
     Smartphone,
     Star,
     ShoppingBag,
+    Mail,
+    HelpCircle,
+    MapPin,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -440,7 +443,18 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                         </span>
                                     </div>
                                 )}
-                                {analysisResult?.hasContactInfo != null && (
+                                {/* Contact Info — show actual values */}
+                                {analysisResult?.contactInfo?.phones?.length > 0 ? (
+                                    <div className="flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Phone className="w-4 h-4" />
+                                            <span>الهاتف</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-emerald-600 dir-ltr" dir="ltr">
+                                            {analysisResult.contactInfo.phones[0]}
+                                        </span>
+                                    </div>
+                                ) : analysisResult?.hasContactInfo != null && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Phone className="w-4 h-4" />
@@ -451,7 +465,30 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                         </span>
                                     </div>
                                 )}
-                                {analysisResult?.hasWhatsapp != null && (
+                                {/* Email */}
+                                {analysisResult?.contactInfo?.emails?.length > 0 && (
+                                    <div className="flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <Mail className="w-4 h-4" />
+                                            <span>البريد الإلكتروني</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-emerald-600 dir-ltr" dir="ltr">
+                                            {analysisResult.contactInfo.emails[0]}
+                                        </span>
+                                    </div>
+                                )}
+                                {/* WhatsApp — show actual number */}
+                                {analysisResult?.contactInfo?.whatsappNumber ? (
+                                    <div className="flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <MessageCircle className="w-4 h-4" />
+                                            <span>واتساب</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-emerald-600 dir-ltr" dir="ltr">
+                                            ✅ +{analysisResult.contactInfo.whatsappNumber}
+                                        </span>
+                                    </div>
+                                ) : analysisResult?.hasWhatsapp != null && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <MessageCircle className="w-4 h-4" />
@@ -459,6 +496,30 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                         </div>
                                         <span className={`text-sm font-medium ${analysisResult.hasWhatsapp ? 'text-emerald-600' : 'text-gray-400'}`}>
                                             {analysisResult.hasWhatsapp ? '✅ مرتبط' : '—'}
+                                        </span>
+                                    </div>
+                                )}
+                                {/* Address */}
+                                {analysisResult?.contactInfo?.address && (
+                                    <div className="flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <MapPin className="w-4 h-4" />
+                                            <span>العنوان</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-700 text-left max-w-[200px] truncate" dir="rtl">
+                                            {analysisResult.contactInfo.address}
+                                        </span>
+                                    </div>
+                                )}
+                                {/* FAQs count */}
+                                {analysisResult?.faqs?.length > 0 && (
+                                    <div className="flex items-center justify-between p-3">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                                            <HelpCircle className="w-4 h-4" />
+                                            <span>أسئلة شائعة</span>
+                                        </div>
+                                        <span className="text-sm font-medium text-emerald-600">
+                                            ✅ {analysisResult.faqs.length} سؤال
                                         </span>
                                     </div>
                                 )}

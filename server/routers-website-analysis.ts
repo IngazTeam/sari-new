@@ -65,6 +65,44 @@ export const websiteAnalysisRouter = router({
               overallScore: result.overallScore,
               status: 'analyzing',
             });
+
+            // Save enriched contact info to merchant profile
+            if (result.contactInfo) {
+              const ci = result.contactInfo;
+              const updateData: Record<string, any> = {};
+              if (ci.phones.length > 0 && !merchant.phone) {
+                updateData.phone = ci.phones[0];
+              }
+              if (ci.whatsappNumber) {
+                updateData.whatsappNumber = ci.whatsappNumber;
+              }
+              if (Object.keys(updateData).length > 0) {
+                try {
+                  await db.updateMerchant(merchant.id, updateData);
+                  console.log('[WebsiteAnalysis] Updated merchant contact info:', updateData);
+                } catch (contactErr: any) {
+                  console.warn('[WebsiteAnalysis] Failed to update merchant contact:', contactErr.message);
+                }
+              }
+            }
+
+            // Save extracted FAQs
+            if (result.faqs && result.faqs.length > 0) {
+              try {
+                await db.deleteAllExtractedFaqs(merchant.id);
+                for (const faq of result.faqs) {
+                  await db.createExtractedFaq({
+                    merchantId: merchant.id,
+                    question: faq.question,
+                    answer: faq.answer,
+                    category: faq.category,
+                  });
+                }
+                console.log(`[WebsiteAnalysis] Saved ${result.faqs.length} FAQs for merchant ${merchant.id}`);
+              } catch (faqErr: any) {
+                console.warn('[WebsiteAnalysis] Failed to save FAQs:', faqErr.message);
+              }
+            }
           } catch (analysisError) {
             console.error('[WebsiteAnalysis] Analysis phase failed:', analysisError);
             // Keep status as analyzing — don't block product extraction
