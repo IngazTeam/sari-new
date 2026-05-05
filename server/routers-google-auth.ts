@@ -21,6 +21,14 @@ export const googleAuthRouter = router({
     )
     .mutation(async ({ input, ctx }) => {
       try {
+        // SEC-W5: Rate limit Google login attempts
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const check = checkRateLimit(`google_login:${clientIp}`, 10, 900000); // 10 per 15 min
+        if (!check.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من المحاولات. حاول لاحقاً.' });
+        }
+
         // التحقق من صحة Google Token
         const googleData = await verifyGoogleToken(input.token);
 
