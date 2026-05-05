@@ -3319,7 +3319,12 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
     .limit(1);
 
   if (existing.length > 0) {
-    return existing[0];
+    const row = existing[0];
+    return {
+      ...row,
+      autoReplyEnabled: Boolean(row.autoReplyEnabled),
+      workingHoursEnabled: Boolean(row.workingHoursEnabled),
+    } as any;
   }
 
   // Create default settings
@@ -3347,7 +3352,12 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
     .where(eq(botSettings.id, insertId))
     .limit(1);
 
-  return newSettings[0];
+  const row = newSettings[0];
+  return {
+    ...row,
+    autoReplyEnabled: Boolean(row.autoReplyEnabled),
+    workingHoursEnabled: Boolean(row.workingHoursEnabled),
+  } as any;
 }
 
 /**
@@ -3363,10 +3373,19 @@ export async function updateBotSettings(
   // Ensure settings exist first
   await getBotSettings(merchantId);
 
+  // Convert booleans to tinyint for MySQL
+  const dbUpdates: any = { ...updates };
+  if (typeof dbUpdates.autoReplyEnabled === 'boolean') {
+    dbUpdates.autoReplyEnabled = dbUpdates.autoReplyEnabled ? 1 : 0;
+  }
+  if (typeof dbUpdates.workingHoursEnabled === 'boolean') {
+    dbUpdates.workingHoursEnabled = dbUpdates.workingHoursEnabled ? 1 : 0;
+  }
+
   // Update
   await db
     .update(botSettings)
-    .set(updates)
+    .set(dbUpdates)
     .where(eq(botSettings.merchantId, merchantId));
 
   // Return updated settings
