@@ -61,25 +61,33 @@ export const referralsRouter = router({
         return await db.getReferralStats(merchant.id);
     }),
 
-    // Apply referral code during signup
-    applyReferralCode: publicProcedure
+    // Apply referral code during signup — SEC-W4 FIX: Now protectedProcedure, derives merchantId from auth
+    applyReferralCode: protectedProcedure
         .input(z.object({
-            code: z.string(),
-            referredMerchantId: z.number(),
+            code: z.string().max(50),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            // Rate limit
+            const { checkRateLimit } = await import('./_core/rateLimiter');
+            const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+            const check = checkRateLimit(`referral_apply:${clientIp}`, 5, 3600000); // 5 per hour
+            if (!check.allowed) {
+                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول لاحقاً.' });
+            }
+
+            // Derive merchant from authenticated user — not from client input
+            const referredMerchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!referredMerchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
             const referralCode = await db.getReferralCodeByCode(input.code);
             if (!referralCode || !referralCode.isActive) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'كود الإحالة غير صحيح' });
             }
 
-            const referredMerchant = await db.getMerchantById(input.referredMerchantId);
-            if (!referredMerchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
             // FIX #12: Prevent self-referral
-            if (referralCode.merchantId === input.referredMerchantId) {
+            if (referralCode.merchantId === referredMerchant.id) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك إحالة نفسك' });
             }
 

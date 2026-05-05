@@ -2739,26 +2739,36 @@ export const appRouter = router({
       return await db.getReferralStats(merchant.id);
     }),
 
-    // Apply referral code during signup
-    applyReferralCode: publicProcedure
+    // Apply referral code during signup — SEC-W4 FIX: protectedProcedure, merchantId from auth
+    applyReferralCode: protectedProcedure
       .input(z.object({
-        code: z.string(),
-        referredMerchantId: z.number(),
+        code: z.string().max(50),
       }))
-      .mutation(async ({ input }) => {
-        // Get referral code
+      .mutation(async ({ input, ctx }) => {
+        // Rate limit
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const clientIp = ctx.req?.ip || ctx.req?.socket?.remoteAddress || 'unknown';
+        const check = checkRateLimit(`referral_apply:${clientIp}`, 5, 3600000);
+        if (!check.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول لاحقاً.' });
+        }
+
+        // Derive merchant from authenticated user
+        const referredMerchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!referredMerchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
         const referralCode = await db.getReferralCodeByCode(input.code);
         if (!referralCode || !referralCode.isActive) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'كود الإحالة غير صحيح' });
         }
 
-        // Get referred merchant info
-        const referredMerchant = await db.getMerchantById(input.referredMerchantId);
-        if (!referredMerchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        // Prevent self-referral
+        if (referralCode.merchantId === referredMerchant.id) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك إحالة نفسك' });
         }
 
-        // Create referral record
         const referral = await db.createReferral({
           referralCodeId: referralCode.id,
           referredPhone: referredMerchant.phone || '',
@@ -2770,34 +2780,31 @@ export const appRouter = router({
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل تسجيل الإحالة' });
         }
 
-        // Increment referral count
         await db.incrementReferralCount(referralCode.id);
 
-        // Grant reward to referrer (90 days expiry)
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 90);
 
         await db.createReward({
           merchantId: referralCode.merchantId,
           referralId: referral.id,
-          rewardType: 'discount_10', // Default: 10% discount
+          rewardType: 'discount_10',
           status: 'pending',
           expiresAt,
           description: `خصم 10% على الاشتراك القادم لإحالة ${referredMerchant.businessName}`,
         });
 
         // Notify referrer and admin
-        const { notifyOwner } = await import('./_core/notification');
-        const { notifyNewReferral } = await import('./_core/emailNotifications');
-        const referrer = await db.getMerchantById(referralCode.merchantId);
-        if (referrer) {
-          await notifyOwner({
-            title: 'إحالة جديدة!',
-            content: `${referrer.businessName} حصل على إحالة جديدة من ${referredMerchant.businessName}`,
-          });
+        try {
+          const { notifyOwner } = await import('./_core/notification');
+          const { notifyNewReferral } = await import('./_core/emailNotifications');
+          const referrer = await db.getMerchantById(referralCode.merchantId);
+          if (referrer) {
+            await notifyOwner({
+              title: 'إحالة جديدة!',
+              content: `${referrer.businessName} حصل على إحالة جديدة من ${referredMerchant.businessName}`,
+            });
 
-          // Email notification to admin
-          try {
             const referredUser = await db.getUserById(referredMerchant.userId);
             await notifyNewReferral({
               referrerName: referrer.businessName,
@@ -2807,9 +2814,9 @@ export const appRouter = router({
               referralCode: input.code,
               referredAt: new Date(),
             });
-          } catch (error) {
-            console.error('Failed to send referral notification:', error);
           }
+        } catch (error) {
+          console.error('Failed to send referral notification:', error);
         }
 
         return { success: true, message: 'تم تطبيق كود الإحالة بنجاح' };
