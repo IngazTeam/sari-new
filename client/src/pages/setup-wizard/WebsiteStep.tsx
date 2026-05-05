@@ -58,9 +58,48 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
         if (getAnalysis.data && isAnalyzing) {
             if (getAnalysis.data.status === 'completed') {
                 setIsAnalyzing(false);
-                setAnalysisResult((prev: any) => ({ ...prev, ...getAnalysis.data, status: 'completed' }));
+                const analysisData = { ...getAnalysis.data, status: 'completed' as const };
+                setAnalysisResult((prev: any) => ({ ...prev, ...analysisData }));
+
+                // Always save analysis data to wizardData — even for non-store websites
+                // This enables pre-filling business info in later steps
+                const wizardUpdate: Record<string, any> = {
+                    websiteUrl: url,
+                    websiteAnalysis: analysisData,
+                };
+
+                // Pre-fill business info from analysis for BasicInfoStep
+                if (analysisData.title) {
+                    wizardUpdate.businessName = analysisData.title;
+                }
+                if (analysisData.description) {
+                    wizardUpdate.description = analysisData.description;
+                }
+                if (analysisData.industry) {
+                    wizardUpdate.industry = analysisData.industry;
+                }
+                if (analysisData.language) {
+                    wizardUpdate.language = analysisData.language;
+                }
+                // Pre-fill contact info
+                if (analysisData.contactInfo) {
+                    const ci = analysisData.contactInfo;
+                    if (ci.phones?.length > 0) {
+                        wizardUpdate.phone = ci.phones[0];
+                    }
+                    if (ci.whatsappNumber) {
+                        wizardUpdate.whatsappNumber = ci.whatsappNumber;
+                    }
+                    if (ci.emails?.length > 0) {
+                        wizardUpdate.email = ci.emails[0];
+                    }
+                    if (ci.address) {
+                        wizardUpdate.address = ci.address;
+                    }
+                }
+
                 // Products come directly from getAnalysis response
-                const rawProducts = getAnalysis.data.extractedProducts || [];
+                const rawProducts = analysisData.extractedProducts || [];
                 if (rawProducts.length > 0 && extractedProducts.length === 0) {
                     setExtractedProducts(rawProducts);
                     // Convert to wizard format immediately so they persist in wizardData
@@ -74,11 +113,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                         productUrl: p.productUrl || '',
                         category: p.category || '',
                     }));
-                    updateWizardData({
-                        products: wizardProducts,
-                        extractedProducts: rawProducts,
-                        websiteAnalysis: { ...getAnalysis.data, status: 'completed' },
-                    });
+                    wizardUpdate.products = wizardProducts;
+                    wizardUpdate.extractedProducts = rawProducts;
                     // Save scraped products to DB immediately (replaces template products)
                     saveProductsMutation.mutate({
                         products: wizardProducts.map((p: any) => ({
@@ -92,6 +128,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                         })),
                     });
                 }
+
+                updateWizardData(wizardUpdate);
             } else if (getAnalysis.data.status === 'failed') {
                 setIsAnalyzing(false);
                 setError('فشل تحليل الموقع. تأكد من صحة الرابط وحاول مرة أخرى.');
@@ -128,6 +166,12 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
     };
 
     const handleContinue = async () => {
+        // Always save website URL and analysis data
+        const wizardUpdate: Record<string, any> = {
+            websiteUrl: url,
+            websiteAnalysis: analysisResult,
+        };
+
         // Save extracted products to wizard data & DB for ProductsServicesStep and AI chat
         if (extractedProducts.length > 0) {
             const products = extractedProducts.map((p: any) => ({
@@ -140,12 +184,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 productUrl: p.productUrl || '',
                 category: p.category || '',
             }));
-            updateWizardData({
-                products,
-                websiteUrl: url,
-                websiteAnalysis: analysisResult,
-                extractedProducts,
-            });
+            wizardUpdate.products = products;
+            wizardUpdate.extractedProducts = extractedProducts;
             // Save to DB with await — MUST complete before navigating
             try {
                 await saveProductsMutation.mutateAsync({
@@ -163,6 +203,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 console.error('Failed to save scraped products to DB:', err);
             }
         }
+
+        updateWizardData(wizardUpdate);
         goToNextStep();
     };
 
