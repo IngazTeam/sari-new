@@ -38,18 +38,24 @@ export const setupWizardRouter = router({
     // Save progress
     saveProgress: protectedProcedure
         .input(z.object({
-            currentStep: z.number(),
-            completedSteps: z.array(z.number()),
+            currentStep: z.number().min(1).max(20),
+            completedSteps: z.array(z.number().min(1).max(20)).max(20),
             wizardData: z.record(z.string(), z.any()),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+            // SEC-W3: Validate wizardData size to prevent JSON bomb / memory exhaustion
+            const serializedData = JSON.stringify(input.wizardData);
+            if (serializedData.length > 100_000) { // 100KB max
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'بيانات الويزرد كبيرة جداً.' });
+            }
+
             await db.updateSetupWizardProgress(merchant.id, {
                 currentStep: input.currentStep,
                 completedSteps: JSON.stringify(input.completedSteps),
-                wizardData: JSON.stringify(input.wizardData),
+                wizardData: serializedData,
             });
 
             return { success: true };
