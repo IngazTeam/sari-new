@@ -133,16 +133,25 @@ export const websiteAnalysisRouter = router({
             let savedCount = 0;
             for (const product of products) {
               try {
-                // Safely extract string values — Zid API may return objects for URLs
-                const safeStr = (val: any, maxLen: number): string | undefined => {
-                  if (!val) return undefined;
+                // Safely extract string values — Zid API may return deeply nested objects for URLs
+                const safeStr = (val: any, maxLen: number, depth: number = 0): string | undefined => {
+                  if (!val || depth > 3) return undefined;
                   if (typeof val === 'string') return val.substring(0, maxLen);
                   if (typeof val === 'object') {
-                    // Try common nested URL formats (Zid/Salla)
-                    const str = val.url || val.src || val.original_url || val.href || '';
-                    return typeof str === 'string' ? str.substring(0, maxLen) : undefined;
+                    // Try direct URL fields first
+                    for (const key of ['url', 'src', 'original_url', 'original', 'href']) {
+                      if (typeof val[key] === 'string') return val[key].substring(0, maxLen);
+                    }
+                    // Try size variants (Zid returns { full_size: { url: "..." }, large: {...}, ... })
+                    for (const key of ['full_size', 'large', 'medium', 'small', 'thumbnail']) {
+                      const nested = val[key];
+                      if (!nested) continue;
+                      if (typeof nested === 'string') return nested.substring(0, maxLen);
+                      const resolved = safeStr(nested, maxLen, depth + 1);
+                      if (resolved) return resolved;
+                    }
                   }
-                  return String(val).substring(0, maxLen);
+                  return undefined;
                 };
 
                 await db.createExtractedProduct({
