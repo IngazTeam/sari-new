@@ -1395,96 +1395,109 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
   // --- Salla ---
   const trySallaAPI = async (): Promise<ExtractedProduct[]> => {
-    // Salla storefront API paths — try multiple known endpoints
-    const sallaEndpoints = [
-      `${baseUrl}/api/products`,
-      `${baseUrl}/api/v1/products`,
-      `${baseUrl}/api/products/search`,
+    // Strategy 1: Salla official storefront API (works for ALL Salla stores including custom domains)
+    // The domain for this API is derived from the store's URL — Salla routes it correctly
+    const sallaStorefrontEndpoints = [
+      // Official Salla storefront API — works for custom-domain stores
+      { url: `${baseUrl}/api/products`, label: 'storefront /api/products' },
+      { url: `${baseUrl}/api/v1/products`, label: 'storefront /api/v1/products' },
+      // Salla's public catalog endpoint (no auth required for published products)
+      { url: `${baseUrl}/api/products?per_page=50&page=1`, label: 'storefront catalog' },
     ];
 
-    for (const endpoint of sallaEndpoints) {
+    const parseSallaProduct = (p: any): ExtractedProduct | null => {
+      const name = p.name || p.title || '';
+      if (!name) return null;
+
+      // Salla price format: { amount: number, currency: "SAR" } or just a number
+      let price = 0;
+      let currency = 'SAR';
+      if (typeof p.price === 'object' && p.price !== null) {
+        price = parseFloat(p.price.amount || p.price.value || '0');
+        currency = p.price.currency || 'SAR';
+      } else {
+        price = parseFloat(p.price || p.sale_price || p.regular_price || '0');
+      }
+
+      // Salla image format: { url: string, alt: string } or string or thumbnail object
+      let imageUrl: string | undefined;
+      if (p.image) {
+        imageUrl = typeof p.image === 'string' ? p.image : p.image.url || p.image.src || p.image.original_url;
+      } else if (p.thumbnail) {
+        imageUrl = typeof p.thumbnail === 'string' ? p.thumbnail : p.thumbnail.url || p.thumbnail.original_url;
+      } else if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+        const firstImg = p.images[0];
+        imageUrl = typeof firstImg === 'string' ? firstImg : firstImg.url || firstImg.src || firstImg.original_url;
+      }
+
+      const description = (p.description || p.short_description || '')
+        .replace(/<[^>]*>/g, '').trim().substring(0, 300);
+
+      const productUrl = p.url || p.share_url || p.permalink ||
+        (p.slug ? `${baseUrl}/p/${p.slug}` : undefined);
+
+      return {
+        name,
+        description,
+        price,
+        currency,
+        imageUrl,
+        productUrl,
+        category: p.category?.name || p.categories?.[0]?.name,
+        inStock: p.status !== 'out' && p.quantity !== 0 && p.availability !== 'out',
+        confidence: 90,
+      };
+    };
+
+    for (const endpoint of sallaStorefrontEndpoints) {
       try {
-        console.log(`[WebsiteAnalyzer] Trying Salla API: ${endpoint}`);
+        console.log(`[WebsiteAnalyzer] Trying Salla API (${endpoint.label}): ${endpoint.url}`);
         const headers = {
           'Accept': 'application/json',
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'X-Requested-With': 'XMLHttpRequest',
           'Accept-Language': 'ar',
+          'Referer': baseUrl,
+          'Origin': baseUrl,
         };
 
         // Try fetch first, then curl
         let body: string | null = null;
         try {
           const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 8000);
-          const response = await fetch(endpoint, { headers, signal: controller.signal });
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          const response = await fetch(endpoint.url, { headers, signal: controller.signal });
           clearTimeout(timeoutId);
-          if (response.ok && (response.headers.get('content-type') || '').includes('json')) {
+          const contentType = response.headers.get('content-type') || '';
+          if (response.ok && contentType.includes('json')) {
             body = await response.text();
           }
         } catch {
-          const curlResult = await curlFetch(endpoint, headers);
+          const curlResult = await curlFetch(endpoint.url, headers);
           if (curlResult.ok) body = curlResult.body;
         }
 
         if (!body) continue;
-        const data = JSON.parse(body);
+
+        let data: any;
+        try { data = JSON.parse(body); } catch { continue; }
 
         // Salla response format: { data: [...products], cursor: {...} }
         // or { products: [...] } or just an array
-        const rawProducts = data.data || data.products || (Array.isArray(data) ? data : []);
+        const rawProducts = data.data || data.products || data.results || (Array.isArray(data) ? data : []);
         if (!Array.isArray(rawProducts) || rawProducts.length === 0) continue;
 
-        const products: ExtractedProduct[] = [];
-        for (const p of rawProducts.slice(0, 50)) {
-          const name = p.name || p.title || '';
-          if (!name) continue;
-
-          // Salla price format: { amount: number, currency: "SAR" } or just a number
-          let price = 0;
-          let currency = 'SAR';
-          if (typeof p.price === 'object' && p.price !== null) {
-            price = parseFloat(p.price.amount || p.price.value || '0');
-            currency = p.price.currency || 'SAR';
-          } else {
-            price = parseFloat(p.price || p.sale_price || p.regular_price || '0');
-          }
-
-          // Salla image format: { url: string, alt: string } or string or thumbnail object
-          let imageUrl: string | undefined;
-          if (p.image) {
-            imageUrl = typeof p.image === 'string' ? p.image : p.image.url || p.image.src;
-          } else if (p.thumbnail) {
-            imageUrl = typeof p.thumbnail === 'string' ? p.thumbnail : p.thumbnail.url;
-          } else if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-            const firstImg = p.images[0];
-            imageUrl = typeof firstImg === 'string' ? firstImg : firstImg.url || firstImg.src || firstImg.original_url;
-          }
-
-          const description = (p.description || p.short_description || '')
-            .replace(/<[^>]*>/g, '').trim().substring(0, 300);
-
-          const productUrl = p.url || p.share_url || (p.slug ? `${baseUrl}/p/${p.slug}` : undefined);
-
-          products.push({
-            name,
-            description,
-            price,
-            currency,
-            imageUrl,
-            productUrl,
-            category: p.category?.name || p.categories?.[0]?.name,
-            inStock: p.status !== 'out' && p.quantity !== 0 && p.availability !== 'out',
-            confidence: 90,
-          });
-        }
+        const products: ExtractedProduct[] = rawProducts
+          .slice(0, 50)
+          .map(parseSallaProduct)
+          .filter((p): p is ExtractedProduct => p !== null);
 
         if (products.length > 0) {
-          console.log(`[WebsiteAnalyzer] ✅ Salla API: Got ${products.length} products from ${endpoint}`);
+          console.log(`[WebsiteAnalyzer] ✅ Salla API: Got ${products.length} products from ${endpoint.url}`);
           return products;
         }
       } catch (err) {
-        console.log(`[WebsiteAnalyzer] Salla API ${endpoint} failed:`, err instanceof Error ? err.message : 'unknown');
+        console.log(`[WebsiteAnalyzer] Salla API ${endpoint.url} failed:`, err instanceof Error ? err.message : 'unknown');
       }
     }
     return [];
@@ -1731,7 +1744,17 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
         if (!Array.isArray(rawProducts) || rawProducts.length === 0) continue;
 
         for (const p of rawProducts.slice(0, 50)) {
-          const name = p.title || p.name || '';
+          // Zid name can be: string | { ar: "...", en: "..." }
+          let name = '';
+          if (typeof p.name === 'string') {
+            name = p.name;
+          } else if (typeof p.name === 'object' && p.name !== null) {
+            name = p.name.ar || p.name.en || '';
+          }
+          if (!name) {
+            name = typeof p.title === 'string' ? p.title :
+              (typeof p.title === 'object' && p.title !== null) ? (p.title.ar || p.title.en || '') : '';
+          }
           if (!name) continue;
 
           // Zid price: { amount: number, currency: { code: "SAR" } } or direct number
@@ -1744,25 +1767,69 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
             price = parseFloat(p.price || p.sale_price || p.regular_price || '0');
           }
 
-          // Zid image: thumbnail object with full_size/large/medium/small
-          const resolveZidImage = (val: any): string | undefined => {
-            if (!val) return undefined;
+          // Zid image resolver — handles deeply nested objects like:
+          // string, { url: "..." }, { full_size: "url" }, { full_size: { url: "..." } }
+          const resolveZidImage = (val: any, depth: number = 0): string | undefined => {
+            if (!val || depth > 3) return undefined;
             if (typeof val === 'string' && val.startsWith('http')) return val;
             if (typeof val === 'object') {
-              return val.full_size || val.large || val.medium || val.small || val.thumbnail || val.url || val.src || val.original_url;
+              // Try direct URL fields first
+              if (typeof val.url === 'string' && val.url.startsWith('http')) return val.url;
+              if (typeof val.src === 'string' && val.src.startsWith('http')) return val.src;
+              if (typeof val.original_url === 'string' && val.original_url.startsWith('http')) return val.original_url;
+              if (typeof val.original === 'string' && val.original.startsWith('http')) return val.original;
+              if (typeof val.href === 'string' && val.href.startsWith('http')) return val.href;
+              // Try size variants — each may be string or object with url
+              for (const key of ['full_size', 'large', 'medium', 'small', 'thumbnail']) {
+                const nested = val[key];
+                if (!nested) continue;
+                if (typeof nested === 'string' && nested.startsWith('http')) return nested;
+                if (typeof nested === 'object') {
+                  const resolved = resolveZidImage(nested, depth + 1);
+                  if (resolved) return resolved;
+                }
+              }
             }
             return undefined;
           };
 
-          const imageUrl = resolveZidImage(p.image) || resolveZidImage(p.images?.[0]) ||
-            resolveZidImage(p.thumbnail) || resolveZidImage(p.main_image);
+          // Try multiple image field patterns
+          let imageUrl: string | undefined;
+          // p.images is often an array of objects with size variants
+          if (Array.isArray(p.images) && p.images.length > 0) {
+            for (const img of p.images) {
+              imageUrl = resolveZidImage(img);
+              if (imageUrl) break;
+            }
+          }
+          if (!imageUrl) imageUrl = resolveZidImage(p.image);
+          if (!imageUrl) imageUrl = resolveZidImage(p.thumbnail);
+          if (!imageUrl) imageUrl = resolveZidImage(p.main_image);
 
-          const description = (p.body_html || p.description || p.short_description || p.content || '')
-            .replace(/<[^>]*>/g, '').trim().substring(0, 300);
+          // Zid description can be: string | { ar: "...", en: "..." }
+          let rawDesc = '';
+          const descSource = p.body_html || p.description || p.short_description || p.content || '';
+          if (typeof descSource === 'string') {
+            rawDesc = descSource;
+          } else if (typeof descSource === 'object' && descSource !== null) {
+            rawDesc = descSource.ar || descSource.en || '';
+          }
+          const description = rawDesc.replace(/<[^>]*>/g, '').trim().substring(0, 300);
 
           let productUrl = p.url || p.permalink || (p.slug ? `${baseUrl}/products/${p.slug}` : undefined);
           if (productUrl && typeof productUrl === 'string' && !productUrl.startsWith('http')) {
             productUrl = productUrl.startsWith('/') ? `${baseUrl}${productUrl}` : `${baseUrl}/${productUrl}`;
+          }
+
+          // Category can also be bilingual
+          let category: string | undefined;
+          if (p.category?.name) {
+            category = typeof p.category.name === 'string' ? p.category.name :
+              (typeof p.category.name === 'object' ? (p.category.name.ar || p.category.name.en) : undefined);
+          } else if (p.categories?.[0]?.name) {
+            const catName = p.categories[0].name;
+            category = typeof catName === 'string' ? catName :
+              (typeof catName === 'object' ? (catName.ar || catName.en) : undefined);
           }
 
           products.push({
@@ -1772,8 +1839,8 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
             currency,
             imageUrl: typeof imageUrl === 'string' ? imageUrl : undefined,
             productUrl: typeof productUrl === 'string' ? productUrl : undefined,
-            category: p.category?.name || p.categories?.[0]?.name,
-            inStock: p.in_stock !== false && p.available !== false && p.quantity !== 0,
+            category,
+            inStock: p.in_stock !== false && p.available !== false && p.is_available !== false && p.quantity !== 0,
             confidence: 90,
           });
         }
@@ -1795,6 +1862,8 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 
   // Detect platform from URL patterns for prioritization
   const urlLower = url.toLowerCase();
+  // Note: isSallaUrl checks subdomain salla.sa but many Salla stores use custom domains.
+  // Custom-domain Salla stores are detected via HTML content (isSallaStore) or API probe.
   const isSallaUrl = urlLower.includes('salla.sa') || urlLower.includes('salla.network');
   const isShopifyUrl = urlLower.includes('shopify') || urlLower.includes('myshopify');
   const isZidUrl = urlLower.includes('zid.sa') || urlLower.includes('zid.store');
@@ -1813,20 +1882,22 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
     if (zidProducts.length > 0) return zidProducts;
   }
 
-  // If no platform-specific match from URL, try all in priority order
-  console.log('[WebsiteAnalyzer] No platform detected from URL, trying all APIs...');
+  // If no platform-specific match from URL, try all in priority order.
+  // IMPORTANT: Try Salla FIRST for custom-domain stores — many Saudi stores use Salla
+  // with custom domains (e.g., mystore.com powered by Salla) and Cloudflare blocks HTML.
+  console.log('[WebsiteAnalyzer] No platform detected from URL, trying all APIs (Salla first for Saudi stores)...');
 
-  // Try Shopify first (most likely to have public products.json)
+  // Try Salla first — most common Saudi e-commerce platform with custom domains
+  const sallaProducts = await trySallaAPI();
+  if (sallaProducts.length > 0) return sallaProducts;
+
+  // Try Shopify (has public products.json)
   const shopifyProducts = await tryShopifyAPI();
   if (shopifyProducts.length > 0) return shopifyProducts;
 
   // Try WooCommerce Store API (public, no auth)
   const wooProducts = await tryWooCommerceAPI();
   if (wooProducts.length > 0) return wooProducts;
-
-  // Try Salla API
-  const sallaProducts = await trySallaAPI();
-  if (sallaProducts.length > 0) return sallaProducts;
 
   // Try Zid
   const zidProducts = await tryZidAPI();
