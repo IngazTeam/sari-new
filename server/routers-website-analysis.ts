@@ -20,10 +20,30 @@ export const websiteAnalysisRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       try {
+        // SEC-W1: SSRF guard — block internal/private/metadata IPs at router level
+        const { isUrlSafe } = await import('./_core/websiteAnalyzer');
+        if (!isUrlSafe(input.url)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به.' });
+        }
+
+        // SEC-W2: Rate limit analysis per merchant (5 per hour) — each analysis triggers LLM + external requests
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const ipCheck = checkRateLimit(`analyze_ip:${clientIp}`, 5, 3600000); // 5 per hour per IP
+        if (!ipCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز عدد محاولات التحليل. حاول بعد قليل.' });
+        }
+
         // Get merchant ID
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Also rate limit per merchant (prevents multi-IP abuse)
+        const merchantCheck = checkRateLimit(`analyze_merchant:${merchant.id}`, 5, 3600000);
+        if (!merchantCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز عدد محاولات التحليل. حاول بعد قليل.' });
         }
 
         // Create analysis record with pending status

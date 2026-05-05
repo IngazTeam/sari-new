@@ -12,7 +12,7 @@ import { execFileSync } from "child_process";
 /**
  * Validate URL to prevent SSRF attacks (internal IP, metadata endpoints, etc.)
  */
-function isUrlSafe(urlStr: string): boolean {
+export function isUrlSafe(urlStr: string): boolean {
   try {
     const parsed = new URL(urlStr);
     // Only allow HTTP/HTTPS
@@ -25,8 +25,12 @@ function isUrlSafe(urlStr: string): boolean {
     if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return false;
     // Block AWS/GCP/Azure metadata endpoints
     if (hostname === '169.254.169.254' || hostname === 'metadata.google.internal') return false;
+    // Block link-local
+    if (hostname.startsWith('169.254.')) return false;
     // Block file:// and other schemes
     if (hostname === '' || hostname.includes('..')) return false;
+    // Block common internal hostnames
+    if (hostname === '0.0.0.0' || hostname.startsWith('fc00:') || hostname.startsWith('fe80:')) return false;
 
     return true;
   } catch {
@@ -171,6 +175,10 @@ export async function scrapeWebsite(url: string): Promise<{
   dom: JSDOM;
   text: string;
 }> {
+  // SEC-W1: SSRF guard — block internal/private IPs before any network request
+  if (!isUrlSafe(url)) {
+    throw new Error(`[SECURITY] Blocked unsafe URL: ${url}`);
+  }
   const userAgents = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
