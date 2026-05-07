@@ -172,7 +172,7 @@ export default function UsageDashboard() {
                 <div className="flex items-baseline justify-between">
                   <span className="text-3xl font-bold">{item.current.toLocaleString()}</span>
                   <span className="text-sm text-muted-foreground">
-                    / {isUnlimited ? 'غير محدود' : item.max.toLocaleString()}
+                    / {isUnlimited ? t('usageDashboardPage.unlimited') : item.max.toLocaleString()}
                   </span>
                 </div>
 
@@ -198,7 +198,7 @@ export default function UsageDashboard() {
 
                     {/* Remaining */}
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>المتبقي: {(item.max - item.current).toLocaleString()}</span>
+                      <span>{t('usageDashboardPage.remaining')}: {(item.max - item.current).toLocaleString()}</span>
                       <span>{percentage.toFixed(1)}%</span>
                     </div>
                   </>
@@ -226,7 +226,7 @@ export default function UsageDashboard() {
             <div>
               <h3 className="text-xl font-semibold">{usage.plan.name}</h3>
               <p className="text-sm text-muted-foreground">
-                {usage.plan.billingCycle === 'monthly' ? 'اشتراك شهري' : 
+                {usage.plan.billingCycle === 'monthly' ? t('usageDashboardPage.monthlySubscription') : 
                  usage.plan.billingCycle === 'yearly' ? t('usageDashboardPage.text9') : t('usageDashboardPage.text10')}
               </p>
             </div>

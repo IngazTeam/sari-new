@@ -256,7 +256,7 @@ export default function PushNotificationsSettings() {
           <div className="rounded-lg border p-4 bg-muted/50">
             <h4 className="font-medium mb-2">{t('pushNotificationsSettingsPage.text21')}</h4>
             <ul className="text-sm space-y-1 text-muted-foreground">
-              <li>• دعم Service Worker: {isSupported ? t('pushNotificationsSettingsPage.text29') : t('pushNotificationsSettingsPage.text30')}</li>
+              <li>• {t('pushNotificationsSettingsPage.serviceWorkerSupport')}: {isSupported ? t('pushNotificationsSettingsPage.text29') : t('pushNotificationsSettingsPage.text30')}</li>
               <li>
                 {t('pushNotificationsSettingsPage.text41', { var0: " " })}
                 {permission === "granted"
@@ -302,7 +302,7 @@ export default function PushNotificationsSettings() {
                       {log.body} • {new Date(log.createdAt).toLocaleString("ar-SA")}
                     </div>
                     {log.error && (
-                      <div className="text-sm text-red-600 mt-1">خطأ: {log.error}</div>
+                      <div className="text-sm text-red-600 mt-1">{t('pushNotificationsSettingsPage.error')}: {log.error}</div>
                     )}
                   </div>
                 </div>

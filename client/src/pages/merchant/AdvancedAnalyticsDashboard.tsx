@@ -103,7 +103,7 @@ function StatCard({ title, value, change, changeLabel, icon, trend, loading }: S
               "text-xs",
               trend === 'up' ? "text-green-500" : trend === 'down' ? "text-red-500" : "text-muted-foreground"
             )}>
-              {change > 0 ? '+' : ''}{change}% {changeLabel || 'من الفترة السابقة'}
+              {change > 0 ? '+' : ''}{change}% {changeLabel || t('advancedAnalyticsDashboardPage.fromPreviousPeriod')}
             </span>
           </div>
         )}

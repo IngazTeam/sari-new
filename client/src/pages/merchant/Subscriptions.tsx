@@ -117,7 +117,7 @@ export default function Subscriptions() {
                   )}
                 </div>
                 <CardTitle className="text-2xl mt-4">{plan.nameAr}</CardTitle>
-                <CardDescription>{plan.features || 'باقة شاملة لجميع احتياجاتك'}</CardDescription>
+                <CardDescription>{plan.features || t('subscriptionsPage.comprehensivePlan')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -129,7 +129,7 @@ export default function Subscriptions() {
                   <div className="flex items-start gap-2">
                     <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
                     <span className="text-sm">
-                      {plan.conversationLimit === -1 ? 'محادثات غير محدودة' : `${plan.conversationLimit} محادثة شهرياًt('subscriptionsPage.text30')${plan.voiceMessageLimit} رسالة صوتية شهرياً`}
+                      {plan.conversationLimit === -1 ? t('subscriptionsPage.unlimitedConversations') : t('subscriptionsPage.conversationsCount', { count: plan.conversationLimit, voiceCount: plan.voiceMessageLimit })}
                     </span>
                   </div>
                   <div className="flex items-start gap-2">
@@ -169,7 +169,7 @@ export default function Subscriptions() {
                   disabled={isCurrentPlan || upgradeMutation.isPending}
                   onClick={() => handleUpgrade(plan.id)}
                 >
-                  {isCurrentPlan ? 'الباقة الحالية' : isUpgrade ? t('subscriptionsPage.text19') : t('subscriptionsPage.text20')}
+                  {isCurrentPlan ? t('subscriptionsPage.currentPlan') : isUpgrade ? t('subscriptionsPage.text19') : t('subscriptionsPage.text20')}
                 </Button>
               </CardFooter>
             </Card>
@@ -209,7 +209,7 @@ export default function Subscriptions() {
                   <td className="p-4">{t('subscriptionsPage.text9')}</td>
                   {activePlans.map(plan => (
                     <td key={plan.id} className="text-center p-4">
-                      {plan.conversationLimit === -1 ? 'غير محدود' : plan.conversationLimit}
+                      {plan.conversationLimit === -1 ? t('subscriptionsPage.unlimited') : plan.conversationLimit}
                     </td>
                   ))}
                 </tr>
@@ -217,7 +217,7 @@ export default function Subscriptions() {
                   <td className="p-4">{t('subscriptionsPage.text10')}</td>
                   {activePlans.map(plan => (
                     <td key={plan.id} className="text-center p-4">
-                      {plan.voiceMessageLimit === -1 ? 'غير محدود' : plan.voiceMessageLimit}
+                      {plan.voiceMessageLimit === -1 ? t('subscriptionsPage.unlimited') : plan.voiceMessageLimit}
                     </td>
                   ))}
                 </tr>

@@ -115,7 +115,7 @@
     "perYear": "Per Year",
     "currency": "SAR",
     "times": "times",
-    "usages": "usages"
+    "usages": "uses"
   },
   "nav": {
     "home": "Home",
@@ -2178,7 +2178,8 @@
     "text53": "Negative",
     "text54": "Incoming",
     "text55": "Outgoing",
-    "text56": "Messages"
+    "text56": "Messages",
+    "fromPreviousPeriod": "from previous period"
   },
   "analyticsPage": {
     "text0": "Analytics",
@@ -2284,7 +2285,9 @@
     "text35": "Reply sent",
     "text36": "Review replied to successfully",
     "text37": "Error",
-    "text38": "Replied on {{var0}}"
+    "text38": "Replied on {{var0}}",
+    "customer": "Customer",
+    "noComment": "No comment"
   },
   "calendlyIntegrationPage": {
     "text0": "Settings saved",
@@ -2450,7 +2453,10 @@
     "text37": "You saved {{var0}} SAR!",
     "text38": "By clicking \"Pay\", you agree to{{var0}}",
     "text39": "{{var0}}and{{var1}}",
-    "text40": "All transactions are protected with SSL encryption. We do not store your credit card information."
+    "text40": "All transactions are protected with SSL encryption. We do not store your credit card information.",
+    "discount": "Discount",
+    "conversationsMonthly": "{{count}} conversations/month",
+    "unlimitedVoice": "Unlimited voice messages"
   },
   "dataSyncPage": {
     "text0": "Succeeded",
@@ -3050,7 +3056,9 @@
     "text39": "Enabling...",
     "text40": "Enable Notifications",
     "text41": "• Notification permission:{{var0}}",
-    "text42": "? \"Granted ✅\""
+    "text42": "? \"Granted ✅\"",
+    "serviceWorkerSupport": "Service Worker Support",
+    "error": "Error"
   },
   "quickResponsesPage": {
     "text0": "Quick response added successfully",
@@ -3137,7 +3145,12 @@
     "text29": "Copy your referral link and share it with friends",
     "text30": "When your friend signs up using your link and subscribes to any plan",
     "text31": "Expires on: {{var0}}",
-    "text32": "You will receive an instant reward you can use (10% discount, free month, or advanced analytics)"
+    "text32": "You will receive an instant reward you can use (10% discount, free month, or advanced analytics)",
+    "discount10": "10% subscription discount",
+    "freeMonth": "Extra free month",
+    "advancedAnalytics": "Advanced analytics for one month",
+    "referralCode": "Referral code",
+    "referralReward": "Referral program reward"
   },
   "reportsPage": {
     "text0": "Reports and Statistics",
@@ -3460,7 +3473,13 @@
     "text19": "Monthly",
     "text20": "Annual",
     "text21": "Subscribe now to one of the plans to continue using all Sari features",
-    "text22": "AI smart responses • Product management • Marketing campaigns • Reports & Statistics • Technical support"
+    "text22": "AI smart responses • Product management • Marketing campaigns • Reports & Statistics • Technical support",
+    "subscribeCTA": "Subscribe to a plan to unlock all features",
+    "customer": "customer",
+    "whatsappNumber": "WhatsApp number",
+    "currentPlan": "Current Plan",
+    "trialStatus": "You are in the trial period — {{days}} days remaining",
+    "trialRemaining": "{{days}} days remaining — subscribe now to continue"
   },
   "subscriptionsPage": {
     "text0": "Subscriptions Management",
@@ -3497,7 +3516,13 @@
     "text31": "Subscription renewed successfully",
     "text32": "Error",
     "text33": "Failed to update subscription",
-    "text34": "Monthly Revenue"
+    "text34": "Monthly Revenue",
+    "comprehensivePlan": "Comprehensive plan for all your needs",
+    "unlimitedConversations": "Unlimited conversations",
+    "unlimitedVoice": "Unlimited voice messages",
+    "currentPlan": "Current Plan",
+    "unlimited": "Unlimited",
+    "conversationsCount": "{{count}} conversations/month + {{voiceCount}} voice messages/month"
   },
   "usagePage": {
     "text0": "Plan Usage",
@@ -3560,7 +3585,10 @@
     "text29": "Used {{var0}}% of {{var1}}",
     "text30": "Good usage ({{var0}}%)",
     "text31": "Track your consumption of {{var0}} plan features",
-    "text32": "✓ Unlimited usage"
+    "text32": "✓ Unlimited usage",
+    "unlimited": "Unlimited",
+    "remaining": "Remaining",
+    "monthlySubscription": "Monthly subscription"
   },
   "whatsAppPage": {
     "text0": "WhatsApp connected successfully! 🎉",

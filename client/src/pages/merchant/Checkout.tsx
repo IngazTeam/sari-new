@@ -146,26 +146,26 @@ export default function Checkout() {
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between text-sm">
                 <span>{t('checkoutPage.text5')}</span>
-                <span>{basePrice.toFixed(2)} ريال</span>
+                <span>{basePrice.toFixed(2)} {t('common.currency')}</span>
               </div>
               
               {appliedCoupon && (
                 <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                  <span>الخصم ({appliedCoupon.code})</span>
-                  <span>-{discount.toFixed(2)} ريال</span>
+                  <span>{t('checkoutPage.discount')} ({appliedCoupon.code})</span>
+                  <span>-{discount.toFixed(2)} {t('common.currency')}</span>
                 </div>
               )}
               
               {appliedCoupon && (
                 <div className="flex justify-between text-sm">
                   <span>{t('checkoutPage.text9')}</span>
-                  <span>{finalPrice.toFixed(2)} ريال</span>
+                  <span>{finalPrice.toFixed(2)} {t('common.currency')}</span>
                 </div>
               )}
               
               <div className="flex justify-between text-sm">
                 <span>{t('checkoutPage.text11')}</span>
-                <span>{finalTax.toFixed(2)} ريال</span>
+                <span>{finalTax.toFixed(2)} {t('common.currency')}</span>
               </div>
               
               <div className="flex justify-between font-bold text-lg border-t pt-2">
@@ -228,8 +228,8 @@ export default function Checkout() {
             <div className="bg-muted p-4 rounded-lg space-y-2">
               <p className="font-medium text-sm">{t('checkoutPage.text16')}</p>
               <ul className="text-sm space-y-1 text-muted-foreground">
-                <li>• {plan.conversationLimit} محادثة شهرياً</li>
-                <li>• {plan.voiceMessageLimit === -1 ? 'رسائل صوتية غير محدودة' : t('checkoutPage.text34', { var0: plan.voiceMessageLimit })}</li>
+                <li>• {t('checkoutPage.conversationsMonthly', { count: plan.conversationLimit })}</li>
+                <li>• {plan.voiceMessageLimit === -1 ? t('checkoutPage.unlimitedVoice') : t('checkoutPage.text34', { var0: plan.voiceMessageLimit })}</li>
                 <li>{t('checkoutPage.text19')}</li>
               </ul>
             </div>

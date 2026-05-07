@@ -269,7 +269,7 @@ export default function BookingReviews() {
                                                     <User className="h-4 w-4 text-muted-foreground" />
                                                     <div>
                                                         <div className="font-medium">
-                                                            {review.customerName || 'عميل'}
+                                                            {review.customerName || t('bookingReviewsPage.customer')}
                                                         </div>
                                                         <div className="text-xs text-muted-foreground">
                                                             {review.customerPhone}
@@ -334,7 +334,7 @@ export default function BookingReviews() {
                     <DialogHeader>
                         <DialogTitle>{t('bookingReviewsPage.text26')}</DialogTitle>
                         <DialogDescription>
-                            {selectedReview?.customerName || 'عميل'} - {selectedReview?.customerPhone}
+                            {selectedReview?.customerName || t('bookingReviewsPage.customer')} - {selectedReview?.customerPhone}
                         </DialogDescription>
                     </DialogHeader>
                     {selectedReview && (
@@ -347,7 +347,7 @@ export default function BookingReviews() {
                                         {new Date(selectedReview.createdAt).toLocaleDateString('ar-SA')}
                                     </span>
                                 </div>
-                                <p className="text-sm">{selectedReview.comment || 'لا يوجد تعليق'}</p>
+                                <p className="text-sm">{selectedReview.comment || t('bookingReviewsPage.noComment')}</p>
                             </div>
 
                             {/* Reply Section */}

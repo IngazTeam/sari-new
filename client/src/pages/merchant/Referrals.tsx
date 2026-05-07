@@ -41,11 +41,11 @@ export default function Referrals() {
   const getRewardTypeLabel = (type: string) => {
     switch (type) {
       case 'discount_10':
-        return 'خصم 10% على الاشتراك';
+        return t('referralsPage.discount10');
       case 'free_month':
-        return 'شهر مجاني إضافي';
+        return t('referralsPage.freeMonth');
       case 'analytics_upgrade':
-        return 'تحليلات متقدمة لمدة شهر';
+        return t('referralsPage.advancedAnalytics');
       default:
         return type;
     }
@@ -155,7 +155,7 @@ export default function Referrals() {
                 </Button>
               </div>
               <div className="text-sm text-muted-foreground">
-                رمز الإحالة: <span className="font-bold text-foreground">{referralCode?.code}</span>
+                {t('referralsPage.referralCode')}: <span className="font-bold text-foreground">{referralCode?.code}</span>
               </div>
             </>
           )}
@@ -186,7 +186,7 @@ export default function Referrals() {
                   <div className="flex-1">
                     <div className="font-medium">{getRewardTypeLabel(reward.rewardType)}</div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      {reward.description || 'مكافأة من برنامج الإحالة'}
+                      {reward.description || t('referralsPage.referralReward')}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {t('referralsPage.text31', { var0: new Date(reward.expiresAt).toLocaleDateString('ar-SA') })}

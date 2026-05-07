@@ -62,8 +62,8 @@ export default function SubscriptionPlans() {
         <h1 className="text-4xl font-bold mb-2">{t('subscriptionPlansPage.text1')}</h1>
         <p className="text-muted-foreground text-lg">
           {isTrial
-            ? `أنت في الفترة التجريبية — متبقي ${daysRemaining} ${daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? t('subscriptionPlansPage.text10') : t('subscriptionPlansPage.text11')}`
-            : 'اشترك في إحدى الباقات لتفعيل جميع الميزات'}
+            ? t('subscriptionPlansPage.trialStatus', { days: daysRemaining })
+            : t('subscriptionPlansPage.subscribeCTA')}
         </p>
       </div>
 
@@ -98,7 +98,7 @@ export default function SubscriptionPlans() {
             </div>
             <CardDescription className="text-blue-700 flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              متبقي {daysRemaining} {daysRemaining === 1 ? 'يوم' : daysRemaining === 2 ? t('subscriptionPlansPage.text12') : t('subscriptionPlansPage.text13')} — اشترك الآن لضمان الاستمرارية
+              {t('subscriptionPlansPage.trialRemaining', { days: daysRemaining })}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -157,14 +157,14 @@ export default function SubscriptionPlans() {
                 {/* Main Feature */}
                 <div className="p-4 rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">{t('subscriptionPlansPage.text6')}</p>
-                  <p className="text-2xl font-bold">{plan.maxCustomers.toLocaleString()} عميل</p>
+                  <p className="text-2xl font-bold">{plan.maxCustomers.toLocaleString()} {t('subscriptionPlansPage.customer')}</p>
                 </div>
 
                 {/* Features List */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="text-sm">{plan.maxWhatsAppNumbers} رقم واتساب</span>
+                    <span className="text-sm">{plan.maxWhatsAppNumbers} {t('subscriptionPlansPage.whatsappNumber')}</span>
                   </div>
                   {features.map((feature: string, index: number) => (
                     <div key={index} className="flex items-center gap-2">
@@ -182,7 +182,7 @@ export default function SubscriptionPlans() {
                   onClick={() => handleSubscribe(plan.id)}
                   disabled={isCurrentPlan || subscribe.isPending}
                 >
-                  {isCurrentPlan ? 'الباقة الحالية' : subscribe.isPending ? t('subscriptionPlansPage.text16') : t('subscriptionPlansPage.text17')}
+                  {isCurrentPlan ? t('subscriptionPlansPage.currentPlan') : subscribe.isPending ? t('subscriptionPlansPage.text16') : t('subscriptionPlansPage.text17')}
                 </Button>
               </CardFooter>
             </Card>
