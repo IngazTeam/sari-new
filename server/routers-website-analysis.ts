@@ -314,11 +314,9 @@ export const websiteAnalysisRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      // Include products when analysis is completed
+      // BUG FIX: Always include products — they may be saved before insights phase completes
       let extractedProductsList: any[] = [];
-      if (analysis.status === 'completed') {
-        extractedProductsList = await db.getExtractedProductsByAnalysisId(input.id);
-      }
+      extractedProductsList = await db.getExtractedProductsByAnalysisId(input.id);
 
       return { ...analysis, extractedProducts: extractedProductsList };
     }),

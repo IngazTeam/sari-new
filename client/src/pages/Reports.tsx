@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Download,
   Calendar,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrency } from "@/contexts/CurrencyContext";
@@ -35,6 +36,7 @@ export default function Reports() {
   const { toast } = useToast();
   const { formatCurrency } = useCurrency();
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
+  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch reports data
   const { data: salesReport, isLoading: loadingSales } =
@@ -46,12 +48,72 @@ export default function Reports() {
   const { data: conversationsReport, isLoading: loadingConversations } =
     trpc.reports.getConversationsReport.useQuery({ period });
 
-  const handleExportReport = (reportType: string) => {
+  // Export mutations — BUG FIX: was previously a TODO placeholder that only showed a toast
+  const exportPDFMutation = trpc.messageAnalytics.exportPDF.useMutation({
+    onSuccess: (data) => {
+      // Convert base64 to blob and trigger download
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast({ title: "تم التصدير", description: "تم تحميل التقرير بنجاح" });
+      setIsExporting(false);
+    },
+    onError: (error) => {
+      toast({ title: "خطأ في التصدير", description: error.message, variant: "destructive" });
+      setIsExporting(false);
+    },
+  });
+
+  const exportExcelMutation = trpc.messageAnalytics.exportExcel.useMutation({
+    onSuccess: (data) => {
+      const byteCharacters = atob(data.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = data.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast({ title: "تم التصدير", description: "تم تحميل التقرير بنجاح" });
+      setIsExporting(false);
+    },
+    onError: (error) => {
+      toast({ title: "خطأ في التصدير", description: error.message, variant: "destructive" });
+      setIsExporting(false);
+    },
+  });
+
+  const handleExportReport = (reportType: string, format: 'pdf' | 'excel' = 'pdf') => {
+    setIsExporting(true);
     toast({
       title: "جاري التصدير",
       description: `سيتم تحميل تقرير ${reportType} قريباً`,
     });
-    // TODO: Implement export functionality
+    const params = { startDate: undefined, endDate: undefined };
+    if (format === 'excel') {
+      exportExcelMutation.mutate(params);
+    } else {
+      exportPDFMutation.mutate(params);
+    }
   };
 
   return (
@@ -89,13 +151,24 @@ export default function Reports() {
         <TabsContent value="sales" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">{t('reportsPage.text8')}</h2>
-            <Button
-              variant="outline"
-              onClick={() => handleExportReport("المبيعات")}
-            >
-              <Download className="ml-2 h-4 w-4" />
-              تصدير PDF
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport("المبيعات", "pdf")}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />}
+                تصدير PDF
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport("المبيعات", "excel")}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />}
+                تصدير Excel
+              </Button>
+            </div>
           </div>
 
           {loadingSales ? (
@@ -216,13 +289,24 @@ export default function Reports() {
         <TabsContent value="customers" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">{t('reportsPage.text11')}</h2>
-            <Button
-              variant="outline"
-              onClick={() => handleExportReport("العملاء")}
-            >
-              <Download className="ml-2 h-4 w-4" />
-              تصدير PDF
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport("العملاء", "pdf")}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />}
+                تصدير PDF
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport("العملاء", "excel")}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />}
+                تصدير Excel
+              </Button>
+            </div>
           </div>
 
           {loadingCustomers ? (
@@ -344,13 +428,24 @@ export default function Reports() {
         <TabsContent value="conversations" className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold">{t('reportsPage.text14')}</h2>
-            <Button
-              variant="outline"
-              onClick={() => handleExportReport("المحادثات")}
-            >
-              <Download className="ml-2 h-4 w-4" />
-              تصدير PDF
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport("المحادثات", "pdf")}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />}
+                تصدير PDF
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExportReport("المحادثات", "excel")}
+                disabled={isExporting}
+              >
+                {isExporting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />}
+                تصدير Excel
+              </Button>
+            </div>
           </div>
 
           {loadingConversations ? (

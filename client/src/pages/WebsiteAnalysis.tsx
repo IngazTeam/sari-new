@@ -24,7 +24,8 @@ import {
   Loader2,
   ExternalLink,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -38,17 +39,32 @@ export default function WebsiteAnalysis() {
 
   // Queries
   const { data: analyses, isLoading: isLoadingAnalyses } = trpc.websiteAnalysis.listAnalyses.useQuery();
+  
+  // BUG FIX: Auto-poll every 3s when analysis is in progress so data appears as phases complete
   const { data: currentAnalysis } = trpc.websiteAnalysis.getAnalysis.useQuery(
     { id: selectedAnalysisId! },
-    { enabled: !!selectedAnalysisId }
+    { 
+      enabled: !!selectedAnalysisId,
+      refetchInterval: (query) => {
+        const data = query.state.data as any;
+        return data?.status === 'analyzing' ? 3000 : false;
+      },
+    }
   );
+  const isAnalyzing = currentAnalysis?.status === 'analyzing';
   const { data: extractedProducts } = trpc.websiteAnalysis.getExtractedProducts.useQuery(
     { analysisId: selectedAnalysisId! },
-    { enabled: !!selectedAnalysisId }
+    { 
+      enabled: !!selectedAnalysisId,
+      refetchInterval: isAnalyzing ? 5000 : false,
+    }
   );
   const { data: insights } = trpc.websiteAnalysis.getInsights.useQuery(
     { analysisId: selectedAnalysisId! },
-    { enabled: !!selectedAnalysisId }
+    { 
+      enabled: !!selectedAnalysisId,
+      refetchInterval: isAnalyzing ? 5000 : false,
+    }
   );
 
   // Mutations
@@ -95,6 +111,47 @@ export default function WebsiteAnalysis() {
     if (confirm('هل أنت متأكد من حذف هذا التحليل؟')) {
       deleteMutation.mutate({ id });
     }
+  };
+
+  // BUG FIX #4: Export analysis results as JSON
+  const handleExportAnalysis = () => {
+    if (!currentAnalysis) return;
+    const exportData = {
+      url: currentAnalysis.url,
+      title: currentAnalysis.title,
+      industry: currentAnalysis.industry,
+      scores: {
+        overall: currentAnalysis.overallScore,
+        seo: currentAnalysis.seoScore,
+        performance: currentAnalysis.performanceScore,
+        ux: currentAnalysis.uxScore,
+        contentQuality: currentAnalysis.contentQuality,
+      },
+      details: {
+        language: currentAnalysis.language,
+        wordCount: currentAnalysis.wordCount,
+        imageCount: currentAnalysis.imageCount,
+        videoCount: currentAnalysis.videoCount,
+        loadTime: currentAnalysis.loadTime,
+        pageSize: currentAnalysis.pageSize,
+        mobileOptimized: currentAnalysis.mobileOptimized,
+        hasWhatsapp: currentAnalysis.hasWhatsapp,
+      },
+      seoIssues: currentAnalysis.seoIssues,
+      products: extractedProducts || [],
+      insights: insights || [],
+      analyzedAt: currentAnalysis.createdAt,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `analysis-${(currentAnalysis.title || 'report').replace(/[^a-zA-Z0-9\u0600-\u06FF_-]/g, '_').substring(0, 50)}-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('تم تصدير التقرير بنجاح');
   };
 
   const getScoreColor = (score: number) => {
@@ -307,7 +364,8 @@ export default function WebsiteAnalysis() {
       </div>
 
       {/* Analysis Details */}
-      {currentAnalysis && currentAnalysis.status === 'completed' && (
+      {/* BUG FIX #5: Show details even during analysis — not only after completed */}
+      {currentAnalysis && (currentAnalysis.status === 'completed' || currentAnalysis.status === 'analyzing') && (
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -325,8 +383,20 @@ export default function WebsiteAnalysis() {
                   </a>
                 </CardDescription>
               </div>
-              <Badge variant="outline">{currentAnalysis.industry}</Badge>
+              <Badge variant="outline">{currentAnalysis.industry || 'جاري التحليل...'}</Badge>
+              {currentAnalysis.status === 'analyzing' && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  جاري التحليل...
+                </Badge>
+              )}
             </div>
+            {currentAnalysis.status === 'completed' && (
+              <Button variant="outline" size="sm" onClick={handleExportAnalysis}>
+                <Download className="h-4 w-4 ml-1" />
+                تصدير
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="overview">

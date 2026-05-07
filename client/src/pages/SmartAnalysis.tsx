@@ -24,25 +24,36 @@ import { useTranslation } from 'react-i18next';
 export default function SmartAnalysis() {
   const { t } = useTranslation();
   const [websiteUrl, setWebsiteUrl] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const utils = trpc.useUtils();
 
-  const { data: status, refetch: refetchStatus } = trpc.analysis.getStatus.useQuery();
+  // BUG FIX #3: Auto-poll status during analysis so results appear automatically
+  const { data: status, refetch: refetchStatus } = trpc.analysis.getStatus.useQuery(
+    undefined,
+    { refetchInterval: (query) => {
+      const data = query.state.data as any;
+      return data?.analysisStatus === 'analyzing' ? 3000 : false;
+    }}
+  );
   const { data: pages, refetch: refetchPages } = trpc.analysis.getDiscoveredPages.useQuery();
   const { data: faqs, refetch: refetchFaqs } = trpc.analysis.getExtractedFaqs.useQuery();
   const { data: stats } = trpc.analysis.getStats.useQuery();
 
+  // BUG FIX #3: Use mutation's isPending instead of manual state management
   const analyzeWebsite = trpc.analysis.analyzeWebsite.useMutation({
     onSuccess: (data) => {
-      setIsAnalyzing(false);
       toast.success("تم تحليل الموقع بنجاح!", {
         description: `تم اكتشاف ${data.pagesCount} صفحة و ${data.faqsCount} سؤال شائع`,
       });
+      // BUG FIX: Invalidate ALL related caches to force fresh data
+      utils.analysis.getStatus.invalidate();
+      utils.analysis.getDiscoveredPages.invalidate();
+      utils.analysis.getExtractedFaqs.invalidate();
+      utils.analysis.getStats.invalidate();
       refetchStatus();
       refetchPages();
       refetchFaqs();
     },
     onError: (error) => {
-      setIsAnalyzing(false);
       toast.error("فشل تحليل الموقع", {
         description: error.message,
       });
@@ -69,7 +80,6 @@ export default function SmartAnalysis() {
       return;
     }
 
-    setIsAnalyzing(true);
     analyzeWebsite.mutate({ websiteUrl });
   };
 
@@ -129,13 +139,13 @@ export default function SmartAnalysis() {
               placeholder="https://example.com"
               value={websiteUrl}
               onChange={(e) => setWebsiteUrl(e.target.value)}
-              disabled={isAnalyzing}
+              disabled={analyzeWebsite.isPending}
             />
             <Button
               onClick={handleAnalyze}
-              disabled={isAnalyzing || !websiteUrl}
+              disabled={analyzeWebsite.isPending || !websiteUrl}
             >
-              {isAnalyzing ? (
+              {analyzeWebsite.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   جاري التحليل...
