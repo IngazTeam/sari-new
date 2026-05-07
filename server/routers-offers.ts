@@ -86,7 +86,8 @@ export const offersRouter = router({
       }),
     
     // Update test result — SEC-03 FIX: Changed from publicProcedure to protectedProcedure
-    updateResult: protectedProcedure
+    // SEC-P3-002: Restrict to admin only — merchants have no legitimate reason to mutate AB test data
+    updateResult: adminProcedure
       .input(z.object({
         id: z.number(),
         shown: z.boolean().optional(),

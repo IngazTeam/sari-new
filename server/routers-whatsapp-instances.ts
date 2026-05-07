@@ -184,7 +184,13 @@ export const whatsappInstancesRouter = router({
                 apiUrl: z.string().url().optional(),
             })
         )
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            // SEC-P3-001: Verify caller has a merchant account
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Merchant not found' });
+            }
+
             try {
                 const baseUrl = input.apiUrl || 'https://api.green-api.com';
 
