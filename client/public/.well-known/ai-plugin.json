@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Sari AI - وكيل مبيعات ذكي",
+  "name_for_model": "sari_ai",
+  "description_for_human": "ساري - وكيل مبيعات ذكي بالذكاء الاصطناعي لأتمتة المبيعات عبر واتساب. يدعم سلة وزد وووكومرس.",
+  "description_for_model": "Sari AI is a WhatsApp sales automation platform for e-commerce merchants. It provides an AI chatbot that handles customer conversations, processes orders, recovers abandoned carts, sends marketing campaigns, manages loyalty programs, and provides analytics. It integrates with Salla, Zid, and WooCommerce platforms. Available in Arabic and English.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://sary.live/api/openapi.json"
+  },
+  "logo_url": "https://sary.live/sari-logo.png",
+  "contact_email": "support@sary.live",
+  "legal_info_url": "https://sary.live/company/terms"
+}

@@ -1,0 +1,41 @@
+# Sari AI — LLMs.txt
+
+> Sari is an AI-powered sales automation platform for WhatsApp, designed for e-commerce merchants in Saudi Arabia and the Arab world.
+
+## What is Sari?
+
+Sari (ساري) is a SaaS platform that connects to your online store (Salla, Zid, WooCommerce) and provides an AI chatbot on WhatsApp that can:
+
+- **Answer customer questions** about products, prices, and availability in natural Arabic conversation
+- **Process orders** directly through WhatsApp chat
+- **Recover abandoned carts** by sending smart follow-up messages
+- **Track shipments** and notify customers of delivery status
+- **Send marketing campaigns** to targeted customer segments
+- **Manage loyalty programs** with points and rewards
+- **Generate invoices** and payment links
+- **Provide 24/7 customer support** without human intervention
+
+## Key Features
+
+- AI Sales Agent: GPT-powered chatbot trained on your product catalog
+- Multi-Platform Integration: Salla, Zid, WooCommerce, and manual product entry
+- Campaign Automation: Scheduled campaigns, occasion-based messages, review requests
+- Customer Management: CRM with full conversation history and purchase analytics
+- Booking System: Appointment scheduling with calendar integration
+- Analytics Dashboard: Revenue tracking, conversation metrics, customer insights
+- Competitor Analysis: AI-powered market intelligence
+- Website Analysis: Extract product data from any website using AI
+
+## Pricing
+
+- Free Plan: Basic features, limited messages
+- Pro Plan: Full features, priority support
+- Advanced Plan: Enterprise features, custom integrations
+
+## Technology
+
+Built with React 19, tRPC, Drizzle ORM, and Express. Supports Arabic (RTL) and English.
+
+## Contact
+
+Website: https://sary.live

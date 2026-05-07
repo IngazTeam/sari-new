@@ -7,6 +7,7 @@ import { Send, Bot, User, Sparkles, MessageCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import SignupPromptDialog from '@/components/SignupPromptDialog';
+import { SeoHead, seoConfigs } from '@/components/SeoHead';
 import { useTranslation } from 'react-i18next';
 
 interface Message {
@@ -136,6 +137,7 @@ export default function TrySari() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col">
+      <SeoHead {...seoConfigs.trySari} />
       <Navbar />
       
       <main className="flex-1 container py-12">

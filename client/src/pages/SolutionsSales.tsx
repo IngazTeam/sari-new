@@ -8,6 +8,7 @@ export default function SolutionsSales() {
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
+      <SeoHead {...seoConfigs.solutionsSales} />
       {/* Hero Section */}
       <section className="container py-20">
         <div className="max-w-4xl mx-auto text-center">

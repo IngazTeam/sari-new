@@ -1,83 +1,83 @@
 {
   "default": {
-    "title": "Sari - AI Sales Agent for WhatsApp",
-    "description": "Automate your sales conversations on WhatsApp with AI. Increase sales, improve customer engagement, and save time with Sari's intelligent chatbot.",
-    "keywords": "WhatsApp sales, AI chatbot, sales automation, customer engagement, WhatsApp marketing",
-    "og:title": "Sari - AI Sales Agent for WhatsApp",
-    "og:description": "Automate your sales conversations on WhatsApp with AI",
-    "og:image": "https://sari.manus.space/og-image.png",
-    "og:url": "https://sari.manus.space",
+    "title": "ساري - وكيل مبيعات ذكي بالذكاء الاصطناعي للواتساب | Sari AI",
+    "description": "ساري منصة ذكاء اصطناعي تُدير مبيعاتك عبر واتساب تلقائياً. رد ذكي، طلبات تلقائية، سلات متروكة، تتبع شحنات، وتقارير متقدمة.",
+    "keywords": "واتساب بوت, ذكاء اصطناعي, أتمتة مبيعات, شات بوت واتساب, WhatsApp AI, مبيعات واتساب, سلة, زد, ووكومرس",
+    "og:title": "ساري - وكيل مبيعات ذكي بالذكاء الاصطناعي للواتساب",
+    "og:description": "أتمتة مبيعاتك عبر الواتساب باستخدام الذكاء الاصطناعي. ابدأ مجاناً!",
+    "og:image": "https://sary.live/og-image.png",
+    "og:url": "https://sary.live",
     "og:type": "website",
+    "og:site_name": "ساري | Sari",
+    "og:locale": "ar_SA",
     "twitter:card": "summary_large_image",
-    "twitter:title": "Sari - AI Sales Agent for WhatsApp",
-    "twitter:description": "Automate your sales conversations on WhatsApp with AI",
-    "twitter:image": "https://sari.manus.space/og-image.png",
-    "canonical": "https://sari.manus.space"
+    "twitter:title": "ساري - وكيل مبيعات ذكي للواتساب",
+    "twitter:description": "أتمتة مبيعاتك عبر الواتساب باستخدام الذكاء الاصطناعي",
+    "twitter:image": "https://sary.live/og-image.png",
+    "canonical": "https://sary.live"
   },
   "pages": {
-    "/products": {
-      "title": "Products - Sari",
-      "description": "Explore Sari's AI-powered products for sales, marketing, and customer support on WhatsApp",
-      "keywords": "WhatsApp products, AI sales tools, marketing automation, customer support",
-      "og:title": "Products - Sari",
-      "og:description": "Explore Sari's AI-powered products",
-      "og:url": "https://sari.manus.space/products"
-    },
     "/pricing": {
-      "title": "Pricing - Sari",
-      "description": "Simple, transparent pricing for Sari's AI sales automation. Choose the plan that fits your business",
-      "keywords": "WhatsApp pricing, AI chatbot cost, sales automation pricing",
-      "og:title": "Pricing - Sari",
-      "og:description": "Simple, transparent pricing for Sari's AI sales automation",
-      "og:url": "https://sari.manus.space/pricing"
+      "title": "الأسعار والباقات | ساري - وكيل مبيعات ذكي",
+      "description": "اختر الباقة المناسبة لمتجرك. باقات مرنة تبدأ من المجاني حتى المتقدم. أتمتة مبيعات واتساب بأسعار تنافسية.",
+      "keywords": "أسعار ساري, باقات واتساب, اشتراك شات بوت, تسعير أتمتة مبيعات",
+      "og:title": "الأسعار والباقات | ساري",
+      "og:description": "باقات مرنة تناسب جميع أحجام الأعمال",
+      "og:url": "https://sary.live/pricing"
+    },
+    "/try-sari": {
+      "title": "جرب ساري مجاناً | تجربة وكيل المبيعات الذكي",
+      "description": "جرب وكيل مبيعات ساري الذكي مباشرة. شاهد كيف يتعامل مع العملاء ويعالج الطلبات عبر واتساب.",
+      "keywords": "تجربة ساري, تجربة مجانية, شات بوت مجاني, واتساب بوت تجربة",
+      "og:title": "جرب ساري مجاناً",
+      "og:description": "جرب وكيل المبيعات الذكي مباشرة",
+      "og:url": "https://sary.live/try-sari"
     },
     "/solutions/sales": {
-      "title": "Sales Solutions - Sari",
-      "description": "Automate your sales process with Sari's AI-powered WhatsApp sales agent",
-      "keywords": "WhatsApp sales, sales automation, AI sales agent, sales chatbot",
-      "og:title": "Sales Solutions - Sari",
-      "og:description": "Automate your sales process with Sari's AI-powered WhatsApp sales agent",
-      "og:url": "https://sari.manus.space/solutions/sales"
+      "title": "حلول المبيعات | ساري - أتمتة مبيعات واتساب",
+      "description": "حوّل واتساب إلى قناة مبيعات قوية. رد تلقائي ذكي، طلبات فورية، وتوصيات منتجات بالذكاء الاصطناعي.",
+      "keywords": "مبيعات واتساب, أتمتة مبيعات, بوت مبيعات, قناة مبيعات واتساب",
+      "og:title": "حلول المبيعات | ساري",
+      "og:description": "حوّل واتساب إلى قناة مبيعات قوية",
+      "og:url": "https://sary.live/solutions/sales"
     },
     "/solutions/marketing": {
-      "title": "Marketing Solutions - Sari",
-      "description": "Boost your marketing campaigns with Sari's AI-powered WhatsApp marketing automation",
-      "keywords": "WhatsApp marketing, marketing automation, customer engagement, campaign automation",
-      "og:title": "Marketing Solutions - Sari",
-      "og:description": "Boost your marketing campaigns with Sari's AI-powered WhatsApp marketing automation",
-      "og:url": "https://sari.manus.space/solutions/marketing"
+      "title": "حلول التسويق | ساري - تسويق واتساب ذكي",
+      "description": "أطلق حملات تسويقية ذكية عبر واتساب. رسائل مخصصة، حملات مجدولة، وتحليلات متقدمة.",
+      "keywords": "تسويق واتساب, حملات واتساب, رسائل تسويقية, إعلانات واتساب",
+      "og:title": "حلول التسويق | ساري",
+      "og:description": "أطلق حملات تسويقية ذكية عبر واتساب",
+      "og:url": "https://sary.live/solutions/marketing"
     },
     "/solutions/support": {
-      "title": "Support Solutions - Sari",
-      "description": "Provide excellent customer support on WhatsApp with Sari's AI-powered support agent",
-      "keywords": "WhatsApp support, customer service, support automation, AI support",
-      "og:title": "Support Solutions - Sari",
-      "og:description": "Provide excellent customer support on WhatsApp with Sari's AI-powered support agent",
-      "og:url": "https://sari.manus.space/solutions/support"
+      "title": "حلول الدعم | ساري - دعم عملاء واتساب 24/7",
+      "description": "وفر دعم عملاء على مدار الساعة عبر واتساب بدون تدخل بشري. ردود فورية وذكية.",
+      "keywords": "دعم عملاء واتساب, خدمة عملاء ذكية, بوت دعم فني, واتساب دعم 24/7",
+      "og:title": "حلول الدعم | ساري",
+      "og:description": "دعم عملاء ذكي على مدار الساعة",
+      "og:url": "https://sary.live/solutions/support"
     },
     "/resources/blog": {
-      "title": "Blog - Sari",
-      "description": "Read articles and tips about WhatsApp sales, AI chatbots, and customer engagement",
-      "keywords": "WhatsApp blog, sales tips, AI chatbot guide, customer engagement",
-      "og:title": "Blog - Sari",
-      "og:description": "Read articles and tips about WhatsApp sales and AI chatbots",
-      "og:url": "https://sari.manus.space/resources/blog"
+      "title": "المدونة | ساري - نصائح المبيعات والتسويق",
+      "description": "اقرأ أحدث المقالات والنصائح حول أتمتة المبيعات والتسويق عبر واتساب.",
+      "keywords": "مدونة ساري, نصائح مبيعات, تسويق واتساب, مقالات تجارة إلكترونية",
+      "og:title": "المدونة | ساري",
+      "og:description": "نصائح وأخبار عن المبيعات والتسويق",
+      "og:url": "https://sary.live/resources/blog"
     },
     "/company/about": {
-      "title": "About Sari",
-      "description": "Learn about Sari, the AI sales agent for WhatsApp. Our mission, team, and vision",
-      "keywords": "about Sari, company information, AI sales automation",
-      "og:title": "About Sari",
-      "og:description": "Learn about Sari, the AI sales agent for WhatsApp",
-      "og:url": "https://sari.manus.space/company/about"
+      "title": "عن ساري | قصتنا ورؤيتنا",
+      "description": "تعرف على ساري — المنصة السعودية لأتمتة المبيعات عبر واتساب بالذكاء الاصطناعي.",
+      "og:title": "عن ساري",
+      "og:description": "تعرف على قصة ساري ورؤيتنا",
+      "og:url": "https://sary.live/company/about"
     },
     "/company/contact": {
-      "title": "Contact Sari",
-      "description": "Get in touch with Sari's team. We're here to help you with any questions",
-      "keywords": "contact Sari, customer support, sales inquiry",
-      "og:title": "Contact Sari",
-      "og:description": "Get in touch with Sari's team",
-      "og:url": "https://sari.manus.space/company/contact"
+      "title": "اتصل بنا | ساري",
+      "description": "تواصل مع فريق ساري للاستفسارات والدعم الفني. نحن هنا لمساعدتك.",
+      "og:title": "اتصل بنا | ساري",
+      "og:description": "تواصل معنا للدعم والاستفسارات",
+      "og:url": "https://sary.live/company/contact"
     }
   }
 }
