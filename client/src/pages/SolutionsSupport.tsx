@@ -2,14 +2,14 @@ import { Link } from "wouter";
 import { ArrowRight, Headphones, Zap, Clock, Users, MessageCircle, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { SeoHead, seoConfigs } from '@/components/SeoHead';
+import { SeoHead, useSeoConfig } from '@/components/SeoHead';
 import { useTranslation } from 'react-i18next';
 
 export default function SolutionsSupport() {
   const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
-      <SeoHead {...seoConfigs.solutionsSupport} />
+      <SeoHead {...useSeoConfig('solutionsSupport')} />
       {/* Hero Section */}
       <section className="container py-20">
         <div className="max-w-4xl mx-auto text-center">

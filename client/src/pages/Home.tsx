@@ -2,7 +2,7 @@ import { Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { SeoHead, seoConfigs } from '@/components/SeoHead';
+import { SeoHead, useSeoConfig } from '@/components/SeoHead';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import LiveChatDemo from '@/components/LiveChatDemo';
@@ -226,7 +226,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <SeoHead {...seoConfigs.home} />
+      <SeoHead {...useSeoConfig('home')} />
       <Navbar />
 
       {/* Hero Section */}

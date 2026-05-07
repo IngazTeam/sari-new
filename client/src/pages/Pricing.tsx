@@ -1,5 +1,5 @@
 import Navbar from '@/components/Navbar';
-import { SeoHead, seoConfigs } from '@/components/SeoHead';
+import { SeoHead, useSeoConfig } from '@/components/SeoHead';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,7 +45,7 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <SeoHead {...seoConfigs.pricing} />
+      <SeoHead {...useSeoConfig('pricing')} />
       <Navbar />
 
       {/* Hero Section */}
