@@ -37,12 +37,13 @@ export const authLimiter = rateLimit({
 
 /**
  * API Rate Limiter
- * Limits: 100 requests per minute
+ * Limits: 300 requests per minute
  * Applied to: /api/trpc routes
+ * Note: Dashboard pages fire 10-15 queries on load — 100/min was too aggressive
  */
 export const apiLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
-    max: 100, // 100 requests per minute
+    max: 300, // 300 requests per minute
     message: 'Too many API requests. Please slow down.',
     standardHeaders: true,
     legacyHeaders: false,

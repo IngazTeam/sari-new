@@ -259,87 +259,108 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
 
-    // Initialize Salla cron jobs
-    initializeSallaCronJobs();
+    // ─── Cluster-Safe Background Jobs ──────────────────────────
+    // In PM2 cluster mode, only the primary worker (instance 0) runs cron jobs.
+    // This prevents duplicate campaign sends, duplicate WhatsApp messages, etc.
+    const isPrimaryWorker = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0';
 
-    // Initialize Order Tracking cron job
-    startOrderTrackingJob();
+    if (isPrimaryWorker) {
+      console.log('[Cluster] This is the PRIMARY worker — initializing cron jobs and polling');
 
-    // Initialize Abandoned Cart Recovery cron job
-    startAbandonedCartJob();
+      // Initialize Salla cron jobs
+      initializeSallaCronJobs();
 
-    // Initialize Review Request cron job (runs daily at 10:00 AM)
-    startReviewRequestJob();
+      // Initialize Order Tracking cron job
+      startOrderTrackingJob();
 
-    // Initialize Scheduled Campaigns cron job (runs every minute)
-    startScheduledCampaignsJob();
+      // Initialize Abandoned Cart Recovery cron job
+      startAbandonedCartJob();
 
-    // Initialize Scheduled Messages cron job (runs every minute)
-    startScheduledMessagesJob();
+      // Initialize Review Request cron job (runs daily at 10:00 AM)
+      startReviewRequestJob();
 
-    // Initialize Usage Alerts cron job (runs every hour)
-    startUsageAlertsCron();
+      // Initialize Scheduled Campaigns cron job (runs every minute)
+      startScheduledCampaignsJob();
 
-    // Initialize Subscription Expiry Alerts cron job (runs daily at 9:00 AM)
-    startSubscriptionExpiryCron();
+      // Initialize Scheduled Messages cron job (runs every minute)
+      startScheduledMessagesJob();
 
-    // Initialize Appointment Reminders cron job (runs every hour)
-    startCronJobs();
+      // Initialize Usage Alerts cron job (runs every hour)
+      startUsageAlertsCron();
 
-    // Initialize Google Sheets Reports cron jobs (daily/weekly/monthly)
-    startAllSheetsCronJobs();
+      // Initialize Subscription Expiry Alerts cron job (runs daily at 9:00 AM)
+      startSubscriptionExpiryCron();
 
-    // Initialize Weekly Report cron job (runs every Sunday at 9:00 AM)
-    initWeeklyReportCron();
+      // Initialize Appointment Reminders cron job (runs every hour)
+      startCronJobs();
 
-    // Initialize Subscription Management cron jobs
-    startSubscriptionJobs();
+      // Initialize Google Sheets Reports cron jobs (daily/weekly/monthly)
+      startAllSheetsCronJobs();
 
-    // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
-    cron.schedule('0 9 * * *', async () => {
-      try {
-        console.log('[Cron] Running occasion campaigns check...');
-        await runOccasionCampaignsCron();
-      } catch (error) {
-        logError('[Cron] Occasion campaigns failed', error);
-      }
-    });
+      // Initialize Weekly Report cron job (runs every Sunday at 9:00 AM)
+      initWeeklyReportCron();
 
-    // Instance Expiry Check (runs daily at 8 AM)
-    cron.schedule('0 8 * * *', async () => {
-      try {
-        console.log('[Cron] Running instance expiry check...');
-        const { checkInstanceExpiry } = await import('../jobs/instance-expiry-check');
-        await checkInstanceExpiry();
-      } catch (error) {
-        logError('[Cron] Instance expiry check failed', error);
-      }
-    });
+      // Initialize Subscription Management cron jobs
+      startSubscriptionJobs();
 
-    // Monthly Usage Reset (runs on the 1st of each month at 00:00)
-    cron.schedule('0 0 1 * *', async () => {
-      try {
-        console.log('[Cron] Running monthly usage reset...');
-        const { resetMonthlyUsage } = await import('../usage-tracking');
-        await resetMonthlyUsage();
-      } catch (error) {
-        logError('[Cron] Monthly usage reset failed', error);
-      }
-    });
+      // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
+      cron.schedule('0 9 * * *', async () => {
+        try {
+          console.log('[Cron] Running occasion campaigns check...');
+          await runOccasionCampaignsCron();
+        } catch (error) {
+          logError('[Cron] Occasion campaigns failed', error);
+        }
+      });
 
-    // Start WhatsApp message polling for all connected merchants
-    // This is used for free Green API accounts that don't support webhooks
-    setTimeout(async () => {
-      console.log('[Polling] Initializing WhatsApp message polling...');
-      await startAllPolling();
-    }, 5000); // Wait 5 seconds for server to fully initialize
+      // Instance Expiry Check (runs daily at 8 AM)
+      cron.schedule('0 8 * * *', async () => {
+        try {
+          console.log('[Cron] Running instance expiry check...');
+          const { checkInstanceExpiry } = await import('../jobs/instance-expiry-check');
+          await checkInstanceExpiry();
+        } catch (error) {
+          logError('[Cron] Instance expiry check failed', error);
+        }
+      });
+
+      // Monthly Usage Reset (runs on the 1st of each month at 00:00)
+      cron.schedule('0 0 1 * *', async () => {
+        try {
+          console.log('[Cron] Running monthly usage reset...');
+          const { resetMonthlyUsage } = await import('../usage-tracking');
+          await resetMonthlyUsage();
+        } catch (error) {
+          logError('[Cron] Monthly usage reset failed', error);
+        }
+      });
+
+      // Start WhatsApp message polling for all connected merchants
+      // This is used for free Green API accounts that don't support webhooks
+      setTimeout(async () => {
+        console.log('[Polling] Initializing WhatsApp message polling...');
+        await startAllPolling();
+      }, 5000); // Wait 5 seconds for server to fully initialize
+
+    } else {
+      console.log(`[Cluster] Worker ${process.env.NODE_APP_INSTANCE} — skipping cron jobs (handled by primary)`);
+    }
 
     // Graceful shutdown handlers
     const gracefulShutdown = async (signal: string) => {
       console.log(`\n[Server] Received ${signal}. Starting graceful shutdown...`);
 
-      server.close(() => {
+      server.close(async () => {
         console.log('[Server] HTTP server closed');
+
+        // Close database connection pool
+        try {
+          const { closeDb } = await import('../db');
+          await closeDb();
+        } catch (e) {
+          console.error('[Server] Error closing DB pool:', e);
+        }
+
         console.log('[Server] Graceful shutdown completed');
         process.exit(0);
       });

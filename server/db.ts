@@ -245,19 +245,64 @@ import {
   NewTapSettings,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import mysql from "mysql2/promise";
 
+// ─── Connection Pool Configuration ───────────────────────────
+// Sized for 2000+ merchants with concurrent access
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: mysql.Pool | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      // Parse DATABASE_URL for pool config
+      const dbUrl = new URL(process.env.DATABASE_URL);
+      const sslParam = dbUrl.searchParams.get('ssl');
+
+      _pool = mysql.createPool({
+        host: dbUrl.hostname,
+        port: parseInt(dbUrl.port) || 3306,
+        user: dbUrl.username,
+        password: decodeURIComponent(dbUrl.password),
+        database: dbUrl.pathname.slice(1), // remove leading /
+        
+        // Pool sizing — handles ~2000 concurrent merchants
+        connectionLimit: 25,       // Max simultaneous connections
+        maxIdle: 10,               // Keep 10 idle connections warm
+        idleTimeout: 60000,        // Close idle connections after 60s
+        enableKeepAlive: true,     // Prevent TCP timeout on cloud DBs
+        keepAliveInitialDelay: 30000, // Keep-alive every 30s
+        
+        // Queue management — prevents memory exhaustion under load
+        waitForConnections: true,  // Queue requests when pool is full
+        queueLimit: 100,           // Max queued requests (reject after this)
+        
+        // SSL for production databases (TiDB, DigitalOcean, etc.)
+        ...(sslParam ? { ssl: JSON.parse(sslParam) } : {}),
+      });
+
+      _db = drizzle({ client: _pool });
+      console.log('[Database] ✅ Connection pool initialized (25 connections, queue limit: 100)');
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      _pool = null;
     }
   }
   return _db;
+}
+
+/**
+ * Gracefully close the connection pool
+ * Called during server shutdown
+ */
+export async function closeDb(): Promise<void> {
+  if (_pool) {
+    await _pool.end();
+    _pool = null;
+    _db = null;
+    console.log('[Database] Connection pool closed');
+  }
 }
 
 // ============================================
