@@ -187,6 +187,27 @@ export const whatsappInstancesRouter = router({
         .mutation(async ({ input }) => {
             try {
                 const baseUrl = input.apiUrl || 'https://api.green-api.com';
+
+                // SEC-P2-001: SSRF guard — only allow Green API domains
+                try {
+                    const parsed = new URL(baseUrl);
+                    const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+                    const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
+                    if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+                        return {
+                            success: false,
+                            status: 'error',
+                            message: 'Only Green API URLs are allowed',
+                        };
+                    }
+                } catch {
+                    return {
+                        success: false,
+                        status: 'error',
+                        message: 'Invalid API URL format',
+                    };
+                }
+
                 const url = `${baseUrl}/waInstance${input.instanceId}/getStateInstance/${input.token}`;
 
                 const response = await fetch(url);
