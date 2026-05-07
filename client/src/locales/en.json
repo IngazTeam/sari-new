@@ -6495,7 +6495,15 @@
   "wizardProductsServicesStepPage": {
     "text0": "Name *",
     "text1": "Description (optional)",
-    "text2": "Price (SAR) *"
+    "text2": "Price (SAR) *",
+    "text3": "Add product name and clear description to help customers understand the product",
+    "text4": "Set the price accurately to facilitate sales via WhatsApp",
+    "text5": "You can add product images later from the Products page",
+    "text6": "Write a clear service description including duration and terms",
+    "text7": "Set the service price or price range if applicable",
+    "text8": "You can add additional details later from the Services page",
+    "text9": "Products",
+    "text10": "Services"
   },
   "wizardTemplatesStepPage": {
     "text0": "Template applied successfully! Products, services, and settings from the template have been added.",
