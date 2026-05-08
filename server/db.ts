@@ -4297,6 +4297,19 @@ export async function updateKeywordStatus(
 }
 
 /**
+ * الحصول على كلمة مفتاحية بالـ ID
+ */
+export async function getKeywordAnalysisById(keywordId: number) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+
+  const results = await db.select().from(keywordAnalysis)
+    .where(eq(keywordAnalysis.id, keywordId))
+    .limit(1);
+  return results[0] || null;
+}
+
+/**
  * حذف كلمة مفتاحية
  */
 export async function deleteKeywordAnalysis(keywordId: number) {
@@ -6452,6 +6465,15 @@ export async function getReviewsByService(serviceId: number) {
       eq(bookingReviews.isPublic, 1)
     ))
     .orderBy(desc(bookingReviews.createdAt));
+}
+
+export async function getBookingReviewById(reviewId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const results = await db.select().from(bookingReviews)
+    .where(eq(bookingReviews.id, reviewId))
+    .limit(1);
+  return results[0] || null;
 }
 
 export async function replyToReview(reviewId: number, reply: string) {

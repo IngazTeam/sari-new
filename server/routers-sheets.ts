@@ -42,6 +42,16 @@ export const sheetsRouter = router({
       orderId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
+      // SECURITY: Verify order belongs to this merchant
+      const order = await db.getOrderById(input.orderId);
+      if (!order) {
+        throw new Error('Order not found');
+      }
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant || order.merchantId !== merchant.id) {
+        throw new Error('Access denied');
+      }
+
       return await sheetsSync.syncOrderToSheets(input.orderId);
     }),
 

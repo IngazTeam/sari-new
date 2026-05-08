@@ -81,7 +81,18 @@ export const keywordsRouter = router({
             keywordId: z.number(),
             status: z.enum(['new', 'reviewed', 'response_created', 'ignored']),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            // SECURITY: Verify keyword belongs to this merchant
+            const keyword = await db.getKeywordAnalysisById(input.keywordId);
+            if (!keyword || keyword.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
             await db.updateKeywordStatus(input.keywordId, input.status);
             return { success: true };
         }),
@@ -91,7 +102,18 @@ export const keywordsRouter = router({
         .input(z.object({
             keywordId: z.number(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            // SECURITY: Verify keyword belongs to this merchant
+            const keyword = await db.getKeywordAnalysisById(input.keywordId);
+            if (!keyword || keyword.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
             await db.deleteKeywordAnalysis(input.keywordId);
             return { success: true };
         }),

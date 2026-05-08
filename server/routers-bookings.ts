@@ -258,7 +258,17 @@ export const bookingsRouter = router({
             date: z.string(),
             staffId: z.number().optional(),
         }))
-        .query(async ({ input }) => {
+        .query(async ({ ctx, input }) => {
+            // SECURITY: Verify service belongs to this merchant
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+            const service = await db.getServiceById(input.serviceId);
+            if (!service || service.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
             const slots = await db.getAvailableTimeSlots(
                 input.serviceId,
                 input.date,
