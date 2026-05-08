@@ -63,8 +63,12 @@ export const abTestsRouter = router({
         .input(z.object({
             testId: z.number(),
         }))
-        .query(async ({ input }) => {
-            return await db.getABTestById(input.testId);
+        .query(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const test = await db.getABTestById(input.testId);
+            if (!test || test.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            return test;
         }),
 
     // Declare winner
@@ -73,10 +77,12 @@ export const abTestsRouter = router({
             testId: z.number(),
             winner: z.enum(['variant_a', 'variant_b', 'no_winner']),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             const test = await db.getABTestById(input.testId);
-            if (!test) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Test not found' });
+            if (!test || test.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
             const totalA = test.variantAUsageCount;
@@ -107,7 +113,11 @@ export const abTestsRouter = router({
         .input(z.object({
             testId: z.number(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const test = await db.getABTestById(input.testId);
+            if (!test || test.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             await db.pauseABTest(input.testId);
             return { success: true };
         }),
@@ -117,7 +127,11 @@ export const abTestsRouter = router({
         .input(z.object({
             testId: z.number(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const test = await db.getABTestById(input.testId);
+            if (!test || test.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             await db.resumeABTest(input.testId);
             return { success: true };
         }),

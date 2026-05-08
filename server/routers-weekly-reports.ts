@@ -30,8 +30,12 @@ export const weeklyReportsRouter = router({
         .input(z.object({
             reportId: z.number(),
         }))
-        .query(async ({ input }) => {
-            return await db.getWeeklySentimentReportById(input.reportId);
+        .query(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const report = await db.getWeeklySentimentReportById(input.reportId);
+            if (!report || report.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            return report;
         }),
 
     // Generate test report (for current week)
