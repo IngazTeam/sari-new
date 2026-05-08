@@ -858,11 +858,7 @@ function Router() {
         </DashboardLayout>
       </Route>
 
-      <Route path="/admin/google-oauth">
-        <DashboardLayout>
-          <AdminGoogleOAuth />
-        </DashboardLayout>
-      </Route>
+
 
       <Route path="/admin/data-sync">
         <DashboardLayout>
