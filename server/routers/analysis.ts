@@ -11,6 +11,19 @@ import {
   type ExtractedFAQ,
 } from "../_core/websiteAnalyzer";
 
+/**
+ * Helper: Get merchant or throw
+ * FIX: ctx.user.id is the USER id, not the MERCHANT id.
+ * All DB functions expect merchant.id, so we must look it up first.
+ */
+async function getMerchantOrThrow(userId: number) {
+  const merchant = await db.getMerchantByUserId(userId);
+  if (!merchant) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
+  }
+  return merchant;
+}
+
 export const analysisRouter = router({
   /**
    * Analyze Website - Full Analysis
@@ -23,7 +36,8 @@ export const analysisRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
-        const merchantId = ctx.user.id;
+        const merchant = await getMerchantOrThrow(ctx.user.id);
+        const merchantId = merchant.id;
 
         // Update status to analyzing
         await db.updateMerchantWebsiteInfo({
@@ -155,10 +169,13 @@ export const analysisRouter = router({
         };
       } catch (error: any) {
         // Update status to failed
-        await db.updateMerchantWebsiteInfo({
-          merchantId: ctx.user.id,
-          analysisStatus: "failed",
-        });
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (merchant) {
+          await db.updateMerchantWebsiteInfo({
+            merchantId: merchant.id,
+            analysisStatus: "failed",
+          });
+        }
 
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -171,7 +188,15 @@ export const analysisRouter = router({
    * Get Analysis Status
    */
   getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const info = await db.getMerchantWebsiteInfo(ctx.user.id);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) {
+      return {
+        hasWebsite: false,
+        analysisStatus: "pending",
+      };
+    }
+
+    const info = await db.getMerchantWebsiteInfo(merchant.id);
     if (!info) {
       return {
         hasWebsite: false,
@@ -179,7 +204,7 @@ export const analysisRouter = router({
       };
     }
 
-    const stats = await db.getAnalysisStats(ctx.user.id);
+    const stats = await db.getAnalysisStats(merchant.id);
 
     return {
       hasWebsite: !!info.websiteUrl,
@@ -195,7 +220,8 @@ export const analysisRouter = router({
    * Get Discovered Pages
    */
   getDiscoveredPages: protectedProcedure.query(async ({ ctx }) => {
-    return await db.getDiscoveredPagesByMerchantId(ctx.user.id);
+    const merchant = await getMerchantOrThrow(ctx.user.id);
+    return await db.getDiscoveredPagesByMerchantId(merchant.id);
   }),
 
   /**
@@ -217,7 +243,8 @@ export const analysisRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      return await db.getDiscoveredPagesByType(ctx.user.id, input.pageType);
+      const merchant = await getMerchantOrThrow(ctx.user.id);
+      return await db.getDiscoveredPagesByType(merchant.id, input.pageType);
     }),
 
   /**
@@ -254,7 +281,8 @@ export const analysisRouter = router({
    * Get Extracted FAQs
    */
   getExtractedFaqs: protectedProcedure.query(async ({ ctx }) => {
-    return await db.getExtractedFaqsByMerchantId(ctx.user.id);
+    const merchant = await getMerchantOrThrow(ctx.user.id);
+    return await db.getExtractedFaqsByMerchantId(merchant.id);
   }),
 
   /**
@@ -263,14 +291,16 @@ export const analysisRouter = router({
   getFaqsByCategory: protectedProcedure
     .input(z.object({ category: z.string() }))
     .query(async ({ ctx, input }) => {
-      return await db.getExtractedFaqsByCategory(ctx.user.id, input.category);
+      const merchant = await getMerchantOrThrow(ctx.user.id);
+      return await db.getExtractedFaqsByCategory(merchant.id, input.category);
     }),
 
   /**
    * Get Active FAQs for Bot
    */
   getActiveFaqsForBot: protectedProcedure.query(async ({ ctx }) => {
-    return await db.getActiveFaqsForBot(ctx.user.id);
+    const merchant = await getMerchantOrThrow(ctx.user.id);
+    return await db.getActiveFaqsForBot(merchant.id);
   }),
 
   /**
@@ -310,13 +340,15 @@ export const analysisRouter = router({
   searchFaqs: protectedProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ ctx, input }) => {
-      return await db.searchFaqsByQuestion(ctx.user.id, input.query);
+      const merchant = await getMerchantOrThrow(ctx.user.id);
+      return await db.searchFaqsByQuestion(merchant.id, input.query);
     }),
 
   /**
    * Get Analysis Statistics
    */
   getStats: protectedProcedure.query(async ({ ctx }) => {
-    return await db.getAnalysisStats(ctx.user.id);
+    const merchant = await getMerchantOrThrow(ctx.user.id);
+    return await db.getAnalysisStats(merchant.id);
   }),
 });
