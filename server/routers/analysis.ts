@@ -77,17 +77,19 @@ export const analysisRouter = router({
         // Delete old pages
         await db.deleteAllDiscoveredPages(merchantId);
 
-        // Save discovered pages
+        // Save discovered pages (initially without content — content added during crawl)
+        const savedPageIds: Map<string, number> = new Map();
         for (const page of pages) {
-          await db.createDiscoveredPage({
+          const pageId = await db.createDiscoveredPage({
             merchantId,
             pageType: page.pageType,
             title: page.title,
             url: page.url,
           });
+          savedPageIds.set(page.url, pageId);
         }
 
-        // 4. Extract FAQs from each FAQ/shipping/returns page
+        // 4. Extract FAQs from each FAQ/shipping/returns page — and save page content for bot
         let allFaqs: ExtractedFAQ[] = [];
 
         const faqPages = pages.filter(p => ['faq', 'shipping', 'returns'].includes(p.pageType));
@@ -95,6 +97,15 @@ export const analysisRouter = router({
           try {
             const pageScrape = await scrapeWebsite(page.url);
             const pageDoc = pageScrape.dom.window.document;
+            const pageText = pageScrape.text;
+
+            // Save page content for bot context (truncated to 2000 chars)
+            const pageId = savedPageIds.get(page.url);
+            if (pageId && pageText.length > 20) {
+              await db.updateDiscoveredPage(pageId, {
+                content: pageText.substring(0, 2000),
+              });
+            }
 
             // Extract FAQs using common selectors
             pageDoc.querySelectorAll('.faq, .faqs, [class*="faq"], [class*="question"], .accordion, details, [class*="accordion"]').forEach((el: any) => {
@@ -121,12 +132,21 @@ export const analysisRouter = router({
           }
         }
 
-        // Also extract contact info from contact/about pages
+        // Also extract contact info and save content from contact/about pages
         const contactPages = pages.filter(p => ['contact', 'about'].includes(p.pageType));
         for (const page of contactPages.slice(0, 2)) {
           try {
             const pageScrape = await scrapeWebsite(page.url);
             const contactInfo = extractContactInfo(pageScrape.dom, pageScrape.text, pageScrape.html);
+
+            // Save page content for bot context
+            const pageId = savedPageIds.get(page.url);
+            if (pageId && pageScrape.text.length > 20) {
+              await db.updateDiscoveredPage(pageId, {
+                content: pageScrape.text.substring(0, 2000),
+              });
+            }
+
             // Save phone/whatsapp to merchant if not already set
             const updateData: Record<string, any> = {};
             if (contactInfo.phones.length > 0) updateData.phone = contactInfo.phones[0];
@@ -142,7 +162,7 @@ export const analysisRouter = router({
         // Delete old FAQs
         await db.deleteAllExtractedFaqs(merchantId);
 
-        // Save extracted FAQs
+        // Save extracted FAQs — auto-enable for bot usage
         for (const faq of allFaqs) {
           await db.createExtractedFaq({
             merchantId,

@@ -324,6 +324,7 @@ async function searchRelevantProducts(
 
 /**
  * Generate enhanced context-aware prompt
+ * Injects: products, FAQs, store policies, and merchant info into the AI context
  */
 async function buildEnhancedContextPrompt(context: {
   customerName?: string;
@@ -368,6 +369,51 @@ async function buildEnhancedContextPrompt(context: {
     contextPrompt += `\n⚠️ استخدم فقط المنتجات المذكورة أعلاه. لا تخترع منتجات أخرى!\n`;
   } else {
     contextPrompt += `\n⚠️ لا توجد منتجات متاحة حالياً. اعتذر بلطف وانصح بالتواصل مع الدعم.\n`;
+  }
+
+  // === Inject FAQs from website analysis ===
+  if (context.merchantId) {
+    try {
+      const faqs = await db.getActiveFaqsForBot(context.merchantId);
+      if (faqs.length > 0) {
+        contextPrompt += `\n## الأسئلة الشائعة عن المتجر:\n`;
+        contextPrompt += `استخدم هذه المعلومات للرد على أسئلة العملاء عن الشحن والاسترجاع وغيرها:\n\n`;
+        for (const faq of faqs.slice(0, 15)) { // Max 15 FAQs to stay within token limits
+          contextPrompt += `**س:** ${faq.question}\n`;
+          contextPrompt += `**ج:** ${faq.answer}\n\n`;
+        }
+      }
+    } catch (error) {
+      // Silent fail — FAQs are supplementary
+      console.warn('[chatWithSari] Failed to load FAQs for bot context:', error);
+    }
+  }
+
+  // === Inject store policies from discovered pages ===
+  if (context.merchantId) {
+    try {
+      const pages = await db.getDiscoveredPagesByMerchantId(context.merchantId);
+      const policyPages = pages.filter((p: any) =>
+        ['shipping', 'returns', 'faq', 'about'].includes(p.pageType) && p.content
+      );
+      if (policyPages.length > 0) {
+        contextPrompt += `\n## سياسات المتجر:\n`;
+        for (const page of policyPages.slice(0, 4)) { // Max 4 pages
+          const typeLabels: Record<string, string> = {
+            shipping: 'سياسة الشحن والتوصيل',
+            returns: 'سياسة الاسترجاع والاستبدال',
+            faq: 'أسئلة شائعة',
+            about: 'عن المتجر',
+          };
+          contextPrompt += `### ${typeLabels[page.pageType] || page.title}:\n`;
+          contextPrompt += `${page.content.substring(0, 400)}\n\n`;
+        }
+        contextPrompt += `⚠️ عند سؤال العميل عن الشحن أو الاسترجاع، استخدم المعلومات أعلاه بدلاً من الاختراع.\n`;
+      }
+    } catch (error) {
+      // Silent fail — policies are supplementary
+      console.warn('[chatWithSari] Failed to load policies for bot context:', error);
+    }
   }
 
   return contextPrompt;
