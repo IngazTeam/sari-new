@@ -104,6 +104,12 @@ export async function getOrCreateLoyaltySettings(merchantId: number) {
   return getLoyaltySettings(merchantId);
 }
 
+/**
+ * Alias for getOrCreateLoyaltySettings
+ * Used by routers-loyalty.ts
+ */
+export const initializeLoyaltySettings = getOrCreateLoyaltySettings;
+
 // ==================== Loyalty Tiers ====================
 
 export async function getLoyaltyTiers(merchantId: number) {

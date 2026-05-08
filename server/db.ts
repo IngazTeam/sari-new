@@ -10135,3 +10135,81 @@ export async function getInvoiceStats() {
   return stats;
 }
 
+// ============================================
+// Alias exports for naming consistency
+// These resolve import-is-undefined warnings
+// ============================================
+
+/**
+ * Alias for getWhatsappConnectionByMerchantId
+ * Used by zid-webhook.ts and woocommerce webhooks
+ */
+export const getWhatsAppConnection = getWhatsappConnectionByMerchantId;
+
+/**
+ * Alias for getActiveSubscriptionByMerchantId
+ * Used by routers-smart-notifications.ts
+ */
+export const getMerchantActiveSubscription = getActiveSubscriptionByMerchantId;
+
+/**
+ * Update an order by ID with partial data
+ * Used by order-from-chat.ts to set paymentUrl after Tap charge creation
+ */
+export async function updateOrder(id: number, data: Partial<InsertOrder>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(orders).set(data).where(eq(orders.id, id));
+}
+
+/**
+ * Update booking status by ID
+ * Used by tap-webhook.ts for payment confirmation
+ */
+export async function updateBookingStatus(
+  id: number,
+  status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
+): Promise<void> {
+  return updateBooking(id, { status });
+}
+
+/**
+ * Count repeat customers (customers with more than one order)
+ * Used by routers-performance.ts
+ */
+export async function getRepeatCustomersCount(
+  merchantId: number,
+  startDate: Date,
+  endDate: Date
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  try {
+    const result = await db
+      .select({
+        count: sql<number>`COUNT(DISTINCT ${orders.customerPhone})`,
+      })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.merchantId, merchantId),
+          gte(orders.createdAt, formatDateForDB(startDate)),
+          lte(orders.createdAt, formatDateForDB(endDate)),
+          sql`${orders.customerPhone} IN (
+            SELECT customer_phone FROM orders
+            WHERE merchant_id = ${merchantId}
+            GROUP BY customer_phone
+            HAVING COUNT(*) > 1
+          )`
+        )
+      );
+
+    return result[0]?.count || 0;
+  } catch (error) {
+    console.error('[DB] Error getting repeat customers count:', error);
+    return 0;
+  }
+}
+
