@@ -19,12 +19,12 @@ export const subscriptionSignupRouter = router({
     .input(z.object({
       planId: z.number(),
       billingCycle: z.enum(['monthly', 'yearly']),
-      userId: z.number().optional(), // If user is already logged in
+      // PEN-02 FIX: Removed userId from input — use ctx.user.id only
     }))
     .mutation(async ({ input, ctx }) => {
       try {
-        // Get user ID from context or input
-        const userId = ctx.user?.id || input.userId;
+        // PEN-02 FIX: Only use authenticated user ID, never accept from input
+        const userId = ctx.user?.id;
         if (!userId) {
           throw new TRPCError({
             code: 'UNAUTHORIZED',

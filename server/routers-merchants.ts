@@ -107,7 +107,7 @@ export const merchantsRouter = router({
         .input(z.object({
             merchantId: z.number(),
             planId: z.number(),
-            durationDays: z.number().min(1).max(730).default(30),
+            durationDays: z.number().int().min(1).max(730).default(30),
             billingCycle: z.enum(['monthly', 'yearly']).default('monthly'),
         }))
         .mutation(async ({ input }) => {
@@ -119,6 +119,11 @@ export const merchantsRouter = router({
             const plan = await db.getSubscriptionPlanById(input.planId);
             if (!plan) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+            }
+
+            // PEN-04 FIX: Ensure plan is active
+            if (!plan.isActive) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot assign an inactive plan' });
             }
 
             // Cancel any existing active subscription
@@ -190,7 +195,7 @@ export const merchantsRouter = router({
     cancelMerchantSubscription: adminProcedure
         .input(z.object({
             merchantId: z.number(),
-            reason: z.string().optional(),
+            reason: z.string().max(500).optional(), // PEN-05 FIX: limit length
         }))
         .mutation(async ({ input }) => {
             const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
@@ -270,7 +275,7 @@ export const merchantsRouter = router({
         };
     }),
 
-    // Request plan upgrade
+    // Request plan upgrade — PEN-01/PEN-03 FIX: no free subscriptions
     requestUpgrade: protectedProcedure
         .input(z.object({ planId: z.number() }))
         .mutation(async ({ input, ctx }) => {
@@ -290,61 +295,23 @@ export const merchantsRouter = router({
 
             const currentSubscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
 
+            // PEN-01 FIX: If no subscription, redirect to payment flow instead of free activation
             if (!currentSubscription) {
-                const startDate = new Date();
-                const endDate = new Date(startDate);
-                endDate.setDate(endDate.getDate() + 30);
-
-                await db.createSubscription({
-                    merchantId: merchant.id,
-                    planId: input.planId,
-                    status: 'active',
-                    startDate,
-                    endDate,
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'لا يوجد اشتراك نشط. يرجى الاشتراك عبر صفحة الباقات.',
                 });
-
-                const { notifyOwner } = await import('./_core/notification');
-                const { notifyNewSubscription } = await import('./_core/emailNotifications');
-                const user = await db.getUserById(merchant.userId);
-
-                try {
-                    await notifyNewSubscription({
-                        merchantName: user?.name || merchant.businessName,
-                        businessName: merchant.businessName,
-                        planName: plan?.name || 'Unknown Plan',
-                        planPrice: plan?.price || 0,
-                        billingCycle: plan?.billingCycle || 'monthly',
-                        subscribedAt: new Date(),
-                    });
-                } catch (error) {
-                    console.error('Failed to send new subscription notification:', error);
-                }
-
-                await notifyOwner({
-                    title: 'اشتراك جديد',
-                    content: `التاجر ${merchant.businessName} اشترك في الباقة ${plan.nameAr}`,
-                });
-
-                return { success: true, message: 'تم الاشتراك بنجاح' };
             }
 
             if (currentSubscription.planId === input.planId) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'You are already subscribed to this plan' });
             }
 
-            await db.updateSubscription(currentSubscription.id, {
-                planId: input.planId,
-                startDate: new Date(),
+            // PEN-03 FIX: Block free plan changes — must go through payment/admin
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'لتغيير الباقة، يرجى التواصل مع الدعم أو استخدام صفحة الترقية مع الدفع.',
             });
-
-            const currentPlan = await db.getPlanById(currentSubscription.planId);
-            const { notifyOwner } = await import('./_core/notification');
-            await notifyOwner({
-                title: 'ترقية باقة',
-                content: `التاجر ${merchant.businessName} قام بالترقية من ${currentPlan?.nameAr} إلى ${plan.nameAr}`,
-            });
-
-            return { success: true, message: 'تم الترقية بنجاح' };
         }),
 
     // Get onboarding status
