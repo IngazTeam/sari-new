@@ -242,13 +242,13 @@ export default function SubscriptionReports() {
               <div className="flex justify-between items-center">
                 <span className="text-sm">{t('adminSubscriptionReportsPage.text11')}</span>
                 <Badge variant="default" className="bg-green-600">
-                  {upgradeDowngrade?.upgradeRate?.toFixed(1)}%
+                  {(upgradeDowngrade?.upgradeRate ?? 0).toFixed(1)}%
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">{t('adminSubscriptionReportsPage.text12')}</span>
                 <Badge variant="destructive">
-                  {upgradeDowngrade?.downgradeRate?.toFixed(1)}%
+                  {(upgradeDowngrade?.downgradeRate ?? 0).toFixed(1)}%
                 </Badge>
               </div>
             </div>
@@ -332,10 +332,10 @@ export default function SubscriptionReports() {
                   <tr key={index} className="border-b hover:bg-muted/50">
                     <td className="p-2">{item.month}</td>
                     <td className="p-2">{item.subscriptions}</td>
-                    <td className="p-2">{t('adminSubscriptionReportsPage.text22', { var0: item.revenue.toFixed(2) })}</td>
+                    <td className="p-2">{t('adminSubscriptionReportsPage.text22', { var0: (item.revenue ?? 0).toFixed(2) })}</td>
                     <td className="p-2">
                       {item.subscriptions > 0 
-                        ? (item.revenue / item.subscriptions).toFixed(2) 
+                        ? ((item.revenue ?? 0) / item.subscriptions).toFixed(2) 
                         : '0.00'} ريال
                     </td>
                   </tr>

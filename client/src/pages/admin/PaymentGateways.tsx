@@ -63,25 +63,33 @@ export default function PaymentGateways() {
   });
 
   const handleSaveTap = async () => {
-    await upsertMutation.mutateAsync({
-      gateway: 'tap',
-      isEnabled: tapEnabled,
-      publicKey: tapPublicKey,
-      secretKey: tapSecretKey,
-      webhookSecret: tapWebhookSecret,
-      testMode: tapTestMode,
-    });
+    try {
+      await upsertMutation.mutateAsync({
+        gateway: 'tap',
+        isEnabled: tapEnabled,
+        publicKey: tapPublicKey,
+        secretKey: tapSecretKey,
+        webhookSecret: tapWebhookSecret,
+        testMode: tapTestMode,
+      });
+    } catch (error) {
+      // Error already handled by onError callback
+    }
   };
 
   const handleSavePayPal = async () => {
-    await upsertMutation.mutateAsync({
-      gateway: 'paypal',
-      isEnabled: paypalEnabled,
-      publicKey: paypalClientId,
-      secretKey: paypalSecret,
-      webhookSecret: paypalWebhookId,
-      testMode: paypalTestMode,
-    });
+    try {
+      await upsertMutation.mutateAsync({
+        gateway: 'paypal',
+        isEnabled: paypalEnabled,
+        publicKey: paypalClientId,
+        secretKey: paypalSecret,
+        webhookSecret: paypalWebhookId,
+        testMode: paypalTestMode,
+      });
+    } catch (error) {
+      // Error already handled by onError callback
+    }
   };
 
   if (isLoading) {

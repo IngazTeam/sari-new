@@ -86,11 +86,15 @@ export default function AdminRecommendations() {
   }, [recommendations]);
 
   const handleStatusChange = async (recId: number, newStatus: string) => {
-    await updateMutation.mutateAsync({
-      id: recId,
-      status: newStatus as any,
-      completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined,
-    });
+    try {
+      await updateMutation.mutateAsync({
+        id: recId,
+        status: newStatus as any,
+        completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined,
+      });
+    } catch (error) {
+      console.error('Failed to update recommendation:', error);
+    }
   };
 
   return (
