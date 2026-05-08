@@ -98,6 +98,119 @@ export const merchantsRouter = router({
             return subscription ? [subscription] : [];
         }),
 
+    // ============================================
+    // Admin Subscription Management
+    // ============================================
+
+    // Assign/Activate subscription for a merchant (Admin only)
+    assignSubscription: adminProcedure
+        .input(z.object({
+            merchantId: z.number(),
+            planId: z.number(),
+            durationDays: z.number().min(1).max(730).default(30),
+            billingCycle: z.enum(['monthly', 'yearly']).default('monthly'),
+        }))
+        .mutation(async ({ input }) => {
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            const plan = await db.getSubscriptionPlanById(input.planId);
+            if (!plan) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+            }
+
+            // Cancel any existing active subscription
+            const existing = await db.getMerchantCurrentSubscription(input.merchantId);
+            if (existing) {
+                await db.cancelMerchantSubscription(existing.id, 'تم استبداله بتفعيل يدوي من الأدمن');
+            }
+
+            // Create new subscription
+            const now = new Date();
+            const endDate = new Date(now.getTime() + input.durationDays * 24 * 60 * 60 * 1000);
+
+            const subscriptionId = await db.createMerchantSubscription({
+                merchantId: input.merchantId,
+                planId: input.planId,
+                status: 'active',
+                billingCycle: input.billingCycle,
+                startDate: now.toISOString(),
+                endDate: endDate.toISOString(),
+                trialEndsAt: null,
+                autoRenew: 0,
+            });
+
+            // Update merchant status and limits
+            await db.updateMerchantSubscriptionStatus(input.merchantId, 'active');
+            await db.updateMerchantCustomerLimit(input.merchantId, plan.maxCustomers);
+            await db.updateMerchant(input.merchantId, { status: 'active' });
+
+            console.log(`[Admin] Subscription assigned: merchant=${input.merchantId}, plan=${plan.name}, duration=${input.durationDays}d`);
+
+            return {
+                success: true,
+                subscriptionId,
+                planName: plan.name,
+                startDate: now.toISOString(),
+                endDate: endDate.toISOString(),
+            };
+        }),
+
+    // Extend subscription duration (Admin only)
+    extendSubscription: adminProcedure
+        .input(z.object({
+            merchantId: z.number(),
+            extraDays: z.number().min(1).max(365),
+        }))
+        .mutation(async ({ input }) => {
+            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            if (!subscription) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found for this merchant' });
+            }
+
+            const currentEnd = new Date(subscription.endDate);
+            const newEnd = new Date(currentEnd.getTime() + input.extraDays * 24 * 60 * 60 * 1000);
+
+            await db.updateMerchantSubscription(subscription.id, {
+                endDate: newEnd.toISOString(),
+            });
+
+            console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, +${input.extraDays}d, new end=${newEnd.toISOString()}`);
+
+            return {
+                success: true,
+                previousEndDate: currentEnd.toISOString(),
+                newEndDate: newEnd.toISOString(),
+            };
+        }),
+
+    // Cancel merchant subscription (Admin only)
+    cancelMerchantSubscription: adminProcedure
+        .input(z.object({
+            merchantId: z.number(),
+            reason: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            if (!subscription) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
+            }
+
+            await db.cancelMerchantSubscription(subscription.id, input.reason || 'تم الإلغاء بواسطة الأدمن');
+            await db.updateMerchantSubscriptionStatus(input.merchantId, 'cancelled');
+
+            console.log(`[Admin] Subscription cancelled: merchant=${input.merchantId}, reason=${input.reason || 'admin action'}`);
+
+            return { success: true };
+        }),
+
+    // Get all plans (Admin helper - for the assign dropdown)
+    getAvailablePlans: adminProcedure.query(async () => {
+        return await db.getActiveSubscriptionPlans();
+    }),
+
     // Get merchant campaigns (Admin only)
     getCampaigns: adminProcedure
         .input(z.object({ merchantId: z.number() }))

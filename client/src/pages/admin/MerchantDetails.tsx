@@ -2,7 +2,6 @@ import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   Table,
   TableBody,
@@ -11,20 +10,33 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { useRoute, useLocation } from 'wouter';
 import { 
   ArrowLeft, 
   Store, 
   Phone, 
-  Mail, 
   Calendar, 
   CreditCard, 
   MessageSquare,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Plus,
+  CalendarPlus,
+  Ban,
+  Zap
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function MerchantDetails() {
   const { t } = useTranslation();
@@ -32,12 +44,20 @@ export default function MerchantDetails() {
   const [, setLocation] = useLocation();
   const merchantId = params?.id ? parseInt(params.id) : 0;
 
+  // State for subscription management
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+  const [durationDays, setDurationDays] = useState(30);
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [extendDays, setExtendDays] = useState(30);
+  const [showExtendForm, setShowExtendForm] = useState(false);
+
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getById.useQuery(
     { merchantId },
     { enabled: merchantId > 0 }
   );
 
-  const { data: subscriptions = [] } = trpc.merchants.getSubscriptions.useQuery(
+  const { data: subscriptions = [], refetch: refetchSubs } = trpc.merchants.getSubscriptions.useQuery(
     { merchantId },
     { enabled: merchantId > 0 }
   );
@@ -46,6 +66,48 @@ export default function MerchantDetails() {
     { merchantId },
     { enabled: merchantId > 0 }
   );
+
+  const { data: plans = [] } = trpc.merchants.getAvailablePlans.useQuery(
+    undefined,
+    { enabled: showAssignForm }
+  );
+
+  const utils = trpc.useUtils();
+
+  const assignMutation = trpc.merchants.assignSubscription.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم تفعيل الاشتراك — ${data.planName}`);
+      setShowAssignForm(false);
+      setSelectedPlanId('');
+      refetchSubs();
+      utils.merchants.getById.invalidate({ merchantId });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل تفعيل الاشتراك');
+    },
+  });
+
+  const extendMutation = trpc.merchants.extendSubscription.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم تمديد الاشتراك حتى ${new Date(data.newEndDate).toLocaleDateString('ar-SA')}`);
+      setShowExtendForm(false);
+      refetchSubs();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل تمديد الاشتراك');
+    },
+  });
+
+  const cancelMutation = trpc.merchants.cancelMerchantSubscription.useMutation({
+    onSuccess: () => {
+      toast.success('تم إلغاء الاشتراك');
+      refetchSubs();
+      utils.merchants.getById.invalidate({ merchantId });
+    },
+    onError: (error) => {
+      toast.error(error.message || 'فشل إلغاء الاشتراك');
+    },
+  });
 
   if (merchantLoading) {
     return (
@@ -95,19 +157,7 @@ export default function MerchantDetails() {
     }
   };
 
-  const getPlanName = (planId: number | null) => {
-    if (!planId) return 'لا يوجد';
-    switch (planId) {
-      case 1:
-        return 'Starter (B1) - 90 ريال';
-      case 2:
-        return 'Growth (B2) - 230 ريال';
-      case 3:
-        return 'Pro (B3) - 845 ريال';
-      default:
-        return t('adminMerchantDetailsPage.text9', { var0: planId });
-    }
-  };
+  const hasActiveSubscription = subscriptions.length > 0 && subscriptions[0]?.status === 'active';
 
   return (
     <div className="space-y-6">
@@ -157,8 +207,6 @@ export default function MerchantDetails() {
               </div>
             )}
 
-
-
             <div className="flex items-center gap-3">
               <Calendar className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -175,17 +223,164 @@ export default function MerchantDetails() {
           </CardContent>
         </Card>
 
-        {/* Subscription Info */}
+        {/* Subscription Info + Admin Actions */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t('adminMerchantDetailsPage.text14')}</CardTitle>
+            <div className="flex gap-2">
+              {!hasActiveSubscription ? (
+                <Button
+                  size="sm"
+                  onClick={() => setShowAssignForm(!showAssignForm)}
+                  className="gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  تفعيل اشتراك
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowExtendForm(!showExtendForm)}
+                    className="gap-1"
+                  >
+                    <CalendarPlus className="h-4 w-4" />
+                    تمديد
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      if (confirm('هل أنت متأكد من إلغاء اشتراك هذا التاجر؟')) {
+                        cancelMutation.mutate({ merchantId });
+                      }
+                    }}
+                    disabled={cancelMutation.isPending}
+                    className="gap-1"
+                  >
+                    <Ban className="h-4 w-4" />
+                    إلغاء
+                  </Button>
+                </>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Assign Subscription Form */}
+            {showAssignForm && (
+              <div className="p-4 border rounded-lg bg-primary/5 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="h-4 w-4 text-primary" />
+                  <p className="font-medium text-sm">تفعيل اشتراك جديد</p>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">الباقة</label>
+                  <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="اختر الباقة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans.map((plan: any) => (
+                        <SelectItem key={plan.id} value={plan.id.toString()}>
+                          {plan.name} — {plan.monthlyPrice} ر.س/شهر
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">المدة (أيام)</label>
+                    <Input
+                      type="number"
+                      value={durationDays}
+                      onChange={(e) => setDurationDays(parseInt(e.target.value) || 30)}
+                      min={1}
+                      max={730}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm text-muted-foreground">دورة الفوترة</label>
+                    <Select value={billingCycle} onValueChange={(v: any) => setBillingCycle(v)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="monthly">شهري</SelectItem>
+                        <SelectItem value="yearly">سنوي</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (!selectedPlanId) {
+                        toast.error('اختر الباقة أولاً');
+                        return;
+                      }
+                      assignMutation.mutate({
+                        merchantId,
+                        planId: parseInt(selectedPlanId),
+                        durationDays,
+                        billingCycle,
+                      });
+                    }}
+                    disabled={assignMutation.isPending || !selectedPlanId}
+                  >
+                    {assignMutation.isPending ? 'جاري التفعيل...' : 'تفعيل الاشتراك'}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowAssignForm(false)}>
+                    إلغاء
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Extend Subscription Form */}
+            {showExtendForm && hasActiveSubscription && (
+              <div className="p-4 border rounded-lg bg-blue-50 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarPlus className="h-4 w-4 text-blue-600" />
+                  <p className="font-medium text-sm">تمديد الاشتراك</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground">عدد الأيام الإضافية</label>
+                  <Input
+                    type="number"
+                    value={extendDays}
+                    onChange={(e) => setExtendDays(parseInt(e.target.value) || 30)}
+                    min={1}
+                    max={365}
+                  />
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    onClick={() => extendMutation.mutate({ merchantId, extraDays: extendDays })}
+                    disabled={extendMutation.isPending}
+                  >
+                    {extendMutation.isPending ? 'جاري التمديد...' : `تمديد ${extendDays} يوم`}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowExtendForm(false)}>
+                    إلغاء
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Subscription Details */}
             <div className="flex items-center gap-3">
               <CreditCard className="h-5 w-5 text-muted-foreground" />
               <div>
                 <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text15')}</p>
-                <p className="font-medium">{getPlanName(null)}</p>
+                <p className="font-medium">
+                  {subscriptions.length > 0 && subscriptions[0]?.planId
+                    ? `الباقة #${subscriptions[0].planId}`
+                    : 'لا يوجد'}
+                </p>
               </div>
             </div>
 
@@ -229,7 +424,7 @@ export default function MerchantDetails() {
               </>
             )}
 
-            {subscriptions.length === 0 && (
+            {subscriptions.length === 0 && !showAssignForm && (
               <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text19')}</p>
             )}
           </CardContent>
