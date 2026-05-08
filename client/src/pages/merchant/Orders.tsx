@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 import { trpc } from '@/lib/trpc';
 import { formatCurrency } from '@/../../shared/currency';
 import { useAuth } from '@/_core/hooks/useAuth';
@@ -270,7 +271,7 @@ export default function Orders() {
                       <td className="p-4 font-medium">{formatPrice(order.totalAmount)}</td>
                       <td className="p-4">{getStatusBadge(order.status)}</td>
                       <td className="p-4 text-muted-foreground">
-                        {new Date(order.createdAt).toLocaleDateString('ar-SA')}
+                        {new Date(order.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                       </td>
                       <td className="p-4">
                         <Button

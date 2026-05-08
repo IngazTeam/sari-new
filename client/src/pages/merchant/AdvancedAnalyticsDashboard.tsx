@@ -501,7 +501,7 @@ export default function AdvancedAnalyticsDashboard() {
                           <div>
                             <p className="font-medium">{product.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {product.price ? `${product.price} ريال` : t('advancedAnalyticsDashboardPage.text45')}
+                              {product.price ? `${product.price} ${t('common.currency')}` : t('advancedAnalyticsDashboardPage.text45')}
                             </p>
                           </div>
                         </div>

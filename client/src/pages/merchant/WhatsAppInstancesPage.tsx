@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { Plus, Trash2, Star, StarOff, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 export default function WhatsAppInstancesPage() {
   const { t } = useTranslation();
@@ -354,12 +355,12 @@ export default function WhatsAppInstancesPage() {
                           </div>
                           <div>
                             <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text19')}</span>
-                            <span className="mr-2">{new Date(instance.createdAt).toLocaleDateString('ar-SA')}</span>
+                            <span className="mr-2">{new Date(instance.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
                           </div>
                           {instance.expiresAt && (
                             <div>
                               <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text20')}</span>
-                              <span className="mr-2">{new Date(instance.expiresAt).toLocaleDateString('ar-SA')}</span>
+                              <span className="mr-2">{new Date(instance.expiresAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
                             </div>
                           )}
                         </div>

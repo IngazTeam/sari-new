@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Copy, Check, Gift, Users, TrendingUp, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 export default function Referrals() {
   const { t } = useTranslation();
@@ -189,7 +190,7 @@ export default function Referrals() {
                       {reward.description || t('referralsPage.referralReward')}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {t('referralsPage.text31', { var0: new Date(reward.expiresAt).toLocaleDateString('ar-SA') })}
+                      {t('referralsPage.text31', { var0: new Date(reward.expiresAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US') })}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -245,7 +246,7 @@ export default function Referrals() {
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-sm text-muted-foreground">
-                      {new Date(referral.createdAt).toLocaleDateString('ar-SA')}
+                      {new Date(referral.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                     </div>
                     {referral.orderCompleted ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">

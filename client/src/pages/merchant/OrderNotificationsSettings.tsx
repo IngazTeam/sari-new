@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Bell, Check, X, Clock } from 'lucide-react';
 
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 export default function OrderNotificationsSettings() {
   const { t } = useTranslation();
 
@@ -125,7 +126,7 @@ export default function OrderNotificationsSettings() {
           <CardContent>
             <div className="text-2xl font-bold">
               {templates && templates.length > 0
-                ? new Date(Math.max(...templates.map(t => t.updatedAt ? new Date(t.updatedAt).getTime() : 0))).toLocaleDateString('ar-SA')
+                ? new Date(Math.max(...templates.map(t => t.updatedAt ? new Date(t.updatedAt).getTime() : 0))).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')
                 : '-'}
             </div>
             <p className="text-xs text-muted-foreground mt-1">

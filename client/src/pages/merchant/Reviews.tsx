@@ -19,8 +19,15 @@ export default function Reviews() {
   });
   const [replyText, setReplyText] = useState("");
 
-  const { data: reviews, isLoading, refetch } = trpc.reviews.list.useQuery({ merchantId: 1 }); // TODO: Get from context
-  const { data: stats } = trpc.reviews.getStats.useQuery({ merchantId: 1 }); // TODO: Get from context
+  const { data: merchant } = trpc.merchants.getCurrent.useQuery();
+  const { data: reviews, isLoading, refetch } = trpc.reviews.list.useQuery(
+    { merchantId: merchant?.id || 0 },
+    { enabled: !!merchant }
+  );
+  const { data: stats } = trpc.reviews.getStats.useQuery(
+    { merchantId: merchant?.id || 0 },
+    { enabled: !!merchant }
+  );
   const replyMutation = trpc.reviews.reply.useMutation({
     onSuccess: () => {
       refetch();

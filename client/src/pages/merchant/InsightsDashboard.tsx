@@ -325,7 +325,7 @@ export default function InsightsDashboard() {
                   <div key={report.id} className="flex items-center justify-between p-3 rounded-lg bg-accent/50">
                     <div>
                       <p className="font-medium">
-                        {new Date(report.weekStart).toLocaleDateString('ar-SA')} - {new Date(report.weekEnd).toLocaleDateString('ar-SA')}
+                        {new Date(report.weekStart).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')} - {new Date(report.weekEnd).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {t('insightsDashboardPage.text45', { var0: report.totalConversations })}

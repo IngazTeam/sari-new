@@ -12,6 +12,7 @@ import { CheckCircle2, XCircle, Clock, Smartphone, QrCode, Loader2, ArrowRight }
 import { useLocation } from 'wouter';
 
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 export default function WhatsAppSetupWizard() {
   const { t } = useTranslation();
 
@@ -177,7 +178,7 @@ export default function WhatsAppSetupWizard() {
                 {getStatusBadge(pendingRequest.status)}
               </div>
               <div className="text-sm text-muted-foreground">
-                {t('whatsAppSetupWizardPage.text38', { var0: new Date(pendingRequest.createdAt).toLocaleDateString('ar-SA') })}
+                {t('whatsAppSetupWizardPage.text38', { var0: new Date(pendingRequest.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US') })}
               </div>
             </div>
           </CardContent>

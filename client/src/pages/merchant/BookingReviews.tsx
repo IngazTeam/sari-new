@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 interface BookingReview {
     id: number;
@@ -280,7 +281,7 @@ export default function BookingReviews() {
                                             <TableCell>
                                                 <div className="flex items-center gap-1 text-sm">
                                                     <Calendar className="h-3 w-3" />
-                                                    {new Date(review.createdAt).toLocaleDateString('ar-SA')}
+                                                    {new Date(review.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                                                 </div>
                                             </TableCell>
                                             <TableCell>{renderStars(review.overallRating)}</TableCell>
@@ -344,7 +345,7 @@ export default function BookingReviews() {
                                 <div className="flex items-center justify-between">
                                     {renderStars(selectedReview.overallRating)}
                                     <span className="text-sm text-muted-foreground">
-                                        {new Date(selectedReview.createdAt).toLocaleDateString('ar-SA')}
+                                        {new Date(selectedReview.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                                     </span>
                                 </div>
                                 <p className="text-sm">{selectedReview.comment || t('bookingReviewsPage.noComment')}</p>
@@ -362,7 +363,7 @@ export default function BookingReviews() {
                                 />
                                 {selectedReview.reply && (
                                     <p className="text-xs text-muted-foreground">
-                                        {t('bookingReviewsPage.text38', { var0: new Date(selectedReview.repliedAt || '').toLocaleDateString('ar-SA') })}
+                                        {t('bookingReviewsPage.text38', { var0: new Date(selectedReview.repliedAt || '').toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US') })}
                                     </p>
                                 )}
                             </div>

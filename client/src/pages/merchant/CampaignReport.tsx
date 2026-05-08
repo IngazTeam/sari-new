@@ -5,6 +5,7 @@ import { useLocation, useParams } from 'wouter';
 import { ArrowRight, CheckCircle2, XCircle, Clock, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 import {
   Table,
   TableBody,
@@ -178,7 +179,7 @@ export default function CampaignReport() {
             <div>
               <p className="text-sm text-muted-foreground">{t('campaignReportPage.text4')}</p>
               <p className="font-medium">
-                {new Date(campaign.createdAt).toLocaleDateString('ar-SA')}
+                {new Date(campaign.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
               </p>
             </div>
           </div>

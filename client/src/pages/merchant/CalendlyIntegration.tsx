@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 export default function CalendlyIntegration() {
   const { t } = useTranslation();
@@ -278,7 +279,7 @@ export default function CalendlyIntegration() {
                           </div>
                         </div>
                         <div className="text-left">
-                          <p className="font-medium">{new Date(event.startTime).toLocaleDateString('ar-SA')}</p>
+                          <p className="font-medium">{new Date(event.startTime).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</p>
                           <p className="text-sm text-muted-foreground">
                             {new Date(event.startTime).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
                           </p>

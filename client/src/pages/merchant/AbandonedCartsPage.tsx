@@ -121,7 +121,7 @@ export default function AbandonedCartsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalRecoveredValue || 0} ريال</div>
+            <div className="text-2xl font-bold">{stats?.totalRecoveredValue || 0} {t('common.currency')}</div>
           </CardContent>
         </Card>
       </div>
@@ -169,7 +169,7 @@ export default function AbandonedCartsPage() {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>{cart.totalAmount} ريال</TableCell>
+                      <TableCell>{cart.totalAmount} {t('common.currency')}</TableCell>
                       <TableCell className="text-sm">{formatDate(cart.createdAt)}</TableCell>
                       <TableCell>
                         {cart.recovered ? (

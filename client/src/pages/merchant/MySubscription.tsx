@@ -8,6 +8,7 @@ import { Calendar, CreditCard, AlertCircle, Check, TrendingUp } from 'lucide-rea
 import { toast } from 'sonner';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/lib/i18n';
 
 export default function MySubscription() {
   const { t } = useTranslation();
@@ -223,7 +224,7 @@ export default function MySubscription() {
                 {transactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
-                      {new Date(transaction.createdAt).toLocaleDateString('ar-SA')}
+                      {new Date(transaction.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                     </TableCell>
                     <TableCell>{transaction.description}</TableCell>
                     <TableCell className="font-semibold">

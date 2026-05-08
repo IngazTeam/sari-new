@@ -140,7 +140,7 @@ export default function WooCommerceAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {t('wooCommerceAnalyticsPage.text47', { var0: salesStats?.totalRevenue.toFixed(2) })}
+              {t('wooCommerceAnalyticsPage.text47', { var0: (salesStats?.totalRevenue ?? 0).toFixed(2) })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('wooCommerceAnalyticsPage.text48', { var0: salesStats?.totalOrders })}
@@ -155,7 +155,7 @@ export default function WooCommerceAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {t('wooCommerceAnalyticsPage.text49', { var0: salesStats?.averageOrderValue.toFixed(2) })}
+              {t('wooCommerceAnalyticsPage.text49', { var0: (salesStats?.averageOrderValue ?? 0).toFixed(2) })}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('wooCommerceAnalyticsPage.text40')}
@@ -170,7 +170,7 @@ export default function WooCommerceAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {conversionRate?.conversionRate.toFixed(2)}%
+              {(conversionRate?.conversionRate ?? 0).toFixed(2)}%
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('wooCommerceAnalyticsPage.text50', { var0: conversionRate?.totalConversations })}
@@ -343,7 +343,7 @@ export default function WooCommerceAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="text-5xl font-bold text-center text-primary mb-4">
-                  {conversionRate?.conversionRate.toFixed(2)}%
+                  {(conversionRate?.conversionRate ?? 0).toFixed(2)}%
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -371,7 +371,7 @@ export default function WooCommerceAnalytics() {
               </CardHeader>
               <CardContent>
                 <div className="text-5xl font-bold text-center text-green-600 mb-4">
-                  {conversionRate?.completionRate.toFixed(2)}%
+                  {(conversionRate?.completionRate ?? 0).toFixed(2)}%
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -380,7 +380,7 @@ export default function WooCommerceAnalytics() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('wooCommerceAnalyticsPage.text30')}</span>
-                    <span className="font-medium">{conversionRate?.whatsappRevenue.toFixed(2)} ر.س</span>
+                    <span className="font-medium">{(conversionRate?.whatsappRevenue ?? 0).toFixed(2)} ر.س</span>
                   </div>
                 </div>
               </CardContent>
@@ -462,7 +462,7 @@ export default function WooCommerceAnalytics() {
             </CardHeader>
             <CardContent>
               <div className="text-5xl font-bold text-center text-primary mb-4">
-                {customerStats?.repeatCustomerRate.toFixed(2)}%
+                {(customerStats?.repeatCustomerRate ?? 0).toFixed(2)}%
               </div>
               <p className="text-center text-muted-foreground">
                 {t('wooCommerceAnalyticsPage.text56', { var0: customerStats?.returningCustomers, var1: customerStats?.totalCustomers })}
