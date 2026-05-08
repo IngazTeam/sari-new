@@ -90,7 +90,7 @@ export default function ServicePackages() {
   const handleOpenDialog = (pkg?: any) => {
     if (pkg) {
       setEditingPackage(pkg);
-      const serviceIds = pkg.serviceIds ? JSON.parse(pkg.serviceIds) : [];
+      const serviceIds = (() => { try { return pkg.serviceIds ? JSON.parse(pkg.serviceIds) : []; } catch { return []; } })();
       setFormData({
         name: pkg.name,
         description: pkg.description || '',

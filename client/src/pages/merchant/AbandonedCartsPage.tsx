@@ -155,7 +155,7 @@ export default function AbandonedCartsPage() {
               </TableHeader>
               <TableBody>
                 {carts.map((cart) => {
-                  const items = JSON.parse(cart.items);
+                  const items = (() => { try { return JSON.parse(cart.items); } catch { return []; } })();
                   return (
                     <TableRow key={cart.id}>
                       <TableCell className="font-medium">{cart.customerPhone}</TableCell>

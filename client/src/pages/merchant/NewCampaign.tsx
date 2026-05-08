@@ -67,7 +67,8 @@ export default function NewCampaign() {
       message: formData.message,
       imageUrl: formData.imageUrl || undefined,
       targetAudience,
-      scheduledAt: formData.scheduledAt ? new Date(formData.scheduledAt) : undefined,
+      scheduledAt: saveAsDraft ? undefined : (formData.scheduledAt ? new Date(formData.scheduledAt) : undefined),
+      status: saveAsDraft ? 'draft' : undefined,
     });
   };
 

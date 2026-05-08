@@ -22,7 +22,9 @@ import {
   Clock,
   Truck,
   ShoppingBag,
-  TrendingUp
+  TrendingUp,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export default function Orders() {
@@ -35,6 +37,8 @@ export default function Orders() {
   const [isUpdateStatusOpen, setIsUpdateStatusOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('');
   const [trackingNumber, setTrackingNumber] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
 
   // Get merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery(
@@ -49,6 +53,8 @@ export default function Orders() {
       merchantId: merchant?.id || 0,
       status: statusFilter !== 'all' ? statusFilter as any : undefined,
       searchQuery: searchQuery || undefined,
+      limit: pageSize,
+      page: currentPage,
     },
     { enabled: !!merchant }
   );
@@ -292,6 +298,33 @@ export default function Orders() {
               </tbody>
             </table>
           </div>
+          {/* Pagination */}
+          {orders && orders.length > 0 && (
+            <div className="flex items-center justify-between p-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                {t('ordersPage.page', 'الصفحة')} {currentPage}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <span className="flex items-center px-3 text-sm font-medium">{currentPage}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => p + 1)}
+                  disabled={!orders || orders.length < pageSize}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -338,7 +371,7 @@ export default function Orders() {
               <div>
                 <h3 className="font-semibold mb-3">{t('ordersPage.products')}</h3>
                 <div className="space-y-2">
-                  {JSON.parse(selectedOrder.items).map((item: any, index: number) => (
+                  {(() => { try { return JSON.parse(selectedOrder.items); } catch { return []; } })().map((item: any, index: number) => (
                     <div key={index} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
                       <div>
                         <p className="font-medium">{item.name}</p>

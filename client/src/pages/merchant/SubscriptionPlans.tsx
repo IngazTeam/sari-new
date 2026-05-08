@@ -124,7 +124,7 @@ export default function SubscriptionPlans() {
         {plans?.map((plan) => {
           const price = selectedPeriod === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
           const isCurrentPlan = currentSubscription?.planId === plan.id;
-          const features = plan.features ? JSON.parse(plan.features) : [];
+          const features = (() => { try { return plan.features ? JSON.parse(plan.features) : []; } catch { return []; } })();
 
           return (
             <Card

@@ -133,6 +133,8 @@ export const ordersRouter = router({
             startDate: z.string().optional(),
             endDate: z.string().optional(),
             searchQuery: z.string().optional(),
+            limit: z.number().min(1).max(100).optional().default(50),
+            page: z.number().min(1).optional().default(1),
         }))
         .query(async ({ input, ctx }) => {
             const merchant = await db.getMerchantById(input.merchantId);
@@ -145,6 +147,8 @@ export const ordersRouter = router({
             if (input.startDate) filters.startDate = new Date(input.startDate);
             if (input.endDate) filters.endDate = new Date(input.endDate);
             if (input.searchQuery) filters.searchQuery = input.searchQuery;
+            filters.limit = input.limit;
+            filters.offset = (input.page - 1) * input.limit;
 
             return await db.getOrdersWithFilters(input.merchantId, filters);
         }),
