@@ -7774,7 +7774,7 @@ export async function updateMerchantWebsiteInfo(data: {
   if (data.websiteUrl !== undefined) updateData.websiteUrl = data.websiteUrl;
   if (data.platformType !== undefined) updateData.platformType = data.platformType;
   if (data.analysisStatus !== undefined) updateData.analysisStatus = data.analysisStatus;
-  if (data.lastAnalysisDate !== undefined) updateData.lastAnalysisDate = data.lastAnalysisDate.toISOString();
+  if (data.lastAnalysisDate !== undefined) updateData.lastAnalysisDate = formatDateForDB(data.lastAnalysisDate);
 
   await db
     .update(merchants)
