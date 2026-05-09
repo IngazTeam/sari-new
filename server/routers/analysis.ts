@@ -9,9 +9,6 @@ import {
   discoverPages,
   extractContactInfo,
   type ExtractedFAQ,
-  type ExtractedProduct,
-  type DiscoveredPage,
-  type ContactInfo,
 } from "../_core/websiteAnalyzer";
 
 /**
