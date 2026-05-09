@@ -9,6 +9,8 @@ import {
   AlertCircle, FileSpreadsheet, Link2, RefreshCw, Clock, Table2, Plus
 } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useLocation } from 'wouter';
 
 export default function UploadProducts() {
@@ -18,6 +20,7 @@ export default function UploadProducts() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'file' | 'sheets' | 'template'>('file');
+  const [createSheet, setCreateSheet] = useState(false);
 
   // Mutations
   const uploadCSV = trpc.products.uploadCSV.useMutation({
@@ -36,6 +39,18 @@ export default function UploadProducts() {
       setUploadResult(data);
       toast.success(t('uploadProductsPage.importSuccess', { count: data.imported }));
       resetFile();
+    },
+    onError: (error) => {
+      toast.error(t('uploadProductsPage.uploadFailed') + error.message);
+    },
+  });
+
+  const uploadExcelAndSheet = trpc.products.uploadExcelAndCreateSheet.useMutation({
+    onSuccess: (data) => {
+      setUploadResult(data);
+      toast.success(data.message);
+      resetFile();
+      sheetStatus.refetch();
     },
     onError: (error) => {
       toast.error(t('uploadProductsPage.uploadFailed') + error.message);
@@ -95,7 +110,11 @@ export default function UploadProducts() {
       const base64 = btoa(
         new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
-      uploadExcel.mutate({ fileBase64: base64, fileName: selectedFile.name });
+      if (createSheet) {
+        uploadExcelAndSheet.mutate({ fileBase64: base64, fileName: selectedFile.name });
+      } else {
+        uploadExcel.mutate({ fileBase64: base64, fileName: selectedFile.name });
+      }
     }
   };
 
@@ -111,7 +130,7 @@ export default function UploadProducts() {
     }
   };
 
-  const isUploading = uploadCSV.isPending || uploadExcel.isPending;
+  const isUploading = uploadCSV.isPending || uploadExcel.isPending || uploadExcelAndSheet.isPending;
 
   const tabs = [
     { id: 'file' as const, label: t('uploadProductsPage.tabFile'), icon: <FileSpreadsheet className="h-4 w-4" /> },
@@ -218,6 +237,23 @@ export default function UploadProducts() {
                   </div>
                 )}
               </div>
+
+              {/* Auto-create Google Sheet checkbox */}
+              {selectedFile && !selectedFile.name.endsWith('.csv') && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                  <Checkbox
+                    id="create-sheet"
+                    checked={createSheet}
+                    onCheckedChange={(v) => setCreateSheet(!!v)}
+                  />
+                  <Label htmlFor="create-sheet" className="cursor-pointer text-sm">
+                    <span className="font-medium">إنشاء Google Sheet تلقائياً</span>
+                    <span className="text-muted-foreground block text-xs mt-0.5">
+                      سيتم رفع المنتجات + إنشاء شيت للمزامنة التلقائية كل 30 دقيقة
+                    </span>
+                  </Label>
+                </div>
+              )}
 
               <Alert>
                 <AlertCircle className="h-4 w-4" />
@@ -495,6 +531,16 @@ function ResultCard({ result, onViewProducts }: { result: any; onViewProducts: (
             </div>
           )}
         </div>
+        {result.sheetCreated && result.spreadsheetUrl && (
+          <div className="mt-3 p-3 rounded-lg bg-green-100 border border-green-300">
+            <p className="text-sm font-medium text-green-900 mb-1">✅ تم إنشاء Google Sheet للمزامنة التلقائية</p>
+            <a href={result.spreadsheetUrl} target="_blank" rel="noopener noreferrer"
+              className="text-xs text-green-700 underline hover:text-green-900 flex items-center gap-1">
+              <Link2 className="h-3 w-3" /> فتح Google Sheet
+            </a>
+            <p className="text-xs text-green-600 mt-1">المنتجات ستتم مزامنتها تلقائياً كل 30 دقيقة</p>
+          </div>
+        )}
         <Button className="w-full mt-4" onClick={onViewProducts}>
           {t('uploadProductsPage.viewProducts')}
         </Button>

@@ -586,21 +586,23 @@ function Router() {
         </DashboardLayout>
       </Route>
 
+
       <Route path="/merchant/sheets/settings">
-        <SheetsSettings />
+        <DashboardLayout><SheetsSettings /></DashboardLayout>
       </Route>
 
       <Route path="/merchant/sheets/export">
-        <SheetsExport />
+        <DashboardLayout><SheetsExport /></DashboardLayout>
       </Route>
 
       <Route path="/merchant/sheets/reports">
-        <SheetsReports />
+        <DashboardLayout><SheetsReports /></DashboardLayout>
       </Route>
 
       <Route path="/merchant/sheets/inventory">
-        <SheetsInventory />
+        <DashboardLayout><SheetsInventory /></DashboardLayout>
       </Route>
+
 
       <Route path="/merchant/payments">
         <DashboardLayout><Payments /></DashboardLayout>

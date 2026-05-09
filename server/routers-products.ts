@@ -289,6 +289,143 @@ export const productsRouter = router({
             };
         }),
 
+    // Upload Excel AND create a Google Sheet for auto-sync
+    uploadExcelAndCreateSheet: protectedProcedure
+        .input(z.object({
+            fileBase64: z.string(),
+            fileName: z.string(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            // Step 1: Parse Excel
+            const ExcelJS = (await import('exceljs')).default;
+            const workbook = new ExcelJS.Workbook();
+            const buffer = Buffer.from(input.fileBase64, 'base64');
+            await workbook.xlsx.load(buffer);
+
+            const worksheet = workbook.worksheets[0];
+            if (!worksheet) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على بيانات' });
+            }
+
+            // Read headers
+            const headerRow = worksheet.getRow(1);
+            const columnMap: Record<number, string> = {};
+            headerRow.eachCell((cell, colNumber) => {
+                const val = cell.value?.toString().trim();
+                if (val) {
+                    const mapped = normalizeHeader(val);
+                    if (mapped) columnMap[colNumber] = mapped;
+                }
+            });
+
+            if (!Object.values(columnMap).includes('name')) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على عمود الاسم' });
+            }
+
+            // Step 2: Import products to DB
+            let successCount = 0;
+            let errorCount = 0;
+            const allRows: string[][] = [];
+
+            // Build header for Google Sheet
+            const sheetHeaders = ['الاسم', 'الوصف', 'السعر', 'التصنيف', 'الكمية', 'رابط الصورة'];
+            allRows.push(sheetHeaders);
+
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowNumber === 1) return;
+
+                const product: Record<string, any> = {};
+                row.eachCell((cell, colNumber) => {
+                    const key = columnMap[colNumber];
+                    if (key) product[key] = cell.value?.toString().trim() || '';
+                });
+
+                if (product.name) {
+                    allRows.push([
+                        product.name || '',
+                        product.description || '',
+                        product.price || '0',
+                        product.category || '',
+                        product.stock || '0',
+                        product.imageUrl || '',
+                    ]);
+                }
+            });
+
+            // Import to DB
+            for (let i = 1; i < allRows.length; i++) {
+                try {
+                    const [name, description, price, category, stock, imageUrl] = allRows[i];
+                    if (name) {
+                        await db.createProduct({
+                            merchantId: merchant.id,
+                            name,
+                            description: description || null,
+                            price: parseFloat(price) || 0,
+                            category: category || null,
+                            stock: stock ? parseInt(stock) : null,
+                            imageUrl: imageUrl || null,
+                        });
+                        successCount++;
+                    }
+                } catch {
+                    errorCount++;
+                }
+            }
+
+            // Step 3: Try to create Google Sheet (if connected)
+            let sheetCreated = false;
+            let spreadsheetUrl = '';
+            try {
+                const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+                if (integration && integration.isActive) {
+                    const sheets = await import('./_core/googleSheets');
+
+                    // Create new spreadsheet
+                    const sheetName = `منتجات ${merchant.businessName || 'متجري'} - ساري`;
+                    const createResult = await sheets.createSpreadsheet(merchant.id, sheetName);
+
+                    if (createResult.success && createResult.spreadsheetId) {
+                        // Write products to the sheet
+                        await sheets.writeToSheet(
+                            merchant.id,
+                            createResult.spreadsheetId,
+                            'Sheet1!A1',
+                            allRows
+                        );
+
+                        // Rename Sheet1 to المنتجات
+                        try {
+                            const { google } = await import('googleapis');
+                            const gAuth = await import('./_core/googleSheets');
+                            // Update the sheet name via direct API is complex, skip for now
+                        } catch {}
+
+                        spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${createResult.spreadsheetId}`;
+                        sheetCreated = true;
+                    }
+                }
+            } catch (error) {
+                console.error('[Products] Error creating Google Sheet:', error);
+                // Don't fail the whole operation if sheet creation fails
+            }
+
+            return {
+                success: true,
+                imported: successCount,
+                failed: errorCount,
+                total: allRows.length - 1,
+                sheetCreated,
+                spreadsheetUrl,
+                message: sheetCreated
+                    ? `تم استيراد ${successCount} منتج وإنشاء Google Sheet للمزامنة التلقائية`
+                    : `تم استيراد ${successCount} منتج. اربط Google Sheets لتفعيل المزامنة التلقائية`,
+            };
+        }),
+
     // Sync products from linked Google Sheet
     syncFromGoogleSheets: protectedProcedure
         .mutation(async ({ ctx }) => {

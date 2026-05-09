@@ -149,10 +149,10 @@ export function startAllSheetsCronJobs() {
 
 /**
  * مزامنة المنتجات تلقائياً من Google Sheets
- * يعمل مرتين يومياً: 9 صباحاً و 9 مساءً
+ * يعمل كل 30 دقيقة لضمان تحديث البوت بأحدث المنتجات
  */
 export function startProductAutoSyncCron() {
-  cron.schedule('0 9,21 * * *', async () => {
+  cron.schedule('*/30 * * * *', async () => {
     console.log('[Sheets Cron] Running product auto-sync...');
 
     try {
@@ -175,7 +175,7 @@ export function startProductAutoSyncCron() {
           const { syncProductsFromSheets } = await import('./sheetsSync');
           const result = await syncProductsFromSheets(merchant.id);
 
-          if (result.success) {
+          if (result.success && (result.created > 0 || result.updated > 0)) {
             console.log(`[Sheets Cron] Product sync for merchant ${merchant.id}: ${result.created} new, ${result.updated} updated`);
           }
         } catch (error) {
@@ -187,5 +187,5 @@ export function startProductAutoSyncCron() {
     }
   });
 
-  console.log('[Sheets Cron] Product auto-sync cron job started (09:00 & 21:00 daily)');
+  console.log('[Sheets Cron] Product auto-sync cron job started (every 30 minutes)');
 }
