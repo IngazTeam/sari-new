@@ -3,7 +3,7 @@
  * Uses GA4 Data API v1beta via direct HTTP calls with Service Account JWT auth
  */
 
-import { sign } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 // ===================== Types =====================
 
@@ -93,7 +93,7 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
 
   const now = Math.floor(Date.now() / 1000);
 
-  const jwt = sign(
+  const jwtToken = jwt.sign(
     {
       iss: sa.client_email,
       scope: 'https://www.googleapis.com/auth/analytics.readonly',
@@ -109,7 +109,7 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
   const tokenRes = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
+    body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwtToken}`,
   });
 
   if (!tokenRes.ok) {
