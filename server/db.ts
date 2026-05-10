@@ -246,6 +246,9 @@ import {
   googleOAuthSettings,
   GoogleOAuthSettings,
   InsertGoogleOAuthSettings,
+  merchantKnowledgeDocs,
+  MerchantKnowledgeDoc,
+  InsertMerchantKnowledgeDoc,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import mysql from "mysql2/promise";
@@ -599,6 +602,68 @@ export async function completeOnboarding(merchantId: number): Promise<void> {
       onboardingCompletedAt: new Date(),
     })
     .where(eq(merchants.id, merchantId));
+}
+
+// ============================================
+// Knowledge Base Document Management
+// ============================================
+
+export async function getActiveKnowledgeDoc(merchantId: number): Promise<MerchantKnowledgeDoc | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select()
+    .from(merchantKnowledgeDocs)
+    .where(and(
+      eq(merchantKnowledgeDocs.merchantId, merchantId),
+      eq(merchantKnowledgeDocs.extractionStatus, 'completed')
+    ))
+    .orderBy(desc(merchantKnowledgeDocs.uploadedAt))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getKnowledgeDocByMerchantId(merchantId: number): Promise<MerchantKnowledgeDoc | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select()
+    .from(merchantKnowledgeDocs)
+    .where(eq(merchantKnowledgeDocs.merchantId, merchantId))
+    .orderBy(desc(merchantKnowledgeDocs.uploadedAt))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createKnowledgeDoc(data: InsertMerchantKnowledgeDoc): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+
+  const result = await db.insert(merchantKnowledgeDocs).values(data);
+  return Number(result[0].insertId);
+}
+
+export async function updateKnowledgeDoc(id: number, data: Partial<InsertMerchantKnowledgeDoc>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(merchantKnowledgeDocs).set(data).where(eq(merchantKnowledgeDocs.id, id));
+}
+
+export async function deleteKnowledgeDoc(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(merchantKnowledgeDocs).where(eq(merchantKnowledgeDocs.id, id));
+}
+
+export async function deleteKnowledgeDocsByMerchantId(merchantId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(merchantKnowledgeDocs).where(eq(merchantKnowledgeDocs.merchantId, merchantId));
 }
 
 // ============================================

@@ -134,9 +134,22 @@ export async function authenticateRequest(req: Request): Promise<User> {
   return user;
 }
 
+/**
+ * Resolve user from request without throwing (returns null on failure)
+ * Used by Express endpoints that need auth but can't use tRPC middleware
+ */
+export async function resolveUser(req: Request): Promise<User | null> {
+  try {
+    return await authenticateRequest(req);
+  } catch {
+    return null;
+  }
+}
+
 // Export as customAuth for easy import
 export const customAuth = {
   createSessionToken,
   verifySession,
   authenticateRequest,
+  resolveUser,
 };

@@ -195,6 +195,143 @@ async function startServer() {
   });
 
   // robots.txt is served from client/public/robots.txt via static files
+
+  // ── Knowledge Docs Upload Endpoint ─────────────────────────
+  // Uses multer for multipart file parsing (tRPC doesn't support FormData)
+  const multer = (await import('multer')).default;
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (_req: any, file: any, cb: any) => {
+      const allowedMimes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword',
+      ];
+      if (allowedMimes.includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error('نوع الملف غير مدعوم. يرجى رفع ملف PDF أو Word فقط.'));
+      }
+    },
+  });
+
+  app.post('/api/knowledge-docs/upload', apiLimiter, (req: any, res: any, next: any) => {
+    // SEC-04 FIX: Wrap multer to catch file size / type errors and return JSON
+    upload.single('file')(req, res, (err: any) => {
+      if (err) {
+        const message = err.code === 'LIMIT_FILE_SIZE'
+          ? 'حجم الملف أكبر من الحد المسموح (5 ميجابايت)'
+          : err.message || 'خطأ في رفع الملف';
+        return res.status(400).json({ error: message });
+      }
+      next();
+    });
+  }, async (req: any, res: any) => {
+    try {
+      // Auth check — extract user from session cookie
+      const { resolveUser } = await import('./auth');
+      const user = await resolveUser(req);
+      if (!user) {
+        return res.status(401).json({ error: 'غير مصرح' });
+      }
+
+      const { getMerchantByUserId, createKnowledgeDoc, updateKnowledgeDoc, deleteKnowledgeDocsByMerchantId } = await import('../db');
+      const merchant = await getMerchantByUserId(user.id);
+      if (!merchant) {
+        return res.status(404).json({ error: 'التاجر غير موجود' });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'لم يتم رفع أي ملف' });
+      }
+
+      const file = req.file;
+      const { getFileTypeFromMime } = await import('../document-parser');
+      const fileType = getFileTypeFromMime(file.mimetype);
+      if (!fileType) {
+        return res.status(400).json({ error: 'نوع الملف غير مدعوم' });
+      }
+
+      console.log(`[KnowledgeDocs] Upload started: merchant=${merchant.id}, size=${file.size}`);
+
+      // SEC-01/SEC-02 FIX: Sanitize filename — strip path separators, control chars, and HTML
+      const sanitizedName = file.originalname
+        .replace(/[/\\<>"'`:;|?*\x00-\x1f]/g, '_')  // Strip path separators & dangerous chars
+        .replace(/\.{2,}/g, '.')                       // Prevent ..
+        .substring(0, 200);                            // Limit length
+
+      // Delete old docs for this merchant (one doc per merchant)
+      await deleteKnowledgeDocsByMerchantId(merchant.id);
+
+      // Save to storage — SEC-01 FIX: Use sanitized name in storage key
+      let fileUrl: string | null = null;
+      try {
+        const { storagePut } = await import('../storage');
+        const storageKey = `knowledge-docs/${merchant.id}/${Date.now()}-${sanitizedName}`;
+        const result = await storagePut(storageKey, file.buffer, file.mimetype);
+        fileUrl = result.key;
+      } catch (err) {
+        console.warn('[KnowledgeDocs] Storage upload failed, proceeding without file URL:', err);
+      }
+
+      // Create DB record — SEC-02 FIX: Store sanitized filename
+      const docId = await createKnowledgeDoc({
+        merchantId: merchant.id,
+        fileName: sanitizedName,
+        fileType,
+        fileUrl,
+        fileSize: file.size,
+        extractionStatus: 'processing',
+      });
+
+      // Extract text
+      try {
+        const { extractTextFromDocument } = await import('../document-parser');
+        const { text, pageCount } = await extractTextFromDocument(file.buffer, fileType);
+
+        await updateKnowledgeDoc(docId, {
+          extractedText: text,
+          extractionStatus: 'completed',
+        });
+
+        console.log(`[KnowledgeDocs] ✅ Extraction completed: merchant=${merchant.id}, chars=${text.length}, pages=${pageCount || 'N/A'}`);
+
+        return res.json({
+          success: true,
+          doc: {
+            id: docId,
+            fileName: sanitizedName,
+            fileType,
+            fileSize: file.size,
+            extractionStatus: 'completed',
+            textLength: text.length,
+            pageCount,
+          },
+        });
+      } catch (extractError) {
+        console.error('[KnowledgeDocs] Text extraction failed:', extractError);
+        await updateKnowledgeDoc(docId, { extractionStatus: 'failed' });
+
+        return res.json({
+          success: true,
+          doc: {
+            id: docId,
+            fileName: sanitizedName,
+            fileType,
+            fileSize: file.size,
+            extractionStatus: 'failed',
+          },
+          warning: 'تم رفع الملف لكن فشل استخراج النص. يمكنك إعادة المحاولة.',
+        });
+      }
+    } catch (error: any) {
+      // SEC-03 FIX: Don't expose raw error messages
+      console.error('[KnowledgeDocs] Upload error:', error);
+      return res.status(500).json({ error: 'حدث خطأ أثناء رفع الملف. حاول مرة أخرى.' });
+    }
+  });
+
   // tRPC API (rate limited: 100 requests per minute)
   app.use(
     "/api/trpc",
