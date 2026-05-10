@@ -1,171 +1,285 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { AlertCircle, TrendingUp, Eye, CheckCircle } from "lucide-react";
-import { useTranslation } from 'react-i18next';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
+import {
+  AlertCircle, TrendingUp, Eye, CheckCircle, Users,
+  Settings, Loader2, RefreshCw, Link2, Unplug,
+} from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export default function SeoDashboard() {
-  const { t } = useTranslation();
-  // Mock data
-  const trafficData = [
-    { date: t('adminSeoDashboardPage.text0'), visitors: 1200, pageViews: 2400, conversions: 240 },
-    { date: t('adminSeoDashboardPage.text1'), visitors: 1400, pageViews: 2210, conversions: 221 },
-    { date: t('adminSeoDashboardPage.text2'), visitors: 1100, pageViews: 2290, conversions: 229 },
-    { date: t('adminSeoDashboardPage.text3'), visitors: 1800, pageViews: 2000, conversions: 200 },
-    { date: t('adminSeoDashboardPage.text4'), visitors: 1500, pageViews: 2181, conversions: 218 },
-    { date: t('adminSeoDashboardPage.text5'), visitors: 2000, pageViews: 2500, conversions: 250 },
-    { date: t('adminSeoDashboardPage.text6'), visitors: 1900, pageViews: 2100, conversions: 210 },
-  ];
+  const [days, setDays] = useState(30);
 
-  const topPages = [
-    { slug: "home", views: 5420, conversions: 542, ctr: "8.2%" },
-    { slug: "pricing", views: 3210, conversions: 321, ctr: "6.5%" },
-    { slug: "features", views: 2840, conversions: 284, ctr: "5.9%" },
-    { slug: "blog", views: 1920, conversions: 192, ctr: "4.3%" },
-  ];
+  // GA Config
+  const { data: config, refetch: refetchConfig } = trpc.googleAnalytics.getConfig.useQuery();
 
-  const alerts = [
-    { id: 1, type: "ranking_drop", severity: "high", message: t('adminSeoDashboardPage.text7'), page: "home" },
-    { id: 2, type: "traffic_drop", severity: "medium", message: t('adminSeoDashboardPage.text8'), page: "pricing" },
-    { id: 3, type: "slow_page", severity: "high", message: t('adminSeoDashboardPage.text9'), page: "features" },
-  ];
+  // GA Data (only fetch when enabled)
+  const { data: overview, isLoading: loadingOverview } =
+    trpc.googleAnalytics.getOverview.useQuery({ days }, { enabled: !!config?.isEnabled });
+  const { data: trafficChart, isLoading: loadingChart } =
+    trpc.googleAnalytics.getTrafficChart.useQuery({ days }, { enabled: !!config?.isEnabled });
+  const { data: topPages } =
+    trpc.googleAnalytics.getTopPages.useQuery({ days }, { enabled: !!config?.isEnabled });
+
+  // If not configured, show setup
+  if (!config?.isEnabled) {
+    return <GASetupCard config={config} onConfigured={refetchConfig} />;
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">{t('adminSeoDashboardPage.text10')}</h1>
-        <p className="text-gray-600 mt-2">{t('adminSeoDashboardPage.text11')}</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">لوحة التحكم SEO</h1>
+          <p className="text-gray-600 mt-2">
+            بيانات حقيقية من Google Analytics 4
+            <Badge variant="outline" className="mr-2 bg-green-50 text-green-700">
+              <CheckCircle className="w-3 h-3 ml-1" /> متصل
+            </Badge>
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={days}
+            onChange={(e) => setDays(parseInt(e.target.value))}
+            className="px-3 py-2 border rounded-lg text-sm"
+          >
+            <option value={7}>آخر 7 أيام</option>
+            <option value={30}>آخر 30 يوم</option>
+            <option value={90}>آخر 90 يوم</option>
+            <option value={365}>سنة كاملة</option>
+          </select>
+        </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text12')}</p>
-              <p className="text-3xl font-bold mt-2">12,540</p>
-              <p className="text-sm text-green-600 mt-2">{t('adminSeoDashboardPage.text13')}</p>
-            </div>
-            <Eye className="w-8 h-8 text-blue-500" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text14')}</p>
-              <p className="text-3xl font-bold mt-2">8.2%</p>
-              <p className="text-sm text-green-600 mt-2">{t('adminSeoDashboardPage.text15')}</p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-green-500" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text16')}</p>
-              <p className="text-3xl font-bold mt-2">156</p>
-              <p className="text-sm text-blue-600 mt-2">{t('adminSeoDashboardPage.text17')}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-blue-500" />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text18')}</p>
-              <p className="text-3xl font-bold mt-2">342</p>
-              <p className="text-sm text-orange-600 mt-2">{t('adminSeoDashboardPage.text19')}</p>
-            </div>
-            <AlertCircle className="w-8 h-8 text-orange-500" />
-          </div>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <KPICard
+          label="إجمالي المستخدمين"
+          value={overview?.totalUsers}
+          icon={<Users className="w-8 h-8 text-blue-500" />}
+          loading={loadingOverview}
+        />
+        <KPICard
+          label="الجلسات"
+          value={overview?.sessions}
+          icon={<Eye className="w-8 h-8 text-green-500" />}
+          loading={loadingOverview}
+        />
+        <KPICard
+          label="مشاهدات الصفحات"
+          value={overview?.pageViews}
+          icon={<TrendingUp className="w-8 h-8 text-purple-500" />}
+          loading={loadingOverview}
+        />
+        <KPICard
+          label="متوسط مدة الجلسة"
+          value={overview ? formatDuration(overview.avgSessionDuration) : undefined}
+          icon={<CheckCircle className="w-8 h-8 text-orange-500" />}
+          loading={loadingOverview}
+          raw
+        />
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* Traffic Chart */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text20')}</h2>
+      {/* Traffic Chart */}
+      <Card className="p-6">
+        <h2 className="text-lg font-semibold mb-4">حركة المرور اليومية</h2>
+        {loadingChart ? (
+          <div className="flex items-center justify-center h-[300px]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : trafficChart && trafficChart.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={trafficData}>
+            <LineChart data={trafficChart}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="visitors" stroke="#3b82f6" name="الزيارات" />
-              <Line type="monotone" dataKey="pageViews" stroke="#10b981" name="مشاهدات الصفحة" />
+              <Line type="monotone" dataKey="users" stroke="#3b82f6" name="المستخدمون" strokeWidth={2} />
+              <Line type="monotone" dataKey="sessions" stroke="#10b981" name="الجلسات" strokeWidth={2} />
+              <Line type="monotone" dataKey="pageViews" stroke="#f59e0b" name="المشاهدات" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
-        </Card>
-
-        {/* Conversions Chart */}
-        <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text21')}</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={trafficData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="conversions" fill="#f59e0b" name="التحويلات" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
+        ) : (
+          <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+            لا توجد بيانات
+          </div>
+        )}
+      </Card>
 
       {/* Top Pages */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text22')}</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text23')}</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text24')}</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text25')}</th>
-                <th className="px-4 py-3 text-right text-sm font-semibold">{t('adminSeoDashboardPage.text26')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {topPages.map((page) => (
-                <tr key={page.slug} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium">{page.slug}</td>
-                  <td className="px-4 py-3">{page.views.toLocaleString()}</td>
-                  <td className="px-4 py-3">{page.conversions}</td>
-                  <td className="px-4 py-3">{page.ctr}</td>
+        <h2 className="text-lg font-semibold mb-4">أعلى الصفحات زيارة</h2>
+        {topPages && topPages.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-muted/50">
+                <tr>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">الصفحة</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">المشاهدات</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">متوسط الوقت</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {topPages.map((page: any) => (
+                  <tr key={page.page} className="border-b hover:bg-muted/30">
+                    <td className="px-4 py-3 font-mono text-sm" dir="ltr">{page.page}</td>
+                    <td className="px-4 py-3">{page.pageViews.toLocaleString()}</td>
+                    <td className="px-4 py-3">{formatDuration(page.avgTime)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-muted-foreground text-center py-8">لا توجد بيانات</p>
+        )}
       </Card>
+    </div>
+  );
+}
 
-      {/* Alerts */}
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">{t('adminSeoDashboardPage.text27')}</h2>
-        <div className="space-y-3">
-          {alerts.map((alert) => (
-            <div key={alert.id} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-              <AlertCircle className={`w-5 h-5 mt-0.5 ${
-                alert.severity === 'high' ? 'text-red-500' : 'text-yellow-500'
-              }`} />
-              <div className="flex-1">
-                <p className="font-medium">{alert.message}</p>
-                <p className="text-sm text-gray-600">{t('adminSeoDashboardPage.text28', { var0: alert.page })}</p>
-              </div>
-              <Badge variant={alert.severity === 'high' ? 'destructive' : 'outline'}>
-                {alert.severity === 'high' ? 'حرج' : 'تحذير'}
-              </Badge>
+// ============ KPI Card ============
+function KPICard({ label, value, icon, loading, raw }: {
+  label: string; value?: number | string; icon: React.ReactNode;
+  loading?: boolean; raw?: boolean;
+}) {
+  return (
+    <Card className="p-6">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          {loading ? (
+            <Loader2 className="h-6 w-6 animate-spin mt-2 text-muted-foreground" />
+          ) : (
+            <p className="text-3xl font-bold mt-2">
+              {raw ? value : (typeof value === 'number' ? value.toLocaleString('ar-SA') : value ?? '—')}
+            </p>
+          )}
+        </div>
+        {icon}
+      </div>
+    </Card>
+  );
+}
+
+// ============ GA Setup Card ============
+function GASetupCard({ config, onConfigured }: { config: any; onConfigured: () => void }) {
+  const [propertyId, setPropertyId] = useState(config?.propertyId || "");
+  const [saJson, setSaJson] = useState("");
+
+  const updateMutation = trpc.googleAnalytics.updateConfig.useMutation({
+    onSuccess: () => {
+      toast.success("تم حفظ الإعدادات ✅");
+      onConfigured();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const testMutation = trpc.googleAnalytics.testConnection.useMutation({
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success(`✅ متصل بنجاح — ${data.propertyName}`);
+      } else {
+        toast.error(data.error || "فشل الاتصال");
+      }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleSave = () => {
+    const data: Record<string, any> = { isEnabled: true };
+    if (propertyId) data.propertyId = propertyId;
+    if (saJson.trim()) data.serviceAccountJson = saJson.trim();
+    updateMutation.mutate(data);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto py-12">
+      <Card className="p-8">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+            <TrendingUp className="h-8 w-8 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold">ربط Google Analytics 4</h2>
+          <p className="text-muted-foreground mt-2">
+            أدخل بيانات Service Account لربط لوحة التحكم ببيانات GA4 الحقيقية
+          </p>
+        </div>
+
+        {config?.hasCredentials && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 mb-4">
+            <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">Service Account مُسجّل</p>
+              <p className="text-xs text-muted-foreground font-mono">{config.serviceAccountEmail}</p>
             </div>
-          ))}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Property ID (الرقمي)</Label>
+            <Input
+              value={propertyId}
+              onChange={(e) => setPropertyId(e.target.value)}
+              placeholder="123456789"
+              dir="ltr"
+              className="font-mono"
+            />
+            <p className="text-xs text-muted-foreground">
+              من GA4 → Admin → Property Settings → Property ID
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Service Account JSON</Label>
+            <Textarea
+              value={saJson}
+              onChange={(e) => setSaJson(e.target.value)}
+              placeholder='{"type": "service_account", "project_id": "...", ...}'
+              rows={6}
+              dir="ltr"
+              className="font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              محتوى ملف JSON المُحمّل من Google Cloud Console
+            </p>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button onClick={handleSave} disabled={updateMutation.isPending} className="flex-1">
+              {updateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              حفظ وتفعيل
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => testMutation.mutate()}
+              disabled={testMutation.isPending || !config?.hasCredentials}
+            >
+              {testMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : <RefreshCw className="h-4 w-4 ml-2" />}
+              اختبار
+            </Button>
+          </div>
         </div>
       </Card>
     </div>
   );
+}
+
+function formatDuration(seconds: number): string {
+  if (!seconds) return "0:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }

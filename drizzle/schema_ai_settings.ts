@@ -12,6 +12,10 @@ export const aiSettings = mysqlTable("ai_settings", {
   whisperModel: varchar("whisper_model", { length: 100 }).notNull().default("whisper-1"),
   isActive: boolean("is_active").notNull().default(true),
   monthlyBudgetLimit: decimal("monthly_budget_limit", { precision: 10, scale: 2 }),
+  // Google Analytics 4
+  gaPropertyId: varchar("ga_property_id", { length: 50 }),
+  gaServiceAccountJson: text("ga_service_account_json"),
+  gaEnabled: boolean("ga_enabled").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
