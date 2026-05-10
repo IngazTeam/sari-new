@@ -243,6 +243,9 @@ import {
   tapSettings,
   TapSettings,
   NewTapSettings,
+  googleOAuthSettings,
+  GoogleOAuthSettings,
+  InsertGoogleOAuthSettings,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import mysql from "mysql2/promise";
