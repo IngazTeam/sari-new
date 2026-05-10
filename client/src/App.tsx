@@ -146,6 +146,8 @@ const CustomerDetails = lazyLoad(() => import("./pages/CustomerDetails"));
 const WebsiteAnalysis = lazyLoad(() => import("./pages/WebsiteAnalysis"));
 const CompetitorAnalysis = lazyLoad(() => import("./pages/CompetitorAnalysis"));
 const SmartAnalysis = lazyLoad(() => import("./pages/SmartAnalysis"));
+const AIWhatsAppHub = lazyLoad(() => import("./pages/merchant/AIWhatsAppHub"));
+const AnalyticsHub = lazyLoad(() => import("./pages/merchant/AnalyticsHub"));
 
 // Admin pages - lazy loaded
 const AdminDashboard = lazyLoad(() => import("./pages/admin/Dashboard"));
@@ -213,6 +215,18 @@ function Router() {
       <Route path="/merchant/dashboard">
         <DashboardLayout>
           <MerchantDashboard />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/ai-hub">
+        <DashboardLayout>
+          <AIWhatsAppHub />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/analytics-hub">
+        <DashboardLayout>
+          <AnalyticsHub />
         </DashboardLayout>
       </Route>
 
