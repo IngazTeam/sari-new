@@ -56,13 +56,41 @@ interface GAPageRow {
 
 let _tokenCache: { token: string; expiry: number } | null = null;
 
+// GA-02 FIX: Validate property ID is strictly numeric
+function validatePropertyId(id: string): void {
+  if (!/^\d{1,15}$/.test(id)) {
+    throw new Error("Invalid Property ID format");
+  }
+}
+
+// GA-04 FIX: Timeout wrapper for fetch
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = 15_000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function getAccessToken(serviceAccountJson: string): Promise<string> {
   // Check cached token
   if (_tokenCache && Date.now() < _tokenCache.expiry - 60_000) {
     return _tokenCache.token;
   }
 
-  const sa = JSON.parse(serviceAccountJson);
+  // GA-03 FIX: Safe JSON parse with clear error
+  let sa: { client_email: string; private_key: string };
+  try {
+    sa = JSON.parse(serviceAccountJson);
+    if (!sa.client_email || !sa.private_key) {
+      throw new Error("missing required fields");
+    }
+  } catch (e) {
+    throw new Error("Service Account JSON غير صالح");
+  }
+
   const now = Math.floor(Date.now() / 1000);
 
   const jwt = sign(
@@ -77,15 +105,18 @@ async function getAccessToken(serviceAccountJson: string): Promise<string> {
     { algorithm: 'RS256' }
   );
 
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+  // GA-04 FIX: Use fetchWithTimeout
+  const tokenRes = await fetchWithTimeout('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`,
   });
 
   if (!tokenRes.ok) {
-    const err = await tokenRes.text();
-    throw new Error(`Google Auth failed: ${tokenRes.status} - ${err}`);
+    // GA-01 FIX: Don't expose raw Google error to caller
+    const statusCode = tokenRes.status;
+    console.error(`[GA] Token exchange failed: ${statusCode}`);
+    throw new Error(`فشل مصادقة Google (${statusCode})`);
   }
 
   const tokenData = await tokenRes.json();
@@ -104,10 +135,14 @@ async function runReport(
   credentials: GACredentials,
   body: Record<string, any>
 ): Promise<any> {
+  // GA-02 FIX: Validate property ID
+  validatePropertyId(credentials.propertyId);
+
   const token = await getAccessToken(credentials.serviceAccountJson);
   const url = `${GA4_API}/properties/${credentials.propertyId}:runReport`;
 
-  const res = await fetch(url, {
+  // GA-04 FIX: Use fetchWithTimeout
+  const res = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -117,8 +152,10 @@ async function runReport(
   });
 
   if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`GA4 API error (${res.status}): ${errText}`);
+    // GA-01 FIX: Log internally, return safe message
+    const statusCode = res.status;
+    console.error(`[GA] Report API failed: ${statusCode}`);
+    throw new Error(`فشل جلب البيانات من Google Analytics (${statusCode})`);
   }
 
   return res.json();
@@ -292,10 +329,14 @@ export async function testConnection(credentials: GACredentials): Promise<{
   error?: string;
 }> {
   try {
+    // GA-02 FIX: Validate property ID
+    validatePropertyId(credentials.propertyId);
+
     const token = await getAccessToken(credentials.serviceAccountJson);
     const url = `https://analyticsadmin.googleapis.com/v1beta/properties/${credentials.propertyId}`;
 
-    const res = await fetch(url, {
+    // GA-04 FIX: Use fetchWithTimeout
+    const res = await fetchWithTimeout(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -304,10 +345,11 @@ export async function testConnection(credentials: GACredentials): Promise<{
     }
 
     const data = await res.json();
-    // Clear token cache on successful new connection
     return { success: true, propertyName: data.displayName || credentials.propertyId };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    // GA-05 FIX: Don't expose raw error internals
+    console.error("[GA] Test connection error:", error);
+    return { success: false, error: "فشل الاتصال. تحقق من البيانات المُدخلة واتصال الإنترنت." };
   }
 }
 
