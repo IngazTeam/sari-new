@@ -31,7 +31,7 @@ export default function SignUp() {
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (data) => {
       // Redirect based on role
-      if (data.user.role === 'admin') {
+      if (data.user.role === 'admin' || data.user.role === 'superadmin') {
         setLocation('/admin/dashboard');
       } else {
         // Redirect new merchants to Setup Wizard

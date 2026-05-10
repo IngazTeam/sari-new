@@ -341,7 +341,8 @@ function DashboardLayoutContent({
   };
 
   // Get menu items based on user role
-  const menuItems = user?.role === 'admin' ? getAdminMenuItems(t) : getMerchantMenuItems(t);
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const menuItems = isAdmin ? getAdminMenuItems(t) : getMerchantMenuItems(t);
   const menuGroups = getMerchantMenuGroups(t);
   const activeMenuItem = menuItems.find(item => item.path === location);
 
@@ -428,7 +429,7 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold tracking-tight truncate">
-                    {user?.role === 'admin' ? t('sidebar.adminPanel') : t('sidebar.merchantPanel')}
+                    {isAdmin ? t('sidebar.adminPanel') : t('sidebar.merchantPanel')}
                   </span>
                 </div>
               ) : null}
@@ -452,7 +453,7 @@ function DashboardLayoutContent({
               </div>
             )}
             <SidebarMenu className="px-2 py-1">
-              {user?.role === 'admin' ? (
+              {isAdmin ? (
                 // Admin: flat list
                 menuItems.map((item) => {
                   const isActive = location === item.path;

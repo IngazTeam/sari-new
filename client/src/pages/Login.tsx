@@ -88,7 +88,7 @@ export default function Login() {
 
       // Redirect
       setTimeout(() => {
-        if (data.user.role === 'admin') {
+        if (data.user.role === 'admin' || data.user.role === 'superadmin') {
           setLocation('/admin/dashboard');
         } else {
           setLocation('/merchant/dashboard');
