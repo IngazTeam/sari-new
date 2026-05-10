@@ -5243,10 +5243,25 @@ export const appRouter = router({
     updatePage: adminProcedure
       .input(z.object({
         pageId: z.number(),
-        data: z.record(z.any()),
+        pageSlug: z.string().optional(),
+        pageTitle: z.string().optional(),
+        pageDescription: z.string().optional(),
+        keywords: z.string().optional(),
+        author: z.string().optional(),
+        canonicalUrl: z.string().optional(),
+        isIndexed: z.number().min(0).max(1).optional(),
+        isPriority: z.number().min(0).max(1).optional(),
+        changeFrequency: z.string().optional(),
+        priority: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        return await seoDb.updateSeoPage(input.pageId, input.data);
+        const { pageId, ...safeData } = input;
+        // Only pass defined fields
+        const data: Record<string, any> = {};
+        for (const [k, v] of Object.entries(safeData)) {
+          if (v !== undefined) data[k] = v;
+        }
+        return await seoDb.updateSeoPage(pageId, data);
       }),
 
     // Meta Tags
@@ -5298,10 +5313,10 @@ export const appRouter = router({
     createTrackingCode: adminProcedure
       .input(z.object({
         pageId: z.number().optional(),
-        trackingType: z.string(),
-        trackingId: z.string(),
-        trackingCode: z.string().optional(),
-        isActive: z.number().optional(),
+        trackingType: z.enum(['google_analytics', 'google_tag_manager', 'facebook_pixel', 'tiktok_pixel', 'snapchat_pixel', 'custom']),
+        trackingId: z.string().min(1).max(200),
+        trackingCode: z.string().max(5000).optional(),
+        isActive: z.number().min(0).max(1).optional(),
       }))
       .mutation(async ({ input }) => {
         return await seoDb.createTrackingCode(input);

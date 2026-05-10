@@ -54,10 +54,16 @@ export async function getSeoPageBySlug(slug: string) {
   return result[0] || null;
 }
 
-export async function updateSeoPage(pageId: number, data: any) {
+export async function updateSeoPage(pageId: number, data: Record<string, any>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(seoPages).set(data).where(eq(seoPages.id, pageId));
+  // Whitelist allowed fields
+  const ALLOWED = ['pageSlug', 'pageTitle', 'pageDescription', 'keywords', 'author', 'canonicalUrl', 'isIndexed', 'isPriority', 'changeFrequency', 'priority'];
+  const safeData: Record<string, any> = {};
+  for (const key of ALLOWED) {
+    if (key in data) safeData[key] = data[key];
+  }
+  return db.update(seoPages).set(safeData).where(eq(seoPages.id, pageId));
 }
 
 // ============================================
@@ -366,10 +372,14 @@ export async function getPendingRecommendations(pageId?: number) {
   return db.select().from(seoRecommendations).where(eq(seoRecommendations.status, "pending"));
 }
 
-export async function updateRecommendation(recId: number, data: any) {
+export async function updateRecommendation(recId: number, data: { status?: string; completedAt?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  return db.update(seoRecommendations).set(data).where(eq(seoRecommendations.id, recId));
+  // Only allow whitelisted fields
+  const safeData: Record<string, any> = {};
+  if (data.status) safeData.status = data.status;
+  if (data.completedAt) safeData.completedAt = data.completedAt;
+  return db.update(seoRecommendations).set(safeData).where(eq(seoRecommendations.id, recId));
 }
 
 // ============================================
