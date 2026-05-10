@@ -6358,39 +6358,8 @@ export const appRouter = router({
       }),
   }),
 
-  // Google OAuth Settings (Super Admin only)
-  googleOAuthSettings: router({
-    // Get Google OAuth settings
-    get: adminProcedure.query(async () => {
-      const settings = await db.getGoogleOAuthSettings();
-      return { settings };
-    }),
-
-    // Update Google OAuth settings
-    update: adminProcedure
-      .input(z.object({
-        clientId: z.string().min(1),
-        clientSecret: z.string().min(1),
-        isEnabled: z.boolean().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        const settings = await db.upsertGoogleOAuthSettings({
-          clientId: input.clientId,
-          clientSecret: input.clientSecret,
-          isEnabled: input.isEnabled ? 1 : 0,
-        });
-
-        return { success: true, settings };
-      }),
-
-    // Toggle enabled status
-    toggleEnabled: adminProcedure
-      .input(z.object({ isEnabled: z.boolean() }))
-      .mutation(async ({ input }) => {
-        const settings = await db.toggleGoogleOAuthEnabled(input.isEnabled);
-        return { success: true, settings };
-      }),
-  }),
+  // Google OAuth Settings (Super Admin only) — modularized to routers-google-oauth-settings.ts
+  googleOAuthSettings: googleOAuthSettingsRouter,
 
   // ============================================
   // Bookings Management
