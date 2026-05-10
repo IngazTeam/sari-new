@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
@@ -32,14 +32,35 @@ export default function SubscriptionPlans() {
     yearlyPrice: '',
     maxCustomers: '',
     maxWhatsAppNumbers: '1',
-    features: '',
+    featuresList: [''] as string[],
     isActive: 1,
   });
 
+  const addFeature = () => {
+    setFormData({ ...formData, featuresList: [...formData.featuresList, ''] });
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData({ ...formData, featuresList: formData.featuresList.filter((_, i) => i !== index) });
+  };
+
+  const updateFeature = (index: number, value: string) => {
+    const updated = [...formData.featuresList];
+    updated[index] = value;
+    setFormData({ ...formData, featuresList: updated });
+  };
+
+  const serializeFeatures = () => {
+    const filtered = formData.featuresList.filter(f => f.trim() !== '');
+    return filtered.length > 0 ? JSON.stringify(filtered) : undefined;
+  };
+
   const handleCreate = async () => {
     try {
+      const { featuresList, ...rest } = formData;
       await createPlan.mutateAsync({
-        ...formData,
+        ...rest,
+        features: serializeFeatures(),
         maxCustomers: parseInt(formData.maxCustomers),
         maxWhatsAppNumbers: parseInt(formData.maxWhatsAppNumbers),
       });
@@ -55,9 +76,11 @@ export default function SubscriptionPlans() {
   const handleUpdate = async () => {
     if (!selectedPlan) return;
     try {
+      const { featuresList, ...rest } = formData;
       await updatePlan.mutateAsync({
         id: selectedPlan.id,
-        ...formData,
+        ...rest,
+        features: serializeFeatures(),
         maxCustomers: formData.maxCustomers ? parseInt(formData.maxCustomers) : undefined,
         maxWhatsAppNumbers: formData.maxWhatsAppNumbers ? parseInt(formData.maxWhatsAppNumbers) : undefined,
       });
@@ -101,10 +124,19 @@ export default function SubscriptionPlans() {
       yearlyPrice: '',
       maxCustomers: '',
       maxWhatsAppNumbers: '1',
-      features: '',
+      featuresList: [''],
       isActive: 1,
     });
     setSelectedPlan(null);
+  };
+
+  const parseFeatures = (raw: string | null | undefined): string[] => {
+    if (!raw) return [''];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch {}
+    return [''];
   };
 
   const openEditDialog = (plan: any) => {
@@ -118,7 +150,7 @@ export default function SubscriptionPlans() {
       yearlyPrice: plan.yearlyPrice,
       maxCustomers: plan.maxCustomers.toString(),
       maxWhatsAppNumbers: plan.maxWhatsAppNumbers.toString(),
-      features: plan.features || '',
+      featuresList: parseFeatures(plan.features),
       isActive: plan.isActive,
     });
     setIsEditDialogOpen(true);
@@ -295,13 +327,35 @@ export default function SubscriptionPlans() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="features">{t('adminSubscriptionPlansPage.text19')}</Label>
-              <Textarea
-                id="features"
-                value={formData.features}
-                onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                placeholder={t('adminSubscriptionPlansPage.text39')}
-              />
+              <div className="flex items-center justify-between">
+                <Label>{t('adminSubscriptionPlansPage.text19')}</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addFeature}>
+                  <Plus className="ml-1 h-3 w-3" />
+                  إضافة ميزة
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {formData.featuresList.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={feature}
+                      onChange={(e) => updateFeature(index, e.target.value)}
+                      placeholder={`ميزة ${index + 1}`}
+                    />
+                    {formData.featuresList.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-destructive hover:text-destructive"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
@@ -398,13 +452,35 @@ export default function SubscriptionPlans() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-features">{t('adminSubscriptionPlansPage.text30')}</Label>
-              <Textarea
-                id="edit-features"
-                value={formData.features}
-                onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                placeholder={t('adminSubscriptionPlansPage.text40')}
-              />
+              <div className="flex items-center justify-between">
+                <Label>{t('adminSubscriptionPlansPage.text30')}</Label>
+                <Button type="button" variant="outline" size="sm" onClick={addFeature}>
+                  <Plus className="ml-1 h-3 w-3" />
+                  إضافة ميزة
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {formData.featuresList.map((feature, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={feature}
+                      onChange={(e) => updateFeature(index, e.target.value)}
+                      placeholder={`ميزة ${index + 1}`}
+                    />
+                    {formData.featuresList.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0 text-destructive hover:text-destructive"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
