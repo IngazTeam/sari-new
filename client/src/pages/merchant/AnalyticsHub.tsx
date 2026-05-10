@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { useTranslation } from "react-i18next";
 import {
   BarChart3,
   TrendingUp,
@@ -11,7 +10,6 @@ import {
   Clock,
   MessageCircle,
   Search,
-  Zap,
   Globe,
 } from "lucide-react";
 
@@ -26,7 +24,6 @@ interface HubCard {
 }
 
 export default function AnalyticsHub() {
-  const { t } = useTranslation();
 
   const cards: HubCard[] = [
     {

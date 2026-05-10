@@ -1,19 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "wouter";
-import { useTranslation } from "react-i18next";
 import {
   Bot,
   Sparkles,
   MessageSquare,
-  Zap,
   Key,
   Mic,
   Calendar,
   BellRing,
   BarChart3,
   TestTube,
-  ArrowLeft,
   Lightbulb,
 } from "lucide-react";
 
@@ -28,7 +25,6 @@ interface HubCard {
 }
 
 export default function AIWhatsAppHub() {
-  const { t } = useTranslation();
 
   const cards: HubCard[] = [
     {

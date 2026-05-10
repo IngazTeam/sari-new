@@ -501,7 +501,7 @@ function DashboardLayoutContent({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <SubscriptionBadge />
+              {!isAdmin && <SubscriptionBadge />}
               <ThemeSwitcher variant="compact" />
               <LanguageSwitcher variant="compact" />
               <NotificationBell />
@@ -533,7 +533,7 @@ function DashboardLayoutContent({
         {!isMobile && (
           <div className="flex border-b h-14 items-center justify-start bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-3">
-              <SubscriptionBadge />
+              {!isAdmin && <SubscriptionBadge />}
               <ThemeSwitcher variant="compact" />
               <LanguageSwitcher variant="compact" />
               <NotificationBell />
