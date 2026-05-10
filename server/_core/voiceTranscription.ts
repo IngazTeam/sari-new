@@ -74,19 +74,14 @@ export async function transcribeAudio(
   options: TranscribeOptions
 ): Promise<TranscriptionResponse | TranscriptionError> {
   try {
-    // Step 1: Validate environment configuration
-    if (!ENV.forgeApiUrl) {
+    // Step 1: Get API key from DB (fallback to env)
+    const { getOpenAiApiKey } = await import("../db_ai_settings");
+    const apiKey = await getOpenAiApiKey();
+    if (!apiKey) {
       return {
-        error: "Voice transcription service is not configured",
+        error: "OpenAI API key is not configured",
         code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_URL is not set"
-      };
-    }
-    if (!ENV.forgeApiKey) {
-      return {
-        error: "Voice transcription service authentication is missing",
-        code: "SERVICE_ERROR",
-        details: "BUILT_IN_FORGE_API_KEY is not set"
+        details: "Set your OpenAI API key in Admin > AI Settings"
       };
     }
 
@@ -142,20 +137,14 @@ export async function transcribeAudio(
     );
     formData.append("prompt", prompt);
 
-    // Step 4: Call the transcription service
-    const baseUrl = ENV.forgeApiUrl.endsWith("/")
-      ? ENV.forgeApiUrl
-      : `${ENV.forgeApiUrl}/`;
-    
-    const fullUrl = new URL(
-      "v1/audio/transcriptions",
-      baseUrl
-    ).toString();
+    // Step 4: Call OpenAI Whisper API directly
+    const startTime = Date.now();
+    const fullUrl = "https://api.openai.com/v1/audio/transcriptions";
 
     const response = await fetch(fullUrl, {
       method: "POST",
       headers: {
-        authorization: `Bearer ${ENV.forgeApiKey}`,
+        authorization: `Bearer ${apiKey}`,
         "Accept-Encoding": "identity",
       },
       body: formData,
@@ -182,7 +171,24 @@ export async function transcribeAudio(
       };
     }
 
-    return whisperResponse; // Return native Whisper API response directly
+    // Log whisper usage (fire-and-forget)
+    try {
+      const { logAiUsage, estimateWhisperCost } = await import("../db_ai_settings");
+      const durationSec = Math.round(whisperResponse.duration || 0);
+      logAiUsage({
+        merchantId: null,
+        requestType: "whisper",
+        model: "whisper-1",
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        audioDurationSec: durationSec,
+        estimatedCost: String(estimateWhisperCost(durationSec)),
+        durationMs: Date.now() - startTime,
+      });
+    } catch { /* ignore logging failures */ }
+
+    return whisperResponse;
 
   } catch (error) {
     // Handle unexpected errors

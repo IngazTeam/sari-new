@@ -47,6 +47,7 @@ import { templateTranslationsRouter } from "./routers-template-translations";
 import { userNotificationsRouter } from "./routers-user-notifications";
 import { productsRouter } from "./routers-products";
 import { knowledgeDocsRouter } from "./routers-knowledge-docs";
+import { aiSettingsRouter } from "./routers-ai-settings";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -8379,5 +8380,8 @@ export const appRouter = router({
 
   // Knowledge Base Documents — modularized to routers-knowledge-docs.ts
   knowledgeDocs: knowledgeDocsRouter,
+
+  // AI Settings & Usage — modularized to routers-ai-settings.ts
+  aiSettings: aiSettingsRouter,
 });
 export type AppRouter = typeof appRouter;

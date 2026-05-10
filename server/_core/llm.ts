@@ -209,16 +209,43 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+const resolveApiUrl = () => "https://api.openai.com/v1/chat/completions";
 
-const assertApiKey = () => {
-  if (!ENV.forgeApiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
+let _cachedApiKey: string | null = null;
+let _cachedModel: string | null = null;
+let _cacheTs = 0;
+const CACHE_TTL = 60_000; // Re-read from DB every 60s
+
+async function getApiKeyAndModel(): Promise<{ apiKey: string; model: string }> {
+  const now = Date.now();
+  if (_cachedApiKey && _cachedModel && now - _cacheTs < CACHE_TTL) {
+    return { apiKey: _cachedApiKey, model: _cachedModel };
+  }
+  try {
+    const { getOpenAiApiKey, getActiveModel } = await import("../db_ai_settings");
+    _cachedApiKey = await getOpenAiApiKey();
+    _cachedModel = await getActiveModel();
+    _cacheTs = now;
+  } catch {
+    _cachedApiKey = ENV.openaiApiKey || ENV.forgeApiKey || "";
+    _cachedModel = "gpt-4o-mini";
+  }
+  return { apiKey: _cachedApiKey, model: _cachedModel };
+}
+
+const assertApiKey = async () => {
+  const { apiKey } = await getApiKeyAndModel();
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured. Set it in Admin > AI Settings.");
   }
 };
+
+/** Clear the cached API key/model so next call re-reads from DB */
+export function _clearCache() {
+  _cachedApiKey = null;
+  _cachedModel = null;
+  _cacheTs = 0;
+}
 
 const normalizeResponseFormat = ({
   responseFormat,
@@ -265,8 +292,10 @@ const normalizeResponseFormat = ({
   };
 };
 
-export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
+export async function invokeLLM(params: InvokeParams & { merchantId?: number }): Promise<InvokeResult> {
+  await assertApiKey();
+  const { apiKey, model: activeModel } = await getApiKeyAndModel();
+  const startTime = Date.now();
 
   const {
     messages,
@@ -277,10 +306,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     output_schema,
     responseFormat,
     response_format,
+    merchantId,
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: activeModel,
     messages: messages.map(normalizeMessage),
   };
 
@@ -296,10 +326,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 32768
-  payload.thinking = {
-    "budget_tokens": 128
-  }
+  payload.max_tokens = 4096;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,
@@ -316,7 +343,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(payload),
   });
@@ -328,5 +355,28 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     );
   }
 
-  return (await response.json()) as InvokeResult;
+  const result = (await response.json()) as InvokeResult;
+
+  // Log usage asynchronously (fire-and-forget)
+  try {
+    const usage = result.usage;
+    if (usage) {
+      const { logAiUsage, estimateCost } = await import("../db_ai_settings");
+      logAiUsage({
+        merchantId: merchantId ?? null,
+        requestType: "chat",
+        model: activeModel,
+        promptTokens: usage.prompt_tokens,
+        completionTokens: usage.completion_tokens,
+        totalTokens: usage.total_tokens,
+        estimatedCost: String(estimateCost(activeModel, usage.prompt_tokens, usage.completion_tokens)),
+        durationMs: Date.now() - startTime,
+      });
+    }
+  } catch (e) {
+    // Don't let logging failures break the response
+    console.warn("[LLM] Usage logging failed:", e);
+  }
+
+  return result;
 }

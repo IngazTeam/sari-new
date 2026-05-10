@@ -213,7 +213,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: BellRing, label: t('sidebar.merchant.notificationSettings'), path: "/merchant/notification-settings", group: 'settings' },
 ];
 
-const getAdminMenuItems = (t: any) => [
+const getAdminMenuItems = (t: any): MenuItem[] => [
   { icon: LayoutDashboard, label: t('sidebar.admin.dashboard'), path: "/admin/dashboard" },
   { icon: Users, label: t('sidebar.admin.merchants'), path: "/admin/merchants" },
   { icon: Megaphone, label: t('sidebar.admin.campaigns'), path: "/admin/campaigns" },
@@ -233,6 +233,7 @@ const getAdminMenuItems = (t: any) => [
   { icon: Zap, label: t('sidebar.admin.googleOAuth'), path: "/admin/google-oauth" },
   { icon: Database, label: t('sidebar.admin.dataSync'), path: "/admin/data-sync" },
   { icon: BarChart3, label: t('sidebar.admin.seoManagement'), path: "/admin/seo" },
+  { icon: Sparkles, label: t('sidebar.admin.aiSettings', 'إعدادات AI'), path: "/admin/ai-settings" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";

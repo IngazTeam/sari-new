@@ -338,7 +338,7 @@ export async function generateAIResponse(
     // استدعاء OpenAI
     const response = await invokeLLM({
       messages,
-      // يمكن إضافة معاملات إضافية هنا
+      merchantId,
     });
 
     const content = response.choices[0]?.message?.content;
