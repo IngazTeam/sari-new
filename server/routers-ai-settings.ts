@@ -13,6 +13,10 @@ function assertAdmin(role: string) {
   }
 }
 
+// AI-02 FIX: Whitelist allowed models
+const ALLOWED_MODELS = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"] as const;
+const ALLOWED_WHISPER_MODELS = ["whisper-1"] as const;
+
 export const aiSettingsRouter = router({
   // Get AI settings (masked API key)
   getSettings: protectedProcedure.query(async ({ ctx }) => {
@@ -36,9 +40,11 @@ export const aiSettingsRouter = router({
   // Update AI settings
   updateSettings: protectedProcedure
     .input(z.object({
-      openaiApiKey: z.string().optional(),
-      model: z.string().optional(),
-      whisperModel: z.string().optional(),
+      // AI-05 FIX: Validate API key format (must start with sk-)
+      openaiApiKey: z.string().regex(/^sk-/, "المفتاح يجب أن يبدأ بـ sk-").optional(),
+      // AI-02 FIX: Whitelist models
+      model: z.enum(ALLOWED_MODELS).optional(),
+      whisperModel: z.enum(ALLOWED_WHISPER_MODELS).optional(),
       isActive: z.boolean().optional(),
       monthlyBudgetLimit: z.string().nullable().optional(),
     }))
@@ -57,7 +63,6 @@ export const aiSettingsRouter = router({
 
       // Clear LLM cache so new key takes effect immediately
       try {
-        // Dynamic import to avoid circular deps
         const llm = await import("./_core/llm");
         if ('_clearCache' in llm) (llm as any)._clearCache();
       } catch { /* ignore */ }
@@ -65,19 +70,32 @@ export const aiSettingsRouter = router({
       return { success: true };
     }),
 
-  // Test OpenAI connection
+  // AI-01 FIX: Test connection using stored key OR new key
   testConnection: protectedProcedure
-    .input(z.object({ apiKey: z.string().min(1) }))
+    .input(z.object({
+      apiKey: z.string().regex(/^sk-/).optional(), // Optional — if empty, test stored key
+    }))
     .mutation(async ({ ctx, input }) => {
       assertAdmin(ctx.user.role);
 
+      // Determine which key to test
+      let keyToTest = input.apiKey;
+      if (!keyToTest) {
+        // Use stored key from DB
+        const { getOpenAiApiKey } = await import("./db_ai_settings");
+        keyToTest = await getOpenAiApiKey();
+      }
+
+      if (!keyToTest) {
+        return { success: false, error: "لا يوجد مفتاح API للاختبار" };
+      }
+
       try {
         const response = await fetch("https://api.openai.com/v1/models", {
-          headers: { authorization: `Bearer ${input.apiKey}` },
+          headers: { authorization: `Bearer ${keyToTest}` },
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
           return {
             success: false,
             error: `فشل الاتصال (${response.status}): ${response.statusText}`,
@@ -95,9 +113,11 @@ export const aiSettingsRouter = router({
           availableModels: models.slice(0, 20),
         };
       } catch (error: any) {
+        // AI-04 FIX: Don't expose raw error messages
+        console.error("[AI Settings] Test connection error:", error);
         return {
           success: false,
-          error: `خطأ في الاتصال: ${error.message}`,
+          error: "فشل الاتصال بخوادم OpenAI. تحقق من اتصال الإنترنت.",
         };
       }
     }),
@@ -114,8 +134,9 @@ export const aiSettingsRouter = router({
     }),
 
   // Get daily usage for chart
+  // AI-03 FIX: Cap days at 365
   getDailyUsage: protectedProcedure
-    .input(z.object({ days: z.number().default(30) }))
+    .input(z.object({ days: z.number().min(1).max(365).default(30) }))
     .query(async ({ ctx, input }) => {
       assertAdmin(ctx.user.role);
       const { getDailyUsage } = await import("./db_ai_settings");
@@ -130,8 +151,9 @@ export const aiSettingsRouter = router({
   }),
 
   // Get recent logs
+  // AI-03 FIX: Cap limit at 200
   getRecentLogs: protectedProcedure
-    .input(z.object({ limit: z.number().default(50) }))
+    .input(z.object({ limit: z.number().min(1).max(200).default(50) }))
     .query(async ({ ctx, input }) => {
       assertAdmin(ctx.user.role);
       const { getRecentLogs } = await import("./db_ai_settings");

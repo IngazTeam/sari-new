@@ -22,7 +22,6 @@ import { Badge } from "@/components/ui/badge";
 export default function AISettings() {
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
-  const [testKey, setTestKey] = useState("");
   const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
 
   // Queries
@@ -213,12 +212,15 @@ export default function AISettings() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  const key = apiKey.trim() || (settings?.hasKey ? "existing" : "");
-                  if (!key || key === "existing") {
+                  // AI-01 FIX: For new key, pass it; for existing, let server use stored key
+                  const newKey = apiKey.trim();
+                  if (newKey) {
+                    testMutation.mutate({ apiKey: newKey });
+                  } else if (settings?.hasKey) {
+                    testMutation.mutate({}); // Server uses stored key
+                  } else {
                     toast.error("أدخل مفتاح API أولاً");
-                    return;
                   }
-                  testMutation.mutate({ apiKey: key });
                 }}
                 disabled={testMutation.isPending}
               >
