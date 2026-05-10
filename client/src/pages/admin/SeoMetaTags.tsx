@@ -3,123 +3,105 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Trash2, Save } from "lucide-react";
-import { useTranslation } from 'react-i18next';
+import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export default function SeoMetaTags() {
-  const { t } = useTranslation();
-  const [selectedPage, setSelectedPage] = useState("home");
-  const [metaTags, setMetaTags] = useState([
-    { id: 1, name: "description", content: t('adminSeoMetaTagsPage.text0') },
-    { id: 2, name: "keywords", content: t('adminSeoMetaTagsPage.text1') },
-    { id: 3, name: "author", content: "Sari Team" },
-  ]);
+  const { data: pages } = trpc.seo.getPages.useQuery();
+  const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
 
-  const pages = ["home", "pricing", "features", "blog"];
+  const activePageId = selectedPageId || (pages?.[0]?.id ?? null);
 
-  const addMetaTag = () => {
-    setMetaTags([...metaTags, { id: Date.now(), name: "", content: "" }]);
-  };
+  const { data: metaTags, isLoading, refetch } = trpc.seo.getMetaTags.useQuery(
+    { pageId: activePageId! },
+    { enabled: !!activePageId }
+  );
 
-  const updateMetaTag = (id: number, field: string, value: string) => {
-    setMetaTags(metaTags.map(tag => 
-      tag.id === id ? { ...tag, [field]: value } : tag
-    ));
-  };
+  const createMutation = trpc.seo.createMetaTag.useMutation({
+    onSuccess: () => { toast.success("تمت الإضافة ✅"); refetch(); },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const deleteMetaTag = (id: number) => {
-    setMetaTags(metaTags.filter(tag => tag.id !== id));
+  const [newName, setNewName] = useState("");
+  const [newContent, setNewContent] = useState("");
+
+  const handleAdd = () => {
+    if (!activePageId || !newName.trim()) return;
+    createMutation.mutate({ pageId: activePageId, metaName: newName, metaContent: newContent });
+    setNewName("");
+    setNewContent("");
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('adminSeoMetaTagsPage.text2')}</h1>
-        <p className="text-gray-600 mt-2">{t('adminSeoMetaTagsPage.text3')}</p>
+        <h1 className="text-3xl font-bold">Meta Tags</h1>
+        <p className="text-muted-foreground mt-2">إدارة Meta Tags لكل صفحة</p>
       </div>
 
       {/* Page Selector */}
       <Card className="p-6">
-        <label className="block text-sm font-medium mb-3">{t('adminSeoMetaTagsPage.text4')}</label>
+        <label className="block text-sm font-medium mb-3">اختر الصفحة</label>
         <div className="flex gap-2 flex-wrap">
-          {pages.map(page => (
+          {(pages || []).map((page: any) => (
             <Button
-              key={page}
-              variant={selectedPage === page ? "default" : "outline"}
-              onClick={() => setSelectedPage(page)}
-              className="capitalize"
+              key={page.id}
+              variant={activePageId === page.id ? "default" : "outline"}
+              onClick={() => setSelectedPageId(page.id)}
             >
-              {page}
+              {page.pageSlug}
             </Button>
           ))}
+          {(!pages || pages.length === 0) && (
+            <p className="text-muted-foreground">لا توجد صفحات — أنشئ صفحة أولاً من تاب "الصفحات"</p>
+          )}
         </div>
       </Card>
 
-      {/* Meta Tags Editor */}
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold">{t('adminSeoMetaTagsPage.text5', { var0: selectedPage })}</h2>
-          <Button onClick={addMetaTag} className="gap-2">
-            <Plus className="w-4 h-4" />
-            إضافة Meta Tag
-          </Button>
-        </div>
+      {activePageId && (
+        <>
+          {/* Existing Meta Tags */}
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Meta Tags الحالية</h2>
+            {isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : (metaTags || []).length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">لا توجد Meta Tags لهذه الصفحة</p>
+            ) : (
+              <div className="space-y-3">
+                {(metaTags || []).map((tag: any) => (
+                  <div key={tag.id} className="p-3 border rounded-lg flex justify-between items-start">
+                    <div>
+                      <span className="font-mono text-sm font-medium">{tag.metaName}</span>
+                      <p className="text-sm text-muted-foreground mt-1">{tag.metaContent}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
 
-        <div className="space-y-4">
-          {metaTags.map(tag => (
-            <div key={tag.id} className="p-4 border rounded-lg space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">{t('adminSeoMetaTagsPage.text6')}</label>
-                  <Input
-                    value={tag.name}
-                    onChange={(e) => updateMetaTag(tag.id, "name", e.target.value)}
-                    placeholder={t('adminSeoMetaTagsPage.text7')}
-                  />
-                </div>
+          {/* Add New */}
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold mb-4">إضافة Meta Tag</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">الاسم</label>
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="description, keywords, author..." dir="ltr" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">{t('adminSeoMetaTagsPage.text8')}</label>
-                <Textarea
-                  value={tag.content}
-                  onChange={(e) => updateMetaTag(tag.id, "content", e.target.value)}
-                  placeholder={t('adminSeoMetaTagsPage.text9')}
-                  rows={3}
-                />
-              </div>
-              <div className="flex justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteMetaTag(tag.id)}
-                  className="text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  حذف
-                </Button>
+                <label className="block text-sm font-medium mb-2">المحتوى</label>
+                <Input value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="محتوى الوسم" />
               </div>
             </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Preview */}
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">{t('adminSeoMetaTagsPage.text10')}</h2>
-        <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-          <p className="text-blue-600 text-lg font-semibold">{t('adminSeoMetaTagsPage.text11')}</p>
-          <p className="text-gray-600">{t('adminSeoMetaTagsPage.text12')}</p>
-          <p className="text-gray-500 text-sm">https://sari.app</p>
-        </div>
-      </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button size="lg" className="gap-2">
-          <Save className="w-4 h-4" />
-          حفظ التغييرات
-        </Button>
-      </div>
+            <Button onClick={handleAdd} disabled={createMutation.isPending || !newName.trim()} className="gap-2">
+              {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              إضافة
+            </Button>
+          </Card>
+        </>
+      )}
     </div>
   );
 }

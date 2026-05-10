@@ -1,255 +1,96 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { useTranslation } from 'react-i18next';
+import { Loader2, Key } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 
 export default function SeoKeywords() {
-  const { t } = useTranslation();
-  const [keywords, setKeywords] = useState([
-    {
-      id: 1,
-      keyword: t('adminSeoKeywordsPage.text0'),
-      searchVolume: 8900,
-      difficulty: 72,
-      currentRank: 3,
-      targetRank: 1,
-      trend: "up",
-      trendValue: 15,
-      competitors: 245,
-    },
-    {
-      id: 2,
-      keyword: t('adminSeoKeywordsPage.text1'),
-      searchVolume: 2100,
-      difficulty: 45,
-      currentRank: 5,
-      targetRank: 2,
-      trend: "up",
-      trendValue: 8,
-      competitors: 89,
-    },
-    {
-      id: 3,
-      keyword: t('adminSeoKeywordsPage.text2'),
-      searchVolume: 5600,
-      difficulty: 85,
-      currentRank: 12,
-      targetRank: 5,
-      trend: "down",
-      trendValue: -5,
-      competitors: 512,
-    },
-    {
-      id: 4,
-      keyword: t('adminSeoKeywordsPage.text3'),
-      searchVolume: 1200,
-      difficulty: 38,
-      currentRank: 8,
-      targetRank: 3,
-      trend: "up",
-      trendValue: 12,
-      competitors: 67,
-    },
-    {
-      id: 5,
-      keyword: t('adminSeoKeywordsPage.text4'),
-      searchVolume: 890,
-      difficulty: 52,
-      currentRank: 15,
-      targetRank: 5,
-      trend: "stable",
-      trendValue: 0,
-      competitors: 123,
-    },
-  ]);
+  const { data: pages } = trpc.seo.getPages.useQuery();
+  const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
 
-  const [newKeyword, setNewKeyword] = useState("");
+  const activePageId = selectedPageId || (pages?.[0]?.id ?? null);
 
-  const deleteKeyword = (id: number) => {
-    setKeywords(keywords.filter(k => k.id !== id));
-  };
-
-  const getRankColor = (current: number, target: number) => {
-    if (current <= target) return "text-green-600";
-    if (current <= target + 5) return "text-yellow-600";
-    return "text-red-600";
-  };
-
-  const getDifficultyColor = (difficulty: number) => {
-    if (difficulty <= 30) return "bg-green-50 text-green-700";
-    if (difficulty <= 60) return "bg-yellow-50 text-yellow-700";
-    return "bg-red-50 text-red-700";
-  };
+  const { data: keywords, isLoading } = trpc.seo.getKeywords.useQuery(
+    { pageId: activePageId! },
+    { enabled: !!activePageId }
+  );
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('adminSeoKeywordsPage.text5')}</h1>
-        <p className="text-gray-600 mt-2">{t('adminSeoKeywordsPage.text6')}</p>
+        <h1 className="text-3xl font-bold">الكلمات المفتاحية</h1>
+        <p className="text-muted-foreground mt-2">تحليل الكلمات المفتاحية لكل صفحة</p>
       </div>
 
-      {/* Add New Keyword */}
+      {/* Page Selector */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">{t('adminSeoKeywordsPage.text7')}</h2>
-        <div className="flex gap-2">
-          <Input
-            placeholder={t('adminSeoKeywordsPage.text8')}
-            value={newKeyword}
-            onChange={(e) => setNewKeyword(e.target.value)}
-          />
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" />
-            إضافة
-          </Button>
+        <label className="block text-sm font-medium mb-3">اختر الصفحة</label>
+        <div className="flex gap-2 flex-wrap">
+          {(pages || []).map((page: any) => (
+            <Button
+              key={page.id}
+              variant={activePageId === page.id ? "default" : "outline"}
+              onClick={() => setSelectedPageId(page.id)}
+            >
+              {page.pageSlug}
+            </Button>
+          ))}
+          {(!pages || pages.length === 0) && (
+            <p className="text-muted-foreground">لا توجد صفحات</p>
+          )}
         </div>
       </Card>
 
       {/* Keywords Table */}
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
-              <tr>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text9')}</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text10')}</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text11')}</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text12')}</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text13')}</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text14')}</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text15')}</th>
-                <th className="px-6 py-3 text-right text-sm font-semibold">{t('adminSeoKeywordsPage.text16')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keywords.map((kw) => (
-                <tr key={kw.id} className="border-b hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">{kw.keyword}</td>
-                  <td className="px-6 py-4">{kw.searchVolume.toLocaleString()}</td>
-                  <td className="px-6 py-4">
-                    <Badge className={getDifficultyColor(kw.difficulty)}>
-                      {kw.difficulty}%
-                    </Badge>
-                  </td>
-                  <td className={`px-6 py-4 font-semibold ${getRankColor(kw.currentRank, kw.targetRank)}`}>
-                    #{kw.currentRank}
-                  </td>
-                  <td className="px-6 py-4 font-semibold">#{kw.targetRank}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {kw.trend === "up" && (
-                        <>
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                          <span className="text-green-600">↑ {kw.trendValue}%</span>
-                        </>
-                      )}
-                      {kw.trend === "down" && (
-                        <>
-                          <TrendingDown className="w-4 h-4 text-red-600" />
-                          <span className="text-red-600">↓ {Math.abs(kw.trendValue)}%</span>
-                        </>
-                      )}
-                      {kw.trend === "stable" && (
-                        <>
-                          <Minus className="w-4 h-4 text-gray-600" />
-                          <span className="text-gray-600">{t('adminSeoKeywordsPage.text17')}</span>
-                        </>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">{kw.competitors}</td>
-                  <td className="px-6 py-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteKeyword(kw.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-
-      {/* Keyword Insights */}
-      <div className="grid grid-cols-3 gap-6">
+      {activePageId && (
         <Card className="p-6">
-          <h3 className="font-semibold mb-4">{t('adminSeoKeywordsPage.text18')}</h3>
-          <div className="space-y-2">
-            {keywords
-              .filter(k => k.searchVolume > 5000)
-              .map(k => (
-                <div key={k.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                  <span className="font-medium text-sm">{k.keyword}</span>
-                  <Badge variant="outline">{k.searchVolume.toLocaleString()}</Badge>
-                </div>
-              ))}
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">{t('adminSeoKeywordsPage.text19')}</h3>
-          <div className="space-y-2">
-            {keywords
-              .filter(k => k.currentRank <= 10)
-              .map(k => (
-                <div key={k.id} className="flex justify-between items-center p-2 bg-green-50 rounded">
-                  <span className="font-medium text-sm">{k.keyword}</span>
-                  <Badge className="bg-green-600">#{k.currentRank}</Badge>
-                </div>
-              ))}
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">{t('adminSeoKeywordsPage.text20')}</h3>
-          <div className="space-y-2">
-            {keywords
-              .filter(k => k.currentRank > k.targetRank + 5)
-              .map(k => (
-                <div key={k.id} className="flex justify-between items-center p-2 bg-red-50 rounded">
-                  <span className="font-medium text-sm">{k.keyword}</span>
-                  <Badge variant="destructive">#{k.currentRank}</Badge>
-                </div>
-              ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* Competitor Analysis */}
-      <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">{t('adminSeoKeywordsPage.text21')}</h2>
-        <div className="space-y-4">
-          {keywords.slice(0, 3).map(kw => (
-            <div key={kw.id} className="p-4 border rounded-lg">
-              <div className="flex justify-between items-start mb-3">
-                <h3 className="font-semibold">{kw.keyword}</h3>
-                <Badge variant="outline">{t('adminSeoKeywordsPage.text22', { var0: kw.competitors })}</Badge>
-              </div>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-600">{t('adminSeoKeywordsPage.text23')}</p>
-                  <p className="font-semibold">{kw.searchVolume.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">{t('adminSeoKeywordsPage.text24')}</p>
-                  <p className="font-semibold">{kw.difficulty}%</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">{t('adminSeoKeywordsPage.text25')}</p>
-                  <p className="font-semibold text-green-600">{t('adminSeoKeywordsPage.text26')}</p>
-                </div>
-              </div>
+          <h2 className="text-lg font-semibold mb-4">الكلمات المفتاحية</h2>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          ) : (keywords || []).length === 0 ? (
+            <div className="text-center py-12">
+              <Key className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">لا توجد كلمات مفتاحية</h3>
+              <p className="text-muted-foreground">لم يتم تحليل كلمات مفتاحية لهذه الصفحة بعد</p>
             </div>
-          ))}
-        </div>
-      </Card>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">الكلمة</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">الترتيب</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">حجم البحث</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">المنافسة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(keywords || []).map((kw: any) => (
+                    <tr key={kw.id} className="border-b hover:bg-muted/30">
+                      <td className="px-4 py-3 font-medium">{kw.keyword}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant={kw.currentRank <= 10 ? "default" : "outline"}>
+                          #{kw.currentRank || "—"}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3">{kw.searchVolume?.toLocaleString() || "—"}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant="outline" className={
+                          kw.competition === 'high' ? 'bg-red-50' :
+                          kw.competition === 'medium' ? 'bg-yellow-50' : 'bg-green-50'
+                        }>
+                          {kw.competition || "—"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

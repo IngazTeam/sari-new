@@ -2,174 +2,97 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Save, Copy, Eye, EyeOff } from "lucide-react";
-import { useTranslation } from 'react-i18next';
+import { Plus, Code, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export default function SeoTracking() {
-  const { t } = useTranslation();
-  const [trackingCodes, setTrackingCodes] = useState([
-    {
-      id: 1,
-      type: "Google Analytics",
-      trackingId: "G-XXXXXXXXXX",
-      code: "<!-- Google Analytics -->\n<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX\"></script>",
-      isActive: true,
-    },
-    {
-      id: 2,
-      type: "Facebook Pixel",
-      trackingId: "1234567890",
-      code: "<!-- Facebook Pixel Code -->\n<img height=\"1\" width=\"1\" style=\"display:none\" src=\"https://www.facebook.com/tr?id=1234567890&ev=PageView&noscript=1\" />",
-      isActive: true,
-    },
-    {
-      id: 3,
-      type: "Google Tag Manager",
-      trackingId: "GTM-XXXXXXX",
-      code: "<!-- Google Tag Manager -->\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>",
-      isActive: false,
-    },
-  ]);
+  const { data: trackingCodes, isLoading, refetch } = trpc.seo.getTrackingCodes.useQuery();
 
-  const [showCode, setShowCode] = useState<number | null>(null);
+  const createMutation = trpc.seo.createTrackingCode.useMutation({
+    onSuccess: () => { toast.success("تمت الإضافة ✅"); refetch(); setNewId(""); setNewCode(""); },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const toggleActive = (id: number) => {
-    setTrackingCodes(trackingCodes.map(code =>
-      code.id === id ? { ...code, isActive: !code.isActive } : code
-    ));
-  };
+  const [newType, setNewType] = useState("google_analytics");
+  const [newId, setNewId] = useState("");
+  const [newCode, setNewCode] = useState("");
 
-  const deleteCode = (id: number) => {
-    setTrackingCodes(trackingCodes.filter(code => code.id !== id));
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
+  const handleAdd = () => {
+    if (!newId.trim()) return;
+    createMutation.mutate({
+      trackingType: newType,
+      trackingId: newId,
+      trackingCode: newCode || undefined,
+      isActive: 1,
+    });
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">{t('adminSeoTrackingPage.text0')}</h1>
-        <p className="text-gray-600 mt-2">{t('adminSeoTrackingPage.text1')}</p>
+        <h1 className="text-3xl font-bold">رموز التتبع</h1>
+        <p className="text-muted-foreground mt-2">إدارة أكواد التتبع والتحليلات</p>
       </div>
 
-      {/* Add New Code */}
+      {/* Existing Codes */}
       <Card className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-semibold">{t('adminSeoTrackingPage.text2')}</h2>
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" />
-            إضافة رمز تتبع
-          </Button>
-        </div>
-
-        <div className="space-y-4">
-          {trackingCodes.map(code => (
-            <Card key={code.id} className="p-4 border">
-              <div className="flex items-start justify-between mb-4">
+        <h2 className="text-lg font-semibold mb-4">الأكواد المفعّلة</h2>
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+        ) : (trackingCodes || []).length === 0 ? (
+          <p className="text-muted-foreground text-center py-8">لا توجد أكواد تتبع</p>
+        ) : (
+          <div className="space-y-3">
+            {(trackingCodes || []).map((code: any) => (
+              <div key={code.id} className="p-4 border rounded-lg flex justify-between items-center">
                 <div className="flex items-center gap-3">
+                  <Code className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <h3 className="font-semibold">{code.type}</h3>
-                    <p className="text-sm text-gray-600">{t('adminSeoTrackingPage.text3', { var0: code.trackingId })}</p>
+                    <span className="font-medium">{code.trackingType}</span>
+                    <p className="text-sm text-muted-foreground font-mono" dir="ltr">{code.trackingId}</p>
                   </div>
                 </div>
                 <Badge variant={code.isActive ? "default" : "outline"}>
-                  {code.isActive ? t('adminSeoTrackingPage.text4') : t('adminSeoTrackingPage.text5')}
+                  {code.isActive ? "مفعّل" : "معطّل"}
                 </Badge>
               </div>
-
-              <div className="bg-gray-50 p-3 rounded-lg mb-4 font-mono text-sm max-h-24 overflow-y-auto">
-                {showCode === code.id ? (
-                  <pre className="whitespace-pre-wrap break-words text-xs">{code.code}</pre>
-                ) : (
-                  <p className="text-gray-500">{t('adminSeoTrackingPage.text6')}</p>
-                )}
-              </div>
-
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCode(showCode === code.id ? null : code.id)}
-                  className="gap-2"
-                >
-                  {showCode === code.id ? (
-                    <>
-                      <EyeOff className="w-4 h-4" />
-                      إخفاء
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-4 h-4" />
-                      عرض
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(code.code)}
-                  className="gap-2"
-                >
-                  <Copy className="w-4 h-4" />
-                  نسخ
-                </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleActive(code.id)}
-                >
-                  {code.isActive ? t('adminSeoTrackingPage.text7') : t('adminSeoTrackingPage.text8')}
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteCode(code.id)}
-                  className="text-red-600"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
 
-      {/* Integration Guide */}
+      {/* Add New */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">{t('adminSeoTrackingPage.text9')}</h2>
-        <div className="space-y-4">
+        <h2 className="text-lg font-semibold mb-4">إضافة كود تتبع</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
-            <h3 className="font-semibold mb-2">Google Analytics 4</h3>
-            <p className="text-sm text-gray-600 mb-2">{t('adminSeoTrackingPage.text10')}</p>
-            <div className="bg-gray-50 p-3 rounded-lg text-xs font-mono overflow-x-auto">
-              &lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"&gt;&lt;/script&gt;
-            </div>
+            <label className="block text-sm font-medium mb-2">النوع</label>
+            <select value={newType} onChange={(e) => setNewType(e.target.value)} className="w-full px-3 py-2 border rounded-lg text-sm">
+              <option value="google_analytics">Google Analytics</option>
+              <option value="google_tag_manager">Google Tag Manager</option>
+              <option value="facebook_pixel">Facebook Pixel</option>
+              <option value="tiktok_pixel">TikTok Pixel</option>
+              <option value="snapchat_pixel">Snapchat Pixel</option>
+              <option value="custom">Custom</option>
+            </select>
           </div>
-
           <div>
-            <h3 className="font-semibold mb-2">Facebook Pixel</h3>
-            <p className="text-sm text-gray-600 mb-2">{t('adminSeoTrackingPage.text11')}</p>
-            <div className="bg-gray-50 p-3 rounded-lg text-xs font-mono overflow-x-auto">
-              &lt;img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=..."&gt;
-            </div>
+            <label className="block text-sm font-medium mb-2">Tracking ID</label>
+            <Input value={newId} onChange={(e) => setNewId(e.target.value)} placeholder="G-XXXXXXXXXX" dir="ltr" className="font-mono" />
           </div>
         </div>
-      </Card>
-
-      {/* Save Button */}
-      <div className="flex justify-end">
-        <Button size="lg" className="gap-2">
-          <Save className="w-4 h-4" />
-          حفظ التغييرات
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-2">كود مخصص (اختياري)</label>
+          <Textarea value={newCode} onChange={(e) => setNewCode(e.target.value)} placeholder="<script>...</script>" dir="ltr" rows={4} className="font-mono text-xs" />
+        </div>
+        <Button onClick={handleAdd} disabled={createMutation.isPending || !newId.trim()} className="gap-2">
+          {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+          إضافة
         </Button>
-      </div>
+      </Card>
     </div>
   );
 }
