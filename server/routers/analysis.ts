@@ -9,7 +9,11 @@ import {
   discoverPages,
   extractContactInfo,
   isUrlSafe,
+  detectSiteType,
+  smartCrawl,
+  extractAllWithAI,
   type ExtractedFAQ,
+  type SiteType,
 } from "../_core/websiteAnalyzer";
 import { checkRateLimit } from "../_core/rateLimiter";
 
@@ -52,80 +56,79 @@ export const analysisRouter = router({
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز عدد محاولات التحليل. حاول بعد قليل.' });
         }
 
-        // Update status to analyzing (only status, not the data)
+        // Update status to analyzing
         await db.updateMerchantWebsiteInfo({
           merchantId: merchant.id,
           analysisStatus: "analyzing",
         });
 
-        // Fetch website content using the engine (with curl fallback)
-        const { html, dom, text } = await scrapeWebsite(input.websiteUrl);
-
-        // 1. Detect Platform
+        // ═══ Phase 1: Scrape homepage ═══
+        console.log(`[SmartAnalysis] Starting analysis for ${input.websiteUrl}`);
+        const { html, dom, text: homeText } = await scrapeWebsite(input.websiteUrl);
         const platform = detectPlatform(input.websiteUrl, html);
+        const siteType = detectSiteType(input.websiteUrl, html, homeText);
+        console.log(`[SmartAnalysis] Site type: ${siteType}, Platform: ${platform}`);
 
-        // 2. Extract Products (multi-strategy: JSON-LD → API → HTML → AI)
-        const products = await extractProducts(input.websiteUrl, html, text);
+        // ═══ Phase 2: Smart crawl (up to 30 pages) ═══
+        const crawlResult = await smartCrawl(input.websiteUrl, dom, 30);
+        // Combine homepage text + crawled text
+        const allText = `--- الصفحة الرئيسية ---\n${homeText}` + crawlResult.allText;
+        console.log(`[SmartAnalysis] Total crawled text: ${allText.length} chars from ${crawlResult.pages.length + 1} pages`);
 
-        // 3. Discover Pages (from homepage links)
-        const pages = discoverPages(dom, input.websiteUrl);
+        // ═══ Phase 3: Extract products/services ═══
+        let products: any[] = [];
+        let faqs: ExtractedFAQ[] = [];
 
-        // 4. Extract FAQs from FAQ/shipping/returns pages
-        let allFaqs: ExtractedFAQ[] = [];
-        const faqPages = pages.filter(p => ['faq', 'shipping', 'returns'].includes(p.pageType));
-        for (const page of faqPages.slice(0, 5)) {
-          try {
-            const pageScrape = await scrapeWebsite(page.url);
-            const pageDoc = pageScrape.dom.window.document;
-
-            // Extract FAQs using common selectors
-            pageDoc.querySelectorAll('.faq, .faqs, [class*="faq"], [class*="question"], .accordion, details, [class*="accordion"]').forEach((el: any) => {
-              const question = (el.querySelector('h1, h2, h3, h4, h5, summary, [class*="question"], button')?.textContent || '').trim();
-              const answer = (el.querySelector('p, [class*="answer"], .content, .panel, dd')?.textContent || '').trim();
-              if (question && answer && question.length > 5 && answer.length > 10) {
-                allFaqs.push({ question, answer: answer.substring(0, 500), category: page.pageType });
-              }
-            });
-
-            // Also try <dt>/<dd> FAQ patterns
-            pageDoc.querySelectorAll('dt').forEach((dt: any) => {
-              const question = (dt.textContent || '').trim();
-              const dd = dt.nextElementSibling;
-              if (dd && dd.tagName === 'DD') {
-                const answer = (dd.textContent || '').trim();
-                if (question && answer) {
-                  allFaqs.push({ question, answer: answer.substring(0, 500), category: page.pageType });
-                }
-              }
-            });
-          } catch (error) {
-            console.error(`Error extracting FAQs from ${page.url}:`, error);
+        if (siteType === 'ecommerce') {
+          // E-commerce: use existing multi-strategy extraction (API → JSON-LD → HTML → AI)
+          products = await extractProducts(input.websiteUrl, html, homeText);
+          // If API/HTML found nothing, fall back to AI
+          if (products.length === 0 && allText.length >= 100) {
+            const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType);
+            products = aiResult.products;
+            faqs = aiResult.faqs;
           }
+        } else {
+          // Non-ecommerce: always use AI extraction from all crawled content
+          const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType);
+          products = aiResult.products;
+          faqs = aiResult.faqs;
         }
 
-        // 5. Extract contact info from contact/about pages
-        let contactInfo: ContactInfo | null = null;
-        const contactPages = pages.filter(p => ['contact', 'about'].includes(p.pageType));
-        for (const page of contactPages.slice(0, 2)) {
+        // ═══ Phase 4: Extract pages + contact info ═══
+        const discoveredPages = discoverPages(dom, input.websiteUrl);
+        let contactInfo = extractContactInfo(dom, homeText, html);
+
+        // Enrich contact from crawled contact/about pages
+        for (const page of crawlResult.pages.filter(p => p.type === 'contact' || p.type === 'about').slice(0, 2)) {
           try {
-            const pageScrape = await scrapeWebsite(page.url);
-            contactInfo = extractContactInfo(pageScrape.dom, pageScrape.text, pageScrape.html);
-            if (contactInfo.phones.length > 0 || contactInfo.emails.length > 0) break;
-          } catch (error) {
-            console.error(`Error extracting contact from ${page.url}:`, error);
-          }
+            const { dom: pageDom, text: pageText, html: pageHtml } = await scrapeWebsite(page.url);
+            const pageContact = extractContactInfo(pageDom, pageText, pageHtml);
+            contactInfo.phones = Array.from(new Set([...contactInfo.phones, ...pageContact.phones]));
+            contactInfo.emails = Array.from(new Set([...contactInfo.emails, ...pageContact.emails]));
+            if (!contactInfo.whatsappNumber && pageContact.whatsappNumber) contactInfo.whatsappNumber = pageContact.whatsappNumber;
+            if (!contactInfo.address && pageContact.address) contactInfo.address = pageContact.address;
+          } catch {} // silently skip failed pages — already crawled above
         }
 
-        // Reset status back to previous (don't mark completed yet)
-        await db.updateMerchantWebsiteInfo({
-          merchantId: merchant.id,
-          analysisStatus: "pending",
-        });
+        // ═══ Phase 5: Save scraped content for bot knowledge ═══
+        try {
+          await db.updateMerchantWebsiteInfo({
+            merchantId: merchant.id,
+            analysisStatus: "pending",
+            websiteUrl: input.websiteUrl,
+          });
+        } catch (err) {
+          console.warn('[SmartAnalysis] Failed to save website info:', err);
+        }
+
+        console.log(`[SmartAnalysis] Complete: ${products.length} items, ${faqs.length} FAQs, ${discoveredPages.length} pages, siteType=${siteType}`);
 
         return {
           success: true,
           websiteUrl: input.websiteUrl,
           platform,
+          siteType,
           products: products.map(p => ({
             name: p.name,
             description: p.description || '',
@@ -136,17 +139,22 @@ export const analysisRouter = router({
             category: p.category || '',
             inStock: p.inStock ?? true,
           })),
-          pages: pages.map(p => ({
+          pages: discoveredPages.map(p => ({
             pageType: p.pageType,
             title: p.title,
             url: p.url,
           })),
-          faqs: allFaqs.map(f => ({
+          faqs: faqs.map(f => ({
             question: f.question,
             answer: f.answer,
             category: f.category || '',
           })),
           contactInfo: contactInfo || { phones: [], emails: [], whatsappNumber: null, address: null },
+          crawlStats: {
+            totalPages: crawlResult.pages.length + 1,
+            totalChars: allText.length,
+            siteType,
+          },
         };
       } catch (error: any) {
         // Reset status on failure

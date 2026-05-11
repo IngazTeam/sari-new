@@ -2208,3 +2208,232 @@ ${i + 1}. ${c.title}
     return { strengths: [], weaknesses: [], opportunities: [] };
   }
 }
+
+// ============================================
+// Smart Crawler — Universal Website Analysis
+// ============================================
+
+export type SiteType = 'ecommerce' | 'services' | 'courses' | 'general';
+
+/**
+ * كشف نوع الموقع من المحتوى
+ */
+export function detectSiteType(url: string, html: string, text: string): SiteType {
+  const platform = detectPlatform(url, html);
+  if (platform !== 'custom') return 'ecommerce';
+
+  const lower = text.toLowerCase();
+  const htmlLower = html.toLowerCase();
+
+  // E-commerce signals
+  const ecomSignals = ['add to cart', 'أضف للسلة', 'اشتري الآن', 'buy now', 'سلة', 'cart', 'checkout', '.product-price', 'data-product'];
+  const ecomScore = ecomSignals.filter(s => lower.includes(s) || htmlLower.includes(s)).length;
+  if (ecomScore >= 2) return 'ecommerce';
+
+  // Courses/training signals
+  const courseSignals = ['دورة', 'دورات', 'تدريب', 'تدريبية', 'ورشة عمل', 'course', 'training', 'workshop', 'certificate', 'شهادة', 'برنامج تدريبي', 'محاضرة', 'أكاديمية', 'academy', 'enrollment', 'تسجيل في الدورة'];
+  const courseScore = courseSignals.filter(s => lower.includes(s)).length;
+  if (courseScore >= 2) return 'courses';
+
+  // Services signals
+  const serviceSignals = ['خدمة', 'خدمات', 'خدماتنا', 'service', 'services', 'استشارة', 'استشارات', 'صيانة', 'تصميم', 'our services', 'نقدم لكم', 'حلول', 'solutions'];
+  const serviceScore = serviceSignals.filter(s => lower.includes(s)).length;
+  if (serviceScore >= 2) return 'services';
+
+  return 'general';
+}
+
+/**
+ * زحف ذكي — يسحب حتى 30 صفحة داخلية بترتيب أولوية
+ */
+export async function smartCrawl(baseUrl: string, homeDom: JSDOM, maxPages: number = 30): Promise<{
+  pages: Array<{ url: string; type: string; title: string; text: string }>;
+  allText: string;
+  totalChars: number;
+}> {
+  // 1. Discover all internal links from homepage
+  const allLinks = discoverPages(homeDom, baseUrl);
+  console.log(`[SmartCrawl] Discovered ${allLinks.length} internal links from homepage`);
+
+  // 2. Priority ordering
+  const priorityMap: Record<string, number> = {
+    services: 1, products: 2, courses: 3, about: 4, portfolio: 5,
+    faq: 6, contact: 7, shipping: 8, returns: 9, terms: 10, privacy: 11, content: 12,
+  };
+  const sorted = [...allLinks].sort((a, b) => {
+    const pa = priorityMap[a.pageType] ?? 99;
+    const pb = priorityMap[b.pageType] ?? 99;
+    return pa - pb;
+  });
+
+  // 3. Crawl up to maxPages
+  const crawled: Array<{ url: string; type: string; title: string; text: string }> = [];
+  let allText = '';
+  const MAX_TEXT = 500_000; // 500KB cap
+
+  for (const page of sorted.slice(0, maxPages)) {
+    if (allText.length >= MAX_TEXT) {
+      console.log(`[SmartCrawl] Text cap reached (${allText.length} chars), stopping crawl`);
+      break;
+    }
+    try {
+      console.log(`[SmartCrawl] Crawling [${page.pageType}] ${page.url}`);
+      const { text } = await scrapeWebsite(page.url);
+      if (text.length > 50) { // Skip empty/blocked pages
+        crawled.push({ url: page.url, type: page.pageType, title: page.title, text });
+        allText += `\n\n--- ${page.title} (${page.pageType}) ---\n${text}`;
+      }
+    } catch (err) {
+      console.warn(`[SmartCrawl] Failed to crawl ${page.url}:`, err instanceof Error ? err.message : 'unknown');
+    }
+  }
+
+  console.log(`[SmartCrawl] Crawled ${crawled.length}/${sorted.length} pages, ${allText.length} total chars`);
+  return { pages: crawled, allText, totalChars: allText.length };
+}
+
+/**
+ * استخراج شامل بالـ AI — يستخرج كل أنواع المحتوى من النص المجمّع
+ */
+export async function extractAllWithAI(allText: string, url: string, siteType: SiteType): Promise<{
+  products: ExtractedProduct[];
+  faqs: ExtractedFAQ[];
+  companyInfo: { name: string; description: string; industry: string };
+}> {
+  try {
+    if (allText.length < 100) {
+      console.warn('[SmartCrawl] Not enough text for AI extraction');
+      return { products: [], faqs: [], companyInfo: { name: '', description: '', industry: '' } };
+    }
+
+    const siteTypeHint = {
+      ecommerce: 'هذا متجر إلكتروني. ركّز على المنتجات والأسعار.',
+      services: 'هذا موقع شركة خدمات. ركّز على الخدمات والاستشارات والباقات.',
+      courses: 'هذا موقع تدريب/تعليم. ركّز على الدورات التدريبية والبرامج والشهادات.',
+      general: 'هذا موقع شركة/مؤسسة. استخرج كل ما تقدمه من منتجات وخدمات ودورات.',
+    };
+
+    const response = await invokeLLM({
+      messages: [
+        {
+          role: 'system',
+          content: `أنت خبير في تحليل المواقع واستخراج كل ما تقدمه الشركة/المتجر.
+
+${siteTypeHint[siteType]}
+
+مهمتك:
+1. استخراج كل المنتجات/الخدمات/الدورات/الباقات (كل شيء تبيعه أو تقدمه الشركة)
+2. استخراج الأسئلة الشائعة إن وُجدت
+3. استخراج معلومات الشركة (الاسم، الوصف، المجال)
+
+قواعد:
+- استخرج الاسم الكامل بدقة كما هو في الموقع
+- اكتب وصف مفيد لكل عنصر (حتى لو لم يكن صريحاً)
+- حدد الفئة: "منتج" / "خدمة" / "دورة تدريبية" / "باقة" / "استشارة"
+- استخرج السعر إن وُجد (0 إذا غير مذكور)
+- استخرج أكبر عدد ممكن من العناصر
+
+الإجابة بصيغة JSON فقط.`
+        },
+        {
+          role: 'user',
+          content: `الموقع: ${url}
+
+${allText.substring(0, 30000)}
+
+استخرج كل ما يقدمه هذا الموقع بالتنسيق التالي:
+{
+  "products": [
+    { "name": "...", "description": "...", "price": 0, "currency": "SAR", "category": "خدمة/منتج/دورة/باقة", "tags": ["..."], "inStock": true, "confidence": 85 }
+  ],
+  "faqs": [
+    { "question": "...", "answer": "...", "category": "عام" }
+  ],
+  "companyInfo": { "name": "اسم الشركة", "description": "وصف مختصر للشركة ونشاطها", "industry": "المجال" }
+}`
+        }
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'full_extraction',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              products: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    name: { type: 'string' },
+                    description: { type: 'string' },
+                    price: { type: 'number' },
+                    currency: { type: 'string' },
+                    category: { type: 'string' },
+                    tags: { type: 'array', items: { type: 'string' } },
+                    inStock: { type: 'boolean' },
+                    confidence: { type: 'number' },
+                  },
+                  required: ['name', 'description', 'price', 'currency', 'category', 'tags', 'inStock', 'confidence'],
+                  additionalProperties: false,
+                },
+              },
+              faqs: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    question: { type: 'string' },
+                    answer: { type: 'string' },
+                    category: { type: 'string' },
+                  },
+                  required: ['question', 'answer', 'category'],
+                  additionalProperties: false,
+                },
+              },
+              companyInfo: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  description: { type: 'string' },
+                  industry: { type: 'string' },
+                },
+                required: ['name', 'description', 'industry'],
+                additionalProperties: false,
+              },
+            },
+            required: ['products', 'faqs', 'companyInfo'],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      return { products: [], faqs: [], companyInfo: { name: '', description: '', industry: '' } };
+    }
+
+    const parsed = JSON.parse(content as string);
+    console.log(`[SmartCrawl] AI extracted: ${parsed.products?.length || 0} items, ${parsed.faqs?.length || 0} FAQs, company: ${parsed.companyInfo?.name || 'unknown'}`);
+
+    return {
+      products: (parsed.products || []).map((p: any) => ({
+        name: p.name,
+        description: p.description || '',
+        price: p.price || 0,
+        currency: p.currency || 'SAR',
+        category: p.category || '',
+        tags: p.tags || [],
+        inStock: p.inStock ?? true,
+        confidence: p.confidence || 70,
+      })),
+      faqs: parsed.faqs || [],
+      companyInfo: parsed.companyInfo || { name: '', description: '', industry: '' },
+    };
+  } catch (error) {
+    console.error('[SmartCrawl] AI extraction failed:', error);
+    return { products: [], faqs: [], companyInfo: { name: '', description: '', industry: '' } };
+  }
+}
