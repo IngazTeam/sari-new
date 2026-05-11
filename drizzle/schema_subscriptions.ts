@@ -78,13 +78,13 @@ export const merchantSubscriptions = mysqlTable("merchant_subscriptions", {
 	// Dates
 	startDate: timestamp("start_date", { mode: 'string' }).notNull(),
 	endDate: timestamp("end_date", { mode: 'string' }).notNull(),
-	trialEndsAt: timestamp("trial_ends_at", { mode: 'string' }).default(null), // تاريخ انتهاء الفترة التجريبية
+	trialEndsAt: timestamp("trial_ends_at", { mode: 'string' }), // تاريخ انتهاء الفترة التجريبية
 
 	// Auto Renewal
 	autoRenew: tinyint("auto_renew").default(0).notNull(), // التجديد التلقائي
 
 	// Cancellation
-	cancelledAt: timestamp("cancelled_at", { mode: 'string' }).default(null),
+	cancelledAt: timestamp("cancelled_at", { mode: 'string' }),
 	cancellationReason: text("cancellation_reason"),
 
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
