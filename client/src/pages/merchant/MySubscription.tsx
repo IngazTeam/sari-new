@@ -17,7 +17,7 @@ export default function MySubscription() {
   const { data: subscription, isLoading, refetch } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
   const { data: daysRemainingData } = trpc.merchantSubscription.getDaysRemaining.useQuery();
   const daysRemaining = daysRemainingData?.daysRemaining ?? 0;
-  const { data: transactions } = trpc.payment.listTransactions.useQuery({ limit: 10 });
+  const { data: transactions } = trpc.payment.listTransactions.useQuery();
   const cancelSubscription = trpc.merchantSubscription.cancelSubscription.useMutation();
 
   const handleCancel = async () => {
