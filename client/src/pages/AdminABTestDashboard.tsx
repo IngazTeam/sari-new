@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 export default function AdminABTestDashboard() {
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [days, setDays] = useState(30);
   const [newVariantData, setNewVariantData] = useState({
     variantId: '',
@@ -58,6 +58,15 @@ export default function AdminABTestDashboard() {
       },
     });
   };
+
+  // Wait for auth to load before checking role
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-muted-foreground">جاري التحميل...</p>
+      </div>
+    );
+  }
 
   if (user?.role !== 'admin' && user?.role !== 'superadmin') {
     return (
