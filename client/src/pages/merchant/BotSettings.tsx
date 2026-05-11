@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { BOT_TEMPLATE_DEFINITIONS, resolveTemplate } from '@/constants/botTemplates';
 
 export default function BotSettings() {
   const { t } = useTranslation();
@@ -126,8 +127,9 @@ export default function BotSettings() {
   }
 
   // Templates resolved from constants
-  const { BOT_TEMPLATE_DEFINITIONS, resolveTemplate } = require('@/constants/botTemplates');
-  const allTemplates = BOT_TEMPLATE_DEFINITIONS.map((def: any) => resolveTemplate(def, t));
+  const allTemplates = BOT_TEMPLATE_DEFINITIONS.map((def) => resolveTemplate(def, t));
+  const generalTemplates = allTemplates.filter((tpl) => tpl.category === 'general');
+  const industryTemplates = allTemplates.filter((tpl) => tpl.category === 'industry');
 
   const applyTemplate = (template: typeof allTemplates[0]) => {
     setFormData({
