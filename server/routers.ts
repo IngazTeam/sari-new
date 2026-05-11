@@ -1514,12 +1514,16 @@ export const appRouter = router({
           status: 'pending',
         });
 
-        // Notify admin
-        const notifyOwner = await import('./_core/notification');
-        await notifyOwner.notifyOwner({
-          title: 'طلب ربط واتساب جديد',
-          content: `التاجر ${merchant.businessName} يطلب ربط رقم الواتساب: ${fullNumber}`,
-        });
+        // Notify admin (non-blocking — don't fail if notification service isn't configured)
+        try {
+          const notifyOwner = await import('./_core/notification');
+          await notifyOwner.notifyOwner({
+            title: 'طلب ربط واتساب جديد',
+            content: `التاجر ${merchant.businessName} يطلب ربط رقم الواتساب: ${fullNumber}`,
+          });
+        } catch (notifErr) {
+          console.warn('[WhatsApp] Admin notification failed (non-blocking):', (notifErr as Error).message);
+        }
 
         return { success: true, request };
       }),
@@ -1556,12 +1560,16 @@ export const appRouter = router({
         await db.deleteWhatsAppInstance(instance.id);
       }
 
-      // Notify admin about the disconnection
-      const notifyOwner = await import('./_core/notification');
-      await notifyOwner.notifyOwner({
-        title: 'فك ربط واتساب',
-        content: `التاجر ${merchant.businessName} قام بفك ربط رقم الواتساب: ${existingRequest.fullNumber}`,
-      });
+      // Notify admin about the disconnection (non-blocking)
+      try {
+        const notifyOwner = await import('./_core/notification');
+        await notifyOwner.notifyOwner({
+          title: 'فك ربط واتساب',
+          content: `التاجر ${merchant.businessName} قام بفك ربط رقم الواتساب: ${existingRequest.fullNumber}`,
+        });
+      } catch (notifErr) {
+        console.warn('[WhatsApp] Admin notification failed (non-blocking):', (notifErr as Error).message);
+      }
 
       // إرسال إشعار للتاجر بفك الربط
       try {
