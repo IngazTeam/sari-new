@@ -143,7 +143,6 @@ export const merchantsRouter = router({
                 billingCycle: input.billingCycle,
                 startDate: now.toISOString(),
                 endDate: endDate.toISOString(),
-                trialEndsAt: null,
                 autoRenew: 0,
             });
 
@@ -204,7 +203,8 @@ export const merchantsRouter = router({
             }
 
             await db.cancelMerchantSubscription(subscription.id, input.reason || 'تم الإلغاء بواسطة الأدمن');
-            await db.updateMerchantSubscriptionStatus(input.merchantId, 'cancelled');
+            // SEC-07 FIX: DB enum is ['none','trial','active','expired'] — 'cancelled' doesn't exist
+            await db.updateMerchantSubscriptionStatus(input.merchantId, 'expired');
 
             console.log(`[Admin] Subscription cancelled: merchant=${input.merchantId}, reason=${input.reason || 'admin action'}`);
 

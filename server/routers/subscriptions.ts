@@ -745,6 +745,12 @@ export const paymentRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Transaction not found' });
         }
 
+        // SEC-04 FIX: Idempotency Guard — reject already-processed transactions
+        if (transaction.status !== 'pending') {
+          console.warn(`[Payment] Duplicate callback rejected: tap_id=${input.tap_id}, current_status=${transaction.status}`);
+          return { success: true, status: transaction.status, message: 'Transaction already processed' };
+        }
+
         // Update transaction status
         if (charge.status === 'CAPTURED') {
           await db.updatePaymentTransaction(transaction.id, {
@@ -770,7 +776,6 @@ export const paymentRouter = router({
               billingCycle: metadata.billingCycle,
               startDate: now.toISOString(),
               endDate: endDate.toISOString(),
-              trialEndsAt: null,
               autoRenew: 0,
             });
 

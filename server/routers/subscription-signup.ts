@@ -135,7 +135,7 @@ export const subscriptionSignupRouter = router({
 
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'Failed to create subscription',
+          message: 'حدث خطأ أثناء إنشاء الاشتراك. يرجى المحاولة لاحقاً.',
         });
       }
     }),
@@ -145,10 +145,10 @@ export const subscriptionSignupRouter = router({
    */
   registerUser: publicProcedure
     .input(z.object({
-      email: z.string().email(),
-      password: z.string().min(6),
-      businessName: z.string(),
-      phone: z.string(),
+      email: z.string().email().max(255),
+      password: z.string().min(8).max(128), // SEC-08 FIX: stronger minimum (was 6)
+      businessName: z.string().min(2).max(200).transform(v => v.trim()),
+      phone: z.string().min(9).max(15).regex(/^[\d+]+$/, 'رقم الهاتف غير صالح'),
     }))
     .mutation(async ({ input }) => {
       try {
@@ -213,7 +213,7 @@ export const subscriptionSignupRouter = router({
 
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'Failed to register user',
+          message: 'حدث خطأ أثناء تسجيل الحساب. يرجى المحاولة لاحقاً.',
         });
       }
     }),

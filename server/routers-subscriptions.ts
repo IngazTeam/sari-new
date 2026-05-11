@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
 export const subscriptionsRouter = router({
@@ -37,8 +37,8 @@ export const subscriptionsRouter = router({
         return stats;
     }),
 
-    // Create subscription
-    create: protectedProcedure
+    // Create subscription (Admin only — SEC-01 FIX: was protectedProcedure, allowed free activation)
+    create: adminProcedure
         .input(z.object({
             planId: z.number(),
         }))
@@ -97,8 +97,8 @@ export const subscriptionsRouter = router({
             return { success: true, message: 'تم إلغاء الاشتراك' };
         }),
 
-    // FIX #15: Upgrade/change plan
-    changePlan: protectedProcedure
+    // FIX #15: Upgrade/change plan (Admin only — SEC-02 FIX: was protectedProcedure, allowed free upgrades)
+    changePlan: adminProcedure
         .input(z.object({ planId: z.number() }))
         .mutation(async ({ input, ctx }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);

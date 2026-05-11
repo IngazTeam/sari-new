@@ -654,6 +654,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
         }
 
+        // SEC-06 FIX: Ensure plan is active (mirrors PEN-04 in routers-merchants.ts)
+        if (!plan.isActive) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot assign an inactive plan' });
+        }
+
         // Check for existing active subscription
         const existing = await db.getActiveSubscriptionByMerchantId(input.merchantId);
         if (existing) {
@@ -670,7 +675,6 @@ export const appRouter = router({
           billingCycle: input.billingCycle,
           startDate: now.toISOString(),
           endDate: endDate.toISOString(),
-          trialEndsAt: null,
           autoRenew: 0,
         });
 
@@ -758,7 +762,7 @@ export const appRouter = router({
       };
     }),
 
-    // Request plan upgrade
+    // Request plan upgrade — SEC-03 FIX: Block free subscription creation/changes
     requestUpgrade: protectedProcedure
       .input(z.object({ planId: z.number() }))
       .mutation(async ({ input, ctx }) => {
@@ -781,43 +785,12 @@ export const appRouter = router({
         // Get current subscription
         const currentSubscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
 
-        // If no current subscription, create new one
+        // SEC-03 FIX: No free subscriptions — redirect to payment flow
         if (!currentSubscription) {
-          const startDate = new Date();
-          const endDate = new Date(startDate);
-          endDate.setDate(endDate.getDate() + 30); // 30 days subscription
-
-          await db.createSubscription({
-            merchantId: merchant.id,
-            planId: input.planId,
-            status: 'active',
-            startDate,
-            endDate,
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'لا يوجد اشتراك نشط. يرجى الاشتراك عبر صفحة الباقات.',
           });
-
-          // Notify owner about new subscription
-          const { notifyOwner } = await import('./_core/notification');
-          const { notifyNewSubscription } = await import('./_core/emailNotifications');
-          const plan = await db.getPlanById(input.planId);
-          const user = await db.getUserById(merchant.userId);
-          try {
-            await notifyNewSubscription({
-              merchantName: user?.name || merchant.businessName,
-              businessName: merchant.businessName,
-              planName: plan?.name || 'Unknown Plan',
-              planPrice: plan?.price || 0,
-              billingCycle: plan?.billingCycle || 'monthly',
-              subscribedAt: new Date(),
-            });
-          } catch (error) {
-            console.error('Failed to send new subscription notification:', error);
-          }
-          await notifyOwner({
-            title: 'اشتراك جديد',
-            content: `التاجر ${merchant.businessName} اشترك في الباقة ${plan.nameAr}`,
-          });
-
-          return { success: true, message: 'تم الاشتراك بنجاح' };
         }
 
         // Check if trying to upgrade to same plan
@@ -825,21 +798,11 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'You are already subscribed to this plan' });
         }
 
-        // Update subscription to new plan
-        await db.updateSubscription(currentSubscription.id, {
-          planId: input.planId,
-          startDate: new Date(),
+        // SEC-03 FIX: Block free plan changes — must go through payment/admin
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'لتغيير الباقة، يرجى التواصل مع الدعم أو استخدام صفحة الترقية مع الدفع.',
         });
-
-        // Notify owner about upgrade
-        const currentPlan = await db.getPlanById(currentSubscription.planId);
-        const { notifyOwner } = await import('./_core/notification');
-        await notifyOwner({
-          title: 'ترقية باقة',
-          content: `التاجر ${merchant.businessName} قام بالترقية من ${currentPlan?.nameAr} إلى ${plan.nameAr}`,
-        });
-
-        return { success: true, message: 'تم الترقية بنجاح' };
       }),
 
     // Get onboarding status

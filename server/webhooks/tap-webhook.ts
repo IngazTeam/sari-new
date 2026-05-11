@@ -89,7 +89,9 @@ export function verifyTapSignature(
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(payload);
     const computedSignature = hmac.digest('hex');
-    return computedSignature === signature;
+    // SEC-05 FIX: Use timingSafeEqual to prevent timing attacks
+    if (computedSignature.length !== signature.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(computedSignature), Buffer.from(signature));
   } catch (error) {
     console.error('[TapWebhook] Error verifying signature:', error);
     return false;
