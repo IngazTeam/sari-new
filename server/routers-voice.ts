@@ -21,6 +21,20 @@ export const voiceRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
             try {
+                // SEC-PT-2: MIME type whitelist — prevent uploading HTML/JS as "audio"
+                const ALLOWED_AUDIO_MIMES = [
+                    'audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/ogg',
+                    'audio/wav', 'audio/mp4', 'audio/aac', 'audio/x-m4a',
+                    'audio/webm;codecs=opus', 'audio/ogg;codecs=opus',
+                ];
+                const normalizedMime = input.mimeType.toLowerCase().trim();
+                if (!ALLOWED_AUDIO_MIMES.some(m => normalizedMime.startsWith(m))) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'نوع الملف غير مسموح. يرجى رفع ملف صوتي فقط.'
+                    });
+                }
+
                 const audioBuffer = Buffer.from(input.audioBase64, 'base64');
 
                 const sizeMB = audioBuffer.length / (1024 * 1024);

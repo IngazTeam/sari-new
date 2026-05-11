@@ -19,18 +19,45 @@ export function isUrlSafe(urlStr: string): boolean {
     if (!['http:', 'https:'].includes(parsed.protocol)) return false;
 
     const hostname = parsed.hostname.toLowerCase();
-    // Block internal/private IPs
+
+    // Block empty or dotdot
+    if (hostname === '' || hostname.includes('..')) return false;
+
+    // Block bracketed IPv6 (Node URL parser strips brackets, but be safe)
+    if (hostname.startsWith('[') || urlStr.includes('[')) return false;
+
+    // Block localhost variants
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return false;
+    if (hostname === '0.0.0.0' || hostname === '0') return false;
+
+    // Block hex/decimal/octal IP bypass (e.g., 0x7f000001, 2130706433, 0177.0.0.1)
+    if (/^(0x[\da-f]+|0\d+|\d+)$/i.test(hostname)) return false; // pure number or hex
+    if (/^[\d.]+$/.test(hostname)) {
+      // Looks like an IP — validate each octet
+      const parts = hostname.split('.');
+      for (const part of parts) {
+        // Block octal (leading zero like 0177) and hex (0x7f)
+        if (/^0\d+/.test(part) || /^0x/i.test(part)) return false;
+      }
+    }
+
+    // Block internal/private IPs
     if (hostname.startsWith('10.') || hostname.startsWith('192.168.')) return false;
     if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return false;
+
     // Block AWS/GCP/Azure metadata endpoints
     if (hostname === '169.254.169.254' || hostname === 'metadata.google.internal') return false;
     // Block link-local
     if (hostname.startsWith('169.254.')) return false;
-    // Block file:// and other schemes
-    if (hostname === '' || hostname.includes('..')) return false;
-    // Block common internal hostnames
-    if (hostname === '0.0.0.0' || hostname.startsWith('fc00:') || hostname.startsWith('fe80:')) return false;
+
+    // Block IPv6 patterns (mapped, link-local, unique-local)
+    if (hostname.startsWith('fc00:') || hostname.startsWith('fe80:')) return false;
+    if (hostname.includes('::ffff:') || hostname.includes('::1')) return false;
+    // Block any remaining IPv6 (colon-containing hostnames)
+    if (hostname.includes(':')) return false;
+
+    // Block internal hostnames
+    if (hostname.endsWith('.internal') || hostname.endsWith('.local')) return false;
 
     return true;
   } catch {

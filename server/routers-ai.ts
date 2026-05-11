@@ -11,13 +11,19 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
 export const aiRouter = router({
-  // Chat with Sari AI
+  // Chat with Sari AI — SEC-PT-4: Rate limited (20/min per merchant) to prevent LLM quota abuse
   chat: protectedProcedure
     .input(z.object({
-      message: z.string(),
+      message: z.string().max(2000),
       conversationId: z.number().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
+      const { checkRateLimit } = await import('./_core/rateLimiter');
+      const rlCheck = checkRateLimit(`ai_chat:${ctx.user.id}`, 20, 60000); // 20/min
+      if (!rlCheck.allowed) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
+      }
+
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -81,13 +87,19 @@ export const aiRouter = router({
       return result;
     }),
 
-  // Process voice message
+  // Process voice message — SEC-PT-4: Rate limited (10/min)
   processVoice: protectedProcedure
     .input(z.object({
       conversationId: z.number(),
-      audioUrl: z.string(),
+      audioUrl: z.string().url(),
     }))
     .mutation(async ({ input, ctx }) => {
+      const { checkRateLimit } = await import('./_core/rateLimiter');
+      const rlCheck = checkRateLimit(`ai_voice:${ctx.user.id}`, 10, 60000);
+      if (!rlCheck.allowed) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
+      }
+
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });

@@ -182,9 +182,10 @@ export const whatsappRequestsRouter = router({
                     throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get QR code' });
                 }
             } catch (error) {
+                console.error('[WhatsApp QR] Error:', error instanceof Error ? error.message : error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
-                    message: error instanceof Error ? error.message : 'Unknown error',
+                    message: 'فشل الاتصال بخدمة الواتساب. حاول مرة أخرى.',
                 });
             }
         }),
