@@ -336,7 +336,7 @@ async function buildEnhancedContextPrompt(context: {
   let contextPrompt = '\n\n## السياق الحالي:\n';
 
   if (context.merchantName) {
-    contextPrompt += `أنت تعمل في متجر "${context.merchantName}".\n`;
+    contextPrompt += `أنت تعمل في "${context.merchantName}".\n`;
   }
 
   if (context.customerName) {
@@ -345,6 +345,67 @@ async function buildEnhancedContextPrompt(context: {
 
   if (context.isFirstMessage) {
     contextPrompt += `هذه أول رسالة من العميل - رحب به بحرارة!\n`;
+  }
+
+  // === Inject website analysis summary (title, description, industry, etc.) ===
+  if (context.merchantId) {
+    try {
+      const analyses = await db.getWebsiteAnalysesByMerchant(context.merchantId);
+      const latestAnalysis = analyses.length > 0 ? analyses[0] : null;
+      if (latestAnalysis && latestAnalysis.status === 'completed') {
+        contextPrompt += `\n## معلومات عن النشاط التجاري (من تحليل الموقع):\n`;
+        if (latestAnalysis.title) contextPrompt += `- الاسم: ${latestAnalysis.title}\n`;
+        if (latestAnalysis.description) contextPrompt += `- الوصف: ${latestAnalysis.description}\n`;
+        if (latestAnalysis.industry) contextPrompt += `- المجال/الصناعة: ${latestAnalysis.industry}\n`;
+        if (latestAnalysis.url) contextPrompt += `- الموقع الإلكتروني: ${latestAnalysis.url}\n`;
+        if (latestAnalysis.language) contextPrompt += `- لغة الموقع: ${latestAnalysis.language}\n`;
+        contextPrompt += `⚠️ استخدم هذه المعلومات عند الرد على أسئلة العملاء عن الشركة/المتجر.\n`;
+      }
+    } catch (error) {
+      console.warn('[chatWithSari] Failed to load website analysis for bot context:', error);
+    }
+  }
+
+  // === Inject knowledge document (uploaded Word/PDF/Excel profile) ===
+  if (context.merchantId) {
+    try {
+      const knowledgeDoc = await db.getKnowledgeDocByMerchantId(context.merchantId);
+      if (knowledgeDoc && knowledgeDoc.extractedText && knowledgeDoc.extractionStatus === 'completed') {
+        contextPrompt += `\n## ملف التعريف بالنشاط التجاري (مرفوع من التاجر):\n`;
+        contextPrompt += `النوع: ${knowledgeDoc.fileType || 'مستند'}\n`;
+        // Limit to 2000 chars to stay within token limits
+        const docText = knowledgeDoc.extractedText.substring(0, 2000);
+        contextPrompt += `المحتوى:\n${docText}\n`;
+        if (knowledgeDoc.extractedText.length > 2000) {
+          contextPrompt += `...(تم اقتطاع باقي المحتوى)\n`;
+        }
+        contextPrompt += `⚠️ هذا ملف تعريفي من التاجر — استخدم المعلومات الموجودة فيه للرد على أسئلة العملاء عن الخدمات والمنتجات والشركة.\n`;
+      }
+    } catch (error) {
+      console.warn('[chatWithSari] Failed to load knowledge doc for bot context:', error);
+    }
+  }
+
+  // === Inject merchant profile data (phone, email, address, etc.) ===
+  if (context.merchantId) {
+    try {
+      const merchant = await db.getMerchantById(context.merchantId);
+      if (merchant) {
+        const profileParts: string[] = [];
+        if (merchant.phone) profileParts.push(`الهاتف: ${merchant.phone}`);
+        if (merchant.email) profileParts.push(`البريد: ${merchant.email}`);
+        if (merchant.website) profileParts.push(`الموقع: ${merchant.website}`);
+        if (merchant.address) profileParts.push(`العنوان: ${merchant.address}`);
+        if (merchant.city) profileParts.push(`المدينة: ${merchant.city}`);
+        if ((merchant as any).description) profileParts.push(`الوصف: ${(merchant as any).description}`);
+        if (profileParts.length > 0) {
+          contextPrompt += `\n## بيانات التواصل مع المتجر:\n`;
+          contextPrompt += profileParts.join('\n') + '\n';
+        }
+      }
+    } catch (error) {
+      console.warn('[chatWithSari] Failed to load merchant profile for bot context:', error);
+    }
   }
 
   if (context.availableProducts && context.availableProducts.length > 0) {
@@ -368,7 +429,7 @@ async function buildEnhancedContextPrompt(context: {
     
     contextPrompt += `\n⚠️ استخدم فقط المنتجات المذكورة أعلاه. لا تخترع منتجات أخرى!\n`;
   } else {
-    contextPrompt += `\n⚠️ لا توجد منتجات متاحة حالياً. اعتذر بلطف وانصح بالتواصل مع الدعم.\n`;
+    contextPrompt += `\n⚠️ لا توجد قائمة منتجات محددة حالياً. استخدم المعلومات المتاحة أعلاه (تحليل الموقع، ملف التعريف، بيانات الشركة) للرد على العميل. إذا لم تجد معلومات كافية، اعتذر بلطف واقترح التواصل المباشر مع الشركة.\n`;
   }
 
   // === Inject FAQs from website analysis ===
