@@ -707,11 +707,24 @@ export async function updatePlan(id: number, data: Partial<InsertPlan>): Promise
 // ============================================
 
 export async function createSubscription(subscription: InsertSubscription): Promise<Subscription | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
+  await getDb();
+  if (!_pool) return undefined;
 
-  const result = await db.insert(subscriptions).values(subscription);
-  const insertedId = Number(result[0].insertId);
+  // FIX: Use raw SQL to avoid Drizzle's broken `default` keyword in prepared statements
+  const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+  const now = toMySQL(new Date().toISOString());
+
+  const [result] = await _pool.execute(
+    `INSERT INTO subscriptions (merchant_id, plan_id, status, start_date, end_date, auto_renew, created_at, updated_at, last_reset_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      subscription.merchantId, subscription.planId,
+      subscription.status || 'pending',
+      toMySQL(subscription.startDate), toMySQL(subscription.endDate),
+      subscription.autoRenew ?? 1, now, now, now
+    ]
+  );
+  const insertedId = Number((result as any).insertId);
 
   return getSubscriptionById(insertedId);
 }
@@ -9240,10 +9253,12 @@ export async function updateMerchantSubscription(id: number, data: Partial<NewMe
 export async function cancelMerchantSubscription(id: number, reason?: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  // FIX: Normalize ISO timestamp to MySQL format
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
   await db.update(merchantSubscriptions)
     .set({
       status: 'cancelled',
-      cancelledAt: new Date().toISOString(),
+      cancelledAt: now,
       cancellationReason: reason,
     })
     .where(eq(merchantSubscriptions.id, id));
@@ -9258,9 +9273,11 @@ export async function extendMerchantSubscription(id: number, days: number) {
 
   const currentEndDate = new Date(subscription.endDate);
   const newEndDate = new Date(currentEndDate.getTime() + days * 24 * 60 * 60 * 1000);
+  // FIX: Normalize ISO timestamp to MySQL format
+  const formattedDate = newEndDate.toISOString().slice(0, 19).replace('T', ' ');
 
   await db.update(merchantSubscriptions)
-    .set({ endDate: newEndDate.toISOString() })
+    .set({ endDate: formattedDate })
     .where(eq(merchantSubscriptions.id, id));
 }
 
@@ -9377,10 +9394,23 @@ export async function getMerchantAddonById(id: number) {
 }
 
 export async function createMerchantAddon(data: NewMerchantAddon) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(merchantAddons).values(data);
-  return result.insertId;
+  // FIX: Use raw SQL to avoid Drizzle's broken `default` keyword in prepared statements
+  await getDb();
+  if (!_pool) throw new Error("Database not available");
+
+  const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+  const now = toMySQL(new Date().toISOString());
+
+  const [result] = await _pool.execute(
+    `INSERT INTO merchant_addons (merchant_id, addon_id, subscription_id, quantity, start_date, end_date, is_active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.merchantId, data.addonId, data.subscriptionId || null,
+      data.quantity ?? 1, toMySQL(data.startDate), toMySQL(data.endDate),
+      data.isActive ?? 1, now, now
+    ]
+  );
+  return (result as any).insertId;
 }
 
 export async function updateMerchantAddon(id: number, data: Partial<NewMerchantAddon>) {
