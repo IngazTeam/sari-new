@@ -81,7 +81,6 @@ import {
   Activity,
   Gauge,
   ChevronDown,
-  ChevronRight,
   Languages
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
@@ -268,7 +267,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['main', 'sales', 'sari']);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>('main');
   const [sidebarSearch, setSidebarSearch] = useState('');
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
@@ -282,12 +281,9 @@ function DashboardLayoutContent({
     logout();
   };
 
+  // Accordion: only one group open at a time
   const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev =>
-      prev.includes(groupId)
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
-    );
+    setExpandedGroup(prev => prev === groupId ? null : groupId);
   };
 
   // Get menu items based on user role
@@ -318,8 +314,8 @@ function DashboardLayoutContent({
 
   // Auto-expand group containing active item
   useEffect(() => {
-    if (activeMenuItem?.group && !expandedGroups.includes(activeMenuItem.group)) {
-      setExpandedGroups(prev => [...prev, activeMenuItem.group!]);
+    if (activeMenuItem?.group && expandedGroup !== activeMenuItem.group) {
+      setExpandedGroup(activeMenuItem.group);
     }
   }, [location]);
 
@@ -429,7 +425,7 @@ function DashboardLayoutContent({
                   const groupItems = (sidebarSearch.trim() ? filteredGroupedItems : groupedMenuItems)[group.id] || [];
                   if (groupItems.length === 0) return null;
                   const isSearching = sidebarSearch.trim().length > 0;
-                  const isExpanded = isSearching || expandedGroups.includes(group.id);
+                  const isExpanded = isSearching || expandedGroup === group.id;
                   const hasActiveItem = groupItems.some(item => item.path === location);
                   const GroupIcon = group.icon;
 
@@ -445,38 +441,40 @@ function DashboardLayoutContent({
                         {!isCollapsed && (
                           <>
                             <span className="flex-1 text-right truncate">{group.label}</span>
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4 shrink-0" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 shrink-0" />
-                            )}
+                            <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-300 ${isExpanded ? '' : 'ltr:-rotate-90 rtl:rotate-90'}`} />
                           </>
                         )}
                       </button>
 
-                      {/* Group Items */}
-                      {(isExpanded || isCollapsed) && (
-                        <div className={`${!isCollapsed ? 'ml-2 border-l border-border/50' : ''}`}>
-                          {groupItems.map((item) => {
-                            const isActive = location === item.path;
-                            return (
-                              <SidebarMenuItem key={item.path}>
-                                <SidebarMenuButton
-                                  isActive={isActive}
-                                  onClick={() => setLocation(item.path)}
-                                  tooltip={item.label}
-                                  className={`h-9 transition-all font-normal ${!isCollapsed ? 'ml-2' : ''}`}
-                                >
-                                  <item.icon
-                                    className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
-                                  />
-                                  <span className="truncate">{item.label}</span>
-                                </SidebarMenuButton>
-                              </SidebarMenuItem>
-                            );
-                          })}
+                      {/* Group Items — smooth accordion */}
+                      <div
+                        className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                          isExpanded || isCollapsed ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                        }`}
+                      >
+                        <div className="overflow-hidden">
+                          <div className={`${!isCollapsed ? 'ml-2 border-l border-border/50' : ''}`}>
+                            {groupItems.map((item) => {
+                              const isActive = location === item.path;
+                              return (
+                                <SidebarMenuItem key={item.path}>
+                                  <SidebarMenuButton
+                                    isActive={isActive}
+                                    onClick={() => setLocation(item.path)}
+                                    tooltip={item.label}
+                                    className={`h-9 transition-all font-normal ${!isCollapsed ? 'ml-2' : ''}`}
+                                  >
+                                    <item.icon
+                                      className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                                    />
+                                    <span className="truncate">{item.label}</span>
+                                  </SidebarMenuButton>
+                                </SidebarMenuItem>
+                              );
+                            })}
+                          </div>
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })
