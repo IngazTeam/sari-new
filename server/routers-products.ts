@@ -240,7 +240,7 @@ export const productsRouter = router({
     // Upload CSV
     uploadCSV: protectedProcedure
         .input(z.object({
-            csvData: z.string(),
+            csvData: z.string().max(5_000_000, 'الحد الأقصى لحجم الملف 5 ميجابايت'),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -320,8 +320,8 @@ export const productsRouter = router({
     // Upload Excel (.xlsx) — Smart import with auto-column detection + bot brain feeding
     uploadExcel: protectedProcedure
         .input(z.object({
-            fileBase64: z.string(),
-            fileName: z.string(),
+            fileBase64: z.string().max(15_000_000, 'الحد الأقصى لحجم الملف 10 ميجابايت'),
+            fileName: z.string().max(255).transform(s => s.replace(/[<>:"/\\|?*]/g, '_')),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -487,11 +487,11 @@ export const productsRouter = router({
             };
         }),
 
-    // Upload Excel AND create a Google Sheet for auto-sync
+    // Legacy: Upload Excel AND create a Google Sheet (kept for backward compat, redirects to uploadExcel logic)
     uploadExcelAndCreateSheet: protectedProcedure
         .input(z.object({
-            fileBase64: z.string(),
-            fileName: z.string(),
+            fileBase64: z.string().max(15_000_000, 'الحد الأقصى لحجم الملف 10 ميجابايت'),
+            fileName: z.string().max(255).transform(s => s.replace(/[<>:"/\\|?*]/g, '_')),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
