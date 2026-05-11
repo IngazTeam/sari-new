@@ -229,7 +229,7 @@ export const websiteAnalysisRouter = router({
             console.error('[WebsiteAnalysis] Product extraction failed:', productError);
           }
 
-          // Phase 3: Generate insights (only if we have analysis data)
+          // Phase 3: Generate insights (only if we have analysis data, with timeout)
           try {
             const analysis = await db.getWebsiteAnalysisById(analysisId);
             if (analysis && analysis.overallScore > 0) {
@@ -254,7 +254,13 @@ export const websiteAnalysisRouter = router({
                 videoCount: analysis.videoCount,
                 overallScore: analysis.overallScore,
               };
-              const insights = await analyzer.generateInsights(insightsData);
+
+              // Timeout guard: don't let AI insights hang the pipeline
+              const insightsPromise = analyzer.generateInsights(insightsData);
+              const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Insights generation timeout (15s)')), 15000)
+              );
+              const insights = await Promise.race([insightsPromise, timeoutPromise]);
 
               for (const insight of insights) {
                 await db.createWebsiteInsight({
@@ -272,7 +278,7 @@ export const websiteAnalysisRouter = router({
               }
             }
           } catch (insightsError) {
-            console.error('[WebsiteAnalysis] Insights generation failed:', insightsError);
+            console.error('[WebsiteAnalysis] Insights generation failed/timed out:', insightsError);
           }
 
           // Final: Mark analysis as completed after all phases finish

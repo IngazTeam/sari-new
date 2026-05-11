@@ -767,8 +767,15 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       (enrichedContentScore * 0.2)
     );
 
-    // Detect industry using AI
-    const industry = await detectIndustry(title, description, text);
+    // Detect industry using AI (non-blocking with timeout)
+    let industry = 'غير محدد';
+    try {
+      const industryPromise = detectIndustry(title, description, text);
+      const timeoutPromise = new Promise<string>((_, reject) => setTimeout(() => reject(new Error('Industry detection timeout')), 10000));
+      industry = await Promise.race([industryPromise, timeoutPromise]);
+    } catch (err) {
+      console.warn('[WebsiteAnalyzer] Industry detection failed/timed out, continuing with default:', err instanceof Error ? err.message : err);
+    }
 
     return {
       title,
