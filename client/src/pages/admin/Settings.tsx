@@ -49,8 +49,20 @@ export default function Settings() {
   const [filterDateFrom, setFilterDateFrom] = useState<string>('');
   const [filterDateTo, setFilterDateTo] = useState<string>('');
 
-  const { data: plans, isLoading, refetch } = trpc.plans.list.useQuery();
+  const { data: rawPlans, isLoading, refetch } = trpc.subscriptionPlans.adminListPlans.useQuery();
   const { data: changeLogs, refetch: refetchLogs } = trpc.plans.getChangeLogs.useQuery({});
+  
+  // Map subscription_plans fields to Settings UI fields for backward compat
+  const plans = rawPlans?.map((p: any) => ({
+    id: p.id,
+    name: p.nameEn || p.name,
+    nameAr: p.name,
+    priceMonthly: parseFloat(p.monthlyPrice || '0'),
+    conversationLimit: p.maxCustomers || 0,
+    voiceMessageLimit: p.maxWhatsAppNumbers || 0,
+    features: p.features || '',
+    isActive: !!p.isActive,
+  }));
   
   // Filter logs
   const filteredLogs = useMemo(() => {
@@ -90,7 +102,7 @@ export default function Settings() {
   }, [changeLogs, filterPlanId, filterFieldName, filterDateFrom, filterDateTo]);
   const { data: users } = trpc.auth.me.useQuery();
 
-  const createMutation = trpc.plans.create.useMutation({
+  const createMutation = trpc.subscriptionPlans.createPlan.useMutation({
     onSuccess: () => {
       toast.success(t('toast.common.msg1'));
       refetch();
@@ -102,7 +114,7 @@ export default function Settings() {
     },
   });
 
-  const updateMutation = trpc.plans.update.useMutation({
+  const updateMutation = trpc.subscriptionPlans.updatePlan.useMutation({
     onSuccess: () => {
       toast.success(t('toast.common.msg1'));
       refetch();
@@ -151,25 +163,26 @@ export default function Settings() {
     if (!editingPlan) return;
 
     if (editingPlan.id) {
-      // Update existing plan
+      // Update existing plan via subscriptionPlans API
       await updateMutation.mutateAsync({
         id: editingPlan.id,
-        name: editingPlan.name,
-        nameAr: editingPlan.nameAr,
-        priceMonthly: editingPlan.priceMonthly,
-        conversationLimit: editingPlan.conversationLimit,
-        voiceMessageLimit: editingPlan.voiceMessageLimit,
+        name: editingPlan.nameAr,
+        nameEn: editingPlan.name,
+        monthlyPrice: editingPlan.priceMonthly.toString(),
+        maxCustomers: editingPlan.conversationLimit,
+        maxWhatsAppNumbers: editingPlan.voiceMessageLimit,
         features: editingPlan.features,
-        isActive: editingPlan.isActive,
+        isActive: editingPlan.isActive ? 1 : 0,
       });
     } else {
-      // Create new plan
+      // Create new plan via subscriptionPlans API
       await createMutation.mutateAsync({
-        name: editingPlan.name,
-        nameAr: editingPlan.nameAr,
-        priceMonthly: editingPlan.priceMonthly,
-        conversationLimit: editingPlan.conversationLimit,
-        voiceMessageLimit: editingPlan.voiceMessageLimit,
+        name: editingPlan.nameAr,
+        nameEn: editingPlan.name,
+        monthlyPrice: editingPlan.priceMonthly.toString(),
+        yearlyPrice: (editingPlan.priceMonthly * 10).toString(),
+        maxCustomers: editingPlan.conversationLimit,
+        maxWhatsAppNumbers: editingPlan.voiceMessageLimit,
         features: editingPlan.features,
       });
     }
