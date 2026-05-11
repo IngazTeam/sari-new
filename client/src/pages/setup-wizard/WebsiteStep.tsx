@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,15 +16,13 @@ import {
     Building2,
     Phone,
     MessageCircle,
-    BarChart3,
-    FileText,
-    Eye,
-    Smartphone,
-    Star,
-    ShoppingBag,
     Mail,
     HelpCircle,
     MapPin,
+    ShoppingBag,
+    Briefcase,
+    GraduationCap,
+    LayoutGrid,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -38,104 +36,12 @@ interface WebsiteStepProps {
 export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep, skipStep }: WebsiteStepProps) {
     const { t } = useTranslation();
     const [url, setUrl] = useState(wizardData.websiteUrl || '');
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<any>(wizardData.websiteAnalysis || null);
     const [extractedProducts, setExtractedProducts] = useState<any[]>(wizardData.extractedProducts || []);
     const [error, setError] = useState('');
 
-    const analyzeWebsite = trpc.websiteAnalysis.analyze.useMutation();
+    const previewMutation = trpc.analysis.previewAnalysis.useMutation();
     const saveProductsMutation = trpc.setupWizard.saveProducts.useMutation();
-    const getAnalysis = trpc.websiteAnalysis.getAnalysis.useQuery(
-        { id: analysisResult?.analysisId },
-        {
-            enabled: !!analysisResult?.analysisId && isAnalyzing,
-            refetchInterval: isAnalyzing ? 2000 : false,
-        }
-    );
-
-    // Poll for analysis completion — products are included in getAnalysis response
-    useEffect(() => {
-        if (getAnalysis.data && isAnalyzing) {
-            if (getAnalysis.data.status === 'completed') {
-                setIsAnalyzing(false);
-                const analysisData = { ...getAnalysis.data, status: 'completed' as const };
-                setAnalysisResult((prev: any) => ({ ...prev, ...analysisData }));
-
-                // Always save analysis data to wizardData — even for non-store websites
-                // This enables pre-filling business info in later steps
-                const wizardUpdate: Record<string, any> = {
-                    websiteUrl: url,
-                    websiteAnalysis: analysisData,
-                };
-
-                // Pre-fill business info from analysis for BasicInfoStep
-                if (analysisData.title) {
-                    wizardUpdate.businessName = analysisData.title;
-                }
-                if (analysisData.description) {
-                    wizardUpdate.description = analysisData.description;
-                }
-                if (analysisData.industry) {
-                    wizardUpdate.industry = analysisData.industry;
-                }
-                if (analysisData.language) {
-                    wizardUpdate.language = analysisData.language;
-                }
-                // Pre-fill contact info
-                if (analysisData.contactInfo) {
-                    const ci = analysisData.contactInfo;
-                    if (ci.phones?.length > 0) {
-                        wizardUpdate.phone = ci.phones[0];
-                    }
-                    if (ci.whatsappNumber) {
-                        wizardUpdate.whatsappNumber = ci.whatsappNumber;
-                    }
-                    if (ci.emails?.length > 0) {
-                        wizardUpdate.email = ci.emails[0];
-                    }
-                    if (ci.address) {
-                        wizardUpdate.address = ci.address;
-                    }
-                }
-
-                // Products come directly from getAnalysis response
-                const rawProducts = analysisData.extractedProducts || [];
-                if (rawProducts.length > 0 && extractedProducts.length === 0) {
-                    setExtractedProducts(rawProducts);
-                    // Convert to wizard format immediately so they persist in wizardData
-                    const wizardProducts = rawProducts.map((p: any) => ({
-                        id: crypto.randomUUID(),
-                        name: p.name || '',
-                        description: p.description || '',
-                        price: p.price?.toString() || '',
-                        currency: p.currency || 'SAR',
-                        imageUrl: p.imageUrl || '',
-                        productUrl: p.productUrl || '',
-                        category: p.category || '',
-                    }));
-                    wizardUpdate.products = wizardProducts;
-                    wizardUpdate.extractedProducts = rawProducts;
-                    // Save scraped products to DB immediately (replaces template products)
-                    saveProductsMutation.mutate({
-                        products: wizardProducts.map((p: any) => ({
-                            name: p.name || '',
-                            description: p.description || '',
-                            price: p.price?.toString() || '0',
-                            currency: p.currency || 'SAR',
-                            imageUrl: p.imageUrl || '',
-                            productUrl: p.productUrl || '',
-                            category: p.category || '',
-                        })),
-                    });
-                }
-
-                updateWizardData(wizardUpdate);
-            } else if (getAnalysis.data.status === 'failed') {
-                setIsAnalyzing(false);
-                setError('فشل تحليل الموقع. تأكد من صحة الرابط وحاول مرة أخرى.');
-            }
-        }
-    }, [getAnalysis.data, isAnalyzing]);
 
     const handleAnalyze = async () => {
         if (!url.trim()) {
@@ -143,36 +49,87 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
             return;
         }
 
-        // Basic URL validation
         let finalUrl = url.trim();
         if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
             finalUrl = 'https://' + finalUrl;
         }
 
         setError('');
-        setIsAnalyzing(true);
         setExtractedProducts([]);
         setAnalysisResult(null);
 
         try {
-            const result = await analyzeWebsite.mutateAsync({ url: finalUrl });
-            setAnalysisResult(result);
+            const result = await previewMutation.mutateAsync({ websiteUrl: finalUrl });
             setUrl(finalUrl);
-            updateWizardData({ websiteUrl: finalUrl });
+            setAnalysisResult(result);
+
+            // Extract products from result
+            if (result.products?.length > 0) {
+                setExtractedProducts(result.products);
+            }
+
+            // Build wizard data update
+            const wizardUpdate: Record<string, any> = {
+                websiteUrl: finalUrl,
+                websiteAnalysis: result,
+            };
+
+            // Pre-fill business info from companyInfo
+            if (result.companyInfo?.name) wizardUpdate.businessName = result.companyInfo.name;
+            if (result.companyInfo?.description) wizardUpdate.description = result.companyInfo.description;
+            if (result.companyInfo?.industry) wizardUpdate.industry = result.companyInfo.industry;
+            if (result.siteType) wizardUpdate.businessType = result.siteType === 'ecommerce' ? 'store' : result.siteType === 'services' ? 'services' : 'store';
+
+            // Pre-fill contact info
+            if (result.contactInfo) {
+                const ci = result.contactInfo;
+                if (ci.phones?.length > 0) wizardUpdate.phone = ci.phones[0];
+                if (ci.whatsappNumber) wizardUpdate.whatsappNumber = ci.whatsappNumber;
+                if (ci.emails?.length > 0) wizardUpdate.email = ci.emails[0];
+                if (ci.address) wizardUpdate.address = ci.address;
+            }
+
+            // Save products to wizard data + DB
+            if (result.products?.length > 0) {
+                const wizardProducts = result.products.map((p: any) => ({
+                    id: crypto.randomUUID(),
+                    name: p.name || '',
+                    description: p.description || '',
+                    price: p.price?.toString() || '',
+                    currency: p.currency || 'SAR',
+                    imageUrl: p.imageUrl || '',
+                    productUrl: p.productUrl || '',
+                    category: p.category || '',
+                }));
+                wizardUpdate.products = wizardProducts;
+                wizardUpdate.extractedProducts = result.products;
+
+                // Save to DB immediately
+                saveProductsMutation.mutate({
+                    products: wizardProducts.map((p: any) => ({
+                        name: p.name || '',
+                        description: p.description || '',
+                        price: p.price || '0',
+                        currency: p.currency || 'SAR',
+                        imageUrl: p.imageUrl || '',
+                        productUrl: p.productUrl || '',
+                        category: p.category || '',
+                    })),
+                });
+            }
+
+            updateWizardData(wizardUpdate);
         } catch (err: any) {
-            setIsAnalyzing(false);
-            setError(err.message || 'فشل بدء التحليل');
+            setError(err.message || 'فشل تحليل الموقع');
         }
     };
 
     const handleContinue = async () => {
-        // Always save website URL and analysis data
         const wizardUpdate: Record<string, any> = {
             websiteUrl: url,
             websiteAnalysis: analysisResult,
         };
 
-        // Save extracted products to wizard data & DB for ProductsServicesStep and AI chat
         if (extractedProducts.length > 0) {
             const products = extractedProducts.map((p: any) => ({
                 id: crypto.randomUUID(),
@@ -186,7 +143,6 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
             }));
             wizardUpdate.products = products;
             wizardUpdate.extractedProducts = extractedProducts;
-            // Save to DB with await — MUST complete before navigating
             try {
                 await saveProductsMutation.mutateAsync({
                     products: products.map((p: any) => ({
@@ -208,20 +164,25 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
         goToNextStep();
     };
 
-    const showResults = !isAnalyzing && analysisResult?.status === 'completed';
+    const isAnalyzing = previewMutation.isPending;
+    const showResults = !isAnalyzing && analysisResult?.success;
 
-    // Score color helper
-    const getScoreColor = (score: number) => {
-        if (score >= 80) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-        if (score >= 60) return 'text-amber-600 bg-amber-50 border-amber-200';
-        return 'text-red-500 bg-red-50 border-red-200';
-    };
-
-    const getScoreLabel = (score: number) => {
-        if (score >= 80) return 'ممتاز';
-        if (score >= 60) return 'جيد';
-        if (score >= 40) return 'متوسط';
-        return 'يحتاج تحسين';
+    // Site type badge
+    const getSiteTypeBadge = (siteType: string) => {
+        const config: Record<string, { icon: any; label: string; color: string }> = {
+            ecommerce: { icon: ShoppingBag, label: 'متجر إلكتروني', color: 'bg-purple-100 text-purple-700' },
+            services: { icon: Briefcase, label: 'خدمات', color: 'bg-blue-100 text-blue-700' },
+            courses: { icon: GraduationCap, label: 'تدريب وتعليم', color: 'bg-emerald-100 text-emerald-700' },
+            general: { icon: LayoutGrid, label: 'موقع عام', color: 'bg-gray-100 text-gray-700' },
+        };
+        const c = config[siteType] || config.general;
+        const Icon = c.icon;
+        return (
+            <span className={`inline-flex items-center gap-1 text-xs rounded-full px-3 py-1 font-medium ${c.color}`}>
+                <Icon className="w-3 h-3" />
+                {c.label}
+            </span>
+        );
     };
 
     return (
@@ -233,7 +194,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 </div>
                 <h2 className="text-2xl font-bold">{t('wizardWebsiteStepPage.text0')}</h2>
                 <p className="text-muted-foreground">
-                    أدخل رابط موقعك وساري يسحب المنتجات والمعلومات تلقائياً
+                    أدخل رابط موقعك وساري يزحف حتى 30 صفحة ويستخرج كل المحتوى تلقائياً
                 </p>
             </div>
 
@@ -285,8 +246,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             <div className="flex items-center gap-3">
                                 <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
                                 <div>
-                                    <p className="font-medium text-blue-900">{t('wizardWebsiteStepPage.text1')}</p>
-                                    <p className="text-sm text-blue-700">{t('wizardWebsiteStepPage.text2')}</p>
+                                    <p className="font-medium text-blue-900">جاري تحليل الموقع...</p>
+                                    <p className="text-sm text-blue-700">يتم زحف الصفحات واستخراج المحتوى بالذكاء الاصطناعي — قد يستغرق 1-3 دقائق</p>
                                 </div>
                             </div>
                         </Card>
@@ -302,18 +263,21 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                         <div className="flex items-center gap-3">
                             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                             <div className="flex-1">
-                                <p className="font-medium text-emerald-900">
-                                    تم تحليل الموقع بنجاح! 🎉
-                                </p>
-                                <a
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-emerald-700 flex items-center gap-1 mt-0.5 hover:underline"
-                                >
-                                    <ExternalLink className="w-3 h-3" />
-                                    {url}
-                                </a>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <p className="font-medium text-emerald-900">تم تحليل الموقع بنجاح! 🎉</p>
+                                    {analysisResult.siteType && getSiteTypeBadge(analysisResult.siteType)}
+                                </div>
+                                <div className="flex items-center gap-3 mt-1 text-sm text-emerald-700">
+                                    <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline">
+                                        <ExternalLink className="w-3 h-3" />
+                                        {url}
+                                    </a>
+                                    {analysisResult.crawlStats && (
+                                        <span className="text-emerald-600">
+                                            ({analysisResult.crawlStats.totalPages} صفحة)
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <Button
                                 variant="ghost"
@@ -322,26 +286,46 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                 onClick={() => {
                                     setAnalysisResult(null);
                                     setExtractedProducts([]);
-                                    setIsAnalyzing(false);
                                 }}
                             >
                                 <Search className="w-4 h-4 ml-1" />
-                                إعادة التحليل
+                                إعادة
                             </Button>
                         </div>
                     </Card>
 
-                    {/* Products Grid */}
+                    {/* Company Info */}
+                    {analysisResult.companyInfo?.name && (
+                        <Card className="p-4 border-blue-100 bg-blue-50/50">
+                            <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                    <Building2 className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-gray-900 text-lg">{analysisResult.companyInfo.name}</h3>
+                                    {analysisResult.companyInfo.description && (
+                                        <p className="text-sm text-gray-600 mt-1 line-clamp-3">{analysisResult.companyInfo.description}</p>
+                                    )}
+                                    {analysisResult.companyInfo.industry && (
+                                        <span className="inline-block mt-2 text-xs bg-blue-100 text-blue-700 rounded-full px-3 py-0.5">
+                                            {analysisResult.companyInfo.industry}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+
+                    {/* Products/Services Grid */}
                     {extractedProducts.length > 0 ? (
                         <div className="space-y-4">
                             <div className="flex items-center gap-2">
                                 <ShoppingBag className="w-5 h-5 text-primary" />
                                 <h3 className="font-semibold text-lg">
-                                    تم استخراج {extractedProducts.length} منتج
+                                    تم استخراج {extractedProducts.length} عنصر
                                 </h3>
                             </div>
 
-                            {/* Responsive product card grid */}
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto p-1">
                                 {extractedProducts.map((product: any, index: number) => (
                                     <Card
@@ -367,7 +351,6 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                             >
                                                 <Package className="w-10 h-10 text-primary/30" />
                                             </div>
-                                            {/* Price badge */}
                                             {product.price > 0 && (
                                                 <div className="absolute bottom-2 left-2 bg-white/95 backdrop-blur-sm rounded-full px-2.5 py-0.5 text-xs font-bold text-primary shadow-sm">
                                                     {product.price} {product.currency === 'SAR' ? 'ر.س' : product.currency || 'ر.س'}
@@ -390,171 +373,59 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             </div>
 
                             <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg text-center">
-                                💡 سيتم إضافة هذه المنتجات تلقائياً في الخطوة التالية. يمكنك تعديلها أو حذفها.
+                                💡 سيتم إضافة هذه العناصر تلقائياً في الخطوة التالية. يمكنك تعديلها أو حذفها.
                             </p>
                         </div>
                     ) : (
-                        /* Informational website data */
+                        /* No products found */
                         <div className="space-y-4">
-                            {/* Site info header */}
-                            {analysisResult?.title && (
-                                <Card className="p-4 border-blue-100 bg-blue-50/50">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                            <Building2 className="w-5 h-5 text-blue-600" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-bold text-gray-900 text-lg">{analysisResult.title}</h3>
-                                            {analysisResult.description && (
-                                                <p className="text-sm text-gray-600 mt-1 line-clamp-3">{analysisResult.description}</p>
-                                            )}
-                                            {analysisResult.industry && (
-                                                <span className="inline-block mt-2 text-xs bg-blue-100 text-blue-700 rounded-full px-3 py-0.5">
-                                                    {analysisResult.industry}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </Card>
-                            )}
-
-                            {/* Score cards */}
-                            {analysisResult?.overallScore > 0 && (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                    {/* Overall */}
-                                    <Card className={`p-3 text-center border ${getScoreColor(analysisResult.overallScore)}`}>
-                                        <Star className="w-4 h-4 mx-auto mb-1 opacity-70" />
-                                        <p className="text-2xl font-bold">{analysisResult.overallScore}</p>
-                                        <p className="text-[10px] mt-0.5 opacity-80">التقييم العام</p>
-                                    </Card>
-                                    {/* SEO */}
-                                    {analysisResult.seoScore != null && (
-                                        <Card className={`p-3 text-center border ${getScoreColor(analysisResult.seoScore)}`}>
-                                            <BarChart3 className="w-4 h-4 mx-auto mb-1 opacity-70" />
-                                            <p className="text-2xl font-bold">{analysisResult.seoScore}</p>
-                                            <p className="text-[10px] mt-0.5 opacity-80">SEO</p>
-                                        </Card>
-                                    )}
-                                    {/* Performance */}
-                                    {analysisResult.performanceScore != null && (
-                                        <Card className={`p-3 text-center border ${getScoreColor(analysisResult.performanceScore)}`}>
-                                            <Eye className="w-4 h-4 mx-auto mb-1 opacity-70" />
-                                            <p className="text-2xl font-bold">{analysisResult.performanceScore}</p>
-                                            <p className="text-[10px] mt-0.5 opacity-80">الأداء</p>
-                                        </Card>
-                                    )}
-                                    {/* UX */}
-                                    {analysisResult.uxScore != null && (
-                                        <Card className={`p-3 text-center border ${getScoreColor(analysisResult.uxScore)}`}>
-                                            <Smartphone className="w-4 h-4 mx-auto mb-1 opacity-70" />
-                                            <p className="text-2xl font-bold">{analysisResult.uxScore}</p>
-                                            <p className="text-[10px] mt-0.5 opacity-80">تجربة المستخدم</p>
-                                        </Card>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Site details list */}
+                            {/* Contact details */}
                             <Card className="divide-y">
-                                {analysisResult?.wordCount > 0 && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <FileText className="w-4 h-4" />
-                                            <span>المحتوى</span>
-                                        </div>
-                                        <span className="text-sm font-medium">{analysisResult.wordCount.toLocaleString()} كلمة</span>
-                                    </div>
-                                )}
-                                {analysisResult?.imageCount > 0 && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Eye className="w-4 h-4" />
-                                            <span>الصور</span>
-                                        </div>
-                                        <span className="text-sm font-medium">{analysisResult.imageCount} صورة</span>
-                                    </div>
-                                )}
-                                {analysisResult?.mobileOptimized != null && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Smartphone className="w-4 h-4" />
-                                            <span>متوافق مع الجوال</span>
-                                        </div>
-                                        <span className={`text-sm font-medium ${analysisResult.mobileOptimized ? 'text-emerald-600' : 'text-red-500'}`}>
-                                            {analysisResult.mobileOptimized ? '✅ نعم' : '❌ لا'}
-                                        </span>
-                                    </div>
-                                )}
-                                {/* Contact Info — show actual values */}
-                                {analysisResult?.contactInfo?.phones?.length > 0 ? (
+                                {analysisResult.contactInfo?.phones?.length > 0 && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Phone className="w-4 h-4" />
                                             <span>الهاتف</span>
                                         </div>
-                                        <span className="text-sm font-medium text-emerald-600 dir-ltr" dir="ltr">
+                                        <span className="text-sm font-medium text-emerald-600" dir="ltr">
                                             {analysisResult.contactInfo.phones[0]}
                                         </span>
                                     </div>
-                                ) : analysisResult?.hasContactInfo != null && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Phone className="w-4 h-4" />
-                                            <span>معلومات التواصل</span>
-                                        </div>
-                                        <span className={`text-sm font-medium ${analysisResult.hasContactInfo ? 'text-emerald-600' : 'text-amber-500'}`}>
-                                            {analysisResult.hasContactInfo ? '✅ متوفرة' : '⚠️ غير متوفرة'}
-                                        </span>
-                                    </div>
                                 )}
-                                {/* Email */}
-                                {analysisResult?.contactInfo?.emails?.length > 0 && (
+                                {analysisResult.contactInfo?.emails?.length > 0 && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Mail className="w-4 h-4" />
-                                            <span>البريد الإلكتروني</span>
+                                            <span>البريد</span>
                                         </div>
-                                        <span className="text-sm font-medium text-emerald-600 dir-ltr" dir="ltr">
+                                        <span className="text-sm font-medium text-emerald-600" dir="ltr">
                                             {analysisResult.contactInfo.emails[0]}
                                         </span>
                                     </div>
                                 )}
-                                {/* WhatsApp — show actual number */}
-                                {analysisResult?.contactInfo?.whatsappNumber ? (
+                                {analysisResult.contactInfo?.whatsappNumber && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <MessageCircle className="w-4 h-4" />
                                             <span>واتساب</span>
                                         </div>
-                                        <span className="text-sm font-medium text-emerald-600 dir-ltr" dir="ltr">
+                                        <span className="text-sm font-medium text-emerald-600" dir="ltr">
                                             ✅ +{analysisResult.contactInfo.whatsappNumber}
                                         </span>
                                     </div>
-                                ) : analysisResult?.hasWhatsapp != null && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <MessageCircle className="w-4 h-4" />
-                                            <span>واتساب</span>
-                                        </div>
-                                        <span className={`text-sm font-medium ${analysisResult.hasWhatsapp ? 'text-emerald-600' : 'text-gray-400'}`}>
-                                            {analysisResult.hasWhatsapp ? '✅ مرتبط' : '—'}
-                                        </span>
-                                    </div>
                                 )}
-                                {/* Address */}
-                                {analysisResult?.contactInfo?.address && (
+                                {analysisResult.contactInfo?.address && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <MapPin className="w-4 h-4" />
                                             <span>العنوان</span>
                                         </div>
-                                        <span className="text-sm font-medium text-gray-700 text-left max-w-[200px] truncate" dir="rtl">
+                                        <span className="text-sm font-medium text-gray-700 max-w-[200px] truncate">
                                             {analysisResult.contactInfo.address}
                                         </span>
                                     </div>
                                 )}
-                                {/* FAQs count */}
-                                {analysisResult?.faqs?.length > 0 && (
+                                {analysisResult.faqs?.length > 0 && (
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <HelpCircle className="w-4 h-4" />
@@ -563,15 +434,6 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                         <span className="text-sm font-medium text-emerald-600">
                                             ✅ {analysisResult.faqs.length} سؤال
                                         </span>
-                                    </div>
-                                )}
-                                {analysisResult?.language && (
-                                    <div className="flex items-center justify-between p-3">
-                                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                                            <Globe className="w-4 h-4" />
-                                            <span>اللغة</span>
-                                        </div>
-                                        <span className="text-sm font-medium">{analysisResult.language === 'ar' ? 'العربية' : analysisResult.language === 'en' ? 'الإنجليزية' : analysisResult.language}</span>
                                     </div>
                                 )}
                             </Card>
@@ -590,7 +452,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                     <Button onClick={handleContinue} className="flex-1">
                         <ArrowRight className="w-4 h-4 ml-2" />
                         {extractedProducts.length > 0
-                            ? `متابعة مع ${extractedProducts.length} منتج`
+                            ? `متابعة مع ${extractedProducts.length} عنصر`
                             : 'متابعة'
                         }
                     </Button>

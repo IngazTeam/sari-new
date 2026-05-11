@@ -78,6 +78,7 @@ export const analysisRouter = router({
         // ═══ Phase 3: Extract products/services ═══
         let products: any[] = [];
         let faqs: ExtractedFAQ[] = [];
+        let companyInfo = { name: '', description: '', industry: '' };
 
         if (siteType === 'ecommerce') {
           // E-commerce: use existing multi-strategy extraction (API → JSON-LD → HTML → AI)
@@ -87,12 +88,19 @@ export const analysisRouter = router({
             const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType);
             products = aiResult.products;
             faqs = aiResult.faqs;
+            companyInfo = aiResult.companyInfo;
+          } else {
+            // For e-commerce with API products, derive basic info from DOM
+            const doc = dom.window.document;
+            companyInfo.name = doc.querySelector('title')?.textContent?.trim() || '';
+            companyInfo.description = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
           }
         } else {
           // Non-ecommerce: always use AI extraction from all crawled content
           const aiResult = await extractAllWithAI(allText, input.websiteUrl, siteType);
           products = aiResult.products;
           faqs = aiResult.faqs;
+          companyInfo = aiResult.companyInfo;
         }
 
         // ═══ Phase 4: Extract pages + contact info ═══
@@ -129,6 +137,7 @@ export const analysisRouter = router({
           websiteUrl: input.websiteUrl,
           platform,
           siteType,
+          companyInfo,
           products: products.map(p => ({
             name: p.name,
             description: p.description || '',
