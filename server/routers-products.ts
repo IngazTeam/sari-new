@@ -415,11 +415,100 @@ export const productsRouter = router({
                     errors.push(`سطر ${i + 2}: ${error.message}`);
                 }
             }
-            // Step 4: Bot brain auto-fed
-            // Products are now in the DB with rich descriptions.
-            // The AI engine (ai.ts) automatically loads products via searchProducts()
-            // and injects them into the conversation context.
-            console.log(`[Products] Imported ${successCount} items with rich descriptions from ${input.fileName}`);
+            // Step 4: AI File Understanding — GPT-4 analyzes the full file content
+            // This gives the bot DEEP understanding, not just name+price
+            try {
+                // Build raw text representation of the entire file
+                const rawLines: string[] = [];
+                rawLines.push(`ملف: ${input.fileName}`);
+                rawLines.push(`الأعمدة: ${rawHeaders.map(h => h.value).join(' | ')}`);
+                rawLines.push('---');
+                for (let i = 0; i < Math.min(allParsedRows.length, 200); i++) {
+                    const row = allParsedRows[i];
+                    const parts: string[] = [];
+                    for (const h of rawHeaders) {
+                        const field = columnMap[h.colNumber];
+                        if (field && row[field]) {
+                            parts.push(`${h.value}: ${row[field]}`);
+                        }
+                    }
+                    rawLines.push(parts.join(' | '));
+                }
+                const rawFileText = rawLines.join('\n').substring(0, 15000); // Cap for token limits
+
+                // Send to GPT-4 for deep understanding
+                const { invokeLLM } = await import('./_core/llm');
+                const aiResult = await invokeLLM({
+                    merchantId: merchant.id,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: `أنت محلل بيانات تجارية. مهمتك تحليل ملف مرفوع من تاجر وتحويله لملخص مبيعات ذكي يستخدمه بوت مبيعات واتساب.
+
+قواعد التحليل:
+1. حدد نوع النشاط (منتجات، دورات، خدمات، مطعم، إلخ)
+2. لخّص كل عنصر بطريقة تساعد البوت على البيع والتوجيه
+3. حدد نقاط البيع القوية (USPs) لكل عنصر
+4. اقترح عبارات يستخدمها البوت عند ترشيح هذا المنتج/الخدمة
+5. حدد العلاقات بين العناصر (مثلاً: "إذا اهتم العميل بدورة التسويق، رشح له دورة المبيعات")
+6. اكتب بالعربية وباللهجة السعودية
+
+شكل المخرج:
+=== نوع النشاط ===
+[وصف مختصر]
+
+=== الملخص العام ===
+[ملخص شامل لما يقدمه التاجر]
+
+=== تفاصيل العناصر ===
+لكل عنصر:
+• الاسم: [...]
+• السعر: [...]
+• أبرز المميزات: [...]
+• عبارة بيعية مقترحة: [...]
+
+=== فرص البيع المتقاطع ===
+[اقتراحات ربط بين المنتجات/الخدمات]`
+                        },
+                        {
+                            role: 'user',
+                            content: `حلل هذا الملف وحوّله لملخص مبيعات ذكي:\n\n${rawFileText}`
+                        }
+                    ],
+                    maxTokens: 3000,
+                });
+
+                const aiSummary = typeof aiResult.choices[0]?.message?.content === 'string'
+                    ? aiResult.choices[0].message.content
+                    : '';
+
+                if (aiSummary && aiSummary.length > 50) {
+                    // Store as knowledge document for the bot
+                    const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
+                    if (existingDoc) {
+                        // Append AI analysis to existing knowledge
+                        const combined = (existingDoc.extractedText || '') + 
+                            '\n\n=== تحليل ذكي لملف المنتجات ===\n' + aiSummary;
+                        await db.updateKnowledgeDoc(existingDoc.id, {
+                            extractedText: combined.substring(0, 100000),
+                        });
+                    } else {
+                        // Create new knowledge doc with AI analysis
+                        await db.createKnowledgeDoc({
+                            merchantId: merchant.id,
+                            fileName: input.fileName,
+                            fileType: 'docx', // Closest match in enum
+                            fileSize: buffer.length,
+                            extractedText: aiSummary,
+                            extractionStatus: 'completed',
+                        });
+                    }
+                    console.log(`[Products] ✅ AI analyzed ${input.fileName}: ${aiSummary.length} chars of sales intelligence`);
+                }
+            } catch (aiErr) {
+                // Don't fail import if AI analysis fails
+                console.warn('[Products] AI file analysis failed (non-blocking):', aiErr);
+            }
 
             // Step 5: Auto-create Google Sheet (always, per user preference)
             let sheetCreated = false;

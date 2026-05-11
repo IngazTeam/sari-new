@@ -290,8 +290,66 @@ async function startServer() {
         const { extractTextFromDocument } = await import('../document-parser');
         const { text, pageCount } = await extractTextFromDocument(file.buffer, fileType);
 
+        // AI-Powered Understanding: Send extracted text to GPT-4 for sales-oriented analysis
+        let finalText = text;
+        try {
+          const { invokeLLM } = await import('./llm');
+          const aiResult = await invokeLLM({
+            merchantId: merchant.id,
+            messages: [
+              {
+                role: 'system',
+                content: `أنت محلل أعمال متخصص. مهمتك تحليل ملف بروفايل تاجر وتحويله لملخص مبيعات ذكي يستخدمه بوت مبيعات واتساب اسمه "ساري".
+
+قواعد التحليل:
+1. حدد نوع النشاط التجاري وتخصصه
+2. استخرج المنتجات والخدمات المقدمة مع أسعارها إن وُجدت
+3. حدد نقاط القوة والتميز (USPs)
+4. حدد الجمهور المستهدف
+5. اكتب عبارات بيعية يستخدمها البوت عند الترويج
+6. حدد الأسئلة الشائعة المتوقعة وأجوبتها
+7. اكتب بالعربية
+
+الشكل:
+=== ملخص النشاط ===
+[وصف مختصر وشامل]
+
+=== المنتجات/الخدمات ===
+[قائمة مفصلة]
+
+=== نقاط القوة ===
+[أبرز مميزات التاجر]
+
+=== عبارات بيعية مقترحة ===
+[جمل يستخدمها البوت]
+
+=== أسئلة شائعة ===
+[سؤال: جواب]`
+              },
+              {
+                role: 'user',
+                content: `حلل ملف البروفايل هذا:\n\n${text.substring(0, 15000)}`
+              }
+            ],
+            maxTokens: 3000,
+          });
+
+          const aiSummary = typeof aiResult.choices[0]?.message?.content === 'string'
+            ? aiResult.choices[0].message.content
+            : '';
+
+          if (aiSummary && aiSummary.length > 50) {
+            // Store both raw text AND AI analysis
+            finalText = aiSummary + '\n\n=== النص الأصلي للملف ===\n' + text;
+            console.log(`[KnowledgeDocs] ✅ AI analyzed profile: ${aiSummary.length} chars of sales intelligence`);
+          }
+        } catch (aiErr) {
+          console.warn('[KnowledgeDocs] AI analysis failed, using raw text:', aiErr);
+          // Fall back to raw text if AI fails
+        }
+
         await updateKnowledgeDoc(docId, {
-          extractedText: text,
+          extractedText: finalText,
           extractionStatus: 'completed',
         });
 
