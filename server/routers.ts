@@ -49,6 +49,7 @@ import { productsRouter } from "./routers-products";
 import { knowledgeDocsRouter } from "./routers-knowledge-docs";
 import { aiSettingsRouter } from "./routers-ai-settings";
 import { googleAnalyticsRouter } from "./routers-google-analytics";
+import { dashboardRouter } from "./routers-dashboard";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -8402,5 +8403,8 @@ export const appRouter = router({
 
   // Google Analytics 4 — modularized to routers-google-analytics.ts
   googleAnalytics: googleAnalyticsRouter,
+
+  // Dashboard Analytics — modularized to routers-dashboard.ts
+  dashboard: dashboardRouter,
 });
 export type AppRouter = typeof appRouter;

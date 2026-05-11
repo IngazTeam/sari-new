@@ -9253,7 +9253,13 @@ export async function getExpiringSubscriptions(daysBeforeExpiry: number) {
   const now = new Date();
   const targetDate = new Date(now.getTime() + daysBeforeExpiry * 24 * 60 * 60 * 1000);
 
-  return await db.select().from(merchantSubscriptions)
+  // Guard against invalid dates
+  if (isNaN(now.getTime()) || isNaN(targetDate.getTime())) {
+    console.error('[getExpiringSubscriptions] Invalid date calculation, skipping');
+    return [];
+  }
+
+  const results = await db.select().from(merchantSubscriptions)
     .where(and(
       or(
         eq(merchantSubscriptions.status, 'trial'),
@@ -9262,6 +9268,12 @@ export async function getExpiringSubscriptions(daysBeforeExpiry: number) {
       gte(merchantSubscriptions.endDate, now.toISOString()),
       lte(merchantSubscriptions.endDate, targetDate.toISOString())
     ));
+
+  // Filter out records with invalid endDate
+  return results.filter(s => {
+    const d = new Date(s.endDate);
+    return !isNaN(d.getTime());
+  });
 }
 
 export async function getMerchantSubscriptionStats() {
