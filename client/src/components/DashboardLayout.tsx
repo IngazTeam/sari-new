@@ -117,11 +117,14 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   // 1. الرئيسية والمتابعة (Overview)
   { icon: LayoutDashboard, label: t('sidebar.merchant.dashboard', 'لوحة التحكم'), path: "/merchant/dashboard", group: 'main' },
   { icon: MessageSquare, label: t('sidebar.merchant.conversations', 'المحادثات'), path: "/merchant/conversations", group: 'main' },
+  { icon: Bell, label: t('sidebar.merchant.notifications', 'الإشعارات'), path: "/merchant/notifications", group: 'main' },
 
   // 2. المبيعات والتشغيل (Operations)
   { icon: Package, label: t('sidebar.merchant.products', 'المنتجات'), path: "/merchant/products", group: 'operations' },
   { icon: FileText, label: t('sidebar.merchant.orders', 'الطلبات'), path: "/merchant/orders", group: 'operations' },
+  { icon: Briefcase, label: t('sidebar.merchant.services', 'الخدمات'), path: "/merchant/services", group: 'operations' },
   { icon: BookOpen, label: t('sidebar.merchant.bookingManagement', 'الحجوزات'), path: "/merchant/bookings", group: 'operations' },
+  { icon: Calendar, label: t('sidebar.merchant.calendar', 'التقويم'), path: "/merchant/calendar", group: 'operations' },
   { icon: Users, label: t('sidebar.merchant.customerManagement', 'العملاء'), path: "/merchant/customers", group: 'operations' },
   { icon: Link, label: t('sidebar.merchant.paymentLinks', 'روابط الدفع'), path: "/merchant/payment-links", group: 'operations' },
   { icon: Wallet, label: t('sidebar.merchant.paymentsPage', 'المدفوعات'), path: "/merchant/payments", group: 'operations' },
@@ -131,8 +134,10 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Sparkles, label: t('sidebar.merchant.aiHub', 'مركز المساعد الذكي'), path: "/merchant/ai-hub", group: 'channels' },
   { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances', 'أرقام الواتساب'), path: "/merchant/whatsapp-instances", group: 'channels' },
   { icon: Bot, label: t('sidebar.merchant.botSettings', 'إعدادات البوت'), path: "/merchant/bot-settings", group: 'channels' },
+  { icon: Activity, label: t('sidebar.merchant.sariPersonality', 'شخصية ساري'), path: "/merchant/sari-personality", group: 'channels' },
   { icon: Zap, label: t('sidebar.merchant.quickResponses', 'الردود السريعة'), path: "/merchant/quick-responses", group: 'channels' },
-  { icon: Bell, label: t('sidebar.merchant.orderNotifications', 'إشعارات الطلبات'), path: "/merchant/order-notifications", group: 'channels' },
+  { icon: Clock, label: t('sidebar.merchant.scheduledMessages', 'الرسائل المجدولة'), path: "/merchant/scheduled-messages", group: 'channels' },
+  { icon: BellRing, label: t('sidebar.merchant.orderNotifications', 'إشعارات الطلبات'), path: "/merchant/order-notifications", group: 'channels' },
   { icon: MessageCircle, label: t('sidebar.merchant.messageAnalytics', 'سجل الرسائل'), path: "/merchant/message-analytics", group: 'channels' },
 
   // 4. التسويق والولاء (Marketing & Growth)
@@ -143,12 +148,16 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: ShoppingBag, label: t('sidebar.merchant.abandonedCarts', 'السلات المتروكة'), path: "/merchant/abandoned-carts", group: 'marketing' },
   { icon: UserPlus, label: t('sidebar.merchant.referrals', 'الإحالات'), path: "/merchant/referrals", group: 'marketing' },
 
-  // 5. التحليلات (Analytics)
+  // 5. التحليلات والتقارير (Analytics & Reports)
   { icon: BarChart3, label: t('sidebar.merchant.analyticsHub', 'مركز التحليلات'), path: "/merchant/analytics-hub", group: 'analytics' },
+  { icon: Search, label: t('sidebar.merchant.websiteAnalysis', 'تحليل الموقع'), path: "/merchant/website-analysis", group: 'analytics' },
+  { icon: TrendingUp, label: t('sidebar.merchant.competitorAnalysis', 'تحليل المنافسين'), path: "/merchant/competitor-analysis", group: 'analytics' },
+  { icon: FileText, label: t('sidebar.merchant.weeklyReports', 'التقارير الأسبوعية'), path: "/merchant/weekly-reports", group: 'analytics' },
   { icon: FileText, label: t('sidebar.merchant.reports', 'التقارير الدورية'), path: "/merchant/reports", group: 'analytics' },
 
-  // 6. الإعدادات والربط (Settings & App Store)
+  // 6. الإعدادات والربط (Settings & Integrations)
   { icon: Settings, label: t('sidebar.merchant.settings', 'إعدادات المتجر'), path: "/merchant/settings", group: 'settings' },
+  { icon: Languages, label: t('sidebar.merchant.languageSettings', 'إعدادات اللغة'), path: "/merchant/language-settings", group: 'settings' },
   { icon: Plug, label: t('sidebar.merchant.integrationsDashboard', 'التطبيقات والربط'), path: "/merchant/integrations-dashboard", group: 'settings' },
   { icon: UsersRound, label: t('sidebar.merchant.staffManagement', 'فريق العمل'), path: "/merchant/staff", group: 'settings' },
   { icon: Crown, label: t('sidebar.merchant.mySubscription', 'باقتي والفواتير'), path: "/merchant/my-subscription", group: 'settings' },
