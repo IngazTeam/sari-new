@@ -8,8 +8,10 @@ import {
   extractProducts,
   discoverPages,
   extractContactInfo,
+  isUrlSafe,
   type ExtractedFAQ,
 } from "../_core/websiteAnalyzer";
+import { checkRateLimit } from "../_core/rateLimiter";
 
 /**
  * Helper: Get merchant or throw
@@ -37,7 +39,18 @@ export const analysisRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
+        // SEC-A1: SSRF guard
+        if (!isUrlSafe(input.websiteUrl)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به.' });
+        }
+
         const merchant = await getMerchantOrThrow(ctx.user.id);
+
+        // SEC-A2: Rate limit (5 per hour per merchant)
+        const rl = checkRateLimit(`analysis_preview:${merchant.id}`, 5, 3600000);
+        if (!rl.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز عدد محاولات التحليل. حاول بعد قليل.' });
+        }
 
         // Update status to analyzing (only status, not the data)
         await db.updateMerchantWebsiteInfo({
@@ -370,8 +383,19 @@ export const analysisRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       try {
+        // SEC-A1: SSRF guard
+        if (!isUrlSafe(input.websiteUrl)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به.' });
+        }
+
         const merchant = await getMerchantOrThrow(ctx.user.id);
         const merchantId = merchant.id;
+
+        // SEC-A2: Rate limit (5 per hour per merchant)
+        const rl = checkRateLimit(`analysis_legacy:${merchantId}`, 5, 3600000);
+        if (!rl.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز عدد محاولات التحليل. حاول بعد قليل.' });
+        }
 
         // Update status to analyzing
         await db.updateMerchantWebsiteInfo({
