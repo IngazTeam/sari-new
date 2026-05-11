@@ -10,19 +10,158 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
-// Header mapping: supports English and Arabic column headers
+// Header mapping: comprehensive support for Arabic/English column headers
+// Covers: products, courses, services, real-estate, food, general exports
 const HEADER_MAP: Record<string, string> = {
-    'name': 'name', 'الاسم': 'name', 'اسم المنتج': 'name', 'product name': 'name', 'اسم': 'name',
-    'description': 'description', 'الوصف': 'description', 'وصف': 'description', 'وصف المنتج': 'description',
+    // ═══ NAME variants ═══
+    'name': 'name', 'الاسم': 'name', 'اسم المنتج': 'name', 'product name': 'name',
+    'اسم': 'name', 'عنوان': 'name', 'title': 'name', 'المنتج': 'name',
+    'اسم الدورة': 'name', 'course name': 'name', 'course title': 'name',
+    'اسم الخدمة': 'name', 'service name': 'name', 'اسم البرنامج': 'name',
+    'program name': 'name', 'اسم الباقة': 'name', 'package name': 'name',
+    'العنوان': 'name', 'item': 'name', 'item name': 'name',
+    'اسم العنصر': 'name', 'الصنف': 'name', 'المادة': 'name',
+    'اسم المادة': 'name', 'subject': 'name', 'الدورة': 'name',
+
+    // ═══ DESCRIPTION variants ═══
+    'description': 'description', 'الوصف': 'description', 'وصف': 'description',
+    'وصف المنتج': 'description', 'product description': 'description',
+    'التفاصيل': 'description', 'details': 'description', 'تفاصيل': 'description',
+    'وصف الدورة': 'description', 'course description': 'description',
+    'وصف الخدمة': 'description', 'الملخص': 'description', 'summary': 'description',
+    'نبذة': 'description', 'overview': 'description', 'محتوى': 'description',
+    'المحتوى': 'description', 'content': 'description', 'notes': 'description',
+    'ملاحظات': 'description',
+
+    // ═══ PRICE variants ═══
     'price': 'price', 'السعر': 'price', 'سعر': 'price',
-    'imageurl': 'imageUrl', 'image': 'imageUrl', 'الصورة': 'imageUrl', 'رابط الصورة': 'imageUrl', 'صورة': 'imageUrl',
-    'stock': 'stock', 'المخزون': 'stock', 'الكمية': 'stock', 'كمية': 'stock', 'quantity': 'stock',
-    'category': 'category', 'التصنيف': 'category', 'تصنيف': 'category', 'الفئة': 'category',
+    'التكلفة': 'price', 'cost': 'price', 'رسوم': 'price', 'fees': 'price',
+    'الرسوم': 'price', 'المبلغ': 'price', 'amount': 'price',
+    'سعر الدورة': 'price', 'course price': 'price', 'سعر الخدمة': 'price',
+    'unit price': 'price', 'سعر الوحدة': 'price', 'rate': 'price',
+
+    // ═══ IMAGE variants ═══
+    'imageurl': 'imageUrl', 'image': 'imageUrl', 'الصورة': 'imageUrl',
+    'رابط الصورة': 'imageUrl', 'صورة': 'imageUrl', 'image url': 'imageUrl',
+    'photo': 'imageUrl', 'الشعار': 'imageUrl', 'logo': 'imageUrl',
+    'thumbnail': 'imageUrl', 'صورة المنتج': 'imageUrl',
+
+    // ═══ STOCK variants ═══
+    'stock': 'stock', 'المخزون': 'stock', 'الكمية': 'stock', 'كمية': 'stock',
+    'quantity': 'stock', 'عدد': 'stock', 'المقاعد': 'stock', 'seats': 'stock',
+    'المتاح': 'stock', 'available': 'stock', 'عدد المقاعد': 'stock',
+
+    // ═══ CATEGORY variants ═══
+    'category': 'category', 'التصنيف': 'category', 'تصنيف': 'category',
+    'الفئة': 'category', 'النوع': 'category', 'type': 'category',
+    'القسم': 'category', 'department': 'category', 'section': 'category',
+    'المجال': 'category', 'field': 'category', 'التخصص': 'category',
+    'specialization': 'category',
 };
 
 function normalizeHeader(header: string): string | null {
     const normalized = header.trim().toLowerCase().replace(/\s+/g, ' ');
     return HEADER_MAP[normalized] || null;
+}
+
+/**
+ * Smart header detection: if no column matches 'name' from the HEADER_MAP,
+ * auto-assign the first text column as 'name' and merge remaining unmapped
+ * columns into 'description'. This ensures NO file is ever rejected.
+ */
+function smartMapHeaders(
+    rawHeaders: { colNumber: number; value: string }[]
+): { columnMap: Record<number, string>; autoDetected: boolean; rawHeaderNames: Record<number, string> } {
+    const columnMap: Record<number, string> = {};
+    const rawHeaderNames: Record<number, string> = {};
+
+    // Phase 1: try HEADER_MAP matches
+    for (const h of rawHeaders) {
+        rawHeaderNames[h.colNumber] = h.value;
+        const mapped = normalizeHeader(h.value);
+        if (mapped) {
+            columnMap[h.colNumber] = mapped;
+        }
+    }
+
+    // If we found 'name', we're good — standard mode
+    if (Object.values(columnMap).includes('name')) {
+        // Map remaining unmapped columns as 'extra_N' for description merge
+        for (const h of rawHeaders) {
+            if (!columnMap[h.colNumber]) {
+                columnMap[h.colNumber] = `extra_${h.colNumber}`;
+            }
+        }
+        return { columnMap, autoDetected: false, rawHeaderNames };
+    }
+
+    // Phase 2: Smart fallback — auto-detect columns
+    // First column = name, first numeric-looking column = price, rest = extras for description
+    let nameAssigned = false;
+    for (const h of rawHeaders) {
+        if (!nameAssigned) {
+            columnMap[h.colNumber] = 'name';
+            nameAssigned = true;
+        } else if (!Object.values(columnMap).includes('price') && /سعر|price|cost|رسوم|مبلغ|amount/i.test(h.value)) {
+            columnMap[h.colNumber] = 'price';
+        } else {
+            columnMap[h.colNumber] = `extra_${h.colNumber}`;
+        }
+    }
+
+    return { columnMap, autoDetected: true, rawHeaderNames };
+}
+
+/**
+ * Build a rich description from extra columns for a given row.
+ * Example: "المدرب: أحمد | المدة: 5 ساعات | الموقع: الرياض"
+ */
+function buildExtraDescription(
+    row: Record<string, string>,
+    rawHeaderNames: Record<number, string>,
+    columnMap: Record<number, string>
+): string {
+    const parts: string[] = [];
+    if (row.description) parts.push(row.description);
+
+    for (const [colStr, field] of Object.entries(columnMap)) {
+        if (field.startsWith('extra_') && row[field]) {
+            const colNumber = parseInt(colStr);
+            const headerLabel = rawHeaderNames[colNumber] || field;
+            parts.push(`${headerLabel}: ${row[field]}`);
+        }
+    }
+    return parts.join(' | ');
+}
+
+/**
+ * Build rows for Google Sheets from parsed data.
+ * Preserves original column headers in the sheet for merchant editing.
+ */
+function buildSheetRows(
+    allRows: Record<string, string>[],
+    rawHeaderNames: Record<number, string>,
+    columnMap: Record<number, string>
+): string[][] {
+    // Build header row from original column names
+    const headerCols = Object.entries(rawHeaderNames)
+        .sort(([a], [b]) => parseInt(a) - parseInt(b))
+        .map(([, name]) => name);
+
+    const rows: string[][] = [headerCols];
+
+    // Build data rows
+    for (const row of allRows) {
+        const dataRow: string[] = [];
+        const sortedCols = Object.entries(columnMap)
+            .sort(([a], [b]) => parseInt(a) - parseInt(b));
+        for (const [, field] of sortedCols) {
+            dataRow.push(row[field] || '');
+        }
+        rows.push(dataRow);
+    }
+
+    return rows;
 }
 
 export const productsRouter = router({
@@ -178,7 +317,7 @@ export const productsRouter = router({
             };
         }),
 
-    // Upload Excel (.xlsx) — accepts base64-encoded file
+    // Upload Excel (.xlsx) — Smart import with auto-column detection + bot brain feeding
     uploadExcel: protectedProcedure
         .input(z.object({
             fileBase64: z.string(),
@@ -198,32 +337,33 @@ export const productsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على بيانات' });
             }
 
-            // Read headers from first row
+            // Step 1: Smart header detection
             const headerRow = worksheet.getRow(1);
-            const columnMap: Record<number, string> = {};
+            const rawHeaders: { colNumber: number; value: string }[] = [];
             headerRow.eachCell((cell, colNumber) => {
                 const val = cell.value?.toString().trim();
                 if (val) {
-                    const mapped = normalizeHeader(val);
-                    if (mapped) {
-                        columnMap[colNumber] = mapped;
-                    }
+                    rawHeaders.push({ colNumber, value: val });
                 }
             });
 
-            if (!Object.values(columnMap).includes('name')) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على عمود الاسم (name أو الاسم)' });
+            if (rawHeaders.length === 0) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على أعمدة' });
             }
+
+            const { columnMap, autoDetected, rawHeaderNames } = smartMapHeaders(rawHeaders);
 
             let successCount = 0;
             let errorCount = 0;
             const errors: string[] = [];
             const preview: { name: string; price: number; description: string }[] = [];
 
+            // Step 2: Parse all rows
+            const allParsedRows: Record<string, string>[] = [];
             worksheet.eachRow((row, rowNumber) => {
-                if (rowNumber === 1) return; // skip header
+                if (rowNumber === 1) return;
 
-                const product: Record<string, any> = {};
+                const product: Record<string, string> = {};
                 row.eachCell((cell, colNumber) => {
                     const key = columnMap[colNumber];
                     if (key) {
@@ -232,60 +372,118 @@ export const productsRouter = router({
                 });
 
                 if (product.name) {
-                    preview.push({
-                        name: product.name,
-                        price: parseFloat(product.price) || 0,
-                        description: product.description || '',
-                    });
+                    allParsedRows.push(product);
                 }
             });
 
             // FIX #14: Limit import size
-            if (preview.length > 5000) {
+            if (allParsedRows.length > 5000) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى للاستيراد 5000 منتج' });
             }
 
-            // Actually import products — FIX #8: use index i instead of indexOf to avoid duplicate-name bug
-            for (let i = 0; i < preview.length; i++) {
-                try {
-                    const row: Record<string, any> = {};
-                    // Re-read from worksheet using i directly
-                    const wsRow = worksheet.getRow(i + 2);
-                    wsRow.eachCell((cell, colNumber) => {
-                        const key = columnMap[colNumber];
-                        if (key) {
-                            row[key] = cell.value?.toString().trim() || '';
-                        }
-                    });
+            if (allParsedRows.length === 0) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على صفوف بيانات' });
+            }
 
-                    if (row.name && (row.price || parseFloat(row.price) === 0)) {
-                        await db.createProduct({
-                            merchantId: merchant.id,
+            // Step 3: Import products to DB (AI reads products from DB automatically)
+            for (let i = 0; i < allParsedRows.length; i++) {
+                const row = allParsedRows[i];
+                try {
+                    // Build rich description from extra columns
+                    const richDescription = buildExtraDescription(row, rawHeaderNames, columnMap);
+
+                    await db.createProduct({
+                        merchantId: merchant.id,
+                        name: row.name,
+                        description: richDescription || null,
+                        price: parseFloat(row.price) || 0,
+                        imageUrl: row.imageUrl || null,
+                        stock: row.stock ? parseInt(row.stock) : null,
+                        category: row.category || null,
+                    });
+                    successCount++;
+
+                    if (preview.length < 5) {
+                        preview.push({
                             name: row.name,
-                            description: row.description || null,
                             price: parseFloat(row.price) || 0,
-                            imageUrl: row.imageUrl || null,
-                            stock: row.stock ? parseInt(row.stock) : null,
-                            category: row.category || null,
+                            description: richDescription.substring(0, 100),
                         });
-                        successCount++;
-                    } else {
-                        errorCount++;
-                        errors.push(`سطر ${i + 2}: اسم أو سعر مفقود`);
                     }
                 } catch (error: any) {
                     errorCount++;
                     errors.push(`سطر ${i + 2}: ${error.message}`);
                 }
             }
+            // Step 4: Bot brain auto-fed
+            // Products are now in the DB with rich descriptions.
+            // The AI engine (ai.ts) automatically loads products via searchProducts()
+            // and injects them into the conversation context.
+            console.log(`[Products] Imported ${successCount} items with rich descriptions from ${input.fileName}`);
+
+            // Step 5: Auto-create Google Sheet (always, per user preference)
+            let sheetCreated = false;
+            let spreadsheetUrl = '';
+            let existingSheetWarning = '';
+            try {
+                const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+                if (integration && integration.isActive) {
+                    const sheets = await import('./_core/googleSheets');
+
+                    // Check if a sheet already exists
+                    if (integration.sheetId) {
+                        existingSheetWarning = 'تم تحديث الشيت الحالي بالبيانات الجديدة';
+                        // Clear existing data and write new
+                        try {
+                            await sheets.writeToSheet(
+                                merchant.id,
+                                integration.sheetId,
+                                'Sheet1!A1',
+                                buildSheetRows(allParsedRows, rawHeaderNames, columnMap)
+                            );
+                            spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${integration.sheetId}`;
+                            sheetCreated = true;
+                        } catch {
+                            // If update fails, create new sheet
+                            existingSheetWarning = '';
+                        }
+                    }
+
+                    if (!sheetCreated) {
+                        // Create new spreadsheet
+                        const sheetName = `منتجات ${merchant.businessName || 'متجري'} - ساري`;
+                        const createResult = await sheets.createSpreadsheet(merchant.id, sheetName);
+
+                        if (createResult.success && createResult.spreadsheetId) {
+                            await sheets.writeToSheet(
+                                merchant.id,
+                                createResult.spreadsheetId,
+                                'Sheet1!A1',
+                                buildSheetRows(allParsedRows, rawHeaderNames, columnMap)
+                            );
+                            spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${createResult.spreadsheetId}`;
+                            sheetCreated = true;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Products] Error creating Google Sheet:', error);
+            }
 
             return {
                 success: true,
                 imported: successCount,
                 failed: errorCount,
-                total: preview.length,
-                errors: errors.slice(0, 10), // Return first 10 errors
-                preview: preview.slice(0, 5), // Return first 5 items as preview
+                total: allParsedRows.length,
+                errors: errors.slice(0, 10),
+                preview: preview.slice(0, 5),
+                autoDetected,
+                sheetCreated,
+                spreadsheetUrl,
+                existingSheetWarning,
+                message: autoDetected
+                    ? `تم التعرف تلقائياً على الأعمدة واستيراد ${successCount} عنصر`
+                    : `تم استيراد ${successCount} منتج بنجاح`,
             };
         }),
 

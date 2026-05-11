@@ -9,7 +9,6 @@ import {
   AlertCircle, FileSpreadsheet, Link2, RefreshCw, Clock, Table2, Plus
 } from 'lucide-react';
 import { useState, useRef } from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useLocation } from 'wouter';
 
@@ -20,7 +19,6 @@ export default function UploadProducts() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'file' | 'sheets' | 'template'>('file');
-  const [createSheet, setCreateSheet] = useState(false);
 
   // Mutations
   const uploadCSV = trpc.products.uploadCSV.useMutation({
@@ -37,18 +35,22 @@ export default function UploadProducts() {
   const uploadExcel = trpc.products.uploadExcel.useMutation({
     onSuccess: (data) => {
       setUploadResult(data);
-      toast.success(t('uploadProductsPage.importSuccess', { count: data.imported }));
-      resetFile();
-    },
-    onError: (error) => {
-      toast.error(t('uploadProductsPage.uploadFailed') + error.message);
-    },
-  });
-
-  const uploadExcelAndSheet = trpc.products.uploadExcelAndCreateSheet.useMutation({
-    onSuccess: (data) => {
-      setUploadResult(data);
-      toast.success(data.message);
+      if (data.autoDetected) {
+        toast.success(data.message || `تم التعرف تلقائياً على الأعمدة واستيراد ${data.imported} عنصر`);
+      } else {
+        toast.success(data.message || t('uploadProductsPage.importSuccess', { count: data.imported }));
+      }
+      if (data.sheetCreated && data.spreadsheetUrl) {
+        toast.success('تم رفع البيانات على Google Sheet تلقائياً', {
+          action: {
+            label: 'فتح الشيت',
+            onClick: () => window.open(data.spreadsheetUrl, '_blank'),
+          },
+        });
+      }
+      if (data.existingSheetWarning) {
+        toast.info(data.existingSheetWarning);
+      }
       resetFile();
       sheetStatus.refetch();
     },
@@ -56,6 +58,7 @@ export default function UploadProducts() {
       toast.error(t('uploadProductsPage.uploadFailed') + error.message);
     },
   });
+
 
   const syncSheets = trpc.products.syncFromGoogleSheets.useMutation({
     onSuccess: (data) => {
@@ -105,16 +108,12 @@ export default function UploadProducts() {
       const text = await selectedFile.text();
       uploadCSV.mutate({ csvData: text });
     } else {
-      // Excel file — read as base64
+      // Excel file — read as base64 (auto-creates Google Sheet if connected)
       const arrayBuffer = await selectedFile.arrayBuffer();
       const base64 = btoa(
         new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
       );
-      if (createSheet) {
-        uploadExcelAndSheet.mutate({ fileBase64: base64, fileName: selectedFile.name });
-      } else {
-        uploadExcel.mutate({ fileBase64: base64, fileName: selectedFile.name });
-      }
+      uploadExcel.mutate({ fileBase64: base64, fileName: selectedFile.name });
     }
   };
 
@@ -130,7 +129,7 @@ export default function UploadProducts() {
     }
   };
 
-  const isUploading = uploadCSV.isPending || uploadExcel.isPending || uploadExcelAndSheet.isPending;
+  const isUploading = uploadCSV.isPending || uploadExcel.isPending;
 
   const tabs = [
     { id: 'file' as const, label: t('uploadProductsPage.tabFile'), icon: <FileSpreadsheet className="h-4 w-4" /> },
