@@ -326,6 +326,22 @@ async function searchRelevantProducts(
  * Generate enhanced context-aware prompt
  * Injects: products, FAQs, store policies, and merchant info into the AI context
  */
+/**
+ * Strip prompt injection patterns from merchant-controlled content
+ * Prevents: 'ignore previous instructions', 'system:', role impersonation, etc.
+ */
+function sanitizeForPrompt(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+    .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+    .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+    .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+    .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+    .replace(/do\s+not\s+follow/gi, '[filtered]')
+    .replace(/override\s+(system|all|your)/gi, '[filtered]');
+}
+
 async function buildEnhancedContextPrompt(context: {
   customerName?: string;
   merchantName?: string;
@@ -354,9 +370,9 @@ async function buildEnhancedContextPrompt(context: {
       const latestAnalysis = analyses.length > 0 ? analyses[0] : null;
       if (latestAnalysis && latestAnalysis.status === 'completed') {
         contextPrompt += `\n## معلومات عن النشاط التجاري (من تحليل الموقع):\n`;
-        if (latestAnalysis.title) contextPrompt += `- الاسم: ${latestAnalysis.title}\n`;
-        if (latestAnalysis.description) contextPrompt += `- الوصف: ${latestAnalysis.description}\n`;
-        if (latestAnalysis.industry) contextPrompt += `- المجال/الصناعة: ${latestAnalysis.industry}\n`;
+        if (latestAnalysis.title) contextPrompt += `- الاسم: ${sanitizeForPrompt(latestAnalysis.title)}\n`;
+        if (latestAnalysis.description) contextPrompt += `- الوصف: ${sanitizeForPrompt(latestAnalysis.description)}\n`;
+        if (latestAnalysis.industry) contextPrompt += `- المجال/الصناعة: ${sanitizeForPrompt(latestAnalysis.industry)}\n`;
         if (latestAnalysis.url) contextPrompt += `- الموقع الإلكتروني: ${latestAnalysis.url}\n`;
         if (latestAnalysis.language) contextPrompt += `- لغة الموقع: ${latestAnalysis.language}\n`;
         contextPrompt += `⚠️ استخدم هذه المعلومات عند الرد على أسئلة العملاء عن الشركة/المتجر.\n`;
@@ -374,7 +390,7 @@ async function buildEnhancedContextPrompt(context: {
         contextPrompt += `\n## ملف التعريف بالنشاط التجاري (مرفوع من التاجر):\n`;
         contextPrompt += `النوع: ${knowledgeDoc.fileType || 'مستند'}\n`;
         // Limit to 2000 chars to stay within token limits
-        const docText = knowledgeDoc.extractedText.substring(0, 2000);
+        const docText = sanitizeForPrompt(knowledgeDoc.extractedText.substring(0, 2000));
         contextPrompt += `المحتوى:\n${docText}\n`;
         if (knowledgeDoc.extractedText.length > 2000) {
           contextPrompt += `...(تم اقتطاع باقي المحتوى)\n`;
@@ -387,17 +403,19 @@ async function buildEnhancedContextPrompt(context: {
   }
 
   // === Inject merchant profile data (phone, email, address, etc.) ===
+  // Cache merchant lookup to avoid duplicate DB calls
+  let cachedMerchant: any = null;
   if (context.merchantId) {
     try {
-      const merchant = await db.getMerchantById(context.merchantId);
-      if (merchant) {
+      cachedMerchant = await db.getMerchantById(context.merchantId);
+      if (cachedMerchant) {
         const profileParts: string[] = [];
-        if (merchant.phone) profileParts.push(`الهاتف: ${merchant.phone}`);
-        if (merchant.email) profileParts.push(`البريد: ${merchant.email}`);
-        if (merchant.website) profileParts.push(`الموقع: ${merchant.website}`);
-        if (merchant.address) profileParts.push(`العنوان: ${merchant.address}`);
-        if (merchant.city) profileParts.push(`المدينة: ${merchant.city}`);
-        if ((merchant as any).description) profileParts.push(`الوصف: ${(merchant as any).description}`);
+        if (cachedMerchant.phone) profileParts.push(`الهاتف: ${cachedMerchant.phone}`);
+        if (cachedMerchant.email) profileParts.push(`البريد: ${cachedMerchant.email}`);
+        if (cachedMerchant.website) profileParts.push(`الموقع: ${cachedMerchant.website}`);
+        if (cachedMerchant.address) profileParts.push(`العنوان: ${cachedMerchant.address}`);
+        if (cachedMerchant.city) profileParts.push(`المدينة: ${cachedMerchant.city}`);
+        if (cachedMerchant.description) profileParts.push(`الوصف: ${sanitizeForPrompt(cachedMerchant.description)}`);
         if (profileParts.length > 0) {
           contextPrompt += `\n## بيانات التواصل مع المتجر:\n`;
           contextPrompt += profileParts.join('\n') + '\n';
@@ -411,9 +429,8 @@ async function buildEnhancedContextPrompt(context: {
   if (context.availableProducts && context.availableProducts.length > 0) {
     contextPrompt += `\n## المنتجات المتاحة حالياً:\n`;
     
-    // Get merchant currency once
-    const merchant = context.merchantId ? await db.getMerchantById(context.merchantId) : null;
-    const currency = (merchant?.currency as Currency) || 'SAR';
+    // Reuse cached merchant instead of duplicate DB call
+    const currency = (cachedMerchant?.currency as Currency) || 'SAR';
     
     for (let index = 0; index < context.availableProducts.length; index++) {
       const product = context.availableProducts[index];
@@ -440,8 +457,8 @@ async function buildEnhancedContextPrompt(context: {
         contextPrompt += `\n## الأسئلة الشائعة عن المتجر:\n`;
         contextPrompt += `استخدم هذه المعلومات للرد على أسئلة العملاء عن الشحن والاسترجاع وغيرها:\n\n`;
         for (const faq of faqs.slice(0, 15)) { // Max 15 FAQs to stay within token limits
-          contextPrompt += `**س:** ${faq.question}\n`;
-          contextPrompt += `**ج:** ${faq.answer}\n\n`;
+          contextPrompt += `**س:** ${sanitizeForPrompt(faq.question)}\n`;
+          contextPrompt += `**ج:** ${sanitizeForPrompt(faq.answer)}\n\n`;
         }
       }
     } catch (error) {
@@ -466,8 +483,8 @@ async function buildEnhancedContextPrompt(context: {
             faq: 'أسئلة شائعة',
             about: 'عن المتجر',
           };
-          contextPrompt += `### ${typeLabels[page.pageType] || page.title}:\n`;
-          contextPrompt += `${page.content.substring(0, 400)}\n\n`;
+          contextPrompt += `### ${typeLabels[page.pageType] || sanitizeForPrompt(page.title)}:\n`;
+          contextPrompt += `${sanitizeForPrompt(page.content.substring(0, 400))}\n\n`;
         }
         contextPrompt += `⚠️ عند سؤال العميل عن الشحن أو الاسترجاع، استخدم المعلومات أعلاه بدلاً من الاختراع.\n`;
       }
