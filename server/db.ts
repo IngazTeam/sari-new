@@ -9287,6 +9287,16 @@ export async function updateMerchantSubscription(id: number, data: Partial<NewMe
   await db.update(merchantSubscriptions).set(cleanData).where(eq(merchantSubscriptions.id, id));
 }
 
+// Raw SQL update for subscription end_date — guaranteed to work
+export async function rawUpdateSubscriptionEndDate(subscriptionId: number, endDate: string) {
+  await getDb();
+  if (!_pool) throw new Error("Database not available");
+  await _pool.execute(
+    `UPDATE merchant_subscriptions SET end_date = ?, updated_at = NOW() WHERE id = ?`,
+    [endDate, subscriptionId]
+  );
+}
+
 // PEN-13 FIX: Update currentSubscriptionId on merchants table
 export async function updateMerchantCurrentSubscriptionId(merchantId: number, subscriptionId: number | null) {
   const db = await getDb();

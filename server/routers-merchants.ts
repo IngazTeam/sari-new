@@ -184,12 +184,13 @@ export const merchantsRouter = router({
 
             const currentEnd = new Date(subscription.endDate);
             const newEnd = new Date(currentEnd.getTime() + input.extraDays * 24 * 60 * 60 * 1000);
+            const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+            const newEndMySQL = toMySQL(newEnd.toISOString());
 
-            await db.updateMerchantSubscription(subscription.id, {
-                endDate: newEnd.toISOString(),
-            });
+            // Direct raw SQL to guarantee update (bypass Drizzle typing issues)
+            await db.rawUpdateSubscriptionEndDate(subscription.id, newEndMySQL);
 
-            console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, +${input.extraDays}d, new end=${newEnd.toISOString()}`);
+            console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, sub=${subscription.id}, +${input.extraDays}d, new end=${newEndMySQL}`);
 
             return {
                 success: true,

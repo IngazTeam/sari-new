@@ -91,6 +91,9 @@ export default function MerchantDetails() {
     onSuccess: (data) => {
       toast.success(`تم تمديد الاشتراك حتى ${new Date(data.newEndDate).toLocaleDateString('ar-SA')}`);
       setShowExtendForm(false);
+      // Force hard refetch — invalidate all cached subscription data
+      utils.merchants.getSubscriptions.invalidate({ merchantId });
+      utils.merchants.getById.invalidate({ merchantId });
       refetchSubs();
     },
     onError: (error) => {
