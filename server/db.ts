@@ -9208,18 +9208,17 @@ export async function createMerchantSubscription(data: NewMerchantSubscription) 
   if (!_pool) throw new Error("Database not available");
 
   // FIX: Bypass Drizzle ORM entirely — use mysql2 pool directly.
-  // Drizzle's db.insert() generates `default` keyword which mysql2 prepared statements reject.
-  // Drizzle's db.execute() also wraps through its layer causing issues.
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  // Normalize all timestamps to MySQL format (YYYY-MM-DD HH:MM:SS)
+  const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+  const now = toMySQL(new Date().toISOString());
+  const startDate = toMySQL(data.startDate);
+  const endDate = toMySQL(data.endDate);
 
   if (data.trialEndsAt) {
-    const trialDate = data.trialEndsAt.includes('T')
-      ? data.trialEndsAt.slice(0, 19).replace('T', ' ')
-      : data.trialEndsAt;
     const [result] = await _pool.execute(
       `INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, trial_ends_at, auto_renew, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [data.merchantId, data.planId, data.status, data.billingCycle, data.startDate, data.endDate, trialDate, data.autoRenew, now, now]
+      [data.merchantId, data.planId, data.status, data.billingCycle, startDate, endDate, toMySQL(data.trialEndsAt), data.autoRenew, now, now]
     );
     return (result as any).insertId;
   }
@@ -9227,7 +9226,7 @@ export async function createMerchantSubscription(data: NewMerchantSubscription) 
   const [result] = await _pool.execute(
     `INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, auto_renew, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [data.merchantId, data.planId, data.status, data.billingCycle, data.startDate, data.endDate, data.autoRenew, now, now]
+    [data.merchantId, data.planId, data.status, data.billingCycle, startDate, endDate, data.autoRenew, now, now]
   );
   return (result as any).insertId;
 }
