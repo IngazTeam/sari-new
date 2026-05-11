@@ -62,13 +62,14 @@ export const websiteAnalysisRouter = router({
         const runPipeline = async () => {
           let scrapedHtml = '';
           let scrapedText = '';
+          let enrichedText = '';  // Text from ALL crawled sub-pages
 
-          // Phase 1: Analyze website (30s timeout — reduced from 45s to fit global budget)
+          // Phase 1: Analyze website (120s timeout — increased for up to 30-page crawl)
           console.log(`[WebsiteAnalysis] Phase 1 START: scrape + analyze ${input.url}`);
           try {
             const analyzePromise = analyzer.analyzeWebsite(input.url);
             const analyzeTimeout = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Analysis phase timeout (30s)')), 30000)
+              setTimeout(() => reject(new Error('Analysis phase timeout (120s)')), 120000)
             );
             const result = await Promise.race([analyzePromise, analyzeTimeout]);
             console.log(`[WebsiteAnalysis] Phase 1 COMPLETE: score=${result.overallScore}, title="${result.title}"`);
@@ -94,14 +95,17 @@ export const websiteAnalysisRouter = router({
               imageCount: result.imageCount,
               videoCount: result.videoCount,
               overallScore: result.overallScore,
+              // Save ALL scraped text for AI bot
+              scrapedContent: (result._scrapedText || '') + '\n\n' + (result._enrichedText || ''),
               status: 'analyzing',
             });
 
-            // Cache scraped HTML from Phase 1 for reuse in Phase 2
+            // Cache scraped content from Phase 1 for reuse in Phase 2
             if (result._scrapedHtml) {
               scrapedHtml = result._scrapedHtml;
               scrapedText = result._scrapedText;
-              console.log(`[WebsiteAnalysis] Cached ${scrapedHtml.length} bytes HTML from Phase 1 for Phase 2`);
+              enrichedText = result._enrichedText || '';
+              console.log(`[WebsiteAnalysis] Cached ${scrapedHtml.length} bytes HTML, ${scrapedText.length + enrichedText.length} chars text from Phase 1`);
             }
             // Save enriched contact info to merchant profile
             if (result.contactInfo) {
@@ -172,10 +176,11 @@ export const websiteAnalysisRouter = router({
               }
             }
 
-            // Extract products with timeout — works even with empty HTML for Zid/Salla via API strategy
-            const extractPromise = analyzer.extractProducts(input.url, scrapedHtml, scrapedText);
+            // Extract products/courses/services with timeout — pass ALL text (main + sub-pages)
+            const allText = scrapedText + '\n\n' + enrichedText;
+            const extractPromise = analyzer.extractProducts(input.url, scrapedHtml, allText);
             const extractTimeout = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Product extraction timeout (20s)')), 20000)
+              setTimeout(() => reject(new Error('Product extraction timeout (30s)')), 30000)
             );
             const products = await Promise.race([extractPromise, extractTimeout]) as any[];
             console.log(`[WebsiteAnalysis] Phase 2 COMPLETE: ${products.length} products found`);
@@ -319,9 +324,9 @@ export const websiteAnalysisRouter = router({
           }
         };
 
-        // GLOBAL TIMEOUT: 75s (must be > sum of phase timeouts: 30+20+10=60s + overhead)
+        // GLOBAL TIMEOUT: 180s (increased for up to 30-page crawl: 120s Phase1 + 30s Phase2 + 10s Phase3 + overhead)
         const globalTimeout = new Promise<void>((_, reject) =>
-          setTimeout(() => reject(new Error('Global analysis pipeline timeout (75s)')), 75000)
+          setTimeout(() => reject(new Error('Global analysis pipeline timeout (180s)')), 180000)
         );
 
         Promise.race([runPipeline(), globalTimeout])

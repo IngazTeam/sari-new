@@ -1829,6 +1829,9 @@ export const websiteAnalyses = mysqlTable("website_analyses", {
 	status: mysqlEnum(['pending', 'analyzing', 'completed', 'failed']).default('pending').notNull(),
 	errorMessage: text("error_message"),
 
+	// Scraped content — ALL text from all crawled pages, used by AI bot as knowledge base
+	scrapedContent: text("scraped_content"),
+
 	// Timestamps
 	analyzedAt: timestamp("analyzed_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),

@@ -317,11 +317,25 @@ export async function generateAIResponse(
       console.warn('[AI] Failed to fetch knowledge doc:', err);
     }
 
+    // جلب محتوى الموقع المسحوب — هذا يعطي البوت معرفة كاملة بنشاط التاجر
+    let websiteContext = '';
+    try {
+      const analyses = await db.getWebsiteAnalysesByMerchant(merchantId);
+      const latest = analyses?.find((a: any) => a.status === 'completed' && a.scrapedContent);
+      if (latest?.scrapedContent) {
+        // أخذ أول 10000 حرف من محتوى الموقع كسياق
+        const truncated = latest.scrapedContent.substring(0, 10000);
+        websiteContext = `\n\n--- محتوى موقع التاجر (معلومات مرجعية عن نشاطه) ---\n${truncated}\n--- نهاية محتوى الموقع ---`;
+      }
+    } catch (err) {
+      console.warn('[AI] Failed to fetch website content:', err);
+    }
+
     // بناء سياق المحادثة
     const messages: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = [
       {
         role: 'system',
-        content: SARI_PERSONALITY + merchantContext + knowledgeContext + productsContext + ordersContext
+        content: SARI_PERSONALITY + merchantContext + knowledgeContext + websiteContext + productsContext + ordersContext
       }
     ];
 

@@ -578,7 +578,11 @@ export function analyzeContent(dom: JSDOM, text: string): {
 
 /** Keywords used to classify discovered pages */
 const PAGE_TYPE_KEYWORDS: Record<string, string[]> = {
+  courses: ['course', 'courses', 'training', 'workshop', 'program', 'دورة', 'دورات', 'تدريب', 'تدريبية', 'برنامج', 'برامج', 'ورشة', 'ورش'],
+  services: ['service', 'services', 'خدمة', 'خدمات', 'خدماتنا', 'our-services'],
+  products: ['product', 'products', 'shop', 'store', 'catalog', 'منتج', 'منتجات', 'متجر', 'تسوق'],
   about: ['about', 'من نحن', 'عن', 'عنا', 'من-نحن', 'about-us'],
+  portfolio: ['portfolio', 'projects', 'gallery', 'أعمال', 'مشاريع', 'معرض', 'أعمالنا'],
   shipping: ['shipping', 'delivery', 'شحن', 'توصيل', 'الشحن', 'التوصيل'],
   returns: ['return', 'refund', 'استرجاع', 'استبدال', 'الاسترجاع', 'الاستبدال'],
   faq: ['faq', 'questions', 'أسئلة', 'الأسئلة', 'شائعة'],
@@ -622,7 +626,11 @@ export function discoverPages(dom: JSDOM, baseUrl: string): DiscoveredPage[] {
 
     if (seenUrls.has(fullUrl)) return;
 
+    // Skip asset files
+    if (/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|pdf|zip)$/i.test(fullUrl)) return;
+
     // Classify page type
+    let matched = false;
     for (const [type, keywords] of Object.entries(PAGE_TYPE_KEYWORDS)) {
       for (const keyword of keywords) {
         if (text.includes(keyword) || href.toLowerCase().includes(keyword)) {
@@ -632,9 +640,21 @@ export function discoverPages(dom: JSDOM, baseUrl: string): DiscoveredPage[] {
             title: (el.textContent || '').trim() || type,
             url: fullUrl,
           });
-          return;
+          matched = true;
+          break;
         }
       }
+      if (matched) break;
+    }
+
+    // Any unclassified internal link = general content page (scrape everything)
+    if (!matched && text.length > 1) {
+      seenUrls.add(fullUrl);
+      pages.push({
+        pageType: 'content' as any,
+        title: (el.textContent || '').trim() || 'page',
+        url: fullUrl,
+      });
     }
   });
 
@@ -662,7 +682,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
     return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
   });
 
-  for (const page of sorted.slice(0, 3)) {
+  for (const page of sorted.slice(0, 30)) {
     try {
       console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
       const { dom, text, html } = await scrapeWebsite(page.url);
@@ -752,16 +772,18 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
     let faqs: ExtractedFAQ[] = [];
     let contactInfo = uxAnalysis.contactInfo;
     let totalWordCount = contentAnalysis.wordCount;
+    let allEnrichedText = '';  // Accumulated text from ALL crawled sub-pages
 
     if (discoveredPages.length > 0) {
       try {
         const crawled = await crawlAndExtract(discoveredPages, contactInfo);
         faqs = crawled.faqs;
         contactInfo = crawled.contactInfo;
+        allEnrichedText = crawled.enrichedText;
         // Update word count with enriched text
         const extraWords = crawled.enrichedText.trim().split(/\s+/).length;
         totalWordCount += extraWords;
-        console.log(`[WebsiteAnalyzer] Crawling complete: ${faqs.length} FAQs, ${contactInfo.phones.length} phones, ${contactInfo.emails.length} emails, +${extraWords} words`);
+        console.log(`[WebsiteAnalyzer] Crawling complete: ${faqs.length} FAQs, ${contactInfo.phones.length} phones, ${contactInfo.emails.length} emails, +${extraWords} words, ${allEnrichedText.length} chars total`);
       } catch (crawlErr) {
         console.warn('[WebsiteAnalyzer] Multi-page crawling failed:', crawlErr instanceof Error ? crawlErr.message : 'unknown');
       }
@@ -831,6 +853,7 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       // Internal: pass scraped HTML to avoid re-fetching in Phase 2
       _scrapedHtml: html,
       _scrapedText: text,
+      _enrichedText: allEnrichedText,  // Text from ALL crawled sub-pages
     };
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error analyzing website:', error);
@@ -1087,35 +1110,41 @@ async function extractWithAI(text: string, url: string): Promise<ExtractedProduc
       messages: [
         {
           role: 'system',
-          content: `أنت خبير في استخراج معلومات المنتجات من المواقع الإلكترونية. قم بتحليل المحتوى واستخراج قائمة المنتجات أو الخدمات المتاحة.
+          content: `أنت خبير في استخراج جميع ما يقدمه الموقع من منتجات وخدمات ودورات تدريبية وبرامج واشتراكات.
+
+أنواع ما يجب استخراجه:
+- منتجات (ملابس، إلكترونيات، طعام، مستحضرات)
+- خدمات (استشارات، صالون، صيانة، تصميم، برمجة)
+- دورات تدريبية (تدريب، ورش عمل، برامج تعليمية، شهادات)
+- باقات واشتراكات (خطط، باقات شهرية، عضويات)
 
 قواعد مهمة:
-- استخرج اسم المنتج كاملاً بدقة
-- اكتب وصف مفيد وموجز لكل منتج (إذا لم يوجد وصف صريح، اكتب وصفاً من خلال اسم المنتج وسياق الموقع)
-- استخرج السعر بدقة
-- إذا وجدت رابط صورة في النص، ضعه في imageUrl. إذا لم تجد صورة اتركه فارغاً
-- حدد الفئة (category) لكل منتج
+- استخرج الاسم الكامل بدقة كما هو في الموقع
+- اكتب وصف مفيد وموجز (إذا لم يوجد وصف صريح، اكتب وصفاً من سياق الموقع)
+- استخرج السعر إن وُجد، وإذا لم يوجد ضع 0
+- حدد الفئة (مثل: دورة تدريبية، خدمة، منتج، باقة)
+- استخرج أكبر عدد ممكن من العناصر
 
-يجب أن تكون الإجابة بصيغة JSON فقط، بدون أي نص إضافي.`
+يجب أن تكون الإجابة بصيغة JSON فقط.`
         },
         {
           role: 'user',
           content: `الموقع: ${url}
 
-قم بتحليل محتوى هذا الموقع واستخراج جميع المنتجات أو الخدمات:
+قم بتحليل كل محتوى هذا الموقع واستخراج جميع المنتجات والخدمات والدورات التدريبية والبرامج:
 
-${text.substring(0, 12000)}
+${text.substring(0, 25000)}
 
-استخرج المنتجات بالتنسيق التالي (JSON فقط):
+استخرج كل ما يقدمه الموقع بالتنسيق التالي (JSON فقط):
 {
   "products": [
     {
-      "name": "اسم المنتج الكامل",
-      "description": "وصف المنتج — اكتب وصفاً مفيداً حتى لو لم يكن موجوداً صراحة",
+      "name": "الاسم الكامل",
+      "description": "وصف مفيد — اكتب وصفاً حتى لو لم يكن موجوداً صراحة",
       "price": 100.00,
       "currency": "SAR",
-      "imageUrl": "رابط الصورة إذا وجد في النص أو فارغ",
-      "category": "الفئة",
+      "imageUrl": "رابط الصورة إذا وجد أو فارغ",
+      "category": "دورة تدريبية / خدمة / منتج / باقة",
       "tags": ["تاج1", "تاج2"],
       "inStock": true,
       "confidence": 85

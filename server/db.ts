@@ -7422,6 +7422,7 @@ export async function updateWebsiteAnalysis(
     overallScore: number;
     status: 'pending' | 'analyzing' | 'completed' | 'failed';
     errorMessage: string;
+    scrapedContent: string;
   }>
 ): Promise<void> {
   const db = await getDb();
@@ -7455,6 +7456,7 @@ export async function updateWebsiteAnalysis(
     }
   }
   if (data.errorMessage !== undefined) updateData.errorMessage = data.errorMessage;
+  if (data.scrapedContent !== undefined) updateData.scrapedContent = data.scrapedContent;
 
   await db.update(websiteAnalyses).set(updateData).where(eq(websiteAnalyses.id, id));
 }
