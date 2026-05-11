@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -31,6 +31,13 @@ export default function AISettings() {
   const { data: dailyUsage } = trpc.aiSettings.getDailyUsage.useQuery({ days: 30 });
   const { data: topMerchants } = trpc.aiSettings.getTopMerchants.useQuery();
   const { data: recentLogs } = trpc.aiSettings.getRecentLogs.useQuery({ limit: 20 });
+
+  // Sync model from server settings
+  useEffect(() => {
+    if (settings?.model) {
+      setSelectedModel(settings.model);
+    }
+  }, [settings?.model]);
 
   // Mutations
   const updateMutation = trpc.aiSettings.updateSettings.useMutation({
