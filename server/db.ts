@@ -9205,8 +9205,23 @@ export async function getAllMerchantSubscriptions(merchantId: number) {
 export async function createMerchantSubscription(data: NewMerchantSubscription) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const [result] = await db.insert(merchantSubscriptions).values(data);
-  return result.insertId;
+
+  // FIX: mysql2 prepared statements don't support the `default` keyword.
+  // Drizzle's db.insert() generates `default` for omitted columns, causing failures.
+  // Use raw SQL with only the columns we actually provide values for.
+  if (data.trialEndsAt) {
+    const [result] = await db.execute(sql`
+      INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, trial_ends_at, auto_renew)
+      VALUES (${data.merchantId}, ${data.planId}, ${data.status}, ${data.billingCycle}, ${data.startDate}, ${data.endDate}, ${data.trialEndsAt}, ${data.autoRenew})
+    `);
+    return (result as any).insertId;
+  }
+
+  const [result] = await db.execute(sql`
+    INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, auto_renew)
+    VALUES (${data.merchantId}, ${data.planId}, ${data.status}, ${data.billingCycle}, ${data.startDate}, ${data.endDate}, ${data.autoRenew})
+  `);
+  return (result as any).insertId;
 }
 
 export async function updateMerchantSubscription(id: number, data: Partial<NewMerchantSubscription>) {
