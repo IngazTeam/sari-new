@@ -702,24 +702,26 @@ export const appRouter = router({
         extraDays: z.number().min(1).max(365),
       }))
       .mutation(async ({ input }) => {
-        const subscription = await db.getActiveSubscriptionByMerchantId(input.merchantId);
+        // Use getMerchantCurrentSubscription (reads merchant_subscriptions table)
+        const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
         if (!subscription) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found for this merchant' });
         }
 
         const currentEnd = new Date(subscription.endDate);
         const newEnd = new Date(currentEnd.getTime() + input.extraDays * 24 * 60 * 60 * 1000);
+        const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+        const newEndMySQL = toMySQL(newEnd.toISOString());
 
-        await db.updateSubscription(subscription.id, {
-          endDate: newEnd.toISOString(),
-        });
+        // Raw SQL update on merchant_subscriptions table (guaranteed to work)
+        await db.rawUpdateSubscriptionEndDate(subscription.id, newEndMySQL);
 
-        console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, +${input.extraDays}d`);
+        console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, sub=${subscription.id}, +${input.extraDays}d, DB end=${newEndMySQL}`);
 
         return {
           success: true,
           previousEndDate: currentEnd.toISOString(),
-          newEndDate: newEnd.toISOString(),
+          newEndDate: newEndMySQL,
         };
       }),
 
@@ -730,18 +732,15 @@ export const appRouter = router({
         reason: z.string().max(500).optional(),
       }))
       .mutation(async ({ input }) => {
-        const subscription = await db.getActiveSubscriptionByMerchantId(input.merchantId);
+        // Use getMerchantCurrentSubscription (reads merchant_subscriptions table)
+        const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
         if (!subscription) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
         }
 
-        await db.updateSubscription(subscription.id, {
-          status: 'cancelled',
-          cancelledAt: new Date().toISOString(),
-          cancellationReason: input.reason || 'تم الإلغاء بواسطة الأدمن',
-        });
+        await db.cancelMerchantSubscription(subscription.id, input.reason || 'تم الإلغاء بواسطة الأدمن');
 
-        console.log(`[Admin] Subscription cancelled: merchant=${input.merchantId}`);
+        console.log(`[Admin] Subscription cancelled: merchant=${input.merchantId}, sub=${subscription.id}`);
 
         return { success: true };
       }),
