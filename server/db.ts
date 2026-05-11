@@ -10293,3 +10293,223 @@ export async function getRepeatCustomersCount(
   }
 }
 
+// ============================================
+// Missing Function Stubs (fix esbuild warnings)
+// These are called from woocommerce_router.ts, weeklyReportCron.ts, and routers.ts
+// but were never exported. Adding safe implementations to prevent runtime crashes.
+// ============================================
+
+/**
+ * Get WhatsApp connection for a merchant (returns first active instance)
+ * Used by: woocommerce_router.ts, woocommerce_webhook.ts
+ */
+export async function getWhatsAppConnectionByMerchantId(merchantId: number): Promise<{ instanceId: string; apiToken: string; isActive: boolean } | null> {
+  try {
+    const instances = await getWhatsAppInstancesByMerchantId(merchantId);
+    const active = instances.find((i: any) => i.isActive === 1 || i.status === 'connected');
+    if (!active) return null;
+    return {
+      instanceId: active.instanceId,
+      apiToken: active.apiToken,
+      isActive: true,
+    };
+  } catch (error) {
+    console.error('[DB] Error getting WhatsApp connection:', error);
+    return null;
+  }
+}
+
+/**
+ * Get all WooCommerce orders for a merchant (no pagination)
+ * Used by: woocommerce_router.ts analytics endpoints
+ */
+export async function getWooCommerceOrdersByMerchant(merchantId: number): Promise<any[]> {
+  try {
+    return await getWooCommerceOrders(merchantId, 10000, 0);
+  } catch (error) {
+    console.error('[DB] Error getting WooCommerce orders by merchant:', error);
+    return [];
+  }
+}
+
+/**
+ * Get conversations by merchant (alias for getConversationsByMerchantId)
+ * Used by: woocommerce_router.ts conversion rate
+ */
+export async function getConversationsByMerchant(merchantId: number): Promise<any[]> {
+  try {
+    return await getConversationsByMerchantId(merchantId);
+  } catch (error) {
+    console.error('[DB] Error getting conversations by merchant:', error);
+    return [];
+  }
+}
+
+/**
+ * Get appointments/bookings by merchant
+ * Used by: weeklyReportCron.ts
+ */
+export async function getAppointmentsByMerchantId(merchantId: number): Promise<any[]> {
+  try {
+    const bookings = await getBookingsByMerchant(merchantId, {});
+    return bookings;
+  } catch (error) {
+    console.error('[DB] Error getting appointments by merchant:', error);
+    return [];
+  }
+}
+
+/**
+ * Update user password
+ * Used by: routers.ts password reset flow
+ */
+export async function updateUserPassword(userId: number, hashedPassword: string): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+
+  try {
+    await database
+      .update(users)
+      .set({ password: hashedPassword })
+      .where(eq(users.id, userId));
+  } catch (error) {
+    console.error('[DB] Error updating user password:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get staff members by merchant
+ * Used by: routers.ts, routers-staff.ts
+ */
+export async function getStaffMembersByMerchant(merchantId: number): Promise<any[]> {
+  const database = await getDb();
+  if (!database) return [];
+
+  try {
+    return await database
+      .select()
+      .from(staffMembers)
+      .where(eq(staffMembers.merchantId, merchantId))
+      .orderBy(staffMembers.name);
+  } catch (error) {
+    console.error('[DB] Error getting staff members:', error);
+    return [];
+  }
+}
+
+/**
+ * Get active staff by merchant
+ */
+export async function getActiveStaffByMerchant(merchantId: number): Promise<any[]> {
+  const database = await getDb();
+  if (!database) return [];
+
+  try {
+    return await database
+      .select()
+      .from(staffMembers)
+      .where(and(eq(staffMembers.merchantId, merchantId), eq(staffMembers.isActive, 1)))
+      .orderBy(staffMembers.name);
+  } catch (error) {
+    console.error('[DB] Error getting active staff:', error);
+    return [];
+  }
+}
+
+/**
+ * Get staff member by ID
+ */
+export async function getStaffMemberById(id: number): Promise<any | undefined> {
+  const database = await getDb();
+  if (!database) return undefined;
+
+  try {
+    const [member] = await database
+      .select()
+      .from(staffMembers)
+      .where(eq(staffMembers.id, id));
+    return member;
+  } catch (error) {
+    console.error('[DB] Error getting staff member by id:', error);
+    return undefined;
+  }
+}
+
+/**
+ * Create staff member
+ */
+export async function createStaffMember(data: any): Promise<number> {
+  const database = await getDb();
+  if (!database) return 0;
+
+  try {
+    const [result] = await database.insert(staffMembers).values(data);
+    return result.insertId;
+  } catch (error) {
+    console.error('[DB] Error creating staff member:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete staff member
+ */
+export async function deleteStaffMember(id: number): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+
+  try {
+    await database.delete(staffMembers).where(eq(staffMembers.id, id));
+  } catch (error) {
+    console.error('[DB] Error deleting staff member:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get services available for booking (active, with appointment required)
+ * Used by: appointmentBot.ts
+ */
+export async function getServicesForBooking(merchantId: number): Promise<any[]> {
+  return await getServicesByMerchant(merchantId);
+}
+
+/**
+ * Get active staff for a merchant (alias without 'ByMerchant')
+ * Used by: appointmentBot.ts
+ */
+export async function getActiveStaff(merchantId: number): Promise<any[]> {
+  return await getActiveStaffByMerchant(merchantId);
+}
+
+/**
+ * Get staff by ID (alias for getStaffMemberById)
+ * Used by: appointmentBot.ts
+ */
+export async function getStaffById(id: number): Promise<any | undefined> {
+  return await getStaffMemberById(id);
+}
+
+/**
+ * Get Google integration status for a merchant
+ * Used by: appointmentBot.ts
+ */
+export async function getGoogleIntegrationStatus(merchantId: number): Promise<any | null> {
+  const database = await getDb();
+  if (!database) return null;
+
+  try {
+    const [integration] = await database
+      .select()
+      .from(googleIntegrations)
+      .where(and(
+        eq(googleIntegrations.merchantId, merchantId),
+        eq(googleIntegrations.integrationType, 'calendar')
+      ));
+    return integration || null;
+  } catch (error) {
+    console.error('[DB] Error getting Google integration status:', error);
+    return null;
+  }
+}
