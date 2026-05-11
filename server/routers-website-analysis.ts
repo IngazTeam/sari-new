@@ -131,15 +131,16 @@ export const websiteAnalysisRouter = router({
             }
           } catch (analysisError) {
             console.error('[WebsiteAnalysis] Analysis phase failed:', analysisError);
-            // Keep status as analyzing — don't block product extraction
+            // Save partial info but DON'T re-set status to 'analyzing' — let finally block handle it
             try {
               await db.updateWebsiteAnalysis(analysisId, {
-                status: 'analyzing',
                 title: new URL(input.url).hostname,
                 description: 'تعذر تحليل الموقع بسبب حماية أو تجاوز المهلة — تم استخراج المنتجات عبر API',
                 overallScore: 0,
               });
-            } catch { /* ignore */ }
+            } catch (dbErr) {
+              console.error('[WebsiteAnalysis] Failed to save partial Phase 1 data:', dbErr);
+            }
           }
 
           // Phase 2: Extract products (independent from analysis, with 30s timeout)
@@ -296,35 +297,38 @@ export const websiteAnalysisRouter = router({
           }
 
           // Final: Mark analysis as completed after all phases finish
-          await db.updateWebsiteAnalysis(analysisId, { status: 'completed' });
-          console.log('[WebsiteAnalysis] Analysis pipeline completed:', analysisId);
+          try {
+            await db.updateWebsiteAnalysis(analysisId, { status: 'completed' });
+            console.log('[WebsiteAnalysis] Analysis pipeline completed:', analysisId);
+          } catch (finalUpdateErr) {
+            console.error('[WebsiteAnalysis] CRITICAL: Failed to mark as completed:', finalUpdateErr);
+          }
         };
 
         // GLOBAL TIMEOUT: Entire pipeline must finish in 90 seconds
-        // Without this, crawling 5 sub-pages + LLM calls could hang indefinitely
         const globalTimeout = new Promise<void>((_, reject) =>
           setTimeout(() => reject(new Error('Global analysis pipeline timeout (90s)')), 90000)
         );
 
         Promise.race([runPipeline(), globalTimeout])
-          .catch(async (err) => {
+          .catch((err) => {
             console.error('[WebsiteAnalysis] Background pipeline crashed/timed out:', err);
-            // ALWAYS mark as completed (not failed) so user sees partial results
-            // The analysis data from Phase 1 is already saved and useful
+          })
+          .finally(async () => {
+            // GUARANTEE: status NEVER stays 'analyzing' forever
             try {
               const existing = await db.getWebsiteAnalysisById(analysisId);
-              if (existing && existing.overallScore > 0) {
-                // We have partial results — mark as completed so user can see them
-                await db.updateWebsiteAnalysis(analysisId, { status: 'completed' });
-                console.log('[WebsiteAnalysis] Marked as completed with partial results (timed out)');
-              } else {
-                // No useful results — mark as failed
+              if (existing && existing.status === 'analyzing') {
+                const finalStatus = existing.overallScore > 0 ? 'completed' : 'failed';
                 await db.updateWebsiteAnalysis(analysisId, {
-                  status: 'failed',
-                  errorMessage: 'تحليل الموقع تجاوز المهلة المسموحة. حاول مرة أخرى.'
+                  status: finalStatus,
+                  ...(finalStatus === 'failed' ? { errorMessage: 'فشل إكمال التحليل. حاول مرة أخرى.' } : {})
                 });
+                console.log(`[WebsiteAnalysis] finally: marked analysis ${analysisId} as ${finalStatus}`);
               }
-            } catch { /* ignore */ }
+            } catch (finalErr) {
+              console.error('[WebsiteAnalysis] CRITICAL: finally block DB update failed:', finalErr);
+            }
           });
 
         return { analysisId, status: 'analyzing' };
