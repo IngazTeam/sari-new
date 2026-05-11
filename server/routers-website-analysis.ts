@@ -46,12 +46,15 @@ export const websiteAnalysisRouter = router({
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز عدد محاولات التحليل. حاول بعد قليل.' });
         }
 
-        // Create analysis record with pending status
+        // Create analysis record — save hostname as title immediately so frontend never shows "بدون عنوان"
+        const hostname = new URL(input.url).hostname;
         const analysisId = await db.createWebsiteAnalysis({
           merchantId: merchant.id,
           url: input.url,
+          title: hostname,
           status: 'analyzing',
         });
+        console.log(`[WebsiteAnalysis] ▶ Pipeline START: id=${analysisId}, url=${input.url}`);
 
         // Start analysis in background with GLOBAL TIMEOUT (90s)
         // BUG FIX: Without global timeout, if crawling 5 sub-pages (15s each) + LLM calls hang,
@@ -60,13 +63,15 @@ export const websiteAnalysisRouter = router({
           let scrapedHtml = '';
           let scrapedText = '';
 
-          // Phase 1: Analyze website (with 45s timeout for the whole phase including sub-page crawling)
+          // Phase 1: Analyze website (30s timeout — reduced from 45s to fit global budget)
+          console.log(`[WebsiteAnalysis] Phase 1 START: scrape + analyze ${input.url}`);
           try {
             const analyzePromise = analyzer.analyzeWebsite(input.url);
             const analyzeTimeout = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Analysis phase timeout (45s)')), 45000)
+              setTimeout(() => reject(new Error('Analysis phase timeout (30s)')), 30000)
             );
             const result = await Promise.race([analyzePromise, analyzeTimeout]);
+            console.log(`[WebsiteAnalysis] Phase 1 COMPLETE: score=${result.overallScore}, title="${result.title}"`);
 
             // Update analysis with results
             await db.updateWebsiteAnalysis(analysisId, {
@@ -92,6 +97,12 @@ export const websiteAnalysisRouter = router({
               status: 'analyzing',
             });
 
+            // Cache scraped HTML from Phase 1 for reuse in Phase 2
+            if (result._scrapedHtml) {
+              scrapedHtml = result._scrapedHtml;
+              scrapedText = result._scrapedText;
+              console.log(`[WebsiteAnalysis] Cached ${scrapedHtml.length} bytes HTML from Phase 1 for Phase 2`);
+            }
             // Save enriched contact info to merchant profile
             if (result.contactInfo) {
               const ci = result.contactInfo;
@@ -130,11 +141,10 @@ export const websiteAnalysisRouter = router({
               }
             }
           } catch (analysisError) {
-            console.error('[WebsiteAnalysis] Analysis phase failed:', analysisError);
-            // Save partial info but DON'T re-set status to 'analyzing' — let finally block handle it
+            console.error('[WebsiteAnalysis] Phase 1 FAILED:', analysisError instanceof Error ? analysisError.message : analysisError);
+            // Save partial info — title was already saved at creation, just add description
             try {
               await db.updateWebsiteAnalysis(analysisId, {
-                title: new URL(input.url).hostname,
                 description: 'تعذر تحليل الموقع بسبب حماية أو تجاوز المهلة — تم استخراج المنتجات عبر API',
                 overallScore: 0,
               });
@@ -143,29 +153,32 @@ export const websiteAnalysisRouter = router({
             }
           }
 
-          // Phase 2: Extract products (independent from analysis, with 30s timeout)
+          // Phase 2: Extract products (20s timeout — reuse HTML from Phase 1 if available)
+          console.log(`[WebsiteAnalysis] Phase 2 START: extract products (html=${scrapedHtml.length} bytes cached)`);
           try {
-            // Try scraping first (only if Phase 1 didn't already scrape)
-            try {
-              const scrapePromise = analyzer.scrapeWebsite(input.url);
-              const scrapeTimeout = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Scrape timeout (15s)')), 15000)
-              );
-              const scraped = await Promise.race([scrapePromise, scrapeTimeout]) as any;
-              scrapedHtml = scraped.html;
-              scrapedText = scraped.text;
-            } catch (scrapeError) {
-              console.warn('[WebsiteAnalysis] Scrape failed (likely Cloudflare/timeout), trying API-only extraction:',
-                scrapeError instanceof Error ? scrapeError.message : 'unknown');
+            // Only re-scrape if Phase 1 didn't already provide HTML
+            if (!scrapedHtml) {
+              console.log('[WebsiteAnalysis] Phase 2: no cached HTML, re-scraping...');
+              try {
+                const scrapePromise = analyzer.scrapeWebsite(input.url);
+                const scrapeTimeout = new Promise<never>((_, reject) =>
+                  setTimeout(() => reject(new Error('Scrape timeout (15s)')), 15000)
+                );
+                const scraped = await Promise.race([scrapePromise, scrapeTimeout]) as any;
+                scrapedHtml = scraped.html;
+                scrapedText = scraped.text;
+              } catch (scrapeError) {
+                console.warn('[WebsiteAnalysis] Phase 2 scrape failed:', scrapeError instanceof Error ? scrapeError.message : 'unknown');
+              }
             }
 
             // Extract products with timeout — works even with empty HTML for Zid/Salla via API strategy
             const extractPromise = analyzer.extractProducts(input.url, scrapedHtml, scrapedText);
             const extractTimeout = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Product extraction timeout (30s)')), 30000)
+              setTimeout(() => reject(new Error('Product extraction timeout (20s)')), 20000)
             );
             const products = await Promise.race([extractPromise, extractTimeout]) as any[];
-            console.log(`[WebsiteAnalysis] extractProducts returned ${products.length} products, saving to DB...`);
+            console.log(`[WebsiteAnalysis] Phase 2 COMPLETE: ${products.length} products found`);
 
             let savedCount = 0;
             for (const product of products) {
@@ -242,10 +255,11 @@ export const websiteAnalysisRouter = router({
               }
             }
           } catch (productError) {
-            console.error('[WebsiteAnalysis] Product extraction failed/timed out:', productError);
+            console.error('[WebsiteAnalysis] Phase 2 FAILED:', productError instanceof Error ? productError.message : productError);
           }
 
-          // Phase 3: Generate insights (only if we have analysis data, with timeout)
+          // Phase 3: Generate insights (10s timeout — only if we have analysis data)
+          console.log(`[WebsiteAnalysis] Phase 3 START: generate insights`);
           try {
             const analysis = await db.getWebsiteAnalysisById(analysisId);
             if (analysis && analysis.overallScore > 0) {
@@ -273,7 +287,7 @@ export const websiteAnalysisRouter = router({
 
               const insightsPromise = analyzer.generateInsights(insightsData);
               const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Insights generation timeout (15s)')), 15000)
+                setTimeout(() => reject(new Error('Insights generation timeout (10s)')), 10000)
               );
               const insights = await Promise.race([insightsPromise, timeoutPromise]);
 
@@ -293,21 +307,21 @@ export const websiteAnalysisRouter = router({
               }
             }
           } catch (insightsError) {
-            console.error('[WebsiteAnalysis] Insights generation failed/timed out:', insightsError);
+            console.error('[WebsiteAnalysis] Phase 3 FAILED:', insightsError instanceof Error ? insightsError.message : insightsError);
           }
 
           // Final: Mark analysis as completed after all phases finish
           try {
             await db.updateWebsiteAnalysis(analysisId, { status: 'completed' });
-            console.log('[WebsiteAnalysis] Analysis pipeline completed:', analysisId);
+            console.log(`[WebsiteAnalysis] ✅ Pipeline COMPLETE: id=${analysisId}`);
           } catch (finalUpdateErr) {
             console.error('[WebsiteAnalysis] CRITICAL: Failed to mark as completed:', finalUpdateErr);
           }
         };
 
-        // GLOBAL TIMEOUT: Entire pipeline must finish in 90 seconds
+        // GLOBAL TIMEOUT: 75s (must be > sum of phase timeouts: 30+20+10=60s + overhead)
         const globalTimeout = new Promise<void>((_, reject) =>
-          setTimeout(() => reject(new Error('Global analysis pipeline timeout (90s)')), 90000)
+          setTimeout(() => reject(new Error('Global analysis pipeline timeout (75s)')), 75000)
         );
 
         Promise.race([runPipeline(), globalTimeout])

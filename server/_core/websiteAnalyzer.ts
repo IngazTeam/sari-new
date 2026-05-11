@@ -662,7 +662,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
     return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
   });
 
-  for (const page of sorted.slice(0, 5)) {
+  for (const page of sorted.slice(0, 3)) {
     try {
       console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
       const { dom, text, html } = await scrapeWebsite(page.url);
@@ -720,7 +720,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
 /**
  * تحليل شامل للموقع — مع multi-page crawling
  */
-export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult> {
+export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult & { _scrapedHtml: string; _scrapedText: string }> {
   try {
     console.log('[WebsiteAnalyzer] Analyzing website:', url);
 
@@ -828,6 +828,9 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       contactInfo,
       faqs: faqs.length > 0 ? faqs : undefined,
       discoveredPages: discoveredPages.length > 0 ? discoveredPages : undefined,
+      // Internal: pass scraped HTML to avoid re-fetching in Phase 2
+      _scrapedHtml: html,
+      _scrapedText: text,
     };
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error analyzing website:', error);
