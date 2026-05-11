@@ -10306,11 +10306,12 @@ export async function getRepeatCustomersCount(
 export async function getWhatsAppConnectionByMerchantId(merchantId: number): Promise<{ instanceId: string; apiToken: string; isActive: boolean } | null> {
   try {
     const instances = await getWhatsAppInstancesByMerchantId(merchantId);
-    const active = instances.find((i: any) => i.isActive === 1 || i.status === 'connected');
+    // whatsappInstances schema: status enum ['active','inactive','pending','expired'], field is 'token' not 'apiToken'
+    const active = instances.find((i: any) => i.status === 'active' || i.isPrimary === 1);
     if (!active) return null;
     return {
       instanceId: active.instanceId,
-      apiToken: active.apiToken,
+      apiToken: active.token, // schema field is 'token', caller expects 'apiToken'
       isActive: true,
     };
   } catch (error) {

@@ -86,6 +86,14 @@ export const appRouter = router({
         password: z.string().min(6),
       }))
       .mutation(async ({ input, ctx }) => {
+        // SECURITY: Rate limit login attempts (5 per 15 min per IP)
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const loginCheck = checkRateLimit(`login_ip:${clientIp}`, 5, 15 * 60 * 1000);
+        if (!loginCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'محاولات كثيرة. حاول بعد 15 دقيقة.' });
+        }
+
         const user = await db.getUserByEmail(input.email);
 
         if (!user || !user.password) {
@@ -203,6 +211,14 @@ export const appRouter = router({
         phone: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // SECURITY: Rate limit signup attempts (3 per hour per IP)
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const signupCheck = checkRateLimit(`signup_ip:${clientIp}`, 3, 60 * 60 * 1000);
+        if (!signupCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من محاولات التسجيل. حاول لاحقاً.' });
+        }
+
         // Check if email already exists
         const existingUser = await db.getUserByEmail(input.email);
         if (existingUser) {
