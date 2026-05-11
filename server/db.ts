@@ -9203,24 +9203,32 @@ export async function getAllMerchantSubscriptions(merchantId: number) {
 }
 
 export async function createMerchantSubscription(data: NewMerchantSubscription) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  // Ensure pool is initialized
+  await getDb();
+  if (!_pool) throw new Error("Database not available");
 
-  // FIX: mysql2 prepared statements don't support the `default` keyword.
-  // Drizzle's db.insert() generates `default` for omitted columns, causing failures.
-  // Use raw SQL with only the columns we actually provide values for.
+  // FIX: Bypass Drizzle ORM entirely — use mysql2 pool directly.
+  // Drizzle's db.insert() generates `default` keyword which mysql2 prepared statements reject.
+  // Drizzle's db.execute() also wraps through its layer causing issues.
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
   if (data.trialEndsAt) {
-    const [result] = await db.execute(sql`
-      INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, trial_ends_at, auto_renew)
-      VALUES (${data.merchantId}, ${data.planId}, ${data.status}, ${data.billingCycle}, ${data.startDate}, ${data.endDate}, ${data.trialEndsAt}, ${data.autoRenew})
-    `);
+    const trialDate = data.trialEndsAt.includes('T')
+      ? data.trialEndsAt.slice(0, 19).replace('T', ' ')
+      : data.trialEndsAt;
+    const [result] = await _pool.execute(
+      `INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, trial_ends_at, auto_renew, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [data.merchantId, data.planId, data.status, data.billingCycle, data.startDate, data.endDate, trialDate, data.autoRenew, now, now]
+    );
     return (result as any).insertId;
   }
 
-  const [result] = await db.execute(sql`
-    INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, auto_renew)
-    VALUES (${data.merchantId}, ${data.planId}, ${data.status}, ${data.billingCycle}, ${data.startDate}, ${data.endDate}, ${data.autoRenew})
-  `);
+  const [result] = await _pool.execute(
+    `INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, auto_renew, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [data.merchantId, data.planId, data.status, data.billingCycle, data.startDate, data.endDate, data.autoRenew, now, now]
+  );
   return (result as any).insertId;
 }
 
