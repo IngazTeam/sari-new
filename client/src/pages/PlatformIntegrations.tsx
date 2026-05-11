@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Store, CheckCircle2, XCircle, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Loader2, Store, CheckCircle2, XCircle, ExternalLink, AlertTriangle, FileSpreadsheet, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'wouter';
 
 interface PlatformInfo {
   platform: 'salla' | 'zid' | 'woocommerce' | 'shopify';
@@ -24,6 +25,10 @@ export default function PlatformIntegrations() {
   const { t } = useTranslation();
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const utils = trpc.useUtils();
+
+  // استعلام حالة Google Services
+  const { data: sheetsStatus } = trpc.sheets.getStatus.useQuery();
+  const { data: calendarStatus } = trpc.calendar.getStatus.useQuery();
 
   // استعلام المنصة المربوطة حالياً
   const { data: currentPlatform, isLoading } = trpc.integrations.getCurrentPlatform.useQuery();
@@ -265,6 +270,68 @@ export default function PlatformIntegrations() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      </div>
+
+      {/* ═══════════════ خدمات Google ═══════════════ */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">خدمات Google</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Google Sheets */}
+          <Card className={sheetsStatus?.isConnected ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <FileSpreadsheet className="h-8 w-8 text-green-600" />
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Google Sheets
+                    {sheetsStatus?.isConnected && (
+                      <Badge variant="default" className="bg-green-600">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        مربوط
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>مزامنة المنتجات والطلبات مع جداول بيانات Google</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Link href="/merchant/sheets/settings">
+                <Button variant={sheetsStatus?.isConnected ? 'outline' : 'default'} className="w-full">
+                  {sheetsStatus?.isConnected ? 'إدارة الإعدادات' : 'ربط Google Sheets'}
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Google Calendar */}
+          <Card className={calendarStatus?.connected ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}>
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Calendar className="h-8 w-8 text-blue-600" />
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    Google Calendar
+                    {calendarStatus?.connected && (
+                      <Badge variant="default" className="bg-green-600">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        مربوط
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <CardDescription>إدارة المواعيد والحجوزات عبر تقويم Google</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Link href="/merchant/calendar/settings">
+                <Button variant={calendarStatus?.connected ? 'outline' : 'default'} className="w-full">
+                  {calendarStatus?.connected ? 'إدارة الإعدادات' : 'ربط Google Calendar'}
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
