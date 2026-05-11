@@ -378,7 +378,7 @@ export default function MerchantDetails() {
                 <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text15')}</p>
                 <p className="font-medium">
                   {subscriptions.length > 0 && subscriptions[0]?.planId
-                    ? `الباقة #${subscriptions[0].planId}`
+                    ? (subscriptions[0] as any).planName || `الباقة #${subscriptions[0].planId}`
                     : 'لا يوجد'}
                 </p>
               </div>
@@ -435,7 +435,11 @@ export default function MerchantDetails() {
       <Card>
         <CardHeader>
           <CardTitle>{t('adminMerchantDetailsPage.text20')}</CardTitle>
-          <CardDescription>{t('adminMerchantDetailsPage.text21')}</CardDescription>
+          <CardDescription>
+            {subscriptions.length > 0 && subscriptions[0]?.endDate
+              ? `${t('adminMerchantDetailsPage.text21')} ${new Date(subscriptions[0].endDate).toLocaleDateString('ar-SA')}`
+              : t('adminMerchantDetailsPage.text21')}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
