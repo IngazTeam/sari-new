@@ -94,8 +94,14 @@ export const merchantsRouter = router({
     getSubscriptions: adminProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input }) => {
-            const subscription = await db.getActiveSubscriptionByMerchantId(input.merchantId);
-            return subscription ? [subscription] : [];
+            // Use merchant_subscriptions table (not legacy subscriptions table)
+            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            if (subscription) {
+                // Enrich with plan name
+                const plan = subscription.planId ? await db.getSubscriptionPlanById(subscription.planId) : null;
+                return [{ ...subscription, planName: plan?.name || 'غير معروف' }];
+            }
+            return [];
         }),
 
     // ============================================

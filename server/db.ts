@@ -737,10 +737,27 @@ export async function getSubscriptionById(id: number): Promise<Subscription | un
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getActiveSubscriptionByMerchantId(merchantId: number): Promise<Subscription | undefined> {
+export async function getActiveSubscriptionByMerchantId(merchantId: number): Promise<any> {
   const db = await getDb();
   if (!db) return undefined;
 
+  // Check NEW merchant_subscriptions table first
+  const newResult = await db.select().from(merchantSubscriptions)
+    .where(and(
+      eq(merchantSubscriptions.merchantId, merchantId),
+      or(
+        eq(merchantSubscriptions.status, 'active'),
+        eq(merchantSubscriptions.status, 'trial')
+      )
+    ))
+    .orderBy(desc(merchantSubscriptions.createdAt))
+    .limit(1);
+
+  if (newResult.length > 0) {
+    return newResult[0];
+  }
+
+  // Fallback: legacy subscriptions table
   const result = await db
     .select()
     .from(subscriptions)
