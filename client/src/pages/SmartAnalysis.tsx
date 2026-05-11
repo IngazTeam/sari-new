@@ -105,6 +105,13 @@ export default function SmartAnalysis() {
   const previewMutation = trpc.analysis.previewAnalysis.useMutation({
     onSuccess: (data) => {
       setPreview(data as any);
+      const totalFound = (data.products?.length || 0) + (data.pages?.length || 0) + (data.faqs?.length || 0);
+      if (totalFound === 0) {
+        toast.warning("لم يتم استخراج بيانات من الموقع", {
+          description: "قد يكون الموقع محمياً أو لا يحتوي على بيانات قابلة للاستخراج. تحقق من تاب 'التقييم' للنتائج العميقة.",
+          duration: 8000,
+        });
+      }
       setPhase('comparing');
       // Smart defaults
       const hasExisting = (existingData?.products?.length || 0) > 0;
