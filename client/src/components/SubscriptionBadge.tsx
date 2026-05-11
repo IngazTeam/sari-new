@@ -6,7 +6,8 @@ import { useLocation } from 'wouter';
 export function SubscriptionBadge() {
   const [, setLocation] = useLocation();
   const { data: subscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
-  const { data: daysRemaining } = trpc.merchantSubscription.getDaysRemaining.useQuery();
+  const { data: daysData } = trpc.merchantSubscription.getDaysRemaining.useQuery();
+  const daysRemaining = daysData?.daysRemaining;
 
   if (!subscription || subscription.status === 'expired') {
     return (

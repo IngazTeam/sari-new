@@ -32,12 +32,11 @@ export default function WhatsAppInstancesPage() {
     expiresAt: "",
   });
 
-  // Get merchant
-  const { data: merchants } = trpc.merchants.list.useQuery(
+  // Get current merchant (not admin list)
+  const { data: merchant } = trpc.merchants.getCurrent.useQuery(
     undefined,
     { enabled: !!user }
   );
-  const merchant = merchants?.[0];
 
   // Get instances
   const { data: instances, refetch } = trpc.whatsappInstances.list.useQuery(
