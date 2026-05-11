@@ -328,7 +328,15 @@ async function startServer() {
               },
               {
                 role: 'user',
-                content: `حلل ملف البروفايل هذا:\n\n${text.substring(0, 15000)}`
+                content: `حلل ملف البروفايل هذا:\n\n${text.substring(0, 15000)
+                  // SEC-02: Sanitize to prevent prompt injection from malicious docs
+                  .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+                  .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+                  .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+                  .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+                  .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+                  .replace(/do\s+not\s+follow/gi, '[filtered]')
+                  .replace(/override\s+(system|all|your)/gi, '[filtered]')}`
               }
             ],
             maxTokens: 3000,
