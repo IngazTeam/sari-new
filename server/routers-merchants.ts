@@ -97,6 +97,13 @@ export const merchantsRouter = router({
             // Use merchant_subscriptions table (not legacy subscriptions table)
             const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
             if (subscription) {
+                // Auto-sync: if subscription is active but merchant status is stale, fix it
+                const merchant = await db.getMerchantById(input.merchantId);
+                if (merchant && merchant.status !== 'active' && (subscription.status === 'active' || subscription.status === 'trial')) {
+                    await db.updateMerchant(input.merchantId, { status: 'active' });
+                    await db.updateMerchantSubscriptionStatus(input.merchantId, subscription.status as any);
+                }
+
                 // Enrich with plan name
                 const plan = subscription.planId ? await db.getSubscriptionPlanById(subscription.planId) : null;
                 return [{ ...subscription, planName: plan?.name || 'غير معروف' }];

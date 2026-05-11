@@ -178,9 +178,15 @@ export default function MerchantsManagement() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm font-medium">
-                          {getPlanName(merchant.currentPlanId)}
-                        </span>
+                        {merchant.subscriptionStatus === 'active' ? (
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">نشط</Badge>
+                        ) : merchant.subscriptionStatus === 'trial' ? (
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">تجريبي</Badge>
+                        ) : merchant.subscriptionStatus === 'expired' ? (
+                          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">منتهي</Badge>
+                        ) : (
+                          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">قيد المراجعة</Badge>
+                        )}
                       </TableCell>
                       <TableCell>{getStatusBadge(merchant.status)}</TableCell>
                       <TableCell>
