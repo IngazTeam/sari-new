@@ -3297,6 +3297,16 @@ export async function createTestConversation(merchantId: number): Promise<number
 }
 
 /**
+ * Get test conversation by ID (for tenant isolation checks)
+ */
+export async function getTestConversationById(conversationId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(testConversations).where(eq(testConversations.id, conversationId));
+  return results[0] || null;
+}
+
+/**
  * Save test message
  */
 export async function saveTestMessage(data: {

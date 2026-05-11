@@ -41,13 +41,19 @@ export const aiRouter = router({
       return { response };
     }),
 
-  // Search products with AI
+  // Search products with AI — PEN-NEW-3: Rate limited
   searchProducts: protectedProcedure
     .input(z.object({
-      query: z.string(),
-      limit: z.number().optional(),
+      query: z.string().max(500),
+      limit: z.number().min(1).max(50).optional(),
     }))
     .query(async ({ input, ctx }) => {
+      const { checkRateLimit } = await import('./_core/rateLimiter');
+      const rlCheck = checkRateLimit(`ai_search:${ctx.user.id}`, 30, 60000);
+      if (!rlCheck.allowed) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
+      }
+
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -64,13 +70,19 @@ export const aiRouter = router({
       return { products };
     }),
 
-  // Suggest products based on context
+  // Suggest products based on context — PEN-NEW-3: Rate limited
   suggestProducts: protectedProcedure
     .input(z.object({
-      context: z.string(),
-      limit: z.number().optional(),
+      context: z.string().max(2000),
+      limit: z.number().min(1).max(50).optional(),
     }))
     .query(async ({ input, ctx }) => {
+      const { checkRateLimit } = await import('./_core/rateLimiter');
+      const rlCheck = checkRateLimit(`ai_suggest:${ctx.user.id}`, 30, 60000);
+      if (!rlCheck.allowed) {
+        throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
+      }
+
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });

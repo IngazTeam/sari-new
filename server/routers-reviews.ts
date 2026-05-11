@@ -62,7 +62,7 @@ export const reviewsRouter = router({
     reply: protectedProcedure
         .input(z.object({
             reviewId: z.number(),
-            reply: z.string().min(1),
+            reply: z.string().min(1).max(1000), // PEN-NEW-4: Cap length to prevent WhatsApp abuse
         }))
         .mutation(async ({ input, ctx }) => {
             const review = await db.getCustomerReviewById(input.reviewId);

@@ -11,16 +11,22 @@ import { protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
 export const testSariRouter = router({
-    // Send a test message and get AI response
+    // Send a test message and get AI response — PEN-NEW-2: Rate limited
     sendMessage: protectedProcedure
         .input(z.object({
-            message: z.string(),
+            message: z.string().max(2000),
             conversationHistory: z.array(z.object({
                 role: z.enum(['user', 'assistant']),
                 content: z.string(),
             })).optional(),
         }))
         .mutation(async ({ input, ctx }) => {
+            const { checkRateLimit } = await import('./_core/rateLimiter');
+            const rlCheck = checkRateLimit(`test_sari:${ctx.user.id}`, 15, 60000);
+            if (!rlCheck.allowed) {
+                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
+            }
+
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -43,15 +49,25 @@ export const testSariRouter = router({
         return { success: true };
     }),
 
-    // Save test message to database
+    // Save test message to database — PEN-NEW-1: Tenant isolation enforced
     saveMessage: protectedProcedure
         .input(z.object({
             conversationId: z.number(),
             sender: z.enum(['user', 'sari']),
-            content: z.string(),
+            content: z.string().max(5000),
             responseTime: z.number().optional(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            // PEN-NEW-1 FIX: Verify conversation belongs to this merchant
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+            const conversation = await db.getTestConversationById(input.conversationId);
+            if (conversation && conversation.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
             await db.saveTestMessage(input);
             return { success: true };
         }),
