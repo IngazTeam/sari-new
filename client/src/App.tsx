@@ -757,9 +757,10 @@ function Router() {
         </DashboardLayout>
       </Route>
 
+      {/* Legacy route — now redirects to unified SmartAnalysis */}
       <Route path="/merchant/website-analysis">
         <DashboardLayout>
-          <WebsiteAnalysis />
+          <SmartAnalysis />
         </DashboardLayout>
       </Route>
 

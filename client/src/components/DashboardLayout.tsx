@@ -153,11 +153,10 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
 
   // 5. التحليلات والتقارير (Analytics & Reports)
   { icon: BarChart3, label: t('sidebar.merchant.analyticsHub', 'مركز التحليلات'), path: "/merchant/analytics-hub", group: 'analytics' },
-  { icon: Search, label: t('sidebar.merchant.websiteAnalysis', 'تحليل الموقع'), path: "/merchant/website-analysis", group: 'analytics' },
+  { icon: Gauge, label: t('sidebar.merchant.smartAnalysis', 'تحليل الموقع'), path: "/merchant/smart-analysis", group: 'analytics' },
   { icon: TrendingUp, label: t('sidebar.merchant.competitorAnalysis', 'تحليل المنافسين'), path: "/merchant/competitor-analysis", group: 'analytics' },
   { icon: FileText, label: t('sidebar.merchant.weeklyReports', 'التقارير الأسبوعية'), path: "/merchant/weekly-reports", group: 'analytics' },
   { icon: FileText, label: t('sidebar.merchant.reports', 'التقارير الدورية'), path: "/merchant/reports", group: 'analytics' },
-  { icon: Gauge, label: t('sidebar.merchant.smartAnalysis', 'التحليل الذكي'), path: "/merchant/smart-analysis", group: 'analytics' },
   { icon: KeyIcon, label: t('sidebar.merchant.keywords', 'الكلمات المفتاحية'), path: "/merchant/keywords", group: 'analytics' },
   { icon: FlaskConical, label: t('sidebar.merchant.abTests', 'اختبارات A/B'), path: "/merchant/ab-tests", group: 'analytics' },
 
