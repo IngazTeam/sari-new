@@ -190,12 +190,15 @@ export const merchantsRouter = router({
             // Direct raw SQL to guarantee update (bypass Drizzle typing issues)
             await db.rawUpdateSubscriptionEndDate(subscription.id, newEndMySQL);
 
-            console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, sub=${subscription.id}, +${input.extraDays}d, new end=${newEndMySQL}`);
+            // Verify the update was saved
+            const updated = await db.getMerchantSubscriptionById(subscription.id);
+            const actualEndDate = updated?.endDate || newEndMySQL;
+            console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, sub=${subscription.id}, +${input.extraDays}d, DB end=${actualEndDate}`);
 
             return {
                 success: true,
                 previousEndDate: currentEnd.toISOString(),
-                newEndDate: newEnd.toISOString(),
+                newEndDate: actualEndDate,
             };
         }),
 
