@@ -19,9 +19,19 @@ const PageLoader = () => (
   </div>
 );
 
-// Lazy wrapper helper
+// Lazy wrapper helper with automatic retry on stale chunk errors
 const lazyLoad = (importFn: () => Promise<{ default: React.ComponentType<any> }>) => {
-  const LazyComponent = lazy(importFn);
+  const LazyComponent = lazy(() =>
+    importFn().catch((err) => {
+      // Stale chunk after deployment — auto-reload once
+      const key = 'chunk_reload_' + window.location.pathname;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+      }
+      throw err;
+    })
+  );
   return (props: any) => (
     <Suspense fallback={<PageLoader />}>
       <LazyComponent {...props} />

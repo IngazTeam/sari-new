@@ -21,6 +21,18 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
+  componentDidCatch(error: Error) {
+    // Auto-reload once on stale chunk / dynamic import errors (post-deployment)
+    const isChunkError = error.message?.includes('dynamically imported module') ||
+      error.message?.includes('Loading chunk') ||
+      error.message?.includes('Failed to fetch');
+    const key = 'eb_reload_' + window.location.pathname;
+    if (isChunkError && !sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1');
+      window.location.reload();
+    }
+  }
+
   render() {
     if (this.state.hasError) {
       return (
