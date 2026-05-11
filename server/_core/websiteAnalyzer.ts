@@ -687,7 +687,10 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
       console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
       const { dom, text, html } = await scrapeWebsite(page.url);
 
-      enrichedText += ' ' + text;
+      // SEC-04 FIX: Cap accumulated text at 500KB to prevent memory bloat
+      if (enrichedText.length < 500000) {
+        enrichedText += ' ' + text;
+      }
 
       // Extract contact info from contact pages
       if (page.pageType === 'contact' || page.pageType === 'about') {
