@@ -81,7 +81,10 @@ import {
   Activity,
   Gauge,
   ChevronDown,
-  Languages
+  Languages,
+  Mic,
+  FlaskConical,
+  Key as KeyIcon
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -138,6 +141,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Clock, label: t('sidebar.merchant.scheduledMessages', 'الرسائل المجدولة'), path: "/merchant/scheduled-messages", group: 'channels' },
   { icon: BellRing, label: t('sidebar.merchant.orderNotifications', 'إشعارات الطلبات'), path: "/merchant/order-notifications", group: 'channels' },
   { icon: MessageCircle, label: t('sidebar.merchant.messageAnalytics', 'سجل الرسائل'), path: "/merchant/message-analytics", group: 'channels' },
+  { icon: Mic, label: t('sidebar.merchant.voiceMessages', 'الرسائل الصوتية'), path: "/merchant/voice-messages", group: 'channels' },
 
   // 4. التسويق والولاء (Marketing & Growth)
   { icon: Megaphone, label: t('sidebar.merchant.campaigns', 'الحملات التسويقية'), path: "/merchant/campaigns", group: 'marketing' },
@@ -153,6 +157,9 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: TrendingUp, label: t('sidebar.merchant.competitorAnalysis', 'تحليل المنافسين'), path: "/merchant/competitor-analysis", group: 'analytics' },
   { icon: FileText, label: t('sidebar.merchant.weeklyReports', 'التقارير الأسبوعية'), path: "/merchant/weekly-reports", group: 'analytics' },
   { icon: FileText, label: t('sidebar.merchant.reports', 'التقارير الدورية'), path: "/merchant/reports", group: 'analytics' },
+  { icon: Gauge, label: t('sidebar.merchant.smartAnalysis', 'التحليل الذكي'), path: "/merchant/smart-analysis", group: 'analytics' },
+  { icon: KeyIcon, label: t('sidebar.merchant.keywords', 'الكلمات المفتاحية'), path: "/merchant/keywords", group: 'analytics' },
+  { icon: FlaskConical, label: t('sidebar.merchant.abTests', 'اختبارات A/B'), path: "/merchant/ab-tests", group: 'analytics' },
 
   // 6. الإعدادات والربط (Settings & Integrations)
   { icon: Settings, label: t('sidebar.merchant.settings', 'إعدادات المتجر'), path: "/merchant/settings", group: 'settings' },
@@ -160,6 +167,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Plug, label: t('sidebar.merchant.integrationsDashboard', 'التطبيقات والربط'), path: "/merchant/integrations-dashboard", group: 'settings' },
   { icon: UsersRound, label: t('sidebar.merchant.staffManagement', 'فريق العمل'), path: "/merchant/staff", group: 'settings' },
   { icon: Crown, label: t('sidebar.merchant.mySubscription', 'باقتي والفواتير'), path: "/merchant/my-subscription", group: 'settings' },
+  { icon: CreditCard, label: t('sidebar.merchant.merchantPayments', 'مدفوعات التاجر'), path: "/merchant/merchant-payments", group: 'settings' },
 ];
 
 const getAdminMenuItems = (t: any): MenuItem[] => [
