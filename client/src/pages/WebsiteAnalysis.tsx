@@ -38,7 +38,14 @@ export default function WebsiteAnalysis() {
   const utils = trpc.useUtils();
 
   // Queries
-  const { data: analyses, isLoading: isLoadingAnalyses } = trpc.websiteAnalysis.listAnalyses.useQuery();
+  // CRITICAL FIX: listAnalyses must re-poll when any analysis is "analyzing"
+  // Without this, cards show stale "analyzing" forever since pipeline updates DB in background
+  const { data: analyses, isLoading: isLoadingAnalyses } = trpc.websiteAnalysis.listAnalyses.useQuery(undefined, {
+    refetchInterval: (query) => {
+      const list = query.state.data;
+      return list?.some((a) => a.status === "analyzing") ? 5000 : false;
+    },
+  });
   
   // BUG FIX: Auto-poll every 3s when analysis is in progress so data appears as phases complete
   const { data: currentAnalysis } = trpc.websiteAnalysis.getAnalysis.useQuery(
