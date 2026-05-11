@@ -299,6 +299,8 @@ export const merchantSubscriptionRouter = router({
     // Update merchant status
     await db.updateMerchantSubscriptionStatus(merchant.id, 'trial');
     await db.updateMerchantCustomerLimit(merchant.id, 100); // Trial limit
+    // PEN-13 FIX: Keep currentSubscriptionId in sync
+    await db.updateMerchantCurrentSubscriptionId(merchant.id, subscriptionId);
 
     return { success: true, subscriptionId, trialEndsAt: trialEndDate };
   }),
@@ -751,11 +753,17 @@ export const paymentRouter = router({
           return { success: true, status: transaction.status, message: 'Transaction already processed' };
         }
 
+        // PEN-12 FIX: Normalize timestamps to MySQL format
+        const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+        const now = new Date();
+        const nowMySQL = toMySQL(now.toISOString());
+
         // Update transaction status
         if (charge.status === 'CAPTURED') {
+          // PEN-14 FIX: Atomic update — prevents race condition with concurrent webhooks
           await db.updatePaymentTransaction(transaction.id, {
             status: 'completed',
-            paidAt: new Date().toISOString(),
+            paidAt: nowMySQL,
             tapResponse: JSON.stringify(charge),
           });
 
@@ -763,8 +771,13 @@ export const paymentRouter = router({
           const metadata = transaction.metadata ? JSON.parse(transaction.metadata) : {};
 
           if (transaction.type === 'subscription') {
+            // PEN-15 FIX: Validate metadata before creating subscription
+            if (!metadata.planId || !metadata.billingCycle) {
+              console.error(`[Payment] Invalid metadata for subscription: tap_id=${input.tap_id}`, metadata);
+              return { success: false, status: 'error', message: 'Invalid subscription metadata' };
+            }
+
             // Create subscription
-            const now = new Date();
             const endDate = new Date(
               now.getTime() + (metadata.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
             );
@@ -781,6 +794,8 @@ export const paymentRouter = router({
 
             // Update merchant status
             await db.updateMerchantSubscriptionStatus(transaction.merchantId, 'active');
+            // PEN-13 FIX: Keep currentSubscriptionId in sync
+            await db.updateMerchantCurrentSubscriptionId(transaction.merchantId, subscriptionId);
 
             // Update merchant customer limit
             const plan = await db.getSubscriptionPlanById(metadata.planId);
@@ -793,8 +808,13 @@ export const paymentRouter = router({
               subscriptionId,
             });
           } else if (transaction.type === 'addon') {
+            // PEN-15 FIX: Validate addon metadata
+            if (!metadata.addonId) {
+              console.error(`[Payment] Invalid metadata for addon: tap_id=${input.tap_id}`, metadata);
+              return { success: false, status: 'error', message: 'Invalid addon metadata' };
+            }
+
             // Create merchant addon
-            const now = new Date();
             const endDate = new Date(
               now.getTime() + (metadata.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
             );
@@ -810,7 +830,6 @@ export const paymentRouter = router({
             });
           } else if (transaction.type === 'upgrade') {
             // Update subscription
-            const now = new Date();
             const endDate = new Date(
               now.getTime() + (metadata.newBillingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
             );

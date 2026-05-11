@@ -771,7 +771,17 @@ export async function updateSubscription(id: number, data: Partial<InsertSubscri
   const db = await getDb();
   if (!db) return;
 
-  await db.update(subscriptions).set(data).where(eq(subscriptions.id, id));
+  // PEN-16 FIX: Normalize ISO timestamps to MySQL format
+  const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+  const cleanData: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined && typeof value === 'string' && (key.includes('Date') || key.includes('At') || key.includes('date'))) {
+      cleanData[key] = toMySQL(value);
+    } else if (value !== undefined) {
+      cleanData[key] = value;
+    }
+  }
+  await db.update(subscriptions).set(cleanData).where(eq(subscriptions.id, id));
 }
 
 export async function incrementSubscriptionUsage(
@@ -9264,7 +9274,26 @@ export async function createMerchantSubscription(data: NewMerchantSubscription) 
 export async function updateMerchantSubscription(id: number, data: Partial<NewMerchantSubscription>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(merchantSubscriptions).set(data).where(eq(merchantSubscriptions.id, id));
+  // PEN-11 FIX: Normalize ISO timestamps to MySQL format
+  const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+  const cleanData: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined && typeof value === 'string' && (key.includes('Date') || key.includes('At') || key.includes('date'))) {
+      cleanData[key] = toMySQL(value);
+    } else if (value !== undefined) {
+      cleanData[key] = value;
+    }
+  }
+  await db.update(merchantSubscriptions).set(cleanData).where(eq(merchantSubscriptions.id, id));
+}
+
+// PEN-13 FIX: Update currentSubscriptionId on merchants table
+export async function updateMerchantCurrentSubscriptionId(merchantId: number, subscriptionId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(merchants)
+    .set({ currentSubscriptionId: subscriptionId })
+    .where(eq(merchants.id, merchantId));
 }
 
 export async function cancelMerchantSubscription(id: number, reason?: string) {
@@ -9489,7 +9518,17 @@ export async function createPaymentTransaction(data: NewPaymentTransaction) {
 export async function updatePaymentTransaction(id: number, data: Partial<NewPaymentTransaction>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(paymentTransactions).set(data).where(eq(paymentTransactions.id, id));
+  // PEN-12 FIX: Normalize ISO timestamps to MySQL format
+  const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
+  const cleanData: Record<string, any> = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (value !== undefined && typeof value === 'string' && (key.includes('Date') || key.includes('At') || key.includes('date'))) {
+      cleanData[key] = toMySQL(value);
+    } else if (value !== undefined) {
+      cleanData[key] = value;
+    }
+  }
+  await db.update(paymentTransactions).set(cleanData).where(eq(paymentTransactions.id, id));
 }
 
 export async function getPaymentTransactionByTapChargeId(tapChargeId: string) {

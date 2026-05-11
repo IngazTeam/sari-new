@@ -680,6 +680,9 @@ export const appRouter = router({
 
         // Update merchant status
         await db.updateMerchant(input.merchantId, { status: 'active' });
+        await db.updateMerchantSubscriptionStatus(input.merchantId, 'active');
+        // PEN-13 FIX: Keep currentSubscriptionId in sync
+        await db.updateMerchantCurrentSubscriptionId(input.merchantId, subscriptionId);
 
         console.log(`[Admin] Subscription assigned: merchant=${input.merchantId}, plan=${plan.name}, duration=${input.durationDays}d`);
 
