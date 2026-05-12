@@ -449,13 +449,73 @@ export const products = mysqlTable("products", {
 	imageUrl: varchar({ length: 500 }),
 	productUrl: varchar({ length: 500 }),
 	category: varchar({ length: 100 }),
+	categoryId: int("category_id"),
 	isActive: tinyint().default(1).notNull(),
 	stock: int().default(0),
+	// Advanced fields
+	sku: varchar({ length: 100 }),
+	barcode: varchar({ length: 100 }),
+	compareAtPrice: int("compare_at_price"),
+	costPrice: int("cost_price"),
+	weight: varchar({ length: 20 }),
+	trackInventory: tinyint("track_inventory").default(1).notNull(),
+	lowStockAlert: int("low_stock_alert").default(5),
+	images: text(),
+	tags: text(),
+	productType: mysqlEnum("product_type", ['physical', 'digital', 'service']).default('physical'),
+	status: mysqlEnum(['active', 'draft', 'archived']).default('active').notNull(),
+	hasVariants: tinyint("has_variants").default(0).notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	sallaProductId: varchar({ length: 100 }),
 	lastSyncedAt: timestamp({ mode: 'string' }),
 });
+
+export const productCategories = mysqlTable("product_categories", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	name: varchar({ length: 100 }).notNull(),
+	nameEn: varchar("name_en", { length: 100 }),
+	parentId: int("parent_id"),
+	sortOrder: int("sort_order").default(0).notNull(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const productOptions = mysqlTable("product_options", {
+	id: int().autoincrement().primaryKey(),
+	productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+	merchantId: int("merchant_id").notNull(),
+	name: varchar({ length: 100 }).notNull(),
+	nameEn: varchar("name_en", { length: 100 }),
+	values: text().notNull(),
+	sortOrder: int("sort_order").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+});
+
+export const productVariants = mysqlTable("product_variants", {
+	id: int().autoincrement().primaryKey(),
+	productId: int("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+	merchantId: int("merchant_id").notNull(),
+	name: varchar({ length: 255 }).notNull(),
+	sku: varchar({ length: 100 }),
+	price: int(),
+	compareAtPrice: int("compare_at_price"),
+	costPrice: int("cost_price"),
+	stock: int().default(0),
+	barcode: varchar({ length: 100 }),
+	weight: varchar({ length: 20 }),
+	imageUrl: varchar("image_url", { length: 500 }),
+	options: text(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	sortOrder: int("sort_order").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("idx_variant_product").on(table.productId),
+	index("idx_variant_merchant").on(table.merchantId),
+]);
 
 export const quickResponses = mysqlTable("quick_responses", {
 	id: int().autoincrement().primaryKey(),
@@ -1374,6 +1434,12 @@ export type WhatsAppConnectionRequest = InferSelectModel<typeof whatsappConnecti
 export type InsertWhatsAppConnectionRequest = InferInsertModel<typeof whatsappConnectionRequests>;
 export type Product = InferSelectModel<typeof products>;
 export type InsertProduct = InferInsertModel<typeof products>;
+export type ProductCategory = InferSelectModel<typeof productCategories>;
+export type InsertProductCategory = InferInsertModel<typeof productCategories>;
+export type ProductOption = InferSelectModel<typeof productOptions>;
+export type InsertProductOption = InferInsertModel<typeof productOptions>;
+export type ProductVariant = InferSelectModel<typeof productVariants>;
+export type InsertProductVariant = InferInsertModel<typeof productVariants>;
 export type Conversation = InferSelectModel<typeof conversations>;
 export type InsertConversation = InferInsertModel<typeof conversations>;
 export type Message = InferSelectModel<typeof messages>;

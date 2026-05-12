@@ -172,38 +172,128 @@ export const productsRouter = router({
         return await db.getProductsByMerchantId(merchant.id);
     }),
 
-    // Create product
+    // Create product (with advanced fields)
     create: protectedProcedure
         .input(z.object({
             name: z.string().min(1),
             description: z.string().optional(),
-            price: z.number().positive(),
+            price: z.number().min(0),
             currency: z.enum(['SAR', 'USD']).optional(),
-            imageUrl: z.string().url().optional(),
+            imageUrl: z.string().url().optional().or(z.literal('')),
             stock: z.number().int().min(0).optional(),
+            category: z.string().optional(),
+            categoryId: z.number().optional(),
+            // Advanced fields
+            sku: z.string().optional(),
+            barcode: z.string().optional(),
+            compareAtPrice: z.number().optional(),
+            costPrice: z.number().optional(),
+            weight: z.string().optional(),
+            trackInventory: z.number().optional(),
+            lowStockAlert: z.number().optional(),
+            images: z.string().optional(),
+            tags: z.string().optional(),
+            productType: z.enum(['physical', 'digital', 'service']).optional(),
+            status: z.enum(['active', 'draft', 'archived']).optional(),
+            // Variants (optional — sent as JSON)
+            variants: z.array(z.object({
+                name: z.string(),
+                sku: z.string().optional(),
+                price: z.number().optional(),
+                compareAtPrice: z.number().optional(),
+                costPrice: z.number().optional(),
+                stock: z.number().optional(),
+                barcode: z.string().optional(),
+                weight: z.string().optional(),
+                imageUrl: z.string().optional(),
+                options: z.string().optional(),
+            })).optional(),
+            // Options (optional)
+            options: z.array(z.object({
+                name: z.string(),
+                values: z.string(),
+            })).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+            const { variants, options, ...productData } = input;
+            const hasVariants = (variants && variants.length > 0) ? 1 : 0;
+
             const productId = await db.createProduct({
                 merchantId: merchant.id,
-                ...input,
-                currency: input.currency || merchant.currency || 'SAR',
+                ...productData,
+                imageUrl: productData.imageUrl || undefined,
+                currency: productData.currency || merchant.currency || 'SAR',
+                hasVariants,
             });
-            return { success: true, productId };
+
+            if (!productId) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create product' });
+
+            // Import product-specific DB functions
+            const prodDb = await import('./db/products');
+
+            // Create options if provided
+            if (options && options.length > 0) {
+                for (let i = 0; i < options.length; i++) {
+                    await prodDb.createOption({
+                        productId: (productId as any).id,
+                        merchantId: merchant.id,
+                        name: options[i].name,
+                        values: options[i].values,
+                        sortOrder: i,
+                    });
+                }
+            }
+
+            // Create variants if provided
+            if (variants && variants.length > 0) {
+                for (let i = 0; i < variants.length; i++) {
+                    await prodDb.createVariant({
+                        productId: (productId as any).id,
+                        merchantId: merchant.id,
+                        name: variants[i].name,
+                        sku: variants[i].sku,
+                        price: variants[i].price,
+                        compareAtPrice: variants[i].compareAtPrice,
+                        costPrice: variants[i].costPrice,
+                        stock: variants[i].stock ?? 0,
+                        barcode: variants[i].barcode,
+                        weight: variants[i].weight,
+                        imageUrl: variants[i].imageUrl,
+                        options: variants[i].options,
+                        sortOrder: i,
+                    });
+                }
+            }
+
+            return { success: true, productId: (productId as any).id };
         }),
 
-    // Update product
+    // Update product (with advanced fields)
     update: protectedProcedure
         .input(z.object({
             productId: z.number(),
             name: z.string().min(1).optional(),
             description: z.string().optional(),
-            price: z.number().positive().optional(),
+            price: z.number().min(0).optional(),
             currency: z.enum(['SAR', 'USD']).optional(),
-            imageUrl: z.string().url().optional(),
+            imageUrl: z.string().optional(),
             stock: z.number().int().min(0).optional(),
+            category: z.string().optional(),
+            categoryId: z.number().nullable().optional(),
+            sku: z.string().optional(),
+            barcode: z.string().optional(),
+            compareAtPrice: z.number().nullable().optional(),
+            costPrice: z.number().nullable().optional(),
+            weight: z.string().optional(),
+            trackInventory: z.number().optional(),
+            lowStockAlert: z.number().optional(),
+            images: z.string().optional(),
+            tags: z.string().optional(),
+            productType: z.enum(['physical', 'digital', 'service']).optional(),
+            status: z.enum(['active', 'draft', 'archived']).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -216,7 +306,7 @@ export const productsRouter = router({
             }
 
             const { productId, ...updates } = input;
-            await db.updateProduct(productId, updates);
+            await db.updateProduct(productId, updates as any);
             return { success: true };
         }),
 
@@ -227,7 +317,6 @@ export const productsRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            // Verify product belongs to this merchant (prevent IDOR)
             const product = await db.getProductById(input.productId);
             if (!product || product.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not own this product' });
@@ -236,6 +325,190 @@ export const productsRouter = router({
             await db.deleteProduct(input.productId);
             return { success: true };
         }),
+
+    // Get product with variants and options
+    getById: protectedProcedure
+        .input(z.object({ productId: z.number() }))
+        .query(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            const product = await db.getProductById(input.productId);
+            if (!product || product.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const prodDb = await import('./db/products');
+            const variants = await prodDb.getVariantsByProductId(input.productId);
+            const options = await prodDb.getOptionsByProductId(input.productId);
+
+            return { ...product, variants, options };
+        }),
+
+    // ============================================
+    // Variant CRUD
+    // ============================================
+
+    addVariant: protectedProcedure
+        .input(z.object({
+            productId: z.number(),
+            name: z.string(),
+            sku: z.string().optional(),
+            price: z.number().optional(),
+            compareAtPrice: z.number().optional(),
+            costPrice: z.number().optional(),
+            stock: z.number().optional(),
+            barcode: z.string().optional(),
+            weight: z.string().optional(),
+            imageUrl: z.string().optional(),
+            options: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            const product = await db.getProductById(input.productId);
+            if (!product || product.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const prodDb = await import('./db/products');
+            const variant = await prodDb.createVariant({
+                ...input,
+                merchantId: merchant.id,
+                stock: input.stock ?? 0,
+                sortOrder: 0,
+            });
+
+            // Mark product as having variants
+            if (!product.hasVariants) {
+                await db.updateProduct(input.productId, { hasVariants: 1 } as any);
+            }
+
+            return variant;
+        }),
+
+    updateVariant: protectedProcedure
+        .input(z.object({
+            variantId: z.number(),
+            productId: z.number(),
+            name: z.string().optional(),
+            sku: z.string().optional(),
+            price: z.number().nullable().optional(),
+            compareAtPrice: z.number().nullable().optional(),
+            costPrice: z.number().nullable().optional(),
+            stock: z.number().optional(),
+            barcode: z.string().optional(),
+            weight: z.string().optional(),
+            imageUrl: z.string().optional(),
+            options: z.string().optional(),
+            isActive: z.number().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            const product = await db.getProductById(input.productId);
+            if (!product || product.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const prodDb = await import('./db/products');
+            const { variantId, productId, ...data } = input;
+            await prodDb.updateVariant(variantId, data as any);
+            return { success: true };
+        }),
+
+    deleteVariant: protectedProcedure
+        .input(z.object({ variantId: z.number(), productId: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            const product = await db.getProductById(input.productId);
+            if (!product || product.merchantId !== merchant.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const prodDb = await import('./db/products');
+            await prodDb.deleteVariant(input.variantId);
+
+            // Check if product still has variants
+            const remaining = await prodDb.getVariantsByProductId(input.productId);
+            if (remaining.length === 0) {
+                await db.updateProduct(input.productId, { hasVariants: 0 } as any);
+            }
+
+            return { success: true };
+        }),
+
+    // ============================================
+    // Category CRUD
+    // ============================================
+
+    listCategories: protectedProcedure.query(async ({ ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        const prodDb = await import('./db/products');
+        return await prodDb.getCategoriesByMerchantId(merchant.id);
+    }),
+
+    createCategory: protectedProcedure
+        .input(z.object({
+            name: z.string().min(1),
+            nameEn: z.string().optional(),
+            parentId: z.number().nullable().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            const prodDb = await import('./db/products');
+            return await prodDb.createCategory({
+                merchantId: merchant.id,
+                ...input,
+            });
+        }),
+
+    updateCategory: protectedProcedure
+        .input(z.object({
+            id: z.number(),
+            name: z.string().optional(),
+            nameEn: z.string().optional(),
+            parentId: z.number().nullable().optional(),
+            isActive: z.number().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const prodDb = await import('./db/products');
+            const { id, ...data } = input;
+            await prodDb.updateCategory(id, data as any);
+            return { success: true };
+        }),
+
+    deleteCategory: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            const prodDb = await import('./db/products');
+            await prodDb.deleteCategory(input.id);
+            return { success: true };
+        }),
+
+    // ============================================
+    // Low Stock Alerts
+    // ============================================
+
+    getLowStock: protectedProcedure.query(async ({ ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        const prodDb = await import('./db/products');
+        const products = await prodDb.getLowStockProducts(merchant.id);
+        const variants = await prodDb.getLowStockVariants(merchant.id);
+        return { products, variants, total: products.length + variants.length };
+    }),
 
     // Upload CSV
     uploadCSV: protectedProcedure

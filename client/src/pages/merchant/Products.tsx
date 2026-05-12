@@ -3,27 +3,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Package, Plus, Upload, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Package, Plus, Upload, Edit, Trash2, Image as ImageIcon, Tag, Layers, AlertTriangle, BarChart3 } from 'lucide-react';
 import { useState } from 'react';
 import { formatCurrency } from '@/../../shared/currency';
 import { useTranslation } from 'react-i18next';
@@ -43,12 +34,12 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
 
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    imageUrl: '',
-    stock: '',
+    name: '', description: '', price: '', imageUrl: '', stock: '',
+    sku: '', barcode: '', compareAtPrice: '', costPrice: '', weight: '',
+    category: '', tags: '', productType: 'physical' as string, status: 'active' as string,
+    lowStockAlert: '5', trackInventory: true,
   });
+  const [activeTab, setActiveTab] = useState('basic');
 
   const createMutation = trpc.products.create.useMutation({
     onSuccess: () => {
@@ -87,12 +78,12 @@ export default function Products() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      description: '',
-      price: '',
-      imageUrl: '',
-      stock: '',
+      name: '', description: '', price: '', imageUrl: '', stock: '',
+      sku: '', barcode: '', compareAtPrice: '', costPrice: '', weight: '',
+      category: '', tags: '', productType: 'physical', status: 'active',
+      lowStockAlert: '5', trackInventory: true,
     });
+    setActiveTab('basic');
   };
 
   const handleCreate = () => {
@@ -107,35 +98,61 @@ export default function Products() {
       price: parseFloat(formData.price),
       imageUrl: formData.imageUrl || undefined,
       stock: formData.stock ? parseInt(formData.stock) : undefined,
+      sku: formData.sku || undefined,
+      barcode: formData.barcode || undefined,
+      compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : undefined,
+      costPrice: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
+      weight: formData.weight || undefined,
+      category: formData.category || undefined,
+      tags: formData.tags || undefined,
+      productType: formData.productType as any,
+      status: formData.status as any,
+      trackInventory: formData.trackInventory ? 1 : 0,
+      lowStockAlert: formData.lowStockAlert ? parseInt(formData.lowStockAlert) : 5,
     });
   };
 
   const handleEdit = (product: any) => {
     setEditingProduct(product);
     setFormData({
-      name: product.name,
-      description: product.description || '',
-      price: product.price.toString(),
-      imageUrl: product.imageUrl || '',
+      name: product.name, description: product.description || '',
+      price: product.price.toString(), imageUrl: product.imageUrl || '',
       stock: product.stock?.toString() || '',
+      sku: product.sku || '', barcode: product.barcode || '',
+      compareAtPrice: product.compareAtPrice?.toString() || '',
+      costPrice: product.costPrice?.toString() || '',
+      weight: product.weight || '', category: product.category || '',
+      tags: product.tags || '', productType: product.productType || 'physical',
+      status: product.status || 'active',
+      lowStockAlert: product.lowStockAlert?.toString() || '5',
+      trackInventory: product.trackInventory !== 0,
     });
+    setActiveTab('basic');
     setIsEditDialogOpen(true);
   };
 
   const handleUpdate = () => {
     if (!editingProduct) return;
 
-    const updates: any = {
+    updateMutation.mutate({
       productId: editingProduct.id,
-    };
-
-    if (formData.name !== editingProduct.name) updates.name = formData.name;
-    if (formData.description !== (editingProduct.description || '')) updates.description = formData.description;
-    if (parseFloat(formData.price) !== editingProduct.price) updates.price = parseFloat(formData.price);
-    if (formData.imageUrl !== (editingProduct.imageUrl || '')) updates.imageUrl = formData.imageUrl;
-    if (formData.stock && parseInt(formData.stock) !== editingProduct.stock) updates.stock = parseInt(formData.stock);
-
-    updateMutation.mutate(updates);
+      name: formData.name,
+      description: formData.description || undefined,
+      price: parseFloat(formData.price),
+      imageUrl: formData.imageUrl || undefined,
+      stock: formData.stock ? parseInt(formData.stock) : 0,
+      sku: formData.sku || undefined,
+      barcode: formData.barcode || undefined,
+      compareAtPrice: formData.compareAtPrice ? parseFloat(formData.compareAtPrice) : undefined,
+      costPrice: formData.costPrice ? parseFloat(formData.costPrice) : undefined,
+      weight: formData.weight || undefined,
+      category: formData.category || undefined,
+      tags: formData.tags || undefined,
+      productType: formData.productType as any,
+      status: formData.status as any,
+      trackInventory: formData.trackInventory ? 1 : 0,
+      lowStockAlert: formData.lowStockAlert ? parseInt(formData.lowStockAlert) : 5,
+    });
   };
 
   const handleDelete = (productId: number, productName: string) => {
@@ -172,64 +189,133 @@ export default function Products() {
                 {t('productsPage.addProduct')}
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{t('productsPage.addNewProduct')}</DialogTitle>
-                <DialogDescription>
-                  {t('productsPage.addNewProductDesc')}
-                </DialogDescription>
+                <DialogDescription>{t('productsPage.addNewProductDesc')}</DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">{t('productsPage.productNameRequired')}</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder={t('productsPage.productNamePlaceholder')}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">{t('productsPage.descriptionLabel')}</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder={t('productsPage.descriptionPlaceholder')}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="price">{t('productsPage.priceLabel')} ({currency === 'SAR' ? t('productsPage.sar') : t('productsPage.dollar')}) *</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="imageUrl">{t('productsPage.imageUrl')}</Label>
-                  <Input
-                    id="imageUrl"
-                    type="url"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="stock">{t('productsPage.stockAvailable')}</Label>
-                  <Input
-                    id="stock"
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="basic"><Package className="h-3 w-3 me-1" /> أساسي</TabsTrigger>
+                  <TabsTrigger value="pricing"><BarChart3 className="h-3 w-3 me-1" /> التسعير</TabsTrigger>
+                  <TabsTrigger value="inventory"><Layers className="h-3 w-3 me-1" /> المخزون</TabsTrigger>
+                </TabsList>
+                <TabsContent value="basic" className="space-y-3 mt-3">
+                  <div className="grid gap-2">
+                    <Label>{t('productsPage.productNameRequired')}</Label>
+                    <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder={t('productsPage.productNamePlaceholder')} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>{t('productsPage.descriptionLabel')}</Label>
+                    <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder={t('productsPage.descriptionPlaceholder')} rows={3} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-2">
+                      <Label>التصنيف</Label>
+                      <Input value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} placeholder="مثل: إلكترونيات" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>نوع المنتج</Label>
+                      <Select value={formData.productType} onValueChange={(v) => setFormData({ ...formData, productType: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="physical">فيزيائي</SelectItem>
+                          <SelectItem value="digital">رقمي</SelectItem>
+                          <SelectItem value="service">خدمة</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>{t('productsPage.imageUrl')}</Label>
+                    <Input value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="https://example.com/image.jpg" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>الوسوم (مفصولة بفاصلة)</Label>
+                    <Input value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} placeholder="عرض, جديد, حصري" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>الحالة</Label>
+                    <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">نشط</SelectItem>
+                        <SelectItem value="draft">مسودة</SelectItem>
+                        <SelectItem value="archived">مؤرشف</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
+                <TabsContent value="pricing" className="space-y-3 mt-3">
+                  <div className="grid gap-2">
+                    <Label>{t('productsPage.priceLabel')} ({currency === 'SAR' ? t('productsPage.sar') : t('productsPage.dollar')}) *</Label>
+                    <Input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="0.00" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-2">
+                      <Label>سعر المقارنة <span className="text-xs text-muted-foreground">(قبل الخصم)</span></Label>
+                      <Input type="number" step="0.01" value={formData.compareAtPrice} onChange={(e) => setFormData({ ...formData, compareAtPrice: e.target.value })} placeholder="0.00" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>سعر التكلفة</Label>
+                      <Input type="number" step="0.01" value={formData.costPrice} onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })} placeholder="0.00" />
+                    </div>
+                  </div>
+                  {formData.price && formData.costPrice && parseFloat(formData.costPrice) > 0 && (
+                    <div className="rounded-lg border p-3 bg-muted/30">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">هامش الربح</span>
+                        <span className="text-lg font-bold text-green-600">
+                          {Math.round(((parseFloat(formData.price) - parseFloat(formData.costPrice)) / parseFloat(formData.price)) * 100)}%
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2 mt-2">
+                        <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${Math.min(100, Math.round(((parseFloat(formData.price) - parseFloat(formData.costPrice)) / parseFloat(formData.price)) * 100))}%` }} />
+                      </div>
+                    </div>
+                  )}
+                  {formData.compareAtPrice && parseFloat(formData.compareAtPrice) > 0 && formData.price && (
+                    <div className="rounded-lg border p-3 bg-red-50 dark:bg-red-950/20">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">نسبة الخصم</span>
+                        <span className="text-lg font-bold text-red-600">
+                          {Math.round(((parseFloat(formData.compareAtPrice) - parseFloat(formData.price)) / parseFloat(formData.compareAtPrice)) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+                <TabsContent value="inventory" className="space-y-3 mt-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-2">
+                      <Label>SKU (رقم الصنف)</Label>
+                      <Input value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} placeholder="SKU-001" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>الباركود</Label>
+                      <Input value={formData.barcode} onChange={(e) => setFormData({ ...formData, barcode: e.target.value })} placeholder="123456789" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-2">
+                      <Label>{t('productsPage.stockAvailable')}</Label>
+                      <Input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} placeholder="0" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>تنبيه نفاد عند</Label>
+                      <Input type="number" value={formData.lowStockAlert} onChange={(e) => setFormData({ ...formData, lowStockAlert: e.target.value })} placeholder="5" />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>الوزن (كجم)</Label>
+                    <Input value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} placeholder="0.5" />
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <input type="checkbox" id="trackInventory" checked={formData.trackInventory} onChange={(e) => setFormData({ ...formData, trackInventory: e.target.checked })} className="h-4 w-4" />
+                    <Label htmlFor="trackInventory" className="cursor-pointer">تتبع المخزون تلقائياً</Label>
+                  </div>
+                </TabsContent>
+              </Tabs>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   {t('productsPage.cancel')}
@@ -383,59 +469,121 @@ export default function Products() {
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('productsPage.editProduct')}</DialogTitle>
-            <DialogDescription>
-              {t('productsPage.editProductDesc')}
-            </DialogDescription>
+            <DialogDescription>{t('productsPage.editProductDesc')}</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-name">{t('productsPage.productNameRequired')}</Label>
-              <Input
-                id="edit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-description">{t('productsPage.descriptionLabel')}</Label>
-              <Textarea
-                id="edit-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-price">{t('productsPage.priceLabel')} ({currency === 'SAR' ? t('productsPage.sar') : t('productsPage.dollar')}) *</Label>
-              <Input
-                id="edit-price"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-imageUrl">{t('productsPage.imageUrl')}</Label>
-              <Input
-                id="edit-imageUrl"
-                type="url"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit-stock">{t('productsPage.stockAvailable')}</Label>
-              <Input
-                id="edit-stock"
-                type="number"
-                value={formData.stock}
-                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-              />
-            </div>
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="basic"><Package className="h-3 w-3 me-1" /> أساسي</TabsTrigger>
+              <TabsTrigger value="pricing"><BarChart3 className="h-3 w-3 me-1" /> التسعير</TabsTrigger>
+              <TabsTrigger value="inventory"><Layers className="h-3 w-3 me-1" /> المخزون</TabsTrigger>
+            </TabsList>
+            <TabsContent value="basic" className="space-y-3 mt-3">
+              <div className="grid gap-2">
+                <Label>{t('productsPage.productNameRequired')}</Label>
+                <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>{t('productsPage.descriptionLabel')}</Label>
+                <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>التصنيف</Label>
+                  <Input value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>نوع المنتج</Label>
+                  <Select value={formData.productType} onValueChange={(v) => setFormData({ ...formData, productType: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="physical">فيزيائي</SelectItem>
+                      <SelectItem value="digital">رقمي</SelectItem>
+                      <SelectItem value="service">خدمة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>{t('productsPage.imageUrl')}</Label>
+                <Input value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>الوسوم</Label>
+                <Input value={formData.tags} onChange={(e) => setFormData({ ...formData, tags: e.target.value })} />
+              </div>
+              <div className="grid gap-2">
+                <Label>الحالة</Label>
+                <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">نشط</SelectItem>
+                    <SelectItem value="draft">مسودة</SelectItem>
+                    <SelectItem value="archived">مؤرشف</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </TabsContent>
+            <TabsContent value="pricing" className="space-y-3 mt-3">
+              <div className="grid gap-2">
+                <Label>{t('productsPage.priceLabel')} *</Label>
+                <Input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>سعر المقارنة</Label>
+                  <Input type="number" step="0.01" value={formData.compareAtPrice} onChange={(e) => setFormData({ ...formData, compareAtPrice: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>سعر التكلفة</Label>
+                  <Input type="number" step="0.01" value={formData.costPrice} onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })} />
+                </div>
+              </div>
+              {formData.price && formData.costPrice && parseFloat(formData.costPrice) > 0 && (
+                <div className="rounded-lg border p-3 bg-muted/30">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">هامش الربح</span>
+                    <span className="text-lg font-bold text-green-600">{Math.round(((parseFloat(formData.price) - parseFloat(formData.costPrice)) / parseFloat(formData.price)) * 100)}%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2 mt-2">
+                    <div className="bg-green-500 h-2 rounded-full transition-all" style={{ width: `${Math.min(100, Math.round(((parseFloat(formData.price) - parseFloat(formData.costPrice)) / parseFloat(formData.price)) * 100))}%` }} />
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+            <TabsContent value="inventory" className="space-y-3 mt-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>SKU</Label>
+                  <Input value={formData.sku} onChange={(e) => setFormData({ ...formData, sku: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>الباركود</Label>
+                  <Input value={formData.barcode} onChange={(e) => setFormData({ ...formData, barcode: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>{t('productsPage.stockAvailable')}</Label>
+                  <Input type="number" value={formData.stock} onChange={(e) => setFormData({ ...formData, stock: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>تنبيه نفاد عند</Label>
+                  <Input type="number" value={formData.lowStockAlert} onChange={(e) => setFormData({ ...formData, lowStockAlert: e.target.value })} />
+                </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>الوزن (كجم)</Label>
+                <Input value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} />
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border p-3">
+                <input type="checkbox" id="editTrackInventory" checked={formData.trackInventory} onChange={(e) => setFormData({ ...formData, trackInventory: e.target.checked })} className="h-4 w-4" />
+                <Label htmlFor="editTrackInventory" className="cursor-pointer">تتبع المخزون تلقائياً</Label>
+              </div>
+            </TabsContent>
+          </Tabs>
           <DialogFooter>
             <Button variant="outline" onClick={() => {
               setIsEditDialogOpen(false);
