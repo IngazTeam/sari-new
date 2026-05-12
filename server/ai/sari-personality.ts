@@ -732,11 +732,27 @@ ${result.message}
 
     return response.trim();
   } catch (error: any) {
-    console.error('Error in chatWithSari:', error);
+    console.error('[chatWithSari] ERROR:', {
+      merchantId: params.merchantId,
+      customerPhone: params.customerPhone,
+      errorMessage: error.message,
+      errorCode: error.code || error.status || 'unknown',
+      errorType: error.constructor?.name,
+      stack: error.stack?.split('\n').slice(0, 3).join('\n'),
+    });
     
     // Intelligent fallback based on error type
-    if (error.message?.includes('rate limit')) {
+    if (error.message?.includes('rate limit') || error.status === 429) {
       return 'عذراً، الضغط كبير شوي الحين 😅 ممكن تعيد رسالتك بعد ثواني؟';
+    }
+    
+    if (error.message?.includes('API key') || error.message?.includes('authentication') || error.status === 401) {
+      console.error('[chatWithSari] CRITICAL: API key issue!');
+      return 'عذراً، نواجه مشكلة تقنية حالياً. فريقنا يعمل على حلها 🔧';
+    }
+
+    if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
+      return 'عذراً، الرد تأخر شوي 😅 ممكن تعيد رسالتك؟';
     }
     
     return 'عذراً، حصل خطأ مؤقت. ممكن تعيد رسالتك مرة ثانية؟ 🙏';

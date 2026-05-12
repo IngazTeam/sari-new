@@ -190,14 +190,14 @@ export default function ServiceForm() {
             <div>
               <Label htmlFor="categoryId">{t('serviceFormPage.text9')}</Label>
               <Select
-                value={formData.categoryId}
-                onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                value={formData.categoryId || 'none'}
+                onValueChange={(value) => setFormData({ ...formData, categoryId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('serviceFormPage.text10')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{t('serviceFormPage.text11')}</SelectItem>
+                  <SelectItem value="none">{t('serviceFormPage.text11')}</SelectItem>
                   {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
