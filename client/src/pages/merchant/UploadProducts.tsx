@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useLocation } from 'wouter';
 
 export default function UploadProducts() {
@@ -19,6 +20,7 @@ export default function UploadProducts() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'file' | 'sheets' | 'template'>('file');
+  const [createSheet, setCreateSheet] = useState(true);
 
   // Mutations
   const uploadCSV = trpc.products.uploadCSV.useMutation({

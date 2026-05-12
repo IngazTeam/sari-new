@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<Props, State> {
               className="text-destructive mb-6 flex-shrink-0"
             />
 
-            <h2 className="text-xl mb-4">{t('errorBoundary.auto_0')}</h2>
+            <h2 className="text-xl mb-4">حدث خطأ غير متوقع | Something went wrong</h2>
 
             {import.meta.env.DEV && (
             <div className="p-4 w-full rounded bg-muted overflow-auto mb-6">
@@ -53,7 +53,7 @@ class ErrorBoundary extends Component<Props, State> {
             </div>
             )}
             {!import.meta.env.DEV && (
-            <p className="text-muted-foreground mb-6">{t('errorBoundary.auto_1')}</p>
+            <p className="text-muted-foreground mb-6">يرجى إعادة تحميل الصفحة أو التواصل مع الدعم | Please reload the page or contact support</p>
             )}
 
             <button
