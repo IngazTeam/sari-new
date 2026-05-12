@@ -200,15 +200,107 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Platform keys are static secrets shared between Sari and partner platforms.
+ * Platform keys are secrets shared between Sari and partner platforms.
+ * Sources: 1) DB table (admin-managed), 2) env fallback
  * Format: sari_platform_{platformName}_{secret}
- * Stored in env: BYAAN_PLATFORM_KEY=sari_platform_byaan_xxxxxxxx
  */
 const PLATFORM_KEYS: Record<string, string> = {};
 
-// Load platform keys from env
+// Load from env as fallback
 if (process.env.BYAAN_PLATFORM_KEY) {
   PLATFORM_KEYS['byaan'] = process.env.BYAAN_PLATFORM_KEY;
+}
+
+let _platformKeysTableCreated = false;
+
+async function ensurePlatformKeysTable() {
+  if (_platformKeysTableCreated) return;
+  try {
+    const dbConn = await db.getDb();
+    if (!dbConn) return;
+    await (dbConn as any).execute(`
+      CREATE TABLE IF NOT EXISTS sari_platform_keys (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        platform VARCHAR(50) NOT NULL UNIQUE,
+        key_value VARCHAR(255) NOT NULL,
+        label VARCHAR(100) DEFAULT '',
+        is_active TINYINT(1) DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    _platformKeysTableCreated = true;
+    // Load DB keys into memory
+    await loadPlatformKeysFromDb();
+  } catch (e) {
+    console.error('[SariAPI] Failed to create platform_keys table:', e);
+  }
+}
+
+async function loadPlatformKeysFromDb() {
+  try {
+    const dbConn = await db.getDb();
+    if (!dbConn) return;
+    const [rows] = await (dbConn as any).execute(
+      `SELECT platform, key_value FROM sari_platform_keys WHERE is_active = 1`
+    );
+    for (const row of rows as any[]) {
+      PLATFORM_KEYS[row.platform] = row.key_value;
+    }
+  } catch (e) { /* table may not exist yet */ }
+}
+
+// Load DB keys on startup (deferred)
+setTimeout(() => loadPlatformKeysFromDb(), 3000);
+
+/** Admin: Set/update a platform key */
+export async function setPlatformKey(platform: string, keyValue: string, label: string = ''): Promise<void> {
+  await ensurePlatformKeysTable();
+  const dbConn = await db.getDb();
+  if (!dbConn) throw new Error('DB unavailable');
+
+  await (dbConn as any).execute(
+    `INSERT INTO sari_platform_keys (platform, key_value, label) VALUES (?, ?, ?)
+     ON DUPLICATE KEY UPDATE key_value = VALUES(key_value), label = VALUES(label), is_active = 1, updated_at = NOW()`,
+    [platform, keyValue, label]
+  );
+  // Update in-memory cache
+  PLATFORM_KEYS[platform] = keyValue;
+}
+
+/** Admin: Get all platform keys */
+export async function getPlatformKeys(): Promise<Array<{ platform: string; keyPrefix: string; label: string; createdAt: string }>> {
+  await ensurePlatformKeysTable();
+  const dbConn = await db.getDb();
+  if (!dbConn) return [];
+
+  const [rows] = await (dbConn as any).execute(
+    `SELECT platform, key_value, label, created_at FROM sari_platform_keys WHERE is_active = 1`
+  );
+  return (rows as any[]).map(r => ({
+    platform: r.platform,
+    keyPrefix: r.key_value.substring(0, 24) + '••••••••',
+    label: r.label || '',
+    createdAt: r.created_at,
+  }));
+}
+
+/** Admin: Delete a platform key */
+export async function deletePlatformKey(platform: string): Promise<void> {
+  await ensurePlatformKeysTable();
+  const dbConn = await db.getDb();
+  if (!dbConn) return;
+
+  await (dbConn as any).execute(
+    `UPDATE sari_platform_keys SET is_active = 0 WHERE platform = ?`,
+    [platform]
+  );
+  delete PLATFORM_KEYS[platform];
+}
+
+/** Generate a new platform key value */
+export function generatePlatformKeyValue(platform: string): string {
+  return `sari_platform_${platform}_${crypto.randomBytes(32).toString('hex')}`;
 }
 
 function validatePlatformKey(key: string): { platform: string } | null {

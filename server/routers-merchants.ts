@@ -285,6 +285,49 @@ export const merchantsRouter = router({
         return await db.getActiveSubscriptionPlans();
     }),
 
+    // ============================================
+    // Platform Integration Keys (Admin only)
+    // ============================================
+
+    // List all platform keys
+    listPlatformKeys: adminProcedure.query(async () => {
+        const { getPlatformKeys } = await import('./api/rest');
+        return await getPlatformKeys();
+    }),
+
+    // Generate a new platform key
+    generatePlatformKey: adminProcedure
+        .input(z.object({
+            platform: z.string().min(2).max(50),
+            label: z.string().max(100).optional(),
+        }))
+        .mutation(async ({ input }) => {
+            const { generatePlatformKeyValue, setPlatformKey } = await import('./api/rest');
+            const keyValue = generatePlatformKeyValue(input.platform);
+            await setPlatformKey(input.platform, keyValue, input.label || `${input.platform} integration`);
+            // Return full key ONCE — admin copies it, never shown again
+            return { platform: input.platform, key: keyValue };
+        }),
+
+    // Regenerate platform key (overwrites existing)
+    regeneratePlatformKey: adminProcedure
+        .input(z.object({ platform: z.string() }))
+        .mutation(async ({ input }) => {
+            const { generatePlatformKeyValue, setPlatformKey } = await import('./api/rest');
+            const keyValue = generatePlatformKeyValue(input.platform);
+            await setPlatformKey(input.platform, keyValue);
+            return { platform: input.platform, key: keyValue };
+        }),
+
+    // Delete platform key
+    deletePlatformKey: adminProcedure
+        .input(z.object({ platform: z.string() }))
+        .mutation(async ({ input }) => {
+            const { deletePlatformKey } = await import('./api/rest');
+            await deletePlatformKey(input.platform);
+            return { success: true };
+        }),
+
     // Get merchant campaigns (Admin only)
     getCampaigns: adminProcedure
         .input(z.object({ merchantId: z.number() }))

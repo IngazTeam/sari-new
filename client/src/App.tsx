@@ -209,6 +209,7 @@ const ComparePlans = lazyLoad(() => import("./pages/ComparePlans"));
 const UsageDashboard = lazyLoad(() => import("./pages/merchant/UsageDashboard"));
 const GlobalSeoSettings = lazyLoad(() => import("./pages/admin/GlobalSeoSettings"));
 const GoogleOAuthSettings = lazyLoad(() => import("./pages/admin/GoogleOAuthSettings"));
+const PlatformKeys = lazyLoad(() => import("./pages/admin/PlatformKeys"));
 const AdminABTestDashboard = lazyLoad(() => import("./pages/AdminABTestDashboard"));
 const PlatformIntegrations = lazyLoad(() => import("./pages/PlatformIntegrations"));
 const NotificationDashboard = lazyLoad(() => import("./pages/super-admin/NotificationDashboard"));
@@ -920,6 +921,12 @@ function Router() {
       <Route path="/admin/settings">
         <DashboardLayout>
           <AdminSettings />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/admin/platform-keys">
+        <DashboardLayout>
+          <PlatformKeys />
         </DashboardLayout>
       </Route>
 
