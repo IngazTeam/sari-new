@@ -147,7 +147,26 @@ export const sariBrainRouter = router({
       // website_analyses table may not exist — skip silently
     }
 
-    // 4. Merchant Settings (non-deletable)
+    // 4. FAQs (custom Q&A)
+    try {
+      const faqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      if (faqs.length > 0) {
+        const activeFaqs = faqs.filter((f: any) => f.isActive);
+        sources.push({
+          id: `faqs-${merchant.id}`,
+          type: 'faqs',
+          icon: '❓',
+          name: `أسئلة شائعة (${faqs.length} سؤال — ${activeFaqs.length} نشط)`,
+          status: 'active',
+          hasContent: true,
+          contentLength: faqs.length,
+          date: faqs[0]?.extractedAt || new Date().toISOString(),
+          deletable: true,
+        });
+      }
+    } catch (e) { /* skip */ }
+
+    // 5. Merchant Settings (non-deletable)
     sources.push({
       id: `settings-${merchant.id}`,
       type: 'settings',
@@ -167,7 +186,7 @@ export const sariBrainRouter = router({
   deleteSource: protectedProcedure
     .input(z.object({
       sourceId: z.string(),
-      sourceType: z.enum(['document', 'products', 'website']),
+      sourceType: z.enum(['document', 'products', 'website', 'faqs']),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -215,6 +234,15 @@ export const sariBrainRouter = router({
           await logBrainActivity(merchant.id, 'website_deleted', 'تم حذف تحليل الموقع');
           break;
         }
+        case 'faqs': {
+          const faqCount = (await db.getExtractedFaqsByMerchantId(merchant.id)).length;
+          if (faqCount === 0) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'لا توجد أسئلة شائعة للحذف' });
+          }
+          await db.deleteAllExtractedFaqs(merchant.id);
+          await logBrainActivity(merchant.id, 'faqs_deleted', `تم حذف ${faqCount} سؤال شائع`, { count: faqCount });
+          break;
+        }
         default:
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المصدر غير صالح' });
       }
@@ -254,6 +282,12 @@ export const sariBrainRouter = router({
         );
         deletedSources.push('website');
       }
+    } catch (e) { /* skip */ }
+
+    // Delete all FAQs
+    try {
+      await db.deleteAllExtractedFaqs(merchant.id);
+      deletedSources.push('faqs');
     } catch (e) { /* skip */ }
 
     await logBrainActivity(merchant.id, 'brain_reset', 'تم إعادة ضبط عقل ساري بالكامل', { deletedSources });
@@ -562,6 +596,74 @@ ${sanitizedContent}`
           message: 'فشل تحليل المحتوى. حاول مرة أخرى.',
         });
       }
+    }),
+
+  // ════════════════════════════════════════════════════════════════
+  // FAQ Management — CRUD for custom Q&A pairs
+  // ════════════════════════════════════════════════════════════════
+  getFaqs: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await db.getExtractedFaqsByMerchantId(merchant.id);
+  }),
+
+  createFaq: protectedProcedure
+    .input(z.object({
+      question: z.string().min(3).max(500),
+      answer: z.string().min(3).max(2000),
+      category: z.string().max(100).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const id = await db.createExtractedFaq({
+        merchantId: merchant.id,
+        question: input.question,
+        answer: input.answer,
+        category: input.category || 'عام',
+        isActive: true,
+        useInBot: true,
+      });
+
+      await logBrainActivity(merchant.id, 'faq_created', `تم إضافة سؤال: "${input.question.substring(0, 50)}"`, {
+        faqId: id,
+        category: input.category,
+      });
+
+      return { success: true, id };
+    }),
+
+  updateFaq: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      question: z.string().min(3).max(500).optional(),
+      answer: z.string().min(3).max(2000).optional(),
+      category: z.string().max(100).optional(),
+      isActive: z.boolean().optional(),
+      useInBot: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const { id, ...data } = input;
+      await db.updateExtractedFaq(id, data);
+      await logBrainActivity(merchant.id, 'faq_updated', `تم تحديث سؤال رقم ${id}`);
+
+      return { success: true };
+    }),
+
+  deleteFaq: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      await db.deleteExtractedFaq(input.id);
+      await logBrainActivity(merchant.id, 'faq_deleted', `تم حذف سؤال رقم ${input.id}`);
+
+      return { success: true };
     }),
 });
 
