@@ -130,6 +130,34 @@ export default function Navbar() {
                 </NavigationMenuContent>
               </NavigationMenuItem>
 
+              {/* القطاعات */}
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="text-sm font-medium">
+                  {isRTL ? 'القطاعات' : 'Industries'}
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[400px] gap-3 p-4">
+                    {[
+                      { title: isRTL ? 'العيادات' : 'Clinics', href: '/solutions/clinics', desc: isRTL ? 'حجز مواعيد وتذكيرات ذكية' : 'Appointment booking & reminders' },
+                      { title: isRTL ? 'المطاعم' : 'Restaurants', href: '/solutions/restaurants', desc: isRTL ? 'نظام طلبات واتساب ذكي' : 'AI WhatsApp ordering' },
+                      { title: isRTL ? 'الصالونات' : 'Salons', href: '/solutions/salons', desc: isRTL ? 'حجز وبرنامج ولاء' : 'Booking & loyalty' },
+                      { title: isRTL ? 'مراكز التدريب' : 'Training', href: '/solutions/training-centers', desc: isRTL ? 'تسجيل دورات وتذكيرات' : 'Course registration' },
+                      { title: isRTL ? 'العقار' : 'Real Estate', href: '/solutions/real-estate', desc: isRTL ? 'عرض عقارات ومتابعة' : 'Listings & follow-up' },
+                      { title: isRTL ? 'الاستشارات' : 'Consulting', href: '/solutions/consultants', desc: isRTL ? 'حجز استشارات ودفع' : 'Booking & payment' },
+                    ].map((item) => (
+                      <li key={item.href}>
+                        <Link href={item.href}>
+                          <NavigationMenuLink className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                            <div className="text-sm font-medium leading-none">{item.title}</div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">{item.desc}</p>
+                          </NavigationMenuLink>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+
               {/* المنتج */}
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="text-sm font-medium">
@@ -293,6 +321,28 @@ export default function Navbar() {
             <div className="space-y-2">
               <div className="text-sm font-bold text-foreground py-2">{t('menu.solutions.title')}</div>
               {solutionsMenu.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    className="block py-2 pr-4 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {item.title}
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* القطاعات */}
+            <div className="space-y-2">
+              <div className="text-sm font-bold text-foreground py-2">{isRTL ? 'القطاعات' : 'Industries'}</div>
+              {[
+                { title: isRTL ? 'العيادات' : 'Clinics', href: '/solutions/clinics' },
+                { title: isRTL ? 'المطاعم' : 'Restaurants', href: '/solutions/restaurants' },
+                { title: isRTL ? 'الصالونات' : 'Salons', href: '/solutions/salons' },
+                { title: isRTL ? 'مراكز التدريب' : 'Training', href: '/solutions/training-centers' },
+                { title: isRTL ? 'العقار' : 'Real Estate', href: '/solutions/real-estate' },
+                { title: isRTL ? 'الاستشارات' : 'Consulting', href: '/solutions/consultants' },
+              ].map((item) => (
                 <Link key={item.href} href={item.href}>
                   <div
                     className="block py-2 pr-4 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
