@@ -326,6 +326,12 @@ sariApiRouter.get('/products', async (req: AuthenticatedRequest, res: Response) 
 
 // ── POST /api/v1/sync/products — Bulk sync products ─────────
 sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Response) => {
+  // PEN-R2-02: Sync-specific rate limit for products
+  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
+  if (!checkSyncLimit(`sync_p_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
+  }
+
   const { products, mode } = req.body;
   if (!Array.isArray(products)) {
     return res.status(400).json({ error: 'products array is required', errorAr: 'مصفوفة المنتجات مطلوبة' });
@@ -547,15 +553,14 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
 
     if ((existingUsers as any[])?.length > 0) {
       // PEN-BYAAN-02: Do NOT generate API key for existing accounts without password verification
-      // This prevents attackers from obtaining keys for other merchants' accounts
+      // PEN-R2-05: Uniform response to prevent email enumeration
       return res.json({
         success: true,
-        created: false,
-        existing: true,
+        created: true,
         email: String(email).toLowerCase().trim(),
         loginUrl: 'https://sari.app/login',
-        message: 'Account already exists — please login with your credentials',
-        messageAr: 'الحساب موجود مسبقاً — سجل دخول ببياناتك الحالية',
+        message: 'Account provisioned successfully',
+        messageAr: 'تم تجهيز الحساب بنجاح',
       });
     }
 
@@ -638,6 +643,12 @@ sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Resp
 
 // ── POST /api/v1/sync/settings — Sync settings (whitelist) ──
 sariApiRouter.post('/sync/settings', async (req: AuthenticatedRequest, res: Response) => {
+  // PEN-R2-02: Sync-specific rate limit for settings
+  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
+  if (!checkSyncLimit(`sync_s_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
+  }
+
   const { settings } = req.body;
   if (!settings || typeof settings !== 'object') {
     return res.status(400).json({ error: 'settings object is required', errorAr: 'كائن الإعدادات مطلوب' });
@@ -675,6 +686,17 @@ sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Resp
   }
 
   try {
+    // PEN-R2-04: Check if merchant is already connected to another platform
+    const { checkExistingIntegrations } = await import('../integrations/platform-checker');
+    const existing = await checkExistingIntegrations(req.merchant.id);
+    if (existing.salla || existing.zid || existing.woocommerce) {
+      const connectedTo = existing.salla ? 'سلة' : existing.zid ? 'زد' : 'ووكومرس';
+      return res.status(409).json({
+        error: `Already connected to ${connectedTo}. Disconnect first.`,
+        errorAr: `التاجر مربوط بـ${connectedTo} بالفعل. افصل المنصة الحالية أولاً.`,
+      });
+    }
+
     const { createByaanConnection } = await import('../integrations/byaan');
     const connection = await createByaanConnection(req.merchant.id, cleanDomain, permissions);
 

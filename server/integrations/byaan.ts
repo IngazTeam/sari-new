@@ -59,8 +59,9 @@ export interface ByaanConversion {
 // Settings Whitelist — ما يمكن لبيان تعديله
 // ═══════════════════════════════════════════════════════════════
 
+// PEN-R2-03: Removed 'industry' — mapping was removed in PEN-07, no corresponding DB column
 const ALLOWED_SETTINGS_FIELDS = [
-  'businessName', 'website', 'industry', 'city', 'description'
+  'businessName', 'website', 'city', 'description'
 ] as const;
 
 // ═══════════════════════════════════════════════════════════════

@@ -23,7 +23,8 @@ function useByaanIntegration() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const apiKey = localStorage.getItem('sari_api_key') || '';
+  // PEN-R2-01: Use sessionStorage instead of localStorage to limit XSS exposure
+  const apiKey = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
 
   const fetchData = async () => {
     if (!apiKey) {
@@ -68,7 +69,8 @@ export default function ByaanIntegration() {
     if (!confirm('هل أنت متأكد من فصل ربط بيان؟ سيتم فتح التعديل اليدوي على المحتوى.')) return;
     setDisconnecting(true);
     try {
-      const apiKey = localStorage.getItem('sari_api_key') || '';
+      // PEN-R2-01: Use sessionStorage instead of localStorage to limit XSS exposure
+      const apiKey = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
       const res = await fetch('/api/v1/connect/byaan', {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${apiKey}` },
