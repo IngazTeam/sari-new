@@ -630,16 +630,17 @@ export async function clearWebhookUrl(
     console.log(`[WhatsApp] Clearing webhook URL for instance ${instanceId}...`);
     
     // Clear webhook settings using setSettings endpoint
+    // IMPORTANT: Keep incomingWebhook: 'yes' — it's required for polling to receive messages!
     const response = await axios.post(`${baseURL}/setSettings/${apiToken}`, {
       webhookUrl: '',
       webhookUrlToken: '',
-      outgoingWebhook: 'no',
-      outgoingMessageWebhook: 'no',
-      outgoingAPIMessageWebhook: 'no',
-      incomingWebhook: 'no',
+      outgoingWebhook: 'yes',
+      outgoingMessageWebhook: 'yes',
+      outgoingAPIMessageWebhook: 'yes',
+      incomingWebhook: 'yes',
       deviceWebhook: 'no',
       statusInstanceWebhook: 'no',
-      stateWebhook: 'no',
+      stateWebhook: 'yes',
     });
 
     console.log('[WhatsApp] Clear webhook response:', response.data);
