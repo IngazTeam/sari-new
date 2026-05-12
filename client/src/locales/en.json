@@ -616,7 +616,7 @@
       "sentimentAnalysis": "Sentiment Analysis",
       "keywords": "Keywords",
       "whatsapp": "Connect WhatsApp",
-      "whatsappInstances": "Manage WhatsApp Instances",
+      "whatsappInstances": "Manage WhatsApp Numbers",
       "orderNotifications": "Order Notifications",
       "scheduledMessages": "Scheduled Messages",
       "whatsappAutoNotifications": "Auto WhatsApp Notifications",
@@ -1747,7 +1747,7 @@
     "greenApiDocs": "Green API Official Documentation",
     "greenApiDashboard": "Green API Dashboard",
     "whatsAppTestPage": "WhatsApp Test Page",
-    "manageInstances": "Manage WhatsApp Instances",
+    "manageInstances": "Manage WhatsApp Numbers",
     "copiedMsg": "Copied!",
     "step1Title": "Register on Green API",
     "step1Desc": "Get a free Green API account",
@@ -1797,7 +1797,7 @@
     "officialDocs": "Green API Official Documentation",
     "consoleLink": "Green API Dashboard",
     "testPageLink": "WhatsApp Test Page",
-    "instancesLink": "Manage WhatsApp Instances"
+    "instancesLink": "Manage WhatsApp Numbers"
   },
   "abandonedCartsPagePage": {
     "text0": "Abandoned Carts",
@@ -3413,7 +3413,7 @@
     "text2": "Pending",
     "text3": "Expired",
     "text4": "Loading...",
-    "text5": "Manage WhatsApp Instances",
+    "text5": "Manage WhatsApp Numbers",
     "text6": "Instance expired - please renew immediately",
     "text7": "Instance expires within 24 hours",
     "text8": "Instance expires within 3 days",

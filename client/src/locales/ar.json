@@ -616,7 +616,7 @@
       "sentimentAnalysis": "تحليل المشاعر",
       "keywords": "الكلمات المفتاحية",
       "whatsapp": "ربط الواتساب",
-      "whatsappInstances": "إدارة WhatsApp Instances",
+      "whatsappInstances": "إدارة أرقام الواتساب",
       "orderNotifications": "إشعارات الطلبات",
       "scheduledMessages": "الرسائل المجدولة",
       "whatsappAutoNotifications": "إشعارات واتساب التلقائية",
@@ -1747,7 +1747,7 @@
     "greenApiDocs": "التوثيق الرسمي لـ Green API",
     "greenApiDashboard": "لوحة تحكم Green API",
     "whatsAppTestPage": "صفحة اختبار WhatsApp",
-    "manageInstances": "إدارة WhatsApp Instances",
+    "manageInstances": "إدارة أرقام الواتساب",
     "copiedMsg": "تم النسخ!",
     "step1Title": "التسجيل في Green API",
     "step1Desc": "احصل على حساب مجاني في Green API",
@@ -1797,7 +1797,7 @@
     "officialDocs": "التوثيق الرسمي لـ Green API",
     "consoleLink": "لوحة تحكم Green API",
     "testPageLink": "صفحة اختبار WhatsApp",
-    "instancesLink": "إدارة WhatsApp Instances"
+    "instancesLink": "إدارة أرقام الواتساب"
   },
   "abandonedCartsPagePage": {
     "text0": "السلال المهجورة",
@@ -3413,7 +3413,7 @@
     "text2": "قيد الانتظار",
     "text3": "منتهي",
     "text4": "جاري التحميل...",
-    "text5": "إدارة WhatsApp Instances",
+    "text5": "إدارة أرقام الواتساب",
     "text6": "instance منتهي - يرجى التجديد فوراً",
     "text7": "instance ينتهي خلال 24 ساعة",
     "text8": "instance ينتهي خلال 3 أيام",
