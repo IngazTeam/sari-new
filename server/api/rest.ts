@@ -134,11 +134,59 @@ function checkApiRateLimit(key: string, maxRequests: number = 100, windowMs: num
   return true;
 }
 
+// PEN-BYAAN-01: Separate rate limiters for sensitive operations
+const provisionLimitMap: Record<string, { count: number; resetAt: number }> = {};
+const syncLimitMap: Record<string, { count: number; resetAt: number }> = {};
+
+function checkProvisionLimit(key: string): boolean {
+  return checkSpecialLimit(provisionLimitMap, key, 5, 3600_000); // 5 per hour
+}
+
+function checkSyncLimit(key: string): boolean {
+  return checkSpecialLimit(syncLimitMap, key, 10, 60_000); // 10 per minute
+}
+
+function checkSpecialLimit(map: Record<string, { count: number; resetAt: number }>, key: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  const entry = map[key];
+  if (!entry || now > entry.resetAt) {
+    map[key] = { count: 1, resetAt: now + windowMs };
+    return true;
+  }
+  if (entry.count >= max) return false;
+  entry.count++;
+  return true;
+}
+
+// Validate email format
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+// Validate domain format
+function isValidDomain(domain: string): boolean {
+  return /^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(domain) && domain.length <= 255;
+}
+
+// Strip HTML tags
+function stripHtml(str: string): string {
+  return str.replace(/<[^>]*>/g, '').trim();
+}
+
+// Valid action types
+const VALID_ACTION_TYPES = ['enrollment', 'payment', 'inquiry'] as const;
+
 // Cleanup stale entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
   for (const key of Object.keys(rateLimitMap)) {
     if (rateLimitMap[key].resetAt < now) delete rateLimitMap[key];
+  }
+  for (const key of Object.keys(provisionLimitMap)) {
+    if (provisionLimitMap[key].resetAt < now) delete provisionLimitMap[key];
+  }
+  for (const key of Object.keys(syncLimitMap)) {
+    if (syncLimitMap[key].resetAt < now) delete syncLimitMap[key];
   }
 }, 300_000);
 
@@ -463,6 +511,12 @@ sariApiRouter.get('/stats', async (req: AuthenticatedRequest, res: Response) => 
 
 // ── POST /api/v1/auth/provision — Auto-create merchant account ──
 sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Response) => {
+  // PEN-BYAAN-01: Separate rate limit for provision
+  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
+  if (!checkProvisionLimit(keyPrefix)) {
+    return res.status(429).json({ error: 'Provision rate limit exceeded (5/hour)', errorAr: 'تجاوزت حد إنشاء الحسابات (5/ساعة)' });
+  }
+
   const { name, email, password, businessName, phone, industry, source } = req.body;
 
   if (!email || !password || !businessName) {
@@ -470,6 +524,11 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
       error: 'email, password, and businessName are required',
       errorAr: 'الإيميل وكلمة المرور واسم النشاط مطلوبة',
     });
+  }
+
+  // PEN-BYAAN-03: Email validation
+  if (!isValidEmail(String(email))) {
+    return res.status(400).json({ error: 'Invalid email format', errorAr: 'تنسيق الإيميل غير صالح' });
   }
 
   if (typeof password !== 'string' || password.length < 6) {
@@ -487,24 +546,17 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
     );
 
     if ((existingUsers as any[])?.length > 0) {
-      const existingUserId = (existingUsers as any[])[0].id;
-      const existingMerchant = await db.getMerchantByUserId(existingUserId);
-
-      if (existingMerchant) {
-        // Generate API key for existing merchant
-        const apiKeyResult = await generateApiKey(existingMerchant.id, `${source || 'external'} auto-key`);
-        return res.json({
-          success: true,
-          created: false,
-          existing: true,
-          merchantId: existingMerchant.id,
-          email: String(email).toLowerCase().trim(),
-          loginUrl: 'https://sari.app/login',
-          apiKey: apiKeyResult.key,
-          message: 'Account already exists — API key generated',
-          messageAr: 'الحساب موجود مسبقاً — تم إنشاء مفتاح API',
-        });
-      }
+      // PEN-BYAAN-02: Do NOT generate API key for existing accounts without password verification
+      // This prevents attackers from obtaining keys for other merchants' accounts
+      return res.json({
+        success: true,
+        created: false,
+        existing: true,
+        email: String(email).toLowerCase().trim(),
+        loginUrl: 'https://sari.app/login',
+        message: 'Account already exists — please login with your credentials',
+        messageAr: 'الحساب موجود مسبقاً — سجل دخول ببياناتك الحالية',
+      });
     }
 
     // Create new user
@@ -546,12 +598,19 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
     });
   } catch (e: any) {
     console.error('[SariAPI] Provision failed:', e);
-    res.status(500).json({ error: 'Provision failed', errorAr: 'فشل إنشاء الحساب', detail: e.message });
+    // PEN-BYAAN-12: Don't leak error details
+    res.status(500).json({ error: 'Provision failed', errorAr: 'فشل إنشاء الحساب' });
   }
 });
 
 // ── POST /api/v1/sync/trainees — Sync trainees from Byaan ───
 sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Response) => {
+  // PEN-BYAAN-05: Sync-specific rate limit
+  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
+  if (!checkSyncLimit(`sync_t_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
+  }
+
   const { trainees, mode } = req.body;
   if (!Array.isArray(trainees)) {
     return res.status(400).json({ error: 'trainees array is required', errorAr: 'مصفوفة المتدربين مطلوبة' });
@@ -609,13 +668,18 @@ sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Resp
   if (!tenantDomain) {
     return res.status(400).json({ error: 'tenantDomain is required', errorAr: 'نطاق التيننت مطلوب' });
   }
+  // PEN-BYAAN-04: Validate domain format
+  const cleanDomain = stripHtml(String(tenantDomain));
+  if (!isValidDomain(cleanDomain)) {
+    return res.status(400).json({ error: 'Invalid domain format', errorAr: 'تنسيق النطاق غير صالح' });
+  }
 
   try {
     const { createByaanConnection } = await import('../integrations/byaan');
-    const connection = await createByaanConnection(req.merchant.id, tenantDomain, permissions);
+    const connection = await createByaanConnection(req.merchant.id, cleanDomain, permissions);
 
     const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(req.merchant.id, 'settings_changed', `تم ربط بيان: ${tenantDomain}`, { tenantDomain });
+    await logBrainActivity(req.merchant.id, 'settings_changed', `تم ربط بيان: ${cleanDomain}`, { tenantDomain: cleanDomain });
 
     res.json({ success: true, connection });
   } catch (e) {
@@ -659,11 +723,22 @@ sariApiRouter.post('/conversions', async (req: AuthenticatedRequest, res: Respon
   if (!actionType || !productName) {
     return res.status(400).json({ error: 'actionType and productName required', errorAr: 'نوع العملية واسم المنتج مطلوبان' });
   }
+  // PEN-BYAAN-06: Validate actionType enum
+  if (!VALID_ACTION_TYPES.includes(actionType)) {
+    return res.status(400).json({ error: 'Invalid actionType. Must be: enrollment, payment, inquiry', errorAr: 'نوع العملية غير صالح' });
+  }
+  // PEN-BYAAN-08: Amount bounds check
+  const safeAmount = amount ? Math.max(0, Math.min(Number(amount) || 0, 999999)) : undefined;
 
   try {
     const { recordConversion } = await import('../integrations/byaan');
     const id = await recordConversion(req.merchant.id, {
-      customerPhone, customerName, actionType, productName, amount, externalRef,
+      customerPhone: stripHtml(String(customerPhone || '')),
+      customerName: stripHtml(String(customerName || '')),
+      actionType,
+      productName: stripHtml(String(productName)),
+      amount: safeAmount,
+      externalRef: externalRef ? stripHtml(String(externalRef)) : undefined,
     });
     res.json({ success: true, id });
   } catch (e) {

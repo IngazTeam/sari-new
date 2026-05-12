@@ -232,10 +232,10 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
     );
 
     if ((existing as any[])?.length > 0) {
-      // Step 2: Found → UPDATE
+      // PEN-BYAAN-09: Strip HTML from names
       await (dbConn as any).execute(
         `UPDATE customers SET name = ?, phone = ?, email = ? WHERE id = ?`,
-        [trainee.name.substring(0, 255), phone, trainee.email || null, (existing as any[])[0].id]
+        [trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email || null, (existing as any[])[0].id]
       );
       updated++;
       continue;
@@ -248,10 +248,9 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
     );
 
     if ((byPhone as any[])?.length > 0) {
-      // Step 4: Phone exists → Link external_id
       await (dbConn as any).execute(
         `UPDATE customers SET external_id = ?, external_source = 'byaan', name = ? WHERE id = ?`,
-        [externalId, trainee.name.substring(0, 255), (byPhone as any[])[0].id]
+        [externalId, trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), (byPhone as any[])[0].id]
       );
       linked++;
       continue;
@@ -261,7 +260,7 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
     try {
       await (dbConn as any).execute(
         `INSERT INTO customers (merchant_id, name, phone, email, external_id, external_source, created_at) VALUES (?, ?, ?, ?, ?, 'byaan', NOW())`,
-        [merchantId, trainee.name.substring(0, 255), phone, trainee.email || null, externalId]
+        [merchantId, trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email || null, externalId]
       );
       created++;
     } catch (e) {
@@ -287,11 +286,10 @@ export async function syncSettings(merchantId: number, settings: ByaanSettings):
   for (const field of ALLOWED_SETTINGS_FIELDS) {
     if (settings[field] !== undefined && settings[field] !== null) {
       const sanitized = String(settings[field]).substring(0, field === 'description' ? 2000 : 500);
-      // Map field names to DB column names
+      // PEN-BYAAN-07 FIX: Removed industry→platform_type mapping to prevent overwrite
       const colMap: Record<string, string> = {
         businessName: 'business_name',
         website: 'website_url',
-        industry: 'platform_type',
         city: 'address',
         description: 'description',
       };
@@ -348,6 +346,10 @@ export async function getConversions(merchantId: number, limit: number = 20, act
   const safeLimit = Math.min(Math.max(limit, 1), 200);
 
   if (actionType) {
+    // PEN-BYAAN-11: Validate actionType
+    const validTypes = ['enrollment', 'payment', 'inquiry'];
+    if (!validTypes.includes(actionType)) return [];
+
     const [rows] = await (dbConn as any).execute(
       `SELECT * FROM sari_conversions WHERE merchant_id = ? AND action_type = ? ORDER BY created_at DESC LIMIT ?`,
       [merchantId, actionType, safeLimit]
