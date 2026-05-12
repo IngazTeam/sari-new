@@ -7,567 +7,312 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Trash2, Star, StarOff, CheckCircle2, XCircle, Clock, AlertCircle, RefreshCw } from "lucide-react";
+import { Plus, CheckCircle2, XCircle, Clock, AlertCircle, Smartphone, Phone, Building2, Send, Loader2 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
-import i18n from '@/lib/i18n';
 
 export default function WhatsAppInstancesPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [selectedInstance, setSelectedInstance] = useState<any>(null);
-  const [testingConnection, setTestingConnection] = useState(false);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [businessName, setBusinessName] = useState("");
 
-  // Form state
-  const [formData, setFormData] = useState({
-    instanceId: "",
-    token: "",
-    apiUrl: "https://api.green-api.com",
-    phoneNumber: "",
-    webhookUrl: "",
-    isPrimary: false,
-    expiresAt: "",
-  });
-
-  // Get current merchant (not admin list)
+  // Get current merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery(
     undefined,
     { enabled: !!user }
   );
 
-  // Get instances
-  const { data: instances, refetch } = trpc.whatsappInstances.list.useQuery(
+  // Get merchant's WhatsApp requests
+  const { data: requests, refetch, isLoading } = trpc.whatsappRequests.listMine.useQuery(
     { merchantId: merchant?.id || 0 },
     { enabled: !!merchant }
   );
 
-  // Get stats
-  const { data: stats } = trpc.whatsappInstances.getStats.useQuery(
+  // Get active instances (read-only view — no sensitive data)
+  const { data: instances } = trpc.whatsappInstances.list.useQuery(
     { merchantId: merchant?.id || 0 },
     { enabled: !!merchant }
   );
 
-  // Get expiring instances
-  const { data: expiringData } = trpc.whatsappInstances.getExpiring.useQuery(
-    { merchantId: merchant?.id || 0 },
-    { enabled: !!merchant }
-  );
-
-  // Mutations
-  const createMutation = trpc.whatsappInstances.create.useMutation({
+  // Create request mutation
+  const createRequestMutation = trpc.whatsappRequests.create.useMutation({
     onSuccess: () => {
-      toast.success("t('toast.instances.msg1')}");
-      setShowAddDialog(false);
-      resetForm();
+      toast.success(t('whatsappManagement.toast.requestSent', 'تم إرسال طلب الربط بنجاح! سيتم مراجعته من قبل الإدارة.'));
+      setShowRequestDialog(false);
+      setPhoneNumber("");
+      setBusinessName("");
       refetch();
     },
     onError: (error) => {
-      toast.error(error.message || t('whatsAppInstancesPagePage.text32'));
+      toast.error(error.message || t('whatsappManagement.toast.requestFailed', 'فشل إرسال الطلب'));
     },
   });
 
-  const updateMutation = trpc.whatsappInstances.update.useMutation({
-    onSuccess: () => {
-      toast.success("t('toast.instances.msg3')}");
-      setShowEditDialog(false);
-      setSelectedInstance(null);
-      resetForm();
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message || t('whatsAppInstancesPagePage.text33'));
-    },
-  });
-
-  const setPrimaryMutation = trpc.whatsappInstances.setPrimary.useMutation({
-    onSuccess: () => {
-      toast.success("t('toast.instances.msg5')}");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message || t('whatsAppInstancesPagePage.text34'));
-    },
-  });
-
-  const deleteMutation = trpc.whatsappInstances.delete.useMutation({
-    onSuccess: () => {
-      toast.success("t('toast.instances.msg7')}");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(error.message || t('whatsAppInstancesPagePage.text35'));
-    },
-  });
-
-  const testConnectionMutation = trpc.whatsappInstances.testConnection.useMutation({
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(`t('toast.instances.msg9')}: ${data.status}`);
-      } else {
-        toast.error(`t('toast.instances.msg10')}: ${data.message}`);
-      }
-      setTestingConnection(false);
-    },
-    onError: (error) => {
-      toast.error(error.message || t('whatsAppInstancesPagePage.text36'));
-      setTestingConnection(false);
-    },
-  });
-
-  const resetForm = () => {
-    setFormData({
-      instanceId: "",
-      token: "",
-      apiUrl: "https://api.green-api.com",
-      phoneNumber: "",
-      webhookUrl: "",
-      isPrimary: false,
-      expiresAt: "",
-    });
-  };
-
-  const handleAdd = () => {
+  const handleSubmitRequest = () => {
     if (!merchant) return;
-    createMutation.mutate({
+    createRequestMutation.mutate({
       merchantId: merchant.id,
-      ...formData,
+      phoneNumber: phoneNumber || undefined,
+      businessName: businessName || undefined,
     });
-  };
-
-  const handleUpdate = () => {
-    if (!merchant || !selectedInstance) return;
-    updateMutation.mutate({
-      id: selectedInstance.id,
-      merchantId: merchant.id,
-      ...formData,
-    });
-  };
-
-  const handleSetPrimary = (instanceId: number) => {
-    if (!merchant) return;
-    setPrimaryMutation.mutate({
-      id: instanceId,
-      merchantId: merchant.id,
-    });
-  };
-
-  const handleDelete = (instanceId: number) => {
-    if (!merchant) return;
-    if (confirm("هل أنت متأكد من حذف هذا Instance؟")) {
-      deleteMutation.mutate({
-        id: instanceId,
-        merchantId: merchant.id,
-      });
-    }
-  };
-
-  const handleTestConnection = () => {
-    setTestingConnection(true);
-    testConnectionMutation.mutate({
-      instanceId: formData.instanceId,
-      token: formData.token,
-      apiUrl: formData.apiUrl,
-    });
-  };
-
-  const handleEdit = (instance: any) => {
-    setSelectedInstance(instance);
-    setFormData({
-      instanceId: instance.instanceId,
-      token: instance.token,
-      apiUrl: instance.apiUrl || "https://api.green-api.com",
-      phoneNumber: instance.phoneNumber || "",
-      webhookUrl: instance.webhookUrl || "",
-      isPrimary: instance.isPrimary,
-      expiresAt: instance.expiresAt ? new Date(instance.expiresAt).toISOString().split('T')[0] : "",
-    });
-    setShowEditDialog(true);
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active":
-        return <Badge className="bg-green-500"><CheckCircle2 className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text0')}</Badge>;
-      case "inactive":
-        return <Badge variant="secondary"><XCircle className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text1')}</Badge>;
+      case "approved":
+        return <Badge className="bg-blue-500"><CheckCircle2 className="w-3 h-3 ml-1" />{t('whatsappManagement.status.approved', 'تمت الموافقة')}</Badge>;
+      case "connected":
+      case "completed":
+        return <Badge className="bg-green-500"><CheckCircle2 className="w-3 h-3 ml-1" />{t('whatsappManagement.status.connected', 'متصل')}</Badge>;
+      case "rejected":
+        return <Badge variant="destructive"><XCircle className="w-3 h-3 ml-1" />{t('whatsappManagement.status.rejected', 'مرفوض')}</Badge>;
       case "pending":
-        return <Badge variant="outline"><Clock className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text2')}</Badge>;
-      case "expired":
-        return <Badge variant="destructive"><AlertCircle className="w-3 h-3 ml-1" />{t('whatsAppInstancesPagePage.text3')}</Badge>;
+        return <Badge variant="outline" className="border-orange-400 text-orange-600"><Clock className="w-3 h-3 ml-1" />{t('whatsappManagement.status.pending', 'قيد المراجعة')}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
   };
 
+  const hasPendingRequest = requests?.some((r: any) => r.status === 'pending');
+  const activeInstances = instances?.filter((i: any) => i.status === 'active') || [];
+
   if (!merchant) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-muted-foreground">{t('whatsAppInstancesPagePage.text4')}</p>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">{t('whatsAppInstancesPagePage.text5')}</h1>
+          <h1 className="text-3xl font-bold">{t('whatsappManagement.title', 'إدارة أرقام الواتساب')}</h1>
           <p className="text-muted-foreground mt-1">
-            {t('whatsAppInstancesPagePage.text37')}
+            {t('whatsappManagement.subtitle', 'أضف أرقام واتساب جديدة وتابع حالة طلباتك')}
           </p>
         </div>
-        <Button onClick={() => setShowAddDialog(true)}>
+        <Button
+          onClick={() => setShowRequestDialog(true)}
+          disabled={hasPendingRequest}
+        >
           <Plus className="w-4 h-4 ml-2" />
-          {t('whatsAppInstancesPagePage.text42')}
+          {t('whatsappManagement.addNumber', 'طلب ربط رقم جديد')}
         </Button>
       </div>
 
-      {/* Expiring Instances Alert */}
-      {expiringData && (expiringData.expiring1Day.length > 0 || expiringData.expiring3Days.length > 0 || expiringData.expired.length > 0) && (
-        <Card className="border-red-500 bg-red-50">
-          <CardHeader>
-            <CardTitle className="text-red-700 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
-              {t('whatsAppInstancesPagePage.text43')}
-            </CardTitle>
+      {/* Active Numbers Summary */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">{t('whatsappManagement.stats.activeNumbers', 'الأرقام المفعّلة')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {expiringData.expired.length > 0 && (
-                <div className="flex items-center gap-2 text-red-700">
-                  <XCircle className="w-4 h-4" />
-                  <span className="font-semibold">{expiringData.expired.length}</span>
-                  <span>{t('whatsAppInstancesPagePage.text6')}</span>
+            <div className="text-2xl font-bold text-green-600">{activeInstances.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">{t('whatsappManagement.stats.pendingRequests', 'طلبات قيد المراجعة')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-500">{requests?.filter((r: any) => r.status === 'pending').length || 0}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">{t('whatsappManagement.stats.totalRequests', 'إجمالي الطلبات')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{requests?.length || 0}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Active Connected Numbers */}
+      {activeInstances.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-green-600" />
+              {t('whatsappManagement.connectedNumbers', 'الأرقام المتصلة')}
+            </CardTitle>
+            <CardDescription>{t('whatsappManagement.connectedDesc', 'أرقام الواتساب النشطة والمتصلة بحسابك')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {activeInstances.map((instance: any) => (
+                <div key={instance.id} className={`flex items-center justify-between p-4 rounded-lg border ${instance.isPrimary ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <Phone className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{instance.phoneNumber || t('whatsappManagement.noPhone', 'رقم غير محدد')}</span>
+                        {instance.isPrimary && (
+                          <Badge variant="outline" className="text-xs">{t('whatsappManagement.primary', 'الرقم الأساسي')}</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {t('whatsappManagement.connectedSince', 'متصل منذ')}: {instance.connectedAt ? new Date(instance.connectedAt).toLocaleDateString('ar-SA') : new Date(instance.createdAt).toLocaleDateString('ar-SA')}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge className="bg-green-500">{t('whatsappManagement.status.active', 'نشط')}</Badge>
                 </div>
-              )}
-              {expiringData.expiring1Day.length > 0 && (
-                <div className="flex items-center gap-2 text-orange-700">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-semibold">{expiringData.expiring1Day.length}</span>
-                  <span>{t('whatsAppInstancesPagePage.text7')}</span>
-                </div>
-              )}
-              {expiringData.expiring3Days.length > 0 && (
-                <div className="flex items-center gap-2 text-yellow-700">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-semibold">{expiringData.expiring3Days.length}</span>
-                  <span>{t('whatsAppInstancesPagePage.text8')}</span>
-                </div>
-              )}
-              {expiringData.expiring7Days.length > 0 && (
-                <div className="flex items-center gap-2 text-primary">
-                  <Clock className="w-4 h-4" />
-                  <span className="font-semibold">{expiringData.expiring7Days.length}</span>
-                  <span>{t('whatsAppInstancesPagePage.text9')}</span>
-                </div>
-              )}
+              ))}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text10')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text11')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text12')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-600">{stats.inactive}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">{t('whatsAppInstancesPagePage.text13')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.expired}</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Instances List */}
+      {/* Requests History */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('whatsAppInstancesPagePage.text14')}</CardTitle>
-          <CardDescription>{t('whatsAppInstancesPagePage.text15')}</CardDescription>
+          <CardTitle>{t('whatsappManagement.requestsHistory', 'سجل الطلبات')}</CardTitle>
+          <CardDescription>{t('whatsappManagement.requestsHistoryDesc', 'جميع طلبات ربط أرقام الواتساب الخاصة بك')}</CardDescription>
         </CardHeader>
         <CardContent>
-          {!instances || instances.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">{t('whatsAppInstancesPagePage.text16')}</p>
-              <Button onClick={() => setShowAddDialog(true)} className="mt-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : !requests || requests.length === 0 ? (
+            <div className="text-center py-12 space-y-4">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                <Smartphone className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium">{t('whatsappManagement.noRequests', 'لا توجد طلبات بعد')}</p>
+                <p className="text-sm text-muted-foreground">{t('whatsappManagement.noRequestsDesc', 'قدّم طلب ربط رقم واتساب جديد للبدء')}</p>
+              </div>
+              <Button onClick={() => setShowRequestDialog(true)}>
                 <Plus className="w-4 h-4 ml-2" />
-                {t('whatsAppInstancesPagePage.text44')}
+                {t('whatsappManagement.addNumber', 'طلب ربط رقم جديد')}
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              {instances.map((instance) => (
-                <Card key={instance.id} className={instance.isPrimary ? "border-blue-500 border-2" : ""}>
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-lg">{instance.instanceId}</h3>
-                          {instance.isPrimary && (
-                            <Badge className="bg-primary/100">
-                              <Star className="w-3 h-3 ml-1 fill-current" />
-                              Primary
-                            </Badge>
-                          )}
-                          {getStatusBadge(instance.status)}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text17')}</span>
-                            <span className="mr-2 font-medium">{instance.phoneNumber || "غير محدد"}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">API URL:</span>
-                            <span className="mr-2 font-mono text-xs">{instance.apiUrl}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text19')}</span>
-                            <span className="mr-2">{new Date(instance.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
-                          </div>
-                          {instance.expiresAt && (
-                            <div>
-                              <span className="text-muted-foreground">{t('whatsAppInstancesPagePage.text20')}</span>
-                              <span className="mr-2">{new Date(instance.expiresAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2">
-                        {!instance.isPrimary && instance.status === 'active' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSetPrimary(instance.id)}
-                          >
-                            <Star className="w-4 h-4 ml-1" />
-                            {t('whatsAppInstancesPagePage.text45')}
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(instance)}
-                        >
-                          {t('whatsAppInstancesPagePage.text38')}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDelete(instance.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+            <div className="space-y-3">
+              {requests.map((request: any) => (
+                <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border">
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      request.status === 'pending' ? 'bg-orange-100' :
+                      request.status === 'approved' || request.status === 'completed' ? 'bg-green-100' :
+                      'bg-red-100'
+                    }`}>
+                      {request.status === 'pending' ? <Clock className="w-5 h-5 text-orange-600" /> :
+                       request.status === 'approved' || request.status === 'completed' ? <CheckCircle2 className="w-5 h-5 text-green-600" /> :
+                       <XCircle className="w-5 h-5 text-red-600" />}
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{request.phoneNumber || t('whatsappManagement.newNumberRequest', 'طلب رقم جديد')}</span>
+                        {getStatusBadge(request.status)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(request.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                      {request.rejectionReason && (
+                        <p className="text-sm text-red-600 mt-1">
+                          <AlertCircle className="w-3 h-3 inline ml-1" />
+                          {t('whatsappManagement.rejectionReason', 'سبب الرفض')}: {request.rejectionReason}
+                        </p>
+                      )}
+                      {request.adminNotes && request.status === 'approved' && (
+                        <p className="text-sm text-blue-600 mt-1">
+                          {t('whatsappManagement.adminNotes', 'ملاحظات الإدارة')}: {request.adminNotes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Add Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-2xl">
+      {/* Request Dialog — CLEAN: No Instance ID, API Token, or Green API details */}
+      <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('whatsAppInstancesPagePage.text21')}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Phone className="w-5 h-5 text-green-600" />
+              {t('whatsappManagement.dialog.title', 'طلب ربط رقم واتساب')}
+            </DialogTitle>
             <DialogDescription>
-              {t('whatsAppInstancesPagePage.text46')}
+              {t('whatsappManagement.dialog.description', 'أدخل رقم الواتساب الذي تريد ربطه. سيتم مراجعة طلبك من قبل فريق الإدارة وتفعيله خلال 24 ساعة.')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="instanceId">Instance ID *</Label>
-              <Input
-                id="instanceId"
-                value={formData.instanceId}
-                onChange={(e) => setFormData({ ...formData, instanceId: e.target.value })}
-                placeholder="1234567890"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="token">API Token *</Label>
-              <Input
-                id="token"
-                type="password"
-                value={formData.token}
-                onChange={(e) => setFormData({ ...formData, token: e.target.value })}
-                placeholder="your-api-token"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="apiUrl">API URL</Label>
-              <Input
-                id="apiUrl"
-                value={formData.apiUrl}
-                onChange={(e) => setFormData({ ...formData, apiUrl: e.target.value })}
-                placeholder="https://api.green-api.com"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="phoneNumber">{t('whatsAppInstancesPagePage.text22')}</Label>
+              <Label htmlFor="phoneNumber" className="flex items-center gap-1">
+                <Phone className="w-4 h-4" />
+                {t('whatsappManagement.dialog.phoneLabel', 'رقم الواتساب')}
+              </Label>
               <Input
                 id="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 placeholder="+966500000000"
+                dir="ltr"
+                className="text-left"
               />
+              <p className="text-xs text-muted-foreground">
+                {t('whatsappManagement.dialog.phoneHint', 'أدخل الرقم مع مفتاح الدولة (مثال: +966)')}
+              </p>
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="webhookUrl">{t('whatsAppInstancesPagePage.text23')}</Label>
-              <Input
-                id="webhookUrl"
-                value={formData.webhookUrl}
-                onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
-                placeholder="https://your-domain.com/webhook"
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="expiresAt">{t('whatsAppInstancesPagePage.text24')}</Label>
-              <Input
-                id="expiresAt"
-                type="date"
-                value={formData.expiresAt}
-                onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isPrimary"
-                checked={formData.isPrimary}
-                onChange={(e) => setFormData({ ...formData, isPrimary: e.target.checked })}
-                className="rounded"
-              />
-              <Label htmlFor="isPrimary" className="cursor-pointer">
-                {t('whatsAppInstancesPagePage.text47')}
+              <Label htmlFor="businessName" className="flex items-center gap-1">
+                <Building2 className="w-4 h-4" />
+                {t('whatsappManagement.dialog.businessLabel', 'اسم النشاط التجاري (اختياري)')}
               </Label>
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={handleTestConnection}
-              disabled={!formData.instanceId || !formData.token || testingConnection}
-            >
-              <RefreshCw className={`w-4 h-4 ml-2 ${testingConnection ? 'animate-spin' : ''}`} />
-              {t('whatsAppInstancesPagePage.text39')}
-            </Button>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowAddDialog(false); resetForm(); }}>
-              {t('whatsAppInstancesPagePage.text40')}
-            </Button>
-            <Button
-              onClick={handleAdd}
-              disabled={!formData.instanceId || !formData.token || createMutation.isPending}
-            >
-              {createMutation.isPending ? t('whatsAppInstancesPagePage.text28') : t('whatsAppInstancesPagePage.text29')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{t('whatsAppInstancesPagePage.text25')}</DialogTitle>
-            <DialogDescription>
-              {t('whatsAppInstancesPagePage.text48')}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="edit-instanceId">Instance ID</Label>
               <Input
-                id="edit-instanceId"
-                value={formData.instanceId}
-                onChange={(e) => setFormData({ ...formData, instanceId: e.target.value })}
+                id="businessName"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder={merchant?.businessName || t('whatsappManagement.dialog.businessPlaceholder', 'اسم المتجر أو الشركة')}
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="edit-token">API Token</Label>
-              <Input
-                id="edit-token"
-                type="password"
-                value={formData.token}
-                onChange={(e) => setFormData({ ...formData, token: e.target.value })}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="edit-phoneNumber">{t('whatsAppInstancesPagePage.text26')}</Label>
-              <Input
-                id="edit-phoneNumber"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label htmlFor="edit-expiresAt">{t('whatsAppInstancesPagePage.text27')}</Label>
-              <Input
-                id="edit-expiresAt"
-                type="date"
-                value={formData.expiresAt}
-                onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
-              />
+            {/* Info box */}
+            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+              <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                {t('whatsappManagement.dialog.info', 'بعد إرسال الطلب، سيقوم فريق الدعم بمراجعته وتفعيل الرقم. ستتلقى إشعاراً عند التفعيل.')}
+              </p>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowEditDialog(false); setSelectedInstance(null); resetForm(); }}>
-              {t('whatsAppInstancesPagePage.text41')}
+            <Button variant="outline" onClick={() => setShowRequestDialog(false)}>
+              {t('common.cancel', 'إلغاء')}
             </Button>
             <Button
-              onClick={handleUpdate}
-              disabled={updateMutation.isPending}
+              onClick={handleSubmitRequest}
+              disabled={createRequestMutation.isPending}
             >
-              {updateMutation.isPending ? t('whatsAppInstancesPagePage.text30') : t('whatsAppInstancesPagePage.text31')}
+              {createRequestMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                  {t('whatsappManagement.dialog.sending', 'جاري الإرسال...')}
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 ml-2" />
+                  {t('whatsappManagement.dialog.submit', 'إرسال الطلب')}
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

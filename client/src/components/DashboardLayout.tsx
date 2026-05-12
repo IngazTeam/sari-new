@@ -134,7 +134,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
 
   // 3. المساعد الذكي والواتساب (AI & Channels)
   { icon: Sparkles, label: t('sidebar.merchant.aiHub', 'مركز المساعد الذكي'), path: "/merchant/ai-hub", group: 'channels' },
-  { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances', 'أرقام الواتساب'), path: "/merchant/whatsapp-instances", group: 'channels' },
+  { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances', 'إدارة أرقام الواتساب'), path: "/merchant/whatsapp-instances", group: 'channels' },
   { icon: Bot, label: t('sidebar.merchant.botSettings', 'إعدادات البوت'), path: "/merchant/bot-settings", group: 'channels' },
   { icon: Activity, label: t('sidebar.merchant.sariPersonality', 'شخصية ساري'), path: "/merchant/sari-personality", group: 'channels' },
   { icon: Zap, label: t('sidebar.merchant.quickResponses', 'الردود السريعة'), path: "/merchant/quick-responses", group: 'channels' },
