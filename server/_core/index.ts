@@ -363,6 +363,12 @@ async function startServer() {
 
         console.log(`[KnowledgeDocs] ✅ Extraction completed: merchant=${merchant.id}, chars=${text.length}, pages=${pageCount || 'N/A'}`);
 
+        // Log to Sari Brain activity
+        try {
+          const { logBrainActivity } = await import('../routers-sari-brain');
+          await logBrainActivity(merchant.id, 'file_uploaded', `تم رفع ملف "${sanitizedName}" (${fileType})`, { fileName: sanitizedName, fileType, textLength: text.length });
+        } catch (e) { /* skip */ }
+
         return res.json({
           success: true,
           doc: {

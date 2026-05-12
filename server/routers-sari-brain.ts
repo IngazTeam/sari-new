@@ -9,7 +9,7 @@ import { protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
 // Activity log helper — logs brain events via raw SQL (table created lazily)
-async function logBrainActivity(merchantId: number, actionType: string, description: string, details?: any) {
+export async function logBrainActivity(merchantId: number, actionType: string, description: string, details?: any) {
   try {
     const dbConn = await db.getDb();
     if (!dbConn) return;

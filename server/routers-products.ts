@@ -702,6 +702,12 @@ export const productsRouter = router({
                 }
             }
 
+            // Log to Sari Brain activity
+            try {
+                const { logBrainActivity } = await import('./routers-sari-brain');
+                await logBrainActivity(merchant.id, 'products_imported', `تم استيراد ${successCount} منتج من ملف CSV`, { count: successCount, failed: errorCount });
+            } catch (e) { /* skip */ }
+
             return {
                 success: true,
                 imported: successCount,
@@ -961,6 +967,12 @@ export const productsRouter = router({
             } catch (error) {
                 console.error('[Products] Error creating Google Sheet:', error);
             }
+
+            // Log to Sari Brain activity
+            try {
+                const { logBrainActivity } = await import('./routers-sari-brain');
+                await logBrainActivity(merchant.id, 'products_imported', `تم استيراد ${successCount} منتج من ملف Excel`, { count: successCount, failed: errorCount, autoDetected });
+            } catch (e) { /* skip */ }
 
             return {
                 success: true,
