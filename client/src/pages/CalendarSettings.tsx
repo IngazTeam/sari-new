@@ -73,9 +73,7 @@ export default function CalendarSettings() {
     <div className="container max-w-4xl py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('calendarSettingsPage.text1')}</h1>
-        <p className="text-muted-foreground">
-          قم بربط حسابك في Google Calendar لإدارة المواعيد تلقائياً
-        </p>
+        <p className="text-muted-foreground">{t('calendarSettings.auto_0')}</p>
       </div>
 
       {/* حالة الاتصال */}
@@ -84,9 +82,7 @@ export default function CalendarSettings() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                حالة الاتصال
-              </CardTitle>
+                <Calendar className="h-5 w-5" />{t('calendarSettings.auto_1')}</CardTitle>
               <CardDescription>
                 {status?.connected 
                   ? "متصل بـ Google Calendar" 
@@ -95,14 +91,10 @@ export default function CalendarSettings() {
             </div>
             {status?.connected ? (
               <Badge variant="default" className="bg-green-500">
-                <CheckCircle2 className="h-4 w-4 mr-1" />
-                متصل
-              </Badge>
+                <CheckCircle2 className="h-4 w-4 mr-1" />{t('calendarSettings.auto_2')}</Badge>
             ) : (
               <Badge variant="secondary">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                غير متصل
-              </Badge>
+                <AlertCircle className="h-4 w-4 mr-1" />{t('calendarSettings.auto_3')}</Badge>
             )}
           </div>
         </CardHeader>
@@ -124,9 +116,7 @@ export default function CalendarSettings() {
               
               <Alert>
                 <CheckCircle2 className="h-4 w-4" />
-                <AlertDescription>
-                  سيتم مزامنة جميع المواعيد تلقائياً مع Google Calendar الخاص بك
-                </AlertDescription>
+                <AlertDescription>{t('calendarSettings.auto_4')}</AlertDescription>
               </Alert>
 
               <Button 
@@ -136,14 +126,10 @@ export default function CalendarSettings() {
               >
                 {disconnectMutation.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    جاري الفصل...
-                  </>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('calendarSettings.auto_5')}</>
                 ) : (
                   <>
-                    <Unlink className="h-4 w-4 mr-2" />
-                    فصل الاتصال
-                  </>
+                    <Unlink className="h-4 w-4 mr-2" />{t('calendarSettings.auto_6')}</>
                 )}
               </Button>
             </div>
@@ -151,9 +137,7 @@ export default function CalendarSettings() {
             <div className="space-y-4">
               <Alert>
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  قم بربط حسابك في Google Calendar لتمكين:
-                  <ul className="list-disc list-inside mt-2 mr-4">
+                <AlertDescription>{t('calendarSettings.auto_7')}<ul className="list-disc list-inside mt-2 mr-4">
                     <li>{t('calendarSettingsPage.text4')}</li>
                     <li>{t('calendarSettingsPage.text5')}</li>
                     <li>{t('calendarSettingsPage.text6')}</li>
@@ -169,14 +153,10 @@ export default function CalendarSettings() {
               >
                 {isConnecting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    جاري الاتصال...
-                  </>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('calendarSettings.auto_8')}</>
                 ) : (
                   <>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    ربط Google Calendar
-                  </>
+                    <ExternalLink className="h-4 w-4 mr-2" />{t('calendarSettings.auto_9')}</>
                 )}
               </Button>
             </div>
@@ -189,18 +169,14 @@ export default function CalendarSettings() {
         <Card>
           <CardHeader>
             <CardTitle>{t('calendarSettingsPage.text8')}</CardTitle>
-            <CardDescription>
-              سيتم إرسال تذكيرات تلقائية عبر WhatsApp للعملاء
-            </CardDescription>
+            <CardDescription>{t('calendarSettings.auto_10')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <p className="font-medium">{t('calendarSettingsPage.text9')}</p>
-                  <p className="text-sm text-muted-foreground">
-                    يتم الإرسال قبل يوم من الموعد
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t('calendarSettings.auto_11')}</p>
                 </div>
                 <Badge variant="outline" className="bg-green-50">{t('calendarSettingsPage.text10')}</Badge>
               </div>
@@ -208,17 +184,13 @@ export default function CalendarSettings() {
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                   <p className="font-medium">{t('calendarSettingsPage.text11')}</p>
-                  <p className="text-sm text-muted-foreground">
-                    يتم الإرسال قبل ساعة من الموعد
-                  </p>
+                  <p className="text-sm text-muted-foreground">{t('calendarSettings.auto_12')}</p>
                 </div>
                 <Badge variant="outline" className="bg-green-50">{t('calendarSettingsPage.text12')}</Badge>
               </div>
 
               <Alert>
-                <AlertDescription className="text-sm">
-                  💡 نصيحة: التذكيرات تساعد على تقليل نسبة عدم الحضور بنسبة تصل إلى 40%
-                </AlertDescription>
+                <AlertDescription className="text-sm">{t('calendarSettings.auto_13')}</AlertDescription>
               </Alert>
             </div>
           </CardContent>

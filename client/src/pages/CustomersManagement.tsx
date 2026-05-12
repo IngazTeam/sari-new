@@ -74,17 +74,11 @@ export default function CustomersManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Users className="w-8 h-8" />
-            إدارة العملاء
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            عرض وإدارة جميع عملائك في مكان واحد
-          </p>
+            <Users className="w-8 h-8" />{t('customersManagement.auto_0')}</h1>
+          <p className="text-muted-foreground mt-2">{t('customersManagement.auto_1')}</p>
         </div>
         <Button onClick={handleExport} variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          تصدير البيانات
-        </Button>
+          <Download className="w-4 h-4 mr-2" />{t('customersManagement.auto_2')}</Button>
       </div>
 
       {/* Stats Cards */}
@@ -225,9 +219,7 @@ export default function CustomersManagement() {
                       </TableCell>
                       <TableCell>
                         <Link href={`/merchant/customers/${encodeURIComponent(customer.customerPhone)}`}>
-                          <Button variant="ghost" size="sm">
-                            عرض التفاصيل
-                          </Button>
+                          <Button variant="ghost" size="sm">{t('customersManagement.auto_3')}</Button>
                         </Link>
                       </TableCell>
                     </TableRow>

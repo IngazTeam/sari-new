@@ -121,9 +121,7 @@ export default function LoyaltySettings() {
                     setFormData({ ...formData, pointsPerCurrency: parseInt(e.target.value) })
                   }
                 />
-                <p className="text-sm text-muted-foreground">
-                  كم نقطة يحصل عليها العميل مقابل كل 1 ريال
-                </p>
+                <p className="text-sm text-muted-foreground">{t('loyaltySettings.auto_0')}</p>
               </div>
 
               <div className="space-y-2">
@@ -137,9 +135,7 @@ export default function LoyaltySettings() {
                     setFormData({ ...formData, currencyPerPoint: parseInt(e.target.value) })
                   }
                 />
-                <p className="text-sm text-muted-foreground">
-                  قيمة النقطة بالريال عند الاستبدال
-                </p>
+                <p className="text-sm text-muted-foreground">{t('loyaltySettings.auto_1')}</p>
               </div>
             </div>
 
@@ -154,9 +150,7 @@ export default function LoyaltySettings() {
                   setFormData({ ...formData, pointsExpiryDays: parseInt(e.target.value) })
                 }
               />
-              <p className="text-sm text-muted-foreground">
-                0 = لا تنتهي صلاحية النقاط
-              </p>
+              <p className="text-sm text-muted-foreground">{t('loyaltySettings.auto_2')}</p>
             </div>
           </CardContent>
         </Card>
@@ -171,9 +165,7 @@ export default function LoyaltySettings() {
             {/* مكافأة الإحالة */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="enableReferralBonus" className="text-base">
-                  مكافأة الإحالة
-                </Label>
+                <Label htmlFor="enableReferralBonus" className="text-base">{t('loyaltySettings.auto_3')}</Label>
                 <Switch
                   id="enableReferralBonus"
                   checked={formData.enableReferralBonus === 1}
@@ -201,9 +193,7 @@ export default function LoyaltySettings() {
             {/* مكافأة التقييم */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="enableReviewBonus" className="text-base">
-                  مكافأة التقييم
-                </Label>
+                <Label htmlFor="enableReviewBonus" className="text-base">{t('loyaltySettings.auto_4')}</Label>
                 <Switch
                   id="enableReviewBonus"
                   checked={formData.enableReviewBonus === 1}
@@ -231,9 +221,7 @@ export default function LoyaltySettings() {
             {/* مكافأة عيد الميلاد */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="enableBirthdayBonus" className="text-base">
-                  مكافأة عيد الميلاد
-                </Label>
+                <Label htmlFor="enableBirthdayBonus" className="text-base">{t('loyaltySettings.auto_5')}</Label>
                 <Switch
                   id="enableBirthdayBonus"
                   checked={formData.enableBirthdayBonus === 1}
@@ -269,14 +257,10 @@ export default function LoyaltySettings() {
           >
             {updateSettings.isPending ? (
               <>
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                جاري الحفظ...
-              </>
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('loyaltySettings.auto_6')}</>
             ) : (
               <>
-                <Save className="ml-2 h-4 w-4" />
-                حفظ الإعدادات
-              </>
+                <Save className="ml-2 h-4 w-4" />{t('loyaltySettings.auto_7')}</>
             )}
           </Button>
         </div>

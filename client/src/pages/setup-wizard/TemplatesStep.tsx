@@ -73,9 +73,7 @@ export default function TemplatesStep({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <p className="text-gray-600">
-          وفر الوقت! اختر قالباً جاهزاً يناسب نشاطك وسنملأ كل شيء تلقائياً
-        </p>
+        <p className="text-gray-600">{t('templatesStep.auto_0')}</p>
       </div>
 
       {/* Language Switcher */}
@@ -130,9 +128,7 @@ export default function TemplatesStep({
                   {/* Suitable For */}
                   {template.suitableFor && (
                     <div className="pt-2 border-t">
-                      <p className="text-xs font-semibold text-gray-500 mb-1">
-                        مناسب لـ:
-                      </p>
+                      <p className="text-xs font-semibold text-gray-500 mb-1">{t('templatesStep.auto_1')}</p>
                       <p className="text-xs text-gray-600">{template.suitableFor}</p>
                     </div>
                   )}
@@ -162,9 +158,7 @@ export default function TemplatesStep({
           <Button
             onClick={handleSkip}
             className="mt-4 bg-emerald-600 hover:bg-emerald-700"
-          >
-            تخطي والمتابعة
-            <ArrowRight className="mr-2 h-4 w-4" />
+          >{t('templatesStep.auto_2')}<ArrowRight className="mr-2 h-4 w-4" />
           </Button>
         </div>
       )}
@@ -172,9 +166,7 @@ export default function TemplatesStep({
       {/* Actions - only show if templates exist */}
       {hasTemplates && (
         <div className="flex items-center justify-between pt-4 border-t">
-          <Button variant="ghost" onClick={handleSkip}>
-            تخطي - سأضيف يدوياً
-          </Button>
+          <Button variant="ghost" onClick={handleSkip}>{t('templatesStep.auto_3')}</Button>
 
           <Button
             size="lg"
@@ -184,13 +176,9 @@ export default function TemplatesStep({
           >
             {isApplying ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                جاري التطبيق...
-              </>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />{t('templatesStep.auto_4')}</>
             ) : (
-              <>
-                تطبيق القالب
-                <ArrowRight className="mr-2 h-5 w-5" />
+              <>{t('templatesStep.auto_5')}<ArrowRight className="mr-2 h-5 w-5" />
               </>
             )}
           </Button>
@@ -200,8 +188,7 @@ export default function TemplatesStep({
       {/* Info Box */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
         <p className="text-sm text-emerald-800">
-          💡 <strong>{t('wizardTemplatesStepPage.text5')}</strong> يمكنك تعديل أو حذف أي شيء من القالب لاحقاً
-        </p>
+          💡 <strong>{t('wizardTemplatesStepPage.text5')}</strong>{t('templatesStep.auto_6')}</p>
       </div>
     </div>
   );

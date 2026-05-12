@@ -149,9 +149,7 @@ export default function SheetsReports() {
       <div className="container max-w-6xl py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">{t('sheetsReportsPage.text0')}</h1>
-          <p className="text-muted-foreground">
-            توليد وإرسال التقارير إلى Google Sheets و WhatsApp
-          </p>
+          <p className="text-muted-foreground">{t('sheetsReports.auto_0')}</p>
         </div>
 
         {/* بطاقات التقارير */}
@@ -180,9 +178,7 @@ export default function SheetsReports() {
                     variant="outline"
                   >
                     {isGenerating && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                    <FileText className="w-4 h-4 ml-2" />
-                    توليد الآن
-                  </Button>
+                    <FileText className="w-4 h-4 ml-2" />{t('sheetsReports.auto_1')}</Button>
 
                   <Button
                     onClick={() => handleSendReport(report.title.split(' ')[1])}
@@ -190,9 +186,7 @@ export default function SheetsReports() {
                     className="w-full"
                   >
                     {isSending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                    <Send className="w-4 h-4 ml-2" />
-                    إرسال عبر WhatsApp
-                  </Button>
+                    <Send className="w-4 h-4 ml-2" />{t('sheetsReports.auto_2')}</Button>
                 </div>
 
                 <div className="mt-4 pt-4 border-t">

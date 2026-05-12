@@ -135,9 +135,7 @@ export default function SallaIntegration() {
     <div className="container max-w-4xl py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('sallaIntegrationPage.text0')}</h1>
-        <p className="text-muted-foreground mt-2">
-          قم بربط متجرك في Salla لمزامنة المنتجات تلقائياً
-        </p>
+        <p className="text-muted-foreground mt-2">{t('sallaIntegration.auto_0')}</p>
       </div>
 
       {/* Connection Status Card */}
@@ -226,9 +224,7 @@ export default function SallaIntegration() {
         <Card>
           <CardHeader>
             <CardTitle>{t('sallaIntegrationPage.text2')}</CardTitle>
-            <CardDescription>
-              أدخل بيانات متجرك لبدء المزامنة التلقائية
-            </CardDescription>
+            <CardDescription>{t('sallaIntegration.auto_1')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert>
@@ -275,14 +271,10 @@ export default function SallaIntegration() {
             >
               {isConnecting ? (
                 <>
-                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                  جاري الربط...
-                </>
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />{t('sallaIntegration.auto_2')}</>
               ) : (
                 <>
-                  <Store className="h-4 w-4 ml-2" />
-                  ربط المتجر
-                </>
+                  <Store className="h-4 w-4 ml-2" />{t('sallaIntegration.auto_3')}</>
               )}
             </Button>
           </CardContent>
@@ -352,10 +344,8 @@ export default function SallaIntegration() {
               <Link2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <CardTitle>روابط OAuth & Webhook</CardTitle>
-              <CardDescription>
-                استخدم هذه الروابط عند إعداد تطبيقك في لوحة تحكم سلة
-              </CardDescription>
+              <CardTitle>{t('sallaIntegration.auto_4')}</CardTitle>
+              <CardDescription>{t('sallaIntegration.auto_5')}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -374,7 +364,7 @@ export default function SallaIntegration() {
                 variant="outline"
                 size="icon"
                 onClick={() => handleCopy(callbackUrl, 'callback')}
-                title="نسخ الرابط"
+                title={t('sallaIntegration.auto_12')}
               >
                 {copiedField === 'callback' ? (
                   <CheckCheck className="h-4 w-4 text-green-500" />
@@ -383,9 +373,7 @@ export default function SallaIntegration() {
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              أضف هذا الرابط كـ Redirect URI في إعدادات تطبيق سلة
-            </p>
+            <p className="text-xs text-muted-foreground">{t('sallaIntegration.auto_6')}</p>
           </div>
 
           <div className="space-y-2">
@@ -402,7 +390,7 @@ export default function SallaIntegration() {
                 variant="outline"
                 size="icon"
                 onClick={() => handleCopy(webhookUrl, 'webhook')}
-                title="نسخ الرابط"
+                title={t('sallaIntegration.auto_13')}
               >
                 {copiedField === 'webhook' ? (
                   <CheckCheck className="h-4 w-4 text-green-500" />
@@ -411,9 +399,7 @@ export default function SallaIntegration() {
                 )}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
-              أضف هذا الرابط في إعدادات Webhook في لوحة تحكم سلة لاستقبال التحديثات الفورية
-            </p>
+            <p className="text-xs text-muted-foreground">{t('sallaIntegration.auto_7')}</p>
           </div>
         </CardContent>
       </Card>
@@ -429,32 +415,28 @@ export default function SallaIntegration() {
               1
             </div>
             <div>
-              <strong>{t('sallaIntegrationPage.text15')}</strong> تتم مرة واحدة يومياً في الساعة 3 صباحاً لجلب جميع المنتجات والأسعار والصور
-            </div>
+              <strong>{t('sallaIntegrationPage.text15')}</strong>{t('sallaIntegration.auto_8')}</div>
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
               2
             </div>
             <div>
-              <strong>{t('sallaIntegrationPage.text16')}</strong> تتم كل ساعة لتحديث الكميات المتوفرة فقط
-            </div>
+              <strong>{t('sallaIntegrationPage.text16')}</strong>{t('sallaIntegration.auto_9')}</div>
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
               3
             </div>
             <div>
-              <strong>{t('sallaIntegrationPage.text17')}</strong> المنتجات تُحفظ في قاعدة بيانات ساري للرد السريع على العملاء
-            </div>
+              <strong>{t('sallaIntegrationPage.text17')}</strong>{t('sallaIntegration.auto_10')}</div>
           </div>
           <div className="flex gap-3">
             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">
               4
             </div>
             <div>
-              <strong>{t('sallaIntegrationPage.text18')}</strong> عندما يطلب العميل من الواتساب، يتم إنشاء الطلب تلقائياً في Salla
-            </div>
+              <strong>{t('sallaIntegrationPage.text18')}</strong>{t('sallaIntegration.auto_11')}</div>
           </div>
         </CardContent>
       </Card>

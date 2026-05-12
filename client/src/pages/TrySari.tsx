@@ -147,12 +147,8 @@ export default function TrySari() {
             <Sparkles className="w-4 h-4" />
             <span className="text-sm font-medium">{t('trySariPage.text0')}</span>
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            تحدث مع ساري AI
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            اختبر قوة الذكاء الاصطناعي في خدمة العملاء. جرّب المحادثة مع ساري وشاهد كيف يمكنها مساعدة عملائك.
-          </p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">{t('trySari.auto_0')}</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">{t('trySari.auto_1')}</p>
         </div>
 
         <div className="max-w-4xl mx-auto">
@@ -174,9 +170,7 @@ export default function TrySari() {
                     size="sm"
                     onClick={handleReset}
                     className="text-white hover:bg-white/20"
-                  >
-                    إعادة تعيين
-                  </Button>
+                  >{t('trySari.auto_2')}</Button>
                 </div>
               </div>
 
@@ -323,9 +317,7 @@ export default function TrySari() {
 
               {/* Features Info */}
               <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-                <h3 className="font-semibold text-gray-900 mb-3">
-                  ✨ مميزات ساري AI
-                </h3>
+                <h3 className="font-semibold text-gray-900 mb-3">{t('trySari.auto_3')}</h3>
                 <ul className="space-y-2 text-sm text-gray-700">
                   <li className="flex items-start gap-2">
                     <span className="text-blue-600 mt-0.5">•</span>
@@ -349,9 +341,7 @@ export default function TrySari() {
               {/* CTA */}
               <Card className="p-4 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
                 <h3 className="font-semibold mb-2">{t('trySariPage.text9')}</h3>
-                <p className="text-sm text-gray-300 mb-4">
-                  ابدأ الآن واحصل على ساري AI لمتجرك
-                </p>
+                <p className="text-sm text-gray-300 mb-4">{t('trySari.auto_4')}</p>
                 <Button
                   className="w-full bg-blue-600 hover:bg-blue-700"
                   onClick={() => (window.location.href = '/signup')}

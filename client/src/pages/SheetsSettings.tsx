@@ -117,9 +117,7 @@ export default function SheetsSettings() {
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">{t('sheetsSettingsPage.text0')}</h1>
-          <p className="text-muted-foreground">
-            ربط حسابك في Google Sheets لحفظ البيانات تلقائياً
-          </p>
+          <p className="text-muted-foreground">{t('sheetsSettings.auto_0')}</p>
         </div>
 
         {/* حالة الاتصال */}
@@ -158,9 +156,7 @@ export default function SheetsSettings() {
                     size="sm"
                     onClick={() => window.open(`https://docs.google.com/spreadsheets/d/${status.spreadsheetId}`, '_blank')}
                   >
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                    فتح
-                  </Button>
+                    <ExternalLink className="w-4 h-4 ml-2" />{t('sheetsSettings.auto_1')}</Button>
                 </div>
               )}
 
@@ -185,9 +181,7 @@ export default function SheetsSettings() {
                   variant="outline"
                   onClick={() => refetchStatus()}
                 >
-                  <RefreshCw className="w-4 h-4 ml-2" />
-                  تحديث الحالة
-                </Button>
+                  <RefreshCw className="w-4 h-4 ml-2" />{t('sheetsSettings.auto_2')}</Button>
 
                 <Button
                   variant="destructive"
@@ -201,18 +195,14 @@ export default function SheetsSettings() {
             </div>
           ) : (
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                قم بربط حسابك في Google Sheets لتفعيل المزامنة التلقائية للبيانات
-              </p>
+              <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_3')}</p>
               <Button
                 onClick={handleConnect}
                 disabled={isConnecting}
                 size="lg"
               >
                 {isConnecting && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-                <FileSpreadsheet className="w-5 h-5 ml-2" />
-                ربط Google Sheets
-              </Button>
+                <FileSpreadsheet className="w-5 h-5 ml-2" />{t('sheetsSettings.auto_4')}</Button>
             </div>
           )}
         </Card>
@@ -224,21 +214,15 @@ export default function SheetsSettings() {
               <Settings className="w-6 h-6 text-primary" />
               <div>
                 <h2 className="text-xl font-semibold">{t('sheetsSettingsPage.text2')}</h2>
-                <p className="text-sm text-muted-foreground">
-                  تفعيل إرسال التقارير عبر WhatsApp
-                </p>
+                <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_5')}</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="daily-reports" className="text-base font-medium">
-                    التقارير اليومية
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    إرسال تقرير يومي في الساعة 11:59 مساءً
-                  </p>
+                  <Label htmlFor="daily-reports" className="text-base font-medium">{t('sheetsSettings.auto_6')}</Label>
+                  <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_7')}</p>
                 </div>
                 <Switch
                   id="daily-reports"
@@ -250,12 +234,8 @@ export default function SheetsSettings() {
 
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="weekly-reports" className="text-base font-medium">
-                    التقارير الأسبوعية
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    إرسال تقرير أسبوعي كل يوم أحد
-                  </p>
+                  <Label htmlFor="weekly-reports" className="text-base font-medium">{t('sheetsSettings.auto_8')}</Label>
+                  <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_9')}</p>
                 </div>
                 <Switch
                   id="weekly-reports"
@@ -267,12 +247,8 @@ export default function SheetsSettings() {
 
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
-                  <Label htmlFor="monthly-reports" className="text-base font-medium">
-                    التقارير الشهرية
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    إرسال تقرير شهري في آخر يوم من الشهر
-                  </p>
+                  <Label htmlFor="monthly-reports" className="text-base font-medium">{t('sheetsSettings.auto_10')}</Label>
+                  <p className="text-sm text-muted-foreground">{t('sheetsSettings.auto_11')}</p>
                 </div>
                 <Switch
                   id="monthly-reports"

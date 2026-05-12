@@ -107,9 +107,7 @@ export default function TapSettings() {
       <Card>
         <CardHeader>
           <CardTitle>{t('adminTapSettingsPage.text3')}</CardTitle>
-          <CardDescription>
-            أدخل مفاتيح API الخاصة بحساب Tap الخاص بك
-          </CardDescription>
+          <CardDescription>{t('tapSettings.auto_0')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-2">
@@ -121,9 +119,7 @@ export default function TapSettings() {
               onChange={(e) => setFormData({ ...formData, secretKey: e.target.value })}
               placeholder="sk_test_..."
             />
-            <p className="text-sm text-muted-foreground">
-              المفتاح السري الخاص بحساب Tap (يستخدم في الـ Backend)
-            </p>
+            <p className="text-sm text-muted-foreground">{t('tapSettings.auto_1')}</p>
           </div>
 
           <div className="space-y-2">
@@ -134,17 +130,13 @@ export default function TapSettings() {
               onChange={(e) => setFormData({ ...formData, publicKey: e.target.value })}
               placeholder="pk_test_..."
             />
-            <p className="text-sm text-muted-foreground">
-              المفتاح العام الخاص بحساب Tap (يستخدم في الـ Frontend)
-            </p>
+            <p className="text-sm text-muted-foreground">{t('tapSettings.auto_2')}</p>
           </div>
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="isLive">{t('adminTapSettingsPage.text4')}</Label>
-              <p className="text-sm text-muted-foreground">
-                تفعيل الوضع المباشر للمدفوعات الحقيقية
-              </p>
+              <p className="text-sm text-muted-foreground">{t('tapSettings.auto_3')}</p>
             </div>
             <Switch
               id="isLive"
@@ -156,9 +148,7 @@ export default function TapSettings() {
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="space-y-0.5">
               <Label htmlFor="isActive">{t('adminTapSettingsPage.text5')}</Label>
-              <p className="text-sm text-muted-foreground">
-                تمكين/تعطيل بوابة الدفع Tap
-              </p>
+              <p className="text-sm text-muted-foreground">{t('tapSettings.auto_4')}</p>
             </div>
             <Switch
               id="isActive"
@@ -175,9 +165,7 @@ export default function TapSettings() {
               onChange={(e) => setFormData({ ...formData, webhookUrl: e.target.value })}
               placeholder="https://yourdomain.com/api/webhooks/tap"
             />
-            <p className="text-sm text-muted-foreground">
-              عنوان URL لاستقبال إشعارات الدفع من Tap
-            </p>
+            <p className="text-sm text-muted-foreground">{t('tapSettings.auto_5')}</p>
           </div>
 
           <div className="space-y-2">
@@ -189,18 +177,14 @@ export default function TapSettings() {
               onChange={(e) => setFormData({ ...formData, webhookSecret: e.target.value })}
               placeholder="whsec_..."
             />
-            <p className="text-sm text-muted-foreground">
-              المفتاح السري للتحقق من صحة إشعارات Webhook
-            </p>
+            <p className="text-sm text-muted-foreground">{t('tapSettings.auto_6')}</p>
           </div>
 
           <div className="flex gap-3 pt-4">
             <Button onClick={handleSave} disabled={updateSettings.isPending} className="flex-1">
               {updateSettings.isPending ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الحفظ...
-                </>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('tapSettings.auto_7')}</>
               ) : (
                 'حفظ الإعدادات'
               )}
@@ -212,9 +196,7 @@ export default function TapSettings() {
             >
               {testConnection.isPending ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الاختبار...
-                </>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('tapSettings.auto_8')}</>
               ) : (
                 'اختبار الاتصال'
               )}

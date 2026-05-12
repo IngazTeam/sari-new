@@ -159,18 +159,14 @@ export default function PlatformIntegrations() {
     <div className="container max-w-6xl py-8 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">{t('platformIntegrationsPage.text3')}</h1>
-        <p className="text-muted-foreground mt-2">
-          قم بربط متجرك الإلكتروني لمزامنة المنتجات والطلبات تلقائياً
-        </p>
+        <p className="text-muted-foreground mt-2">{t('platformIntegrations.auto_0')}</p>
       </div>
 
       {/* تنبيه: منصة واحدة فقط */}
       <Alert>
         <AlertTriangle className="h-4 w-4" />
         <AlertDescription>
-          <strong>{t('platformIntegrationsPage.text4')}</strong> يمكنك ربط منصة واحدة فقط في نفس الوقت لتجنب تضارب البيانات.
-          إذا أردت التبديل إلى منصة أخرى، يجب فصل المنصة الحالية أولاً.
-        </AlertDescription>
+          <strong>{t('platformIntegrationsPage.text4')}</strong>{t('platformIntegrations.auto_1')}</AlertDescription>
       </Alert>
 
       {/* المنصة المربوطة حالياً */}
@@ -184,9 +180,7 @@ export default function PlatformIntegrations() {
                   <CardTitle className="flex items-center gap-2">
                     {connectedPlatform.name}
                     <Badge variant="default" className="bg-green-600">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      مربوط
-                    </Badge>
+                      <CheckCircle2 className="h-3 w-3 mr-1" />{t('platformIntegrations.auto_2')}</Badge>
                   </CardTitle>
                   <CardDescription>{connectedPlatform.description}</CardDescription>
                 </div>
@@ -223,14 +217,10 @@ export default function PlatformIntegrations() {
               >
                 {isDisconnecting ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    جاري الفصل...
-                  </>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('platformIntegrations.auto_3')}</>
                 ) : (
                   <>
-                    <XCircle className="h-4 w-4 mr-2" />
-                    فصل المنصة
-                  </>
+                    <XCircle className="h-4 w-4 mr-2" />{t('platformIntegrations.auto_4')}</>
                 )}
               </Button>
             </div>
@@ -275,7 +265,7 @@ export default function PlatformIntegrations() {
 
       {/* ═══════════════ خدمات Google ═══════════════ */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">خدمات Google</h2>
+        <h2 className="text-xl font-semibold mb-4">{t('platformIntegrations.auto_5')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Google Sheets */}
           <Card className={sheetsStatus?.isConnected ? 'border-green-500 bg-green-50 dark:bg-green-950' : ''}>
@@ -287,12 +277,10 @@ export default function PlatformIntegrations() {
                     Google Sheets
                     {sheetsStatus?.isConnected && (
                       <Badge variant="default" className="bg-green-600">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        مربوط
-                      </Badge>
+                        <CheckCircle2 className="h-3 w-3 mr-1" />{t('platformIntegrations.auto_6')}</Badge>
                     )}
                   </CardTitle>
-                  <CardDescription>مزامنة المنتجات والطلبات مع جداول بيانات Google</CardDescription>
+                  <CardDescription>{t('platformIntegrations.auto_7')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -315,12 +303,10 @@ export default function PlatformIntegrations() {
                     Google Calendar
                     {calendarStatus?.connected && (
                       <Badge variant="default" className="bg-green-600">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        مربوط
-                      </Badge>
+                        <CheckCircle2 className="h-3 w-3 mr-1" />{t('platformIntegrations.auto_8')}</Badge>
                     )}
                   </CardTitle>
-                  <CardDescription>إدارة المواعيد والحجوزات عبر تقويم Google</CardDescription>
+                  <CardDescription>{t('platformIntegrations.auto_9')}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -342,15 +328,11 @@ export default function PlatformIntegrations() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            <strong>{t('platformIntegrationsPage.text6')}</strong> ربط منصات متعددة قد يؤدي إلى تكرار المنتجات والطلبات
-            وصعوبة التتبع.
-          </p>
+            <strong>{t('platformIntegrationsPage.text6')}</strong>{t('platformIntegrations.auto_10')}</p>
           <p>
-            <strong>{t('platformIntegrationsPage.text7')}</strong> المزامنة مع منصة واحدة تضمن سرعة أفضل واستهلاك أقل للموارد.
-          </p>
+            <strong>{t('platformIntegrationsPage.text7')}</strong>{t('platformIntegrations.auto_11')}</p>
           <p>
-            <strong>{t('platformIntegrationsPage.text8')}</strong> إدارة منصة واحدة أبسط وأكثر وضوحاً من إدارة منصات متعددة.
-          </p>
+            <strong>{t('platformIntegrationsPage.text8')}</strong>{t('platformIntegrations.auto_12')}</p>
         </CardContent>
       </Card>
     </div>

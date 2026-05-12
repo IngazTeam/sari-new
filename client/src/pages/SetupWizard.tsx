@@ -406,9 +406,7 @@ export default function SetupWizard() {
               onClick={goToPreviousStep}
               disabled={currentStep === 1}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              السابق
-            </Button>
+              <ArrowLeft className="mr-2 h-4 w-4" />{t('setupWizard.auto_0')}</Button>
           </div>
         )}
       </div>

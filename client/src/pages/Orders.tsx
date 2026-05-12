@@ -115,9 +115,7 @@ export default function Orders() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('ordersPage.text0')}</h1>
-          <p className="text-muted-foreground mt-1">
-            عرض وإدارة جميع الطلبات
-          </p>
+          <p className="text-muted-foreground mt-1">{t('orders.auto_0')}</p>
         </div>
       </div>
 
@@ -207,9 +205,7 @@ export default function Orders() {
           {isLoading ? (
             <div className="text-center py-8">{t('ordersPage.text20')}</div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد طلبات
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('orders.auto_1')}</div>
           ) : (
             <div className="border rounded-lg">
               <Table>
@@ -250,9 +246,7 @@ export default function Orders() {
                           size="sm"
                           onClick={() => handleViewDetails(order)}
                         >
-                          <Eye className="ml-2 h-4 w-4" />
-                          عرض
-                        </Button>
+                          <Eye className="ml-2 h-4 w-4" />{t('orders.auto_2')}</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -342,15 +336,11 @@ export default function Orders() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      الحالة الحالية
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-2">{t('orders.auto_3')}</p>
                     {getStatusBadge(selectedOrder.status)}
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      تحديث الحالة
-                    </p>
+                    <p className="text-sm text-muted-foreground mb-2">{t('orders.auto_4')}</p>
                     <Select
                       value={selectedOrder.status}
                       onValueChange={handleUpdateStatus}

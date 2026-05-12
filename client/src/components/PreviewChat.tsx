@@ -199,9 +199,7 @@ export default function PreviewChat({
             <div>
               <h3 className="font-semibold">ساري - {businessName}</h3>
               <p className="text-xs text-green-100 flex items-center gap-1">
-                <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>
-                متصل الآن
-              </p>
+                <span className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></span>{t('previewChat.auto_0')}</p>
             </div>
           </div>
           <Button

@@ -92,9 +92,7 @@ export default function SubscriptionReports() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">{t('adminSubscriptionReportsPage.text0')}</h1>
-          <p className="text-muted-foreground mt-1">
-            تحليل شامل لأداء الاشتراكات والإيرادات
-          </p>
+          <p className="text-muted-foreground mt-1">{t('subscriptionReports.auto_0')}</p>
         </div>
         
         <div className="flex gap-2">

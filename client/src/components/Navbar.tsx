@@ -212,9 +212,7 @@ export default function Navbar() {
                 onClick={() => changeLanguage('ar')}
                 className={currentLang === 'ar' ? 'bg-accent' : ''}
               >
-                <span className="ml-2">🇸🇦</span>
-                العربية
-              </DropdownMenuItem>
+                <span className="ml-2">🇸🇦</span>{t('navbar.auto_0')}</DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => changeLanguage('en')}
                 className={currentLang === 'en' ? 'bg-accent' : ''}

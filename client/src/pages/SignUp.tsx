@@ -101,9 +101,7 @@ export default function SignUp() {
               </div>
             </div>
             <CardTitle className="text-2xl text-center">{t('signUpPage.text0')}</CardTitle>
-            <CardDescription className="text-center">
-              انضم إلى ساري وابدأ في تحسين مبيعاتك عبر الواتساب
-            </CardDescription>
+            <CardDescription className="text-center">{t('signUp.auto_0')}</CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -252,9 +250,7 @@ export default function SignUp() {
               >
                 {signupMutation.isPending ? (
                   <>
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    جاري التسجيل...
-                  </>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('signUp.auto_1')}</>
                 ) : (
                   'إنشاء حساب'
                 )}
@@ -262,9 +258,7 @@ export default function SignUp() {
 
               <div className="text-center text-sm text-muted-foreground">
                 لديك حساب بالفعل؟{' '}
-                <Link href="/login" className="text-primary hover:underline">
-                  تسجيل الدخول
-                </Link>
+                <Link href="/login" className="text-primary hover:underline">{t('signUp.auto_2')}</Link>
               </div>
             </CardFooter>
           </form>

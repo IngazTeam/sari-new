@@ -420,14 +420,10 @@ export function QuickActions({
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    جاري التنفيذ...
-                  </>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('quickActions.auto_0')}</>
                 ) : (
                   <>
-                    <Send className="w-4 h-4 mr-2" />
-                    إرسال
-                  </>
+                    <Send className="w-4 h-4 mr-2" />{t('quickActions.auto_1')}</>
                 )}
               </Button>
             </DialogFooter>
@@ -450,9 +446,7 @@ export function QuickActions({
     <Card className={className}>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Zap className="w-5 h-5 text-primary" />
-          إجراءات سريعة
-        </CardTitle>
+          <Zap className="w-5 h-5 text-primary" />{t('quickActions.auto_2')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {Object.entries(groupedActions).map(([category, actions]) => (
@@ -508,14 +502,10 @@ export function QuickActions({
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    جاري التنفيذ...
-                  </>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />{t('quickActions.auto_3')}</>
                 ) : (
                   <>
-                    <Send className="w-4 h-4 mr-2" />
-                    إرسال
-                  </>
+                    <Send className="w-4 h-4 mr-2" />{t('quickActions.auto_4')}</>
                 )}
               </Button>
             </DialogFooter>

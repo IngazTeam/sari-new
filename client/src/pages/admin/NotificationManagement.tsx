@@ -69,14 +69,10 @@ export default function NotificationManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('adminNotificationManagementPage.text2')}</h1>
-          <p className="text-muted-foreground mt-2">
-            مراقبة وإدارة جميع الإشعارات في النظام
-          </p>
+          <p className="text-muted-foreground mt-2">{t('notificationManagement.auto_0')}</p>
         </div>
         <Button variant="outline" onClick={() => refetchLogs()}>
-          <RefreshCw className="h-4 w-4 ml-2" />
-          تحديث
-        </Button>
+          <RefreshCw className="h-4 w-4 ml-2" />{t('notificationManagement.auto_1')}</Button>
       </div>
 
       {/* إحصائيات الإشعارات */}
@@ -266,9 +262,7 @@ export default function NotificationManagement() {
         </CardHeader>
         <CardContent>
           {logsLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              جاري التحميل...
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('notificationManagement.auto_2')}</div>
           ) : logs && logs.length > 0 ? (
             <div className="overflow-x-auto">
               <Table>
@@ -302,19 +296,13 @@ export default function NotificationManagement() {
                       <TableCell>
                         {log.status === 'sent' ? (
                           <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                            <CheckCircle className="h-3 w-3 ml-1" />
-                            تم الإرسال
-                          </Badge>
+                            <CheckCircle className="h-3 w-3 ml-1" />{t('notificationManagement.auto_3')}</Badge>
                         ) : log.status === 'failed' ? (
                           <Badge variant="destructive">
-                            <AlertCircle className="h-3 w-3 ml-1" />
-                            فشل
-                          </Badge>
+                            <AlertCircle className="h-3 w-3 ml-1" />{t('notificationManagement.auto_4')}</Badge>
                         ) : (
                           <Badge variant="secondary">
-                            <Clock className="h-3 w-3 ml-1" />
-                            قيد الإرسال
-                          </Badge>
+                            <Clock className="h-3 w-3 ml-1" />{t('notificationManagement.auto_5')}</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -334,9 +322,7 @@ export default function NotificationManagement() {
                             onClick={() => handleResend(log.id)}
                             disabled={resendMutation.isPending}
                           >
-                            <RefreshCw className="h-4 w-4 ml-1" />
-                            إعادة الإرسال
-                          </Button>
+                            <RefreshCw className="h-4 w-4 ml-1" />{t('notificationManagement.auto_6')}</Button>
                         )}
                       </TableCell>
                     </TableRow>
@@ -345,9 +331,7 @@ export default function NotificationManagement() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد إشعارات مطابقة للفلاتر
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('notificationManagement.auto_7')}</div>
           )}
         </CardContent>
       </Card>

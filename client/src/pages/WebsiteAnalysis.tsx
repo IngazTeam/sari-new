@@ -234,18 +234,14 @@ export default function WebsiteAnalysis() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold mb-2">{t('websiteAnalysisPage.text4')}</h1>
-        <p className="text-muted-foreground">
-          قم بتحليل أي موقع إلكتروني واحصل على رؤى ذكية وتوصيات لتحسين موقعك
-        </p>
+        <p className="text-muted-foreground">{t('websiteAnalysis.auto_0')}</p>
       </div>
 
       {/* Analysis Form */}
       <Card>
         <CardHeader>
           <CardTitle>{t('websiteAnalysisPage.text5')}</CardTitle>
-          <CardDescription>
-            أدخل رابط الموقع الذي تريد تحليله
-          </CardDescription>
+          <CardDescription>{t('websiteAnalysis.auto_1')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
@@ -262,14 +258,10 @@ export default function WebsiteAnalysis() {
             >
               {analyzeMutation.isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  جاري التحليل...
-                </>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('websiteAnalysis.auto_2')}</>
               ) : (
                 <>
-                  <Search className="mr-2 h-4 w-4" />
-                  تحليل
-                </>
+                  <Search className="mr-2 h-4 w-4" />{t('websiteAnalysis.auto_3')}</>
               )}
             </Button>
           </div>
@@ -393,16 +385,12 @@ export default function WebsiteAnalysis() {
               <Badge variant="outline">{currentAnalysis.industry || 'جاري التحليل...'}</Badge>
               {currentAnalysis.status === 'analyzing' && (
                 <Badge variant="secondary" className="flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  جاري التحليل...
-                </Badge>
+                  <Loader2 className="h-3 w-3 animate-spin" />{t('websiteAnalysis.auto_4')}</Badge>
               )}
             </div>
             {currentAnalysis.status === 'completed' && (
               <Button variant="outline" size="sm" onClick={handleExportAnalysis}>
-                <Download className="h-4 w-4 ml-1" />
-                تصدير
-              </Button>
+                <Download className="h-4 w-4 ml-1" />{t('websiteAnalysis.auto_5')}</Button>
             )}
           </CardHeader>
           <CardContent>
@@ -622,9 +610,7 @@ export default function WebsiteAnalysis() {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-sm text-primary hover:underline flex items-center gap-1"
-                            >
-                              عرض المنتج
-                              <ExternalLink className="h-3 w-3" />
+                            >{t('websiteAnalysis.auto_6')}<ExternalLink className="h-3 w-3" />
                             </a>
                           )}
                         </CardContent>

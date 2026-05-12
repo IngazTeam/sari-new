@@ -87,9 +87,7 @@ export default function SariAnalytics() {
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
               <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl">
                 <Sparkles className="h-6 w-6 text-white" />
-              </div>
-              إحصائيات ساري AI
-            </h1>
+              </div>{t('sariAnalytics.auto_0')}</h1>
             <p className="text-gray-600 mt-1">{t('sariAnalyticsPage.text0')}</p>
           </div>
           
@@ -160,9 +158,7 @@ export default function SariAnalytics() {
                 <p className="text-gray-600 text-sm">{t('sariAnalyticsPage.text10')}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{stats.avgResponseTime}s</p>
                 <Badge variant="outline" className="mt-2 text-green-600 border-green-600">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  ممتاز
-                </Badge>
+                  <CheckCircle2 className="h-3 w-3 mr-1" />{t('sariAnalytics.auto_1')}</Badge>
               </div>
               <Clock className="h-12 w-12 text-orange-500" />
             </div>
@@ -174,9 +170,7 @@ export default function SariAnalytics() {
                 <p className="text-gray-600 text-sm">{t('sariAnalyticsPage.text11')}</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{stats.successRate}%</p>
                 <Badge variant="outline" className="mt-2 text-green-600 border-green-600">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  عالي جداً
-                </Badge>
+                  <CheckCircle2 className="h-3 w-3 mr-1" />{t('sariAnalytics.auto_2')}</Badge>
               </div>
               <CheckCircle2 className="h-12 w-12 text-green-500" />
             </div>
@@ -189,9 +183,7 @@ export default function SariAnalytics() {
                 <p className="text-3xl font-bold text-gray-900 mt-1">{stats.activeToday}</p>
                 <Badge variant="outline" className="mt-2 text-blue-600 border-blue-600">
                   <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
-                    مباشر
-                  </div>
+                    <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" />{t('sariAnalytics.auto_3')}</div>
                 </Badge>
               </div>
               <Bot className="h-12 w-12 text-blue-500" />
@@ -270,10 +262,10 @@ export default function SariAnalytics() {
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">{t('sariAnalyticsPage.text16')}</h3>
               <div className="space-y-2 text-gray-700">
-                <p>✨ <strong>{t('sariAnalyticsPage.text17')}</strong> نسبة النجاح 94.5% أعلى من المتوسط بـ 12%</p>
-                <p>📈 <strong>{t('sariAnalyticsPage.text18')}</strong> زيادة 18% في عدد الرسائل مقارنة بالشهر الماضي</p>
-                <p>🎯 <strong>{t('sariAnalyticsPage.text19')}</strong> 91.7% من الردود كانت دقيقة ومفيدة للعملاء</p>
-                <p>⚡ <strong>{t('sariAnalyticsPage.text20')}</strong> متوسط وقت الاستجابة 2.3 ثانية فقط</p>
+                <p>✨ <strong>{t('sariAnalyticsPage.text17')}</strong>{t('sariAnalytics.auto_4')}</p>
+                <p>📈 <strong>{t('sariAnalyticsPage.text18')}</strong>{t('sariAnalytics.auto_5')}</p>
+                <p>🎯 <strong>{t('sariAnalyticsPage.text19')}</strong>{t('sariAnalytics.auto_6')}</p>
+                <p>⚡ <strong>{t('sariAnalyticsPage.text20')}</strong>{t('sariAnalytics.auto_7')}</p>
               </div>
             </div>
           </div>

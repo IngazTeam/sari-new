@@ -65,9 +65,7 @@ export default function BasicInfoStep({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <p className="text-gray-600">
-          أخبرنا المزيد عن نشاطك التجاري
-        </p>
+        <p className="text-gray-600">{t('basicInfoStep.auto_0')}</p>
       </div>
 
       <div className="space-y-5">
@@ -104,9 +102,7 @@ export default function BasicInfoStep({
           {errors.phone && (
             <p className="text-sm text-red-500">{errors.phone}</p>
           )}
-          <p className="text-xs text-gray-500">
-            سيستخدم هذا الرقم للتواصل مع العملاء عبر واتساب
-          </p>
+          <p className="text-xs text-gray-500">{t('basicInfoStep.auto_1')}</p>
         </div>
 
         {/* Address */}
@@ -136,9 +132,7 @@ export default function BasicInfoStep({
             onChange={(e) => handleChange('description', e.target.value)}
             rows={3}
           />
-          <p className="text-xs text-gray-500">
-            سيساعد هذا الوصف ساري في فهم نشاطك بشكل أفضل
-          </p>
+          <p className="text-xs text-gray-500">{t('basicInfoStep.auto_2')}</p>
         </div>
 
         {/* Working Hours Type */}
@@ -190,9 +184,7 @@ export default function BasicInfoStep({
           size="lg"
           onClick={handleNext}
           className="px-8"
-        >
-          التالي
-          <ArrowRight className="mr-2 h-5 w-5" />
+        >{t('basicInfoStep.auto_3')}<ArrowRight className="mr-2 h-5 w-5" />
         </Button>
       </div>
     </div>

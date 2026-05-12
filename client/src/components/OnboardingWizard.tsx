@@ -167,10 +167,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                   <Sparkles className="w-10 h-10 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold">{t('compOnboardingWizardPage.text5')}</h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  ساري هو مساعدك الذكي الذي يعمل بالذكاء الاصطناعي لإدارة متجرك على واتساب.
-                  يرد على عملائك باللهجة السعودية، يساعدهم في اختيار المنتجات، ويستقبل الطلبات تلقائياً.
-                </p>
+                <p className="text-gray-600 max-w-md mx-auto">{t('onboardingWizard.auto_0')}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -191,9 +188,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                 </div>
               </div>
 
-              <p className="text-center text-sm text-gray-500">
-                دعنا نساعدك في إعداد حسابك في 3 خطوات بسيطة
-              </p>
+              <p className="text-center text-sm text-gray-500">{t('onboardingWizard.auto_1')}</p>
             </div>
           )}
 
@@ -230,9 +225,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                   placeholder={t('compOnboardingWizardPage.text19')}
                   className="text-right"
                 />
-                <p className="text-sm text-gray-500">
-                  هذا الاسم سيظهر للعملاء عند التواصل معهم
-                </p>
+                <p className="text-sm text-gray-500">{t('onboardingWizard.auto_2')}</p>
               </div>
 
               <div className="space-y-2">
@@ -267,9 +260,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                   className="text-right"
                   dir="ltr"
                 />
-                <p className="text-sm text-gray-500">
-                  رقم جوالك للتواصل (غير رقم واتساب المتجر)
-                </p>
+                <p className="text-sm text-gray-500">{t('onboardingWizard.auto_3')}</p>
               </div>
             </div>
           )}
@@ -282,9 +273,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                   <CheckCircle2 className="w-10 h-10 text-green-600" />
                 </div>
                 <h3 className="text-xl font-semibold">{t('compOnboardingWizardPage.text25')}</h3>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  يمكنك الآن استكشاف لوحة التحكم بالكامل، إضافة المنتجات، وتجربة ردود ساري الذكية مجاناً
-                </p>
+                <p className="text-gray-600 max-w-md mx-auto">{t('onboardingWizard.auto_4')}</p>
               </div>
 
               {/* What you can do now */}
@@ -313,9 +302,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
               {/* WhatsApp requires subscription */}
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
                 <h4 className="font-semibold text-amber-800">{t('compOnboardingWizardPage.text31')}</h4>
-                <p className="text-sm text-amber-700">
-                  لتفعيل الرد التلقائي على واتساب واستقبال الطلبات من العملاء، اختر الباقة المناسبة لك:
-                </p>
+                <p className="text-sm text-amber-700">{t('onboardingWizard.auto_5')}</p>
               </div>
 
               {/* Abbreviated Plans */}
@@ -366,19 +353,13 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
               onClick={handleBack}
               disabled={currentStep === 0}
             >
-              <ArrowLeft className="ml-2 w-4 h-4" />
-              السابق
-            </Button>
+              <ArrowLeft className="ml-2 w-4 h-4" />{t('onboardingWizard.auto_6')}</Button>
 
             {currentStep < steps.length - 1 ? (
-              <Button onClick={handleNext}>
-                التالي
-                <ArrowRight className="mr-2 w-4 h-4" />
+              <Button onClick={handleNext}>{t('onboardingWizard.auto_7')}<ArrowRight className="mr-2 w-4 h-4" />
               </Button>
             ) : (
-              <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">
-                ابدأ الآن
-                <CheckCircle2 className="mr-2 w-4 h-4" />
+              <Button onClick={handleComplete} className="bg-green-600 hover:bg-green-700">{t('onboardingWizard.auto_8')}<CheckCircle2 className="mr-2 w-4 h-4" />
               </Button>
             )}
           </div>
@@ -390,9 +371,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                 size="sm"
                 onClick={handleSkip}
                 className="text-gray-500 hover:text-gray-700"
-              >
-                تخطي وإنهاء الإعداد
-              </Button>
+              >{t('onboardingWizard.auto_9')}</Button>
             </div>
           )}
         </CardContent>

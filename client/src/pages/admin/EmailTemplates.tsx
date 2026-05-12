@@ -139,17 +139,13 @@ export default function EmailTemplates() {
     <div className="container mx-auto py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('adminEmailTemplatesPage.text0')}</h1>
-        <p className="text-muted-foreground">
-          إدارة وتخصيص قوالب البريد الإلكتروني المستخدمة في النظام
-        </p>
+        <p className="text-muted-foreground">{t('emailTemplates.auto_0')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            قوالب البريد الإلكتروني
-          </CardTitle>
+            <Mail className="h-5 w-5" />{t('emailTemplates.auto_1')}</CardTitle>
           <CardDescription>
             {templates?.length || 0} قالب متاح
           </CardDescription>
@@ -335,9 +331,7 @@ export default function EmailTemplates() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('adminEmailTemplatesPage.text17', { var0: selectedTemplate?.displayName })}</DialogTitle>
-            <DialogDescription>
-              أدخل البريد الإلكتروني لإرسال رسالة تجريبية
-            </DialogDescription>
+            <DialogDescription>{t('emailTemplates.auto_2')}</DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
@@ -352,9 +346,7 @@ export default function EmailTemplates() {
               />
             </div>
             
-            <div className="text-sm text-muted-foreground">
-              سيتم إرسال القالب مع بيانات تجريبية للمعاينة
-            </div>
+            <div className="text-sm text-muted-foreground">{t('emailTemplates.auto_3')}</div>
           </div>
           
           <DialogFooter>

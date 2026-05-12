@@ -58,26 +58,19 @@ export default function CurrencySettings() {
     <div className="container max-w-4xl py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('currencySettingsPage.text2')}</h1>
-        <p className="text-muted-foreground mt-2">
-          اختر العملة الأساسية لمتجرك. سيتم عرض جميع الأسعار والمبالغ بهذه العملة.
-        </p>
+        <p className="text-muted-foreground mt-2">{t('currencySettings.auto_0')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
-            العملة الأساسية
-          </CardTitle>
-          <CardDescription>
-            اختر العملة التي تريد استخدامها في متجرك
-          </CardDescription>
+            <DollarSign className="w-5 h-5" />{t('currencySettings.auto_1')}</CardTitle>
+          <CardDescription>{t('currencySettings.auto_2')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <Alert>
             <Info className="w-4 h-4" />
-            <AlertDescription>
-              العملة الحالية: <strong>{merchant?.currency ? (merchant.currency === 'SAR' ? 'ريال سعودي' : 'دولار أمريكي') : 'غير محدد'}</strong>
+            <AlertDescription>{t('currencySettings.auto_3')}<strong>{merchant?.currency ? (merchant.currency === 'SAR' ? 'ريال سعودي' : 'دولار أمريكي') : 'غير محدد'}</strong>
             </AlertDescription>
           </Alert>
 
@@ -136,14 +129,10 @@ export default function CurrencySettings() {
             >
               {updateMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                  جاري الحفظ...
-                </>
+                  <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('currencySettings.auto_4')}</>
               ) : (
                 <>
-                  <Save className="w-4 h-4 ml-2" />
-                  حفظ التغييرات
-                </>
+                  <Save className="w-4 h-4 ml-2" />{t('currencySettings.auto_5')}</>
               )}
             </Button>
           </div>

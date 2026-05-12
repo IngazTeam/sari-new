@@ -64,9 +64,7 @@ export default function SheetsInventory() {
       <div className="container max-w-4xl py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">{t('sheetsInventoryPage.text0')}</h1>
-          <p className="text-muted-foreground">
-            مزامنة ثنائية الاتجاه بين قاعدة البيانات و Google Sheets
-          </p>
+          <p className="text-muted-foreground">{t('sheetsInventory.auto_0')}</p>
         </div>
 
         {/* بطاقات المزامنة */}
@@ -78,9 +76,7 @@ export default function SheetsInventory() {
             </div>
 
             <h3 className="text-xl font-semibold mb-2">{t('sheetsInventoryPage.text1')}</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              نقل بيانات المخزون من قاعدة البيانات إلى Google Sheets
-            </p>
+            <p className="text-sm text-muted-foreground mb-6">{t('sheetsInventory.auto_1')}</p>
 
             <Button
               onClick={handleExport}
@@ -89,9 +85,7 @@ export default function SheetsInventory() {
               size="lg"
             >
               {exportMutation.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-              <Upload className="w-5 h-5 ml-2" />
-              تصدير المخزون
-            </Button>
+              <Upload className="w-5 h-5 ml-2" />{t('sheetsInventory.auto_2')}</Button>
 
             {lastAction === 'export' && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
@@ -117,9 +111,7 @@ export default function SheetsInventory() {
             </div>
 
             <h3 className="text-xl font-semibold mb-2">{t('sheetsInventoryPage.text7')}</h3>
-            <p className="text-sm text-muted-foreground mb-6">
-              تحديث كميات المخزون من Google Sheets إلى قاعدة البيانات
-            </p>
+            <p className="text-sm text-muted-foreground mb-6">{t('sheetsInventory.auto_3')}</p>
 
             <Button
               onClick={handleImport}
@@ -129,9 +121,7 @@ export default function SheetsInventory() {
               variant="outline"
             >
               {importMutation.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-              <Download className="w-5 h-5 ml-2" />
-              استيراد المخزون
-            </Button>
+              <Download className="w-5 h-5 ml-2" />{t('sheetsInventory.auto_4')}</Button>
 
             {lastAction === 'import' && (
               <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
@@ -165,9 +155,7 @@ export default function SheetsInventory() {
               </div>
               <div>
                 <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text14')}</h3>
-                <p className="text-sm text-muted-foreground">
-                  يتم نسخ جميع المنتجات مع أسعارها وكمياتها إلى صفحة "المخزون" في Google Sheets
-                </p>
+                <p className="text-sm text-muted-foreground">{t('sheetsInventory.auto_5')}</p>
               </div>
             </div>
 
@@ -177,9 +165,7 @@ export default function SheetsInventory() {
               </div>
               <div>
                 <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text15')}</h3>
-                <p className="text-sm text-muted-foreground">
-                  يمكنك تعديل الكميات مباشرة في Google Sheets (عمود "الكمية المتاحة")
-                </p>
+                <p className="text-sm text-muted-foreground">{t('sheetsInventory.auto_6')}</p>
               </div>
             </div>
 
@@ -189,9 +175,7 @@ export default function SheetsInventory() {
               </div>
               <div>
                 <h3 className="font-medium mb-1">{t('sheetsInventoryPage.text16')}</h3>
-                <p className="text-sm text-muted-foreground">
-                  يتم قراءة الكميات المحدثة من Sheets وتطبيقها على قاعدة البيانات
-                </p>
+                <p className="text-sm text-muted-foreground">{t('sheetsInventory.auto_7')}</p>
               </div>
             </div>
           </div>
@@ -204,7 +188,7 @@ export default function SheetsInventory() {
             <div>
               <h3 className="font-semibold mb-2 text-amber-900">{t('sheetsInventoryPage.text17')}</h3>
               <ul className="text-sm text-amber-800 space-y-1">
-                <li>• <strong>{t('sheetsInventoryPage.text18')}</strong> سيستبدل الكميات الحالية في قاعدة البيانات</li>
+                <li>• <strong>{t('sheetsInventoryPage.text18')}</strong>{t('sheetsInventory.auto_8')}</li>
                 <li>{t('sheetsInventoryPage.text19')}</li>
                 <li>{t('sheetsInventoryPage.text20')}</li>
                 <li>{t('sheetsInventoryPage.text21')}</li>

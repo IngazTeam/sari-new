@@ -121,9 +121,7 @@ export default function Reports() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('reportsPage.text0')}</h1>
-          <p className="text-muted-foreground mt-1">
-            تقارير شاملة عن أداء عملك
-          </p>
+          <p className="text-muted-foreground mt-1">{t('reports.auto_0')}</p>
         </div>
         <div className="flex gap-2">
           <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
@@ -178,9 +176,7 @@ export default function Reports() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      إجمالي المبيعات
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_1')}</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -196,52 +192,40 @@ export default function Reports() {
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      عدد الطلبات
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_2')}</CardTitle>
                     <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {salesReport?.totalOrders || 0}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      طلب خلال الفترة
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_3')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      متوسط قيمة الطلب
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_4')}</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {formatCurrency(salesReport?.averageOrderValue || 0)}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      لكل طلب
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_5')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      معدل التحويل
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_6')}</CardTitle>
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {salesReport?.conversionRate || 0}%
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      من المحادثات للطلبات
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_7')}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -250,9 +234,7 @@ export default function Reports() {
               <Card>
                 <CardHeader>
                   <CardTitle>{t('reportsPage.text10')}</CardTitle>
-                  <CardDescription>
-                    المنتجات الأكثر طلباً خلال الفترة
-                  </CardDescription>
+                  <CardDescription>{t('reports.auto_8')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {salesReport?.topProducts?.length > 0 ? (
@@ -275,9 +257,7 @@ export default function Reports() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center py-8 text-muted-foreground">
-                      لا توجد بيانات
-                    </p>
+                    <p className="text-center py-8 text-muted-foreground">{t('reports.auto_9')}</p>
                   )}
                 </CardContent>
               </Card>
@@ -316,69 +296,53 @@ export default function Reports() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      إجمالي العملاء
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_10')}</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {customersReport?.totalCustomers || 0}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      عميل مسجل
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_11')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      عملاء جدد
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_12')}</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {customersReport?.newCustomers || 0}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      خلال الفترة
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_13')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      عملاء نشطين
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_14')}</CardTitle>
                     <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {customersReport?.activeCustomers || 0}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      تفاعلوا خلال الفترة
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_15')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      معدل الاحتفاظ
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_16')}</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {customersReport?.retentionRate || 0}%
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      عملاء عائدين
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_17')}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -387,9 +351,7 @@ export default function Reports() {
               <Card>
                 <CardHeader>
                   <CardTitle>{t('reportsPage.text13')}</CardTitle>
-                  <CardDescription>
-                    العملاء الأكثر إنفاقاً خلال الفترة
-                  </CardDescription>
+                  <CardDescription>{t('reports.auto_18')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {customersReport?.topCustomers?.length > 0 ? (
@@ -414,9 +376,7 @@ export default function Reports() {
                       )}
                     </div>
                   ) : (
-                    <p className="text-center py-8 text-muted-foreground">
-                      لا توجد بيانات
-                    </p>
+                    <p className="text-center py-8 text-muted-foreground">{t('reports.auto_19')}</p>
                   )}
                 </CardContent>
               </Card>
@@ -455,69 +415,53 @@ export default function Reports() {
               <div className="grid gap-4 md:grid-cols-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      إجمالي المحادثات
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_20')}</CardTitle>
                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {conversationsReport?.totalConversations || 0}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      محادثة خلال الفترة
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_21')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      متوسط وقت الرد
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_22')}</CardTitle>
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {conversationsReport?.averageResponseTime || 0} دقيقة
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      وقت الاستجابة
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_23')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      معدل الرضا
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_24')}</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {conversationsReport?.satisfactionRate || 0}%
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      رضا العملاء
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_25')}</p>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">
-                      معدل التحويل
-                    </CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('reports.auto_26')}</CardTitle>
                     <BarChart3 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
                       {conversationsReport?.conversionRate || 0}%
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      من محادثة لطلب
-                    </p>
+                    <p className="text-xs text-muted-foreground">{t('reports.auto_27')}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -526,9 +470,7 @@ export default function Reports() {
               <Card>
                 <CardHeader>
                   <CardTitle>{t('reportsPage.text16')}</CardTitle>
-                  <CardDescription>
-                    أكثر المواضيع التي يسأل عنها العملاء
-                  </CardDescription>
+                  <CardDescription>{t('reports.auto_28')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {conversationsReport?.topTopics?.length > 0 ? (
@@ -548,9 +490,7 @@ export default function Reports() {
                       )}
                     </div>
                   ) : (
-                    <p className="text-center py-8 text-muted-foreground">
-                      لا توجد بيانات
-                    </p>
+                    <p className="text-center py-8 text-muted-foreground">{t('reports.auto_29')}</p>
                   )}
                 </CardContent>
               </Card>

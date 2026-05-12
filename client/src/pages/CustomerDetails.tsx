@@ -45,9 +45,7 @@ export default function CustomerDetails() {
             <User className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">{t('customerDetailsPage.text1')}</p>
             <Link href="/merchant/customers">
-              <Button className="mt-4" variant="outline">
-                العودة للقائمة
-              </Button>
+              <Button className="mt-4" variant="outline">{t('customerDetails.auto_0')}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -96,9 +94,7 @@ export default function CustomerDetails() {
             <User className="w-8 h-8" />
             {customer.customerName || 'عميل غير معروف'}
           </h1>
-          <p className="text-muted-foreground mt-1">
-            تفاصيل العميل الكاملة
-          </p>
+          <p className="text-muted-foreground mt-1">{t('customerDetails.auto_1')}</p>
         </div>
         {getStatusBadge(customer.status)}
       </div>
@@ -243,9 +239,7 @@ export default function CustomerDetails() {
                           <TableCell>{getOrderStatusBadge(order.status)}</TableCell>
                           <TableCell>
                             <Link href={`/merchant/orders`}>
-                              <Button variant="ghost" size="sm">
-                                عرض
-                              </Button>
+                              <Button variant="ghost" size="sm">{t('customerDetails.auto_2')}</Button>
                             </Link>
                           </TableCell>
                         </TableRow>
@@ -293,9 +287,7 @@ export default function CustomerDetails() {
                             </p>
                           </div>
                           <Link href={`/merchant/conversations`}>
-                            <Button variant="ghost" size="sm">
-                              عرض المحادثة
-                            </Button>
+                            <Button variant="ghost" size="sm">{t('customerDetails.auto_3')}</Button>
                           </Link>
                         </div>
                       </CardContent>

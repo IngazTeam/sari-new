@@ -95,27 +95,21 @@ export default function NotificationSettings() {
                 onClick={() => handleUpdate({ preferredMethod: 'push' })}
                 className="w-full justify-start"
               >
-                <Smartphone className="w-4 h-4 ml-2" />
-                إشعارات فورية فقط
-              </Button>
+                <Smartphone className="w-4 h-4 ml-2" />{t('notificationSettings.auto_0')}</Button>
               
               <Button
                 variant={preferences.preferredMethod === 'email' ? 'default' : 'outline'}
                 onClick={() => handleUpdate({ preferredMethod: 'email' })}
                 className="w-full justify-start"
               >
-                <Mail className="w-4 h-4 ml-2" />
-                بريد إلكتروني فقط
-              </Button>
+                <Mail className="w-4 h-4 ml-2" />{t('notificationSettings.auto_1')}</Button>
               
               <Button
                 variant={preferences.preferredMethod === 'both' ? 'default' : 'outline'}
                 onClick={() => handleUpdate({ preferredMethod: 'both' })}
                 className="w-full justify-start"
               >
-                <Bell className="w-4 h-4 ml-2" />
-                كلاهما
-              </Button>
+                <Bell className="w-4 h-4 ml-2" />{t('notificationSettings.auto_2')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -247,9 +241,7 @@ export default function NotificationSettings() {
                   </div>
                 </div>
                 
-                <div className="text-sm text-gray-600 bg-white p-3 rounded border border-blue-200">
-                  ℹ️ ملاحظة: الإشعارات المهمة جداً (مثل فك ربط واتساب) سيتم إرسالها حتى خلال ساعات الهدوء
-                </div>
+                <div className="text-sm text-gray-600 bg-white p-3 rounded border border-blue-200">{t('notificationSettings.auto_3')}</div>
               </div>
             )}
           </CardContent>

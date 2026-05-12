@@ -69,22 +69,16 @@ export default function ResetPassword() {
               <CheckCircle2 className="w-10 h-10 text-green-600" />
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900">{t('resetPasswordPage.text0')}</CardTitle>
-            <CardDescription className="text-base text-gray-600">
-              يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة
-            </CardDescription>
+            <CardDescription className="text-base text-gray-600">{t('resetPassword.auto_0')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Alert className="border-green-200 bg-green-50">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-sm text-gray-700">
-                تم تحديث كلمة المرور بنجاح. استخدم كلمة المرور الجديدة لتسجيل الدخول.
-              </AlertDescription>
+              <AlertDescription className="text-sm text-gray-700">{t('resetPassword.auto_1')}</AlertDescription>
             </Alert>
 
             <Link href="/login">
-              <Button className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700">
-                الذهاب لتسجيل الدخول
-                <ArrowRight className="w-4 h-4 mr-2" />
+              <Button className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700">{t('resetPassword.auto_2')}<ArrowRight className="w-4 h-4 mr-2" />
               </Button>
             </Link>
           </CardContent>
@@ -131,22 +125,16 @@ export default function ResetPassword() {
           <CardContent className="space-y-4">
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                الرابط الذي استخدمته غير صالح أو منتهي الصلاحية. يرجى طلب رابط جديد.
-              </AlertDescription>
+              <AlertDescription className="text-sm">{t('resetPassword.auto_3')}</AlertDescription>
             </Alert>
 
             <Link href="/forgot-password">
-              <Button className="w-full h-12 text-base font-semibold">
-                طلب رابط جديد
-              </Button>
+              <Button className="w-full h-12 text-base font-semibold">{t('resetPassword.auto_4')}</Button>
             </Link>
 
             <div className="text-center pt-2">
               <Link href="/login">
-                <span className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer inline-flex items-center gap-1">
-                  العودة لتسجيل الدخول
-                  <ArrowRight className="w-4 h-4" />
+                <span className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer inline-flex items-center gap-1">{t('resetPassword.auto_5')}<ArrowRight className="w-4 h-4" />
                 </span>
               </Link>
             </div>
@@ -166,9 +154,7 @@ export default function ResetPassword() {
       <Card className="w-full max-w-md shadow-xl border-blue-100">
         <CardHeader className="text-center space-y-2 pb-8">
           <CardTitle className="text-3xl font-bold text-gray-900">{t('resetPasswordPage.text3')}</CardTitle>
-          <CardDescription className="text-base text-gray-600">
-            أدخل كلمة المرور الجديدة لحسابك
-          </CardDescription>
+          <CardDescription className="text-base text-gray-600">{t('resetPassword.auto_6')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -182,9 +168,7 @@ export default function ResetPassword() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">
-                كلمة المرور الجديدة
-              </Label>
+              <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700">{t('resetPassword.auto_7')}</Label>
               <div className="relative">
                 <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
@@ -205,15 +189,11 @@ export default function ResetPassword() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">
-                يجب أن تكون 6 أحرف على الأقل
-              </p>
+              <p className="text-xs text-gray-500 mt-1">{t('resetPassword.auto_8')}</p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                تأكيد كلمة المرور
-              </Label>
+              <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">{t('resetPassword.auto_9')}</Label>
               <div className="relative">
                 <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
@@ -243,9 +223,7 @@ export default function ResetPassword() {
             >
               {resetPasswordMutation.isPending ? (
                 <span className="flex items-center gap-2">
-                  <span className="animate-spin">⏳</span>
-                  جاري التحديث...
-                </span>
+                  <span className="animate-spin">⏳</span>{t('resetPassword.auto_10')}</span>
               ) : (
                 'تحديث كلمة المرور'
               )}
@@ -253,9 +231,7 @@ export default function ResetPassword() {
 
             <div className="text-center pt-4">
               <Link href="/login">
-                <span className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer inline-flex items-center gap-1">
-                  العودة لتسجيل الدخول
-                  <ArrowRight className="w-4 h-4" />
+                <span className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer inline-flex items-center gap-1">{t('resetPassword.auto_11')}<ArrowRight className="w-4 h-4" />
                 </span>
               </Link>
             </div>

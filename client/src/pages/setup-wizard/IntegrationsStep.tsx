@@ -46,12 +46,8 @@ export default function IntegrationsStep({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <p className="text-gray-600">
-          ربط ساري مع Google لتحسين الإنتاجية (اختياري)
-        </p>
-        <p className="text-sm text-gray-500 mt-1">
-          يمكنك تفعيل هذه التكاملات لاحقاً من الإعدادات
-        </p>
+        <p className="text-gray-600">{t('integrationsStep.auto_0')}</p>
+        <p className="text-sm text-gray-500 mt-1">{t('integrationsStep.auto_1')}</p>
       </div>
 
       <div className="space-y-4">
@@ -69,15 +65,11 @@ export default function IntegrationsStep({
                     Google Calendar
                   </h3>
                   {enableCalendar && (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                      مفعّل
-                    </span>
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">{t('integrationsStep.auto_2')}</span>
                   )}
                 </div>
 
-                <p className="text-sm text-gray-600 mb-1">
-                  يسجّل ساري مواعيد الاجتماعات والحجوزات التي ينشئها مع عملائك تلقائياً في تقويم Google الخاص بك
-                </p>
+                <p className="text-sm text-gray-600 mb-1">{t('integrationsStep.auto_3')}</p>
 
                 <ul className="space-y-1 text-xs text-gray-500">
                   <li className="flex items-center space-x-1 space-x-reverse">
@@ -96,17 +88,13 @@ export default function IntegrationsStep({
 
                 {enableCalendar && (
                   <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                    <p className="text-xs text-blue-800 mb-2">
-                      سنحتاج إلى إذن الوصول إلى تقويم Google الخاص بك
-                    </p>
+                    <p className="text-xs text-blue-800 mb-2">{t('integrationsStep.auto_4')}</p>
                     <Button
                       variant="outline"
                       size="sm"
                       className="text-xs"
                     >
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                      ربط الآن
-                    </Button>
+                      <ExternalLink className="h-3 w-3 ml-1" />{t('integrationsStep.auto_5')}</Button>
                   </div>
                 )}
               </div>
@@ -134,15 +122,11 @@ export default function IntegrationsStep({
                     Google Sheets
                   </h3>
                   {enableSheets && (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                      مفعّل
-                    </span>
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">{t('integrationsStep.auto_6')}</span>
                   )}
                 </div>
 
-                <p className="text-sm text-gray-600 mb-1">
-                  يسجّل ساري نتائج المحادثات مع كل عميل تلقائياً في جدول بيانات Google لتتمكن من المتابعة معه
-                </p>
+                <p className="text-sm text-gray-600 mb-1">{t('integrationsStep.auto_7')}</p>
 
                 <ul className="space-y-1 text-xs text-gray-500">
                   <li className="flex items-center space-x-1 space-x-reverse">
@@ -161,17 +145,13 @@ export default function IntegrationsStep({
 
                 {enableSheets && (
                   <div className="mt-3 p-3 bg-green-50 rounded-lg">
-                    <p className="text-xs text-green-800 mb-2">
-                      سنحتاج إلى إذن الوصول إلى Google Sheets الخاص بك
-                    </p>
+                    <p className="text-xs text-green-800 mb-2">{t('integrationsStep.auto_8')}</p>
                     <Button
                       variant="outline"
                       size="sm"
                       className="text-xs"
                     >
-                      <ExternalLink className="h-3 w-3 ml-1" />
-                      ربط الآن
-                    </Button>
+                      <ExternalLink className="h-3 w-3 ml-1" />{t('integrationsStep.auto_9')}</Button>
                   </div>
                 )}
               </div>
@@ -189,19 +169,14 @@ export default function IntegrationsStep({
       {/* Info Box */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
         <p className="text-sm text-yellow-800">
-          💡 <strong>{t('wizardIntegrationsStepPage.text6')}</strong> يمكنك تفعيل هذه التكاملات في أي وقت من لوحة التحكم
-        </p>
+          💡 <strong>{t('wizardIntegrationsStepPage.text6')}</strong>{t('integrationsStep.auto_10')}</p>
       </div>
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t">
-        <Button variant="ghost" onClick={handleSkip}>
-          تخطي - سأفعل لاحقاً
-        </Button>
+        <Button variant="ghost" onClick={handleSkip}>{t('integrationsStep.auto_11')}</Button>
 
-        <Button size="lg" onClick={handleNext} className="px-8">
-          التالي
-          <ArrowRight className="mr-2 h-5 w-5" />
+        <Button size="lg" onClick={handleNext} className="px-8">{t('integrationsStep.auto_12')}<ArrowRight className="mr-2 h-5 w-5" />
         </Button>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 
 export default function SeoKeywords() {
+  const { t } = useTranslation();
   const { data: pages } = trpc.seo.getPages.useQuery();
   const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
 
@@ -19,13 +20,13 @@ export default function SeoKeywords() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">الكلمات المفتاحية</h1>
-        <p className="text-muted-foreground mt-2">تحليل الكلمات المفتاحية لكل صفحة</p>
+        <h1 className="text-3xl font-bold">{t('seoKeywords.auto_0')}</h1>
+        <p className="text-muted-foreground mt-2">{t('seoKeywords.auto_1')}</p>
       </div>
 
       {/* Page Selector */}
       <Card className="p-6">
-        <label className="block text-sm font-medium mb-3">اختر الصفحة</label>
+        <label className="block text-sm font-medium mb-3">{t('seoKeywords.auto_2')}</label>
         <div className="flex gap-2 flex-wrap">
           {(pages || []).map((page: any) => (
             <Button
@@ -37,7 +38,7 @@ export default function SeoKeywords() {
             </Button>
           ))}
           {(!pages || pages.length === 0) && (
-            <p className="text-muted-foreground">لا توجد صفحات</p>
+            <p className="text-muted-foreground">{t('seoKeywords.auto_3')}</p>
           )}
         </div>
       </Card>
@@ -45,24 +46,24 @@ export default function SeoKeywords() {
       {/* Keywords Table */}
       {activePageId && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">الكلمات المفتاحية</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('seoKeywords.auto_4')}</h2>
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : (keywords || []).length === 0 ? (
             <div className="text-center py-12">
               <Key className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد كلمات مفتاحية</h3>
-              <p className="text-muted-foreground">لم يتم تحليل كلمات مفتاحية لهذه الصفحة بعد</p>
+              <h3 className="text-lg font-semibold mb-2">{t('seoKeywords.auto_5')}</h3>
+              <p className="text-muted-foreground">{t('seoKeywords.auto_6')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">الكلمة</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">الترتيب</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">حجم البحث</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">المنافسة</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoKeywords.auto_7')}</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoKeywords.auto_8')}</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoKeywords.auto_9')}</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoKeywords.auto_10')}</th>
                   </tr>
                 </thead>
                 <tbody>

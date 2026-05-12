@@ -30,6 +30,7 @@ export function ConversationPreviewMode({
   isOnline = false,
   lastSeen,
 }: ConversationPreviewModeProps) {
+  const { t } = useTranslation();
   const [darkMode, setDarkMode] = useState(false);
   const [deviceView, setDeviceView] = useState<'mobile' | 'desktop'>('mobile');
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -63,17 +64,13 @@ export function ConversationPreviewMode({
             size="sm"
             onClick={() => setDeviceView('mobile')}
           >
-            <Smartphone className="w-4 h-4 mr-2" />
-            جوال
-          </Button>
+            <Smartphone className="w-4 h-4 mr-2" />{t('conversationPreviewMode.auto_0')}</Button>
           <Button
             variant={deviceView === 'desktop' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setDeviceView('desktop')}
           >
-            <Monitor className="w-4 h-4 mr-2" />
-            سطح المكتب
-          </Button>
+            <Monitor className="w-4 h-4 mr-2" />{t('conversationPreviewMode.auto_1')}</Button>
         </div>
       </div>
 
@@ -105,16 +102,12 @@ export function ConversationPreviewMode({
       <Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
         <DialogTrigger asChild>
           <Button variant="outline" size="sm">
-            <Eye className="w-4 h-4 mr-2" />
-            معاينة واتساب
-          </Button>
+            <Eye className="w-4 h-4 mr-2" />{t('conversationPreviewMode.auto_2')}</Button>
         </DialogTrigger>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              معاينة المحادثة كما تظهر في واتساب
-            </DialogTitle>
+              <Eye className="w-5 h-5" />{t('conversationPreviewMode.auto_3')}</DialogTitle>
           </DialogHeader>
           <PreviewContent />
         </DialogContent>

@@ -193,9 +193,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                     <Globe className="w-8 h-8 text-primary" />
                 </div>
                 <h2 className="text-2xl font-bold">{t('wizardWebsiteStepPage.text0')}</h2>
-                <p className="text-muted-foreground">
-                    أدخل رابط موقعك وساري يزحف حتى 30 صفحة ويستخرج كل المحتوى تلقائياً
-                </p>
+                <p className="text-muted-foreground">{t('websiteStep.auto_0')}</p>
             </div>
 
             {/* URL Input */}
@@ -222,14 +220,10 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                         >
                             {isAnalyzing ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                                    جاري التحليل...
-                                </>
+                                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('websiteStep.auto_1')}</>
                             ) : (
                                 <>
-                                    <Search className="w-4 h-4 ml-2" />
-                                    تحليل
-                                </>
+                                    <Search className="w-4 h-4 ml-2" />{t('websiteStep.auto_2')}</>
                             )}
                         </Button>
                     </div>
@@ -246,8 +240,8 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             <div className="flex items-center gap-3">
                                 <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
                                 <div>
-                                    <p className="font-medium text-blue-900">جاري تحليل الموقع...</p>
-                                    <p className="text-sm text-blue-700">يتم زحف الصفحات واستخراج المحتوى بالذكاء الاصطناعي — قد يستغرق 1-3 دقائق</p>
+                                    <p className="font-medium text-blue-900">{t('websiteStep.auto_3')}</p>
+                                    <p className="text-sm text-blue-700">{t('websiteStep.auto_4')}</p>
                                 </div>
                             </div>
                         </Card>
@@ -264,7 +258,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <p className="font-medium text-emerald-900">تم تحليل الموقع بنجاح! 🎉</p>
+                                    <p className="font-medium text-emerald-900">{t('websiteStep.auto_5')}</p>
                                     {analysisResult.siteType && getSiteTypeBadge(analysisResult.siteType)}
                                 </div>
                                 <div className="flex items-center gap-3 mt-1 text-sm text-emerald-700">
@@ -288,9 +282,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     setExtractedProducts([]);
                                 }}
                             >
-                                <Search className="w-4 h-4 ml-1" />
-                                إعادة
-                            </Button>
+                                <Search className="w-4 h-4 ml-1" />{t('websiteStep.auto_6')}</Button>
                         </div>
                     </Card>
 
@@ -372,9 +364,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                 ))}
                             </div>
 
-                            <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg text-center">
-                                💡 سيتم إضافة هذه العناصر تلقائياً في الخطوة التالية. يمكنك تعديلها أو حذفها.
-                            </p>
+                            <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg text-center">{t('websiteStep.auto_7')}</p>
                         </div>
                     ) : (
                         /* No products found */
@@ -385,7 +375,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Phone className="w-4 h-4" />
-                                            <span>الهاتف</span>
+                                            <span>{t('websiteStep.auto_8')}</span>
                                         </div>
                                         <span className="text-sm font-medium text-emerald-600" dir="ltr">
                                             {analysisResult.contactInfo.phones[0]}
@@ -396,7 +386,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <Mail className="w-4 h-4" />
-                                            <span>البريد</span>
+                                            <span>{t('websiteStep.auto_9')}</span>
                                         </div>
                                         <span className="text-sm font-medium text-emerald-600" dir="ltr">
                                             {analysisResult.contactInfo.emails[0]}
@@ -407,7 +397,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <MessageCircle className="w-4 h-4" />
-                                            <span>واتساب</span>
+                                            <span>{t('websiteStep.auto_10')}</span>
                                         </div>
                                         <span className="text-sm font-medium text-emerald-600" dir="ltr">
                                             ✅ +{analysisResult.contactInfo.whatsappNumber}
@@ -418,7 +408,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <MapPin className="w-4 h-4" />
-                                            <span>العنوان</span>
+                                            <span>{t('websiteStep.auto_11')}</span>
                                         </div>
                                         <span className="text-sm font-medium text-gray-700 max-w-[200px] truncate">
                                             {analysisResult.contactInfo.address}
@@ -429,7 +419,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                     <div className="flex items-center justify-between p-3">
                                         <div className="flex items-center gap-2 text-sm text-gray-600">
                                             <HelpCircle className="w-4 h-4" />
-                                            <span>أسئلة شائعة</span>
+                                            <span>{t('websiteStep.auto_12')}</span>
                                         </div>
                                         <span className="text-sm font-medium text-emerald-600">
                                             ✅ {analysisResult.faqs.length} سؤال
@@ -438,9 +428,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                                 )}
                             </Card>
 
-                            <p className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 p-3 rounded-lg text-center">
-                                ℹ️ لم يتم العثور على منتجات — يمكنك إضافة المنتجات والخدمات يدوياً في الخطوة التالية
-                            </p>
+                            <p className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 p-3 rounded-lg text-center">{t('websiteStep.auto_13')}</p>
                         </div>
                     )}
                 </div>
@@ -459,9 +447,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
                 ) : (
                     !isAnalyzing && (
                         <Button onClick={skipStep} variant="ghost" className="flex-1">
-                            <SkipForward className="w-4 h-4 ml-2" />
-                            تخطي — ليس لدي موقع
-                        </Button>
+                            <SkipForward className="w-4 h-4 ml-2" />{t('websiteStep.auto_14')}</Button>
                     )
                 )}
             </div>

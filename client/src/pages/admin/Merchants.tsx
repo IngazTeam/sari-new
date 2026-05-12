@@ -78,9 +78,7 @@ export default function MerchantsManagement() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">{t('adminMerchantsPage.text4')}</h1>
-        <p className="text-muted-foreground mt-2">
-          عرض وإدارة جميع التجار المسجلين في المنصة
-        </p>
+        <p className="text-muted-foreground mt-2">{t('merchants.auto_0')}</p>
       </div>
 
       {/* Stats Cards */}
@@ -124,9 +122,7 @@ export default function MerchantsManagement() {
       <Card>
         <CardHeader>
           <CardTitle>{t('adminMerchantsPage.text8')}</CardTitle>
-          <CardDescription>
-            جميع التجار المسجلين مع إمكانية تغيير حالاتهم
-          </CardDescription>
+          <CardDescription>{t('merchants.auto_1')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -179,13 +175,13 @@ export default function MerchantsManagement() {
                       </TableCell>
                       <TableCell>
                         {merchant.subscriptionStatus === 'active' ? (
-                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">نشط</Badge>
+                          <Badge className="bg-green-100 text-green-700 hover:bg-green-100">{t('merchants.auto_2')}</Badge>
                         ) : merchant.subscriptionStatus === 'trial' ? (
-                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">تجريبي</Badge>
+                          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">{t('merchants.auto_3')}</Badge>
                         ) : merchant.subscriptionStatus === 'expired' ? (
-                          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">منتهي</Badge>
+                          <Badge className="bg-red-100 text-red-700 hover:bg-red-100">{t('merchants.auto_4')}</Badge>
                         ) : (
-                          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">قيد المراجعة</Badge>
+                          <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100">{t('merchants.auto_5')}</Badge>
                         )}
                       </TableCell>
                       <TableCell>{getStatusBadge(merchant.status)}</TableCell>
@@ -217,9 +213,7 @@ export default function MerchantsManagement() {
                           size="sm"
                           onClick={() => setLocation(`/admin/merchants/${merchant.id}`)}
                         >
-                          <Eye className="h-4 w-4 ml-2" />
-                          عرض التفاصيل
-                        </Button>
+                          <Eye className="h-4 w-4 ml-2" />{t('merchants.auto_6')}</Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -230,9 +224,7 @@ export default function MerchantsManagement() {
             <div className="text-center py-12">
               <Store className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4 text-lg font-medium">{t('adminMerchantsPage.text20')}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                سيظهر التجار هنا بمجرد تسجيلهم في المنصة
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{t('merchants.auto_7')}</p>
             </div>
           )}
         </CardContent>

@@ -15,12 +15,8 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 mb-4 shadow-lg shadow-green-200">
           <Bot className="h-10 w-10 text-white" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-3">
-          مرحباً بك في ساري! 🎉
-        </h2>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          مساعدك الذكي للمبيعات والتسويق عبر واتساب. سنساعدك في إعداد كل شيء خلال 5 دقائق فقط!
-        </p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">{t('welcomeStep.auto_0')}</h2>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">{t('welcomeStep.auto_1')}</p>
       </div>
 
       {/* Features Grid */}
@@ -31,9 +27,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text0')}</h3>
-            <p className="text-sm text-gray-600">
-              ساري يرد على عملائك 24/7 بذكاء اصطناعي متقدم
-            </p>
+            <p className="text-sm text-gray-600">{t('welcomeStep.auto_2')}</p>
           </div>
         </div>
 
@@ -43,9 +37,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text1')}</h3>
-            <p className="text-sm text-gray-600">
-              تحويل المحادثات إلى طلبات ومبيعات فعلية
-            </p>
+            <p className="text-sm text-gray-600">{t('welcomeStep.auto_3')}</p>
           </div>
         </div>
 
@@ -55,9 +47,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text2')}</h3>
-            <p className="text-sm text-gray-600">
-              بياناتك محمية بأعلى معايير الأمان
-            </p>
+            <p className="text-sm text-gray-600">{t('welcomeStep.auto_4')}</p>
           </div>
         </div>
 
@@ -67,9 +57,7 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 mb-1">{t('wizardWelcomeStepPage.text3')}</h3>
-            <p className="text-sm text-gray-600">
-              لا تحتاج خبرة تقنية، كل شيء بسيط وواضح
-            </p>
+            <p className="text-sm text-gray-600">{t('welcomeStep.auto_5')}</p>
           </div>
         </div>
       </div>
@@ -97,13 +85,9 @@ export default function WelcomeStep({ goToNextStep }: WelcomeStepProps) {
           size="lg"
           onClick={goToNextStep}
           className="px-8 py-6 text-lg font-semibold bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 shadow-lg shadow-green-200 hover:shadow-xl hover:shadow-green-200 transition-all"
-        >
-          لنبدأ! 🚀
-          <ArrowRight className="mr-2 h-5 w-5" />
+        >{t('welcomeStep.auto_6')}<ArrowRight className="mr-2 h-5 w-5" />
         </Button>
-        <p className="text-sm text-gray-500 mt-3">
-          لن يستغرق الأمر أكثر من 5 دقائق
-        </p>
+        <p className="text-sm text-gray-500 mt-3">{t('welcomeStep.auto_7')}</p>
       </div>
     </div>
   );

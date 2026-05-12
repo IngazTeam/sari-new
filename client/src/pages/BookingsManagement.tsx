@@ -133,14 +133,10 @@ export default function BookingsManagement() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">{t('bookingsManagementPage.text0')}</h1>
-          <p className="text-muted-foreground mt-1">
-            إدارة وتتبع جميع حجوزات الخدمات
-          </p>
+          <p className="text-muted-foreground mt-1">{t('bookingsManagement.auto_0')}</p>
         </div>
         <Button>
-          <Plus className="w-4 h-4 mr-2" />
-          حجز جديد
-        </Button>
+          <Plus className="w-4 h-4 mr-2" />{t('bookingsManagement.auto_1')}</Button>
       </div>
 
       {/* Statistics Cards */}
@@ -243,9 +239,7 @@ export default function BookingsManagement() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
-                    جاري التحميل...
-                  </td>
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">{t('bookingsManagement.auto_2')}</td>
                 </tr>
               ) : filteredBookings.length === 0 ? (
                 <tr>
@@ -293,9 +287,7 @@ export default function BookingsManagement() {
                           <DialogContent>
                             <DialogHeader>
                               <DialogTitle>{t('bookingsManagementPage.text21')}</DialogTitle>
-                              <DialogDescription>
-                                معلومات كاملة عن الحجز
-                              </DialogDescription>
+                              <DialogDescription>{t('bookingsManagement.auto_3')}</DialogDescription>
                             </DialogHeader>
                             {selectedBooking && (
                               <div className="space-y-4">

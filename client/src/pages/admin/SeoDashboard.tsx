@@ -17,6 +17,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 export default function SeoDashboard() {
+  const { t } = useTranslation();
   const [days, setDays] = useState(30);
 
   // GA Config
@@ -39,12 +40,9 @@ export default function SeoDashboard() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">لوحة التحكم SEO</h1>
-          <p className="text-gray-600 mt-2">
-            بيانات حقيقية من Google Analytics 4
-            <Badge variant="outline" className="mr-2 bg-green-50 text-green-700">
-              <CheckCircle className="w-3 h-3 ml-1" /> متصل
-            </Badge>
+          <h1 className="text-3xl font-bold">{t('seoDashboard.auto_0')}</h1>
+          <p className="text-gray-600 mt-2">{t('seoDashboard.auto_1')}<Badge variant="outline" className="mr-2 bg-green-50 text-green-700">
+              <CheckCircle className="w-3 h-3 ml-1" />{t('seoDashboard.auto_2')}</Badge>
           </p>
         </div>
         <div className="flex gap-2">
@@ -53,10 +51,10 @@ export default function SeoDashboard() {
             onChange={(e) => setDays(parseInt(e.target.value))}
             className="px-3 py-2 border rounded-lg text-sm"
           >
-            <option value={7}>آخر 7 أيام</option>
-            <option value={30}>آخر 30 يوم</option>
-            <option value={90}>آخر 90 يوم</option>
-            <option value={365}>سنة كاملة</option>
+            <option value={7}>{t('seoDashboard.auto_3')}</option>
+            <option value={30}>{t('seoDashboard.auto_4')}</option>
+            <option value={90}>{t('seoDashboard.auto_5')}</option>
+            <option value={365}>{t('seoDashboard.auto_6')}</option>
           </select>
         </div>
       </div>
@@ -64,25 +62,25 @@ export default function SeoDashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KPICard
-          label="إجمالي المستخدمين"
+          label={t('seoDashboard.auto_20')}
           value={overview?.totalUsers}
           icon={<Users className="w-8 h-8 text-blue-500" />}
           loading={loadingOverview}
         />
         <KPICard
-          label="الجلسات"
+          label={t('seoDashboard.auto_21')}
           value={overview?.sessions}
           icon={<Eye className="w-8 h-8 text-green-500" />}
           loading={loadingOverview}
         />
         <KPICard
-          label="مشاهدات الصفحات"
+          label={t('seoDashboard.auto_22')}
           value={overview?.pageViews}
           icon={<TrendingUp className="w-8 h-8 text-purple-500" />}
           loading={loadingOverview}
         />
         <KPICard
-          label="متوسط مدة الجلسة"
+          label={t('seoDashboard.auto_23')}
           value={overview ? formatDuration(overview.avgSessionDuration) : undefined}
           icon={<CheckCircle className="w-8 h-8 text-orange-500" />}
           loading={loadingOverview}
@@ -92,7 +90,7 @@ export default function SeoDashboard() {
 
       {/* Traffic Chart */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">حركة المرور اليومية</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('seoDashboard.auto_7')}</h2>
         {loadingChart ? (
           <div className="flex items-center justify-center h-[300px]">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -111,23 +109,21 @@ export default function SeoDashboard() {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-            لا توجد بيانات
-          </div>
+          <div className="flex items-center justify-center h-[300px] text-muted-foreground">{t('seoDashboard.auto_8')}</div>
         )}
       </Card>
 
       {/* Top Pages */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">أعلى الصفحات زيارة</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('seoDashboard.auto_9')}</h2>
         {topPages && topPages.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">الصفحة</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">المشاهدات</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">متوسط الوقت</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoDashboard.auto_10')}</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoDashboard.auto_11')}</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoDashboard.auto_12')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,7 +138,7 @@ export default function SeoDashboard() {
             </table>
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-8">لا توجد بيانات</p>
+          <p className="text-muted-foreground text-center py-8">{t('seoDashboard.auto_13')}</p>
         )}
       </Card>
     </div>
@@ -211,17 +207,15 @@ function GASetupCard({ config, onConfigured }: { config: any; onConfigured: () =
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-green-500 rounded-2xl mx-auto mb-4 flex items-center justify-center">
             <TrendingUp className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-2xl font-bold">ربط Google Analytics 4</h2>
-          <p className="text-muted-foreground mt-2">
-            أدخل بيانات Service Account لربط لوحة التحكم ببيانات GA4 الحقيقية
-          </p>
+          <h2 className="text-2xl font-bold">{t('seoDashboard.auto_14')}</h2>
+          <p className="text-muted-foreground mt-2">{t('seoDashboard.auto_15')}</p>
         </div>
 
         {config?.hasCredentials && (
           <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/20 mb-4">
             <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">Service Account مُسجّل</p>
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">{t('seoDashboard.auto_16')}</p>
               <p className="text-xs text-muted-foreground font-mono">{config.serviceAccountEmail}</p>
             </div>
           </div>
@@ -229,7 +223,7 @@ function GASetupCard({ config, onConfigured }: { config: any; onConfigured: () =
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Property ID (الرقمي)</Label>
+            <Label>{t('seoDashboard.auto_17')}</Label>
             <Input
               value={propertyId}
               onChange={(e) => setPropertyId(e.target.value)}
@@ -237,9 +231,7 @@ function GASetupCard({ config, onConfigured }: { config: any; onConfigured: () =
               dir="ltr"
               className="font-mono"
             />
-            <p className="text-xs text-muted-foreground">
-              من GA4 → Admin → Property Settings → Property ID
-            </p>
+            <p className="text-xs text-muted-foreground">{t('seoDashboard.auto_18')}</p>
           </div>
 
           <div className="space-y-2">
@@ -252,9 +244,7 @@ function GASetupCard({ config, onConfigured }: { config: any; onConfigured: () =
               dir="ltr"
               className="font-mono text-xs"
             />
-            <p className="text-xs text-muted-foreground">
-              محتوى ملف JSON المُحمّل من Google Cloud Console
-            </p>
+            <p className="text-xs text-muted-foreground">{t('seoDashboard.auto_19')}</p>
           </div>
 
           <div className="flex gap-2 pt-2">

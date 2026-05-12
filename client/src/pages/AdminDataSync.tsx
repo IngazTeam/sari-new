@@ -118,9 +118,7 @@ export default function AdminDataSync() {
                   onCheckedChange={(checked) => setSyncChats(checked as boolean)}
                   disabled={isLoading}
                 />
-                <label htmlFor="syncChats" className="text-sm cursor-pointer">
-                  مزامنة المحادثات
-                </label>
+                <label htmlFor="syncChats" className="text-sm cursor-pointer">{t('adminDataSync.auto_0')}</label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -130,9 +128,7 @@ export default function AdminDataSync() {
                   onCheckedChange={(checked) => setSyncMessages(checked as boolean)}
                   disabled={isLoading}
                 />
-                <label htmlFor="syncMessages" className="text-sm cursor-pointer">
-                  مزامنة الرسائل
-                </label>
+                <label htmlFor="syncMessages" className="text-sm cursor-pointer">{t('adminDataSync.auto_1')}</label>
               </div>
             </div>
 
@@ -144,9 +140,7 @@ export default function AdminDataSync() {
             >
               {isLoading ? (
                 <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  جاري المزامنة...
-                </>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />{t('adminDataSync.auto_2')}</>
               ) : (
                 'بدء المزامنة'
               )}

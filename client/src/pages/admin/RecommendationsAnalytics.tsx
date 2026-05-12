@@ -145,12 +145,8 @@ export default function RecommendationsAnalytics() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <BarChart3 className="w-8 h-8 text-blue-500" />
-          تحليلات التوصيات
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          رؤى شاملة عن أداء التوصيات والـ ROI
-        </p>
+          <BarChart3 className="w-8 h-8 text-blue-500" />{t('recommendationsAnalytics.auto_0')}</h1>
+        <p className="text-muted-foreground mt-2">{t('recommendationsAnalytics.auto_1')}</p>
       </div>
 
       {/* KPI Cards */}
@@ -162,9 +158,7 @@ export default function RecommendationsAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              جميع التوصيات
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('recommendationsAnalytics.auto_2')}</p>
           </CardContent>
         </Card>
 
@@ -188,9 +182,7 @@ export default function RecommendationsAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics.averageROI}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              نقاط التأثير
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('recommendationsAnalytics.auto_3')}</p>
           </CardContent>
         </Card>
 
@@ -201,9 +193,7 @@ export default function RecommendationsAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics.inProgress}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              توصيات نشطة
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('recommendationsAnalytics.auto_4')}</p>
           </CardContent>
         </Card>
 
@@ -214,9 +204,7 @@ export default function RecommendationsAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{analytics.critical}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              توصيات حرجة
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('recommendationsAnalytics.auto_5')}</p>
           </CardContent>
         </Card>
       </div>
@@ -227,9 +215,7 @@ export default function RecommendationsAnalytics() {
         <Card>
           <CardHeader>
             <CardTitle>{t('adminRecommendationsAnalyticsPage.text6')}</CardTitle>
-            <CardDescription>
-              توزيع التوصيات حسب الحالة الحالية
-            </CardDescription>
+            <CardDescription>{t('recommendationsAnalytics.auto_6')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -258,9 +244,7 @@ export default function RecommendationsAnalytics() {
         <Card>
           <CardHeader>
             <CardTitle>{t('adminRecommendationsAnalyticsPage.text7')}</CardTitle>
-            <CardDescription>
-              توزيع التوصيات حسب مستوى الأولوية
-            </CardDescription>
+            <CardDescription>{t('recommendationsAnalytics.auto_7')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -279,9 +263,7 @@ export default function RecommendationsAnalytics() {
         <Card>
           <CardHeader>
             <CardTitle>{t('adminRecommendationsAnalyticsPage.text8')}</CardTitle>
-            <CardDescription>
-              توزيع التوصيات حسب نوع التحسين
-            </CardDescription>
+            <CardDescription>{t('recommendationsAnalytics.auto_8')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -300,9 +282,7 @@ export default function RecommendationsAnalytics() {
         <Card>
           <CardHeader>
             <CardTitle>{t('adminRecommendationsAnalyticsPage.text9')}</CardTitle>
-            <CardDescription>
-              توزيع التوصيات حسب صعوبة التنفيذ
-            </CardDescription>
+            <CardDescription>{t('recommendationsAnalytics.auto_9')}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -346,9 +326,7 @@ export default function RecommendationsAnalytics() {
           <p>
             <strong>{t('adminRecommendationsAnalyticsPage.text14')}</strong> متوسط نقاط التأثير للتوصيات المكتملة هو {analytics.averageROI}
           </p>
-          <p className="text-blue-900 font-medium pt-2">
-            💡 التوصية: ركز على التوصيات الحرجة ذات صعوبة التنفيذ المنخفضة لتحقيق أفضل ROI
-          </p>
+          <p className="text-blue-900 font-medium pt-2">{t('recommendationsAnalytics.auto_10')}</p>
         </CardContent>
       </Card>
     </div>

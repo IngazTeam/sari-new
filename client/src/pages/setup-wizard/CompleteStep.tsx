@@ -79,12 +79,8 @@ export default function CompleteStep({
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 mb-4 animate-bounce">
           <Check className="h-10 w-10 text-white" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          رائع! كل شيء جاهز 🎉
-        </h2>
-        <p className="text-lg text-gray-600">
-          دعنا نراجع إعداداتك قبل البدء
-        </p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">{t('completeStep.auto_0')}</h2>
+        <p className="text-lg text-gray-600">{t('completeStep.auto_1')}</p>
       </div>
 
       {/* WhatsApp Preview Section */}
@@ -142,17 +138,13 @@ export default function CompleteStep({
 
               {/* Input (disabled) */}
               <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="bg-gray-100 rounded-full px-4 py-2 text-sm text-gray-500 text-center">
-                  هذه معاينة فقط - ساري سيرد تلقائياً على عملائك
-                </div>
+                <div className="bg-gray-100 rounded-full px-4 py-2 text-sm text-gray-500 text-center">{t('completeStep.auto_2')}</div>
               </div>
             </div>
           )}
 
           {!showPreview && (
-            <p className="text-sm text-gray-600 text-center">
-              شاهد كيف سيتفاعل ساري مع عملائك بناءً على الإعدادات التي اخترتها
-            </p>
+            <p className="text-sm text-gray-600 text-center">{t('completeStep.auto_3')}</p>
           )}
         </div>
       </Card>
@@ -307,19 +299,13 @@ export default function CompleteStep({
         >
           {isLoading ? (
             <>
-              <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-              جاري الإعداد...
-            </>
+              <Loader2 className="mr-2 h-6 w-6 animate-spin" />{t('completeStep.auto_4')}</>
           ) : (
-            <>
-              ابدأ الآن! 🚀
-              <Rocket className="mr-2 h-6 w-6" />
+            <>{t('completeStep.auto_5')}<Rocket className="mr-2 h-6 w-6" />
             </>
           )}
         </Button>
-        <p className="text-sm text-gray-500 mt-3">
-          بالنقر على "ابدأ الآن"، أنت توافق على شروط الخدمة وسياسة الخصوصية
-        </p>
+        <p className="text-sm text-gray-500 mt-3">{t('completeStep.auto_6')}</p>
       </div>
     </div>
   );

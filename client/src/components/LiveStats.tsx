@@ -11,6 +11,7 @@ export default function LiveStats({
   targetOrders, 
   duration = 2000 
 }: LiveStatsProps) {
+  const { t } = useTranslation();
   const [conversations, setConversations] = useState(0);
   const [orders, setOrders] = useState(0);
 
@@ -49,17 +50,13 @@ export default function LiveStats({
         <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums">
           {conversations.toLocaleString('ar-SA')}+
         </div>
-        <div className="text-sm md:text-base text-muted-foreground font-medium">
-          محادثة نشطة
-        </div>
+        <div className="text-sm md:text-base text-muted-foreground font-medium">{t('liveStats.auto_0')}</div>
       </div>
       <div className="text-center space-y-2">
         <div className="text-4xl md:text-5xl font-bold text-primary tabular-nums">
           {orders.toLocaleString('ar-SA')}+
         </div>
-        <div className="text-sm md:text-base text-muted-foreground font-medium">
-          طلب مكتمل
-        </div>
+        <div className="text-sm md:text-base text-muted-foreground font-medium">{t('liveStats.auto_1')}</div>
       </div>
     </div>
   );

@@ -68,12 +68,8 @@ export default function CalendarPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-orange-500" />
-              Google Calendar غير متصل
-            </CardTitle>
-            <CardDescription>
-              يجب ربط حسابك في Google Calendar أولاً لعرض المواعيد
-            </CardDescription>
+              <AlertCircle className="h-5 w-5 text-orange-500" />{t('calendarPage.auto_0')}</CardTitle>
+            <CardDescription>{t('calendarPage.auto_1')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => window.location.href = '/merchant/calendar/settings'}>
@@ -89,18 +85,14 @@ export default function CalendarPage() {
     <div className="container max-w-7xl py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('calendarPagePage.text1')}</h1>
-        <p className="text-muted-foreground">
-          إدارة جميع المواعيد المحجوزة مع العملاء
-        </p>
+        <p className="text-muted-foreground">{t('calendarPage.auto_2')}</p>
       </div>
 
       {/* الإحصائيات */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              إجمالي المواعيد
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('calendarPage.auto_3')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.total || 0}</div>
@@ -109,9 +101,7 @@ export default function CalendarPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              مؤكدة
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('calendarPage.auto_4')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats?.confirmed || 0}</div>
@@ -120,9 +110,7 @@ export default function CalendarPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              قيد الانتظار
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('calendarPage.auto_5')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">{stats?.pending || 0}</div>
@@ -131,9 +119,7 @@ export default function CalendarPage() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              ملغاة
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('calendarPage.auto_6')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats?.cancelled || 0}</div>
@@ -189,17 +175,13 @@ export default function CalendarPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t('calendarPagePage.text3')}</CardTitle>
-          <CardDescription>
-            المواعيد المحجوزة خلال الشهر الحالي
-          </CardDescription>
+          <CardDescription>{t('calendarPage.auto_7')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">{t('calendarPagePage.text4')}</div>
           ) : !appointments || appointments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد مواعيد محجوزة
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('calendarPage.auto_8')}</div>
           ) : (
             <div className="space-y-4">
               {appointments
@@ -218,14 +200,10 @@ export default function CalendarPage() {
                         <Badge variant={apt.status === 'confirmed' ? 'default' : 'secondary'}>
                           {apt.status === 'confirmed' ? (
                             <>
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              مؤكد
-                            </>
+                              <CheckCircle2 className="h-3 w-3 mr-1" />{t('calendarPage.auto_9')}</>
                           ) : (
                             <>
-                              <Clock className="h-3 w-3 mr-1" />
-                              قيد الانتظار
-                            </>
+                              <Clock className="h-3 w-3 mr-1" />{t('calendarPage.auto_10')}</>
                           )}
                         </Badge>
                       </div>

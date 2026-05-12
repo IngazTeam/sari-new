@@ -60,9 +60,7 @@ export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageS
           <Globe className="w-8 h-8 text-primary" />
         </div>
         <h2 className="text-2xl font-bold">{t('wizardLanguageStepPage.text0')}</h2>
-        <p className="text-muted-foreground">
-          اختر اللغة التي سيستخدمها ساري للتواصل مع عملائك
-        </p>
+        <p className="text-muted-foreground">{t('languageStep.auto_0')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -107,12 +105,8 @@ export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageS
           <div className="flex gap-3">
             <Globe className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="font-medium text-blue-900 dark:text-blue-100">
-                معلومة مهمة
-              </h4>
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                سيتم استخدام هذه اللغة في جميع رسائل البوت التلقائية. يمكنك تغيير اللغة لاحقاً من صفحة الإعدادات.
-              </p>
+              <h4 className="font-medium text-blue-900 dark:text-blue-100">{t('languageStep.auto_1')}</h4>
+              <p className="text-sm text-blue-800 dark:text-blue-200">{t('languageStep.auto_2')}</p>
             </div>
           </div>
         </CardContent>
@@ -135,9 +129,7 @@ export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageS
 
       {/* Next Button */}
       <div className="flex justify-center pt-4">
-        <Button size="lg" onClick={goToNextStep} className="px-8 bg-emerald-600 hover:bg-emerald-700">
-          التالي
-          <ArrowRight className="mr-2 h-5 w-5" />
+        <Button size="lg" onClick={goToNextStep} className="px-8 bg-emerald-600 hover:bg-emerald-700">{t('languageStep.auto_3')}<ArrowRight className="mr-2 h-5 w-5" />
         </Button>
       </div>
     </div>

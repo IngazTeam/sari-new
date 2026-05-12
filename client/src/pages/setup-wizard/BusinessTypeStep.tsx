@@ -108,9 +108,7 @@ export default function BusinessTypeStep({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <p className="text-gray-600">
-          اختر نوع نشاطك التجاري لنتمكن من تخصيص ساري حسب احتياجاتك
-        </p>
+        <p className="text-gray-600">{t('businessTypeStep.auto_0')}</p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-5">
@@ -167,8 +165,7 @@ export default function BusinessTypeStep({
       {/* Help Text */}
       <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-center">
         <p className="text-sm text-emerald-800">
-          💡 <strong>{t('wizardBusinessTypeStepPage.text1')}</strong> يمكنك تغيير نوع النشاط لاحقاً من الإعدادات
-        </p>
+          💡 <strong>{t('wizardBusinessTypeStepPage.text1')}</strong>{t('businessTypeStep.auto_1')}</p>
       </div>
 
       {/* Next Button */}
@@ -178,9 +175,7 @@ export default function BusinessTypeStep({
           onClick={handleNext}
           disabled={!selectedType}
           className="px-8 bg-emerald-600 hover:bg-emerald-700"
-        >
-          التالي
-          <ArrowRight className="mr-2 h-5 w-5" />
+        >{t('businessTypeStep.auto_2')}<ArrowRight className="mr-2 h-5 w-5" />
         </Button>
       </div>
     </div>

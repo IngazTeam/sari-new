@@ -99,9 +99,7 @@ export default function ChatOrders() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold mb-2">{t('chatOrdersPage.text1')}</h1>
-        <p className="text-muted-foreground">
-          جميع الطلبات التي تم إنشاؤها من محادثات الواتساب
-        </p>
+        <p className="text-muted-foreground">{t('chatOrders.auto_0')}</p>
       </div>
 
       {/* Stats Cards */}
@@ -157,18 +155,14 @@ export default function ChatOrders() {
       <Card>
         <CardHeader>
           <CardTitle>{t('chatOrdersPage.text6')}</CardTitle>
-          <CardDescription>
-            جميع الطلبات مرتبة حسب الأحدث
-          </CardDescription>
+          <CardDescription>{t('chatOrders.auto_1')}</CardDescription>
         </CardHeader>
         <CardContent>
           {!orders || orders.length === 0 ? (
             <div className="text-center py-12">
               <ShoppingCart className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">{t('chatOrdersPage.text7')}</h3>
-              <p className="text-muted-foreground">
-                عندما يقوم العملاء بالطلب عبر الواتساب، ستظهر الطلبات هنا
-              </p>
+              <p className="text-muted-foreground">{t('chatOrders.auto_2')}</p>
             </div>
           ) : (
             <Table>
@@ -204,9 +198,7 @@ export default function ChatOrders() {
                     <TableCell>
                       {order.isGift ? (
                         <Badge variant="secondary" className="gap-1">
-                          <Gift className="w-3 h-3" />
-                          هدية
-                        </Badge>
+                          <Gift className="w-3 h-3" />{t('chatOrders.auto_3')}</Badge>
                       ) : (
                         <Badge variant="outline">{t('chatOrdersPage.text15')}</Badge>
                       )}

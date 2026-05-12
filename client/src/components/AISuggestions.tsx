@@ -106,9 +106,7 @@ export function AISuggestions({
         onClick={() => setIsExpanded(true)}
         className={cn("gap-2", className)}
       >
-        <Sparkles className="w-4 h-4 text-primary" />
-        اقتراحات AI
-        <ChevronDown className="w-3 h-3" />
+        <Sparkles className="w-4 h-4 text-primary" />{t('aISuggestions.auto_0')}<ChevronDown className="w-3 h-3" />
       </Button>
     );
   }
@@ -222,18 +220,14 @@ export function AISuggestions({
             // Empty state
             <div className="text-center py-4">
               <Sparkles className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">
-                اضغط على زر التوليد للحصول على اقتراحات
-              </p>
+              <p className="text-sm text-muted-foreground">{t('aISuggestions.auto_1')}</p>
               <Button
                 variant="outline"
                 size="sm"
                 className="mt-2 gap-2"
                 onClick={handleGenerate}
               >
-                <Wand2 className="w-4 h-4" />
-                توليد اقتراحات
-              </Button>
+                <Wand2 className="w-4 h-4" />{t('aISuggestions.auto_2')}</Button>
             </div>
           )}
         </div>

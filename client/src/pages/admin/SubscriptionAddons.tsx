@@ -149,9 +149,7 @@ export default function SubscriptionAddons() {
           <p className="text-muted-foreground mt-1">{t('adminSubscriptionAddonsPage.text1')}</p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="ml-2 h-4 w-4" />
-          إضافة خدمة جديدة
-        </Button>
+          <Plus className="ml-2 h-4 w-4" />{t('subscriptionAddons.auto_0')}</Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -200,9 +198,7 @@ export default function SubscriptionAddons() {
                     className="flex-1"
                     onClick={() => openEditDialog(addon)}
                   >
-                    <Edit className="ml-2 h-4 w-4" />
-                    تعديل
-                  </Button>
+                    <Edit className="ml-2 h-4 w-4" />{t('subscriptionAddons.auto_1')}</Button>
                   <Button
                     variant="destructive"
                     size="sm"

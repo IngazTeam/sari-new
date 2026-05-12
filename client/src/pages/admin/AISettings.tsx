@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 export default function AISettings() {
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
@@ -84,8 +85,8 @@ export default function AISettings() {
           <Zap className="h-6 w-6" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">إعدادات الذكاء الاصطناعي</h1>
-          <p className="text-sm text-muted-foreground">إدارة مفتاح OpenAI API وتتبع الاستهلاك</p>
+          <h1 className="text-2xl font-bold">{t('aISettings.auto_0')}</h1>
+          <p className="text-sm text-muted-foreground">{t('aISettings.auto_1')}</p>
         </div>
       </div>
 
@@ -95,7 +96,7 @@ export default function AISettings() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <Activity className="h-4 w-4" />
-              <span>طلبات اليوم</span>
+              <span>{t('aISettings.auto_2')}</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(todayStats?.totalRequests || 0)}</p>
           </CardContent>
@@ -105,7 +106,7 @@ export default function AISettings() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <BarChart3 className="h-4 w-4" />
-              <span>طلبات الشهر</span>
+              <span>{t('aISettings.auto_3')}</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(monthStats?.totalRequests || 0)}</p>
           </CardContent>
@@ -115,7 +116,7 @@ export default function AISettings() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <TrendingUp className="h-4 w-4" />
-              <span>إجمالي Tokens</span>
+              <span>{t('aISettings.auto_4')}</span>
             </div>
             <p className="text-2xl font-bold">{formatNumber(monthStats?.totalTokens || 0)}</p>
           </CardContent>
@@ -125,7 +126,7 @@ export default function AISettings() {
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
               <Clock className="h-4 w-4" />
-              <span>التكلفة التقديرية</span>
+              <span>{t('aISettings.auto_5')}</span>
             </div>
             <p className="text-2xl font-bold text-amber-600">{formatCost(monthStats?.totalCost || "0")}</p>
           </CardContent>
@@ -137,12 +138,8 @@ export default function AISettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5" />
-              إعدادات API
-            </CardTitle>
-            <CardDescription>
-              مفتاح OpenAI API الخاص بالمنصة
-            </CardDescription>
+              <Key className="h-5 w-5" />{t('aISettings.auto_6')}</CardTitle>
+            <CardDescription>{t('aISettings.auto_7')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Current Status */}
@@ -151,7 +148,7 @@ export default function AISettings() {
                 <>
                   <CheckCircle className="h-5 w-5 text-emerald-500" />
                   <div>
-                    <p className="text-sm font-medium">المفتاح مُفعّل</p>
+                    <p className="text-sm font-medium">{t('aISettings.auto_8')}</p>
                     <p className="text-xs text-muted-foreground font-mono">{settings.openaiApiKey}</p>
                   </div>
                 </>
@@ -159,8 +156,8 @@ export default function AISettings() {
                 <>
                   <AlertCircle className="h-5 w-5 text-amber-500" />
                   <div>
-                    <p className="text-sm font-medium text-amber-600">لم يتم إعداد المفتاح</p>
-                    <p className="text-xs text-muted-foreground">أدخل مفتاح OpenAI API أدناه</p>
+                    <p className="text-sm font-medium text-amber-600">{t('aISettings.auto_9')}</p>
+                    <p className="text-xs text-muted-foreground">{t('aISettings.auto_10')}</p>
                   </div>
                 </>
               )}
@@ -168,7 +165,7 @@ export default function AISettings() {
 
             {/* API Key Input */}
             <div className="space-y-2">
-              <Label htmlFor="api-key">مفتاح API جديد</Label>
+              <Label htmlFor="api-key">{t('aISettings.auto_11')}</Label>
               <div className="relative">
                 <Input
                   id="api-key"
@@ -191,15 +188,15 @@ export default function AISettings() {
 
             {/* Model Selection */}
             <div className="space-y-2">
-              <Label>النموذج الافتراضي</Label>
+              <Label>{t('aISettings.auto_12')}</Label>
               <Select value={selectedModel} onValueChange={setSelectedModel}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gpt-4o-mini">GPT-4o Mini — الأرخص ($0.15/M)</SelectItem>
-                  <SelectItem value="gpt-4o">GPT-4o — متوازن ($2.50/M)</SelectItem>
-                  <SelectItem value="gpt-4-turbo">GPT-4 Turbo — الأقوى ($10/M)</SelectItem>
+                  <SelectItem value="gpt-4o-mini">{t('aISettings.auto_13')}</SelectItem>
+                  <SelectItem value="gpt-4o">{t('aISettings.auto_14')}</SelectItem>
+                  <SelectItem value="gpt-4-turbo">{t('aISettings.auto_15')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -246,15 +243,13 @@ export default function AISettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              توزيع الاستهلاك (هذا الشهر)
-            </CardTitle>
+              <BarChart3 className="h-5 w-5" />{t('aISettings.auto_16')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Chat vs Whisper */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">الرد الذكي (Chat)</span>
+                <span className="text-sm font-medium">{t('aISettings.auto_17')}</span>
                 <Badge variant="secondary">{formatNumber(monthStats?.chatRequests || 0)} طلب</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
@@ -269,7 +264,7 @@ export default function AISettings() {
               </div>
 
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">الرسائل الصوتية (Whisper)</span>
+                <span className="text-sm font-medium">{t('aISettings.auto_18')}</span>
                 <Badge variant="secondary">{formatNumber(monthStats?.whisperRequests || 0)} طلب</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
@@ -297,11 +292,11 @@ export default function AISettings() {
                 <p className="font-semibold">{formatNumber(monthStats?.totalCompletionTokens || 0)}</p>
               </div>
               <div className="p-2 rounded bg-muted/50">
-                <p className="text-muted-foreground">مدة الصوت</p>
+                <p className="text-muted-foreground">{t('aISettings.auto_19')}</p>
                 <p className="font-semibold">{Math.round((monthStats?.totalAudioDuration || 0) / 60)} دقيقة</p>
               </div>
               <div className="p-2 rounded bg-muted/50">
-                <p className="text-muted-foreground">متوسط وقت الرد</p>
+                <p className="text-muted-foreground">{t('aISettings.auto_20')}</p>
                 <p className="font-semibold">{Math.round(monthStats?.avgDurationMs || 0)} ms</p>
               </div>
             </div>
@@ -313,9 +308,7 @@ export default function AISettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            الاستهلاك اليومي (آخر 30 يوم)
-          </CardTitle>
+            <TrendingUp className="h-5 w-5" />{t('aISettings.auto_21')}</CardTitle>
         </CardHeader>
         <CardContent>
           {dailyUsage && dailyUsage.length > 0 ? (
@@ -345,7 +338,7 @@ export default function AISettings() {
             </div>
           ) : (
             <div className="flex items-center justify-center h-40 text-muted-foreground">
-              <p>لا توجد بيانات بعد</p>
+              <p>{t('aISettings.auto_22')}</p>
             </div>
           )}
         </CardContent>
@@ -356,19 +349,17 @@ export default function AISettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              أعلى التجار استهلاكاً (هذا الشهر)
-            </CardTitle>
+              <Users className="h-5 w-5" />{t('aISettings.auto_23')}</CardTitle>
           </CardHeader>
           <CardContent>
             {topMerchants && topMerchants.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>التاجر</TableHead>
-                    <TableHead>الطلبات</TableHead>
+                    <TableHead>{t('aISettings.auto_24')}</TableHead>
+                    <TableHead>{t('aISettings.auto_25')}</TableHead>
                     <TableHead>Tokens</TableHead>
-                    <TableHead>التكلفة</TableHead>
+                    <TableHead>{t('aISettings.auto_26')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -383,7 +374,7 @@ export default function AISettings() {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-muted-foreground text-center py-4">لا توجد بيانات</p>
+              <p className="text-muted-foreground text-center py-4">{t('aISettings.auto_27')}</p>
             )}
           </CardContent>
         </Card>
@@ -392,9 +383,7 @@ export default function AISettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              آخر الطلبات
-            </CardTitle>
+              <Clock className="h-5 w-5" />{t('aISettings.auto_28')}</CardTitle>
           </CardHeader>
           <CardContent>
             {recentLogs && recentLogs.length > 0 ? (
@@ -402,11 +391,11 @@ export default function AISettings() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>النوع</TableHead>
-                      <TableHead>النموذج</TableHead>
+                      <TableHead>{t('aISettings.auto_29')}</TableHead>
+                      <TableHead>{t('aISettings.auto_30')}</TableHead>
                       <TableHead>Tokens</TableHead>
-                      <TableHead>التكلفة</TableHead>
-                      <TableHead>الوقت</TableHead>
+                      <TableHead>{t('aISettings.auto_31')}</TableHead>
+                      <TableHead>{t('aISettings.auto_32')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -429,7 +418,7 @@ export default function AISettings() {
                 </Table>
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-4">لا توجد سجلات بعد</p>
+              <p className="text-muted-foreground text-center py-4">{t('aISettings.auto_33')}</p>
             )}
           </CardContent>
         </Card>

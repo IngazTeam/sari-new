@@ -194,9 +194,7 @@ export default function SubscribePage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <h1 className="text-4xl font-bold mb-4">{t('subscribePagePage.text3')}</h1>
-              <p className="text-lg text-muted-foreground">
-                ابدأ رحلتك مع ساري واختر الباقة التي تناسب احتياجاتك
-              </p>
+              <p className="text-lg text-muted-foreground">{t('subscribePage.auto_0')}</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8">
@@ -216,9 +214,7 @@ export default function SubscribePage() {
                     {isPopular && (
                       <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                         <div className="bg-primary text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                          <Sparkles className="w-4 h-4" />
-                          الأكثر شعبية
-                        </div>
+                          <Sparkles className="w-4 h-4" />{t('subscribePage.auto_1')}</div>
                       </div>
                     )}
 
@@ -255,9 +251,7 @@ export default function SubscribePage() {
                         className="w-full"
                         variant={isPopular ? 'default' : 'outline'}
                         size="lg"
-                      >
-                        اختر هذه الباقة
-                        <ArrowRight className="mr-2 w-4 h-4" />
+                      >{t('subscribePage.auto_2')}<ArrowRight className="mr-2 w-4 h-4" />
                       </Button>
                     </CardContent>
                   </Card>
@@ -273,8 +267,7 @@ export default function SubscribePage() {
             <Card>
               <CardHeader>
                 <h2 className="text-2xl font-bold text-center">{t('subscribePagePage.text5')}</h2>
-                <p className="text-center text-muted-foreground">
-                  الباقة المختارة: <span className="font-semibold text-foreground">{selectedPlan.name}</span>
+                <p className="text-center text-muted-foreground">{t('subscribePage.auto_3')}<span className="font-semibold text-foreground">{selectedPlan.name}</span>
                 </p>
               </CardHeader>
 
@@ -400,13 +393,9 @@ export default function SubscribePage() {
                   >
                     {isProcessing ? (
                       <>
-                        <Loader2 className="ml-2 w-4 h-4 animate-spin" />
-                        جاري المعالجة...
-                      </>
+                        <Loader2 className="ml-2 w-4 h-4 animate-spin" />{t('subscribePage.auto_4')}</>
                     ) : (
-                      <>
-                        متابعة للدفع
-                        <ArrowRight className="mr-2 w-4 h-4" />
+                      <>{t('subscribePage.auto_5')}<ArrowRight className="mr-2 w-4 h-4" />
                       </>
                     )}
                   </Button>

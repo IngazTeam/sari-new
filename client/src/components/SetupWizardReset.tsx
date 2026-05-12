@@ -45,12 +45,8 @@ export default function SetupWizardReset() {
     <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-yellow-50">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-orange-900">
-          <RefreshCw className="w-5 h-5" />
-          إعادة تشغيل معالج الإعداد
-        </CardTitle>
-        <CardDescription className="text-orange-700">
-          ابدأ من جديد وأعد إعداد متجرك بالكامل
-        </CardDescription>
+          <RefreshCw className="w-5 h-5" />{t('setupWizardReset.auto_0')}</CardTitle>
+        <CardDescription className="text-orange-700">{t('setupWizardReset.auto_1')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="bg-white/60 p-4 rounded-lg border border-orange-200">
@@ -58,10 +54,7 @@ export default function SetupWizardReset() {
             <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h4 className="font-semibold text-orange-900 mb-1">{t('compSetupWizardResetPage.text1')}</h4>
-              <p className="text-sm text-orange-700">
-                إعادة تشغيل معالج الإعداد سيسمح لك بتغيير نوع نشاطك التجاري واختيار قالب جديد.
-                لن يتم حذف أي بيانات موجودة (منتجات، حملات، محادثات).
-              </p>
+              <p className="text-sm text-orange-700">{t('setupWizardReset.auto_2')}</p>
             </div>
           </div>
           
@@ -79,28 +72,20 @@ export default function SetupWizardReset() {
               variant="outline"
               className="w-full border-orange-600 text-orange-600 hover:bg-orange-600 hover:text-white"
             >
-              <RefreshCw className="w-4 h-4 ml-2" />
-              إعادة تشغيل معالج الإعداد
-            </Button>
+              <RefreshCw className="w-4 h-4 ml-2" />{t('setupWizardReset.auto_3')}</Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-orange-600" />
-                هل أنت متأكد؟
-              </AlertDialogTitle>
+                <RefreshCw className="w-5 h-5 text-orange-600" />{t('setupWizardReset.auto_4')}</AlertDialogTitle>
               <AlertDialogDescription className="space-y-2">
-                <p>
-                  سيتم إعادة تشغيل معالج الإعداد من البداية. سيمكنك هذا من:
-                </p>
+                <p>{t('setupWizardReset.auto_5')}</p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
                   <li>{t('compSetupWizardResetPage.text6')}</li>
                   <li>{t('compSetupWizardResetPage.text7')}</li>
                   <li>{t('compSetupWizardResetPage.text8')}</li>
                 </ul>
-                <p className="font-semibold text-orange-600 mt-3">
-                  ملاحظة: جميع بياناتك الحالية (منتجات، حملات، محادثات) ستبقى محفوظة.
-                </p>
+                <p className="font-semibold text-orange-600 mt-3">{t('setupWizardReset.auto_6')}</p>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

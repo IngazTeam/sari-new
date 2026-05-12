@@ -434,9 +434,7 @@ export default function ZidIntegration() {
           <CardContent className="space-y-6">
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                للحصول على Access Token، اذهب إلى لوحة تحكم زد &gt; الإعدادات &gt; التكاملات &gt; API
-              </AlertDescription>
+              <AlertDescription>{t('zidIntegration.auto_0')}</AlertDescription>
             </Alert>
 
             <div className="space-y-4">

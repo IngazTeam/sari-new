@@ -18,6 +18,7 @@ export function SignupPromptDialogEnhanced({
   sessionId,
   messageCount,
 }: SignupPromptDialogEnhancedProps) {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [variant, setVariant] = useState<any>(null);
   const [offer, setOffer] = useState<any>(null);
@@ -208,15 +209,11 @@ export function SignupPromptDialogEnhanced({
             onClick={handleClose}
             variant="outline"
             className="w-full border-gray-300 text-gray-700 hover:bg-gray-50"
-          >
-            ليس الآن
-          </Button>
+          >{t('signupPromptDialogEnhanced.auto_0')}</Button>
         </div>
 
         {/* Footer Note */}
-        <div className="text-xs text-gray-500 text-center pt-2 border-t border-gray-200">
-          عرض محدود الوقت - لا تفوت هذه الفرصة!
-        </div>
+        <div className="text-xs text-gray-500 text-center pt-2 border-t border-gray-200">{t('signupPromptDialogEnhanced.auto_1')}</div>
       </DialogContent>
     </Dialog>
   );

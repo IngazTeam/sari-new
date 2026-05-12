@@ -97,9 +97,7 @@ export default function ZidSettings() {
     <div className="container mx-auto py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('zidSettingsPage.text0')}</h1>
-        <p className="text-muted-foreground mt-2">
-          ربط متجرك على منصة زد مع ساري لمزامنة المنتجات والطلبات والعملاء
-        </p>
+        <p className="text-muted-foreground mt-2">{t('zidSettings.auto_0')}</p>
       </div>
 
       {/* Connection Status Card */}
@@ -108,14 +106,10 @@ export default function ZidSettings() {
           <CardTitle className="flex items-center gap-2">
             {status?.connected ? (
               <>
-                <CheckCircle className="w-5 h-5 text-green-500" />
-                متصل بـ Zid
-              </>
+                <CheckCircle className="w-5 h-5 text-green-500" />{t('zidSettings.auto_1')}</>
             ) : (
               <>
-                <XCircle className="w-5 h-5 text-gray-400" />
-                غير متصل
-              </>
+                <XCircle className="w-5 h-5 text-gray-400" />{t('zidSettings.auto_2')}</>
             )}
           </CardTitle>
           <CardDescription>
@@ -170,14 +164,10 @@ export default function ZidSettings() {
                 >
                   {isConnecting ? (
                     <>
-                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                      جاري الاتصال...
-                    </>
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('zidSettings.auto_3')}</>
                   ) : (
                     <>
-                      <LinkIcon className="w-4 h-4 ml-2" />
-                      ربط مع Zid
-                    </>
+                      <LinkIcon className="w-4 h-4 ml-2" />{t('zidSettings.auto_4')}</>
                   )}
                 </Button>
               </div>
@@ -235,14 +225,10 @@ export default function ZidSettings() {
               >
                 {disconnectMutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    جاري الفصل...
-                  </>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('zidSettings.auto_5')}</>
                 ) : (
                   <>
-                    <Unlink className="w-4 h-4 ml-2" />
-                    فصل الاتصال
-                  </>
+                    <Unlink className="w-4 h-4 ml-2" />{t('zidSettings.auto_6')}</>
                 )}
               </Button>
             </div>
@@ -255,17 +241,13 @@ export default function ZidSettings() {
         <Card>
           <CardHeader>
             <CardTitle>{t('zidSettingsPage.text7')}</CardTitle>
-            <CardDescription>
-              تفعيل المزامنة التلقائية للبيانات من Zid
-            </CardDescription>
+            <CardDescription>{t('zidSettings.auto_7')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <Label>{t('zidSettingsPage.text8')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  مزامنة المنتجات كل ساعة
-                </p>
+                <p className="text-sm text-muted-foreground">{t('zidSettings.auto_8')}</p>
               </div>
               <Switch
                 checked={status.autoSyncProducts}
@@ -279,9 +261,7 @@ export default function ZidSettings() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>{t('zidSettingsPage.text9')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  مزامنة الطلبات كل 15 دقيقة
-                </p>
+                <p className="text-sm text-muted-foreground">{t('zidSettings.auto_9')}</p>
               </div>
               <Switch
                 checked={status.autoSyncOrders}
@@ -295,9 +275,7 @@ export default function ZidSettings() {
             <div className="flex items-center justify-between">
               <div>
                 <Label>{t('zidSettingsPage.text10')}</Label>
-                <p className="text-sm text-muted-foreground">
-                  مزامنة العملاء يومياً
-                </p>
+                <p className="text-sm text-muted-foreground">{t('zidSettings.auto_10')}</p>
               </div>
               <Switch
                 checked={status.autoSyncCustomers}
@@ -316,9 +294,7 @@ export default function ZidSettings() {
         <Card>
           <CardHeader>
             <CardTitle>{t('zidSettingsPage.text11')}</CardTitle>
-            <CardDescription>
-              قم بمزامنة البيانات يدوياً من Zid
-            </CardDescription>
+            <CardDescription>{t('zidSettings.auto_11')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Button
@@ -326,18 +302,14 @@ export default function ZidSettings() {
               variant="outline"
               className="w-full"
             >
-              <RefreshCw className="w-4 h-4 ml-2" />
-              مزامنة المنتجات
-            </Button>
+              <RefreshCw className="w-4 h-4 ml-2" />{t('zidSettings.auto_12')}</Button>
 
             <Button
               onClick={() => window.location.href = '/merchant/zid/orders'}
               variant="outline"
               className="w-full"
             >
-              <RefreshCw className="w-4 h-4 ml-2" />
-              مزامنة الطلبات
-            </Button>
+              <RefreshCw className="w-4 h-4 ml-2" />{t('zidSettings.auto_13')}</Button>
 
             <Button
               onClick={() => window.location.href = '/merchant/zid/sync-logs'}

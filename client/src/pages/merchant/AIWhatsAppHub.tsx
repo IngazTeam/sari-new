@@ -25,6 +25,7 @@ interface HubCard {
 }
 
 export default function AIWhatsAppHub() {
+  const { t } = useTranslation();
 
   const cards: HubCard[] = [
     {
@@ -107,10 +108,8 @@ export default function AIWhatsAppHub() {
             <Sparkles className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">مركز المساعد الذكي</h1>
-            <p className="text-muted-foreground">
-              إعدادات متقدمة لتخصيص ساري وقنوات التواصل التلقائية
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight">{t('aIWhatsAppHub.auto_0')}</h1>
+            <p className="text-muted-foreground">{t('aIWhatsAppHub.auto_1')}</p>
           </div>
         </div>
       </div>
@@ -120,19 +119,19 @@ export default function AIWhatsAppHub() {
         <Card className="border-dashed">
           <CardContent className="pt-4 pb-4 text-center">
             <div className="text-2xl font-bold text-violet-600">9</div>
-            <p className="text-xs text-muted-foreground mt-1">أدوات ذكية</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_2')}</p>
           </CardContent>
         </Card>
         <Card className="border-dashed">
           <CardContent className="pt-4 pb-4 text-center">
             <div className="text-2xl font-bold text-blue-600">AI</div>
-            <p className="text-xs text-muted-foreground mt-1">مدعوم بالذكاء</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_3')}</p>
           </CardContent>
         </Card>
         <Card className="border-dashed">
           <CardContent className="pt-4 pb-4 text-center">
             <div className="text-2xl font-bold text-emerald-600">24/7</div>
-            <p className="text-xs text-muted-foreground mt-1">رد تلقائي</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_4')}</p>
           </CardContent>
         </Card>
         <Card className="border-dashed">
@@ -140,7 +139,7 @@ export default function AIWhatsAppHub() {
             <div className="text-2xl font-bold text-amber-600">
               <MessageSquare className="h-6 w-6 mx-auto" />
             </div>
-            <p className="text-xs text-muted-foreground mt-1">واتساب</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('aIWhatsAppHub.auto_5')}</p>
           </CardContent>
         </Card>
       </div>

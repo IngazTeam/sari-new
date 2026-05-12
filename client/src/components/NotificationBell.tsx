@@ -111,9 +111,7 @@ export function NotificationBell() {
               onClick={() => markAllAsRead.mutate()}
               className="h-7 text-xs"
             >
-              <Check className="h-3 w-3 mr-1" />
-              تحديد الكل كمقروء
-            </Button>
+              <Check className="h-3 w-3 mr-1" />{t('notificationBell.auto_0')}</Button>
           )}
         </div>
 

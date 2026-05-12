@@ -157,17 +157,11 @@ export default function CustomerLoyalty() {
       <Tabs defaultValue="rewards" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="rewards">
-            <Gift className="ml-2 h-4 w-4" />
-            المكافآت المتاحة
-          </TabsTrigger>
+            <Gift className="ml-2 h-4 w-4" />{t('customerLoyalty.auto_0')}</TabsTrigger>
           <TabsTrigger value="history">
-            <Clock className="ml-2 h-4 w-4" />
-            سجل النقاط
-          </TabsTrigger>
+            <Clock className="ml-2 h-4 w-4" />{t('customerLoyalty.auto_1')}</TabsTrigger>
           <TabsTrigger value="redemptions">
-            <Award className="ml-2 h-4 w-4" />
-            استبدالاتي
-          </TabsTrigger>
+            <Award className="ml-2 h-4 w-4" />{t('customerLoyalty.auto_2')}</TabsTrigger>
         </TabsList>
 
         {/* المكافآت المتاحة */}
@@ -206,9 +200,7 @@ export default function CustomerLoyalty() {
                         )}
                         
                         {isMaxedOut ? (
-                          <Button disabled className="w-full">
-                            نفذت الكمية
-                          </Button>
+                          <Button disabled className="w-full">{t('customerLoyalty.auto_3')}</Button>
                         ) : (
                           <Button
                             onClick={() => setSelectedReward(reward)}
@@ -225,9 +217,7 @@ export default function CustomerLoyalty() {
               })}
 
               {rewards?.length === 0 && (
-                <div className="col-span-2 text-center py-12 text-muted-foreground">
-                  لا توجد مكافآت متاحة حالياً
-                </div>
+                <div className="col-span-2 text-center py-12 text-muted-foreground">{t('customerLoyalty.auto_4')}</div>
               )}
             </div>
           )}
@@ -271,9 +261,7 @@ export default function CustomerLoyalty() {
                   ))}
 
                   {transactions?.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      لا يوجد سجل حركات حتى الآن
-                    </div>
+                    <div className="text-center py-12 text-muted-foreground">{t('customerLoyalty.auto_5')}</div>
                   )}
                 </div>
               </CardContent>
@@ -326,9 +314,7 @@ export default function CustomerLoyalty() {
                   ))}
 
                   {redemptions?.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      لم تقم باستبدال أي مكافآت بعد
-                    </div>
+                    <div className="text-center py-12 text-muted-foreground">{t('customerLoyalty.auto_6')}</div>
                   )}
                 </div>
               </CardContent>
@@ -342,9 +328,7 @@ export default function CustomerLoyalty() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('customerLoyaltyPage.text10')}</DialogTitle>
-            <DialogDescription>
-              هل أنت متأكد من استبدال هذه المكافأة؟
-            </DialogDescription>
+            <DialogDescription>{t('customerLoyalty.auto_7')}</DialogDescription>
           </DialogHeader>
 
           {selectedReward && (
@@ -385,9 +369,7 @@ export default function CustomerLoyalty() {
             <Button onClick={handleRedeemReward} disabled={redeemReward.isPending}>
               {redeemReward.isPending ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الاستبدال...
-                </>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('customerLoyalty.auto_8')}</>
               ) : (
                 "تأكيد الاستبدال"
               )}

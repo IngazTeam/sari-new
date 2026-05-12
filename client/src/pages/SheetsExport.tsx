@@ -84,9 +84,7 @@ export default function SheetsExport() {
       <div className="container max-w-6xl py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">{t('sheetsExportPage.text0')}</h1>
-          <p className="text-muted-foreground">
-            تصدير المحادثات المحددة إلى Google Sheets
-          </p>
+          <p className="text-muted-foreground">{t('sheetsExport.auto_0')}</p>
         </div>
 
         {/* إحصائيات */}
@@ -119,9 +117,7 @@ export default function SheetsExport() {
               className="w-full"
             >
               {exportMutation.isPending && <Loader2 className="w-4 h-4 ml-2 animate-spin" />}
-              <Download className="w-5 h-5 ml-2" />
-              تصدير المحادثات المحددة
-            </Button>
+              <Download className="w-5 h-5 ml-2" />{t('sheetsExport.auto_1')}</Button>
           </Card>
         </div>
 
@@ -138,9 +134,7 @@ export default function SheetsExport() {
               <label
                 htmlFor="select-all"
                 className="text-sm font-medium cursor-pointer"
-              >
-                تحديد الكل
-              </label>
+              >{t('sheetsExport.auto_2')}</label>
             </div>
           </div>
 
@@ -199,8 +193,7 @@ export default function SheetsExport() {
         {/* ملاحظة */}
         <Card className="p-4 mt-6 bg-blue-50 border-blue-200">
           <p className="text-sm text-blue-800">
-            💡 <strong>{t('sheetsExportPage.text5')}</strong> سيتم تصدير جميع الرسائل في المحادثات المحددة إلى صفحة "المحادثات" في Google Sheets
-          </p>
+            💡 <strong>{t('sheetsExportPage.text5')}</strong>{t('sheetsExport.auto_3')}</p>
         </Card>
       </div>
     </DashboardLayout>

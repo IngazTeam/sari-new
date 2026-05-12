@@ -298,9 +298,7 @@ export default function WhatsAppRequestsPage() {
                 </div>
               ))
             ) : (
-              <div className="text-center text-muted-foreground py-8">
-                لا توجد طلبات
-              </div>
+              <div className="text-center text-muted-foreground py-8">{t('whatsAppRequestsPage.auto_0')}</div>
             )}
           </div>
         </CardContent>
@@ -311,9 +309,7 @@ export default function WhatsAppRequestsPage() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{t('adminWhatsAppRequestsPagePage.text13')}</DialogTitle>
-            <DialogDescription>
-              أدخل بيانات Green API Instance للتاجر
-            </DialogDescription>
+            <DialogDescription>{t('whatsAppRequestsPage.auto_1')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -368,9 +364,7 @@ export default function WhatsAppRequestsPage() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>{t('adminWhatsAppRequestsPagePage.text16')}</DialogTitle>
-            <DialogDescription>
-              أدخل سبب رفض الطلب
-            </DialogDescription>
+            <DialogDescription>{t('whatsAppRequestsPage.auto_2')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

@@ -138,16 +138,12 @@ export default function DiscountCodes() {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="ml-2 h-4 w-4" />
-              إنشاء كود جديد
-            </Button>
+              <Plus className="ml-2 h-4 w-4" />{t('discountCodes.auto_0')}</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>{t('discountCodesPage.text2')}</DialogTitle>
-              <DialogDescription>
-                أضف كود خصم جديد لتقديمه لعملائك
-              </DialogDescription>
+              <DialogDescription>{t('discountCodes.auto_1')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">

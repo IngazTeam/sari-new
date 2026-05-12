@@ -6,6 +6,7 @@ import { Loader2, Link2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export default function SeoBacklinks() {
+  const { t } = useTranslation();
   const { data: pages } = trpc.seo.getPages.useQuery();
   const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
 
@@ -25,13 +26,13 @@ export default function SeoBacklinks() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">الروابط الخارجية</h1>
-        <p className="text-muted-foreground mt-2">تتبع الروابط الخارجية المشيرة لموقعك</p>
+        <h1 className="text-3xl font-bold">{t('seoBacklinks.auto_0')}</h1>
+        <p className="text-muted-foreground mt-2">{t('seoBacklinks.auto_1')}</p>
       </div>
 
       {/* Page Selector */}
       <Card className="p-6">
-        <label className="block text-sm font-medium mb-3">اختر الصفحة</label>
+        <label className="block text-sm font-medium mb-3">{t('seoBacklinks.auto_2')}</label>
         <div className="flex gap-2 flex-wrap">
           {(pages || []).map((page: any) => (
             <Button
@@ -43,7 +44,7 @@ export default function SeoBacklinks() {
             </Button>
           ))}
           {(!pages || pages.length === 0) && (
-            <p className="text-muted-foreground">لا توجد صفحات</p>
+            <p className="text-muted-foreground">{t('seoBacklinks.auto_3')}</p>
           )}
         </div>
       </Card>
@@ -51,19 +52,19 @@ export default function SeoBacklinks() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">إجمالي الروابط</p>
+          <p className="text-sm text-muted-foreground">{t('seoBacklinks.auto_4')}</p>
           <p className="text-3xl font-bold mt-2">{backlinks?.length || 0}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">نشطة</p>
+          <p className="text-sm text-muted-foreground">{t('seoBacklinks.auto_5')}</p>
           <p className="text-3xl font-bold mt-2 text-green-600">{activeLinks.length}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">متوسط DA</p>
+          <p className="text-sm text-muted-foreground">{t('seoBacklinks.auto_6')}</p>
           <p className="text-3xl font-bold mt-2">{avgDA}</p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-muted-foreground">معطلة</p>
+          <p className="text-sm text-muted-foreground">{t('seoBacklinks.auto_7')}</p>
           <p className="text-3xl font-bold mt-2 text-red-600">{brokenLinks.length}</p>
         </Card>
       </div>
@@ -71,24 +72,24 @@ export default function SeoBacklinks() {
       {/* Backlinks Table */}
       {activePageId && (
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">قائمة الروابط</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('seoBacklinks.auto_8')}</h2>
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
           ) : (backlinks || []).length === 0 ? (
             <div className="text-center py-12">
               <Link2 className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-lg font-semibold mb-2">لا توجد روابط خارجية</h3>
-              <p className="text-muted-foreground">لم يتم رصد روابط خارجية لهذه الصفحة بعد</p>
+              <h3 className="text-lg font-semibold mb-2">{t('seoBacklinks.auto_9')}</h3>
+              <p className="text-muted-foreground">{t('seoBacklinks.auto_10')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">المصدر</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">النص المرجعي</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoBacklinks.auto_11')}</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoBacklinks.auto_12')}</th>
                     <th className="px-4 py-3 text-right text-sm font-semibold">DA</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">الحالة</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoBacklinks.auto_13')}</th>
                   </tr>
                 </thead>
                 <tbody>

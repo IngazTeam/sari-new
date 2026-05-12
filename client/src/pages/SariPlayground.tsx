@@ -90,18 +90,12 @@ export default function SariPlayground() {
             <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl">
               <Sparkles className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              ساري AI - ملعب التجربة
-            </h1>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{t('sariPlayground.auto_0')}</h1>
           </div>
-          <p className="text-gray-600 text-lg">
-            جرّب محادثة ساري الذكي واختبر قدراته في فهم العملاء واقتراح المنتجات
-          </p>
+          <p className="text-gray-600 text-lg">{t('sariPlayground.auto_1')}</p>
           <Badge variant="outline" className="text-green-600 border-green-600">
             <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />
-              نشط ومتصل
-            </div>
+              <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse" />{t('sariPlayground.auto_2')}</div>
           </Badge>
         </div>
 
@@ -259,10 +253,7 @@ export default function SariPlayground() {
             <Sparkles className="h-5 w-5 text-blue-600 mt-0.5" />
             <div className="space-y-1">
               <h4 className="font-semibold text-blue-900">{t('sariPlaygroundPage.text7')}</h4>
-              <p className="text-sm text-blue-800">
-                هذه الصفحة للتجربة فقط. الردود تستخدم نفس نظام ساري AI المستخدم في الواتساب.
-                يمكنك اختبار أنواع مختلفة من الأسئلة لرؤية كيف يتفاعل ساري مع العملاء.
-              </p>
+              <p className="text-sm text-blue-800">{t('sariPlayground.auto_3')}</p>
             </div>
           </div>
         </Card>

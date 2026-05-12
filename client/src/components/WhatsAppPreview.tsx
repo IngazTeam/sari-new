@@ -300,9 +300,7 @@ export function WhatsAppPreview({
             <div className="text-xs text-white/80 flex items-center gap-1">
               {isOnline ? (
                 <>
-                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                  متصل الآن
-                </>
+                  <span className="w-2 h-2 bg-green-400 rounded-full"></span>{t('whatsAppPreview.auto_0')}</>
               ) : lastSeen ? (
                 `آخر ظهور ${lastSeen}`
               ) : customerPhone}

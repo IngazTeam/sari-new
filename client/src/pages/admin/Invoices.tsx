@@ -171,14 +171,10 @@ export default function Invoices() {
             <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-3xl font-bold">{t('adminInvoicesPage.text0')}</h1>
-                    <p className="text-muted-foreground mt-2">
-                        إدارة ومتابعة فواتير الاشتراكات
-                    </p>
+                    <p className="text-muted-foreground mt-2">{t('invoices.auto_0')}</p>
                 </div>
                 <Button variant="outline" onClick={() => refetch()}>
-                    <RefreshCw className="h-4 w-4 ml-2" />
-                    تحديث
-                </Button>
+                    <RefreshCw className="h-4 w-4 ml-2" />{t('invoices.auto_1')}</Button>
             </div>
 
             {/* Stats Cards */}
@@ -310,9 +306,7 @@ export default function Invoices() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                                            لا توجد فواتير
-                                        </TableCell>
+                                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">{t('invoices.auto_2')}</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>
@@ -329,9 +323,7 @@ export default function Invoices() {
                 <DialogContent className="max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{t('adminInvoicesPage.text22', { var0: selectedInvoice?.invoiceNumber })}</DialogTitle>
-                        <DialogDescription>
-                            معلومات الفاتورة الكاملة
-                        </DialogDescription>
+                        <DialogDescription>{t('invoices.auto_3')}</DialogDescription>
                     </DialogHeader>
                     {isLoadingDetails ? (
                         <div className="flex items-center justify-center py-8">

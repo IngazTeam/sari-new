@@ -202,26 +202,18 @@ export default function Settings() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
-            <SettingsIcon className="w-8 h-8" />
-            إعدادات النظام
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            إدارة الباقات والأسعار والإعدادات العامة
-          </p>
+            <SettingsIcon className="w-8 h-8" />{t('settings.auto_0')}</h1>
+          <p className="text-muted-foreground mt-2">{t('settings.auto_1')}</p>
         </div>
         <Button onClick={() => handleOpenDialog()}>
-          <Plus className="w-4 h-4 ml-2" />
-          باقة جديدة
-        </Button>
+          <Plus className="w-4 h-4 ml-2" />{t('settings.auto_2')}</Button>
       </div>
 
       {/* Plans Management */}
       <Card>
         <CardHeader>
           <CardTitle>{t('adminSettingsPage.text0')}</CardTitle>
-          <CardDescription>
-            الباقات المتاحة للتجار مع الأسعار والحدود
-          </CardDescription>
+          <CardDescription>{t('settings.auto_3')}</CardDescription>
         </CardHeader>
         <CardContent>
           {plans && plans.length > 0 ? (
@@ -258,14 +250,10 @@ export default function Settings() {
                     <TableCell>
                       {plan.isActive ? (
                         <Badge variant="default" className="flex items-center w-fit">
-                          <Check className="w-3 h-3 ml-1" />
-                          نشط
-                        </Badge>
+                          <Check className="w-3 h-3 ml-1" />{t('settings.auto_4')}</Badge>
                       ) : (
                         <Badge variant="secondary" className="flex items-center w-fit">
-                          <X className="w-3 h-3 ml-1" />
-                          غير نشط
-                        </Badge>
+                          <X className="w-3 h-3 ml-1" />{t('settings.auto_5')}</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -285,13 +273,9 @@ export default function Settings() {
             <div className="text-center py-12">
               <SettingsIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">{t('adminSettingsPage.text9')}</h3>
-              <p className="text-muted-foreground mb-4">
-                ابدأ بإضافة الباقات الثلاث الأساسية
-              </p>
+              <p className="text-muted-foreground mb-4">{t('settings.auto_6')}</p>
               <Button onClick={() => handleOpenDialog()}>
-                <Plus className="w-4 h-4 ml-2" />
-                إضافة باقة جديدة
-              </Button>
+                <Plus className="w-4 h-4 ml-2" />{t('settings.auto_7')}</Button>
             </div>
           )}
         </CardContent>
@@ -302,12 +286,8 @@ export default function Settings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <History className="w-5 h-5" />
-            سجل التغييرات
-          </CardTitle>
-          <CardDescription>
-            تاريخ جميع التعديلات التي تمت على الباقات
-          </CardDescription>
+            <History className="w-5 h-5" />{t('settings.auto_8')}</CardTitle>
+          <CardDescription>{t('settings.auto_9')}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Filters */}
@@ -390,9 +370,7 @@ export default function Settings() {
                   setFilterDateTo('');
                 }}
               >
-                <RotateCcw className="w-4 h-4 ml-2" />
-                إعادة تعيين
-              </Button>
+                <RotateCcw className="w-4 h-4 ml-2" />{t('settings.auto_10')}</Button>
             </div>
           </div>
 
@@ -459,9 +437,7 @@ export default function Settings() {
             <div className="text-center py-12">
               <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">{t('adminSettingsPage.text47')}</h3>
-              <p className="text-muted-foreground">
-                سيتم عرض جميع التعديلات التي تتم على الباقات هنا
-              </p>
+              <p className="text-muted-foreground">{t('settings.auto_11')}</p>
             </div>
           )}
         </CardContent>
@@ -474,9 +450,7 @@ export default function Settings() {
             <DialogTitle>
               {editingPlan?.id ? 'تعديل الباقة' : 'إضافة باقة جديدة'}
             </DialogTitle>
-            <DialogDescription>
-              قم بتعديل معلومات الباقة والأسعار والحدود
-            </DialogDescription>
+            <DialogDescription>{t('settings.auto_12')}</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -540,9 +514,7 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="voiceMessageLimit">
-                  حد الرسائل الصوتية (-1 = غير محدود)
-                </Label>
+                <Label htmlFor="voiceMessageLimit">{t('settings.auto_13')}</Label>
                 <Input
                   id="voiceMessageLimit"
                   type="number"
@@ -589,9 +561,7 @@ export default function Settings() {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                إلغاء
-              </Button>
+              <Button type="button" variant="outline" onClick={handleCloseDialog}>{t('settings.auto_14')}</Button>
               <Button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}

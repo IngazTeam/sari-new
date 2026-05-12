@@ -25,9 +25,7 @@ export default function AdminGoogleOAuth() {
       <div className="flex items-center justify-center min-h-screen">
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            ليس لديك صلاحية للوصول إلى هذه الصفحة. يجب أن تكون مسؤول النظام.
-          </AlertDescription>
+          <AlertDescription>{t('adminGoogleOAuth.auto_0')}</AlertDescription>
         </Alert>
       </div>
     );
@@ -66,24 +64,19 @@ export default function AdminGoogleOAuth() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('adminGoogleOAuthPage.text3')}</h1>
-        <p className="text-muted-foreground mt-2">
-          أدر بيانات اعتماد Google OAuth لتفعيل تسجيل الدخول عبر Google
-        </p>
+        <p className="text-muted-foreground mt-2">{t('adminGoogleOAuth.auto_1')}</p>
       </div>
 
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          <strong>{t('adminGoogleOAuthPage.text4')}</strong> احفظ بيانات الاعتماد في مكان آمن. لا تشارك Client Secret مع أحد.
-        </AlertDescription>
+          <strong>{t('adminGoogleOAuthPage.text4')}</strong>{t('adminGoogleOAuth.auto_2')}</AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
           <CardTitle>{t('adminGoogleOAuthPage.text5')}</CardTitle>
-          <CardDescription>
-            أدخل بيانات الاعتماد من Google Cloud Console
-          </CardDescription>
+          <CardDescription>{t('adminGoogleOAuth.auto_3')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Google Client ID */}
@@ -108,9 +101,7 @@ export default function AdminGoogleOAuth() {
                 </Button>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              يمكن العثور على هذا في Google Cloud Console تحت Credentials
-            </p>
+            <p className="text-sm text-muted-foreground">{t('adminGoogleOAuth.auto_4')}</p>
           </div>
 
           {/* Google Client Secret */}
@@ -146,9 +137,7 @@ export default function AdminGoogleOAuth() {
                 </Button>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              احفظ هذا في مكان آمن. لا تشارك هذا مع أحد
-            </p>
+            <p className="text-sm text-muted-foreground">{t('adminGoogleOAuth.auto_5')}</p>
           </div>
 
           {/* Save Button */}
@@ -160,9 +149,7 @@ export default function AdminGoogleOAuth() {
             >
               {isSaved ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  تم الحفظ
-                </>
+                  <CheckCircle2 className="h-4 w-4" />{t('adminGoogleOAuth.auto_6')}</>
               ) : (
                 "حفظ الإعدادات"
               )}
@@ -193,9 +180,7 @@ export default function AdminGoogleOAuth() {
             <li>{t('adminGoogleOAuthPage.text8')}</li>
             <li>{t('adminGoogleOAuthPage.text9')}</li>
             <li>{t('adminGoogleOAuthPage.text10')}</li>
-            <li>
-              أضف الـ Authorized redirect URIs:
-              <ul className="mt-2 ml-4 space-y-1 list-disc list-inside">
+            <li>{t('adminGoogleOAuth.auto_7')}<ul className="mt-2 ml-4 space-y-1 list-disc list-inside">
                 <li>
                   <code className="bg-muted px-2 py-1 rounded">
                     http://localhost:3000/

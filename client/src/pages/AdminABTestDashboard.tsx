@@ -63,7 +63,7 @@ export default function AdminABTestDashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-muted-foreground">جاري التحميل...</p>
+        <p className="text-muted-foreground">{t('adminABTestDashboard.auto_0')}</p>
       </div>
     );
   }
@@ -179,9 +179,7 @@ export default function AdminABTestDashboard() {
           </CardHeader>
           <CardContent>
             {stats.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                لا توجد بيانات حتى الآن
-              </div>
+              <div className="text-center py-8 text-gray-500">{t('adminABTestDashboard.auto_1')}</div>
             ) : (
               <div className="space-y-6">
                 {stats.map((stat) => (
@@ -296,9 +294,7 @@ export default function AdminABTestDashboard() {
                       className="mt-2"
                     />
                   </div>
-                  <Button onClick={handleCreateVariant} className="w-full">
-                    إنشاء
-                  </Button>
+                  <Button onClick={handleCreateVariant} className="w-full">{t('adminABTestDashboard.auto_2')}</Button>
                 </div>
               </DialogContent>
             </Dialog>

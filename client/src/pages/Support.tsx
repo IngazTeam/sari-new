@@ -125,13 +125,9 @@ export default function Support() {
         <div className="container relative py-20 md:py-32">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold">
-                <span className="text-primary">
-                كيف يمكننا مساعدتك؟
-              </span>
+                <span className="text-primary">{t('support.auto_0')}</span>
             </h1>
-            <p className="text-xl text-muted-foreground">
-              فريق الدعم الفني جاهز لمساعدتك في أي وقت
-            </p>
+            <p className="text-xl text-muted-foreground">{t('support.auto_1')}</p>
           </div>
         </div>
       </section>
@@ -140,12 +136,8 @@ export default function Support() {
       <section className="py-20">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              تواصل معنا
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              اختر الطريقة المناسبة للتواصل معنا
-            </p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('support.auto_2')}</h2>
+            <p className="text-lg text-muted-foreground">{t('support.auto_3')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-16">
@@ -194,12 +186,8 @@ export default function Support() {
         <div className="container">
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                أرسل لنا رسالة
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                املأ النموذج وسنرد عليك في أقرب وقت
-              </p>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('support.auto_4')}</h2>
+              <p className="text-lg text-muted-foreground">{t('support.auto_5')}</p>
             </div>
 
             <Card>
@@ -252,9 +240,7 @@ export default function Support() {
                     />
                   </div>
 
-                  <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">
-                    إرسال الرسالة
-                    <Send className="mr-2 w-4 h-4" />
+                  <Button type="submit" size="lg" className="w-full bg-primary hover:bg-primary/90">{t('support.auto_6')}<Send className="mr-2 w-4 h-4" />
                   </Button>
                 </form>
               </CardContent>
@@ -267,12 +253,8 @@ export default function Support() {
       <section className="py-20">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              مصادر المساعدة
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              ابحث عن الإجابات بنفسك في مصادرنا التعليمية
-            </p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('support.auto_7')}</h2>
+            <p className="text-lg text-muted-foreground">{t('support.auto_8')}</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
@@ -287,9 +269,7 @@ export default function Support() {
                     <p className="text-sm text-muted-foreground">{resource.description}</p>
                   </div>
                   <a href={resource.link}>
-                    <Button className="w-full" variant="outline">
-                      استكشف
-                    </Button>
+                    <Button className="w-full" variant="outline">{t('support.auto_9')}</Button>
                   </a>
                 </CardContent>
               </Card>
@@ -302,12 +282,8 @@ export default function Support() {
       <section className="py-20 bg-muted/30">
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              الأسئلة الشائعة
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              إجابات سريعة على أكثر الأسئلة شيوعاً
-            </p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('support.auto_10')}</h2>
+            <p className="text-lg text-muted-foreground">{t('support.auto_11')}</p>
           </div>
 
           <div className="max-w-3xl mx-auto space-y-4">

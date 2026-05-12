@@ -4,6 +4,7 @@ import { Calendar, AlertCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 export function SubscriptionBadge() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { data: subscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
   const { data: daysData } = trpc.merchantSubscription.getDaysRemaining.useQuery();
@@ -16,9 +17,7 @@ export function SubscriptionBadge() {
         className="cursor-pointer hover:opacity-80 transition-opacity"
         onClick={() => setLocation('/merchant/subscription/plans')}
       >
-        <AlertCircle className="ml-1 h-3 w-3" />
-        اشترك الآن
-      </Badge>
+        <AlertCircle className="ml-1 h-3 w-3" />{t('subscriptionBadge.auto_0')}</Badge>
     );
   }
 

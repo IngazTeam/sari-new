@@ -102,12 +102,8 @@ export default function AdminRecommendations() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Lightbulb className="w-8 h-8 text-yellow-500" />
-          إدارة التوصيات
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          عرض وإدارة توصيات تحسين SEO لجميع الصفحات
-        </p>
+          <Lightbulb className="w-8 h-8 text-yellow-500" />{t('adminRecommendations.auto_0')}</h1>
+        <p className="text-muted-foreground mt-2">{t('adminRecommendations.auto_1')}</p>
       </div>
 
       {/* Stats */}
@@ -119,9 +115,7 @@ export default function AdminRecommendations() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              جميع التوصيات المسجلة
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('adminRecommendations.auto_2')}</p>
           </CardContent>
         </Card>
 
@@ -132,9 +126,7 @@ export default function AdminRecommendations() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.pending}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              تحتاج إلى معالجة
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('adminRecommendations.auto_3')}</p>
           </CardContent>
         </Card>
 
@@ -145,9 +137,7 @@ export default function AdminRecommendations() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completed}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              تم تنفيذها
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('adminRecommendations.auto_4')}</p>
           </CardContent>
         </Card>
 
@@ -158,9 +148,7 @@ export default function AdminRecommendations() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.critical}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              توصيات حرجة
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">{t('adminRecommendations.auto_5')}</p>
           </CardContent>
         </Card>
       </div>

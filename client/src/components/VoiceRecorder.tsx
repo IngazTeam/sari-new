@@ -152,9 +152,7 @@ export function VoiceRecorder({
           >
             <Mic className="h-5 w-5" />
           </Button>
-          <span className="text-sm text-muted-foreground">
-            اضغط لبدء التسجيل
-          </span>
+          <span className="text-sm text-muted-foreground">{t('voiceRecorder.auto_0')}</span>
         </>
       )}
 

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 export default function Products() {
+  const { t } = useTranslation();
   const products = [
     {
       icon: Bot,
@@ -100,13 +101,9 @@ export default function Products() {
         <div className="container relative py-20 md:py-32">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold">
-                <span className="text-primary">
-                منتجات ساري
-              </span>
+                <span className="text-primary">{t('products.auto_0')}</span>
             </h1>
-            <p className="text-xl text-muted-foreground">
-              حلول متكاملة لأتمتة خدمة العملاء وزيادة المبيعات على الواتساب
-            </p>
+            <p className="text-xl text-muted-foreground">{t('products.auto_1')}</p>
           </div>
         </div>
       </section>
@@ -145,26 +142,18 @@ export default function Products() {
       {/* CTA Section */}
       <section className="py-20 bg-primary text-white">
         <div className="container text-center space-y-8">
-          <h2 className="text-3xl md:text-5xl font-bold">
-            جرب ساري مجاناً الآن
-          </h2>
-          <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            ابدأ بتحسين خدمة عملائك وزيادة مبيعاتك اليوم
-          </p>
+          <h2 className="text-3xl md:text-5xl font-bold">{t('products.auto_2')}</h2>
+          <p className="text-xl text-white/90 max-w-2xl mx-auto">{t('products.auto_3')}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/login">
               <a>
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg h-14 px-8">
-                  ابدأ الآن مجاناً
-                  <ArrowRight className="mr-2 w-5 h-5" />
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto text-lg h-14 px-8">{t('products.auto_4')}<ArrowRight className="mr-2 w-5 h-5" />
                 </Button>
               </a>
             </Link>
             <Link href="/pricing">
               <a>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8 bg-transparent border-white text-white hover:bg-white/10">
-                  شاهد الأسعار
-                </Button>
+                <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8 bg-transparent border-white text-white hover:bg-white/10">{t('products.auto_5')}</Button>
               </a>
             </Link>
           </div>

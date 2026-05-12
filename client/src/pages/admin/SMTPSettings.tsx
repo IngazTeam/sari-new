@@ -88,9 +88,7 @@ export default function SMTPSettings() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('adminSMTPSettingsPage.text1')}</h1>
-        <p className="text-muted-foreground mt-2">
-          قم بإعداد SMTP2GO API لإرسال رسائل البريد الإلكتروني التلقائية
-        </p>
+        <p className="text-muted-foreground mt-2">{t('sMTPSettings.auto_0')}</p>
       </div>
 
       {/* معلومات SMTP2GO API */}
@@ -113,9 +111,7 @@ export default function SMTPSettings() {
         <Card>
           <CardHeader>
             <CardTitle>{t('adminSMTPSettingsPage.text8')}</CardTitle>
-            <CardDescription>
-              أدخل SMTP2GO API Key الخاص بك
-            </CardDescription>
+            <CardDescription>{t('sMTPSettings.auto_1')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -127,9 +123,7 @@ export default function SMTPSettings() {
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="api-xxxxxxxxxxxxxxxx"
               />
-              <p className="text-xs text-muted-foreground">
-                يبدأ عادة بـ api-
-              </p>
+              <p className="text-xs text-muted-foreground">{t('sMTPSettings.auto_2')}</p>
             </div>
 
             <div className="space-y-2">
@@ -140,9 +134,7 @@ export default function SMTPSettings() {
                 onChange={(e) => setFromEmail(e.target.value)}
                 placeholder="noreply@sary.live"
               />
-              <p className="text-xs text-muted-foreground">
-                البريد الذي سيظهر كمُرسِل
-              </p>
+              <p className="text-xs text-muted-foreground">{t('sMTPSettings.auto_3')}</p>
             </div>
 
             <Button 
@@ -152,9 +144,7 @@ export default function SMTPSettings() {
             >
               {updateSettingsMutation.isPending ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الحفظ...
-                </>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('sMTPSettings.auto_4')}</>
               ) : (
                 'حفظ الإعدادات'
               )}
@@ -166,9 +156,7 @@ export default function SMTPSettings() {
                 <ul className="list-disc mr-4 mt-1">
                   <li><code>SMTP2GO_API_KEY</code></li>
                   <li><code>SMTP_FROM</code></li>
-                </ul>
-                ثم إعادة تشغيل الخادم.
-              </AlertDescription>
+                </ul>{t('sMTPSettings.auto_5')}</AlertDescription>
             </Alert>
           </CardContent>
         </Card>
@@ -177,9 +165,7 @@ export default function SMTPSettings() {
         <Card>
           <CardHeader>
             <CardTitle>{t('adminSMTPSettingsPage.text11')}</CardTitle>
-            <CardDescription>
-              أرسل بريداً تجريبياً للتحقق من الإعدادات
-            </CardDescription>
+            <CardDescription>{t('sMTPSettings.auto_6')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -200,14 +186,10 @@ export default function SMTPSettings() {
             >
               {isTesting ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الإرسال...
-                </>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('sMTPSettings.auto_7')}</>
               ) : (
                 <>
-                  <Send className="ml-2 h-4 w-4" />
-                  إرسال بريد تجريبي
-                </>
+                  <Send className="ml-2 h-4 w-4" />{t('sMTPSettings.auto_8')}</>
               )}
             </Button>
 
@@ -248,9 +230,7 @@ export default function SMTPSettings() {
               </div>
               <div>
                 <h4 className="font-semibold">{t('adminSMTPSettingsPage.text19')}</h4>
-                <p className="text-sm text-muted-foreground">
-                  إرسال الفواتير تلقائياً بعد كل عملية دفع ناجحة
-                </p>
+                <p className="text-sm text-muted-foreground">{t('sMTPSettings.auto_9')}</p>
               </div>
             </div>
 
@@ -260,9 +240,7 @@ export default function SMTPSettings() {
               </div>
               <div>
                 <h4 className="font-semibold">{t('adminSMTPSettingsPage.text20')}</h4>
-                <p className="text-sm text-muted-foreground">
-                  إرسال تقارير المشاعر والإحصائيات كل أحد صباحاً
-                </p>
+                <p className="text-sm text-muted-foreground">{t('sMTPSettings.auto_10')}</p>
               </div>
             </div>
 
@@ -272,9 +250,7 @@ export default function SMTPSettings() {
               </div>
               <div>
                 <h4 className="font-semibold">{t('adminSMTPSettingsPage.text21')}</h4>
-                <p className="text-sm text-muted-foreground">
-                  إشعارات الاشتراكات والتحديثات الهامة
-                </p>
+                <p className="text-sm text-muted-foreground">{t('sMTPSettings.auto_11')}</p>
               </div>
             </div>
           </div>
@@ -366,19 +342,13 @@ export default function SMTPSettings() {
                       <TableCell>
                         {log.status === 'sent' ? (
                           <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
-                            <CheckCircle className="h-3 w-3 ml-1" />
-                            تم الإرسال
-                          </Badge>
+                            <CheckCircle className="h-3 w-3 ml-1" />{t('sMTPSettings.auto_12')}</Badge>
                         ) : log.status === 'failed' ? (
                           <Badge variant="destructive">
-                            <AlertCircle className="h-3 w-3 ml-1" />
-                            فشل
-                          </Badge>
+                            <AlertCircle className="h-3 w-3 ml-1" />{t('sMTPSettings.auto_13')}</Badge>
                         ) : (
                           <Badge variant="secondary">
-                            <Clock className="h-3 w-3 ml-1" />
-                            قيد الإرسال
-                          </Badge>
+                            <Clock className="h-3 w-3 ml-1" />{t('sMTPSettings.auto_14')}</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -396,9 +366,7 @@ export default function SMTPSettings() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد رسائل مرسلة بعد
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('sMTPSettings.auto_15')}</div>
           )}
         </CardContent>
       </Card>

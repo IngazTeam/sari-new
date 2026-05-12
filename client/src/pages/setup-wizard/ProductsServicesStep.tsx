@@ -341,9 +341,7 @@ export default function ProductsServicesStep({
         {!hasScrapedProducts && (
           <div className="pt-3 border-t border-emerald-200">
             <p className="text-xs text-gray-500 mb-2 flex items-center justify-center gap-1">
-              <Lightbulb className="h-3 w-3" />
-              أو أضف سريعاً من الأمثلة:
-            </p>
+              <Lightbulb className="h-3 w-3" />{t('productsServicesStep.auto_0')}</p>
             <div className="flex flex-wrap justify-center gap-2">
               {suggestions.map((s, i) => (
                 <button
@@ -384,7 +382,7 @@ export default function ProductsServicesStep({
           <Globe className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800">
             <p className="font-medium">🌐 تم استيراد {products.length} منتج من موقعك</p>
-            <p className="text-xs text-blue-600 mt-0.5">يمكنك تعديل أو حذف أي منتج أدناه</p>
+            <p className="text-xs text-blue-600 mt-0.5">{t('productsServicesStep.auto_1')}</p>
           </div>
         </div>
       )}
@@ -435,9 +433,7 @@ export default function ProductsServicesStep({
                   onClick={() => addItem('products')}
                   className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                 >
-                  <Plus className="h-4 w-4 ml-1" />
-                  إضافة منتج
-                </Button>
+                  <Plus className="h-4 w-4 ml-1" />{t('productsServicesStep.auto_2')}</Button>
               )}
             </div>
 
@@ -478,9 +474,7 @@ export default function ProductsServicesStep({
                   onClick={() => addItem('services')}
                   className="border-emerald-300 text-emerald-700 hover:bg-emerald-50"
                 >
-                  <Plus className="h-4 w-4 ml-1" />
-                  إضافة خدمة
-                </Button>
+                  <Plus className="h-4 w-4 ml-1" />{t('productsServicesStep.auto_3')}</Button>
               )}
             </div>
 
@@ -496,9 +490,7 @@ export default function ProductsServicesStep({
       {/* Actions */}
       <div className="flex items-center justify-between pt-4 border-t">
         <Button variant="ghost" onClick={handleSkip} className="text-gray-500 hover:text-gray-700">
-          <AlertCircle className="h-4 w-4 ml-1" />
-          تخطي - سأضيف لاحقاً
-        </Button>
+          <AlertCircle className="h-4 w-4 ml-1" />{t('productsServicesStep.auto_4')}</Button>
 
         {hasFilledItems ? (
           <Button size="lg" onClick={handleNext} className="px-8 bg-emerald-600 hover:bg-emerald-700">
@@ -507,9 +499,7 @@ export default function ProductsServicesStep({
           </Button>
         ) : (
           <div className="text-sm text-gray-400 flex items-center gap-1">
-            <AlertCircle className="h-4 w-4" />
-            أضف عنصر واحد على الأقل أو تخطَّ الخطوة
-          </div>
+            <AlertCircle className="h-4 w-4" />{t('productsServicesStep.auto_5')}</div>
         )}
       </div>
     </div>

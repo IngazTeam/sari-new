@@ -141,9 +141,7 @@ export default function WooCommerceSettings() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('wooCommerceSettingsPage.text0')}</h1>
-          <p className="text-muted-foreground mt-2">
-            ربط متجر WooCommerce الخاص بك مع ساري لمزامنة المنتجات والطلبات تلقائياً
-          </p>
+          <p className="text-muted-foreground mt-2">{t('wooCommerceSettings.auto_0')}</p>
         </div>
         <Store className="w-12 h-12 text-primary" />
       </div>
@@ -164,7 +162,7 @@ export default function WooCommerceSettings() {
                   {settings.storeName && ` (${settings.storeName})`}
                 </>
               ) : (
-                <><strong>{t('wooCommerceSettingsPage.text2')}</strong> - يرجى اختبار الاتصال</>
+                <><strong>{t('wooCommerceSettingsPage.text2')}</strong>{t('wooCommerceSettings.auto_1')}</>
               )}
             </AlertDescription>
           </div>
@@ -208,9 +206,7 @@ export default function WooCommerceSettings() {
       <Card>
         <CardHeader>
           <CardTitle>{t('wooCommerceSettingsPage.text8')}</CardTitle>
-          <CardDescription>
-            أدخل بيانات الاتصال بمتجر WooCommerce الخاص بك
-          </CardDescription>
+          <CardDescription>{t('wooCommerceSettings.auto_2')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -223,9 +219,7 @@ export default function WooCommerceSettings() {
               onChange={(e) => setStoreUrl(e.target.value)}
               disabled={saveSettings.isPending}
             />
-            <p className="text-xs text-muted-foreground">
-              مثال: https://yourstore.com
-            </p>
+            <p className="text-xs text-muted-foreground">{t('wooCommerceSettings.auto_3')}</p>
           </div>
 
           <div className="space-y-2">
@@ -266,8 +260,7 @@ export default function WooCommerceSettings() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline flex items-center gap-1 mt-2"
-              >
-                دليل الاستخدام الكامل <ExternalLink className="w-3 h-3" />
+              >{t('wooCommerceSettings.auto_4')}<ExternalLink className="w-3 h-3" />
               </a>
             </AlertDescription>
           </Alert>
@@ -297,17 +290,13 @@ export default function WooCommerceSettings() {
       <Card>
         <CardHeader>
           <CardTitle>{t('wooCommerceSettingsPage.text15')}</CardTitle>
-          <CardDescription>
-            تحكم في كيفية مزامنة البيانات بين ساري و WooCommerce
-          </CardDescription>
+          <CardDescription>{t('wooCommerceSettings.auto_5')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>{t('wooCommerceSettingsPage.text16')}</Label>
-              <p className="text-sm text-muted-foreground">
-                مزامنة المنتجات من WooCommerce بشكل دوري
-              </p>
+              <p className="text-sm text-muted-foreground">{t('wooCommerceSettings.auto_6')}</p>
             </div>
             <Switch
               checked={autoSyncProducts}
@@ -318,9 +307,7 @@ export default function WooCommerceSettings() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label>{t('wooCommerceSettingsPage.text17')}</Label>
-              <p className="text-sm text-muted-foreground">
-                مزامنة الطلبات من WooCommerce بشكل دوري
-              </p>
+              <p className="text-sm text-muted-foreground">{t('wooCommerceSettings.auto_7')}</p>
             </div>
             <Switch
               checked={autoSyncOrders}
@@ -338,9 +325,7 @@ export default function WooCommerceSettings() {
               value={syncInterval}
               onChange={(e) => setSyncInterval(parseInt(e.target.value))}
             />
-            <p className="text-xs text-muted-foreground">
-              الحد الأدنى: 5 دقائق، الحد الأقصى: 1440 دقيقة (24 ساعة)
-            </p>
+            <p className="text-xs text-muted-foreground">{t('wooCommerceSettings.auto_8')}</p>
           </div>
         </CardContent>
       </Card>
@@ -350,9 +335,7 @@ export default function WooCommerceSettings() {
         <Card className="border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">{t('wooCommerceSettingsPage.text19')}</CardTitle>
-            <CardDescription>
-              إجراءات لا يمكن التراجع عنها
-            </CardDescription>
+            <CardDescription>{t('wooCommerceSettings.auto_9')}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button

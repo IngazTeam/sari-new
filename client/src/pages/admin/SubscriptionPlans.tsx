@@ -176,9 +176,7 @@ export default function SubscriptionPlans() {
           <p className="text-muted-foreground mt-1">{t('adminSubscriptionPlansPage.text1')}</p>
         </div>
         <Button onClick={() => setIsCreateDialogOpen(true)}>
-          <Plus className="ml-2 h-4 w-4" />
-          إضافة باقة جديدة
-        </Button>
+          <Plus className="ml-2 h-4 w-4" />{t('subscriptionPlans.auto_0')}</Button>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -227,9 +225,7 @@ export default function SubscriptionPlans() {
                     className="flex-1"
                     onClick={() => openEditDialog(plan)}
                   >
-                    <Edit className="ml-2 h-4 w-4" />
-                    تعديل
-                  </Button>
+                    <Edit className="ml-2 h-4 w-4" />{t('subscriptionPlans.auto_1')}</Button>
                   <Button
                     variant="destructive"
                     size="sm"
@@ -330,9 +326,7 @@ export default function SubscriptionPlans() {
               <div className="flex items-center justify-between">
                 <Label>{t('adminSubscriptionPlansPage.text19')}</Label>
                 <Button type="button" variant="outline" size="sm" onClick={addFeature}>
-                  <Plus className="ml-1 h-3 w-3" />
-                  إضافة ميزة
-                </Button>
+                  <Plus className="ml-1 h-3 w-3" />{t('subscriptionPlans.auto_2')}</Button>
               </div>
               <div className="space-y-2">
                 {formData.featuresList.map((feature, index) => (
@@ -455,9 +449,7 @@ export default function SubscriptionPlans() {
               <div className="flex items-center justify-between">
                 <Label>{t('adminSubscriptionPlansPage.text30')}</Label>
                 <Button type="button" variant="outline" size="sm" onClick={addFeature}>
-                  <Plus className="ml-1 h-3 w-3" />
-                  إضافة ميزة
-                </Button>
+                  <Plus className="ml-1 h-3 w-3" />{t('subscriptionPlans.auto_3')}</Button>
               </div>
               <div className="space-y-2">
                 {formData.featuresList.map((feature, index) => (

@@ -16,6 +16,7 @@ const DEVICE_COLORS: Record<string, string> = {
 };
 
 export default function SeoAnalytics() {
+  const { t } = useTranslation();
   const [days, setDays] = useState(30);
 
   const { data: config } = trpc.googleAnalytics.getConfig.useQuery();
@@ -34,8 +35,8 @@ export default function SeoAnalytics() {
     return (
       <div className="text-center py-16 text-muted-foreground">
         <Globe className="w-12 h-12 mx-auto mb-4 opacity-50" />
-        <h3 className="text-lg font-semibold mb-2">لم يتم ربط Google Analytics</h3>
-        <p>اذهب إلى تاب "لوحة التحكم" لإعداد الربط أولاً</p>
+        <h3 className="text-lg font-semibold mb-2">{t('seoAnalytics.auto_0')}</h3>
+        <p>{t('seoAnalytics.auto_1')}</p>
       </div>
     );
   }
@@ -44,8 +45,8 @@ export default function SeoAnalytics() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">الإحصائيات التفصيلية</h1>
-          <p className="text-gray-600 mt-2">تحليل مصادر الحركة والأجهزة والدول</p>
+          <h1 className="text-3xl font-bold">{t('seoAnalytics.auto_2')}</h1>
+          <p className="text-gray-600 mt-2">{t('seoAnalytics.auto_3')}</p>
         </div>
         <div className="flex gap-2 items-center">
           <Calendar className="w-4 h-4 text-gray-600" />
@@ -54,10 +55,10 @@ export default function SeoAnalytics() {
             onChange={(e) => setDays(parseInt(e.target.value))}
             className="px-3 py-2 border rounded-lg text-sm"
           >
-            <option value={7}>آخر 7 أيام</option>
-            <option value={30}>آخر 30 يوم</option>
-            <option value={90}>آخر 90 يوم</option>
-            <option value={365}>سنة كاملة</option>
+            <option value={7}>{t('seoAnalytics.auto_4')}</option>
+            <option value={30}>{t('seoAnalytics.auto_5')}</option>
+            <option value={90}>{t('seoAnalytics.auto_6')}</option>
+            <option value={365}>{t('seoAnalytics.auto_7')}</option>
           </select>
         </div>
       </div>
@@ -65,25 +66,25 @@ export default function SeoAnalytics() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground">المستخدمون الجدد</p>
+          <p className="text-sm text-muted-foreground">{t('seoAnalytics.auto_8')}</p>
           {loadingOverview ? <Loader2 className="h-5 w-5 animate-spin mt-2" /> : (
             <p className="text-3xl font-bold mt-2">{(overview?.newUsers || 0).toLocaleString()}</p>
           )}
         </Card>
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground">معدل الارتداد</p>
+          <p className="text-sm text-muted-foreground">{t('seoAnalytics.auto_9')}</p>
           {loadingOverview ? <Loader2 className="h-5 w-5 animate-spin mt-2" /> : (
             <p className="text-3xl font-bold mt-2">{(overview?.bounceRate || 0).toFixed(1)}%</p>
           )}
         </Card>
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground">الجلسات</p>
+          <p className="text-sm text-muted-foreground">{t('seoAnalytics.auto_10')}</p>
           {loadingOverview ? <Loader2 className="h-5 w-5 animate-spin mt-2" /> : (
             <p className="text-3xl font-bold mt-2">{(overview?.sessions || 0).toLocaleString()}</p>
           )}
         </Card>
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground">مشاهدات الصفحات</p>
+          <p className="text-sm text-muted-foreground">{t('seoAnalytics.auto_11')}</p>
           {loadingOverview ? <Loader2 className="h-5 w-5 animate-spin mt-2" /> : (
             <p className="text-3xl font-bold mt-2">{(overview?.pageViews || 0).toLocaleString()}</p>
           )}
@@ -93,7 +94,7 @@ export default function SeoAnalytics() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Traffic Sources */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">مصادر الحركة</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('seoAnalytics.auto_12')}</h2>
           {loadingSources ? (
             <div className="flex items-center justify-center h-[250px]">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -117,13 +118,13 @@ export default function SeoAnalytics() {
               })}
             </div>
           ) : (
-            <p className="text-muted-foreground text-center py-8">لا توجد بيانات</p>
+            <p className="text-muted-foreground text-center py-8">{t('seoAnalytics.auto_13')}</p>
           )}
         </Card>
 
         {/* Device Distribution */}
         <Card className="p-6">
-          <h2 className="text-lg font-semibold mb-4">توزيع الأجهزة</h2>
+          <h2 className="text-lg font-semibold mb-4">{t('seoAnalytics.auto_14')}</h2>
           {loadingDevices ? (
             <div className="flex items-center justify-center h-[250px]">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -162,14 +163,14 @@ export default function SeoAnalytics() {
               </div>
             </>
           ) : (
-            <p className="text-muted-foreground text-center py-8">لا توجد بيانات</p>
+            <p className="text-muted-foreground text-center py-8">{t('seoAnalytics.auto_15')}</p>
           )}
         </Card>
       </div>
 
       {/* Countries */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">الزوار حسب الدولة</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('seoAnalytics.auto_16')}</h2>
         {loadingCountries ? (
           <div className="flex items-center justify-center h-32">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -179,10 +180,10 @@ export default function SeoAnalytics() {
             <table className="w-full">
               <thead className="bg-muted/50">
                 <tr>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">الدولة</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">المستخدمون</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">الجلسات</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold">النسبة</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoAnalytics.auto_17')}</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoAnalytics.auto_18')}</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoAnalytics.auto_19')}</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold">{t('seoAnalytics.auto_20')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -205,7 +206,7 @@ export default function SeoAnalytics() {
             </table>
           </div>
         ) : (
-          <p className="text-muted-foreground text-center py-8">لا توجد بيانات</p>
+          <p className="text-muted-foreground text-center py-8">{t('seoAnalytics.auto_21')}</p>
         )}
       </Card>
     </div>

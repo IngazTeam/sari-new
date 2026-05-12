@@ -195,14 +195,10 @@ export default function LoyaltyTiers() {
                       >
                         {updateTier.isPending ? (
                           <>
-                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                            جاري الحفظ...
-                          </>
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('loyaltyTiers.auto_0')}</>
                         ) : (
                           <>
-                            <Save className="ml-2 h-4 w-4" />
-                            حفظ
-                          </>
+                            <Save className="ml-2 h-4 w-4" />{t('loyaltyTiers.auto_1')}</>
                         )}
                       </Button>
                     </>

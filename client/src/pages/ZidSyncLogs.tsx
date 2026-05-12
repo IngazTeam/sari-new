@@ -65,9 +65,7 @@ export default function ZidSyncLogs() {
     <div className="container mx-auto py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('zidSyncLogsPage.text4')}</h1>
-        <p className="text-muted-foreground mt-2">
-          سجل جميع عمليات المزامنة مع Zid
-        </p>
+        <p className="text-muted-foreground mt-2">{t('zidSyncLogs.auto_0')}</p>
       </div>
 
       {/* Statistics Cards */}
@@ -85,9 +83,7 @@ export default function ZidSyncLogs() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                مزامنات ناجحة
-              </CardTitle>
+                <CheckCircle className="w-4 h-4 text-green-500" />{t('zidSyncLogs.auto_1')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-500">
@@ -99,9 +95,7 @@ export default function ZidSyncLogs() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-500" />
-                مزامنات فاشلة
-              </CardTitle>
+                <XCircle className="w-4 h-4 text-red-500" />{t('zidSyncLogs.auto_2')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-500">
@@ -116,16 +110,12 @@ export default function ZidSyncLogs() {
       <Card>
         <CardHeader>
           <CardTitle>{t('zidSyncLogsPage.text6')}</CardTitle>
-          <CardDescription>
-            آخر 50 عملية مزامنة
-          </CardDescription>
+          <CardDescription>{t('zidSyncLogs.auto_3')}</CardDescription>
         </CardHeader>
         <CardContent>
           {!logs || logs.length === 0 ? (
             <Alert>
-              <AlertDescription>
-                لا توجد عمليات مزامنة بعد
-              </AlertDescription>
+              <AlertDescription>{t('zidSyncLogs.auto_4')}</AlertDescription>
             </Alert>
           ) : (
             <div className="space-y-4">

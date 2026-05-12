@@ -49,9 +49,7 @@ export default function PaymentDetails() {
             <h2 className="text-xl font-semibold mb-2">{t('paymentDetailsPage.text0')}</h2>
             <p className="text-muted-foreground mb-4">{t('paymentDetailsPage.text1')}</p>
             <Button onClick={() => navigate('/merchant/payments')}>
-              <ArrowLeft className="ml-2 h-4 w-4" />
-              العودة للمعاملات
-            </Button>
+              <ArrowLeft className="ml-2 h-4 w-4" />{t('paymentDetails.auto_0')}</Button>
           </CardContent>
         </Card>
       </div>
@@ -116,29 +114,19 @@ export default function PaymentDetails() {
       {/* Header - Hidden on print */}
       <div className="mb-6 print:hidden">
         <Button variant="ghost" onClick={() => navigate('/merchant/payments')}>
-          <ArrowLeft className="ml-2 h-4 w-4" />
-          العودة للمعاملات
-        </Button>
+          <ArrowLeft className="ml-2 h-4 w-4" />{t('paymentDetails.auto_1')}</Button>
       </div>
 
       {/* Actions Bar - Hidden on print */}
       <div className="flex flex-wrap gap-2 mb-6 print:hidden">
         <Button onClick={handlePrint} variant="outline">
-          <Printer className="ml-2 h-4 w-4" />
-          طباعة
-        </Button>
+          <Printer className="ml-2 h-4 w-4" />{t('paymentDetails.auto_2')}</Button>
         <Button onClick={handleDownloadPDF} variant="outline">
-          <Download className="ml-2 h-4 w-4" />
-          تصدير PDF
-        </Button>
+          <Download className="ml-2 h-4 w-4" />{t('paymentDetails.auto_3')}</Button>
         <Button onClick={handleDownloadJSON} variant="outline">
-          <FileJson className="ml-2 h-4 w-4" />
-          تصدير JSON
-        </Button>
+          <FileJson className="ml-2 h-4 w-4" />{t('paymentDetails.auto_4')}</Button>
         <Button onClick={handleSendViaWhatsApp} variant="outline">
-          <MessageSquare className="ml-2 h-4 w-4" />
-          إرسال عبر واتساب
-        </Button>
+          <MessageSquare className="ml-2 h-4 w-4" />{t('paymentDetails.auto_5')}</Button>
       </div>
 
       {/* Payment Details */}

@@ -29,9 +29,7 @@ export default function SeoUnified() {
     <div className="container py-6 space-y-6">
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">{t('adminSeoUnifiedPage.text0')}</h1>
-        <p className="text-muted-foreground">
-          إدارة شاملة لتحسين محركات البحث (SEO) لموقعك
-        </p>
+        <p className="text-muted-foreground">{t('seoUnified.auto_0')}</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

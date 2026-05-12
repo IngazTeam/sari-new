@@ -47,9 +47,7 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
               <DialogTitle className="text-2xl">{t('compSignupPromptDialogPage.text0')}</DialogTitle>
             </div>
           </div>
-          <DialogDescription className="text-base pt-2">
-            احصل على ساري لمتجرك الآن وابدأ في زيادة مبيعاتك تلقائياً عبر الواتساب!
-          </DialogDescription>
+          <DialogDescription className="text-base pt-2">{t('signupPromptDialog.auto_0')}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -86,12 +84,9 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
           </div>
 
           <div className="bg-gradient-to-r from-[#00d25e]/10 to-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-700 font-medium">
-              ✨ احصل على <span className="text-[#00d25e] font-bold">{t('compSignupPromptDialogPage.text5')}</span>
+            <p className="text-sm text-gray-700 font-medium">{t('signupPromptDialog.auto_1')}<span className="text-[#00d25e] font-bold">{t('compSignupPromptDialogPage.text5')}</span>
             </p>
-            <p className="text-xs text-gray-600 mt-1">
-              بدون الحاجة لبطاقة ائتمانية
-            </p>
+            <p className="text-xs text-gray-600 mt-1">{t('signupPromptDialog.auto_2')}</p>
           </div>
         </div>
 
@@ -100,27 +95,19 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
             onClick={handleQuickSignup}
             className="flex-1 bg-[#00d25e] hover:bg-[#00b84e] text-white"
             disabled={!formData.name || !formData.email || !formData.phone}
-          >
-            ابدأ الآن مجاناً
-          </Button>
+          >{t('signupPromptDialog.auto_3')}</Button>
           <Button
             onClick={handleLater}
             variant="outline"
             className="flex-1"
-          >
-            لاحقاً
-          </Button>
+          >{t('signupPromptDialog.auto_4')}</Button>
         </div>
 
         <p className="text-xs text-center text-gray-500">
           بالتسجيل، أنت توافق على{' '}
-          <a href="/terms" className="text-[#00d25e] hover:underline">
-            شروط الخدمة
-          </a>{' '}
+          <a href="/terms" className="text-[#00d25e] hover:underline">{t('signupPromptDialog.auto_5')}</a>{' '}
           و{' '}
-          <a href="/privacy" className="text-[#00d25e] hover:underline">
-            سياسة الخصوصية
-          </a>
+          <a href="/privacy" className="text-[#00d25e] hover:underline">{t('signupPromptDialog.auto_6')}</a>
         </p>
       </DialogContent>
     </Dialog>

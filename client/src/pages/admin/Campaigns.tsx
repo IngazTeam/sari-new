@@ -100,9 +100,7 @@ export default function AdminCampaigns() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold">{t('adminCampaignsPage.text0')}</h1>
-        <p className="text-muted-foreground mt-2">
-          عرض وإدارة جميع حملات التجار
-        </p>
+        <p className="text-muted-foreground mt-2">{t('campaigns.auto_0')}</p>
       </div>
 
       {/* Stats Cards */}
@@ -114,9 +112,7 @@ export default function AdminCampaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">
-              جميع الحملات المسجلة
-            </p>
+            <p className="text-xs text-muted-foreground">{t('campaigns.auto_1')}</p>
           </CardContent>
         </Card>
 
@@ -127,9 +123,7 @@ export default function AdminCampaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.scheduled}</div>
-            <p className="text-xs text-muted-foreground">
-              في انتظار الإرسال
-            </p>
+            <p className="text-xs text-muted-foreground">{t('campaigns.auto_2')}</p>
           </CardContent>
         </Card>
 
@@ -140,9 +134,7 @@ export default function AdminCampaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.sending}</div>
-            <p className="text-xs text-muted-foreground">
-              يتم إرسالها الآن
-            </p>
+            <p className="text-xs text-muted-foreground">{t('campaigns.auto_3')}</p>
           </CardContent>
         </Card>
 
@@ -153,9 +145,7 @@ export default function AdminCampaigns() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.completed}</div>
-            <p className="text-xs text-muted-foreground">
-              تم إرسالها بنجاح
-            </p>
+            <p className="text-xs text-muted-foreground">{t('campaigns.auto_4')}</p>
           </CardContent>
         </Card>
       </div>
@@ -240,13 +230,9 @@ export default function AdminCampaigns() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              جاري التحميل...
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('campaigns.auto_5')}</div>
           ) : filteredCampaigns.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد حملات تطابق معايير البحث
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('campaigns.auto_6')}</div>
           ) : (
             <div className="overflow-x-auto">
               <Table>

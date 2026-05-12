@@ -78,12 +78,8 @@ export default function LanguageSettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5" />
-              إعدادات اللغة
-            </CardTitle>
-            <CardDescription>
-              اختر اللغة المفضلة لواجهة التطبيق ورسائل البوت
-            </CardDescription>
+              <Globe className="h-5 w-5" />{t('languageSettings.auto_0')}</CardTitle>
+            <CardDescription>{t('languageSettings.auto_1')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -123,12 +119,8 @@ export default function LanguageSettings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              إعدادات العملة
-            </CardTitle>
-            <CardDescription>
-              اختر العملة المفضلة لعرض الأسعار والمبالغ
-            </CardDescription>
+              <DollarSign className="h-5 w-5" />{t('languageSettings.auto_2')}</CardTitle>
+            <CardDescription>{t('languageSettings.auto_3')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -169,9 +161,7 @@ export default function LanguageSettings() {
       <Card>
         <CardHeader>
           <CardTitle>{t('languageSettingsPage.text13')}</CardTitle>
-          <CardDescription>
-            معاينة كيف ستظهر اللغة والعملة في التطبيق
-          </CardDescription>
+          <CardDescription>{t('languageSettings.auto_4')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">

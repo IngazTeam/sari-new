@@ -465,9 +465,7 @@ export default function CalendlyIntegration() {
           <CardContent className="space-y-6">
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                للحصول على API Key، اذهب إلى Calendly &gt; Integrations &gt; API & Webhooks &gt; Personal Access Token
-              </AlertDescription>
+              <AlertDescription>{t('calendlyIntegration.auto_0')}</AlertDescription>
             </Alert>
 
             <div className="space-y-4">

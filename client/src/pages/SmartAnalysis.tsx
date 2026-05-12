@@ -193,16 +193,13 @@ export default function SmartAnalysis() {
     <div className="flex flex-wrap gap-2">
       <Button size="sm" variant={value === 'replace' ? 'default' : 'outline'} onClick={() => onChange('replace')}
         className={value === 'replace' ? 'bg-red-600 hover:bg-red-700' : ''}>
-        <Replace className="w-3.5 h-3.5 ml-1" /> استبدال
-      </Button>
+        <Replace className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_0')}</Button>
       <Button size="sm" variant={value === 'merge' ? 'default' : 'outline'} onClick={() => onChange('merge')}
         className={value === 'merge' ? 'bg-blue-600 hover:bg-blue-700' : ''}>
-        <Plus className="w-3.5 h-3.5 ml-1" /> دمج
-      </Button>
+        <Plus className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_1')}</Button>
       <Button size="sm" variant={value === 'skip' ? 'default' : 'outline'} onClick={() => onChange('skip')}
         className={value === 'skip' ? 'bg-gray-600 hover:bg-gray-700' : ''}>
-        <SkipForward className="w-3.5 h-3.5 ml-1" /> تخطي
-      </Button>
+        <SkipForward className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_2')}</Button>
     </div>
   );
 
@@ -219,11 +216,11 @@ export default function SmartAnalysis() {
           <ActionButtons value={action} onChange={onAction} label={title} />
         </div>
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <span>الحالي: <strong className="text-foreground">{existingItems.length}</strong></span>
-          <span>الجديد: <strong className="text-emerald-600">{newItems.length}</strong></span>
-          {action === 'replace' && <Badge variant="destructive" className="text-xs">سيتم حذف الحالي</Badge>}
-          {action === 'merge' && <Badge className="bg-blue-100 text-blue-800 text-xs">سيتم إضافة الجديد فقط</Badge>}
-          {action === 'skip' && <Badge variant="secondary" className="text-xs">بدون تغيير</Badge>}
+          <span>{t('smartAnalysis.auto_3')}<strong className="text-foreground">{existingItems.length}</strong></span>
+          <span>{t('smartAnalysis.auto_4')}<strong className="text-emerald-600">{newItems.length}</strong></span>
+          {action === 'replace' && <Badge variant="destructive" className="text-xs">{t('smartAnalysis.auto_5')}</Badge>}
+          {action === 'merge' && <Badge className="bg-blue-100 text-blue-800 text-xs">{t('smartAnalysis.auto_6')}</Badge>}
+          {action === 'skip' && <Badge variant="secondary" className="text-xs">{t('smartAnalysis.auto_7')}</Badge>}
         </div>
       </CardHeader>
       {action !== 'skip' && (
@@ -233,7 +230,7 @@ export default function SmartAnalysis() {
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground mb-2">📦 البيانات الحالية ({existingItems.length})</p>
               {existingItems.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic p-3 bg-muted rounded-lg text-center">لا توجد بيانات حالية</p>
+                <p className="text-xs text-muted-foreground italic p-3 bg-muted rounded-lg text-center">{t('smartAnalysis.auto_8')}</p>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {existingItems.slice(0, 10).map((item, i) => (
@@ -247,7 +244,7 @@ export default function SmartAnalysis() {
             <div className="space-y-2">
               <p className="text-sm font-medium text-emerald-700 mb-2">✨ البيانات الجديدة ({newItems.length})</p>
               {newItems.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic p-3 bg-emerald-50 rounded-lg text-center">لم يتم استخراج بيانات</p>
+                <p className="text-xs text-muted-foreground italic p-3 bg-emerald-50 rounded-lg text-center">{t('smartAnalysis.auto_9')}</p>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {newItems.slice(0, 10).map((item, i) => (
@@ -273,11 +270,8 @@ export default function SmartAnalysis() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Globe className="w-6 h-6" /> مراجعة نتائج التحليل
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              راجع البيانات المستخرجة واختر الإجراء المناسب لكل قسم قبل الاعتماد
-            </p>
+              <Globe className="w-6 h-6" />{t('smartAnalysis.auto_10')}</h1>
+            <p className="text-muted-foreground text-sm mt-1">{t('smartAnalysis.auto_11')}</p>
           </div>
           <div className="flex items-center gap-2">
             {getPlatformBadge(preview.platform)}
@@ -290,23 +284,23 @@ export default function SmartAnalysis() {
           <Card className="p-3 text-center">
             <Package className="w-4 h-4 mx-auto mb-1 text-emerald-600" />
             <p className="text-xl font-bold">{preview.products.length}</p>
-            <p className="text-xs text-muted-foreground">منتج مستخرج</p>
+            <p className="text-xs text-muted-foreground">{t('smartAnalysis.auto_12')}</p>
           </Card>
           <Card className="p-3 text-center">
             <FileText className="w-4 h-4 mx-auto mb-1 text-blue-600" />
             <p className="text-xl font-bold">{preview.pages.length}</p>
-            <p className="text-xs text-muted-foreground">صفحة مكتشفة</p>
+            <p className="text-xs text-muted-foreground">{t('smartAnalysis.auto_13')}</p>
           </Card>
           <Card className="p-3 text-center">
             <MessageSquare className="w-4 h-4 mx-auto mb-1 text-purple-600" />
             <p className="text-xl font-bold">{preview.faqs.length}</p>
-            <p className="text-xs text-muted-foreground">سؤال شائع</p>
+            <p className="text-xs text-muted-foreground">{t('smartAnalysis.auto_14')}</p>
           </Card>
         </div>
 
         {/* Products comparison */}
         <ComparisonSection
-          title="المنتجات"
+          title={t('smartAnalysis.auto_46')}
           icon={ShoppingCart}
           existingItems={existingData?.products || []}
           newItems={preview.products}
@@ -322,7 +316,7 @@ export default function SmartAnalysis() {
 
         {/* FAQs comparison */}
         <ComparisonSection
-          title="الأسئلة الشائعة"
+          title={t('smartAnalysis.auto_47')}
           icon={MessageSquare}
           existingItems={existingData?.faqs || []}
           newItems={preview.faqs}
@@ -338,7 +332,7 @@ export default function SmartAnalysis() {
 
         {/* Pages comparison */}
         <ComparisonSection
-          title="الصفحات المكتشفة"
+          title={t('smartAnalysis.auto_48')}
           icon={FileText}
           existingItems={existingData?.pages || []}
           newItems={preview.pages}
@@ -354,14 +348,12 @@ export default function SmartAnalysis() {
 
         {/* Action buttons */}
         <div className="flex gap-3 pt-2 sticky bottom-4">
-          <Button variant="outline" onClick={handleReset} className="flex-shrink-0">
-            إلغاء
-          </Button>
+          <Button variant="outline" onClick={handleReset} className="flex-shrink-0">{t('smartAnalysis.auto_15')}</Button>
           <Button onClick={handleApply} className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={applyMutation.isPending}>
             {applyMutation.isPending ? (
-              <><Loader2 className="w-4 h-4 ml-2 animate-spin" /> جاري الحفظ...</>
+              <><Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('smartAnalysis.auto_16')}</>
             ) : (
-              <><CheckCircle2 className="w-4 h-4 ml-2" /> اعتماد التغييرات</>
+              <><CheckCircle2 className="w-4 h-4 ml-2" />{t('smartAnalysis.auto_17')}</>
             )}
           </Button>
         </div>
@@ -376,8 +368,8 @@ export default function SmartAnalysis() {
     return (
       <div className="container mx-auto py-20 text-center">
         <Loader2 className="w-12 h-12 animate-spin text-emerald-600 mx-auto mb-4" />
-        <h2 className="text-xl font-bold">جاري حفظ التغييرات...</h2>
-        <p className="text-muted-foreground mt-2">يتم تحديث البيانات وتزويد البوت بالمعلومات الجديدة</p>
+        <h2 className="text-xl font-bold">{t('smartAnalysis.auto_18')}</h2>
+        <p className="text-muted-foreground mt-2">{t('smartAnalysis.auto_19')}</p>
       </div>
     );
   }
@@ -389,18 +381,14 @@ export default function SmartAnalysis() {
     <div className="container mx-auto py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('smartAnalysisPage.text3')}</h1>
-        <p className="text-muted-foreground mt-2">
-          اكتشف منصة متجرك واستخرج المنتجات والصفحات والأسئلة الشائعة تلقائياً
-        </p>
+        <p className="text-muted-foreground mt-2">{t('smartAnalysis.auto_20')}</p>
       </div>
 
       {/* Success message after applying */}
       {phase === 'done' && (
         <Alert className="border-emerald-300 bg-emerald-50">
           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-          <AlertDescription className="text-emerald-800">
-            تم اعتماد التغييرات بنجاح! البوت الآن يعرف المنتجات والمعلومات الجديدة. 🎉
-          </AlertDescription>
+          <AlertDescription className="text-emerald-800">{t('smartAnalysis.auto_21')}</AlertDescription>
         </Alert>
       )}
 
@@ -408,9 +396,8 @@ export default function SmartAnalysis() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5" /> تحليل موقع جديد
-          </CardTitle>
-          <CardDescription>أدخل رابط موقعك لبدء التحليل الذكي — ستراجع النتائج قبل الاعتماد</CardDescription>
+            <Globe className="h-5 w-5" />{t('smartAnalysis.auto_22')}</CardTitle>
+          <CardDescription>{t('smartAnalysis.auto_23')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -423,9 +410,9 @@ export default function SmartAnalysis() {
             />
             <Button onClick={handleAnalyze} disabled={previewMutation.isPending || !websiteUrl}>
               {previewMutation.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> جاري التحليل...</>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('smartAnalysis.auto_24')}</>
               ) : (
-                <><Search className="mr-2 h-4 w-4" /> تحليل الموقع</>
+                <><Search className="mr-2 h-4 w-4" />{t('smartAnalysis.auto_25')}</>
               )}
             </Button>
           </div>
@@ -492,7 +479,7 @@ export default function SmartAnalysis() {
           <TabsTrigger value="pages"><FileText className="mr-2 h-4 w-4" /> الصفحات ({pages?.length || 0})</TabsTrigger>
           <TabsTrigger value="faqs"><MessageSquare className="mr-2 h-4 w-4" /> الأسئلة ({faqs?.length || 0})</TabsTrigger>
           <TabsTrigger value="history"><BarChart3 className="mr-2 h-4 w-4" /> التحليلات ({analyses?.length || 0})</TabsTrigger>
-          <TabsTrigger value="scores"><TrendingUp className="mr-2 h-4 w-4" /> التقييم</TabsTrigger>
+          <TabsTrigger value="scores"><TrendingUp className="mr-2 h-4 w-4" />{t('smartAnalysis.auto_26')}</TabsTrigger>
         </TabsList>
 
         {/* Pages tab (existing) */}
@@ -505,7 +492,7 @@ export default function SmartAnalysis() {
                     <CardTitle className="text-lg">{page.title || page.pageType}</CardTitle>
                     <CardDescription className="flex items-center gap-2">
                       <Badge variant="outline">{page.pageType}</Badge>
-                      {page.useInBot && <Badge className="bg-green-100 text-green-800">مفعّل في البوت</Badge>}
+                      {page.useInBot && <Badge className="bg-green-100 text-green-800">{t('smartAnalysis.auto_27')}</Badge>}
                     </CardDescription>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => deletePage.mutate({ pageId: page.id })}><Trash2 className="w-4 h-4" /></Button>
@@ -518,7 +505,7 @@ export default function SmartAnalysis() {
               </CardContent>
             </Card>
           )) : (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">لا توجد صفحات مكتشفة بعد. قم بتحليل موقعك أولاً.</CardContent></Card>
+            <Card><CardContent className="py-8 text-center text-muted-foreground">{t('smartAnalysis.auto_28')}</CardContent></Card>
           )}
         </TabsContent>
 
@@ -532,7 +519,7 @@ export default function SmartAnalysis() {
                     <CardTitle className="text-lg">{faq.question}</CardTitle>
                     <CardDescription className="flex items-center gap-2">
                       {faq.category && <Badge variant="outline">{faq.category}</Badge>}
-                      {faq.useInBot && <Badge className="bg-green-100 text-green-800">مفعّل في البوت</Badge>}
+                      {faq.useInBot && <Badge className="bg-green-100 text-green-800">{t('smartAnalysis.auto_29')}</Badge>}
                     </CardDescription>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => deleteFaq.mutate({ faqId: faq.id })}><Trash2 className="w-4 h-4" /></Button>
@@ -541,7 +528,7 @@ export default function SmartAnalysis() {
               <CardContent><p className="text-sm text-muted-foreground">{faq.answer}</p></CardContent>
             </Card>
           )) : (
-            <Card><CardContent className="py-8 text-center text-muted-foreground">لا توجد أسئلة شائعة بعد. قم بتحليل موقعك أولاً.</CardContent></Card>
+            <Card><CardContent className="py-8 text-center text-muted-foreground">{t('smartAnalysis.auto_30')}</CardContent></Card>
           )}
         </TabsContent>
 
@@ -567,14 +554,14 @@ export default function SmartAnalysis() {
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        {analysis.status === 'analyzing' ? (<><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">جاري التحليل...</span></>) :
-                         analysis.status === 'completed' ? (<><CheckCircle2 className="h-4 w-4 text-green-600" /><span className="text-sm">مكتمل</span></>) :
-                         (<><XCircle className="h-4 w-4 text-red-600" /><span className="text-sm">فشل</span></>)}
+                        {analysis.status === 'analyzing' ? (<><Loader2 className="h-4 w-4 animate-spin" /><span className="text-sm">{t('smartAnalysis.auto_31')}</span></>) :
+                         analysis.status === 'completed' ? (<><CheckCircle2 className="h-4 w-4 text-green-600" /><span className="text-sm">{t('smartAnalysis.auto_32')}</span></>) :
+                         (<><XCircle className="h-4 w-4 text-red-600" /><span className="text-sm">{t('smartAnalysis.auto_33')}</span></>)}
                       </div>
                       {analysis.status === 'completed' && (
                         <div>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium">التقييم العام</span>
+                            <span className="text-sm font-medium">{t('smartAnalysis.auto_34')}</span>
                             <span className={`text-2xl font-bold ${getScoreColor(analysis.overallScore)}`}>{analysis.overallScore}</span>
                           </div>
                           <Progress value={analysis.overallScore} className="h-2" />
@@ -589,8 +576,8 @@ export default function SmartAnalysis() {
           ) : (
             <Card><CardContent className="py-12 text-center text-muted-foreground">
               <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p>لا توجد تحليلات سابقة</p>
-              <p className="text-sm">قم بتحليل موقعك من الأعلى لبدء أول تحليل</p>
+              <p>{t('smartAnalysis.auto_35')}</p>
+              <p className="text-sm">{t('smartAnalysis.auto_36')}</p>
             </CardContent></Card>
           )}
         </TabsContent>
@@ -602,19 +589,19 @@ export default function SmartAnalysis() {
               {/* Score Cards */}
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">{currentAnalysis.title}</h3>
-                <Button variant="outline" size="sm" onClick={handleExportAnalysis}><Download className="h-4 w-4 ml-1" /> تصدير</Button>
+                <Button variant="outline" size="sm" onClick={handleExportAnalysis}><Download className="h-4 w-4 ml-1" />{t('smartAnalysis.auto_37')}</Button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.seoScore)}`}><Search className={`h-6 w-6 ${getScoreColor(currentAnalysis.seoScore)}`} /></div><div><p className="text-sm text-muted-foreground">SEO</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.seoScore)}`}>{currentAnalysis.seoScore}</p></div></div></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.performanceScore)}`}><Zap className={`h-6 w-6 ${getScoreColor(currentAnalysis.performanceScore)}`} /></div><div><p className="text-sm text-muted-foreground">الأداء</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.performanceScore)}`}>{currentAnalysis.performanceScore}</p></div></div></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.uxScore)}`}><Eye className={`h-6 w-6 ${getScoreColor(currentAnalysis.uxScore)}`} /></div><div><p className="text-sm text-muted-foreground">تجربة المستخدم</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.uxScore)}`}>{currentAnalysis.uxScore}</p></div></div></CardContent></Card>
-                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.contentQuality)}`}><FileText className={`h-6 w-6 ${getScoreColor(currentAnalysis.contentQuality)}`} /></div><div><p className="text-sm text-muted-foreground">المحتوى</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.contentQuality)}`}>{currentAnalysis.contentQuality}</p></div></div></CardContent></Card>
+                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.performanceScore)}`}><Zap className={`h-6 w-6 ${getScoreColor(currentAnalysis.performanceScore)}`} /></div><div><p className="text-sm text-muted-foreground">{t('smartAnalysis.auto_38')}</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.performanceScore)}`}>{currentAnalysis.performanceScore}</p></div></div></CardContent></Card>
+                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.uxScore)}`}><Eye className={`h-6 w-6 ${getScoreColor(currentAnalysis.uxScore)}`} /></div><div><p className="text-sm text-muted-foreground">{t('smartAnalysis.auto_39')}</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.uxScore)}`}>{currentAnalysis.uxScore}</p></div></div></CardContent></Card>
+                <Card><CardContent className="pt-6"><div className="flex items-center gap-3"><div className={`p-3 rounded-lg ${getScoreBg(currentAnalysis.contentQuality)}`}><FileText className={`h-6 w-6 ${getScoreColor(currentAnalysis.contentQuality)}`} /></div><div><p className="text-sm text-muted-foreground">{t('smartAnalysis.auto_40')}</p><p className={`text-2xl font-bold ${getScoreColor(currentAnalysis.contentQuality)}`}>{currentAnalysis.contentQuality}</p></div></div></CardContent></Card>
               </div>
 
               {/* SEO Issues */}
               {currentAnalysis.seoIssues && currentAnalysis.seoIssues.length > 0 && (
                 <Card>
-                  <CardHeader><CardTitle className="text-lg">مشاكل SEO</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="text-lg">{t('smartAnalysis.auto_41')}</CardTitle></CardHeader>
                   <CardContent>
                     <ul className="space-y-2">
                       {currentAnalysis.seoIssues.map((issue: string, i: number) => (
@@ -628,7 +615,7 @@ export default function SmartAnalysis() {
               {/* Insights */}
               {insights && insights.length > 0 && (
                 <Card>
-                  <CardHeader><CardTitle className="text-lg">التوصيات الذكية</CardTitle></CardHeader>
+                  <CardHeader><CardTitle className="text-lg">{t('smartAnalysis.auto_42')}</CardTitle></CardHeader>
                   <CardContent className="space-y-4">
                     {insights.map((insight: any) => (
                       <div key={insight.id} className="border rounded-lg p-4 space-y-2">
@@ -643,7 +630,7 @@ export default function SmartAnalysis() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">{insight.description}</p>
-                        {insight.recommendation && <div className="bg-blue-50 p-3 rounded-lg"><p className="text-sm font-medium text-blue-900 mb-1">التوصية</p><p className="text-sm text-blue-800">{insight.recommendation}</p></div>}
+                        {insight.recommendation && <div className="bg-blue-50 p-3 rounded-lg"><p className="text-sm font-medium text-blue-900 mb-1">{t('smartAnalysis.auto_43')}</p><p className="text-sm text-blue-800">{insight.recommendation}</p></div>}
                       </div>
                     ))}
                   </CardContent>
@@ -654,12 +641,12 @@ export default function SmartAnalysis() {
             <Card><CardContent className="py-12 text-center">
               <Loader2 className="h-10 w-10 animate-spin mx-auto mb-4 text-primary" />
               <p className="font-medium">جاري تحليل {currentAnalysis.title}...</p>
-              <p className="text-sm text-muted-foreground mt-1">سيظهر التقييم والتوصيات بعد اكتمال التحليل</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('smartAnalysis.auto_44')}</p>
             </CardContent></Card>
           ) : (
             <Card><CardContent className="py-12 text-center text-muted-foreground">
               <BarChart3 className="h-12 w-12 mx-auto mb-4" />
-              <p>اختر تحليلاً من تاب "التحليلات" أو قم بتحليل موقعك</p>
+              <p>{t('smartAnalysis.auto_45')}</p>
             </CardContent></Card>
           )}
         </TabsContent>

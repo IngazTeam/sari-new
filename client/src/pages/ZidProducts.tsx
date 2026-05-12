@@ -51,9 +51,7 @@ export default function ZidProducts() {
         <div className="max-w-md mx-auto">
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              يجب ربط حسابك على Zid أولاً قبل مزامنة المنتجات
-            </AlertDescription>
+            <AlertDescription>{t('zidProducts.auto_0')}</AlertDescription>
           </Alert>
           <Button
             onClick={() => navigate('/merchant/zid/settings')}
@@ -70,20 +68,14 @@ export default function ZidProducts() {
     <div className="container mx-auto py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('zidProductsPage.text0')}</h1>
-        <p className="text-muted-foreground mt-2">
-          مزامنة المنتجات من متجرك على زد إلى ساري
-        </p>
+        <p className="text-muted-foreground mt-2">{t('zidProducts.auto_1')}</p>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package className="w-5 h-5" />
-            مزامنة المنتجات
-          </CardTitle>
-          <CardDescription>
-            سيتم جلب جميع المنتجات من متجرك على زد ومزامنتها مع ساري
-          </CardDescription>
+            <Package className="w-5 h-5" />{t('zidProducts.auto_2')}</CardTitle>
+          <CardDescription>{t('zidProducts.auto_3')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {status.lastProductSync && (
@@ -102,14 +94,10 @@ export default function ZidProducts() {
           >
             {syncProductsMutation.isPending ? (
               <>
-                <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                جاري المزامنة...
-              </>
+                <Loader2 className="w-4 h-4 ml-2 animate-spin" />{t('zidProducts.auto_4')}</>
             ) : (
               <>
-                <RefreshCw className="w-4 h-4 ml-2" />
-                بدء المزامنة
-              </>
+                <RefreshCw className="w-4 h-4 ml-2" />{t('zidProducts.auto_5')}</>
             )}
           </Button>
 

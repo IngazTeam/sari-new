@@ -246,10 +246,8 @@ export default function UploadProducts() {
                     onCheckedChange={(v) => setCreateSheet(!!v)}
                   />
                   <Label htmlFor="create-sheet" className="cursor-pointer text-sm">
-                    <span className="font-medium">إنشاء Google Sheet تلقائياً</span>
-                    <span className="text-muted-foreground block text-xs mt-0.5">
-                      سيتم رفع المنتجات + إنشاء شيت للمزامنة التلقائية كل 30 دقيقة
-                    </span>
+                    <span className="font-medium">{t('uploadProducts.auto_0')}</span>
+                    <span className="text-muted-foreground block text-xs mt-0.5">{t('uploadProducts.auto_1')}</span>
                   </Label>
                 </div>
               )}
@@ -532,12 +530,11 @@ function ResultCard({ result, onViewProducts }: { result: any; onViewProducts: (
         </div>
         {result.sheetCreated && result.spreadsheetUrl && (
           <div className="mt-3 p-3 rounded-lg bg-green-100 border border-green-300">
-            <p className="text-sm font-medium text-green-900 mb-1">✅ تم إنشاء Google Sheet للمزامنة التلقائية</p>
+            <p className="text-sm font-medium text-green-900 mb-1">{t('uploadProducts.auto_2')}</p>
             <a href={result.spreadsheetUrl} target="_blank" rel="noopener noreferrer"
               className="text-xs text-green-700 underline hover:text-green-900 flex items-center gap-1">
-              <Link2 className="h-3 w-3" /> فتح Google Sheet
-            </a>
-            <p className="text-xs text-green-600 mt-1">المنتجات ستتم مزامنتها تلقائياً كل 30 دقيقة</p>
+              <Link2 className="h-3 w-3" />{t('uploadProducts.auto_3')}</a>
+            <p className="text-xs text-green-600 mt-1">{t('uploadProducts.auto_4')}</p>
           </div>
         )}
         <Button className="w-full mt-4" onClick={onViewProducts}>

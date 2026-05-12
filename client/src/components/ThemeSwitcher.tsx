@@ -56,9 +56,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
             className="flex items-center justify-between"
           >
             <span className="flex items-center gap-2">
-              <Sun className="h-4 w-4" />
-              فاتح
-            </span>
+              <Sun className="h-4 w-4" />{t('themeSwitcher.auto_0')}</span>
             {theme === 'light' && <Check className="h-4 w-4 text-primary" />}
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -66,9 +64,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
             className="flex items-center justify-between"
           >
             <span className="flex items-center gap-2">
-              <Moon className="h-4 w-4" />
-              داكن
-            </span>
+              <Moon className="h-4 w-4" />{t('themeSwitcher.auto_1')}</span>
             {theme === 'dark' && <Check className="h-4 w-4 text-primary" />}
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -103,9 +99,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
           )}
         >
           <span className="flex items-center gap-2">
-            <Sun className="h-4 w-4" />
-            فاتح
-          </span>
+            <Sun className="h-4 w-4" />{t('themeSwitcher.auto_2')}</span>
           {theme === 'light' && <Check className="h-4 w-4 text-primary" />}
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -116,9 +110,7 @@ export function ThemeSwitcher({ variant = 'default', className }: ThemeSwitcherP
           )}
         >
           <span className="flex items-center gap-2">
-            <Moon className="h-4 w-4" />
-            داكن
-          </span>
+            <Moon className="h-4 w-4" />{t('themeSwitcher.auto_3')}</span>
           {theme === 'dark' && <Check className="h-4 w-4 text-primary" />}
         </DropdownMenuItem>
       </DropdownMenuContent>

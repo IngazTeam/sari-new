@@ -284,12 +284,8 @@ export default function MerchantSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            الملف التعريفي
-          </CardTitle>
-          <CardDescription>
-            أرفق ملف يحتوي على معلومات نشاطك التجاري (بروفايل، كتالوج، سياسات...) لتحسين ردود ساري الذكية
-          </CardDescription>
+            <FileText className="w-5 h-5" />{t('settings.auto_0')}</CardTitle>
+          <CardDescription>{t('settings.auto_1')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Current doc display */}
@@ -305,18 +301,15 @@ export default function MerchantSettings() {
                 </div>
                 {knowledgeDoc.extractionStatus === 'completed' && (
                   <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 dark:bg-green-950 px-2 py-1 rounded-full">
-                    <CheckCircle2 className="w-3 h-3" /> مكتمل
-                  </span>
+                    <CheckCircle2 className="w-3 h-3" />{t('settings.auto_2')}</span>
                 )}
                 {knowledgeDoc.extractionStatus === 'failed' && (
                   <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 dark:bg-red-950 px-2 py-1 rounded-full">
-                    <XCircle className="w-3 h-3" /> فشل الاستخراج
-                  </span>
+                    <XCircle className="w-3 h-3" />{t('settings.auto_3')}</span>
                 )}
                 {knowledgeDoc.extractionStatus === 'processing' && (
                   <span className="flex items-center gap-1 text-xs text-yellow-600 bg-yellow-50 dark:bg-yellow-950 px-2 py-1 rounded-full">
-                    <Loader2 className="w-3 h-3 animate-spin" /> جاري المعالجة
-                  </span>
+                    <Loader2 className="w-3 h-3 animate-spin" />{t('settings.auto_4')}</span>
                 )}
               </div>
               <div className="flex gap-2">
@@ -327,9 +320,7 @@ export default function MerchantSettings() {
                     onClick={() => reprocessMutation.mutate()}
                     disabled={reprocessMutation.isPending}
                   >
-                    <RefreshCw className={`w-4 h-4 ml-1 ${reprocessMutation.isPending ? 'animate-spin' : ''}`} />
-                    إعادة
-                  </Button>
+                    <RefreshCw className={`w-4 h-4 ml-1 ${reprocessMutation.isPending ? 'animate-spin' : ''}`} />{t('settings.auto_5')}</Button>
                 )}
                 <Button
                   variant="destructive"
@@ -337,9 +328,7 @@ export default function MerchantSettings() {
                   onClick={() => { if (confirm('هل تريد حذف الملف التعريفي؟')) deleteKnowledgeDocMutation.mutate(); }}
                   disabled={deleteKnowledgeDocMutation.isPending}
                 >
-                  <Trash2 className="w-4 h-4 ml-1" />
-                  حذف
-                </Button>
+                  <Trash2 className="w-4 h-4 ml-1" />{t('settings.auto_6')}</Button>
               </div>
             </div>
           )}
@@ -372,7 +361,7 @@ export default function MerchantSettings() {
             {isUploading ? (
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="w-10 h-10 text-primary animate-spin" />
-                <p className="text-sm font-medium">جاري رفع الملف ومعالجته...</p>
+                <p className="text-sm font-medium">{t('settings.auto_7')}</p>
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
@@ -380,15 +369,14 @@ export default function MerchantSettings() {
                 <p className="text-sm font-medium">
                   {knowledgeDoc ? 'اسحب ملفاً جديداً هنا أو اضغط للاستبدال' : 'اسحب الملف هنا أو اضغط لاختيار ملف'}
                 </p>
-                <p className="text-xs text-muted-foreground">PDF, DOCX — حد أقصى 5MB</p>
+                <p className="text-xs text-muted-foreground">{t('settings.auto_8')}</p>
               </div>
             )}
           </div>
 
           <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              💡 <strong>نصيحة:</strong> أضف بروفايل شركتك أو كتالوج خدماتك أو سياسات الإرجاع والشحن. ساري سيستخدم هذه المعلومات للرد على عملائك بدقة أكبر.
-            </p>
+              💡 <strong>{t('settings.auto_9')}</strong>{t('settings.auto_10')}</p>
           </div>
         </CardContent>
       </Card>

@@ -81,24 +81,17 @@ export default function ForgotPassword() {
               </div>
               <div>
                 <CardTitle className="text-2xl font-bold">{t('forgotPasswordPage.text0')}</CardTitle>
-                <CardDescription className="text-base mt-2">
-                  تحقق من بريدك الإلكتروني
-                </CardDescription>
+                <CardDescription className="text-base mt-2">{t('forgotPassword.auto_0')}</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <Alert className="border-blue-200 bg-blue-50">
                 <Mail className="h-4 w-4 text-primary" />
-                <AlertDescription className="text-sm text-gray-700 leading-relaxed">
-                  إذا كان هناك حساب مسجل بالبريد الإلكتروني <strong className="text-primary">{email}</strong>،
-                  فسوف تتلقى رسالة تحتوي على رابط لإعادة تعيين كلمة المرور خلال بضع دقائق.
-                </AlertDescription>
+                <AlertDescription className="text-sm text-gray-700 leading-relaxed">{t('forgotPassword.auto_1')}<strong className="text-primary">{email}</strong>{t('forgotPassword.auto_2')}</AlertDescription>
               </Alert>
 
               <div className="space-y-3 pt-4">
-                <p className="text-sm text-muted-foreground text-center">
-                  لم تتلق الرسالة؟ تحقق من مجلد البريد العشوائي (Spam)
-                </p>
+                <p className="text-sm text-muted-foreground text-center">{t('forgotPassword.auto_3')}</p>
 
                 <Button
                   variant="outline"
@@ -113,9 +106,7 @@ export default function ForgotPassword() {
 
                 <div className="text-center pt-2">
                   <Link href="/login">
-                    <span className="text-sm text-primary hover:underline cursor-pointer inline-flex items-center gap-1">
-                      العودة لتسجيل الدخول
-                      <ArrowRight className="w-4 h-4" />
+                    <span className="text-sm text-primary hover:underline cursor-pointer inline-flex items-center gap-1">{t('forgotPassword.auto_4')}<ArrowRight className="w-4 h-4" />
                     </span>
                   </Link>
                 </div>
@@ -141,9 +132,7 @@ export default function ForgotPassword() {
             </div>
             <div>
               <CardTitle className="text-3xl font-bold">{t('forgotPasswordPage.text1')}</CardTitle>
-              <CardDescription className="text-base mt-2">
-                لا تقلق، سنرسل لك رابطاً لإعادة تعيينها
-              </CardDescription>
+              <CardDescription className="text-base mt-2">{t('forgotPassword.auto_5')}</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
@@ -162,15 +151,10 @@ export default function ForgotPassword() {
                   <Clock className="h-4 w-4 text-orange-600" />
                   <AlertDescription className="text-sm text-gray-700 leading-relaxed">
                     <div className="space-y-2">
-                      <p className="font-semibold text-orange-800">
-                        لقد تجاوزت الحد الأقصى للمحاولات (3 محاولات)
+                      <p className="font-semibold text-orange-800">{t('forgotPassword.auto_6')}</p>
+                      <p>{t('forgotPassword.auto_7')}<strong className="text-orange-600 text-lg">{formatTime(remainingTime)}</strong>{t('forgotPasswordPage.text2')}
                       </p>
-                      <p>
-                        يرجى الانتظار <strong className="text-orange-600 text-lg">{formatTime(remainingTime)}</strong>{t('forgotPasswordPage.text2')}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        هذا الإجراء لحماية حسابك من الوصول غير المصرح به.
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-2">{t('forgotPassword.auto_8')}</p>
                     </div>
                   </AlertDescription>
                 </Alert>
@@ -189,9 +173,7 @@ export default function ForgotPassword() {
                   dir="ltr"
                   className="text-left"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  أدخل البريد الإلكتروني المسجل في حسابك
-                </p>
+                <p className="text-xs text-muted-foreground mt-1">{t('forgotPassword.auto_9')}</p>
               </div>
 
               <Button
@@ -201,9 +183,7 @@ export default function ForgotPassword() {
               >
                 {requestResetMutation.isPending ? (
                   <span className="flex items-center gap-2">
-                    <span className="animate-spin">⏳</span>
-                    جاري الإرسال...
-                  </span>
+                    <span className="animate-spin">⏳</span>{t('forgotPassword.auto_10')}</span>
                 ) : remainingTime !== null ? (
                   <span className="flex items-center gap-2">
                     <Clock className="w-5 h-5" />
@@ -216,9 +196,7 @@ export default function ForgotPassword() {
 
               <div className="mt-4 text-center text-sm">
                 <Link href="/login">
-                  <span className="text-primary hover:underline cursor-pointer inline-flex items-center gap-1">
-                    تذكرت كلمة المرور؟ تسجيل الدخول
-                    <ArrowRight className="w-4 h-4" />
+                  <span className="text-primary hover:underline cursor-pointer inline-flex items-center gap-1">{t('forgotPassword.auto_11')}<ArrowRight className="w-4 h-4" />
                   </span>
                 </Link>
               </div>

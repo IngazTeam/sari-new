@@ -58,13 +58,13 @@ export default function IntegrationsDashboard() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t('integrationsDashboardPage.text4')}</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{integrations.filter((i: any) => i.is_active).length}</div><p className="text-xs text-muted-foreground">من {integrations.length} تكامل</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t('integrationsDashboardPage.text5')}</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{totalSyncs}</div><p className="text-xs text-muted-foreground">آخر 30 يوم</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t('integrationsDashboardPage.text5')}</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{totalSyncs}</div><p className="text-xs text-muted-foreground">{t('integrationsDashboard.auto_0')}</p></CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t('integrationsDashboardPage.text6')}</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-green-600">{successRate}%</div><p className="text-xs text-muted-foreground">{totalSuccess} ناجحة</p></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t('integrationsDashboardPage.text7')}</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-red-600">{errors.length}</div><p className="text-xs text-muted-foreground">تحتاج مراجعة</p></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{t('integrationsDashboardPage.text7')}</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-red-600">{errors.length}</div><p className="text-xs text-muted-foreground">{t('integrationsDashboard.auto_1')}</p></CardContent></Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList><TabsTrigger value="overview">{t('integrationsDashboardPage.text8')}</TabsTrigger><TabsTrigger value="stats">الإحصائيات</TabsTrigger><TabsTrigger value="errors">الأخطاء</TabsTrigger></TabsList>
+        <TabsList><TabsTrigger value="overview">{t('integrationsDashboardPage.text8')}</TabsTrigger><TabsTrigger value="stats">{t('integrationsDashboard.auto_2')}</TabsTrigger><TabsTrigger value="errors">{t('integrationsDashboard.auto_3')}</TabsTrigger></TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -85,7 +85,7 @@ export default function IntegrationsDashboard() {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      {integration.is_active && (<><span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-green-500" />{t('integrationsDashboardPage.text9')}</span><span className="flex items-center gap-1"><Activity className="h-4 w-4" />يعمل</span></>)}
+                      {integration.is_active && (<><span className="flex items-center gap-1"><CheckCircle2 className="h-4 w-4 text-green-500" />{t('integrationsDashboardPage.text9')}</span><span className="flex items-center gap-1"><Activity className="h-4 w-4" />{t('integrationsDashboard.auto_4')}</span></>)}
                     </div>
                     <Link href={`/merchant/integrations/${integration.platform}`}><Button variant="ghost" size="sm"><Settings className="h-4 w-4 ml-1" />{t('integrationsDashboardPage.text10')}</Button></Link>
                   </div>
@@ -97,7 +97,7 @@ export default function IntegrationsDashboard() {
 
         <TabsContent value="stats" className="space-y-4">
           <Card>
-            <CardHeader><CardTitle>{t('integrationsDashboardPage.text11')}</CardTitle><CardDescription>آخر 30 يوم</CardDescription></CardHeader>
+            <CardHeader><CardTitle>{t('integrationsDashboardPage.text11')}</CardTitle><CardDescription>{t('integrationsDashboard.auto_5')}</CardDescription></CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
                 <div className="space-y-4">
@@ -115,7 +115,7 @@ export default function IntegrationsDashboard() {
 
         <TabsContent value="errors" className="space-y-4">
           <Card>
-            <CardHeader><CardTitle>{t('integrationsDashboardPage.text13')}</CardTitle><CardDescription>أخطاء تحتاج مراجعة وحل</CardDescription></CardHeader>
+            <CardHeader><CardTitle>{t('integrationsDashboardPage.text13')}</CardTitle><CardDescription>{t('integrationsDashboard.auto_6')}</CardDescription></CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
                 <div className="space-y-4">

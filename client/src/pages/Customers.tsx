@@ -150,14 +150,10 @@ export default function Customers() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('customersPage.text0')}</h1>
-          <p className="text-muted-foreground mt-1">
-            عرض وإدارة جميع عملائك
-          </p>
+          <p className="text-muted-foreground mt-1">{t('customers.auto_0')}</p>
         </div>
         <Button onClick={handleExport} variant="outline">
-          <Download className="ml-2 h-4 w-4" />
-          تصدير CSV
-        </Button>
+          <Download className="ml-2 h-4 w-4" />{t('customers.auto_1')}</Button>
       </div>
 
       {/* Stats Cards */}
@@ -169,9 +165,7 @@ export default function Customers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.total || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              جميع العملاء المسجلين
-            </p>
+            <p className="text-xs text-muted-foreground">{t('customers.auto_2')}</p>
           </CardContent>
         </Card>
 
@@ -182,9 +176,7 @@ export default function Customers() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.active || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              تفاعلوا خلال آخر 30 يوم
-            </p>
+            <p className="text-xs text-muted-foreground">{t('customers.auto_3')}</p>
           </CardContent>
         </Card>
 
@@ -223,9 +215,7 @@ export default function Customers() {
           {isLoading ? (
             <div className="text-center py-8">{t('customersPage.text8')}</div>
           ) : customers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا يوجد عملاء
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('customers.auto_4')}</div>
           ) : (
             <div className="border rounded-lg">
               <Table>
@@ -305,9 +295,7 @@ export default function Customers() {
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('customersPage.text16')}</DialogTitle>
-            <DialogDescription>
-              معلومات شاملة عن العميل وتفاعلاته
-            </DialogDescription>
+            <DialogDescription>{t('customers.auto_5')}</DialogDescription>
           </DialogHeader>
 
           {selectedCustomer && (
@@ -376,9 +364,7 @@ export default function Customers() {
                           value={newTag}
                           onChange={(e) => setNewTag(e.target.value)}
                         />
-                        <Button onClick={handleAddTag} size="sm">
-                          إضافة
-                        </Button>
+                        <Button onClick={handleAddTag} size="sm">{t('customers.auto_6')}</Button>
                       </div>
                     </div>
                   </CardContent>
@@ -391,9 +377,7 @@ export default function Customers() {
                     <CardTitle>{t('customersPage.text28')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground text-center py-8">
-                      سيتم عرض سجل المحادثات هنا
-                    </p>
+                    <p className="text-muted-foreground text-center py-8">{t('customers.auto_7')}</p>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -404,9 +388,7 @@ export default function Customers() {
                     <CardTitle>{t('customersPage.text29')}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-muted-foreground text-center py-8">
-                      سيتم عرض سجل الطلبات هنا
-                    </p>
+                    <p className="text-muted-foreground text-center py-8">{t('customers.auto_8')}</p>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -425,9 +407,7 @@ export default function Customers() {
                         onChange={(e) => setNewNote(e.target.value)}
                       />
                       <Button onClick={handleAddNote} size="sm">
-                        <FileText className="ml-2 h-4 w-4" />
-                        حفظ الملاحظة
-                      </Button>
+                        <FileText className="ml-2 h-4 w-4" />{t('customers.auto_9')}</Button>
                     </div>
 
                     <div className="space-y-2">
@@ -444,9 +424,7 @@ export default function Customers() {
                           </Card>
                         ))
                       ) : (
-                        <p className="text-muted-foreground text-center py-4">
-                          لا توجد ملاحظات
-                        </p>
+                        <p className="text-muted-foreground text-center py-4">{t('customers.auto_10')}</p>
                       )}
                     </div>
                   </CardContent>

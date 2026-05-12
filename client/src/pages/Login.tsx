@@ -114,10 +114,8 @@ export default function Login() {
               </div>
             </div>
             <div>
-              <CardTitle className="text-3xl font-bold">تسجيل الدخول</CardTitle>
-              <CardDescription className="text-base mt-2">
-                وكيل المبيعات الذكي على الواتساب
-              </CardDescription>
+              <CardTitle className="text-3xl font-bold">{t('login.auto_0')}</CardTitle>
+              <CardDescription className="text-base mt-2">{t('login.auto_1')}</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
@@ -145,9 +143,7 @@ export default function Login() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">{t('loginPage.text7')}</Label>
-                  <a href="/forgot-password" className="text-sm text-primary hover:underline">
-                    نسيت كلمة المرور؟
-                  </a>
+                  <a href="/forgot-password" className="text-sm text-primary hover:underline">{t('login.auto_2')}</a>
                 </div>
                 <div className="relative">
                   <Input
@@ -180,9 +176,7 @@ export default function Login() {
                 <Label
                   htmlFor="remember"
                   className="text-sm font-normal cursor-pointer"
-                >
-                  تذكرني على هذا الجهاز
-                </Label>
+                >{t('login.auto_3')}</Label>
               </div>
               <Button
                 type="submit"
@@ -197,9 +191,7 @@ export default function Login() {
             </form>
             <div className="mt-4 text-center text-sm">
               <span className="text-muted-foreground">{t('loginPage.text8')}</span>
-              <a href="/signup" className="text-primary hover:underline font-medium">
-                سجل الآن
-              </a>
+              <a href="/signup" className="text-primary hover:underline font-medium">{t('login.auto_4')}</a>
             </div>
           </CardContent>
         </Card>

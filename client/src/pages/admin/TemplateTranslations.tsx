@@ -144,12 +144,8 @@ export default function TemplateTranslations() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Languages className="h-8 w-8" />
-            إدارة ترجمات القوالب
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            إضافة وإدارة الترجمات العربية والإنجليزية لقوالب الأعمال
-          </p>
+            <Languages className="h-8 w-8" />{t('templateTranslations.auto_0')}</h1>
+          <p className="text-muted-foreground mt-2">{t('templateTranslations.auto_1')}</p>
         </div>
       </div>
 
@@ -223,9 +219,7 @@ export default function TemplateTranslations() {
       <Card>
         <CardHeader>
           <CardTitle>{t('adminTemplateTranslationsPage.text10')}</CardTitle>
-          <CardDescription>
-            إدارة الترجمات لكل قالب
-          </CardDescription>
+          <CardDescription>{t('templateTranslations.auto_2')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -250,27 +244,19 @@ export default function TemplateTranslations() {
                   <TableCell className="text-center">
                     {template.hasArabic ? (
                       <Badge variant="default" className="bg-green-600">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        متوفرة
-                      </Badge>
+                        <CheckCircle className="h-3 w-3 mr-1" />{t('templateTranslations.auto_3')}</Badge>
                     ) : (
                       <Badge variant="secondary">
-                        <XCircle className="h-3 w-3 mr-1" />
-                        غير متوفرة
-                      </Badge>
+                        <XCircle className="h-3 w-3 mr-1" />{t('templateTranslations.auto_4')}</Badge>
                     )}
                   </TableCell>
                   <TableCell className="text-center">
                     {template.hasEnglish ? (
                       <Badge variant="default" className="bg-blue-600">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        متوفرة
-                      </Badge>
+                        <CheckCircle className="h-3 w-3 mr-1" />{t('templateTranslations.auto_5')}</Badge>
                     ) : (
                       <Badge variant="secondary">
-                        <XCircle className="h-3 w-3 mr-1" />
-                        غير متوفرة
-                      </Badge>
+                        <XCircle className="h-3 w-3 mr-1" />{t('templateTranslations.auto_6')}</Badge>
                     )}
                   </TableCell>
                   <TableCell>
@@ -281,9 +267,7 @@ export default function TemplateTranslations() {
                           variant="outline"
                           onClick={() => handleOpenDialog(template)}
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          إضافة عربي
-                        </Button>
+                          <Plus className="h-4 w-4 mr-1" />{t('templateTranslations.auto_7')}</Button>
                       )}
                       {!template.hasEnglish && (
                         <Button
@@ -291,9 +275,7 @@ export default function TemplateTranslations() {
                           variant="outline"
                           onClick={() => handleOpenDialog(template)}
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          إضافة إنجليزي
-                        </Button>
+                          <Plus className="h-4 w-4 mr-1" />{t('templateTranslations.auto_8')}</Button>
                       )}
                       {template.translations && template.translations.length > 0 && (
                         <Dialog>

@@ -51,13 +51,13 @@ export default function WhatsAppAutoNotifications() {
   return (
     <div className="container mx-auto py-6 space-y-6" dir="rtl">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold">{t('whatsAppAutoNotificationsPage.text4')}</h1><p className="text-muted-foreground">إرسال رسائل تلقائية للعملاء عند تغيير حالة الطلبات أو المواعيد</p></div>
+        <div><h1 className="text-2xl font-bold">{t('whatsAppAutoNotificationsPage.text4')}</h1><p className="text-muted-foreground">{t('whatsAppAutoNotifications.auto_0')}</p></div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
           <DialogTrigger asChild><Button><Plus className="h-4 w-4 ml-2" />{t('whatsAppAutoNotificationsPage.text5')}</Button></DialogTrigger>
           <DialogContent className="max-w-2xl"><DialogHeader><DialogTitle>{editingNotification ? "تعديل الإشعار" : "إنشاء إشعار جديد"}</DialogTitle><DialogDescription>{t('whatsAppAutoNotificationsPage.text6')}</DialogDescription></DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2"><Label>{t('whatsAppAutoNotificationsPage.text7')}</Label><Select value={formData.triggerType} onValueChange={(v) => setFormData(p => ({...p, triggerType: v, messageTemplate: defaultTemplates?.[v as keyof typeof defaultTemplates] || ""}))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(triggerLabels).map(([key, { label, category }]) => <SelectItem key={key} value={key}>{category} - {label}</SelectItem>)}</SelectContent></Select></div>
-              <div className="space-y-2"><div className="flex items-center justify-between"><Label>{t('whatsAppAutoNotificationsPage.text8')}</Label><Button variant="ghost" size="sm" onClick={loadDefaultTemplate}><RotateCcw className="h-4 w-4 ml-1" />استعادة القالب الافتراضي</Button></div><Textarea value={formData.messageTemplate} onChange={(e) => setFormData(p => ({...p, messageTemplate: e.target.value}))} placeholder="أدخل نص الرسالة..." className="min-h-[200px]" dir="rtl" /><p className="text-xs text-muted-foreground">المتغيرات المتاحة: {"{{customerName}}, {{orderNumber}}, {{total}}, {{currency}}, {{trackingNumber}}, {{deliveryDate}}, {{serviceName}}, {{appointmentDate}}, {{appointmentTime}}, {{location}}"}</p></div>
+              <div className="space-y-2"><div className="flex items-center justify-between"><Label>{t('whatsAppAutoNotificationsPage.text8')}</Label><Button variant="ghost" size="sm" onClick={loadDefaultTemplate}><RotateCcw className="h-4 w-4 ml-1" />{t('whatsAppAutoNotifications.auto_1')}</Button></div><Textarea value={formData.messageTemplate} onChange={(e) => setFormData(p => ({...p, messageTemplate: e.target.value}))} placeholder={t('whatsAppAutoNotifications.auto_4')} className="min-h-[200px]" dir="rtl" /><p className="text-xs text-muted-foreground">المتغيرات المتاحة: {t('whatsAppAutoNotifications.auto_5')}</p></div>
               <div className="flex items-center justify-between"><Label>{t('whatsAppAutoNotificationsPage.text9')}</Label><Switch checked={formData.isActive} onCheckedChange={(v) => setFormData(p => ({...p, isActive: v}))} /></div>
             </div>
             <DialogFooter><Button variant="outline" onClick={() => setIsDialogOpen(false)}>{t('whatsAppAutoNotificationsPage.text10')}</Button><Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>{editingNotification ? "تحديث" : "إنشاء"}</Button></DialogFooter>
@@ -66,7 +66,7 @@ export default function WhatsAppAutoNotifications() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card><CardHeader><div className="flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /><CardTitle>{t('whatsAppAutoNotificationsPage.text11')}</CardTitle></div><CardDescription>رسائل تلقائية عند تغيير حالة الطلبات</CardDescription></CardHeader><CardContent className="space-y-3">
+        <Card><CardHeader><div className="flex items-center gap-2"><ShoppingBag className="h-5 w-5 text-primary" /><CardTitle>{t('whatsAppAutoNotificationsPage.text11')}</CardTitle></div><CardDescription>{t('whatsAppAutoNotifications.auto_2')}</CardDescription></CardHeader><CardContent className="space-y-3">
           {orderNotifications.length === 0 ? <p className="text-center text-muted-foreground py-4">{t('whatsAppAutoNotificationsPage.text12')}</p> : orderNotifications.map((notification: any) => (
             <div key={notification.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">{triggerLabels[notification.trigger_type]?.icon}<div><p className="font-medium">{triggerLabels[notification.trigger_type]?.label || notification.trigger_type}</p><p className="text-xs text-muted-foreground line-clamp-1">{notification.message_template.substring(0, 50)}...</p></div></div>
@@ -75,7 +75,7 @@ export default function WhatsAppAutoNotifications() {
           ))}
         </CardContent></Card>
 
-        <Card><CardHeader><div className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /><CardTitle>{t('whatsAppAutoNotificationsPage.text13')}</CardTitle></div><CardDescription>رسائل تلقائية عند حجز أو تغيير المواعيد</CardDescription></CardHeader><CardContent className="space-y-3">
+        <Card><CardHeader><div className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /><CardTitle>{t('whatsAppAutoNotificationsPage.text13')}</CardTitle></div><CardDescription>{t('whatsAppAutoNotifications.auto_3')}</CardDescription></CardHeader><CardContent className="space-y-3">
           {appointmentNotifications.length === 0 ? <p className="text-center text-muted-foreground py-4">{t('whatsAppAutoNotificationsPage.text14')}</p> : appointmentNotifications.map((notification: any) => (
             <div key={notification.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-3">{triggerLabels[notification.trigger_type]?.icon}<div><p className="font-medium">{triggerLabels[notification.trigger_type]?.label || notification.trigger_type}</p><p className="text-xs text-muted-foreground line-clamp-1">{notification.message_template.substring(0, 50)}...</p></div></div>

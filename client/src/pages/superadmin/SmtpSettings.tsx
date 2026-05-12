@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
 export default function SmtpSettings() {
+  const { t } = useTranslation();
   const [testEmail, setTestEmail] = useState("");
   const [smtpProvider, setSmtpProvider] = useState<string>("custom");
 
@@ -110,16 +111,16 @@ export default function SmtpSettings() {
       <div className="flex items-center gap-3">
         <Server className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-3xl font-bold">إعدادات SMTP</h1>
-          <p className="text-muted-foreground">إدارة خادم البريد الإلكتروني واختبار الإرسال</p>
+          <h1 className="text-3xl font-bold">{t('smtpSettings.auto_0')}</h1>
+          <p className="text-muted-foreground">{t('smtpSettings.auto_1')}</p>
         </div>
       </div>
 
       <Tabs defaultValue="settings" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="settings">الإعدادات</TabsTrigger>
-          <TabsTrigger value="test">اختبار الإرسال</TabsTrigger>
-          <TabsTrigger value="logs">سجل الرسائل</TabsTrigger>
+          <TabsTrigger value="settings">{t('smtpSettings.auto_2')}</TabsTrigger>
+          <TabsTrigger value="test">{t('smtpSettings.auto_3')}</TabsTrigger>
+          <TabsTrigger value="logs">{t('smtpSettings.auto_4')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="settings" className="space-y-6">
@@ -128,7 +129,7 @@ export default function SmtpSettings() {
             <div className="grid gap-4 md:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">إجمالي الرسائل</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('smtpSettings.auto_5')}</CardTitle>
                   <Mail className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -137,7 +138,7 @@ export default function SmtpSettings() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">تم الإرسال</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('smtpSettings.auto_6')}</CardTitle>
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
@@ -149,7 +150,7 @@ export default function SmtpSettings() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">فشل</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('smtpSettings.auto_7')}</CardTitle>
                   <AlertCircle className="h-4 w-4 text-red-600" />
                 </CardHeader>
                 <CardContent>
@@ -158,7 +159,7 @@ export default function SmtpSettings() {
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">معلق</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t('smtpSettings.auto_8')}</CardTitle>
                   <Loader2 className="h-4 w-4 text-yellow-600" />
                 </CardHeader>
                 <CardContent>
@@ -170,30 +171,30 @@ export default function SmtpSettings() {
 
           <Card>
             <CardHeader>
-              <CardTitle>إعدادات خادم SMTP</CardTitle>
-              <CardDescription>قم بتكوين خادم البريد الإلكتروني الخاص بك</CardDescription>
+              <CardTitle>{t('smtpSettings.auto_9')}</CardTitle>
+              <CardDescription>{t('smtpSettings.auto_10')}</CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="provider">مزود الخدمة</Label>
+                  <Label htmlFor="provider">{t('smtpSettings.auto_11')}</Label>
                   <Select value={smtpProvider} onValueChange={handleProviderChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر مزود الخدمة" />
+                      <SelectValue placeholder={t('smtpSettings.auto_30')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="smtp2go">SMTP2GO</SelectItem>
                       <SelectItem value="gmail">Gmail</SelectItem>
                       <SelectItem value="sendgrid">SendGrid</SelectItem>
                       <SelectItem value="aws">AWS SES</SelectItem>
-                      <SelectItem value="custom">مخصص</SelectItem>
+                      <SelectItem value="custom">{t('smtpSettings.auto_12')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="host">عنوان الخادم (Host)</Label>
+                    <Label htmlFor="host">{t('smtpSettings.auto_13')}</Label>
                     <Input
                       id="host"
                       value={formData.host}
@@ -204,7 +205,7 @@ export default function SmtpSettings() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="port">المنفذ (Port)</Label>
+                    <Label htmlFor="port">{t('smtpSettings.auto_14')}</Label>
                     <Input
                       id="port"
                       type="number"
@@ -218,7 +219,7 @@ export default function SmtpSettings() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="username">اسم المستخدم</Label>
+                    <Label htmlFor="username">{t('smtpSettings.auto_15')}</Label>
                     <Input
                       id="username"
                       value={formData.username}
@@ -229,20 +230,20 @@ export default function SmtpSettings() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password">كلمة المرور</Label>
+                    <Label htmlFor="password">{t('smtpSettings.auto_16')}</Label>
                     <Input
                       id="password"
                       type="password"
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      placeholder="اتركه فارغاً لعدم التغيير"
+                      placeholder={t('smtpSettings.auto_31')}
                     />
                   </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="fromEmail">البريد الإلكتروني للمرسل</Label>
+                    <Label htmlFor="fromEmail">{t('smtpSettings.auto_17')}</Label>
                     <Input
                       id="fromEmail"
                       type="email"
@@ -254,12 +255,12 @@ export default function SmtpSettings() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="fromName">اسم المرسل</Label>
+                    <Label htmlFor="fromName">{t('smtpSettings.auto_18')}</Label>
                     <Input
                       id="fromName"
                       value={formData.fromName}
                       onChange={(e) => setFormData({ ...formData, fromName: e.target.value })}
-                      placeholder="ساري"
+                      placeholder={t('smtpSettings.auto_32')}
                       required
                     />
                   </div>
@@ -277,12 +278,12 @@ export default function SmtpSettings() {
         <TabsContent value="test">
           <Card>
             <CardHeader>
-              <CardTitle>اختبار إرسال البريد الإلكتروني</CardTitle>
-              <CardDescription>أرسل بريداً تجريبياً للتحقق من صحة الإعدادات</CardDescription>
+              <CardTitle>{t('smtpSettings.auto_19')}</CardTitle>
+              <CardDescription>{t('smtpSettings.auto_20')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="testEmail">عنوان البريد الإلكتروني</Label>
+                <Label htmlFor="testEmail">{t('smtpSettings.auto_21')}</Label>
                 <Input
                   id="testEmail"
                   type="email"
@@ -299,22 +300,18 @@ export default function SmtpSettings() {
               >
                 {testConnection.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    جاري الإرسال...
-                  </>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('smtpSettings.auto_22')}</>
                 ) : (
                   <>
-                    <Send className="mr-2 h-4 w-4" />
-                    إرسال بريد تجريبي
-                  </>
+                    <Send className="mr-2 h-4 w-4" />{t('smtpSettings.auto_23')}</>
                 )}
               </Button>
 
               <div className="rounded-lg border p-4 bg-muted/50">
-                <h4 className="font-medium mb-2">محتوى البريد التجريبي:</h4>
+                <h4 className="font-medium mb-2">{t('smtpSettings.auto_24')}</h4>
                 <ul className="text-sm space-y-1 text-muted-foreground">
-                  <li>• الموضوع: اختبار SMTP - ساري</li>
-                  <li>• المحتوى: رسالة تجريبية للتحقق من إعدادات SMTP</li>
+                  <li>{t('smtpSettings.auto_25')}</li>
+                  <li>{t('smtpSettings.auto_26')}</li>
                   <li>• التاريخ والوقت: {new Date().toLocaleString("ar-SA")}</li>
                 </ul>
               </div>
@@ -325,8 +322,8 @@ export default function SmtpSettings() {
         <TabsContent value="logs">
           <Card>
             <CardHeader>
-              <CardTitle>سجل الرسائل المرسلة</CardTitle>
-              <CardDescription>آخر 50 رسالة بريد إلكتروني</CardDescription>
+              <CardTitle>{t('smtpSettings.auto_27')}</CardTitle>
+              <CardDescription>{t('smtpSettings.auto_28')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -363,7 +360,7 @@ export default function SmtpSettings() {
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     <Mail className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>لا توجد رسائل مسجلة</p>
+                    <p>{t('smtpSettings.auto_29')}</p>
                   </div>
                 )}
               </div>

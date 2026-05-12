@@ -86,9 +86,7 @@ export default function WooCommerceProducts() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('wooCommerceProductsPage.text3')}</h1>
-          <p className="text-muted-foreground mt-2">
-            عرض وإدارة المنتجات المزامنة من متجر WooCommerce
-          </p>
+          <p className="text-muted-foreground mt-2">{t('wooCommerceProducts.auto_0')}</p>
         </div>
         <Button onClick={handleSync} disabled={syncProducts.isPending}>
           {syncProducts.isPending ? (
@@ -149,9 +147,7 @@ export default function WooCommerceProducts() {
       <Card>
         <CardHeader>
           <CardTitle>{t('wooCommerceProductsPage.text8')}</CardTitle>
-          <CardDescription>
-            ابحث بالاسم أو SKU
-          </CardDescription>
+          <CardDescription>{t('wooCommerceProducts.auto_1')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="relative">
@@ -243,9 +239,7 @@ export default function WooCommerceProducts() {
               </Table>
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              لا توجد منتجات. قم بمزامنة المنتجات من WooCommerce أولاً.
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('wooCommerceProducts.auto_2')}</div>
           )}
         </CardContent>
       </Card>

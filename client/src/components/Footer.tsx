@@ -64,23 +64,17 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link href="/solutions/sales">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    للمبيعات
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_0')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/solutions/marketing">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    للتسويق
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_1')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/solutions/support">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    للدعم الفني
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_2')}</span>
                 </Link>
               </li>
             </ul>
@@ -92,37 +86,27 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link href="/product/ai-agent">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    الذكاء الاصطناعي
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_3')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/product/chatbot">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    روبوت الدردشة
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_4')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/product/whatsapp">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    التكامل مع WhatsApp
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_5')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/product/broadcasts">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    البث الجماعي
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_6')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/pricing">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    التسعير
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_7')}</span>
                 </Link>
               </li>
             </ul>
@@ -134,30 +118,22 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link href="/company/about">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    من نحن
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_8')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/company/contact">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    اتصل بنا
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_9')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/company/terms">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    الشروط والأحكام
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_10')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/company/privacy">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    سياسة الخصوصية
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_11')}</span>
                 </Link>
               </li>
             </ul>
@@ -169,30 +145,22 @@ export default function Footer() {
             <ul className="space-y-3">
               <li>
                 <Link href="/resources/blog">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    المدونة
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_12')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/resources/help-center">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    مركز المساعدة
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_13')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/resources/success-stories">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    قصص النجاح
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_14')}</span>
                 </Link>
               </li>
               <li>
                 <Link href="/support">
-                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">
-                    الدعم الفني
-                  </span>
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_15')}</span>
                 </Link>
               </li>
             </ul>

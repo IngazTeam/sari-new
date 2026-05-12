@@ -6,6 +6,7 @@ import { Loader2, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 
 export default function PaymentCallback() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [status, setStatus] = useState<'processing' | 'success' | 'failed'>('processing');
   const [message, setMessage] = useState('جاري معالجة الدفع...');
@@ -81,17 +82,13 @@ export default function PaymentCallback() {
             {/* Additional Info */}
             {status === 'success' && (
               <div className="p-4 bg-green-50 dark:bg-green-900/10 rounded-lg">
-                <p className="text-sm text-green-800 dark:text-green-200">
-                  تم تفعيل اشتراكك بنجاح. سيتم توجيهك إلى لوحة التحكم خلال لحظات...
-                </p>
+                <p className="text-sm text-green-800 dark:text-green-200">{t('paymentCallback.auto_0')}</p>
               </div>
             )}
 
             {status === 'failed' && (
               <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-lg">
-                <p className="text-sm text-red-800 dark:text-red-200">
-                  إذا تم خصم المبلغ من حسابك، سيتم استرجاعه تلقائياً خلال 3-5 أيام عمل.
-                </p>
+                <p className="text-sm text-red-800 dark:text-red-200">{t('paymentCallback.auto_1')}</p>
               </div>
             )}
 

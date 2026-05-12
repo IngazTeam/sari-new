@@ -67,9 +67,7 @@ export default function PersonalityStep({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <p className="text-gray-600">
-          اجعل ساري يتحدث بأسلوبك الخاص
-        </p>
+        <p className="text-gray-600">{t('personalityStep.auto_0')}</p>
       </div>
 
       {/* Tone Selection */}
@@ -122,9 +120,7 @@ export default function PersonalityStep({
 
       {/* Custom Welcome Message */}
       <div className="space-y-3">
-        <Label htmlFor="welcomeMessage" className="text-base font-semibold">
-          رسالة الترحيب المخصصة (اختياري)
-        </Label>
+        <Label htmlFor="welcomeMessage" className="text-base font-semibold">{t('personalityStep.auto_1')}</Label>
         <Textarea
           id="welcomeMessage"
           placeholder={
@@ -139,9 +135,7 @@ export default function PersonalityStep({
           rows={4}
           className="resize-none"
         />
-        <p className="text-xs text-gray-500">
-          اترك فارغاً لاستخدام رسالة افتراضية حسب الأسلوب المختار
-        </p>
+        <p className="text-xs text-gray-500">{t('personalityStep.auto_2')}</p>
       </div>
 
       {/* Interactive Preview */}
@@ -150,9 +144,7 @@ export default function PersonalityStep({
           <Eye className="h-5 w-5 text-primary" />
           <span>{t('wizardPersonalityStepPage.text2')}</span>
         </Label>
-        <p className="text-sm text-gray-600 mb-4">
-          جرب كيف سيتفاعل ساري مع عملائك بناءً على الإعدادات التي اخترتها
-        </p>
+        <p className="text-sm text-gray-600 mb-4">{t('personalityStep.auto_3')}</p>
         <PreviewChat
           businessName={wizardData.businessName || 'متجرك'}
           botTone={botTone as 'friendly' | 'professional' | 'casual'}
@@ -166,9 +158,7 @@ export default function PersonalityStep({
 
       {/* Next Button */}
       <div className="flex justify-center pt-4">
-        <Button size="lg" onClick={handleNext} className="px-8">
-          التالي
-          <ArrowRight className="mr-2 h-5 w-5" />
+        <Button size="lg" onClick={handleNext} className="px-8">{t('personalityStep.auto_4')}<ArrowRight className="mr-2 h-5 w-5" />
         </Button>
       </div>
     </div>

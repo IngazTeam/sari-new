@@ -150,9 +150,7 @@ export default function LiveChatDemo() {
         <div className="flex-1">
           <div className="font-semibold text-white">{t('compLiveChatDemoPage.text0')}</div>
           <div className="text-sm text-white/80 flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-            متصل الآن
-          </div>
+            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>{t('liveChatDemo.auto_0')}</div>
         </div>
       </div>
 
@@ -251,9 +249,7 @@ export default function LiveChatDemo() {
 
       {/* Overlay label */}
       <div className="absolute bottom-16 left-4 right-4 bg-black/70 backdrop-blur-sm rounded-lg p-3 pointer-events-none">
-        <p className="text-white text-sm font-medium text-center">
-          🎬 عرض توضيحي: محادثة حقيقية لشراء منتج عبر واتساب
-        </p>
+        <p className="text-white text-sm font-medium text-center">{t('liveChatDemo.auto_1')}</p>
       </div>
     </div>
   );

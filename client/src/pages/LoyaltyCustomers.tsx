@@ -229,9 +229,7 @@ export default function LoyaltyCustomers() {
 
               {customers?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    لا يوجد عملاء مسجلين في نظام الولاء
-                  </TableCell>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">{t('loyaltyCustomers.auto_0')}</TableCell>
                 </TableRow>
               )}
             </TableBody>
@@ -291,9 +289,7 @@ export default function LoyaltyCustomers() {
             <Button onClick={handleAddPoints} disabled={addPoints.isPending}>
               {addPoints.isPending ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الإضافة...
-                </>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('loyaltyCustomers.auto_1')}</>
               ) : (
                 "إضافة النقاط"
               )}
@@ -359,9 +355,7 @@ export default function LoyaltyCustomers() {
             >
               {deductPoints.isPending ? (
                 <>
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  جاري الخصم...
-                </>
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('loyaltyCustomers.auto_2')}</>
               ) : (
                 "خصم النقاط"
               )}

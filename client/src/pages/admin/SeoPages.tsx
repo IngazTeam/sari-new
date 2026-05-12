@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function SeoPages() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: pages, isLoading, refetch } = trpc.seo.getPages.useQuery();
@@ -29,7 +30,7 @@ export default function SeoPages() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">إدارة الصفحات</h1>
+        <h1 className="text-3xl font-bold">{t('seoPages.auto_0')}</h1>
         <Button
           className="gap-2"
           onClick={() => createMutation.mutate({
@@ -48,7 +49,7 @@ export default function SeoPages() {
         <div className="flex gap-2">
           <Search className="w-5 h-5 text-gray-400" />
           <Input
-            placeholder="بحث بالاسم أو الرابط..."
+            placeholder={t('seoPages.auto_12')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="border-0"
@@ -58,19 +59,19 @@ export default function SeoPages() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground">إجمالي الصفحات</div>
+          <div className="text-sm text-muted-foreground">{t('seoPages.auto_1')}</div>
           <div className="text-2xl font-bold">{pages?.length || 0}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground">مؤرشفة</div>
+          <div className="text-sm text-muted-foreground">{t('seoPages.auto_2')}</div>
           <div className="text-2xl font-bold">{indexed}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground">ذات أولوية</div>
+          <div className="text-sm text-muted-foreground">{t('seoPages.auto_3')}</div>
           <div className="text-2xl font-bold">{priority}</div>
         </Card>
         <Card className="p-4">
-          <div className="text-sm text-muted-foreground">التغطية</div>
+          <div className="text-sm text-muted-foreground">{t('seoPages.auto_4')}</div>
           <div className="text-2xl font-bold">
             {pages?.length ? Math.round((indexed / pages.length) * 100) : 0}%
           </div>
@@ -83,16 +84,16 @@ export default function SeoPages() {
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : filteredPages.length === 0 ? (
-          <p className="text-center text-muted-foreground py-12">لا توجد صفحات</p>
+          <p className="text-center text-muted-foreground py-12">{t('seoPages.auto_5')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50 border-b">
                 <tr>
-                  <th className="px-6 py-3 text-right text-sm font-semibold">الرابط</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold">العنوان</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold">الكلمات المفتاحية</th>
-                  <th className="px-6 py-3 text-right text-sm font-semibold">الحالة</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold">{t('seoPages.auto_6')}</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold">{t('seoPages.auto_7')}</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold">{t('seoPages.auto_8')}</th>
+                  <th className="px-6 py-3 text-right text-sm font-semibold">{t('seoPages.auto_9')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -103,8 +104,8 @@ export default function SeoPages() {
                     <td className="px-6 py-4 text-sm text-muted-foreground">{page.keywords || "—"}</td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
-                        {page.isIndexed ? <Badge variant="outline" className="bg-green-50">مؤرشفة</Badge> : null}
-                        {page.isPriority ? <Badge variant="outline" className="bg-blue-50">أولوية</Badge> : null}
+                        {page.isIndexed ? <Badge variant="outline" className="bg-green-50">{t('seoPages.auto_10')}</Badge> : null}
+                        {page.isPriority ? <Badge variant="outline" className="bg-blue-50">{t('seoPages.auto_11')}</Badge> : null}
                       </div>
                     </td>
                   </tr>

@@ -207,9 +207,7 @@ export default function WooCommerceOrders() {
           onClick={() => syncOrdersMutation.mutate()}
           disabled={syncOrdersMutation.isPending}
         >
-          <RefreshCw className={`mr-2 h-4 w-4 ${syncOrdersMutation.isPending ? 'animate-spin' : ''}`} />
-          مزامنة الطلبات
-        </Button>
+          <RefreshCw className={`mr-2 h-4 w-4 ${syncOrdersMutation.isPending ? 'animate-spin' : ''}`} />{t('wooCommerceOrders.auto_0')}</Button>
       </div>
 
       {/* Stats Cards */}
@@ -379,9 +377,7 @@ export default function WooCommerceOrders() {
                           onClick={() => handleSendNotification(order)}
                           disabled={isSendingNotification || !order.customerPhone}
                         >
-                          <Send className="mr-2 h-4 w-4" />
-                          إرسال إشعار
-                        </Button>
+                          <Send className="mr-2 h-4 w-4" />{t('wooCommerceOrders.auto_1')}</Button>
                       </div>
                     </div>
                   </div>
@@ -397,9 +393,7 @@ export default function WooCommerceOrders() {
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>تفاصيل الطلب #{selectedOrder?.orderNumber}</DialogTitle>
-            <DialogDescription>
-              معلومات كاملة عن الطلب
-            </DialogDescription>
+            <DialogDescription>{t('wooCommerceOrders.auto_2')}</DialogDescription>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">

@@ -99,9 +99,7 @@ export default function ComparePlans() {
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">{t('comparePlansPage.text4')}</h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          اختر الباقة المناسبة لاحتياجات عملك. يمكنك الترقية أو التخفيض في أي وقت.
-        </p>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t('comparePlans.auto_0')}</p>
       </div>
 
       {/* Current Plan Badge */}
@@ -118,9 +116,7 @@ export default function ComparePlans() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b-2">
-              <th className="p-4 text-right font-semibold bg-muted/50 sticky right-0 z-10">
-                الميزة
-              </th>
+              <th className="p-4 text-right font-semibold bg-muted/50 sticky right-0 z-10">{t('comparePlans.auto_1')}</th>
               {sortedPlans.map((plan) => (
                 <th key={plan.id} className="p-4 text-center min-w-[200px]">
                   <Card className={`${
@@ -132,9 +128,7 @@ export default function ComparePlans() {
                       <div className="flex items-center justify-center gap-2 mb-2">
                         {plan.isPopular && (
                           <Badge variant="default" className="gap-1">
-                            <Sparkles className="h-3 w-3" />
-                            الأكثر شعبية
-                          </Badge>
+                            <Sparkles className="h-3 w-3" />{t('comparePlans.auto_2')}</Badge>
                         )}
                         {currentSubscription?.planId === plan.id && (
                           <Badge variant="secondary">{t('comparePlansPage.text5')}</Badge>
@@ -168,15 +162,11 @@ export default function ComparePlans() {
                       >
                         {upgradeMutation.isPending && selectedPlanId === plan.id ? (
                           <>
-                            <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                            جاري التحديث...
+                            <Loader2 className="h-4 w-4 animate-spin ml-2" />{t('comparePlans.auto_3')}
                           </>
-                        ) : currentSubscription?.planId === plan.id ? (
-                          'الباقة الحالية'
                         ) : (
                           <>
-                            اختر هذه الباقة
-                            <ArrowRight className="h-4 w-4 mr-2" />
+                            {t('comparePlans.auto_5')}<ArrowRight className="h-4 w-4 mr-2" />
                           </>
                         )}
                       </Button>
@@ -221,9 +211,7 @@ export default function ComparePlans() {
         <Card className="max-w-2xl mx-auto">
           <CardContent className="pt-6">
             <h3 className="text-xl font-semibold mb-2">{t('comparePlansPage.text6')}</h3>
-            <p className="text-muted-foreground mb-4">
-              تواصل مع فريق الدعم للحصول على استشارة مجانية
-            </p>
+            <p className="text-muted-foreground mb-4">{t('comparePlans.auto_6')}</p>
             <Button variant="outline" onClick={() => setLocation('/merchant/subscription')}>
               العودة إلى صفحة الاشتراك
             </Button>

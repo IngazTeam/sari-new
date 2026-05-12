@@ -24,6 +24,7 @@ interface HubCard {
 }
 
 export default function AnalyticsHub() {
+  const { t } = useTranslation();
 
   const cards: HubCard[] = [
     {
@@ -104,10 +105,8 @@ export default function AnalyticsHub() {
             <BarChart3 className="h-7 w-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">مركز التحليلات</h1>
-            <p className="text-muted-foreground">
-              جميع تقاريرك ومؤشرات أدائك في مكان واحد
-            </p>
+            <h1 className="text-2xl font-bold tracking-tight">{t('analyticsHub.auto_0')}</h1>
+            <p className="text-muted-foreground">{t('analyticsHub.auto_1')}</p>
           </div>
         </div>
       </div>

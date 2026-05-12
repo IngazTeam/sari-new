@@ -111,9 +111,7 @@ export default function PaymentGateways() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">{t('adminPaymentGatewaysPage.text0')}</h1>
-        <p className="text-muted-foreground mt-1">
-          قم بإعداد وإدارة بوابات الدفع المتاحة للتجار
-        </p>
+        <p className="text-muted-foreground mt-1">{t('paymentGateways.auto_0')}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -160,9 +158,7 @@ export default function PaymentGateways() {
                 value={tapPublicKey}
                 onChange={(e) => setTapPublicKey(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                احصل عليه من لوحة تحكم Tap
-              </p>
+              <p className="text-xs text-muted-foreground">{t('paymentGateways.auto_1')}</p>
             </div>
 
             <div className="space-y-2">
@@ -205,9 +201,7 @@ export default function PaymentGateways() {
               className="w-full"
               onClick={handleSaveTap}
               disabled={upsertMutation.isPending}
-            >
-              حفظ إعدادات Tap
-            </Button>
+            >{t('paymentGateways.auto_2')}</Button>
 
             <div className="pt-4 border-t">
               <p className="text-sm font-medium mb-2">{t('adminPaymentGatewaysPage.text5')}</p>
@@ -217,17 +211,13 @@ export default function PaymentGateways() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block hover:text-primary"
-                >
-                  • الموقع الرسمي
-                </a>
+                >{t('paymentGateways.auto_3')}</a>
                 <a
                   href="https://developers.tap.company"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block hover:text-primary"
-                >
-                  • وثائق المطورين
-                </a>
+                >{t('paymentGateways.auto_4')}</a>
               </div>
             </div>
           </CardContent>
@@ -276,9 +266,7 @@ export default function PaymentGateways() {
                 value={paypalClientId}
                 onChange={(e) => setPaypalClientId(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
-                احصل عليه من لوحة تحكم PayPal
-              </p>
+              <p className="text-xs text-muted-foreground">{t('paymentGateways.auto_5')}</p>
             </div>
 
             <div className="space-y-2">
@@ -321,9 +309,7 @@ export default function PaymentGateways() {
               className="w-full"
               onClick={handleSavePayPal}
               disabled={upsertMutation.isPending}
-            >
-              حفظ إعدادات PayPal
-            </Button>
+            >{t('paymentGateways.auto_6')}</Button>
 
             <div className="pt-4 border-t">
               <p className="text-sm font-medium mb-2">{t('adminPaymentGatewaysPage.text10')}</p>
@@ -333,17 +319,13 @@ export default function PaymentGateways() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block hover:text-primary"
-                >
-                  • الموقع الرسمي
-                </a>
+                >{t('paymentGateways.auto_7')}</a>
                 <a
                   href="https://developer.paypal.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block hover:text-primary"
-                >
-                  • وثائق المطورين
-                </a>
+                >{t('paymentGateways.auto_8')}</a>
               </div>
             </div>
           </CardContent>
@@ -380,9 +362,7 @@ export default function PaymentGateways() {
           </div>
 
           <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg">
-            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-              ⚠️ ملاحظة مهمة: استخدم وضع الاختبار (Sandbox) أثناء التطوير، وقم بتعطيله عند الإطلاق للإنتاج.
-            </p>
+            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">{t('paymentGateways.auto_9')}</p>
           </div>
         </CardContent>
       </Card>

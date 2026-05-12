@@ -178,16 +178,12 @@ export default function LoyaltyRewards() {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
-              <Plus className="ml-2 h-4 w-4" />
-              إضافة مكافأة جديدة
-            </Button>
+              <Plus className="ml-2 h-4 w-4" />{t('loyaltyRewards.auto_0')}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t('loyaltyRewardsPage.text2')}</DialogTitle>
-              <DialogDescription>
-                أنشئ مكافأة جديدة يمكن للعملاء استبدالها بالنقاط
-              </DialogDescription>
+              <DialogDescription>{t('loyaltyRewards.auto_1')}</DialogDescription>
             </DialogHeader>
 
             <RewardForm formData={formData} setFormData={setFormData} />
@@ -199,9 +195,7 @@ export default function LoyaltyRewards() {
               <Button onClick={handleCreate} disabled={createReward.isPending}>
                 {createReward.isPending ? (
                   <>
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    جاري الإنشاء...
-                  </>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('loyaltyRewards.auto_2')}</>
                 ) : (
                   "إنشاء المكافأة"
                 )}
@@ -307,9 +301,7 @@ export default function LoyaltyRewards() {
               <Button onClick={handleUpdate} disabled={updateReward.isPending}>
                 {updateReward.isPending ? (
                   <>
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    جاري التحديث...
-                  </>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />{t('loyaltyRewards.auto_3')}</>
                 ) : (
                   "حفظ التعديلات"
                 )}

@@ -237,9 +237,7 @@ export default function MerchantDetails() {
                   onClick={() => setShowAssignForm(!showAssignForm)}
                   className="gap-1"
                 >
-                  <Plus className="h-4 w-4" />
-                  تفعيل اشتراك
-                </Button>
+                  <Plus className="h-4 w-4" />{t('merchantDetails.auto_0')}</Button>
               ) : (
                 <>
                   <Button
@@ -248,9 +246,7 @@ export default function MerchantDetails() {
                     onClick={() => setShowExtendForm(!showExtendForm)}
                     className="gap-1"
                   >
-                    <CalendarPlus className="h-4 w-4" />
-                    تمديد
-                  </Button>
+                    <CalendarPlus className="h-4 w-4" />{t('merchantDetails.auto_1')}</Button>
                   <Button
                     size="sm"
                     variant="destructive"
@@ -262,9 +258,7 @@ export default function MerchantDetails() {
                     disabled={cancelMutation.isPending}
                     className="gap-1"
                   >
-                    <Ban className="h-4 w-4" />
-                    إلغاء
-                  </Button>
+                    <Ban className="h-4 w-4" />{t('merchantDetails.auto_2')}</Button>
                 </>
               )}
             </div>
@@ -275,13 +269,13 @@ export default function MerchantDetails() {
               <div className="p-4 border rounded-lg bg-primary/5 space-y-3">
                 <div className="flex items-center gap-2 mb-2">
                   <Zap className="h-4 w-4 text-primary" />
-                  <p className="font-medium text-sm">تفعيل اشتراك جديد</p>
+                  <p className="font-medium text-sm">{t('merchantDetails.auto_3')}</p>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground">الباقة</label>
+                  <label className="text-sm text-muted-foreground">{t('merchantDetails.auto_4')}</label>
                   <Select value={selectedPlanId} onValueChange={setSelectedPlanId}>
                     <SelectTrigger>
-                      <SelectValue placeholder="اختر الباقة" />
+                      <SelectValue placeholder={t('merchantDetails.auto_12')} />
                     </SelectTrigger>
                     <SelectContent>
                       {plans.map((plan: any) => (
@@ -294,7 +288,7 @@ export default function MerchantDetails() {
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">المدة (أيام)</label>
+                    <label className="text-sm text-muted-foreground">{t('merchantDetails.auto_5')}</label>
                     <Input
                       type="number"
                       value={durationDays}
@@ -304,14 +298,14 @@ export default function MerchantDetails() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm text-muted-foreground">دورة الفوترة</label>
+                    <label className="text-sm text-muted-foreground">{t('merchantDetails.auto_6')}</label>
                     <Select value={billingCycle} onValueChange={(v: any) => setBillingCycle(v)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="monthly">شهري</SelectItem>
-                        <SelectItem value="yearly">سنوي</SelectItem>
+                        <SelectItem value="monthly">{t('merchantDetails.auto_7')}</SelectItem>
+                        <SelectItem value="yearly">{t('merchantDetails.auto_8')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -347,10 +341,10 @@ export default function MerchantDetails() {
               <div className="p-4 border rounded-lg bg-blue-50 space-y-3">
                 <div className="flex items-center gap-2 mb-2">
                   <CalendarPlus className="h-4 w-4 text-blue-600" />
-                  <p className="font-medium text-sm">تمديد الاشتراك</p>
+                  <p className="font-medium text-sm">{t('merchantDetails.auto_9')}</p>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm text-muted-foreground">عدد الأيام الإضافية</label>
+                  <label className="text-sm text-muted-foreground">{t('merchantDetails.auto_10')}</label>
                   <Input
                     type="number"
                     value={extendDays}
@@ -521,9 +515,7 @@ export default function MerchantDetails() {
             <div className="text-center py-12">
               <MessageSquare className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4 text-lg font-medium">{t('adminMerchantDetailsPage.text32')}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                لم يقم التاجر بإنشاء أي حملات تسويقية حتى الآن
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">{t('merchantDetails.auto_11')}</p>
             </div>
           )}
         </CardContent>

@@ -139,16 +139,12 @@ export default function DiscountCoupons() {
         }}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="ml-2 h-4 w-4" />
-              إنشاء كوبون جديد
-            </Button>
+              <Plus className="ml-2 h-4 w-4" />{t('discountCoupons.auto_0')}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{t('adminDiscountCouponsPage.text2', { var0: editingCoupon ? 'تعديل الكوبون' : 'إنشاء كوبون جديد' })}</DialogTitle>
-              <DialogDescription>
-                أدخل تفاصيل الكوبون. سيتم تطبيقه على جميع الباقات.
-              </DialogDescription>
+              <DialogDescription>{t('discountCoupons.auto_1')}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -311,9 +307,7 @@ export default function DiscountCoupons() {
               <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground" />
               <p className="mt-4 text-muted-foreground">{t('adminDiscountCouponsPage.text18')}</p>
               <Button className="mt-4" onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="ml-2 h-4 w-4" />
-                إنشاء أول كوبون
-              </Button>
+                <Plus className="ml-2 h-4 w-4" />{t('discountCoupons.auto_2')}</Button>
             </div>
           ) : (
             <Table>

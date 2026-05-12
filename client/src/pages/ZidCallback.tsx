@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 
 export default function ZidCallback() {
+  const { t } = useTranslation();
   const [, navigate] = useLocation();
   const [, params] = useRoute('/merchant/zid/callback');
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -73,21 +74,15 @@ export default function ZidCallback() {
             <CardTitle className="flex items-center gap-2">
               {status === 'loading' && (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  جاري المعالجة
-                </>
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />{t('zidCallback.auto_0')}</>
               )}
               {status === 'success' && (
                 <>
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  نجح الاتصال
-                </>
+                  <CheckCircle className="w-5 h-5 text-green-500" />{t('zidCallback.auto_1')}</>
               )}
               {status === 'error' && (
                 <>
-                  <XCircle className="w-5 h-5 text-red-500" />
-                  فشل الاتصال
-                </>
+                  <XCircle className="w-5 h-5 text-red-500" />{t('zidCallback.auto_2')}</>
               )}
             </CardTitle>
             <CardDescription>{message}</CardDescription>
@@ -100,16 +95,12 @@ export default function ZidCallback() {
             )}
             {status === 'success' && (
               <div className="space-y-4">
-                <p className="text-center text-muted-foreground">
-                  سيتم توجيهك إلى صفحة الإعدادات...
-                </p>
+                <p className="text-center text-muted-foreground">{t('zidCallback.auto_3')}</p>
               </div>
             )}
             {status === 'error' && (
               <div className="space-y-4">
-                <p className="text-center text-muted-foreground">
-                  حدث خطأ أثناء ربط Zid. يرجى المحاولة مرة أخرى.
-                </p>
+                <p className="text-center text-muted-foreground">{t('zidCallback.auto_4')}</p>
                 <Button
                   onClick={() => navigate('/merchant/zid/settings')}
                   className="w-full"

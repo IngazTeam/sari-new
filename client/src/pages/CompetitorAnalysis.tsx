@@ -108,24 +108,18 @@ export default function CompetitorAnalysis() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold mb-2">{t('competitorAnalysisPage.text4')}</h1>
-          <p className="text-muted-foreground">
-            قم بإضافة منافسيك وقارن موقعك معهم
-          </p>
+          <p className="text-muted-foreground">{t('competitorAnalysis.auto_0')}</p>
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              إضافة منافس
-            </Button>
+              <Plus className="mr-2 h-4 w-4" />{t('competitorAnalysis.auto_1')}</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('competitorAnalysisPage.text5')}</DialogTitle>
-              <DialogDescription>
-                أدخل معلومات المنافس لبدء التحليل
-              </DialogDescription>
+              <DialogDescription>{t('competitorAnalysis.auto_2')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -153,9 +147,7 @@ export default function CompetitorAnalysis() {
               >
                 {addMutation.isPending ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    جاري الإضافة...
-                  </>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{t('competitorAnalysis.auto_3')}</>
                 ) : (
                   'إضافة وتحليل'
                 )}
@@ -293,9 +285,7 @@ export default function CompetitorAnalysis() {
                         {competitor.strengths.length > 0 && (
                           <div>
                             <div className="flex items-center gap-1 text-sm font-medium text-green-700 mb-1">
-                              <TrendingUp className="h-3 w-3" />
-                              نقاط القوة
-                            </div>
+                              <TrendingUp className="h-3 w-3" />{t('competitorAnalysis.auto_4')}</div>
                             <ul className="text-xs text-muted-foreground space-y-1">
                               {competitor.strengths.slice(0, 2).map((strength: string, index: number) => (
                                 <li key={index}>• {strength}</li>
@@ -306,9 +296,7 @@ export default function CompetitorAnalysis() {
                         {competitor.weaknesses.length > 0 && (
                           <div>
                             <div className="flex items-center gap-1 text-sm font-medium text-red-700 mb-1">
-                              <TrendingDown className="h-3 w-3" />
-                              نقاط الضعف
-                            </div>
+                              <TrendingDown className="h-3 w-3" />{t('competitorAnalysis.auto_5')}</div>
                             <ul className="text-xs text-muted-foreground space-y-1">
                               {competitor.weaknesses.slice(0, 2).map((weakness: string, index: number) => (
                                 <li key={index}>• {weakness}</li>
@@ -345,13 +333,9 @@ export default function CompetitorAnalysis() {
             <div className="text-center">
               <TrendingUp className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">{t('competitorAnalysisPage.text18')}</h3>
-              <p className="text-muted-foreground mb-4">
-                ابدأ بإضافة منافسيك لمقارنة موقعك معهم
-              </p>
+              <p className="text-muted-foreground mb-4">{t('competitorAnalysis.auto_6')}</p>
               <Button onClick={() => setIsAddDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                إضافة منافس
-              </Button>
+                <Plus className="mr-2 h-4 w-4" />{t('competitorAnalysis.auto_7')}</Button>
             </div>
           </CardContent>
         </Card>

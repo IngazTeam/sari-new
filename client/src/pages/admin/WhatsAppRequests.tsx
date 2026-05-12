@@ -103,30 +103,22 @@ export default function WhatsAppRequests() {
       case 'pending':
         return (
           <Badge variant="outline" className="gap-1 border-yellow-500 text-yellow-700">
-            <Clock className="w-3 h-3" />
-            قيد المراجعة
-          </Badge>
+            <Clock className="w-3 h-3" />{t('whatsAppRequests.auto_0')}</Badge>
         );
       case 'approved':
         return (
           <Badge variant="outline" className="gap-1 border-blue-500 text-blue-700">
-            <CheckCircle2 className="w-3 h-3" />
-            مقبول - في انتظار الربط
-          </Badge>
+            <CheckCircle2 className="w-3 h-3" />{t('whatsAppRequests.auto_1')}</Badge>
         );
       case 'connected':
         return (
           <Badge variant="outline" className="gap-1 border-green-500 text-green-700">
-            <Wifi className="w-3 h-3" />
-            مربوط
-          </Badge>
+            <Wifi className="w-3 h-3" />{t('whatsAppRequests.auto_2')}</Badge>
         );
       case 'rejected':
         return (
           <Badge variant="outline" className="gap-1 border-red-500 text-red-700">
-            <XCircle className="w-3 h-3" />
-            مرفوض
-          </Badge>
+            <XCircle className="w-3 h-3" />{t('whatsAppRequests.auto_3')}</Badge>
         );
       default:
         return null;
@@ -146,9 +138,7 @@ export default function WhatsAppRequests() {
   const RequestsTable = ({ requests }: { requests: any[] | undefined }) => {
     if (!requests || requests.length === 0) {
       return (
-        <div className="text-center py-12 text-muted-foreground">
-          لا توجد طلبات
-        </div>
+        <div className="text-center py-12 text-muted-foreground">{t('whatsAppRequests.auto_4')}</div>
       );
     }
 
@@ -189,18 +179,14 @@ export default function WhatsAppRequests() {
                       onClick={() => handleApproveClick(request)}
                       disabled={approveMutation.isPending}
                     >
-                      <CheckCircle2 className="w-4 h-4 ml-1" />
-                      قبول
-                    </Button>
+                      <CheckCircle2 className="w-4 h-4 ml-1" />{t('whatsAppRequests.auto_5')}</Button>
                     <Button
                       size="sm"
                       variant="destructive"
                       onClick={() => handleRejectClick(request)}
                       disabled={rejectMutation.isPending}
                     >
-                      <XCircle className="w-4 h-4 ml-1" />
-                      رفض
-                    </Button>
+                      <XCircle className="w-4 h-4 ml-1" />{t('whatsAppRequests.auto_6')}</Button>
                   </div>
                 ) : request.status === 'rejected' && request.rejectionReason ? (
                   <div className="text-sm text-muted-foreground">
@@ -227,9 +213,7 @@ export default function WhatsAppRequests() {
         <Smartphone className="w-8 h-8 text-primary" />
         <div>
           <h1 className="text-3xl font-bold">{t('adminWhatsAppRequestsPage.text7')}</h1>
-          <p className="text-muted-foreground">
-            مراجعة وإدارة طلبات ربط أرقام الواتساب من التجار
-          </p>
+          <p className="text-muted-foreground">{t('whatsAppRequests.auto_7')}</p>
         </div>
       </div>
 
@@ -267,9 +251,7 @@ export default function WhatsAppRequests() {
       <Card>
         <CardHeader>
           <CardTitle>{t('adminWhatsAppRequestsPage.text12')}</CardTitle>
-          <CardDescription>
-            جميع طلبات ربط الواتساب من التجار
-          </CardDescription>
+          <CardDescription>{t('whatsAppRequests.auto_8')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="all">
@@ -300,9 +282,7 @@ export default function WhatsAppRequests() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t('adminWhatsAppRequestsPage.text17')}</DialogTitle>
-            <DialogDescription>
-              أدخل بيانات Green API للتاجر لإتمام عملية الربط
-            </DialogDescription>
+            <DialogDescription>{t('whatsAppRequests.auto_9')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {selectedRequest && (
@@ -321,9 +301,7 @@ export default function WhatsAppRequests() {
                 dir="ltr"
                 className="font-mono"
               />
-              <p className="text-xs text-muted-foreground">
-                احصل عليه من لوحة تحكم Green API
-              </p>
+              <p className="text-xs text-muted-foreground">{t('whatsAppRequests.auto_10')}</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="apiToken">API Token</Label>
@@ -336,9 +314,7 @@ export default function WhatsAppRequests() {
                 className="font-mono"
                 type="password"
               />
-              <p className="text-xs text-muted-foreground">
-                احصل عليه من لوحة تحكم Green API
-              </p>
+              <p className="text-xs text-muted-foreground">{t('whatsAppRequests.auto_11')}</p>
             </div>
           </div>
           <DialogFooter className="flex-row-reverse gap-2">
@@ -368,9 +344,7 @@ export default function WhatsAppRequests() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('adminWhatsAppRequestsPage.text22')}</DialogTitle>
-            <DialogDescription>
-              يرجى إدخال سبب الرفض لإعلام التاجر
-            </DialogDescription>
+            <DialogDescription>{t('whatsAppRequests.auto_12')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             {selectedRequest && (

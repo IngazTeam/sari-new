@@ -152,9 +152,7 @@ export default function TrySariEnhanced() {
                     onClick={handleSendMessage}
                     disabled={isLoading || !inputValue.trim()}
                     className="bg-green-500 hover:bg-green-600 text-white"
-                  >
-                    إرسال
-                  </Button>
+                  >{t('trySariEnhanced.auto_0')}</Button>
                 </div>
               </div>
             </Card>
@@ -201,9 +199,7 @@ export default function TrySariEnhanced() {
             <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white border-none">
               <CardHeader>
                 <CardTitle className="text-lg">{t('trySariEnhancedPage.text15')}</CardTitle>
-                <CardDescription className="text-green-100">
-                  احصل على 7 أيام تجربة مجانية
-                </CardDescription>
+                <CardDescription className="text-green-100">{t('trySariEnhanced.auto_1')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -212,9 +208,7 @@ export default function TrySariEnhanced() {
                 >
                   تسجيل مجاني
                 </Button>
-                <p className="text-xs text-green-100 text-center mt-3">
-                  بدون الحاجة لبطاقة ائتمانية
-                </p>
+                <p className="text-xs text-green-100 text-center mt-3">{t('trySariEnhanced.auto_2')}</p>
               </CardContent>
             </Card>
           </div>

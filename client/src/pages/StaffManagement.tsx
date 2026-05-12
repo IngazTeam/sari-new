@@ -128,26 +128,20 @@ export default function StaffManagement() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold mb-2">{t('staffManagementPage.text4')}</h1>
-          <p className="text-muted-foreground">
-            إدارة فريق العمل وربطهم بالخدمات والمواعيد
-          </p>
+          <p className="text-muted-foreground">{t('staffManagement.auto_0')}</p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              إضافة موظف
-            </Button>
+              <Plus className="h-4 w-4 mr-2" />{t('staffManagement.auto_1')}</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
                 {editingStaff ? "تعديل بيانات الموظف" : "إضافة موظف جديد"}
               </DialogTitle>
-              <DialogDescription>
-                أدخل بيانات الموظف وتخصصه
-              </DialogDescription>
+              <DialogDescription>{t('staffManagement.auto_2')}</DialogDescription>
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -221,9 +215,7 @@ export default function StaffManagement() {
                 >
                   {(createMutation.isPending || updateMutation.isPending) ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      جاري الحفظ...
-                    </>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('staffManagement.auto_3')}</>
                   ) : (
                     editingStaff ? "تحديث" : "إضافة"
                   )}
@@ -238,9 +230,7 @@ export default function StaffManagement() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              إجمالي الموظفين
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('staffManagement.auto_4')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{staffList?.length || 0}</div>
@@ -249,9 +239,7 @@ export default function StaffManagement() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              الموظفين النشطين
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('staffManagement.auto_5')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -262,9 +250,7 @@ export default function StaffManagement() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              التخصصات
-            </CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('staffManagement.auto_6')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -278,9 +264,7 @@ export default function StaffManagement() {
       <Card>
         <CardHeader>
           <CardTitle>{t('staffManagementPage.text13')}</CardTitle>
-          <CardDescription>
-            جميع الموظفين المسجلين في النظام
-          </CardDescription>
+          <CardDescription>{t('staffManagement.auto_7')}</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -288,9 +272,7 @@ export default function StaffManagement() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : !staffList || staffList.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              لا يوجد موظفين مسجلين. قم بإضافة موظف جديد للبدء.
-            </div>
+            <div className="text-center py-8 text-muted-foreground">{t('staffManagement.auto_8')}</div>
           ) : (
             <Table>
               <TableHeader>

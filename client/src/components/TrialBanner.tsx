@@ -70,18 +70,12 @@ export function TrialBanner() {
           </div>
 
           <div className="flex-1">
-            <h3 className="font-semibold text-lg text-red-900 dark:text-red-100">
-              ⏰ انتهت الفترة التجريبية
-            </h3>
+            <h3 className="font-semibold text-lg text-red-900 dark:text-red-100">{t('trialBanner.auto_0')}</h3>
 
-            <p className="text-sm text-red-700 dark:text-red-300 mt-1 mb-3">
-              اشترك الآن في إحدى الباقات لمتابعة استخدام جميع ميزات ساري وتفعيل الرد التلقائي على واتساب.
-            </p>
+            <p className="text-sm text-red-700 dark:text-red-300 mt-1 mb-3">{t('trialBanner.auto_1')}</p>
 
             <Link href="/merchant/subscription/plans">
-              <button className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">
-                اشترك الآن
-              </button>
+              <button className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition-colors">{t('trialBanner.auto_2')}</button>
             </Link>
           </div>
         </div>
@@ -160,9 +154,7 @@ export function TrialBanner() {
 
             {!isUrgent && (
               <Link href="/merchant/subscription/plans">
-                <button className={`bg-white dark:bg-gray-800 ${textColor} border ${isWarning ? 'border-orange-300' : 'border-blue-300'} px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}>
-                  عرض الباقات
-                </button>
+                <button className={`bg-white dark:bg-gray-800 ${textColor} border ${isWarning ? 'border-orange-300' : 'border-blue-300'} px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}>{t('trialBanner.auto_3')}</button>
               </Link>
             )}
           </div>
