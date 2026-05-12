@@ -306,10 +306,23 @@ export async function generateAIResponse(
     const recentHistory = conversationHistory.slice(-5);
     messages.push(...recentHistory);
 
-    // إضافة رسالة العميل الحالية
+    // إضافة رسالة العميل الحالية (مع تنظيف وتقليص)
+    const sanitizedMessage = customerMessage
+      .substring(0, 500)
+      .normalize('NFKC')
+      .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+      .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+      .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+      .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+      .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+      .replace(/override\s+(system|all|your)/gi, '[filtered]')
+      .replace(/act\s+as\s+(a|an)?/gi, '[filtered]')
+      .replace(/تصرف\s*(كـ|ك)/gi, '[filtered]')
+      .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[filtered]')
+      .replace(/انس[َى]?\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد|اعداداتهم)/gi, '[filtered]');
     messages.push({
       role: 'user',
-      content: customerMessage
+      content: sanitizedMessage
     });
 
     // استدعاء OpenAI
