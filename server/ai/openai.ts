@@ -51,12 +51,20 @@ export async function callGPT4(
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
 
+  // Get API key from DB (admin panel) first, then fallback to .env
+  const { getOpenAiApiKey } = await import('../db_ai_settings');
+  const apiKey = await getOpenAiApiKey() || ENV.openaiApiKey;
+
+  if (!apiKey) {
+    throw new Error('OpenAI API key not configured. Set it in Admin > AI Settings.');
+  }
+
   try {
     const response = await fetch(`${OPENAI_API_URL}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ENV.openaiApiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model,
@@ -93,6 +101,10 @@ export async function transcribeAudio(
   const language = options?.language || 'ar'; // Arabic by default
 
   try {
+    // Get API key from DB (admin panel) first, then fallback to .env
+    const { getOpenAiApiKey } = await import('../db_ai_settings');
+    const apiKey = await getOpenAiApiKey() || ENV.openaiApiKey;
+
     const formData = new FormData();
     
     // Create a Blob from the buffer
@@ -106,7 +118,7 @@ export async function transcribeAudio(
     const response = await fetch(`${OPENAI_API_URL}/audio/transcriptions`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${ENV.openaiApiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: formData,
     });
