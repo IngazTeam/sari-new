@@ -83,6 +83,56 @@ export const merchantsRouter = router({
             return { success: true };
         }),
 
+    // Delete merchant and all related data (Admin only)
+    delete: adminProcedure
+        .input(z.object({ merchantId: z.number() }))
+        .mutation(async ({ input }) => {
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            const dbConn = await db.getDb();
+            if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+
+            // Cascade delete all related data
+            const tables = [
+                'api_keys',
+                'merchant_subscriptions',
+                'products',
+                'extracted_faqs',
+                'knowledge_docs',
+                'campaigns',
+                'conversations',
+                'messages',
+                'customers',
+                'orders',
+                'sari_conversions',
+                'byaan_connections',
+                'whatsapp_instances',
+                'brain_activity_log',
+            ];
+
+            for (const table of tables) {
+                try {
+                    await (dbConn as any).execute(`DELETE FROM ${table} WHERE merchant_id = ?`, [input.merchantId]);
+                } catch (e) {
+                    // Table may not exist — skip silently
+                }
+            }
+
+            // Delete merchant
+            await (dbConn as any).execute('DELETE FROM merchants WHERE id = ?', [input.merchantId]);
+
+            // Delete associated user
+            if (merchant.userId) {
+                await (dbConn as any).execute('DELETE FROM users WHERE id = ?', [merchant.userId]);
+            }
+
+            console.log(`[Admin] Merchant DELETED: id=${input.merchantId}, business=${merchant.businessName}`);
+            return { success: true, deletedId: input.merchantId };
+        }),
+
     // Get merchant by ID (Admin only)
     getById: adminProcedure
         .input(z.object({ merchantId: z.number() }))
