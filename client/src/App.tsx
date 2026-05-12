@@ -64,6 +64,13 @@ const TrySariEnhanced = lazyLoad(() => import("./pages/TrySariEnhanced"));
 const SubscribePage = lazyLoad(() => import("./pages/SubscribePage"));
 const PaymentCallback = lazyLoad(() => import("./pages/PaymentCallback"));
 
+// SEO Landing Pages
+const AISalesAgent = lazyLoad(() => import("./pages/landing/AISalesAgent"));
+const WhatsAppOrdering = lazyLoad(() => import("./pages/landing/WhatsAppOrdering"));
+const WhatsAppBooking = lazyLoad(() => import("./pages/landing/WhatsAppBooking"));
+const AICustomerService = lazyLoad(() => import("./pages/landing/AICustomerService"));
+const ConversationalCommerce = lazyLoad(() => import("./pages/landing/ConversationalCommerce"));
+
 // Merchant pages - lazy loaded
 const MerchantDashboard = lazyLoad(() => import("./pages/merchant/Dashboard"));
 const Campaigns = lazyLoad(() => import("./pages/merchant/Campaigns"));
@@ -225,6 +232,14 @@ function Router() {
       <Route path="/company/privacy" component={Privacy} />
       <Route path="/try-sari" component={TrySari} />
       <Route path="/try-sari-enhanced" component={TrySariEnhanced} />
+
+      {/* SEO Landing Pages */}
+      <Route path="/ai-whatsapp-sales-agent" component={AISalesAgent} />
+      <Route path="/whatsapp-ordering-system" component={WhatsAppOrdering} />
+      <Route path="/whatsapp-booking-system" component={WhatsAppBooking} />
+      <Route path="/ai-customer-service-whatsapp" component={AICustomerService} />
+      <Route path="/conversational-commerce-platform" component={ConversationalCommerce} />
+
       <Route path="/merchant/setup-wizard" component={SetupWizard} />
 
       {/* Merchant Routes */}
