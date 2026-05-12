@@ -11,7 +11,7 @@ import { protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
 export const whatsappInstancesRouter = router({
-    // List all instances for merchant
+    // List all instances for merchant (INTERNAL — used by system, returns full data including tokens)
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
@@ -22,6 +22,112 @@ export const whatsappInstancesRouter = router({
 
             return await db.getWhatsAppInstancesByMerchantId(input.merchantId);
         }),
+
+    // List instances for merchant dashboard (SAFE — no tokens, no API keys)
+    listSafe: protectedProcedure
+        .input(z.object({ merchantId: z.number() }))
+        .query(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant || merchant.userId !== ctx.user.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const instances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+            // Strip sensitive fields
+            return instances.map((i: any) => ({
+                id: i.id,
+                merchantId: i.merchantId,
+                phoneNumber: i.phoneNumber,
+                status: i.status,
+                isPrimary: i.isPrimary,
+                connectedAt: i.connectedAt,
+                createdAt: i.createdAt,
+                expiresAt: i.expiresAt,
+            }));
+        }),
+
+    // Toggle instance status (activate / deactivate)
+    toggleStatus: protectedProcedure
+        .input(z.object({
+            id: z.number(),
+            merchantId: z.number(),
+            newStatus: z.enum(['active', 'inactive']),
+        }))
+        .mutation(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant || merchant.userId !== ctx.user.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const instance = await db.getWhatsAppInstanceById(input.id);
+            if (!instance || instance.merchantId !== input.merchantId) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
+            }
+
+            // If activating, check subscription limit
+            if (input.newStatus === 'active') {
+                const allInstances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+                const activeCount = allInstances.filter((i: any) => i.status === 'active').length;
+                const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
+                // Only check limit if adding a NEW active one (not reactivating the same)
+                if (instance.status !== 'active') {
+                    try {
+                        await checkWhatsAppNumberLimit(input.merchantId);
+                    } catch (err) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message: 'لقد وصلت للحد الأقصى من الأرقام النشطة في باقتك. أوقف رقماً آخر أو قم بالترقية.',
+                        });
+                    }
+                }
+            }
+
+            // If deactivating primary, ensure another active instance becomes primary
+            if (input.newStatus === 'inactive' && instance.isPrimary) {
+                const allInstances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+                const anotherActive = allInstances.find((i: any) => i.id !== input.id && i.status === 'active');
+                if (anotherActive) {
+                    await db.setWhatsAppInstanceAsPrimary(anotherActive.id, input.merchantId);
+                }
+            }
+
+            await db.updateWhatsAppInstance(input.id, { status: input.newStatus });
+            return { success: true };
+        }),
+
+    // Get WhatsApp number usage vs plan limit
+    getUsage: protectedProcedure
+        .input(z.object({ merchantId: z.number() }))
+        .query(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant || merchant.userId !== ctx.user.id) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
+
+            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            if (!subscription) {
+                return { current: 0, max: 1, remaining: 1, percentage: 0 };
+            }
+
+            const plan = await db.getSubscriptionPlanById(subscription.planId);
+            if (!plan) {
+                return { current: 0, max: 1, remaining: 1, percentage: 0 };
+            }
+
+            const instances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+            const activeCount = instances.filter((i: any) => i.status === 'active').length;
+            const totalCount = instances.length;
+
+            return {
+                current: activeCount,
+                total: totalCount,
+                max: plan.maxWhatsAppNumbers,
+                remaining: Math.max(0, plan.maxWhatsAppNumbers - activeCount),
+                percentage: Math.min(100, (activeCount / plan.maxWhatsAppNumbers) * 100),
+                planName: plan.name,
+            };
+        }),
+
 
     // Get primary instance
     getPrimary: protectedProcedure

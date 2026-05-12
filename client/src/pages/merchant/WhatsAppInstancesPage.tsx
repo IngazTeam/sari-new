@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Plus, CheckCircle2, XCircle, Clock, AlertCircle, Smartphone, Phone, Building2, Send, Loader2 } from "lucide-react";
+import {
+  Plus, CheckCircle2, XCircle, Clock, AlertCircle, Smartphone, Phone,
+  Building2, Send, Loader2, Star, StarOff, Power, PowerOff, Crown,
+  ArrowUpRight, Shield
+} from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
 export default function WhatsAppInstancesPage() {
@@ -17,6 +23,11 @@ export default function WhatsAppInstancesPage() {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [businessName, setBusinessName] = useState("");
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'deactivate' | 'activate' | 'setPrimary';
+    instanceId: number;
+    phoneNumber?: string;
+  } | null>(null);
 
   // Get current merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery(
@@ -24,29 +35,65 @@ export default function WhatsAppInstancesPage() {
     { enabled: !!user }
   );
 
+  // Get safe instances (no sensitive data)
+  const { data: instances, refetch: refetchInstances, isLoading: instancesLoading } = trpc.whatsappInstances.listSafe.useQuery(
+    { merchantId: merchant?.id || 0 },
+    { enabled: !!merchant }
+  );
+
+  // Get usage vs plan limits
+  const { data: usage, refetch: refetchUsage } = trpc.whatsappInstances.getUsage.useQuery(
+    { merchantId: merchant?.id || 0 },
+    { enabled: !!merchant }
+  );
+
   // Get merchant's WhatsApp requests
-  const { data: requests, refetch, isLoading } = trpc.whatsappRequests.listMine.useQuery(
+  const { data: requests, refetch: refetchRequests, isLoading: requestsLoading } = trpc.whatsappRequests.listMine.useQuery(
     { merchantId: merchant?.id || 0 },
     { enabled: !!merchant }
   );
 
-  // Get active instances (read-only view — no sensitive data)
-  const { data: instances } = trpc.whatsappInstances.list.useQuery(
-    { merchantId: merchant?.id || 0 },
-    { enabled: !!merchant }
-  );
+  const refetchAll = () => {
+    refetchInstances();
+    refetchUsage();
+    refetchRequests();
+  };
 
-  // Create request mutation
+  // Mutations
   const createRequestMutation = trpc.whatsappRequests.create.useMutation({
     onSuccess: () => {
       toast.success(t('whatsappManagement.toast.requestSent', 'تم إرسال طلب الربط بنجاح! سيتم مراجعته من قبل الإدارة.'));
       setShowRequestDialog(false);
       setPhoneNumber("");
       setBusinessName("");
-      refetch();
+      refetchAll();
     },
     onError: (error) => {
       toast.error(error.message || t('whatsappManagement.toast.requestFailed', 'فشل إرسال الطلب'));
+    },
+  });
+
+  const toggleStatusMutation = trpc.whatsappInstances.toggleStatus.useMutation({
+    onSuccess: () => {
+      toast.success(t('whatsappManagement.toast.statusChanged', 'تم تحديث حالة الرقم بنجاح'));
+      setConfirmAction(null);
+      refetchAll();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setConfirmAction(null);
+    },
+  });
+
+  const setPrimaryMutation = trpc.whatsappInstances.setPrimary.useMutation({
+    onSuccess: () => {
+      toast.success(t('whatsappManagement.toast.primarySet', 'تم تعيين الرقم الأساسي بنجاح'));
+      setConfirmAction(null);
+      refetchAll();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setConfirmAction(null);
     },
   });
 
@@ -59,17 +106,28 @@ export default function WhatsAppInstancesPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
+  const handleConfirmAction = () => {
+    if (!confirmAction || !merchant) return;
+    if (confirmAction.type === 'activate') {
+      toggleStatusMutation.mutate({ id: confirmAction.instanceId, merchantId: merchant.id, newStatus: 'active' });
+    } else if (confirmAction.type === 'deactivate') {
+      toggleStatusMutation.mutate({ id: confirmAction.instanceId, merchantId: merchant.id, newStatus: 'inactive' });
+    } else if (confirmAction.type === 'setPrimary') {
+      setPrimaryMutation.mutate({ id: confirmAction.instanceId, merchantId: merchant.id });
+    }
+  };
+
+  const getRequestStatusBadge = (status: string) => {
     switch (status) {
       case "approved":
-        return <Badge className="bg-blue-500"><CheckCircle2 className="w-3 h-3 ml-1" />{t('whatsappManagement.status.approved', 'تمت الموافقة')}</Badge>;
+        return <Badge className="bg-blue-500 gap-1"><CheckCircle2 className="w-3 h-3" />{t('whatsappManagement.status.approved', 'تمت الموافقة')}</Badge>;
       case "connected":
       case "completed":
-        return <Badge className="bg-green-500"><CheckCircle2 className="w-3 h-3 ml-1" />{t('whatsappManagement.status.connected', 'متصل')}</Badge>;
+        return <Badge className="bg-green-500 gap-1"><CheckCircle2 className="w-3 h-3" />{t('whatsappManagement.status.connected', 'متصل')}</Badge>;
       case "rejected":
-        return <Badge variant="destructive"><XCircle className="w-3 h-3 ml-1" />{t('whatsappManagement.status.rejected', 'مرفوض')}</Badge>;
+        return <Badge variant="destructive" className="gap-1"><XCircle className="w-3 h-3" />{t('whatsappManagement.status.rejected', 'مرفوض')}</Badge>;
       case "pending":
-        return <Badge variant="outline" className="border-orange-400 text-orange-600"><Clock className="w-3 h-3 ml-1" />{t('whatsappManagement.status.pending', 'قيد المراجعة')}</Badge>;
+        return <Badge variant="outline" className="border-orange-400 text-orange-600 gap-1"><Clock className="w-3 h-3" />{t('whatsappManagement.status.pending', 'قيد المراجعة')}</Badge>;
       default:
         return <Badge>{status}</Badge>;
     }
@@ -77,6 +135,8 @@ export default function WhatsAppInstancesPage() {
 
   const hasPendingRequest = requests?.some((r: any) => r.status === 'pending');
   const activeInstances = instances?.filter((i: any) => i.status === 'active') || [];
+  const inactiveInstances = instances?.filter((i: any) => i.status === 'inactive') || [];
+  const canAddMore = usage ? usage.remaining > 0 : true;
 
   if (!merchant) {
     return (
@@ -89,27 +149,61 @@ export default function WhatsAppInstancesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">{t('whatsappManagement.title', 'إدارة أرقام الواتساب')}</h1>
           <p className="text-muted-foreground mt-1">
-            {t('whatsappManagement.subtitle', 'أضف أرقام واتساب جديدة وتابع حالة طلباتك')}
+            {t('whatsappManagement.subtitle', 'أضف أرقام واتساب جديدة وتحكّم في أرقامك النشطة')}
           </p>
         </div>
         <Button
           onClick={() => setShowRequestDialog(true)}
-          disabled={hasPendingRequest}
+          disabled={hasPendingRequest || !canAddMore}
+          className="shrink-0"
         >
           <Plus className="w-4 h-4 ml-2" />
           {t('whatsappManagement.addNumber', 'طلب ربط رقم جديد')}
         </Button>
       </div>
 
-      {/* Active Numbers Summary */}
+      {/* Plan Usage Bar */}
+      {usage && (
+        <Card className="border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-primary" />
+                <span className="font-semibold">{t('whatsappManagement.planUsage', 'استخدام الباقة')}</span>
+                {usage.planName && (
+                  <Badge variant="outline" className="text-xs">{usage.planName}</Badge>
+                )}
+              </div>
+              <span className="text-sm font-medium">
+                {usage.current} / {usage.max} {t('whatsappManagement.numbersActive', 'أرقام نشطة')}
+              </span>
+            </div>
+            <Progress value={usage.percentage} className="h-2" />
+            <div className="flex justify-between mt-2 text-xs text-muted-foreground">
+              <span>{t('whatsappManagement.remaining', 'متبقي')}: {usage.remaining} {t('whatsappManagement.numbers', 'أرقام')}</span>
+              {usage.percentage >= 100 && (
+                <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => window.location.href = '/merchant/my-subscription'}>
+                  <ArrowUpRight className="w-3 h-3 ml-1" />
+                  {t('whatsappManagement.upgradePlan', 'ترقية الباقة')}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{t('whatsappManagement.stats.activeNumbers', 'الأرقام المفعّلة')}</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Power className="w-4 h-4 text-green-500" />
+              {t('whatsappManagement.stats.activeNumbers', 'أرقام نشطة')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{activeInstances.length}</div>
@@ -118,54 +212,85 @@ export default function WhatsAppInstancesPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{t('whatsappManagement.stats.pendingRequests', 'طلبات قيد المراجعة')}</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <PowerOff className="w-4 h-4 text-gray-400" />
+              {t('whatsappManagement.stats.inactiveNumbers', 'أرقام متوقفة')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-500">{requests?.filter((r: any) => r.status === 'pending').length || 0}</div>
+            <div className="text-2xl font-bold text-gray-500">{inactiveInstances.length}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{t('whatsappManagement.stats.totalRequests', 'إجمالي الطلبات')}</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Clock className="w-4 h-4 text-orange-500" />
+              {t('whatsappManagement.stats.pendingRequests', 'طلبات قيد المراجعة')}
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{requests?.length || 0}</div>
+            <div className="text-2xl font-bold text-orange-500">{requests?.filter((r: any) => r.status === 'pending').length || 0}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Active Connected Numbers */}
+      {/* Active Numbers */}
       {activeInstances.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Smartphone className="w-5 h-5 text-green-600" />
-              {t('whatsappManagement.connectedNumbers', 'الأرقام المتصلة')}
+              {t('whatsappManagement.connectedNumbers', 'الأرقام النشطة')}
             </CardTitle>
-            <CardDescription>{t('whatsappManagement.connectedDesc', 'أرقام الواتساب النشطة والمتصلة بحسابك')}</CardDescription>
+            <CardDescription>{t('whatsappManagement.connectedDesc', 'أرقام الواتساب المتصلة والنشطة حالياً')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {activeInstances.map((instance: any) => (
-                <div key={instance.id} className={`flex items-center justify-between p-4 rounded-lg border ${instance.isPrimary ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                <div key={instance.id} className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${instance.isPrimary ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent/50'}`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <Phone className="w-5 h-5 text-green-600" />
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${instance.isPrimary ? 'bg-primary/10' : 'bg-green-100'}`}>
+                      <Phone className={`w-5 h-5 ${instance.isPrimary ? 'text-primary' : 'text-green-600'}`} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">{instance.phoneNumber || t('whatsappManagement.noPhone', 'رقم غير محدد')}</span>
+                        <span className="font-semibold" dir="ltr">{instance.phoneNumber || t('whatsappManagement.noPhone', 'رقم غير محدد')}</span>
                         {instance.isPrimary && (
-                          <Badge variant="outline" className="text-xs">{t('whatsappManagement.primary', 'الرقم الأساسي')}</Badge>
+                          <Badge className="bg-primary/10 text-primary border-primary/20 gap-1 text-xs">
+                            <Crown className="w-3 h-3" />
+                            {t('whatsappManagement.primary', 'الرقم الأساسي')}
+                          </Badge>
                         )}
+                        <Badge className="bg-green-500 text-xs">{t('whatsappManagement.status.active', 'نشط')}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {t('whatsappManagement.connectedSince', 'متصل منذ')}: {instance.connectedAt ? new Date(instance.connectedAt).toLocaleDateString('ar-SA') : new Date(instance.createdAt).toLocaleDateString('ar-SA')}
+                        {t('whatsappManagement.connectedSince', 'متصل منذ')} {(instance.connectedAt || instance.createdAt) ? new Date(instance.connectedAt || instance.createdAt).toLocaleDateString('ar-SA') : '-'}
                       </p>
                     </div>
                   </div>
-                  <Badge className="bg-green-500">{t('whatsappManagement.status.active', 'نشط')}</Badge>
+                  <div className="flex gap-2">
+                    {!instance.isPrimary && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setConfirmAction({ type: 'setPrimary', instanceId: instance.id, phoneNumber: instance.phoneNumber })}
+                        className="gap-1"
+                      >
+                        <Star className="w-4 h-4" />
+                        {t('whatsappManagement.setAsPrimary', 'تعيين كأساسي')}
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setConfirmAction({ type: 'deactivate', instanceId: instance.id, phoneNumber: instance.phoneNumber })}
+                      className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    >
+                      <PowerOff className="w-4 h-4" />
+                      {t('whatsappManagement.deactivate', 'إيقاف')}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -173,32 +298,77 @@ export default function WhatsAppInstancesPage() {
         </Card>
       )}
 
-      {/* Requests History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('whatsappManagement.requestsHistory', 'سجل الطلبات')}</CardTitle>
-          <CardDescription>{t('whatsappManagement.requestsHistoryDesc', 'جميع طلبات ربط أرقام الواتساب الخاصة بك')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      {/* Inactive Numbers */}
+      {inactiveInstances.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-muted-foreground">
+              <PowerOff className="w-5 h-5" />
+              {t('whatsappManagement.inactiveNumbers', 'الأرقام المتوقفة')}
+            </CardTitle>
+            <CardDescription>{t('whatsappManagement.inactiveDesc', 'يمكنك إعادة تفعيل هذه الأرقام حسب حدود باقتك')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {inactiveInstances.map((instance: any) => (
+                <div key={instance.id} className="flex items-center justify-between p-4 rounded-lg border border-dashed border-gray-300 bg-gray-50/50 dark:bg-gray-900/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                      <Phone className="w-5 h-5 text-gray-400" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-muted-foreground" dir="ltr">{instance.phoneNumber || t('whatsappManagement.noPhone', 'رقم غير محدد')}</span>
+                        <Badge variant="secondary" className="text-xs">{t('whatsappManagement.status.inactive', 'متوقف')}</Badge>
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirmAction({ type: 'activate', instanceId: instance.id, phoneNumber: instance.phoneNumber })}
+                    disabled={!canAddMore}
+                    className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <Power className="w-4 h-4" />
+                    {t('whatsappManagement.activate', 'تفعيل')}
+                  </Button>
+                </div>
+              ))}
             </div>
-          ) : !requests || requests.length === 0 ? (
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Empty State */}
+      {(!instances || instances.length === 0) && (!requests || requests.length === 0) && !instancesLoading && !requestsLoading && (
+        <Card>
+          <CardContent className="pt-6">
             <div className="text-center py-12 space-y-4">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-                <Smartphone className="w-8 h-8 text-muted-foreground" />
+              <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Smartphone className="w-10 h-10 text-primary" />
               </div>
               <div>
-                <p className="font-medium">{t('whatsappManagement.noRequests', 'لا توجد طلبات بعد')}</p>
-                <p className="text-sm text-muted-foreground">{t('whatsappManagement.noRequestsDesc', 'قدّم طلب ربط رقم واتساب جديد للبدء')}</p>
+                <h3 className="font-semibold text-lg">{t('whatsappManagement.emptyTitle', 'لم تربط أي رقم واتساب بعد')}</h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto mt-2">{t('whatsappManagement.emptyDesc', 'قدّم طلب ربط رقم واتساب جديد وسيقوم فريق الدعم بتفعيله خلال 24 ساعة')}</p>
               </div>
-              <Button onClick={() => setShowRequestDialog(true)}>
-                <Plus className="w-4 h-4 ml-2" />
+              <Button onClick={() => setShowRequestDialog(true)} size="lg" className="gap-2">
+                <Plus className="w-5 h-5" />
                 {t('whatsappManagement.addNumber', 'طلب ربط رقم جديد')}
               </Button>
             </div>
-          ) : (
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Requests History */}
+      {requests && requests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('whatsappManagement.requestsHistory', 'سجل الطلبات')}</CardTitle>
+            <CardDescription>{t('whatsappManagement.requestsHistoryDesc', 'جميع طلبات ربط أرقام الواتساب الخاصة بك')}</CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-3">
               {requests.map((request: any) => (
                 <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border">
@@ -214,21 +384,16 @@ export default function WhatsAppInstancesPage() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{request.phoneNumber || t('whatsappManagement.newNumberRequest', 'طلب رقم جديد')}</span>
-                        {getStatusBadge(request.status)}
+                        <span className="font-medium" dir="ltr">{request.phoneNumber || t('whatsappManagement.newNumberRequest', 'طلب رقم جديد')}</span>
+                        {getRequestStatusBadge(request.status)}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {new Date(request.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}
                       </p>
                       {request.rejectionReason && (
-                        <p className="text-sm text-red-600 mt-1">
-                          <AlertCircle className="w-3 h-3 inline ml-1" />
+                        <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
                           {t('whatsappManagement.rejectionReason', 'سبب الرفض')}: {request.rejectionReason}
-                        </p>
-                      )}
-                      {request.adminNotes && request.status === 'approved' && (
-                        <p className="text-sm text-blue-600 mt-1">
-                          {t('whatsappManagement.adminNotes', 'ملاحظات الإدارة')}: {request.adminNotes}
                         </p>
                       )}
                     </div>
@@ -236,11 +401,11 @@ export default function WhatsAppInstancesPage() {
                 </div>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Request Dialog — CLEAN: No Instance ID, API Token, or Green API details */}
+      {/* Request Dialog */}
       <Dialog open={showRequestDialog} onOpenChange={setShowRequestDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -285,13 +450,18 @@ export default function WhatsAppInstancesPage() {
               />
             </div>
 
-            {/* Info box */}
-            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p className="text-sm text-blue-700 dark:text-blue-300 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                {t('whatsappManagement.dialog.info', 'بعد إرسال الطلب، سيقوم فريق الدعم بمراجعته وتفعيل الرقم. ستتلقى إشعاراً عند التفعيل.')}
-              </p>
-            </div>
+            {/* Plan limit notice */}
+            {usage && (
+              <div className={`rounded-lg p-3 border ${usage.remaining > 0 ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800'}`}>
+                <p className={`text-sm flex items-start gap-2 ${usage.remaining > 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>
+                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  {usage.remaining > 0
+                    ? t('whatsappManagement.dialog.info', `يمكنك إضافة ${usage.remaining} رقم إضافي حسب باقتك الحالية (${usage.planName}).`)
+                    : t('whatsappManagement.dialog.limitReached', 'وصلت للحد الأقصى من الأرقام. أوقف رقماً أو قم بترقية باقتك.')
+                  }
+                </p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -300,7 +470,7 @@ export default function WhatsAppInstancesPage() {
             </Button>
             <Button
               onClick={handleSubmitRequest}
-              disabled={createRequestMutation.isPending}
+              disabled={createRequestMutation.isPending || !canAddMore}
             >
               {createRequestMutation.isPending ? (
                 <>
@@ -317,6 +487,37 @@ export default function WhatsAppInstancesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm Action Dialog */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === 'deactivate' && t('whatsappManagement.confirm.deactivateTitle', 'إيقاف الرقم')}
+              {confirmAction?.type === 'activate' && t('whatsappManagement.confirm.activateTitle', 'تفعيل الرقم')}
+              {confirmAction?.type === 'setPrimary' && t('whatsappManagement.confirm.setPrimaryTitle', 'تعيين كرقم أساسي')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === 'deactivate' && t('whatsappManagement.confirm.deactivateDesc', `هل تريد إيقاف الرقم ${confirmAction?.phoneNumber || ''}؟ سيتوقف استقبال الرسائل على هذا الرقم.`)}
+              {confirmAction?.type === 'activate' && t('whatsappManagement.confirm.activateDesc', `هل تريد إعادة تفعيل الرقم ${confirmAction?.phoneNumber || ''}؟`)}
+              {confirmAction?.type === 'setPrimary' && t('whatsappManagement.confirm.setPrimaryDesc', `هل تريد تعيين ${confirmAction?.phoneNumber || ''} كرقم أساسي؟ سيتم إرسال الرسائل الافتراضية من هذا الرقم.`)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'إلغاء')}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              className={confirmAction?.type === 'deactivate' ? 'bg-orange-600 hover:bg-orange-700' : ''}
+            >
+              {(toggleStatusMutation.isPending || setPrimaryMutation.isPending) ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                t('common.confirm', 'تأكيد')
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
