@@ -7,6 +7,7 @@ import { Plus, Code, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function SeoTracking() {
   const { t } = useTranslation();

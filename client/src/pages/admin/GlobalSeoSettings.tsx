@@ -36,33 +36,29 @@ interface GlobalSeoSettings {
 }
 
 const defaultSettings: GlobalSeoSettings = {
-  siteName: "Sari - AI Sales Agent",
-  siteDescription: "AI-powered WhatsApp sales agent for businesses",
-  siteUrl: "https://sari.app",
-  siteKeywords: "AI, WhatsApp, Sales, Chatbot, Business",
+  siteName: "ساري | Sari - وكيل المبيعات الذكي",
+  siteDescription: "وكيل مبيعات ذكي يعمل على واتساب بالذكاء الاصطناعي للمتاجر الإلكترونية في السعودية",
+  siteUrl: "https://sary.live",
+  siteKeywords: "وكيل مبيعات واتساب, ذكاء اصطناعي, بوت واتساب, سلة, زد, AI Sales Agent, WhatsApp",
   siteAuthor: "Sari Team",
-  siteImage: "https://sari.app/og-image.png",
+  siteImage: "https://sary.live/og-image.png",
   googleAnalyticsId: "",
   googleTagManagerId: "",
   facebookPixelId: "",
-  twitterHandle: "@sariapp",
-  linkedinUrl: "https://linkedin.com/company/sari",
-  instagramHandle: "@sariapp",
-  contactEmail: "support@sari.app",
+  twitterHandle: "@saborni_tech",
+  linkedinUrl: "",
+  instagramHandle: "@saborni_tech",
+  contactEmail: "support@sary.live",
   contactPhone: "+966501234567",
-  businessAddress: "123 Business Street",
+  businessAddress: "",
   businessCity: "Riyadh",
   businessCountry: "Saudi Arabia",
-  businessZipCode: "12345",
-  robotsTxt: `User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /api
-Sitemap: https://sari.app/sitemap.xml`,
-  sitemapUrl: "https://sari.app/sitemap.xml",
-  canonicalUrl: "https://sari.app",
-  preferredLanguage: "en",
-  alternateLanguages: "ar,fr",
+  businessZipCode: "",
+  robotsTxt: `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api\nDisallow: /merchant\nSitemap: https://sary.live/sitemap.xml`,
+  sitemapUrl: "https://sary.live/sitemap.xml",
+  canonicalUrl: "https://sary.live",
+  preferredLanguage: "ar",
+  alternateLanguages: "en",
 };
 
 export default function GlobalSeoSettings() {

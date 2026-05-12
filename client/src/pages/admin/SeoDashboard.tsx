@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+﻿import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { toast } from "sonner";
 
 export default function SeoDashboard() {
