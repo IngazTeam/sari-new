@@ -11,6 +11,7 @@ import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Up
 import { Input } from '@/components/ui/input';
 import { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
+import { useIntegration, IntegrationLockBanner } from '@/hooks/useIntegration';
 
 const ACTION_ICONS: Record<string, string> = {
   document_deleted: '🗑️', products_deleted: '🗑️', website_deleted: '🗑️',
@@ -170,8 +171,13 @@ export default function SariBrain() {
 
   const totalSources = sources?.filter(s => s.hasContent && s.type !== 'settings').length || 0;
 
+  // Integration awareness
+  const { term } = useIntegration();
+
   return (
     <div className="space-y-6">
+      {/* Integration Lock Banner */}
+      <IntegrationLockBanner />
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -239,12 +245,12 @@ export default function SariBrain() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">المنتجات</CardTitle>
+            <CardTitle className="text-sm font-medium">{term('products')}</CardTitle>
             <Package className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{sources?.find(s => s.type === 'products')?.contentLength || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">منتج في ذاكرة ساري</p>
+            <p className="text-xs text-muted-foreground mt-1">{term('item')} في ذاكرة ساري</p>
           </CardContent>
         </Card>
       </div>
@@ -257,7 +263,7 @@ export default function SariBrain() {
         </Button>
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/products')}>
           <Package className="h-4 w-4 ml-2" />
-          إدارة المنتجات
+          إدارة {term('products')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/website-analysis')}>
           <Globe className="h-4 w-4 ml-2" />
@@ -348,7 +354,7 @@ export default function SariBrain() {
                         </Badge>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {source.type === 'products' ? `${source.contentLength} منتج` : source.type === 'document' ? `${Math.round((source.contentLength || 0) / 1000)}K حرف` : ''}
+                        {source.type === 'products' ? `${source.contentLength} ${term('item')}` : source.type === 'document' ? `${Math.round((source.contentLength || 0) / 1000)}K حرف` : ''}
                         {source.date && ` • ${new Date(source.date).toLocaleDateString('ar-SA')}`}
                       </p>
                     </div>

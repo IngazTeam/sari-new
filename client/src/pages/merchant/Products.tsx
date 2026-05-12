@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { ProductsSkeleton } from '@/components/ProductsSkeleton';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useIntegration, IntegrationLockBanner } from '@/hooks/useIntegration';
 
 export default function Products() {
   const { t } = useTranslation();
@@ -37,6 +38,9 @@ export default function Products() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
+
+  // Integration awareness — lock editing when managed by Byaan
+  const { isLocked, term } = useIntegration();
 
   // Filter and paginate products
   const filteredProducts = (products || []).filter((p: any) =>
@@ -253,6 +257,8 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
+      {/* Integration Lock Banner */}
+      <IntegrationLockBanner />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -262,14 +268,14 @@ export default function Products() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setLocation('/merchant/products/upload')}>
+          <Button onClick={() => setLocation('/merchant/products/upload')} disabled={isLocked}>
             <Upload className="h-4 w-4 ml-2" />
             {t('productsPage.uploadCSV')}
           </Button>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={isLocked}>
                 <Plus className="h-4 w-4 ml-2" />
                 {t('productsPage.addProduct')}
               </Button>
@@ -464,7 +470,7 @@ export default function Products() {
             <div className="relative w-64">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="بحث في المنتجات..."
+                placeholder={`بحث في ${term('products')}...`}
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="pr-9"
@@ -545,6 +551,7 @@ export default function Products() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEdit(product)}
+                            disabled={isLocked}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -552,7 +559,7 @@ export default function Products() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(product.id, product.name)}
-                            disabled={deleteMutation.isPending}
+                            disabled={deleteMutation.isPending || isLocked}
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>

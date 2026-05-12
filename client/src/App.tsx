@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
+import { IntegrationProvider } from "./hooks/useIntegration";
 import { lazy, Suspense } from "react";
 
 // Essential pages - loaded immediately (fast initial load)
@@ -1059,8 +1060,10 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable={true}>
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <IntegrationProvider>
+            <Toaster />
+            <Router />
+          </IntegrationProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

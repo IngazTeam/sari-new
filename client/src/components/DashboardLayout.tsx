@@ -96,6 +96,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { SubscriptionBadge } from "./SubscriptionBadge";
 import { useTranslation } from 'react-i18next';
+import { useIntegration } from '@/hooks/useIntegration';
 
 // Menu item type with optional group
 type MenuItem = {
@@ -300,10 +301,23 @@ function DashboardLayoutContent({
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const menuItems = isAdmin ? getAdminMenuItems(t) : getMerchantMenuItems(t);
   const menuGroups = getMerchantMenuGroups(t);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+
+  // Apply integration terminology to sidebar labels (e.g., منتجات → دورات when Byaan)
+  const { term, isLocked, source: integrationSource } = useIntegration();
+  const adaptedMenuItems = useMemo(() => {
+    if (isAdmin || integrationSource === 'none') return menuItems;
+    return menuItems.map(item => {
+      if (item.path === '/merchant/products') return { ...item, label: term('products') };
+      if (item.path === '/merchant/customers') return { ...item, label: term('customers') };
+      if (item.path === '/merchant/orders') return { ...item, label: term('orders') };
+      return item;
+    });
+  }, [menuItems, isAdmin, integrationSource, term]);
+
+  const activeMenuItem = adaptedMenuItems.find(item => item.path === location);
 
   // Group menu items by group
-  const groupedMenuItems = menuItems.reduce((acc, item) => {
+  const groupedMenuItems = adaptedMenuItems.reduce((acc, item) => {
     const group = item.group || 'other';
     if (!acc[group]) acc[group] = [];
     acc[group].push(item);
