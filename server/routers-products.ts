@@ -10,6 +10,26 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
+// SEC-01: Sanitize GPT output to prevent stored XSS and prompt injection chains
+function sanitizeGptOutput(text: string): string {
+    if (!text || typeof text !== 'string') return '';
+    return text
+        // Strip HTML tags
+        .replace(/<[^>]*>/g, '')
+        // Strip script-like patterns
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '')
+        // Strip prompt injection attempts (GPT could echo user-injected content)
+        .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+        .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+        .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+        .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+        .trim();
+}
+
+// SEC-04: In-memory rate limit for smart import (per merchant)
+const smartImportRateLimit: Record<string, { count: number; resetAt: number }> = {};
+
 // Header mapping: comprehensive support for Arabic/English column headers
 // Covers: products, courses, services, real-estate, food, general exports
 const HEADER_MAP: Record<string, string> = {
@@ -952,6 +972,19 @@ export const productsRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+            // SEC-04: Rate limit — max 10 smart imports per hour per merchant
+            // (Using a simple in-memory counter; production should use Redis)
+            const now = Date.now();
+            const rateKey = `smartImport_${merchant.id}`;
+            if (!smartImportRateLimit[rateKey]) smartImportRateLimit[rateKey] = { count: 0, resetAt: now + 3600000 };
+            if (now > smartImportRateLimit[rateKey].resetAt) {
+                smartImportRateLimit[rateKey] = { count: 0, resetAt: now + 3600000 };
+            }
+            if (smartImportRateLimit[rateKey].count >= 10) {
+                throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تجاوزت الحد الأقصى للاستيراد الذكي (10 مرات/ساعة). حاول لاحقاً.' });
+            }
+            smartImportRateLimit[rateKey].count++;
+
             // Step 1: Parse file content to raw text
             const ExcelJS = (await import('exceljs')).default;
             const workbook = new ExcelJS.Workbook();
@@ -1089,12 +1122,21 @@ ${typeHint}
                     if (item.additionalInfo) descParts.push(item.additionalInfo);
                     const fullDescription = descParts.join(' | ');
 
+                    // SEC-01: Sanitize GPT output to prevent stored XSS
+                    const safeName = sanitizeGptOutput(item.name || 'بدون اسم').substring(0, 255);
+                    const safeCategory = item.category ? sanitizeGptOutput(item.category).substring(0, 100) : null;
+
+                    // SEC-02: Validate price is a safe number
+                    let safePrice = parseFloat(item.price) || 0;
+                    if (!isFinite(safePrice) || safePrice < 0) safePrice = 0;
+                    safePrice = Math.round(Math.min(safePrice, 99999999)); // Max ~1M SAR
+
                     await db.createProduct({
                         merchantId: merchant.id,
-                        name: item.name || 'بدون اسم',
-                        description: fullDescription || null,
-                        price: Math.round(parseFloat(item.price) || 0),
-                        category: item.category || null,
+                        name: safeName,
+                        description: fullDescription.substring(0, 5000) || null,
+                        price: safePrice,
+                        category: safeCategory,
                         productType: productType as any,
                     });
                     successCount++;
@@ -1112,22 +1154,26 @@ ${typeHint}
             }
 
             // Step 5: Save AI knowledge for bot
+            // SEC-05: Sanitize knowledge text to prevent prompt injection chains
             try {
+                const safeBusinessSummary = sanitizeGptOutput(parsed.businessSummary || '');
+                const safeSellingTips = sanitizeGptOutput(parsed.sellingTips || '');
+                const safeCrossSell = sanitizeGptOutput(parsed.crossSellSuggestions || '');
                 const knowledgeText = [
                     `=== تحليل ذكي: ${input.fileName} ===`,
                     `نوع النشاط: ${parsed.businessType === 'services' ? 'خدمات/دورات' : 'منتجات'}`,
-                    `الملخص: ${parsed.businessSummary || ''}`,
+                    `الملخص: ${safeBusinessSummary}`,
                     '',
                     `=== العناصر (${items.length}) ===`,
                     ...items.map((item: any, i: number) =>
-                        `${i + 1}. ${item.name} — ${item.price || 0} ر.س${item.description ? ' — ' + item.description : ''}`
+                        `${i + 1}. ${sanitizeGptOutput(item.name)} — ${item.price || 0} ر.س${item.description ? ' — ' + sanitizeGptOutput(item.description).substring(0, 200) : ''}`
                     ),
                     '',
                     `=== نصائح البيع ===`,
-                    parsed.sellingTips || '',
+                    safeSellingTips,
                     '',
                     `=== البيع المتقاطع ===`,
-                    parsed.crossSellSuggestions || '',
+                    safeCrossSell,
                 ].join('\n');
 
                 const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
@@ -1208,12 +1254,12 @@ ${typeHint}
                 imported: successCount,
                 failed: errorCount,
                 total: items.length,
-                businessType: parsed.businessType,
-                businessSummary: parsed.businessSummary,
+                businessType: parsed.businessType === 'services' ? 'services' : 'products',
+                businessSummary: sanitizeGptOutput(parsed.businessSummary || '').substring(0, 500),
                 preview,
                 sheetCreated,
                 spreadsheetUrl,
-                sellingTips: parsed.sellingTips,
+                sellingTips: sanitizeGptOutput(parsed.sellingTips || '').substring(0, 500),
                 message: `تم تحليل الملف بالذكاء الاصطناعي واستيراد ${successCount} ${isService ? 'خدمة' : 'منتج'} بنجاح`,
             };
         }),
