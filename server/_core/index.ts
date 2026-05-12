@@ -147,9 +147,11 @@ async function startServer() {
 
   // REST API v1 — External service integration (API key auth)
   try {
-    const { sariApiRouter } = await import('../api/rest');
+    const { sariApiRouter, sariPlatformRouter } = await import('../api/rest');
     app.use("/api/v1", sariApiRouter);
+    app.use("/api/v1/platform", sariPlatformRouter);
     console.log('[Core] ✅ REST API v1 mounted at /api/v1');
+    console.log('[Core] ✅ Platform API mounted at /api/v1/platform');
   } catch (e) {
     console.warn('[Core] REST API v1 failed to mount:', e);
   }

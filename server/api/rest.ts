@@ -27,6 +27,11 @@ interface AuthenticatedRequest extends Request {
   apiKeyId?: number;
 }
 
+interface PlatformRequest extends Request {
+  platform?: string;
+  tenantDomain?: string;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // API Key Management (DB-backed)
 // ═══════════════════════════════════════════════════════════════
@@ -191,6 +196,56 @@ setInterval(() => {
 }, 300_000);
 
 // ═══════════════════════════════════════════════════════════════
+// Platform Key Validation (M2M — Byaan ↔ Sari)
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Platform keys are static secrets shared between Sari and partner platforms.
+ * Format: sari_platform_{platformName}_{secret}
+ * Stored in env: BYAAN_PLATFORM_KEY=sari_platform_byaan_xxxxxxxx
+ */
+const PLATFORM_KEYS: Record<string, string> = {};
+
+// Load platform keys from env
+if (process.env.BYAAN_PLATFORM_KEY) {
+  PLATFORM_KEYS['byaan'] = process.env.BYAAN_PLATFORM_KEY;
+}
+
+function validatePlatformKey(key: string): { platform: string } | null {
+  for (const [platform, secret] of Object.entries(PLATFORM_KEYS)) {
+    if (key === secret) return { platform };
+  }
+  return null;
+}
+
+/** Platform auth middleware — validates X-Platform-Key header */
+function platformAuthMiddleware(req: PlatformRequest, res: Response, next: NextFunction) {
+  const platformKey = req.headers['x-platform-key'] as string;
+  if (!platformKey) {
+    return res.status(401).json({
+      error: 'Platform key required',
+      errorAr: 'مفتاح المنصة مطلوب',
+      hint: 'Add header: X-Platform-Key: sari_platform_byaan_xxxxx',
+    });
+  }
+
+  // Rate limit by platform key prefix
+  const keyPrefix = platformKey.substring(0, 20);
+  if (!checkApiRateLimit(`platform_${keyPrefix}`, 30, 60_000)) {
+    return res.status(429).json({ error: 'Platform rate limit exceeded', errorAr: 'تجاوزت حد طلبات المنصة' });
+  }
+
+  const result = validatePlatformKey(platformKey);
+  if (!result) {
+    return res.status(401).json({ error: 'Invalid platform key', errorAr: 'مفتاح المنصة غير صالح' });
+  }
+
+  req.platform = result.platform;
+  req.tenantDomain = req.body?.tenantDomain || req.headers['x-tenant-domain'] as string;
+  next();
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Middleware
 // ═══════════════════════════════════════════════════════════════
 
@@ -234,9 +289,13 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
 // ═══════════════════════════════════════════════════════════════
 
 export const sariApiRouter = express.Router();
+export const sariPlatformRouter = express.Router();
 
-// Apply auth to all routes
+// Apply auth to merchant routes
 sariApiRouter.use(authMiddleware);
+
+// Apply platform auth to platform routes
+sariPlatformRouter.use(platformAuthMiddleware);
 
 // ── GET /api/v1/me — Merchant info ──────────────────────────
 sariApiRouter.get('/me', (req: AuthenticatedRequest, res: Response) => {
@@ -512,18 +571,20 @@ sariApiRouter.get('/stats', async (req: AuthenticatedRequest, res: Response) => 
 });
 
 // ════════════════════════════════════════════════════════════════
-// Byaan Integration Endpoints
+// Byaan Integration — Platform-Authenticated Endpoints
+// (Uses X-Platform-Key, NOT merchant API key)
 // ════════════════════════════════════════════════════════════════
 
-// ── POST /api/v1/auth/provision — Auto-create merchant account ──
-sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Response) => {
+// ── POST /api/v1/platform/provision — Auto-create merchant account ──
+sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response) => {
   // PEN-BYAAN-01: Separate rate limit for provision
-  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
   if (!checkProvisionLimit(keyPrefix)) {
     return res.status(429).json({ error: 'Provision rate limit exceeded (5/hour)', errorAr: 'تجاوزت حد إنشاء الحسابات (5/ساعة)' });
   }
 
-  const { name, email, password, businessName, phone, industry, source } = req.body;
+  const { name, email, password, businessName, phone, tenantDomain } = req.body;
+  const source = req.platform || 'external';
 
   if (!email || !password || !businessName) {
     return res.status(400).json({
@@ -541,6 +602,11 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
     return res.status(400).json({ error: 'Password must be at least 6 characters', errorAr: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
   }
 
+  // Validate tenantDomain if provided
+  if (tenantDomain && !isValidDomain(stripHtml(String(tenantDomain)))) {
+    return res.status(400).json({ error: 'Invalid tenantDomain format', errorAr: 'تنسيق نطاق التيننت غير صالح' });
+  }
+
   try {
     const dbConn = await db.getDb();
     if (!dbConn) throw new Error('DB unavailable');
@@ -552,8 +618,7 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
     );
 
     if ((existingUsers as any[])?.length > 0) {
-      // PEN-BYAAN-02: Do NOT generate API key for existing accounts without password verification
-      // PEN-R2-05: Uniform response to prevent email enumeration
+      // PEN-BYAAN-02 + PEN-R2-05: Uniform response
       return res.json({
         success: true,
         created: true,
@@ -576,21 +641,33 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
 
     const userId = (userResult as any).insertId;
 
-    // Create merchant
+    // Create merchant with platform source
     const [merchantResult] = await (dbConn as any).execute(
-      `INSERT INTO merchants (user_id, business_name, phone, status, integration_source, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, NOW(), NOW())`,
-      [userId, String(businessName).substring(0, 255), phone || null, source || 'none']
+      `INSERT INTO merchants (user_id, business_name, phone, status, integration_source, platform_type, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())`,
+      [userId, String(businessName).substring(0, 255), phone || null, source, source === 'byaan' ? 'byaan' : 'none']
     );
 
     const merchantId = (merchantResult as any).insertId;
 
     // Generate API key
-    const apiKeyResult = await generateApiKey(merchantId, `${source || 'external'} auto-key`);
+    const apiKeyResult = await generateApiKey(merchantId, `${source} auto-key`);
+
+    // Auto-connect if Byaan with tenantDomain
+    if (source === 'byaan' && tenantDomain) {
+      try {
+        const cleanDomain = stripHtml(String(tenantDomain));
+        const { createByaanConnection } = await import('../integrations/byaan');
+        await createByaanConnection(merchantId, cleanDomain, {});
+        console.log(`[SariAPI] Byaan auto-connected: merchant=${merchantId}, tenant=${cleanDomain}`);
+      } catch (e) {
+        console.error('[SariAPI] Byaan auto-connect failed (non-blocking):', e);
+      }
+    }
 
     // Log activity
     try {
       const { logBrainActivity } = await import('../routers-sari-brain');
-      await logBrainActivity(merchantId, 'settings_changed', `حساب جديد عبر API — المصدر: ${source || 'external'}`, { source, email });
+      await logBrainActivity(merchantId, 'settings_changed', `حساب جديد عبر ${source} — ${email}`, { source, email, tenantDomain });
     } catch (e) { /* skip */ }
 
     res.json({
@@ -600,13 +677,62 @@ sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Res
       email: String(email).toLowerCase().trim(),
       loginUrl: 'https://sari.app/login',
       apiKey: apiKeyResult.key,
+      platform: source,
     });
   } catch (e: any) {
     console.error('[SariAPI] Provision failed:', e);
-    // PEN-BYAAN-12: Don't leak error details
     res.status(500).json({ error: 'Provision failed', errorAr: 'فشل إنشاء الحساب' });
   }
 });
+
+// ── POST /api/v1/platform/verify — Verify tenant connection ──
+sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) => {
+  const { tenantDomain, email } = req.body;
+  if (!tenantDomain && !email) {
+    return res.status(400).json({ error: 'tenantDomain or email required', errorAr: 'نطاق التيننت أو الإيميل مطلوب' });
+  }
+
+  try {
+    const dbConn = await db.getDb();
+    if (!dbConn) throw new Error('DB unavailable');
+
+    let merchant = null;
+
+    if (tenantDomain) {
+      const [rows] = await (dbConn as any).execute(
+        `SELECT m.id, m.business_name, m.status, m.integration_source FROM merchants m 
+         INNER JOIN byaan_connections bc ON bc.merchant_id = m.id 
+         WHERE bc.tenant_domain = ? AND bc.is_active = 1 LIMIT 1`,
+        [stripHtml(String(tenantDomain))]
+      );
+      merchant = (rows as any[])?.[0];
+    } else if (email) {
+      const [rows] = await (dbConn as any).execute(
+        `SELECT m.id, m.business_name, m.status, m.integration_source FROM merchants m 
+         INNER JOIN users u ON u.id = m.user_id 
+         WHERE u.email = ? AND m.integration_source = ? LIMIT 1`,
+        [String(email).toLowerCase().trim(), req.platform]
+      );
+      merchant = (rows as any[])?.[0];
+    }
+
+    res.json({
+      connected: !!merchant,
+      merchant: merchant ? {
+        id: merchant.id,
+        businessName: merchant.business_name,
+        status: merchant.status,
+      } : null,
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Verification failed', errorAr: 'فشل التحقق' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// Byaan Integration — Merchant-Authenticated Endpoints  
+// (Uses Bearer API key, scoped to merchant)
+// ════════════════════════════════════════════════════════════════
 
 // ── POST /api/v1/sync/trainees — Sync trainees from Byaan ───
 sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Response) => {
