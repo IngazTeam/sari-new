@@ -939,22 +939,283 @@ export const productsRouter = router({
             };
         }),
 
-    // Legacy: Upload Excel AND create a Google Sheet
-    // Now just redirects to uploadExcel which handles everything
-    uploadExcelAndCreateSheet: protectedProcedure
+    // ════════════════════════════════════════════════════════════════
+    // GPT Smart Import — AI analyzes ANY file and adds items correctly
+    // ════════════════════════════════════════════════════════════════
+    smartImport: protectedProcedure
         .input(z.object({
             fileBase64: z.string().max(15_000_000, 'الحد الأقصى لحجم الملف 10 ميجابايت'),
             fileName: z.string().max(255).transform(s => s.replace(/[<>:"/\\|?*]/g, '_')),
+            importType: z.enum(['auto', 'products', 'services']).default('auto'),
         }))
         .mutation(async ({ ctx, input }) => {
-            // This endpoint is deprecated — uploadExcel now handles everything
-            // Including: smart column detection, AI analysis, and auto Google Sheet creation
-            // Kept for API backward compatibility only
-            console.warn('[Products] uploadExcelAndCreateSheet called — this is deprecated, use uploadExcel');
-            throw new TRPCError({ 
-                code: 'BAD_REQUEST', 
-                message: 'هذا الإجراء تم تحديثه. يرجى تحديث الصفحة لاستخدام الإصدار الجديد.' 
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            // Step 1: Parse file content to raw text
+            const ExcelJS = (await import('exceljs')).default;
+            const workbook = new ExcelJS.Workbook();
+            const buffer = Buffer.from(input.fileBase64, 'base64');
+            await workbook.xlsx.load(buffer);
+
+            const worksheet = workbook.worksheets[0];
+            if (!worksheet) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على بيانات' });
+            }
+
+            // Build raw text from file for GPT
+            const rawLines: string[] = [];
+            let rowCount = 0;
+            worksheet.eachRow((row, rowNumber) => {
+                if (rowCount >= 200) return; // Limit for token budget
+                const cells: string[] = [];
+                row.eachCell((cell) => {
+                    const val = cell.value?.toString().trim();
+                    if (val) cells.push(val);
+                });
+                if (cells.length > 0) {
+                    rawLines.push(cells.join(' | '));
+                    rowCount++;
+                }
             });
+
+            if (rawLines.length < 2) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على بيانات كافية' });
+            }
+
+            const rawFileText = rawLines.join('\n').substring(0, 12000)
+                // SEC-01: Sanitize against prompt injection
+                .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+                .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+                .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+                .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+                .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+                .replace(/do\s+not\s+follow/gi, '[filtered]')
+                .replace(/override\s+(system|all|your)/gi, '[filtered]');
+
+            // Step 2: Send to GPT for structured analysis
+            const { invokeLLM } = await import('./_core/llm');
+
+            const typeHint = input.importType === 'products' ? 'هذا ملف منتجات (physical products).'
+                : input.importType === 'services' ? 'هذا ملف خدمات/دورات تدريبية.'
+                : 'حدد تلقائياً نوع الملف (منتجات أو خدمات).';
+
+            const aiResult = await invokeLLM({
+                merchantId: merchant.id,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `أنت محلل بيانات تجارية محترف. مهمتك تحليل ملف مرفوع من تاجر واستخراج البيانات بشكل منظم.
+
+${typeHint}
+
+أرجع JSON فقط بهذا الشكل بالضبط:
+{
+  "businessType": "products" أو "services",
+  "businessSummary": "وصف مختصر لنشاط التاجر",
+  "items": [
+    {
+      "name": "اسم العنصر (مطلوب)",
+      "description": "وصف مفصل يساعد البوت على البيع",
+      "price": 0,
+      "category": "التصنيف إن وُجد",
+      "duration": "المدة إن كانت خدمة/دورة",
+      "instructor": "المدرب إن وُجد",
+      "location": "الموقع إن وُجد",
+      "isAccredited": false,
+      "additionalInfo": "أي معلومات إضافية مفيدة للبوت"
+    }
+  ],
+  "crossSellSuggestions": "اقتراحات بيع متقاطع بين العناصر",
+  "sellingTips": "نصائح بيعية يستخدمها البوت"
+}
+
+قواعد مهمة:
+1. استخرج كل العناصر من الملف
+2. إذا كان السعر غير موجود، ضع 0
+3. الوصف يجب أن يكون مفيداً للبوت البيعي (اكتب مميزات وعبارات بيعية)
+4. إذا كان الملف يحتوي دورات/خدمات/ورش عمل → businessType = "services"
+5. إذا كان الملف يحتوي منتجات/بضائع → businessType = "products"
+6. أرجع JSON صالح فقط بدون أي نص إضافي`
+                    },
+                    {
+                        role: 'user',
+                        content: `حلل هذا الملف واستخرج البيانات:\n\nاسم الملف: ${input.fileName}\n\n${rawFileText}`
+                    }
+                ],
+                maxTokens: 4000,
+                responseFormat: { type: 'json_object' },
+            });
+
+            const aiContent = typeof aiResult.choices[0]?.message?.content === 'string'
+                ? aiResult.choices[0].message.content
+                : '';
+
+            if (!aiContent || aiContent.length < 10) {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل تحليل الملف بالذكاء الاصطناعي' });
+            }
+
+            // Step 3: Parse GPT response
+            let parsed: any;
+            try {
+                parsed = JSON.parse(aiContent);
+            } catch {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل في تحليل استجابة الذكاء الاصطناعي' });
+            }
+
+            if (!parsed.items || !Array.isArray(parsed.items) || parsed.items.length === 0) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم العثور على عناصر في الملف' });
+            }
+
+            // Limit to 500 items
+            const items = parsed.items.slice(0, 500);
+            const isService = parsed.businessType === 'services';
+            const productType = isService ? 'service' : 'physical';
+
+            // Step 4: Insert items into DB
+            let successCount = 0;
+            let errorCount = 0;
+            const preview: { name: string; price: number; description: string }[] = [];
+
+            for (const item of items) {
+                try {
+                    // Build rich description
+                    const descParts: string[] = [];
+                    if (item.description) descParts.push(item.description);
+                    if (item.duration) descParts.push(`المدة: ${item.duration}`);
+                    if (item.instructor) descParts.push(`المدرب: ${item.instructor}`);
+                    if (item.location) descParts.push(`الموقع: ${item.location}`);
+                    if (item.isAccredited) descParts.push('✅ معتمد');
+                    if (item.additionalInfo) descParts.push(item.additionalInfo);
+                    const fullDescription = descParts.join(' | ');
+
+                    await db.createProduct({
+                        merchantId: merchant.id,
+                        name: item.name || 'بدون اسم',
+                        description: fullDescription || null,
+                        price: Math.round(parseFloat(item.price) || 0),
+                        category: item.category || null,
+                        productType: productType as any,
+                    });
+                    successCount++;
+
+                    if (preview.length < 5) {
+                        preview.push({
+                            name: item.name,
+                            price: parseFloat(item.price) || 0,
+                            description: fullDescription.substring(0, 120),
+                        });
+                    }
+                } catch (err: any) {
+                    errorCount++;
+                }
+            }
+
+            // Step 5: Save AI knowledge for bot
+            try {
+                const knowledgeText = [
+                    `=== تحليل ذكي: ${input.fileName} ===`,
+                    `نوع النشاط: ${parsed.businessType === 'services' ? 'خدمات/دورات' : 'منتجات'}`,
+                    `الملخص: ${parsed.businessSummary || ''}`,
+                    '',
+                    `=== العناصر (${items.length}) ===`,
+                    ...items.map((item: any, i: number) =>
+                        `${i + 1}. ${item.name} — ${item.price || 0} ر.س${item.description ? ' — ' + item.description : ''}`
+                    ),
+                    '',
+                    `=== نصائح البيع ===`,
+                    parsed.sellingTips || '',
+                    '',
+                    `=== البيع المتقاطع ===`,
+                    parsed.crossSellSuggestions || '',
+                ].join('\n');
+
+                const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
+                if (existingDoc) {
+                    const combined = (existingDoc.extractedText || '') + '\n\n' + knowledgeText;
+                    await db.updateKnowledgeDoc(existingDoc.id, {
+                        extractedText: combined.substring(0, 100000),
+                    });
+                } else {
+                    await db.createKnowledgeDoc({
+                        merchantId: merchant.id,
+                        fileName: input.fileName,
+                        fileType: 'docx',
+                        fileSize: buffer.length,
+                        extractedText: knowledgeText,
+                        extractionStatus: 'completed',
+                    });
+                }
+                console.log(`[SmartImport] ✅ Knowledge saved: ${knowledgeText.length} chars`);
+            } catch (kErr) {
+                console.warn('[SmartImport] Knowledge save failed (non-blocking):', kErr);
+            }
+
+            // Step 6: Auto-upload to Google Sheet
+            let sheetCreated = false;
+            let spreadsheetUrl = '';
+            try {
+                const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+                if (integration && integration.isActive) {
+                    const sheets = await import('./_core/googleSheets');
+
+                    // Build sheet data
+                    const sheetHeaders = isService
+                        ? ['الاسم', 'الوصف', 'السعر', 'المدة', 'المدرب', 'الموقع', 'التصنيف']
+                        : ['الاسم', 'الوصف', 'السعر', 'الكمية', 'التصنيف', 'رابط الصورة'];
+
+                    const sheetRows: string[][] = [sheetHeaders];
+                    for (const item of items) {
+                        if (isService) {
+                            sheetRows.push([
+                                item.name || '', item.description || '', String(item.price || 0),
+                                item.duration || '', item.instructor || '', item.location || '', item.category || ''
+                            ]);
+                        } else {
+                            sheetRows.push([
+                                item.name || '', item.description || '', String(item.price || 0),
+                                '', item.category || '', ''
+                            ]);
+                        }
+                    }
+
+                    const sheetLabel = isService ? 'خدمات' : 'منتجات';
+                    const sheetName = `${sheetLabel} ${merchant.businessName || 'متجري'} - ساري`;
+
+                    if (integration.sheetId) {
+                        try {
+                            await sheets.writeToSheet(merchant.id, integration.sheetId, 'Sheet1!A1', sheetRows);
+                            spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${integration.sheetId}`;
+                            sheetCreated = true;
+                        } catch { /* fall through to create new */ }
+                    }
+
+                    if (!sheetCreated) {
+                        const createResult = await sheets.createSpreadsheet(merchant.id, sheetName);
+                        if (createResult.success && createResult.spreadsheetId) {
+                            await sheets.writeToSheet(merchant.id, createResult.spreadsheetId, 'Sheet1!A1', sheetRows);
+                            spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${createResult.spreadsheetId}`;
+                            sheetCreated = true;
+                        }
+                    }
+                }
+            } catch (sheetErr) {
+                console.error('[SmartImport] Google Sheet error (non-blocking):', sheetErr);
+            }
+
+            return {
+                success: true,
+                imported: successCount,
+                failed: errorCount,
+                total: items.length,
+                businessType: parsed.businessType,
+                businessSummary: parsed.businessSummary,
+                preview,
+                sheetCreated,
+                spreadsheetUrl,
+                sellingTips: parsed.sellingTips,
+                message: `تم تحليل الملف بالذكاء الاصطناعي واستيراد ${successCount} ${isService ? 'خدمة' : 'منتج'} بنجاح`,
+            };
         }),
 
     // Sync products from linked Google Sheet

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import {
   Upload, FileText, Download, ArrowRight, CheckCircle2, XCircle,
-  AlertCircle, FileSpreadsheet, Link2, RefreshCw, Clock, Table2, Plus
+  AlertCircle, FileSpreadsheet, Link2, RefreshCw, Clock, Table2, Plus, Sparkles, Brain
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,8 @@ export default function UploadProducts() {
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'file' | 'sheets' | 'template'>('file');
   const [createSheet, setCreateSheet] = useState(true);
+  const [importType, setImportType] = useState<'auto' | 'products' | 'services'>('auto');
+  const [smartResult, setSmartResult] = useState<any>(null);
 
   // Mutations
   const uploadCSV = trpc.products.uploadCSV.useMutation({
@@ -61,6 +63,27 @@ export default function UploadProducts() {
     },
   });
 
+  // GPT Smart Import
+  const smartImport = trpc.products.smartImport.useMutation({
+    onSuccess: (data) => {
+      setUploadResult(data);
+      setSmartResult(data);
+      toast.success(data.message || `تم استيراد ${data.imported} عنصر بنجاح`);
+      if (data.sheetCreated && data.spreadsheetUrl) {
+        toast.success('تم رفع البيانات على Google Sheet تلقائياً', {
+          action: {
+            label: 'فتح الشيت',
+            onClick: () => window.open(data.spreadsheetUrl, '_blank'),
+          },
+        });
+      }
+      resetFile();
+      sheetStatus.refetch();
+    },
+    onError: (error) => {
+      toast.error('فشل الاستيراد الذكي: ' + error.message);
+    },
+  });
 
   const syncSheets = trpc.products.syncFromGoogleSheets.useMutation({
     onSuccess: (data) => {
@@ -119,19 +142,31 @@ export default function UploadProducts() {
     }
   };
 
-  const downloadTemplate = (format: 'csv' | 'xlsx') => {
-    if (format === 'csv') {
-      const csvContent = '\uFEFFالاسم,الوصف,السعر,رابط الصورة,الكمية,التصنيف\nمنتج تجريبي,وصف المنتج هنا,99.99,https://example.com/image.jpg,10,إلكترونيات';
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'قالب_المنتجات.csv';
-      link.click();
-      URL.revokeObjectURL(link.href);
+  const handleSmartImport = async () => {
+    if (!selectedFile) {
+      toast.error(t('uploadProductsPage.selectFileFirst'));
+      return;
     }
+    const arrayBuffer = await selectedFile.arrayBuffer();
+    const base64 = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+    smartImport.mutate({ fileBase64: base64, fileName: selectedFile.name, importType });
   };
 
-  const isUploading = uploadCSV.isPending || uploadExcel.isPending;
+  const downloadTemplate = (type: 'products' | 'services') => {
+    const csvContent = type === 'products'
+      ? '\uFEFFالاسم,الوصف,السعر,رابط الصورة,الكمية,التصنيف\nمنتج تجريبي,وصف المنتج هنا,99.99,https://example.com/image.jpg,10,إلكترونيات\nعطر فاخر,عطر رجالي بتركيبة فرنسية,250,,50,عطور'
+      : '\uFEFFاسم الخدمة,الوصف,السعر,المدة (بالساعات),المدرب,الموقع,التصنيف,معتمد\nدورة التسويق الرقمي,دورة شاملة في التسويق عبر السوشال ميديا,1500,10,أحمد محمد,الرياض,تسويق,نعم\nورشة القيادة,ورشة عمل في المهارات القيادية,800,6,سارة أحمد,جدة,إدارة,نعم';
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = type === 'products' ? 'نموذج_المنتجات.csv' : 'نموذج_الخدمات.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const isUploading = uploadCSV.isPending || uploadExcel.isPending || smartImport.isPending;
 
   const tabs = [
     { id: 'file' as const, label: t('uploadProductsPage.tabFile'), icon: <FileSpreadsheet className="h-4 w-4" /> },
@@ -205,9 +240,43 @@ export default function UploadProducts() {
                     <p className="text-sm text-muted-foreground">
                       {t('uploadProductsPage.fileSize', { size: (selectedFile.size / 1024).toFixed(1) })}
                     </p>
+                    {/* Import type selector */}
+                    <div className="flex gap-3 justify-center">
+                      {(['auto', 'products', 'services'] as const).map(type => (
+                        <button
+                          key={type}
+                          onClick={() => setImportType(type)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                            importType === type
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted text-muted-foreground border-transparent hover:border-muted-foreground/30'
+                          }`}
+                        >
+                          {type === 'auto' ? '🤖 تلقائي' : type === 'products' ? '📦 منتجات' : '🛎️ خدمات'}
+                        </button>
+                      ))}
+                    </div>
+
                     <div className="flex gap-2 justify-center">
-                      <Button onClick={handleUpload} disabled={isUploading}>
-                        {isUploading ? (
+                      <Button
+                        onClick={handleSmartImport}
+                        disabled={isUploading}
+                        className="bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 gap-2"
+                      >
+                        {smartImport.isPending ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                            جاري التحليل بالذكاء الاصطناعي...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4" />
+                            استيراد ذكي بالـ AI
+                          </>
+                        )}
+                      </Button>
+                      <Button onClick={handleUpload} variant="outline" disabled={isUploading}>
+                        {(uploadCSV.isPending || uploadExcel.isPending) ? (
                           <>
                             <RefreshCw className="h-4 w-4 ml-2 animate-spin" />
                             {t('uploadProductsPage.importing')}
@@ -215,11 +284,11 @@ export default function UploadProducts() {
                         ) : (
                           <>
                             <Upload className="h-4 w-4 ml-2" />
-                            {t('uploadProductsPage.uploadAndImport')}
+                            استيراد عادي
                           </>
                         )}
                       </Button>
-                      <Button variant="outline" onClick={resetFile}>{t('uploadProductsPage.cancel')}</Button>
+                      <Button variant="ghost" onClick={resetFile}>{t('uploadProductsPage.cancel')}</Button>
                     </div>
                   </div>
                 ) : (
@@ -260,6 +329,25 @@ export default function UploadProducts() {
                   <strong>{t('uploadProductsPage.supportedColumns')}</strong> {t('uploadProductsPage.supportedColumnsList')}
                 </AlertDescription>
               </Alert>
+
+              {/* Smart Result — AI Analysis */}
+              {smartResult && (
+                <div className="space-y-3 p-4 rounded-xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200">
+                  <div className="flex items-center gap-2 text-violet-700 font-semibold">
+                    <Brain className="h-5 w-5" />
+                    تحليل الذكاء الاصطناعي
+                  </div>
+                  {smartResult.businessType && (
+                    <p className="text-sm"><strong>نوع النشاط:</strong> {smartResult.businessType === 'services' ? '🛎️ خدمات/دورات' : '📦 منتجات'}</p>
+                  )}
+                  {smartResult.businessSummary && (
+                    <p className="text-sm"><strong>الملخص:</strong> {smartResult.businessSummary}</p>
+                  )}
+                  {smartResult.sellingTips && (
+                    <p className="text-sm"><strong>نصائح البيع:</strong> {smartResult.sellingTips}</p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -410,10 +498,16 @@ export default function UploadProducts() {
                     <p className="text-sm text-muted-foreground mt-1">
                       {t('uploadProductsPage.step1DownloadDesc')}
                     </p>
-                    <Button variant="outline" size="sm" className="mt-2" onClick={() => downloadTemplate('csv')}>
-                      <Download className="h-4 w-4 ml-2" />
-                      {t('uploadProductsPage.downloadCsvTemplate')}
-                    </Button>
+                    <div className="flex gap-2 mt-2">
+                      <Button variant="outline" size="sm" onClick={() => downloadTemplate('products')}>
+                        <Download className="h-4 w-4 ml-2" />
+                        📦 نموذج المنتجات
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => downloadTemplate('services')}>
+                        <Download className="h-4 w-4 ml-2" />
+                        🛎️ نموذج الخدمات
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
