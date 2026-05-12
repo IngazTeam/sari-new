@@ -398,6 +398,41 @@ export const sariBrainRouter = router({
   }),
 
   // ════════════════════════════════════════════════════════════════
+  // Test Sari — Let merchant ask a test question and see the response
+  // ════════════════════════════════════════════════════════════════
+  testSari: protectedProcedure
+    .input(z.object({
+      question: z.string().min(1).max(500, 'السؤال طويل جداً'),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      // Rate limit: 10s cooldown
+      checkDestructiveRateLimit(merchant.id, 10_000);
+
+      try {
+        const { chatWithSari } = await import('./ai/sari-personality');
+        const response = await chatWithSari({
+          merchantId: merchant.id,
+          customerPhone: 'test-brain-preview',
+          customerName: 'عميل تجريبي',
+          message: input.question,
+        });
+
+        return {
+          success: true,
+          question: input.question,
+          answer: response,
+        };
+      } catch (error: any) {
+        if (error?.code === 'TOO_MANY_REQUESTS') throw error;
+        console.error('[SariBrain] Test failed:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل الاختبار. حاول مرة أخرى.' });
+      }
+    }),
+
+  // ════════════════════════════════════════════════════════════════
   // Phase 2: Smart Intake — GPT-powered file analysis before approval
   // ════════════════════════════════════════════════════════════════
   analyzeContent: protectedProcedure
