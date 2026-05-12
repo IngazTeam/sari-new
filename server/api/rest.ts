@@ -1018,3 +1018,55 @@ sariApiRouter.get('/integration', async (req: AuthenticatedRequest, res: Respons
     res.status(500).json({ error: 'Failed to fetch integration info', errorAr: 'فشل جلب معلومات الربط' });
   }
 });
+
+// ── GET /api/v1/instances — WhatsApp instances ──────────────
+sariApiRouter.get('/instances', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const instances = await db.getWhatsAppInstancesByMerchantId(req.merchant.id);
+    res.json({
+      total: instances.length,
+      data: instances.map((i: any) => ({
+        id: i.id,
+        instanceId: i.instanceId,
+        phoneNumber: i.phoneNumber,
+        displayName: i.displayName,
+        status: i.status,
+        isPrimary: i.isPrimary,
+        isActive: i.isActive,
+        createdAt: i.createdAt,
+      })),
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch instances', errorAr: 'فشل جلب الأرقام' });
+  }
+});
+
+// ── PUT /api/v1/instances/:id — Toggle instance ─────────────
+sariApiRouter.put('/instances/:id', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const instanceId = parseInt(req.params.id);
+    if (isNaN(instanceId)) {
+      return res.status(400).json({ error: 'Invalid instance ID' });
+    }
+
+    // Verify ownership
+    const instance = await db.getWhatsAppInstanceById(instanceId);
+    if (!instance || (instance as any).merchantId !== req.merchant.id) {
+      return res.status(404).json({ error: 'Instance not found', errorAr: 'الرقم غير موجود' });
+    }
+
+    const { isActive, isPrimary } = req.body;
+
+    if (isPrimary === true) {
+      await db.setWhatsAppInstanceAsPrimary(instanceId, req.merchant.id);
+    }
+
+    if (typeof isActive === 'boolean') {
+      await db.updateWhatsAppInstance(instanceId, { isActive } as any);
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to update instance', errorAr: 'فشل تحديث الرقم' });
+  }
+});
