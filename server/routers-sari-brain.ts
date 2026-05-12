@@ -703,6 +703,83 @@ ${sanitizedContent}`
 
       return { success: true };
     }),
+
+  // ════════════════════════════════════════════════════════════════
+  // API Key Management — Generate/revoke REST API keys
+  // ════════════════════════════════════════════════════════════════
+  generateApiKey: protectedProcedure
+    .input(z.object({ label: z.string().max(100).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const { generateApiKey } = await import('./api/rest');
+      const result = await generateApiKey(merchant.id, input.label || 'Default Key');
+
+      await logBrainActivity(merchant.id, 'api_key_created', `تم إنشاء مفتاح API: ${result.prefix}...`);
+
+      return { success: true, key: result.key, prefix: result.prefix };
+    }),
+
+  listApiKeys: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    try {
+      const dbConn = await db.getDb();
+      if (!dbConn) return [];
+
+      const [rows] = await (dbConn as any).execute(
+        `SELECT id, key_prefix, label, is_active, last_used_at, created_at, expires_at FROM sari_api_keys WHERE merchant_id = ? ORDER BY created_at DESC`,
+        [merchant.id]
+      );
+
+      return (rows as any[]).map((r: any) => ({
+        id: r.id,
+        prefix: r.key_prefix,
+        label: r.label,
+        isActive: r.is_active === 1,
+        lastUsedAt: r.last_used_at,
+        createdAt: r.created_at,
+        expiresAt: r.expires_at,
+      }));
+    } catch (e) {
+      return [];
+    }
+  }),
+
+  revokeApiKey: protectedProcedure
+    .input(z.object({ keyId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      try {
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new Error('DB error');
+
+        // Verify ownership
+        const [rows] = await (dbConn as any).execute(
+          `SELECT id FROM sari_api_keys WHERE id = ? AND merchant_id = ?`,
+          [input.keyId, merchant.id]
+        );
+        if (!rows || (rows as any[]).length === 0) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن إلغاء مفتاح لا يخصك' });
+        }
+
+        await (dbConn as any).execute(
+          `UPDATE sari_api_keys SET is_active = 0 WHERE id = ?`,
+          [input.keyId]
+        );
+
+        await logBrainActivity(merchant.id, 'api_key_revoked', `تم إلغاء مفتاح API رقم ${input.keyId}`);
+
+        return { success: true };
+      } catch (e: any) {
+        if (e?.code === 'FORBIDDEN') throw e;
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إلغاء المفتاح' });
+      }
+    }),
 });
 
 export type SariBrainRouter = typeof sariBrainRouter;

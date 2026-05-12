@@ -145,6 +145,15 @@ async function startServer() {
   // Webhook endpoints (rate limited: 200 requests per minute)
   app.use("/api/webhooks", webhookLimiter, webhookRoutes);
 
+  // REST API v1 — External service integration (API key auth)
+  try {
+    const { sariApiRouter } = await import('../api/rest');
+    app.use("/api/v1", sariApiRouter);
+    console.log('[Core] ✅ REST API v1 mounted at /api/v1');
+  } catch (e) {
+    console.warn('[Core] REST API v1 failed to mount:', e);
+  }
+
   // Sitemap routes
   app.get('/sitemap.xml', async (req, res) => {
     try {
