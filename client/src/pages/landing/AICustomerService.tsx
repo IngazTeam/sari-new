@@ -65,12 +65,43 @@ export default function AICustomerService() {
           </div>
         </div>
       </section>
+      {/* How It Works */}
+      <section className="py-20 bg-white dark:bg-background">
+        <div className="container max-w-4xl">
+          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'كيف يعمل الدعم الذكي؟' : 'How Smart Support Works'}</h2>
+          <div className="space-y-8">
+            {[
+              { n: '1', ar: 'العميل يتواصل عبر واتساب', en: 'Customer contacts via WhatsApp', arD: '"عندي مشكلة في طلبي رقم 1234"', enD: '"I have a problem with order #1234"' },
+              { n: '2', ar: 'ساري يفهم المشكلة', en: 'Sari understands the problem', arD: 'يحلل الرسالة ويبحث في قاعدة المعرفة والطلبات', enD: 'Analyzes message and searches knowledge base and orders' },
+              { n: '3', ar: 'يقدم حل فوري', en: 'Provides instant solution', arD: 'يرد بالحل المناسب — إلغاء، استبدال، أو شرح', enD: 'Responds with appropriate solution — cancel, replace, or explain' },
+              { n: '4', ar: 'تحويل ذكي إن لزم', en: 'Smart handoff if needed', arD: 'يحول للموظف البشري مع ملخص كامل إذا كانت المشكلة معقدة', enD: 'Transfers to human agent with full summary if issue is complex' },
+            ].map((s, i) => (
+              <div key={i} className="flex gap-6 items-start">
+                <div className="w-14 h-14 rounded-full bg-orange-600 text-white flex items-center justify-center text-xl font-bold flex-shrink-0">{s.n}</div>
+                <div><h3 className="text-xl font-bold mb-1">{isAr ? s.ar : s.en}</h3><p className="text-muted-foreground italic">"{isAr ? s.arD : s.enD}"</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
       {/* Features */}
       <section className="py-20 bg-muted/30">
         <div className="container">
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'خدمة عملاء خارقة بالـ AI' : 'Supercharged AI Customer Service'}</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((f, i) => (<Card key={i} className="border-2 hover:border-orange-500 transition-all hover:shadow-lg group"><CardContent className="p-6"><div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform"><f.icon className="w-6 h-6 text-orange-600" /></div><h3 className="text-lg font-bold mb-2">{isAr ? f.ar : f.en}</h3><p className="text-muted-foreground text-sm">{isAr ? f.arD : f.enD}</p></CardContent></Card>))}
+          </div>
+        </div>
+      </section>
+      {/* Testimonials */}
+      <section className="py-20 bg-white dark:bg-background">
+        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'شركات تثق بدعم ساري' : 'Companies Trust Sari Support'}</h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              { name: isAr ? 'متجر إلكتروني' : 'E-commerce Store', role: isAr ? 'تجزئة — الرياض' : 'Retail — Riyadh', text: isAr ? 'ساري يحل 85% من مشاكل العملاء بدون تدخلنا. وقت الرد انخفض من ساعات لثوانٍ.' : 'Sari solves 85% of customer issues without our intervention. Response time dropped from hours to seconds.' },
+              { name: isAr ? 'شركة SaaS' : 'SaaS Company', role: isAr ? 'تقنية — جدة' : 'Technology — Jeddah', text: isAr ? 'العملاء يحصلون على إجابات فورية على أسئلتهم التقنية. الفريق يركز على المشاكل المعقدة فقط.' : 'Customers get instant answers to their technical questions. The team focuses only on complex issues.' },
+              { name: isAr ? 'مركز خدمات' : 'Service Center', role: isAr ? 'خدمات — الدمام' : 'Services — Dammam', text: isAr ? 'رضا العملاء ارتفع 30% بعد تفعيل ساري. الدعم 24/7 كان حلم والآن تحقق.' : 'Customer satisfaction increased 30% after activating Sari. 24/7 support was a dream and now it\'s real.' },
+            ].map((t, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div><p className="text-muted-foreground mb-4 text-sm">{t.text}</p><div className="font-semibold">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></CardContent></Card>))}
           </div>
         </div>
       </section>

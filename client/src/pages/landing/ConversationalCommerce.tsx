@@ -76,6 +76,25 @@ export default function ConversationalCommerce() {
           </div>
         </div>
       </section>
+      {/* How It Works */}
+      <section className="py-20 bg-muted/30">
+        <div className="container max-w-4xl">
+          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'كيف تعمل التجارة المحادثية؟' : 'How Does Conversational Commerce Work?'}</h2>
+          <div className="space-y-8">
+            {[
+              { n: '1', ar: 'العميل يراسلك على واتساب', en: 'Customer messages you on WhatsApp', arD: '"أبغى هدية لزوجتي ميزانيتي 300 ريال"', enD: '"I want a gift for my wife, budget 300 SAR"' },
+              { n: '2', ar: 'ساري يفهم الاحتياج', en: 'Sari understands the need', arD: 'يحلل الطلب ويبحث في منتجاتك عن الأنسب', enD: 'Analyzes request and searches your products for the best match' },
+              { n: '3', ar: 'يعرض ويقنع', en: 'Shows and persuades', arD: 'يعرض 3 خيارات مع الصور والأسعار ويشرح المميزات', enD: 'Shows 3 options with photos, prices, and explains features' },
+              { n: '4', ar: 'يتم البيع', en: 'Sale complete', arD: 'العميل يختار ← رابط دفع ← تأكيد ← شحن', enD: 'Customer chooses ← payment link ← confirmation ← shipping' },
+            ].map((s, i) => (
+              <div key={i} className="flex gap-6 items-start">
+                <div className="w-14 h-14 rounded-full bg-rose-600 text-white flex items-center justify-center text-xl font-bold flex-shrink-0">{s.n}</div>
+                <div><h3 className="text-xl font-bold mb-1">{isAr ? s.ar : s.en}</h3><p className="text-muted-foreground italic">"{isAr ? s.arD : s.enD}"</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
       {/* Pillars */}
       <section className="py-20 bg-muted/30">
         <div className="container">
@@ -85,10 +104,21 @@ export default function ConversationalCommerce() {
           </div>
         </div>
       </section>
-      {/* FAQ */}
+      {/* Testimonials */}
       <section className="py-20 bg-white dark:bg-background">
-        <div className="container max-w-4xl">
-          <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'أسئلة شائعة' : 'FAQ'}</h2>
+        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'نتائج حقيقية' : 'Real Results'}</h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              { name: isAr ? 'متجر أزياء' : 'Fashion Store', role: isAr ? 'أزياء نسائية — الرياض' : 'Women Fashion — Riyadh', text: isAr ? 'معدل التحويل من واتساب 18% مقارنة بـ 2% من الموقع. التجارة المحادثية غيّرت اللعبة.' : 'WhatsApp conversion rate 18% vs. 2% from the website. Conversational commerce is a game changer.' },
+              { name: isAr ? 'متجر عطور' : 'Perfume Store', role: isAr ? 'عطور فاخرة — جدة' : 'Luxury Perfumes — Jeddah', text: isAr ? 'ساري يقترح العطور حسب تفضيلات كل عميل. المبيعات تضاعفت والعملاء يرجعون.' : 'Sari suggests perfumes based on each client\'s preferences. Sales doubled and clients return.' },
+              { name: isAr ? 'متجر إلكترونيات' : 'Electronics Store', role: isAr ? 'إلكترونيات — الدمام' : 'Electronics — Dammam', text: isAr ? 'استعادة السلات المتروكة عبر واتساب وفّرت لنا 25% مبيعات إضافية شهرياً.' : 'Cart recovery via WhatsApp saved us 25% additional monthly sales.' },
+            ].map((t, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div><p className="text-muted-foreground mb-4 text-sm">{t.text}</p><div className="font-semibold">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></CardContent></Card>))}
+          </div>
+        </div>
+      </section>
+      {/* FAQ */}
+      <section className="py-20 bg-muted/30">
+        <div className="container max-w-4xl"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'أسئلة شائعة' : 'FAQ'}</h2>
           <div className="space-y-4">{schemaData["@graph"][1].mainEntity.map((q: any, i: number) => (<Card key={i} className="border"><CardContent className="p-6"><h3 className="font-bold mb-2">{q.name}</h3><p className="text-muted-foreground text-sm">{q.acceptedAnswer.text}</p></CardContent></Card>))}</div>
         </div>
       </section>

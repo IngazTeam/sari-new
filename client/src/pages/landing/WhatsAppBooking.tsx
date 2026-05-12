@@ -123,6 +123,26 @@ export default function WhatsAppBooking() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="py-16 bg-muted/30">
+        <div className="container max-w-4xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">{isAr ? 'كيف يعمل الحجز الذكي؟' : 'How Smart Booking Works'}</h2>
+          <div className="space-y-8">
+            {[
+              { n: '1', ar: 'العميل يراسلك على واتساب', en: 'Client messages you on WhatsApp', arD: '"أبغى أحجز موعد يوم الخميس العصر"', enD: '"I want to book an appointment Thursday afternoon"' },
+              { n: '2', ar: 'ساري يعرض المتاح', en: 'Sari shows availability', arD: 'يعرض الأوقات المتاحة لليوم المطلوب', enD: 'Shows available times for the requested day' },
+              { n: '3', ar: 'تأكيد الحجز', en: 'Booking confirmed', arD: 'العميل يختار → تأكيد فوري + رابط دفع إن لزم', enD: 'Client chooses → instant confirmation + payment link if needed' },
+              { n: '4', ar: 'تذكير تلقائي', en: 'Auto reminder', arD: 'رسالة قبل الموعد بـ 24 ساعة وساعة واحدة', enD: 'Message 24 hours and 1 hour before appointment' },
+            ].map((s, i) => (
+              <div key={i} className="flex gap-6 items-start">
+                <div className="w-14 h-14 rounded-full bg-purple-600 text-white flex items-center justify-center text-xl font-bold flex-shrink-0">{s.n}</div>
+                <div><h3 className="text-xl font-bold mb-1">{isAr ? s.ar : s.en}</h3><p className="text-muted-foreground italic">"{isAr ? s.arD : s.enD}"</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section className="py-20 bg-muted/30">
         <div className="container">
@@ -140,6 +160,19 @@ export default function WhatsAppBooking() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 bg-white dark:bg-background">
+        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'عملاؤنا يتحدثون' : 'Our Clients Speak'}</h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              { name: isAr ? 'عيادة الأسنان' : 'Dental Clinic', role: isAr ? 'عيادة — الرياض' : 'Clinic — Riyadh', text: isAr ? 'عدم الحضور انخفض 85% بعد تذكيرات ساري التلقائية.' : 'No-shows dropped 85% after Sari\'s automatic reminders.' },
+              { name: isAr ? 'صالون الأناقة' : 'Elegance Salon', role: isAr ? 'صالون تجميل — جدة' : 'Beauty Salon — Jeddah', text: isAr ? 'الحجوزات زادت 3 أضعاف بعد تفعيل الحجز عبر الواتساب.' : 'Bookings tripled after activating WhatsApp booking.' },
+              { name: isAr ? 'مركز تدريب' : 'Training Center', role: isAr ? 'مركز تعليمي — الدمام' : 'Education Center — Dammam', text: isAr ? 'التسجيل أصبح تلقائي والمتدربين يحبون سهولة الحجز.' : 'Registration is now automatic and trainees love the booking ease.' },
+            ].map((t, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div><p className="text-muted-foreground mb-4 text-sm">{t.text}</p><div className="font-semibold">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></CardContent></Card>))}
           </div>
         </div>
       </section>

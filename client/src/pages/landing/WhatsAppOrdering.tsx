@@ -100,6 +100,9 @@ export default function WhatsAppOrdering() {
               <Link href="/signup"><a><Button size="lg" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-lg h-14 px-8 shadow-lg">{isAr ? 'ابدأ مجاناً' : 'Start Free'}<ArrowRight className="ms-2 w-5 h-5" /></Button></a></Link>
               <Link href="/try-sari"><a><Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8">{isAr ? 'شاهد عرض تجريبي' : 'See Demo'}</Button></a></Link>
             </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-2xl mx-auto">
+              {[{ v: '40%', ar: 'زيادة المبيعات', en: 'Sales Increase' }, { v: '0', ar: 'أخطاء في الطلبات', en: 'Order Errors' }, { v: '<30s', ar: 'وقت استلام الطلب', en: 'Order Receive Time' }, { v: '24/7', ar: 'استقبال الطلبات', en: 'Order Reception' }].map(s => (<div key={s.v} className="text-center"><div className="text-3xl font-bold text-blue-600">{s.v}</div><div className="text-sm text-muted-foreground">{isAr ? s.ar : s.en}</div></div>))}
+            </div>
           </div>
         </div>
       </section>
@@ -151,6 +154,19 @@ export default function WhatsAppOrdering() {
             {schemaData["@graph"][1].mainEntity.map((q: any, i: number) => (
               <Card key={i} className="border"><CardContent className="p-6"><h3 className="font-bold mb-2">{q.name}</h3><p className="text-muted-foreground text-sm">{q.acceptedAnswer.text}</p></CardContent></Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 bg-white dark:bg-background">
+        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'متاجر تثق بساري' : 'Stores Trust Sari'}</h2>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {[
+              { name: isAr ? 'متجر نوره للعبايات' : 'Noura Abayas Store', role: isAr ? 'متجر إلكتروني — الرياض' : 'Online Store — Riyadh', text: isAr ? 'طلبات الواتساب أصبحت 60% من مبيعاتنا. ساري يتعامل مع كل الطلبات تلقائياً والعملاء يحبون السهولة.' : 'WhatsApp orders became 60% of our sales. Sari handles all orders automatically and customers love the ease.' },
+              { name: isAr ? 'مطعم بيت الشاورما' : 'Shawarma House', role: isAr ? 'مطعم — جدة' : 'Restaurant — Jeddah', text: isAr ? 'أخطاء الطلبات اختفت تماماً. كل شيء مكتوب ومؤكد. الطلبات تصلنا جاهزة للتحضير.' : 'Order errors completely disappeared. Everything is written and confirmed. Orders come ready for preparation.' },
+              { name: isAr ? 'بقالة الحي' : 'Al-Hay Grocery', role: isAr ? 'بقالة توصيل — الدمام' : 'Delivery Grocery — Dammam', text: isAr ? 'ساري يستقبل طلبات التوصيل 24/7. حتى بالليل الطلبات تتسجل ونجهزها الصباح.' : 'Sari receives delivery orders 24/7. Even at night, orders are registered and we prepare them in the morning.' },
+            ].map((t, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div><p className="text-muted-foreground mb-4 text-sm">{t.text}</p><div className="font-semibold">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></CardContent></Card>))}
           </div>
         </div>
       </section>
