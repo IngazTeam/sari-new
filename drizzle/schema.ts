@@ -247,7 +247,7 @@ export const merchants = mysqlTable("merchants", {
 	workingHours: text(), // JSON: {"saturday": {"start": "09:00", "end": "18:00"}}
 	// Smart Website Analysis fields
 	websiteUrl: varchar("website_url", { length: 500 }),
-	platformType: mysqlEnum("platform_type", ['salla', 'zid', 'shopify', 'woocommerce', 'custom', 'unknown']),
+	platformType: mysqlEnum("platform_type", ['salla', 'zid', 'shopify', 'woocommerce', 'byaan', 'custom', 'unknown']),
 	lastAnalysisDate: timestamp("last_analysis_date", { mode: 'string' }),
 	analysisStatus: mysqlEnum("analysis_status", ['pending', 'analyzing', 'completed', 'failed']).default('pending'),
 	// Subscription fields

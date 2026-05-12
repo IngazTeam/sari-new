@@ -8,7 +8,7 @@
 import * as db from '../db';
 
 export interface ExistingPlatform {
-  platform: 'salla' | 'zid' | 'woocommerce' | 'shopify';
+  platform: 'salla' | 'zid' | 'woocommerce' | 'shopify' | 'byaan';
   name: string;
   storeUrl?: string;
   connectedAt?: Date | null;
@@ -64,6 +64,22 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
   // TODO: إضافة فحص Shopify عند توفر الدوال المناسبة
   // const shopifyIntegration = await db.getPlatformIntegration(merchantId, 'shopify');
   // if (shopifyIntegration) { ... }
+
+  // فحص بيان (Byaan)
+  try {
+    const { getByaanConnection } = await import('./byaan');
+    const byaanConnection = await getByaanConnection(merchantId);
+    if (byaanConnection && byaanConnection.sync_status === 'active') {
+      existingPlatforms.push({
+        platform: 'byaan',
+        name: 'بيان',
+        storeUrl: byaanConnection.tenant_domain,
+        connectedAt: byaanConnection.created_at,
+      });
+    }
+  } catch (error) {
+    console.error('[Platform Checker] Error checking Byaan:', error);
+  }
 
   return existingPlatforms;
 }

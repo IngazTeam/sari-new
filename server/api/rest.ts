@@ -456,3 +456,240 @@ sariApiRouter.get('/stats', async (req: AuthenticatedRequest, res: Response) => 
     res.status(500).json({ error: 'Failed to fetch stats', errorAr: 'فشل جلب الإحصائيات' });
   }
 });
+
+// ════════════════════════════════════════════════════════════════
+// Byaan Integration Endpoints
+// ════════════════════════════════════════════════════════════════
+
+// ── POST /api/v1/auth/provision — Auto-create merchant account ──
+sariApiRouter.post('/auth/provision', async (req: AuthenticatedRequest, res: Response) => {
+  const { name, email, password, businessName, phone, industry, source } = req.body;
+
+  if (!email || !password || !businessName) {
+    return res.status(400).json({
+      error: 'email, password, and businessName are required',
+      errorAr: 'الإيميل وكلمة المرور واسم النشاط مطلوبة',
+    });
+  }
+
+  if (typeof password !== 'string' || password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters', errorAr: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+  }
+
+  try {
+    const dbConn = await db.getDb();
+    if (!dbConn) throw new Error('DB unavailable');
+
+    // Check if email already exists
+    const [existingUsers] = await (dbConn as any).execute(
+      `SELECT id FROM users WHERE email = ? LIMIT 1`,
+      [String(email).toLowerCase().trim()]
+    );
+
+    if ((existingUsers as any[])?.length > 0) {
+      const existingUserId = (existingUsers as any[])[0].id;
+      const existingMerchant = await db.getMerchantByUserId(existingUserId);
+
+      if (existingMerchant) {
+        // Generate API key for existing merchant
+        const apiKeyResult = await generateApiKey(existingMerchant.id, `${source || 'external'} auto-key`);
+        return res.json({
+          success: true,
+          created: false,
+          existing: true,
+          merchantId: existingMerchant.id,
+          email: String(email).toLowerCase().trim(),
+          loginUrl: 'https://sari.app/login',
+          apiKey: apiKeyResult.key,
+          message: 'Account already exists — API key generated',
+          messageAr: 'الحساب موجود مسبقاً — تم إنشاء مفتاح API',
+        });
+      }
+    }
+
+    // Create new user
+    const bcrypt = await import('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const openId = `provision_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    const [userResult] = await (dbConn as any).execute(
+      `INSERT INTO users (open_id, name, email, password, login_method, role, created_at, updated_at, last_signed_in) VALUES (?, ?, ?, ?, 'credentials', 'user', NOW(), NOW(), NOW())`,
+      [openId, name || businessName, String(email).toLowerCase().trim(), hashedPassword]
+    );
+
+    const userId = (userResult as any).insertId;
+
+    // Create merchant
+    const [merchantResult] = await (dbConn as any).execute(
+      `INSERT INTO merchants (user_id, business_name, phone, status, integration_source, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, NOW(), NOW())`,
+      [userId, String(businessName).substring(0, 255), phone || null, source || 'none']
+    );
+
+    const merchantId = (merchantResult as any).insertId;
+
+    // Generate API key
+    const apiKeyResult = await generateApiKey(merchantId, `${source || 'external'} auto-key`);
+
+    // Log activity
+    try {
+      const { logBrainActivity } = await import('../routers-sari-brain');
+      await logBrainActivity(merchantId, 'settings_changed', `حساب جديد عبر API — المصدر: ${source || 'external'}`, { source, email });
+    } catch (e) { /* skip */ }
+
+    res.json({
+      success: true,
+      created: true,
+      merchantId,
+      email: String(email).toLowerCase().trim(),
+      loginUrl: 'https://sari.app/login',
+      apiKey: apiKeyResult.key,
+    });
+  } catch (e: any) {
+    console.error('[SariAPI] Provision failed:', e);
+    res.status(500).json({ error: 'Provision failed', errorAr: 'فشل إنشاء الحساب', detail: e.message });
+  }
+});
+
+// ── POST /api/v1/sync/trainees — Sync trainees from Byaan ───
+sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Response) => {
+  const { trainees, mode } = req.body;
+  if (!Array.isArray(trainees)) {
+    return res.status(400).json({ error: 'trainees array is required', errorAr: 'مصفوفة المتدربين مطلوبة' });
+  }
+  if (trainees.length > 500) {
+    return res.status(400).json({ error: 'Max 500 trainees per sync', errorAr: 'الحد الأقصى 500 متدرب' });
+  }
+
+  try {
+    const { syncTrainees } = await import('../integrations/byaan');
+    const result = await syncTrainees(req.merchant.id, trainees);
+
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(req.merchant.id, 'settings_changed',
+      `API Sync متدربين: ${result.created} جديد، ${result.updated} محدث، ${result.linked} مربوط`,
+      { ...result, source: 'api' }
+    );
+
+    res.json({ success: true, ...result, mode: mode || 'upsert' });
+  } catch (e) {
+    console.error('[SariAPI] Trainee sync failed:', e);
+    res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة المتدربين' });
+  }
+});
+
+// ── POST /api/v1/sync/settings — Sync settings (whitelist) ──
+sariApiRouter.post('/sync/settings', async (req: AuthenticatedRequest, res: Response) => {
+  const { settings } = req.body;
+  if (!settings || typeof settings !== 'object') {
+    return res.status(400).json({ error: 'settings object is required', errorAr: 'كائن الإعدادات مطلوب' });
+  }
+
+  try {
+    const { syncSettings } = await import('../integrations/byaan');
+    const result = await syncSettings(req.merchant.id, settings);
+
+    if (result.updated.length > 0) {
+      const { logBrainActivity } = await import('../routers-sari-brain');
+      await logBrainActivity(req.merchant.id, 'settings_changed',
+        `API Settings Sync: ${result.updated.join(', ')}`,
+        { updated: result.updated, source: 'api' }
+      );
+    }
+
+    res.json({ success: true, ...result });
+  } catch (e) {
+    console.error('[SariAPI] Settings sync failed:', e);
+    res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة الإعدادات' });
+  }
+});
+
+// ── POST /api/v1/connect/byaan — Activate Byaan integration ─
+sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Response) => {
+  const { tenantDomain, permissions } = req.body;
+  if (!tenantDomain) {
+    return res.status(400).json({ error: 'tenantDomain is required', errorAr: 'نطاق التيننت مطلوب' });
+  }
+
+  try {
+    const { createByaanConnection } = await import('../integrations/byaan');
+    const connection = await createByaanConnection(req.merchant.id, tenantDomain, permissions);
+
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(req.merchant.id, 'settings_changed', `تم ربط بيان: ${tenantDomain}`, { tenantDomain });
+
+    res.json({ success: true, connection });
+  } catch (e) {
+    console.error('[SariAPI] Byaan connect failed:', e);
+    res.status(500).json({ error: 'Connection failed', errorAr: 'فشل الربط' });
+  }
+});
+
+// ── DELETE /api/v1/connect/byaan — Disconnect Byaan ─────────
+sariApiRouter.delete('/connect/byaan', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { deleteByaanConnection } = await import('../integrations/byaan');
+    await deleteByaanConnection(req.merchant.id);
+
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(req.merchant.id, 'settings_changed', 'تم فصل ربط بيان');
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Disconnect failed', errorAr: 'فشل فصل الربط' });
+  }
+});
+
+// ── GET /api/v1/conversions — Enrollment/payment log ────────
+sariApiRouter.get('/conversions', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { getConversions } = await import('../integrations/byaan');
+    const limit = Math.min(parseInt(req.query.limit as string) || 20, 200);
+    const actionType = req.query.type as string | undefined;
+
+    const data = await getConversions(req.merchant.id, limit, actionType);
+    res.json({ total: data.length, data });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch conversions', errorAr: 'فشل جلب التسجيلات' });
+  }
+});
+
+// ── POST /api/v1/conversions — Record a conversion ──────────
+sariApiRouter.post('/conversions', async (req: AuthenticatedRequest, res: Response) => {
+  const { customerPhone, customerName, actionType, productName, amount, externalRef } = req.body;
+  if (!actionType || !productName) {
+    return res.status(400).json({ error: 'actionType and productName required', errorAr: 'نوع العملية واسم المنتج مطلوبان' });
+  }
+
+  try {
+    const { recordConversion } = await import('../integrations/byaan');
+    const id = await recordConversion(req.merchant.id, {
+      customerPhone, customerName, actionType, productName, amount, externalRef,
+    });
+    res.json({ success: true, id });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to record conversion', errorAr: 'فشل تسجيل العملية' });
+  }
+});
+
+// ── GET /api/v1/integration — Get integration info + terminology ──
+sariApiRouter.get('/integration', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { getIntegrationSource, getTerminology, getByaanConnection } = await import('../integrations/byaan');
+    const source = await getIntegrationSource(req.merchant.id);
+    const terminology = getTerminology(source);
+    const byaanConnection = source === 'byaan' ? await getByaanConnection(req.merchant.id) : null;
+
+    res.json({
+      source,
+      isLocked: source !== 'none',
+      terminology,
+      byaan: byaanConnection ? {
+        tenantDomain: byaanConnection.tenant_domain,
+        syncStatus: byaanConnection.sync_status,
+        lastSyncAt: byaanConnection.last_sync_at,
+      } : null,
+    });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to fetch integration info', errorAr: 'فشل جلب معلومات الربط' });
+  }
+});
