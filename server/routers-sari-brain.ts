@@ -298,6 +298,105 @@ export const sariBrainRouter = router({
       }
     }),
 
+  // Re-analyze merchant's website
+  reanalyzeWebsite: protectedProcedure.mutation(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    // Rate limit — 60s cooldown for website analysis
+    checkDestructiveRateLimit(merchant.id, 60_000);
+
+    if (!merchant.website) {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد رابط موقع في إعدادات المتجر. أضف رابط الموقع أولاً من صفحة الإعدادات.' });
+    }
+
+    try {
+      const { analyzeWebsite } = await import('./_core/websiteAnalyzer');
+      const result = await analyzeWebsite(merchant.website);
+
+      // Save to DB
+      const dbConn = await db.getDb();
+      if (dbConn) {
+        // Delete old analyses first
+        await (dbConn as any).execute(
+          `DELETE FROM website_analyses WHERE merchant_id = ?`,
+          [merchant.id]
+        );
+
+        // Insert new
+        await (dbConn as any).execute(
+          `INSERT INTO website_analyses (merchant_id, url, title, description, industry, language, seo_score, overall_score, status, analyzed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'completed', NOW())`,
+          [
+            merchant.id,
+            merchant.website,
+            result.title || '',
+            result.description || '',
+            result.industry || '',
+            result.language || 'ar',
+            result.seoScore || 0,
+            result.overallScore || 0,
+          ]
+        );
+      }
+
+      await logBrainActivity(merchant.id, 'website_analyzed', `تم إعادة تحليل الموقع: ${merchant.website}`, {
+        url: merchant.website,
+        title: result.title,
+        industry: result.industry,
+        score: result.overallScore,
+      });
+
+      return { success: true, title: result.title, industry: result.industry, score: result.overallScore };
+    } catch (error: any) {
+      if (error?.code === 'TOO_MANY_REQUESTS') throw error;
+      console.error('[SariBrain] Website re-analysis failed:', error);
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل تحليل الموقع. تأكد من صحة الرابط وحاول مرة أخرى.' });
+    }
+  }),
+
+  // Get brain summary — used by AI prompt builder
+  getBrainSummary: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const sources = {
+      hasDocument: false,
+      hasProducts: false,
+      hasWebsite: false,
+      documentName: '',
+      productCount: 0,
+      websiteUrl: '',
+    };
+
+    const doc = await db.getKnowledgeDocByMerchantId(merchant.id);
+    if (doc && doc.extractionStatus === 'completed') {
+      sources.hasDocument = true;
+      sources.documentName = doc.fileName || '';
+    }
+
+    const products = await db.getProductsByMerchantId(merchant.id);
+    if (products.length > 0) {
+      sources.hasProducts = true;
+      sources.productCount = products.length;
+    }
+
+    try {
+      const dbConn = await db.getDb();
+      if (dbConn) {
+        const [analyses] = await (dbConn as any).execute(
+          `SELECT url FROM website_analyses WHERE merchant_id = ? LIMIT 1`,
+          [merchant.id]
+        );
+        if (analyses && (analyses as any[]).length > 0) {
+          sources.hasWebsite = true;
+          sources.websiteUrl = (analyses as any[])[0].url || '';
+        }
+      }
+    } catch (e) { /* skip */ }
+
+    return sources;
+  }),
+
   // ════════════════════════════════════════════════════════════════
   // Phase 2: Smart Intake — GPT-powered file analysis before approval
   // ════════════════════════════════════════════════════════════════

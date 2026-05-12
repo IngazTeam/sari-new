@@ -66,6 +66,15 @@ export default function SariBrain() {
     onError: (error) => toast.error('فشل إعادة الضبط: ' + error.message),
   });
 
+  const reanalyzeMutation = trpc.sariBrain.reanalyzeWebsite.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم تحليل الموقع بنجاح — ${data.title || 'بدون عنوان'} (${data.score}/100)`);
+      utils.sariBrain.getSources.invalidate();
+      utils.sariBrain.getActivityLog.invalidate();
+    },
+    onError: (error) => toast.error('فشل التحليل: ' + error.message),
+  });
+
   const analyzeMutation = trpc.sariBrain.analyzeContent.useMutation({
     onSuccess: (data) => {
       setAnalysisResult(data.analysis);
@@ -181,6 +190,26 @@ export default function SariBrain() {
             <p className="text-xs text-muted-foreground mt-1">منتج في ذاكرة ساري</p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={() => reanalyzeMutation.mutate()} disabled={reanalyzeMutation.isPending}>
+          <Globe className="h-4 w-4 ml-2" />
+          {reanalyzeMutation.isPending ? 'جاري التحليل...' : '🔄 إعادة تحليل الموقع'}
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/products')}>
+          <Package className="h-4 w-4 ml-2" />
+          إدارة المنتجات
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/website-analysis')}>
+          <Globe className="h-4 w-4 ml-2" />
+          تحليل الموقع المتقدم
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/settings')}>
+          <Settings className="h-4 w-4 ml-2" />
+          الإعدادات
+        </Button>
       </div>
 
       {/* Knowledge Sources */}
