@@ -71,6 +71,14 @@ const WhatsAppBooking = lazyLoad(() => import("./pages/landing/WhatsAppBooking")
 const AICustomerService = lazyLoad(() => import("./pages/landing/AICustomerService"));
 const ConversationalCommerce = lazyLoad(() => import("./pages/landing/ConversationalCommerce"));
 
+// SEO Vertical Industry Pages
+const Clinics = lazyLoad(() => import("./pages/landing/Clinics"));
+const Restaurants = lazyLoad(() => import("./pages/landing/Restaurants"));
+const Salons = lazyLoad(() => import("./pages/landing/Salons"));
+const TrainingCenters = lazyLoad(() => import("./pages/landing/TrainingCenters"));
+const RealEstate = lazyLoad(() => import("./pages/landing/RealEstate"));
+const Consultants = lazyLoad(() => import("./pages/landing/Consultants"));
+
 // Merchant pages - lazy loaded
 const MerchantDashboard = lazyLoad(() => import("./pages/merchant/Dashboard"));
 const Campaigns = lazyLoad(() => import("./pages/merchant/Campaigns"));
@@ -239,6 +247,14 @@ function Router() {
       <Route path="/whatsapp-booking-system" component={WhatsAppBooking} />
       <Route path="/ai-customer-service-whatsapp" component={AICustomerService} />
       <Route path="/conversational-commerce-platform" component={ConversationalCommerce} />
+
+      {/* SEO Vertical Industry Pages */}
+      <Route path="/solutions/clinics" component={Clinics} />
+      <Route path="/solutions/restaurants" component={Restaurants} />
+      <Route path="/solutions/salons" component={Salons} />
+      <Route path="/solutions/training-centers" component={TrainingCenters} />
+      <Route path="/solutions/real-estate" component={RealEstate} />
+      <Route path="/solutions/consultants" component={Consultants} />
 
       <Route path="/merchant/setup-wizard" component={SetupWizard} />
 
