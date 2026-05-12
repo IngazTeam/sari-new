@@ -46,9 +46,12 @@ function sanitizeLogText(text: string): string {
 
 // ─── PEN-BRAIN-05 FIX: Rate limiter for destructive ops ───────────────────
 const destructiveRateLimit: Record<number, number> = {};
-function checkDestructiveRateLimit(merchantId: number, cooldownMs: number = 30_000): void {
+// PEN-BRAIN-08 FIX: Separate rate limiter for test endpoint
+const testRateLimit: Record<number, number> = {};
+
+function checkRateLimit(map: Record<number, number>, merchantId: number, cooldownMs: number): void {
   const now = Date.now();
-  const lastAction = destructiveRateLimit[merchantId];
+  const lastAction = map[merchantId];
   if (lastAction && now - lastAction < cooldownMs) {
     const waitSec = Math.ceil((cooldownMs - (now - lastAction)) / 1000);
     throw new TRPCError({
@@ -56,7 +59,23 @@ function checkDestructiveRateLimit(merchantId: number, cooldownMs: number = 30_0
       message: `يرجى الانتظار ${waitSec} ثانية قبل تكرار هذا الإجراء`,
     });
   }
-  destructiveRateLimit[merchantId] = now;
+  map[merchantId] = now;
+
+  // PEN-BRAIN-10 FIX: Cleanup stale entries every 100 calls
+  const keys = Object.keys(map);
+  if (keys.length > 500) {
+    const cutoff = now - 120_000; // 2 min TTL
+    for (const k of keys) {
+      if (map[Number(k)] < cutoff) delete map[Number(k)];
+    }
+  }
+}
+
+function checkDestructiveRateLimit(merchantId: number, cooldownMs: number = 30_000): void {
+  checkRateLimit(destructiveRateLimit, merchantId, cooldownMs);
+}
+function checkTestRateLimit(merchantId: number, cooldownMs: number = 5_000): void {
+  checkRateLimit(testRateLimit, merchantId, cooldownMs);
 }
 
 // Activity log helper — logs brain events via raw SQL (table created lazily)
@@ -442,8 +461,8 @@ export const sariBrainRouter = router({
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      // Rate limit: 10s cooldown
-      checkDestructiveRateLimit(merchant.id, 10_000);
+      // PEN-BRAIN-08 FIX: Separate rate limiter for test endpoint (5s cooldown)
+      checkTestRateLimit(merchant.id, 5_000);
 
       try {
         const { chatWithSari } = await import('./ai/sari-personality');
@@ -471,7 +490,8 @@ export const sariBrainRouter = router({
   // ════════════════════════════════════════════════════════════════
   analyzeContent: protectedProcedure
     .input(z.object({
-      content: z.string().max(30_000, 'المحتوى طويل جداً'),
+      // PEN-BRAIN-11 FIX: Require minimum 10 chars to prevent empty analysis
+      content: z.string().min(10, 'المحتوى قصير جداً').max(30_000, 'المحتوى طويل جداً'),
       contentType: z.enum(['document', 'products', 'custom']),
       fileName: z.string().max(255).optional(),
     }))
@@ -617,6 +637,12 @@ ${sanitizedContent}`
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+      // PEN-BRAIN-09 FIX: Cap FAQs at 50 per merchant
+      const existingFaqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      if (existingFaqs.length >= 50) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى 50 سؤال شائع. احذف بعض الأسئلة أولاً.' });
+      }
+
       const id = await db.createExtractedFaq({
         merchantId: merchant.id,
         question: input.question,
@@ -647,6 +673,12 @@ ${sanitizedContent}`
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+      // PEN-BRAIN-07 FIX: Verify FAQ ownership before update
+      const merchantFaqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      if (!merchantFaqs.some((f: any) => f.id === input.id)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن تعديل سؤال لا يخصك' });
+      }
+
       const { id, ...data } = input;
       await db.updateExtractedFaq(id, data);
       await logBrainActivity(merchant.id, 'faq_updated', `تم تحديث سؤال رقم ${id}`);
@@ -659,6 +691,12 @@ ${sanitizedContent}`
     .mutation(async ({ ctx, input }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      // PEN-BRAIN-07 FIX: Verify FAQ ownership before delete
+      const ownedFaqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      if (!ownedFaqs.some((f: any) => f.id === input.id)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن حذف سؤال لا يخصك' });
+      }
 
       await db.deleteExtractedFaq(input.id);
       await logBrainActivity(merchant.id, 'faq_deleted', `تم حذف سؤال رقم ${input.id}`);
