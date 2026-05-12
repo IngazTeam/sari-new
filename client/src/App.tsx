@@ -49,6 +49,9 @@ const SolutionsSales = lazyLoad(() => import("./pages/SolutionsSales"));
 const SolutionsMarketing = lazyLoad(() => import("./pages/SolutionsMarketing"));
 const SolutionsSupport = lazyLoad(() => import("./pages/SolutionsSupport"));
 const ProductAI = lazyLoad(() => import("./pages/ProductAI"));
+const ProductChatbot = lazyLoad(() => import("./pages/ProductChatbot"));
+const ProductWhatsApp = lazyLoad(() => import("./pages/ProductWhatsApp"));
+const ProductBroadcasts = lazyLoad(() => import("./pages/ProductBroadcasts"));
 const CompanyAbout = lazyLoad(() => import("./pages/CompanyAbout"));
 const Blog = lazyLoad(() => import("./pages/resources/Blog"));
 const HelpCenter = lazyLoad(() => import("./pages/resources/HelpCenter"));
@@ -210,6 +213,9 @@ function Router() {
       <Route path="/solutions/marketing" component={SolutionsMarketing} />
       <Route path="/solutions/support" component={SolutionsSupport} />
       <Route path="/product/ai-agent" component={ProductAI} />
+      <Route path="/product/chatbot" component={ProductChatbot} />
+      <Route path="/product/whatsapp" component={ProductWhatsApp} />
+      <Route path="/product/broadcasts" component={ProductBroadcasts} />
       <Route path="/company/about" component={CompanyAbout} />
       <Route path="/resources/blog" component={Blog} />
       <Route path="/resources/help-center" component={HelpCenter} />
