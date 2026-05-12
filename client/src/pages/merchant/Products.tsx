@@ -14,12 +14,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Package, Plus, Upload, Edit, Trash2, Image as ImageIcon, Tag, Layers, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Package, Plus, Upload, Edit, Trash2, Image as ImageIcon, Tag, Layers, AlertTriangle, BarChart3, CheckSquare } from 'lucide-react';
 import { useState } from 'react';
 import { formatCurrency } from '@/../../shared/currency';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { ProductsSkeleton } from '@/components/ProductsSkeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Products() {
   const { t } = useTranslation();
@@ -32,6 +33,7 @@ export default function Products() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', imageUrl: '', stock: '',
@@ -73,6 +75,17 @@ export default function Products() {
     },
     onError: (error) => {
       toast.error(t('toast.products.msg6') + ': ' + error.message);
+    },
+  });
+
+  const bulkDeleteMutation = trpc.products.bulkDelete.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم حذف ${data.deleted} منتج بنجاح`);
+      setSelectedIds(new Set());
+      utils.products.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error('فشل الحذف الجماعي: ' + error.message);
     },
   });
 
@@ -158,6 +171,32 @@ export default function Products() {
   const handleDelete = (productId: number, productName: string) => {
     if (confirm(`${t('productsPage.confirmDelete')} "${productName}"?`)) {
       deleteMutation.mutate({ productId });
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (!products) return;
+    if (selectedIds.size === products.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(products.map((p: any) => p.id)));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkDelete = () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+    if (confirm(`هل أنت متأكد من حذف ${count} منتج؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+      bulkDeleteMutation.mutate({ productIds: Array.from(selectedIds) });
     }
   };
 
@@ -384,6 +423,13 @@ export default function Products() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={products && products.length > 0 && selectedIds.size === products.length}
+                        onCheckedChange={toggleSelectAll}
+                        aria-label="تحديد الكل"
+                      />
+                    </TableHead>
                     <TableHead>{t('productsPage.product')}</TableHead>
                     <TableHead>{t('productsPage.descriptionLabel')}</TableHead>
                     <TableHead>{t('productsPage.price')}</TableHead>
@@ -393,7 +439,14 @@ export default function Products() {
                 </TableHeader>
                 <TableBody>
                   {products.map((product: any) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product.id} className={selectedIds.has(product.id) ? 'bg-primary/5' : ''}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.has(product.id)}
+                          onCheckedChange={() => toggleSelect(product.id)}
+                          aria-label={`تحديد ${product.name}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           {product.imageUrl ? (
@@ -466,6 +519,46 @@ export default function Products() {
           )}
         </CardContent>
       </Card>
+
+      {/* Floating Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200">
+          <div className="flex items-center gap-4 px-6 py-3 rounded-xl bg-background border shadow-2xl">
+            <div className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5 text-primary" />
+              <span className="text-sm font-medium">
+                تم تحديد <strong className="text-primary">{selectedIds.size}</strong> منتج
+              </span>
+            </div>
+            <div className="w-px h-6 bg-border" />
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleteMutation.isPending}
+            >
+              {bulkDeleteMutation.isPending ? (
+                <>
+                  <span className="animate-spin ml-2">⏳</span>
+                  جاري الحذف...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  حذف المحدد
+                </>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              إلغاء التحديد
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

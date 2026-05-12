@@ -406,6 +406,26 @@ export const productsRouter = router({
             return { success: true };
         }),
 
+    // Bulk delete products
+    bulkDelete: protectedProcedure
+        .input(z.object({
+            productIds: z.array(z.number()).min(1).max(500),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            let deleted = 0;
+            for (const productId of input.productIds) {
+                const product = await db.getProductById(productId);
+                if (product && product.merchantId === merchant.id) {
+                    await db.deleteProduct(productId);
+                    deleted++;
+                }
+            }
+            return { success: true, deleted };
+        }),
+
     // Get product with variants and options
     getById: protectedProcedure
         .input(z.object({ productId: z.number() }))
