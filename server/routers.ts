@@ -3426,7 +3426,7 @@ export const appRouter = router({
         return await db.getPrimaryWhatsAppInstance(input.merchantId);
       }),
 
-    // Create new instance
+    // Create new instance (ADMIN ONLY — merchants use whatsappRequests.create)
     create: protectedProcedure
       .input(
         z.object({
@@ -3441,9 +3441,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        // SEC-PEN-WA-01: Admin-only — merchants must use whatsappRequests.create
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required. Use the WhatsApp connection request flow.' });
+        }
         const merchant = await db.getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
         // Check if instance ID already exists
@@ -3477,7 +3481,7 @@ export const appRouter = router({
         return instance;
       }),
 
-    // Update instance
+    // Update instance (ADMIN ONLY — merchants use toggleStatus/setPrimary)
     update: protectedProcedure
       .input(
         z.object({
@@ -3493,9 +3497,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        // SEC-PEN-WA-02: Admin-only — merchants use toggleStatus/setPrimary for safe operations
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
         const merchant = await db.getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
         const instance = await db.getWhatsAppInstanceById(input.id);
@@ -3539,7 +3547,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Delete instance
+    // Delete instance (ADMIN ONLY)
     delete: protectedProcedure
       .input(
         z.object({
@@ -3548,9 +3556,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        // SEC-PEN-WA-01: Admin-only — merchants cannot delete instances directly
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
         const merchant = await db.getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
         const instance = await db.getWhatsAppInstanceById(input.id);
@@ -3570,7 +3582,7 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Test connection
+    // Test connection (ADMIN ONLY — accepts raw credentials)
     testConnection: protectedProcedure
       .input(
         z.object({
@@ -3580,8 +3592,26 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        // SEC-PEN-WA-01: Admin-only — this endpoint accepts raw credentials
+        if (ctx.user.role !== 'admin') {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        }
+
         try {
           const baseUrl = input.apiUrl || 'https://api.green-api.com';
+
+          // SEC-SSRF: Only allow Green API domains
+          try {
+            const parsed = new URL(baseUrl);
+            const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+            const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
+            if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+              return { success: false, status: 'error', message: 'Only Green API URLs are allowed' };
+            }
+          } catch {
+            return { success: false, status: 'error', message: 'Invalid API URL format' };
+          }
+
           const url = `${baseUrl}/waInstance${input.instanceId}/getStateInstance/${input.token}`;
 
           const response = await fetch(url);
