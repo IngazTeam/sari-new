@@ -379,6 +379,8 @@ async function startServer() {
             extractionStatus: 'completed',
             textLength: text.length,
             pageCount,
+            // Smart Intake: return raw text for frontend preview (truncated)
+            extractedTextPreview: text.substring(0, 30000),
           },
         });
       } catch (extractError) {
