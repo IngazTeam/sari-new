@@ -2,6 +2,7 @@ import { trpc } from '@/lib/trpc';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, AlertCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 export function SubscriptionBadge() {
   const { t } = useTranslation();
