@@ -184,15 +184,15 @@ export const productsRouter = router({
             category: z.string().optional(),
             categoryId: z.number().optional(),
             // Advanced fields
-            sku: z.string().optional(),
-            barcode: z.string().optional(),
+            sku: z.string().max(100).optional(),
+            barcode: z.string().max(100).optional(),
             compareAtPrice: z.number().optional(),
             costPrice: z.number().optional(),
-            weight: z.string().optional(),
+            weight: z.string().max(20).optional(),
             trackInventory: z.number().optional(),
-            lowStockAlert: z.number().optional(),
-            images: z.string().optional(),
-            tags: z.string().optional(),
+            lowStockAlert: z.number().min(0).max(99999).optional(),
+            images: z.string().max(5000).optional(),
+            tags: z.string().max(500).optional(),
             productType: z.enum(['physical', 'digital', 'service']).optional(),
             status: z.enum(['active', 'draft', 'archived']).optional(),
             // Variants (optional — sent as JSON)
@@ -207,7 +207,7 @@ export const productsRouter = router({
                 weight: z.string().optional(),
                 imageUrl: z.string().optional(),
                 options: z.string().optional(),
-            })).optional(),
+            })).max(100).optional(),
             // Options (optional)
             options: z.array(z.object({
                 name: z.string(),
@@ -414,6 +414,11 @@ export const productsRouter = router({
             }
 
             const prodDb = await import('./db/products');
+            // SEC-IDOR: Verify variant belongs to this product
+            const variants = await prodDb.getVariantsByProductId(input.productId);
+            if (!variants.find(v => v.id === input.variantId)) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Variant not found for this product' });
+            }
             const { variantId, productId, ...data } = input;
             await prodDb.updateVariant(variantId, data as any);
             return { success: true };
@@ -431,6 +436,11 @@ export const productsRouter = router({
             }
 
             const prodDb = await import('./db/products');
+            // SEC-IDOR: Verify variant belongs to this product
+            const variants = await prodDb.getVariantsByProductId(input.productId);
+            if (!variants.find(v => v.id === input.variantId)) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Variant not found for this product' });
+            }
             await prodDb.deleteVariant(input.variantId);
 
             // Check if product still has variants
@@ -482,6 +492,11 @@ export const productsRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             const prodDb = await import('./db/products');
+            // SEC-IDOR: Verify category belongs to this merchant
+            const cats = await prodDb.getCategoriesByMerchantId(merchant.id);
+            if (!cats.find(c => c.id === input.id)) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
             const { id, ...data } = input;
             await prodDb.updateCategory(id, data as any);
             return { success: true };
@@ -493,6 +508,11 @@ export const productsRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             const prodDb = await import('./db/products');
+            // SEC-IDOR: Verify category belongs to this merchant
+            const cats = await prodDb.getCategoriesByMerchantId(merchant.id);
+            if (!cats.find(c => c.id === input.id)) {
+                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            }
             await prodDb.deleteCategory(input.id);
             return { success: true };
         }),
