@@ -678,7 +678,7 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     return res.status(429).json({ error: 'Provision rate limit exceeded (5/hour)', errorAr: 'تجاوزت حد إنشاء الحسابات (5/ساعة)' });
   }
 
-  const { name, email, password, businessName, phone, tenantDomain } = req.body;
+  const { name, email, password, businessName, phone, tenantDomain, callbackUrl, webhookSecret } = req.body;
   const source = req.platform || 'external';
 
   if (!email || !password || !businessName) {
@@ -756,9 +756,11 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     if (source === 'byaan' && tenantDomain) {
       try {
         const cleanDomain = stripHtml(String(tenantDomain));
+        const apiBaseUrl = callbackUrl ? stripHtml(String(callbackUrl)) : undefined;
+        const secret = webhookSecret ? String(webhookSecret) : undefined;
         const { createByaanConnection } = await import('../integrations/byaan');
-        await createByaanConnection(merchantId, cleanDomain, {});
-        console.log(`[SariAPI] Byaan auto-connected: merchant=${merchantId}, tenant=${cleanDomain}`);
+        await createByaanConnection(merchantId, cleanDomain, {}, apiBaseUrl, secret);
+        console.log(`[SariAPI] Byaan auto-connected: merchant=${merchantId}, tenant=${cleanDomain}, api=${apiBaseUrl || 'auto'}`);
       } catch (e) {
         console.error('[SariAPI] Byaan auto-connect failed (non-blocking):', e);
       }
