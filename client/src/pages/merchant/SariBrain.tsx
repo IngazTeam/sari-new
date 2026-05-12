@@ -2,24 +2,20 @@ import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, AlertTriangle, CheckCircle2, XCircle, Upload, RefreshCw } from 'lucide-react';
-import { useState } from 'react';
+import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, MessageSquare, Sparkles, Shield } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
 
 const ACTION_ICONS: Record<string, string> = {
-  document_deleted: '🗑️',
-  products_deleted: '🗑️',
-  website_deleted: '🗑️',
-  brain_reset: '⚠️',
-  file_uploaded: '📁',
-  file_approved: '✅',
-  website_analyzed: '🌐',
-  products_imported: '🛍️',
-  settings_changed: '⚙️',
+  document_deleted: '🗑️', products_deleted: '🗑️', website_deleted: '🗑️',
+  brain_reset: '⚠️', file_uploaded: '📁', file_approved: '✅',
+  website_analyzed: '🌐', products_imported: '🛍️', settings_changed: '⚙️',
+  content_analyzed: '🔬',
 };
 
 const SOURCE_ICONS: Record<string, React.ReactNode> = {
@@ -29,23 +25,36 @@ const SOURCE_ICONS: Record<string, React.ReactNode> = {
   settings: <Settings className="h-5 w-5 text-gray-500" />,
 };
 
+const RISK_COLORS: Record<string, string> = {
+  low: 'bg-green-100 text-green-800 border-green-200',
+  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  high: 'bg-red-100 text-red-800 border-red-200',
+};
+
+const RISK_LABELS: Record<string, string> = {
+  low: '🟢 منخفض',
+  medium: '🟡 متوسط',
+  high: '🔴 مرتفع',
+};
+
 export default function SariBrain() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const { data: sources, isLoading } = trpc.sariBrain.getSources.useQuery();
   const { data: activityLog } = trpc.sariBrain.getActivityLog.useQuery({ limit: 30 });
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Smart Intake state
+  const [previewText, setPreviewText] = useState('');
+  const [analysisResult, setAnalysisResult] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const deleteSourceMutation = trpc.sariBrain.deleteSource.useMutation({
     onSuccess: () => {
       toast.success('تم حذف المصدر بنجاح');
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
-      setDeletingId(null);
     },
-    onError: (error) => {
-      toast.error('فشل الحذف: ' + error.message);
-    },
+    onError: (error) => toast.error('فشل الحذف: ' + error.message),
   });
 
   const resetBrainMutation = trpc.sariBrain.resetBrain.useMutation({
@@ -54,25 +63,51 @@ export default function SariBrain() {
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
     },
-    onError: (error) => {
-      toast.error('فشل إعادة الضبط: ' + error.message);
-    },
+    onError: (error) => toast.error('فشل إعادة الضبط: ' + error.message),
   });
 
-  const handleDeleteSource = (sourceId: string, sourceType: string) => {
-    deleteSourceMutation.mutate({
-      sourceId,
-      sourceType: sourceType as any,
+  const analyzeMutation = trpc.sariBrain.analyzeContent.useMutation({
+    onSuccess: (data) => {
+      setAnalysisResult(data.analysis);
+      toast.success('تم تحليل المحتوى بنجاح');
+      utils.sariBrain.getActivityLog.invalidate();
+    },
+    onError: (error) => toast.error('فشل التحليل: ' + error.message),
+  });
+
+  const handleAnalyze = () => {
+    if (!previewText.trim()) {
+      toast.error('الصق محتوى الملف أولاً');
+      return;
+    }
+    analyzeMutation.mutate({
+      content: previewText,
+      contentType: 'document',
+      fileName: 'محتوى للفحص',
     });
   };
 
-  const deletableSources = sources?.filter(s => s.deletable) || [];
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type === 'text/plain' || file.type === 'text/csv' || file.name.endsWith('.txt') || file.name.endsWith('.csv')) {
+      const text = await file.text();
+      setPreviewText(text.substring(0, 30000));
+      setAnalysisResult(null);
+      toast.success(`تم تحميل "${file.name}" — اضغط "فحص المحتوى" للتحليل`);
+    } else {
+      toast.error('ادعم حالياً ملفات TXT/CSV فقط للفحص المسبق. للملفات الأخرى استخدم صفحة الإعدادات.');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const totalSources = sources?.filter(s => s.hasContent && s.type !== 'settings').length || 0;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Brain className="h-8 w-8 text-primary" />
@@ -101,16 +136,11 @@ export default function SariBrain() {
                   سيتم حذف جميع مصادر المعرفة (الملفات، المنتجات، تحليل الموقع).
                   <br />
                   <strong className="text-destructive">هذا الإجراء لا يمكن التراجع عنه!</strong>
-                  <br />
-                  سيعود ساري للرد بالمعلومات الأساسية فقط (اسم المتجر والإعدادات).
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter className="flex-row-reverse gap-2">
                 <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => resetBrainMutation.mutate()}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
+                <AlertDialogAction onClick={() => resetBrainMutation.mutate()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                   {resetBrainMutation.isPending ? 'جاري الحذف...' : 'نعم، أعد الضبط'}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -131,29 +161,23 @@ export default function SariBrain() {
             <p className="text-xs text-muted-foreground mt-1">مصدر نشط يغذي ساري</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">الملفات المرفقة</CardTitle>
             <FileText className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {sources?.filter(s => s.type === 'document').length || 0}
-            </div>
+            <div className="text-2xl font-bold text-blue-600">{sources?.filter(s => s.type === 'document').length || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">ملف تعريفي</p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">المنتجات</CardTitle>
             <Package className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {sources?.find(s => s.type === 'products')?.contentLength || 0}
-            </div>
+            <div className="text-2xl font-bold text-green-600">{sources?.find(s => s.type === 'products')?.contentLength || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">منتج في ذاكرة ساري</p>
           </CardContent>
         </Card>
@@ -163,9 +187,7 @@ export default function SariBrain() {
       <Card>
         <CardHeader>
           <CardTitle>📦 مصادر المعرفة</CardTitle>
-          <CardDescription>
-            كل مصدر يؤثر على ردود ساري — يمكنك حذف أي مصدر بشكل مستقل
-          </CardDescription>
+          <CardDescription>كل مصدر يؤثر على ردود ساري — يمكنك حذف أي مصدر بشكل مستقل</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -173,10 +195,7 @@ export default function SariBrain() {
           ) : sources && sources.length > 0 ? (
             <div className="space-y-3">
               {sources.map((source: any) => (
-                <div
-                  key={source.id}
-                  className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                >
+                <div key={source.id} className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-muted">
                       {SOURCE_ICONS[source.type] || <FileText className="h-5 w-5" />}
@@ -194,7 +213,6 @@ export default function SariBrain() {
                       </p>
                     </div>
                   </div>
-
                   {source.deletable ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -211,10 +229,7 @@ export default function SariBrain() {
                         </AlertDialogHeader>
                         <AlertDialogFooter className="flex-row-reverse gap-2">
                           <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteSource(source.id, source.type)}
-                            className="bg-destructive text-destructive-foreground"
-                          >
+                          <AlertDialogAction onClick={() => deleteSourceMutation.mutate({ sourceId: source.id, sourceType: source.type })} className="bg-destructive text-destructive-foreground">
                             حذف
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -230,9 +245,7 @@ export default function SariBrain() {
             <div className="text-center py-12">
               <Brain className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4 text-lg font-medium">لا توجد مصادر معرفة</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                ارفع ملف تعريفي أو أضف منتجات ليتعلم ساري عن متجرك
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">ارفع ملف تعريفي أو أضف منتجات ليتعلم ساري عن متجرك</p>
               <Button className="mt-4" onClick={() => setLocation('/merchant/settings')}>
                 <Upload className="h-4 w-4 ml-2" />
                 رفع ملف تعريفي
@@ -242,20 +255,149 @@ export default function SariBrain() {
         </CardContent>
       </Card>
 
+      {/* ═══ Phase 2: Smart Intake — Content Preview & Analysis ═══ */}
+      <Card className="border-2 border-dashed border-primary/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            🔬 الفحص الذكي — Smart Intake
+          </CardTitle>
+          <CardDescription>
+            الصق محتوى ملف أو ارفع ملف نصي لفحصه بالذكاء الاصطناعي قبل إضافته لذاكرة ساري
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Input area */}
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".txt,.csv" className="hidden" />
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-4 w-4 ml-2" />
+                اختر ملف TXT/CSV
+              </Button>
+              <span className="text-xs text-muted-foreground self-center">أو الصق المحتوى مباشرة ↓</span>
+            </div>
+            <Textarea
+              value={previewText}
+              onChange={(e) => { setPreviewText(e.target.value); setAnalysisResult(null); }}
+              placeholder="الصق هنا محتوى الملف الذي تريد فحصه... (أسعار، منتجات، سياسات، معلومات عامة)"
+              className="min-h-[120px] text-sm"
+              dir="auto"
+            />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">{previewText.length.toLocaleString()} حرف</span>
+              <Button onClick={handleAnalyze} disabled={!previewText.trim() || analyzeMutation.isPending}>
+                <Search className="h-4 w-4 ml-2" />
+                {analyzeMutation.isPending ? 'جاري الفحص...' : 'فحص المحتوى بالذكاء الاصطناعي'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Analysis Result */}
+          {analysisResult && (
+            <div className="mt-4 space-y-4 border rounded-lg p-4 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <Shield className="h-5 w-5 text-primary" />
+                  📊 تقرير الفحص الذكي
+                </h3>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium border ${RISK_COLORS[analysisResult.riskLevel] || RISK_COLORS.medium}`}>
+                  الخطورة: {RISK_LABELS[analysisResult.riskLevel] || analysisResult.riskLevel}
+                </span>
+              </div>
+
+              {/* Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-background border">
+                  <p className="text-xs text-muted-foreground">النوع</p>
+                  <p className="font-medium">{analysisResult.contentType}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-background border">
+                  <p className="text-xs text-muted-foreground">الملخص</p>
+                  <p className="font-medium">{analysisResult.summary}</p>
+                </div>
+              </div>
+
+              {/* Impact */}
+              <div className="p-3 rounded-lg bg-background border">
+                <p className="text-xs text-muted-foreground mb-1">📈 التأثير على ردود ساري</p>
+                <p className="text-sm">{analysisResult.impact}</p>
+              </div>
+
+              {/* Conflicts */}
+              {analysisResult.conflicts && analysisResult.conflicts.length > 0 && (
+                <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
+                  <p className="text-xs font-medium text-yellow-800 dark:text-yellow-200 mb-2 flex items-center gap-1">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    ⚠️ تعارضات مكتشفة ({analysisResult.conflicts.length})
+                  </p>
+                  <ul className="space-y-1">
+                    {analysisResult.conflicts.map((conflict: string, i: number) => (
+                      <li key={i} className="text-sm text-yellow-700 dark:text-yellow-300 flex items-start gap-2">
+                        <span className="mt-0.5">•</span> {conflict}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Sample Q&A */}
+              {analysisResult.sampleQA && analysisResult.sampleQA.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    💬 نماذج أسئلة وأجوبة بعد الإضافة
+                  </p>
+                  <div className="space-y-2">
+                    {analysisResult.sampleQA.map((qa: any, i: number) => (
+                      <div key={i} className="p-3 rounded-lg bg-background border">
+                        <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                          <span className="text-muted-foreground">العميل:</span> {qa.question}
+                        </p>
+                        <p className="text-sm mt-1 text-green-700 dark:text-green-400">
+                          <span className="text-muted-foreground">ساري:</span> {qa.answer}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendation + Actions */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-background border">
+                <div>
+                  <p className="text-xs text-muted-foreground">التوصية</p>
+                  <p className="font-medium flex items-center gap-1">
+                    {analysisResult.recommendation === 'approve' && <><CheckCircle2 className="h-4 w-4 text-green-500" /> موافقة</>}
+                    {analysisResult.recommendation === 'review' && <><AlertTriangle className="h-4 w-4 text-yellow-500" /> مراجعة</>}
+                    {analysisResult.recommendation === 'reject' && <><XCircle className="h-4 w-4 text-red-500" /> رفض</>}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{analysisResult.recommendationReason}</p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => { setAnalysisResult(null); setPreviewText(''); }}>
+                    <XCircle className="h-4 w-4 ml-1" /> تجاهل
+                  </Button>
+                  <Button size="sm" onClick={() => { setLocation('/merchant/settings'); toast.success('انتقل لصفحة الإعدادات لرفع الملف'); }}>
+                    <CheckCircle2 className="h-4 w-4 ml-1" /> رفع الملف
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Activity Log */}
       <Card>
         <CardHeader>
           <CardTitle>📋 مسار ساري</CardTitle>
-          <CardDescription>
-            سجل بكل التغييرات التي أثرت على ذاكرة ساري
-          </CardDescription>
+          <CardDescription>سجل بكل التغييرات التي أثرت على ذاكرة ساري</CardDescription>
         </CardHeader>
         <CardContent>
           {activityLog && activityLog.length > 0 ? (
             <div className="relative">
-              {/* Timeline line */}
               <div className="absolute right-5 top-0 bottom-0 w-px bg-border" />
-
               <div className="space-y-4">
                 {activityLog.map((entry: any) => (
                   <div key={entry.id} className="flex items-start gap-4 relative">
@@ -266,11 +408,7 @@ export default function SariBrain() {
                       <p className="text-sm font-medium">{entry.description}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(entry.createdAt).toLocaleDateString('ar-SA', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
+                          year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
                         })}
                       </p>
                     </div>

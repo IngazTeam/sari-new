@@ -297,6 +297,138 @@ export const sariBrainRouter = router({
         return [];
       }
     }),
+
+  // ════════════════════════════════════════════════════════════════
+  // Phase 2: Smart Intake — GPT-powered file analysis before approval
+  // ════════════════════════════════════════════════════════════════
+  analyzeContent: protectedProcedure
+    .input(z.object({
+      content: z.string().max(30_000, 'المحتوى طويل جداً'),
+      contentType: z.enum(['document', 'products', 'custom']),
+      fileName: z.string().max(255).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      // Rate limit: max 3 analyses per minute per merchant
+      checkDestructiveRateLimit(merchant.id, 20_000);
+
+      try {
+        const { invokeLLM } = await import('./_core/llm');
+
+        // Get existing knowledge for conflict detection
+        const existingProducts = await db.getProductsByMerchantId(merchant.id);
+        const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
+
+        const existingContext = [
+          existingProducts.length > 0 ? `المنتجات الحالية (${existingProducts.length}): ${existingProducts.slice(0, 10).map(p => p.name).join('، ')}` : 'لا توجد منتجات حالية',
+          existingDoc ? `ملف تعريفي موجود: ${existingDoc.fileName}` : 'لا يوجد ملف تعريفي',
+          `اسم المتجر: ${merchant.businessName}`,
+          merchant.industry ? `التخصص: ${merchant.industry}` : '',
+          merchant.city ? `المدينة: ${merchant.city}` : '',
+        ].filter(Boolean).join('\n');
+
+        // Sanitize content for prompt injection
+        const sanitizedContent = input.content
+          .substring(0, 15000)
+          .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+          .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+          .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+          .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+          .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+          .replace(/do\s+not\s+follow/gi, '[filtered]')
+          .replace(/override\s+(system|all|your)/gi, '[filtered]');
+
+        const aiResult = await invokeLLM({
+          messages: [
+            {
+              role: 'system',
+              content: `أنت محلل بيانات ذكي. مهمتك تحليل محتوى جديد يريد تاجر إضافته لبوت ساري AI.
+
+قواعد التحليل:
+1. حدد نوع المحتوى (منتجات/خدمات/سياسات/معلومات عامة)
+2. اكتشف أي تعارضات مع البيانات الحالية
+3. قيّم تأثير الإضافة على ردود البوت
+4. اقترح 3 نماذج أسئلة وأجوبة
+
+أجب بالعربية بتنسيق JSON فقط بهذا الشكل:
+{
+  "contentType": "products|services|policies|general",
+  "summary": "ملخص من سطر واحد",
+  "itemCount": 0,
+  "conflicts": ["تعارض 1", "تعارض 2"],
+  "impact": "وصف التأثير على ردود البوت",
+  "riskLevel": "low|medium|high",
+  "sampleQA": [
+    {"question": "سؤال محتمل من عميل", "answer": "الرد المتوقع من ساري"},
+    {"question": "سؤال 2", "answer": "رد 2"},
+    {"question": "سؤال 3", "answer": "رد 3"}
+  ],
+  "recommendation": "approve|review|reject",
+  "recommendationReason": "سبب التوصية"
+}`
+            },
+            {
+              role: 'user',
+              content: `### بيانات التاجر الحالية:
+${existingContext}
+
+### المحتوى الجديد المراد إضافته (${input.contentType}):
+اسم الملف: ${input.fileName || 'غير محدد'}
+
+${sanitizedContent}`
+            }
+          ],
+          maxTokens: 2000,
+          responseFormat: { type: 'json_object' },
+        });
+
+        const responseText = typeof aiResult.choices[0]?.message?.content === 'string'
+          ? aiResult.choices[0].message.content
+          : '';
+
+        let analysis;
+        try {
+          analysis = JSON.parse(responseText);
+        } catch (e) {
+          // If JSON parse fails, return a default analysis
+          analysis = {
+            contentType: input.contentType,
+            summary: 'تم تحليل المحتوى',
+            itemCount: 0,
+            conflicts: [],
+            impact: 'تأثير غير محدد',
+            riskLevel: 'medium',
+            sampleQA: [],
+            recommendation: 'review',
+            recommendationReason: 'تعذر التحليل التلقائي — يرجى المراجعة يدوياً',
+          };
+        }
+
+        // Log the analysis
+        await logBrainActivity(merchant.id, 'content_analyzed', `تم فحص "${input.fileName || 'محتوى جديد'}" — التوصية: ${analysis.recommendation}`, {
+          fileName: input.fileName,
+          contentType: input.contentType,
+          riskLevel: analysis.riskLevel,
+          recommendation: analysis.recommendation,
+          conflictCount: analysis.conflicts?.length || 0,
+        });
+
+        return {
+          success: true,
+          analysis,
+          tokensUsed: aiResult.usage?.total_tokens || 0,
+        };
+      } catch (error: any) {
+        if (error?.code === 'TOO_MANY_REQUESTS') throw error;
+        console.error('[SariBrain] Content analysis failed:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'فشل تحليل المحتوى. حاول مرة أخرى.',
+        });
+      }
+    }),
 });
 
 export type SariBrainRouter = typeof sariBrainRouter;
