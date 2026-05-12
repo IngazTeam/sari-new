@@ -26,6 +26,11 @@ Allow: /solutions/training-centers
 Allow: /solutions/real-estate
 Allow: /solutions/consultants
 
+# SEO Knowledge Engine (Docs)
+Allow: /docs/how-sari-works
+Allow: /docs/whatsapp-payment-guide
+Allow: /docs/ai-sales-guide
+
 # Disallow private/admin areas
 Disallow: /admin/
 Disallow: /merchant/

@@ -79,6 +79,11 @@ const TrainingCenters = lazyLoad(() => import("./pages/landing/TrainingCenters")
 const RealEstate = lazyLoad(() => import("./pages/landing/RealEstate"));
 const Consultants = lazyLoad(() => import("./pages/landing/Consultants"));
 
+// SEO Knowledge Engine Pages
+const HowSariWorks = lazyLoad(() => import("./pages/landing/HowSariWorks"));
+const WhatsAppPaymentGuide = lazyLoad(() => import("./pages/landing/WhatsAppPaymentGuide"));
+const AISalesGuide = lazyLoad(() => import("./pages/landing/AISalesGuide"));
+
 // Merchant pages - lazy loaded
 const MerchantDashboard = lazyLoad(() => import("./pages/merchant/Dashboard"));
 const Campaigns = lazyLoad(() => import("./pages/merchant/Campaigns"));
@@ -255,6 +260,11 @@ function Router() {
       <Route path="/solutions/training-centers" component={TrainingCenters} />
       <Route path="/solutions/real-estate" component={RealEstate} />
       <Route path="/solutions/consultants" component={Consultants} />
+
+      {/* SEO Knowledge Engine Pages */}
+      <Route path="/docs/how-sari-works" component={HowSariWorks} />
+      <Route path="/docs/whatsapp-payment-guide" component={WhatsAppPaymentGuide} />
+      <Route path="/docs/ai-sales-guide" component={AISalesGuide} />
 
       <Route path="/merchant/setup-wizard" component={SetupWizard} />
 

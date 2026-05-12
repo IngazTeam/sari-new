@@ -182,6 +182,34 @@ export async function generatePagesSitemap(): Promise<string> {
         { lang: 'en', href: `${BASE_URL}/solutions/consultants?lang=en` },
       ],
     },
+    // ─── Knowledge Engine (Docs) ───
+    {
+      loc: `${BASE_URL}/docs/how-sari-works`,
+      changefreq: 'monthly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/docs/how-sari-works` },
+        { lang: 'en', href: `${BASE_URL}/docs/how-sari-works?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/docs/whatsapp-payment-guide`,
+      changefreq: 'monthly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/docs/whatsapp-payment-guide` },
+        { lang: 'en', href: `${BASE_URL}/docs/whatsapp-payment-guide?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/docs/ai-sales-guide`,
+      changefreq: 'monthly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/docs/ai-sales-guide` },
+        { lang: 'en', href: `${BASE_URL}/docs/ai-sales-guide?lang=en` },
+      ],
+    },
     // ─── Standard Pages ───
     {
       loc: `${BASE_URL}/resources/blog`,
