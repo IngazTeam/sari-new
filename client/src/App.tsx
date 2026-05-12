@@ -95,6 +95,7 @@ const UploadProducts = lazyLoad(() => import("./pages/merchant/UploadProducts"))
 const Conversations = lazyLoad(() => import("./pages/merchant/Conversations"));
 const WhatsApp = lazyLoad(() => import("./pages/merchant/WhatsApp"));
 const SallaIntegration = lazyLoad(() => import("./pages/SallaIntegration"));
+const ByaanIntegration = lazyLoad(() => import("./pages/merchant/ByaanIntegration"));
 const ChatOrders = lazyLoad(() => import("./pages/ChatOrders"));
 const DiscountCodes = lazyLoad(() => import("./pages/DiscountCodes"));
 const Referrals = lazyLoad(() => import("./pages/merchant/Referrals"));
@@ -339,6 +340,12 @@ function Router() {
       <Route path="/merchant/salla">
         <DashboardLayout>
           <SallaIntegration />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/integrations/byaan">
+        <DashboardLayout>
+          <ByaanIntegration />
         </DashboardLayout>
       </Route>
 

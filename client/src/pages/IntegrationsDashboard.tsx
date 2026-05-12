@@ -15,6 +15,7 @@ const platformIcons: Record<string, React.ReactNode> = {
   zid: <ShoppingBag className="h-5 w-5" />,
   calendly: <Calendar className="h-5 w-5" />,
   salla: <ShoppingBag className="h-5 w-5" />,
+  byaan: <Activity className="h-5 w-5" />,
   google: <LinkIcon className="h-5 w-5" />,
   whatsapp: <MessageSquare className="h-5 w-5" />
 };
@@ -23,6 +24,7 @@ const platformNames: Record<string, string> = {
   zid: "زد",
   calendly: "Calendly",
   salla: "سلة",
+  byaan: "بيان",
   google: "Google",
   whatsapp: "WhatsApp"
 };

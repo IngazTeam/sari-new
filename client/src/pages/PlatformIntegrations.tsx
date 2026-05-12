@@ -9,13 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Store, CheckCircle2, XCircle, ExternalLink, AlertTriangle, FileSpreadsheet, Calendar } from 'lucide-react';
+import { Loader2, Store, CheckCircle2, XCircle, ExternalLink, AlertTriangle, FileSpreadsheet, Calendar, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
 
 interface PlatformInfo {
-  platform: 'salla' | 'zid' | 'woocommerce' | 'shopify';
+  platform: 'salla' | 'zid' | 'woocommerce' | 'shopify' | 'byaan';
   name: string;
   storeUrl?: string;
   connectedAt?: Date | null;
@@ -149,6 +149,14 @@ export default function PlatformIntegrations() {
       logo: '🏬',
       connected: false,
       setupUrl: '/merchant/integrations/shopify',
+    },
+    {
+      id: 'byaan',
+      name: 'بيان',
+      description: 'منصة إدارة المراكز التدريبية — دورات، متدربين، تسجيلات',
+      logo: '🎓',
+      connected: false,
+      setupUrl: '/merchant/integrations/byaan',
     },
   ];
 
