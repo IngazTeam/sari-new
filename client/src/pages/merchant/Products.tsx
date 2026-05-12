@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Package, Plus, Upload, Edit, Trash2, Image as ImageIcon, Tag, Layers, AlertTriangle, BarChart3, CheckSquare } from 'lucide-react';
+import { Package, Plus, Upload, Edit, Trash2, Image as ImageIcon, Tag, Layers, AlertTriangle, BarChart3, CheckSquare, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useState } from 'react';
 import { formatCurrency } from '@/../../shared/currency';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +34,22 @@ export default function Products() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 20;
+
+  // Filter and paginate products
+  const filteredProducts = (products || []).filter((p: any) =>
+    !searchQuery || p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', imageUrl: '', stock: '',
@@ -175,11 +191,21 @@ export default function Products() {
   };
 
   const toggleSelectAll = () => {
-    if (!products) return;
-    if (selectedIds.size === products.length) {
-      setSelectedIds(new Set());
+    if (!paginatedProducts.length) return;
+    const pageIds = paginatedProducts.map((p: any) => p.id);
+    const allSelected = pageIds.every((id: number) => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        pageIds.forEach((id: number) => next.delete(id));
+        return next;
+      });
     } else {
-      setSelectedIds(new Set(products.map((p: any) => p.id)));
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        pageIds.forEach((id: number) => next.add(id));
+        return next;
+      });
     }
   };
 
@@ -192,11 +218,31 @@ export default function Products() {
     });
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     const count = selectedIds.size;
     if (count === 0) return;
-    if (confirm(`هل أنت متأكد من حذف ${count} منتج؟ لا يمكن التراجع عن هذا الإجراء.`)) {
-      bulkDeleteMutation.mutate({ productIds: Array.from(selectedIds) });
+    if (!confirm(`هل أنت متأكد من حذف ${count} منتج؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    
+    // Split into batches of 100 to avoid the 500-item validation limit
+    const allIds = Array.from(selectedIds);
+    const BATCH_SIZE = 100;
+    let totalDeleted = 0;
+    
+    for (let i = 0; i < allIds.length; i += BATCH_SIZE) {
+      const batch = allIds.slice(i, i + BATCH_SIZE);
+      try {
+        const result = await bulkDeleteMutation.mutateAsync({ productIds: batch });
+        totalDeleted += result.deleted;
+      } catch (error: any) {
+        toast.error(`فشل حذف دفعة: ${error.message}`);
+        break;
+      }
+    }
+    
+    if (totalDeleted > 0) {
+      toast.success(`تم حذف ${totalDeleted} منتج بنجاح`);
+      setSelectedIds(new Set());
+      utils.products.list.invalidate();
     }
   };
 
@@ -408,10 +454,23 @@ export default function Products() {
       {/* Products Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('productsPage.productList')}</CardTitle>
-          <CardDescription>
-            {t('productsPage.productListDesc')}
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{t('productsPage.productList')}</CardTitle>
+              <CardDescription>
+                {t('productsPage.productListDesc')}
+              </CardDescription>
+            </div>
+            <div className="relative w-64">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="بحث في المنتجات..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="pr-9"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -425,7 +484,7 @@ export default function Products() {
                   <TableRow>
                     <TableHead className="w-10">
                       <Checkbox
-                        checked={products && products.length > 0 && selectedIds.size === products.length}
+                        checked={paginatedProducts.length > 0 && paginatedProducts.every((p: any) => selectedIds.has(p.id))}
                         onCheckedChange={toggleSelectAll}
                         aria-label="تحديد الكل"
                       />
@@ -438,7 +497,7 @@ export default function Products() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {products.map((product: any) => (
+                  {paginatedProducts.map((product: any) => (
                     <TableRow key={product.id} className={selectedIds.has(product.id) ? 'bg-primary/5' : ''}>
                       <TableCell>
                         <Checkbox
@@ -503,6 +562,60 @@ export default function Products() {
                   ))}
                 </TableBody>
               </Table>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t">
+                  <div className="text-sm text-muted-foreground">
+                    عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} من {filteredProducts.length} منتج
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                      السابق
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let page: number;
+                        if (totalPages <= 5) {
+                          page = i + 1;
+                        } else if (currentPage <= 3) {
+                          page = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          page = totalPages - 4 + i;
+                        } else {
+                          page = currentPage - 2 + i;
+                        }
+                        return (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            className="w-8 h-8 p-0"
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      التالي
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12">
