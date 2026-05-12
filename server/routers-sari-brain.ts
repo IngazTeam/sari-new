@@ -1,6 +1,8 @@
 /**
  * Sari Brain Management Router
  * Manages knowledge sources, brain reset, and activity logging
+ * 
+ * Security Hardened: PEN-BRAIN-01 through PEN-BRAIN-06
  */
 
 import { z } from "zod";
@@ -8,13 +10,14 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 
-// Activity log helper — logs brain events via raw SQL (table created lazily)
-export async function logBrainActivity(merchantId: number, actionType: string, description: string, details?: any) {
+// ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
+let _activityTableCreated = false;
+
+async function ensureActivityTable() {
+  if (_activityTableCreated) return;
   try {
     const dbConn = await db.getDb();
     if (!dbConn) return;
-
-    // Ensure table exists (safe to call repeatedly — CREATE TABLE IF NOT EXISTS)
     await (dbConn as any).execute(`
       CREATE TABLE IF NOT EXISTS sari_activity_log (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -26,10 +29,50 @@ export async function logBrainActivity(merchantId: number, actionType: string, d
         INDEX idx_merchant_date (merchant_id, created_at DESC)
       )
     `);
+    _activityTableCreated = true;
+  } catch (e) {
+    console.error('[SariBrain] Failed to create activity table:', e);
+  }
+}
+
+// ─── PEN-BRAIN-04 FIX: Sanitize description ───────────────────────────────
+function sanitizeLogText(text: string): string {
+  return text
+    .replace(/<[^>]*>/g, '') // Strip HTML tags
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '')
+    .substring(0, 1000); // Limit length
+}
+
+// ─── PEN-BRAIN-05 FIX: Rate limiter for destructive ops ───────────────────
+const destructiveRateLimit: Record<number, number> = {};
+function checkDestructiveRateLimit(merchantId: number, cooldownMs: number = 30_000): void {
+  const now = Date.now();
+  const lastAction = destructiveRateLimit[merchantId];
+  if (lastAction && now - lastAction < cooldownMs) {
+    const waitSec = Math.ceil((cooldownMs - (now - lastAction)) / 1000);
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: `يرجى الانتظار ${waitSec} ثانية قبل تكرار هذا الإجراء`,
+    });
+  }
+  destructiveRateLimit[merchantId] = now;
+}
+
+// Activity log helper — logs brain events via raw SQL (table created lazily)
+export async function logBrainActivity(merchantId: number, actionType: string, description: string, details?: any) {
+  try {
+    await ensureActivityTable();
+    const dbConn = await db.getDb();
+    if (!dbConn) return;
+
+    // PEN-BRAIN-04: Sanitize before insert
+    const safeDescription = sanitizeLogText(description);
+    const safeActionType = actionType.replace(/[^a-z_]/g, '').substring(0, 100);
 
     await (dbConn as any).execute(
       `INSERT INTO sari_activity_log (merchant_id, action_type, description, details) VALUES (?, ?, ?, ?)`,
-      [merchantId, actionType, description, details ? JSON.stringify(details) : null]
+      [merchantId, safeActionType, safeDescription, details ? JSON.stringify(details) : null]
     );
   } catch (error) {
     console.error('[SariBrain] Failed to log activity:', error);
@@ -130,14 +173,25 @@ export const sariBrainRouter = router({
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+      // PEN-BRAIN-05: Rate limit destructive operations (10s cooldown)
+      checkDestructiveRateLimit(merchant.id, 10_000);
+
       switch (input.sourceType) {
         case 'document': {
-          await db.deleteKnowledgeDocsByMerchantId(merchant.id);
+          // PEN-BRAIN-03 FIX: Validate sourceId matches actual doc
+          const doc = await db.getKnowledgeDocByMerchantId(merchant.id);
+          if (!doc || `doc-${doc.id}` !== input.sourceId) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'المصدر غير موجود' });
+          }
+          await db.deleteKnowledgeDoc(doc.id);
           await logBrainActivity(merchant.id, 'document_deleted', 'تم حذف الملف التعريفي');
           break;
         }
         case 'products': {
           const count = (await db.getProductsByMerchantId(merchant.id)).length;
+          if (count === 0) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'لا توجد منتجات للحذف' });
+          }
           await db.deleteAllProductsByMerchantId(merchant.id);
           await logBrainActivity(merchant.id, 'products_deleted', `تم حذف ${count} منتج`, { count });
           break;
@@ -146,12 +200,16 @@ export const sariBrainRouter = router({
           try {
             const dbConn = await db.getDb();
             if (dbConn) {
-              await (dbConn as any).execute(
+              const [result] = await (dbConn as any).execute(
                 `DELETE FROM website_analyses WHERE merchant_id = ?`,
                 [merchant.id]
               );
+              if ((result as any)?.affectedRows === 0) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد تحليل موقع للحذف' });
+              }
             }
-          } catch (e) {
+          } catch (e: any) {
+            if (e?.code === 'NOT_FOUND') throw e;
             console.error('[SariBrain] Failed to delete website analysis:', e);
           }
           await logBrainActivity(merchant.id, 'website_deleted', 'تم حذف تحليل الموقع');
@@ -168,6 +226,9 @@ export const sariBrainRouter = router({
   resetBrain: protectedProcedure.mutation(async ({ ctx }) => {
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    // PEN-BRAIN-05: Rate limit — 60s cooldown for full reset
+    checkDestructiveRateLimit(merchant.id, 60_000);
 
     let deletedSources: string[] = [];
 
@@ -202,32 +263,27 @@ export const sariBrainRouter = router({
 
   // Get activity log
   getActivityLog: protectedProcedure
-    .input(z.object({ limit: z.number().default(50) }).optional())
+    // PEN-BRAIN-01 FIX: Clamp limit to 1-200
+    .input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional())
     .query(async ({ ctx, input }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       try {
+        await ensureActivityTable();
         const dbConn = await db.getDb();
         if (!dbConn) return [];
-
-        // Ensure table exists
-        await (dbConn as any).execute(`
-          CREATE TABLE IF NOT EXISTS sari_activity_log (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            merchant_id INT NOT NULL,
-            action_type VARCHAR(100) NOT NULL,
-            description TEXT NOT NULL,
-            details JSON,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_merchant_date (merchant_id, created_at DESC)
-          )
-        `);
 
         const [rows] = await (dbConn as any).execute(
           `SELECT id, action_type, description, details, created_at FROM sari_activity_log WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ?`,
           [merchant.id, input?.limit || 50]
         );
+
+        // PEN-BRAIN-06: Cleanup old records (90 days TTL, async non-blocking)
+        (dbConn as any).execute(
+          `DELETE FROM sari_activity_log WHERE merchant_id = ? AND created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)`,
+          [merchant.id]
+        ).catch(() => {}); // Fire-and-forget cleanup
 
         return (rows as any[]).map((row: any) => ({
           id: row.id,
