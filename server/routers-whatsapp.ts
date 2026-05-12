@@ -89,6 +89,22 @@ export const whatsappRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'No WhatsApp connection found' });
         }
 
+        // Logout from Green API BEFORE deleting DB records
+        if (existingRequest.instanceId && existingRequest.apiToken) {
+            try {
+                const axios = await import('axios');
+                const instancePrefix = existingRequest.instanceId.substring(0, 4);
+                const baseUrl = `https://${instancePrefix}.api.greenapi.com`;
+                const logoutUrl = `${baseUrl}/waInstance${existingRequest.instanceId}/logout/${existingRequest.apiToken}`;
+                console.log(`[WhatsApp] Logging out from Green API instance ${existingRequest.instanceId}...`);
+                await axios.default.get(logoutUrl, { timeout: 10000 });
+                console.log(`[WhatsApp] Successfully logged out from Green API instance ${existingRequest.instanceId}`);
+            } catch (logoutError: any) {
+                // Non-blocking: log but don't fail the disconnect
+                console.warn('[WhatsApp] Green API logout failed (non-blocking):', logoutError.message);
+            }
+        }
+
         await db.deleteWhatsAppConnectionRequest(existingRequest.id);
 
         const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
@@ -150,6 +166,33 @@ export const whatsappRouter = router({
                 input.apiToken,
                 input.apiUrl
             );
+
+            // Auto-create whatsapp_instances record so it appears in the instances page
+            try {
+                const existingInstance = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
+                if (!existingInstance) {
+                    await db.createWhatsAppInstance({
+                        merchantId: request.merchantId,
+                        instanceId: input.instanceId,
+                        token: input.apiToken,
+                        apiUrl: input.apiUrl,
+                        phoneNumber: request.phoneNumber,
+                        status: 'active',
+                        isPrimary: true,
+                        connectedAt: new Date(),
+                    });
+                    console.log(`[WhatsApp] Auto-created instance record for merchant ${request.merchantId}`);
+                } else {
+                    await db.updateWhatsAppInstance(existingInstance.id, {
+                        token: input.apiToken,
+                        status: 'active',
+                        connectedAt: new Date(),
+                    });
+                    console.log(`[WhatsApp] Updated existing instance record for merchant ${request.merchantId}`);
+                }
+            } catch (instanceError) {
+                console.error('[WhatsApp] Failed to create instance record (non-blocking):', instanceError);
+            }
 
             // Register Webhook URL
             try {
