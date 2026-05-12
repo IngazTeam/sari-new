@@ -6996,5 +6996,395 @@
     "importedSuccess": "Imported Successfully",
     "importFailed": "Import Failed",
     "errorDetails": "Error Details:"
+  },
+  "productChatbot": {
+    "hero": {
+      "badge": "Chatbot",
+      "title": "A Smart Chatbot Working Around the Clock",
+      "description": "Not just rigid automated replies—Sari understands your customers, speaks their dialect, and guides them towards a purchase step-by-step 24/7.",
+      "ctaPrimary": "Start Automating Conversations",
+      "ctaSecondary": "View Pricing"
+    },
+    "demo": {
+      "title": "AI that Understands Context and Intent",
+      "description": "Forget rigid menus (Press 1 for Sales). Sari understands natural language, typos, and order details with high accuracy.",
+      "f1": {
+        "title": "Understands Local Dialects",
+        "desc": "Trained on Saudi and Gulf dialects as well as common slang."
+      },
+      "f2": {
+        "title": "Smart Recommendations",
+        "desc": "Understands what the customer wants and suggests suitable products from your store."
+      },
+      "f3": {
+        "title": "Order Completion",
+        "desc": "Takes customer details, address, and confirms the order directly via WhatsApp."
+      },
+      "chat": {
+        "m1": "Hello, do you have navy winter abayas in size 54? And how much is delivery to Riyadh?",
+        "m2": "Hello! 🌟 Yes, we have a collection of navy winter abayas in size 54.\n\nDelivery to Riyadh is 25 SAR and takes 1-2 business days.\n\nHere's our latest winter collection in your size:\n1. Plain Navy Wool Abaya (299 SAR)\n2. Navy Velvet Abaya with light embroidery (349 SAR)\n\nWould you like me to send pictures? 📸",
+        "m3": "Yes, send the velvet pictures",
+        "m4": "Sure, here are pictures of the Navy Velvet Abaya ✨<br/><br/>[Abaya Image]<br/><br/>The material is very luxurious and warm for winter. If you'd like to order now, I can process it for you. I just need your name and location 📍"
+      }
+    },
+    "features": {
+      "title": "More Than Just a Chatbot",
+      "subtitle": "Features that make Sari the #1 choice for stores",
+      "items": {
+        "f1": {
+          "title": "Instant Reply 24/7",
+          "desc": "Your customers don't sleep, and neither does your store. Sari replies in seconds even during peak hours."
+        },
+        "f2": {
+          "title": "Seamless Human Handoff",
+          "desc": "If a customer needs complex help, Sari smoothly transfers the chat to your team."
+        },
+        "f3": {
+          "title": "Privacy Protection",
+          "desc": "End-to-end encryption for conversations and complete protection of customer data following the latest standards."
+        },
+        "f4": {
+          "title": "Reports & Analytics",
+          "desc": "Know the most common questions, peak times, and customer satisfaction rates."
+        },
+        "f5": {
+          "title": "Continuous Learning",
+          "desc": "Every conversation makes Sari smarter. It learns from interactions to constantly improve its replies."
+        },
+        "f6": {
+          "title": "Full Customization",
+          "desc": "Set the bot's tone—formal, friendly, or even playful to match your brand identity."
+        }
+      }
+    },
+    "cta": {
+      "title": "Hire Your Best Salesperson",
+      "description": "Don't leave customers waiting. Automate your chats and boost sales today with Sari's smart bot.",
+      "btnPrimary": "Start Your Free Trial",
+      "btnSecondary": "Talk to Sales"
+    }
+  },
+  "productWhatsApp": {
+    "hero": {
+      "badge": "WhatsApp Integration",
+      "title": "Connect WhatsApp to Your Store in Minutes",
+      "description": "Seamless, official integration with WhatsApp Business. Control all conversations, connect your store, and start selling instantly without technical complexity.",
+      "ctaPrimary": "Connect Your Store Now",
+      "ctaSecondary": "Contact Us"
+    },
+    "steps": {
+      "title": "3 Simple Steps to Launch",
+      "subtitle": "No developer or technical experience needed. Connecting is easier than you think.",
+      "s1": {
+        "title": "1. Activate Your Number",
+        "desc": "Link your WhatsApp Business number to Sari in seconds."
+      },
+      "s2": {
+        "title": "2. Connect Your Store",
+        "desc": "Login to your Salla or Zid account to pull your products automatically."
+      },
+      "s3": {
+        "title": "3. Launch",
+        "desc": "You're ready! Start receiving orders and automated replies."
+      }
+    },
+    "platforms": {
+      "title": "Direct Integration with Your Favorite Platform",
+      "description": "Sari is fully connected with leading platforms. Catalog, inventory, and prices sync automatically with zero manual effort.",
+      "sync": "Real-time sync for products, orders, and customers"
+    },
+    "features": {
+      "f1": "Official API Access (WhatsApp Cloud API)",
+      "f2": "Account Verification (Green Tick)",
+      "f3": "End-to-End Data Encryption",
+      "f4": "99.9% Uptime & Stability"
+    },
+    "cta": {
+      "title": "Ready to Connect Your Store?",
+      "description": "Link Salla or Zid to WhatsApp now and start receiving orders directly",
+      "btnPrimary": "Start Your Free Trial"
+    }
+  },
+  "productBroadcasts": {
+    "hero": {
+      "badge": "Broadcasts",
+      "title": "Send Campaigns to Thousands in Seconds",
+      "description": "Broadcast personalized WhatsApp messages to customer lists—offers, updates, reminders—with smart personalization and instant reports.",
+      "ctaPrimary": "Start Your First Campaign",
+      "ctaSecondary": "View Pricing"
+    },
+    "stats": {
+      "s1": {
+        "label": "Open Rate",
+        "desc": "5x higher than Email"
+      },
+      "s2": {
+        "label": "Reply Rate",
+        "desc": "Real engagement with customers"
+      },
+      "s3": {
+        "label": "Sales Increase",
+        "desc": "Compared to traditional channels"
+      },
+      "s4": {
+        "label": "Delivery Time",
+        "desc": "Instant messages for everyone"
+      }
+    },
+    "features": {
+      "title": "Smart Campaigns—Not Just Random Messages",
+      "subtitle": "Professional tools for effective WhatsApp marketing",
+      "items": {
+        "f1": {
+          "title": "Precise Targeting",
+          "desc": "Segment your customers by city, purchases, last interaction, or custom criteria. Send the right message to the right person."
+        },
+        "f2": {
+          "title": "Smart Personalization",
+          "desc": "Customize each message with the customer's name, last purchased item, or a special offer. Messages that feel personal."
+        },
+        "f3": {
+          "title": "Rich Media",
+          "desc": "Send images, videos, PDFs, and interactive buttons. Make your campaigns engaging and content-rich."
+        },
+        "f4": {
+          "title": "Advance Scheduling",
+          "desc": "Schedule campaigns in advance—pick the perfect day and time. Holiday campaigns ready on autopilot."
+        },
+        "f5": {
+          "title": "Detailed Reports",
+          "desc": "Track campaign performance in real-time—delivery, open, reply, and conversion rates. Know what works and what doesn't."
+        },
+        "f6": {
+          "title": "Smart Lists",
+          "desc": "Create dynamic customer lists that update automatically. New customers, inactive customers, or top buyers."
+        }
+      }
+    },
+    "useCases": {
+      "title": "Campaign Ideas to Boost Sales",
+      "c1": {
+        "title": "Offers & Discounts",
+        "desc": "Send exclusive offers with customized discount codes."
+      },
+      "c2": {
+        "title": "Abandoned Cart Recovery",
+        "desc": "Remind customers of items left in their cart with an incentive to complete the purchase."
+      },
+      "c3": {
+        "title": "Shipping Updates",
+        "desc": "Send automated order and shipping updates—tracking numbers and status."
+      },
+      "c4": {
+        "title": "Holiday Campaigns",
+        "desc": "Ramadan, Eid, National Day—ready campaigns with a click of a button."
+      },
+      "c5": {
+        "title": "Review Requests",
+        "desc": "Send a direct link asking for a review after delivery."
+      },
+      "c6": {
+        "title": "Loyalty Program",
+        "desc": "Send reward points and exclusive offers to loyalty members."
+      }
+    },
+    "cta": {
+      "title": "Start Your First Broadcast",
+      "description": "Deliver your message to all customers in seconds with the highest open rate in the market",
+      "btnPrimary": "Start Your Free Trial",
+      "btnSecondary": "Talk to Our Team"
+    }
+  },
+  "productAI": {
+    "auto_0": "الذكاء الاصطناعي (EN)",
+    "auto_1": "تعرّف على ساري: وكيلك الذكي للمبيعات (EN)",
+    "auto_2": "وكيل ذكاء اصطناعي متقدم يتحدث باللهجة السعودية والإنجليزية، يفهم عملاءك، يبحث في منتجاتك، ويحول المحادثات إلى مبيعات. (EN)",
+    "auto_3": "جرب ساري مجاناً (EN)",
+    "auto_4": "عرض الأسعار (EN)",
+    "auto_5": "ساري ليست مجرد روبوت دردشة عادي. إنها وكيلة مبيعات ذكية بشخصية ودودة ومحترفة، مدربة خصيصاً على ثقافة السوق السعودي والخليجي. (EN)",
+    "auto_6": "س (EN)",
+    "auto_7": "مثال على محادثة مع ساري (EN)",
+    "auto_8": "تفهم ساري اللهجات العربية المختلفة والعامية السعودية. تتعامل مع الأخطاء الإملائية والاختصارات بذكاء. (EN)",
+    "auto_9": "تبحث ساري في كتالوج منتجاتك وتقترح الخيارات الأنسب بناءً على احتياجات العميل وميزانيته. (EN)",
+    "auto_10": "ساري متاحة دائماً للرد على عملائك في أي وقت، حتى خارج ساعات العمل. لا تفوت أي فرصة مبيعات. (EN)",
+    "auto_11": "ساري تساعد عملاءك في إيجاد المنتجات المناسبة، تجيب على أسئلتهم حول المقاسات والألوان، وتوجههم لإتمام الشراء. (EN)",
+    "auto_12": "اقتراح منتجات بناءً على التفضيلات (EN)",
+    "auto_13": "الإجابة على أسئلة المنتجات (EN)",
+    "auto_14": "تتبع الطلبات والشحنات (EN)",
+    "auto_15": "ساري تؤهل العملاء المحتملين، تحدد احتياجاتهم، وتحجز المواعيد تلقائياً مع الفريق المناسب. (EN)",
+    "auto_16": "تأهيل العملاء المحتملين (EN)",
+    "auto_17": "حجز المواعيد تلقائياً (EN)",
+    "auto_18": "الإجابة على الأسئلة الشائعة (EN)",
+    "auto_19": "ساري تساعد المرضى في حجز المواعيد، تذكيرهم بالمواعيد، والإجابة على الأسئلة العامة عن الخدمات. (EN)",
+    "auto_20": "حجز وإدارة المواعيد (EN)",
+    "auto_21": "إرسال تذكيرات تلقائية (EN)",
+    "auto_22": "معلومات عن الخدمات والأسعار (EN)",
+    "auto_23": "ساري تساعد الطلاب في التسجيل، تجيب على أسئلتهم حول الدورات، وترسل التحديثات والإشعارات المهمة. (EN)",
+    "auto_24": "معلومات عن الدورات والبرامج (EN)",
+    "auto_25": "مساعدة في التسجيل (EN)",
+    "auto_26": "إرسال التحديثات والإشعارات (EN)",
+    "auto_27": "اجعل ساري جزءاً من فريقك اليوم وابدأ في تحويل المحادثات إلى مبيعات (EN)",
+    "auto_28": "ابدأ تجربتك المجانية (EN)",
+    "auto_29": "تحدث مع فريقنا (EN)"
+  },
+  "solutionsSales": {
+    "auto_0": "حلول المبيعات (EN)",
+    "auto_1": "سرّع خط مبيعاتك وزد تحويلاتك (EN)",
+    "auto_2": "حوّل كل محادثة على واتساب إلى فرصة مبيعات. أدر العملاء المحتملين، اختصر دورة المبيعات، وزد إيراداتك بنسبة تصل إلى 20%. (EN)",
+    "auto_3": "ابدأ الآن مجاناً (EN)",
+    "auto_4": "عرض الأسعار (EN)",
+    "auto_5": "مساحة عمل واحدة لجميع مندوبي المبيعات للتعاون والتواصل وتحويل العملاء المحتملين. تتبع كل محادثة وتفاعل في مكان واحد. (EN)",
+    "auto_6": "تأكد من عدم ضياع أي عميل محتمل جاهز للشراء. تأهيل فوري في الوقت الفعلي على قناة المراسلة المفضلة لديك. (EN)",
+    "auto_7": "أدر حجم كبير من العملاء المحتملين بسهولة على واتساب. استخدم الذكاء الاصطناعي لتأهيل العملاء وتسليم الأفضل لمندوبيك تلقائياً. (EN)",
+    "auto_8": "راقب محادثات العملاء بسهولة وتأكد من تجربة عملاء عالية الجودة لتجنب مخاطر السمعة. تقارير مفصلة عن أداء الفريق. (EN)",
+    "auto_9": "العميل يتواصل معك عبر واتساب من أي مصدر (إعلان، موقع، رابط) (EN)",
+    "auto_10": "ساري يؤهل العميل تلقائياً ويجمع المعلومات المهمة (EN)",
+    "auto_11": "يتم توزيع العميل المؤهل على المندوب المناسب تلقائياً (EN)",
+    "auto_12": "المندوب يتابع ويغلق الصفقة بسرعة أكبر (EN)",
+    "auto_13": "انضم إلى مئات التجار الذين ضاعفوا مبيعاتهم باستخدام ساري (EN)",
+    "auto_14": "ابدأ تجربتك المجانية (EN)",
+    "auto_15": "تحدث مع خبير مبيعات (EN)"
+  },
+  "solutionsMarketing": {
+    "auto_0": "حلول التسويق (EN)",
+    "auto_1": "اكتسب وأشرك وأهّل العملاء بحملات مخصصة (EN)",
+    "auto_2": "حوّل كل نقطة تواصل إلى محادثة هادفة. حسّن الإسناد، أعد الاستهداف بسهولة، وزد العائد على الاستثمار بنسبة تصل إلى 3 أضعاف. (EN)",
+    "auto_3": "ابدأ الآن مجاناً (EN)",
+    "auto_4": "عرض الأسعار (EN)",
+    "auto_5": "حوّل كل نقطة تواصل - من الروابط إلى التفاعلات الميدانية والإعلانات - إلى محادثات هادفة فوراً. لا تفقد أي فرصة. (EN)",
+    "auto_6": "حسّن الإسناد، أعد الاستهداف بسهولة، وزد العائد على الاستثمار مع إعلانات Meta وGoogle التي تنقر إلى واتساب مباشرة. (EN)",
+    "auto_7": "أشرك مستخدميك تلقائياً وقدم سير عمل رائعة بعد التحويل بمحادثات مدعومة بالذكاء الاصطناعي، لكنها تبدو بشرية. (EN)",
+    "auto_8": "ابق على اطلاع برؤى قوية لتحسين رسائلك وحملاتك وأداء إعلاناتك. قرارات مبنية على البيانات. (EN)",
+    "auto_9": "اربط إعلاناتك على Meta وGoogle مباشرة بواتساب. تتبع الأداء وحسّن العائد على الاستثمار. (EN)",
+    "auto_10": "أرسل رسائل مخصصة لشرائح محددة من عملائك. زد معدل التفاعل والتحويل. (EN)",
+    "auto_11": "أعد التواصل مع العملاء الذين أبدوا اهتماماً. حوّل الزوار إلى عملاء فعليين. (EN)",
+    "auto_12": "العميل يشاهد إعلانك على Meta أو Google (EN)",
+    "auto_13": "ينقر ويبدأ محادثة مباشرة على واتساب (EN)",
+    "auto_14": "ساري يشرك العميل بمحادثة ذكية ومخصصة (EN)",
+    "auto_15": "يتحول العميل من زائر إلى مشتري (EN)",
+    "auto_16": "انضم إلى مئات المسوقين الذين حققوا نتائج استثنائية مع ساري (EN)",
+    "auto_17": "ابدأ تجربتك المجانية (EN)",
+    "auto_18": "تحدث مع خبير تسويق (EN)"
+  },
+  "solutionsSupport": {
+    "auto_0": "حلول الدعم الفني (EN)",
+    "auto_1": "أسعد عملاءك وأجب على الاستفسارات بسرعة (EN)",
+    "auto_2": "قدم إجابات فورية ودقيقة على مدار الساعة. حل معظم الاستفسارات دون تدخل بشري وقلل عبء العمل بنسبة تصل إلى 40%. (EN)",
+    "auto_3": "ابدأ الآن مجاناً (EN)",
+    "auto_4": "عرض الأسعار (EN)",
+    "auto_5": "قدم إجابات فورية ودقيقة مستندة إلى قاعدة معرفتك على مدار الساعة. حل معظم الاستفسارات دون تدخل بشري. (EN)",
+    "auto_6": "وجّه المحادثات المعقدة إلى الوكيل البشري المناسب تلقائياً من خلال قواعد توجيه متقدمة. لا تضيع أي استفسار. (EN)",
+    "auto_7": "تعاون بشكل أفضل مع صندوق وارد موحد لجميع منصات المراسلة، مع علامات وسمات جهات الاتصال والتاريخ والمزيد. (EN)",
+    "auto_8": "عزز عمليات الدعم برؤى مبنية على البيانات حول وقت الاستجابة والحلول والأداء حسب الوكيل. (EN)",
+    "auto_9": "يدعم العربية والإنجليزية ولغات متعددة. يفهم اللهجات المحلية ويرد بنفس الأسلوب. (EN)",
+    "auto_10": "يفهم سياق المحادثة ويتذكر التفاعلات السابقة. ردود دقيقة وشخصية. (EN)",
+    "auto_11": "يتعامل مع العملاء بتعاطف واحترافية. يعرف متى يحول إلى وكيل بشري. (EN)",
+    "auto_12": "العميل يرسل استفساره عبر واتساب (EN)",
+    "auto_13": "ساري يرد فوراً بإجابة دقيقة من قاعدة المعرفة (EN)",
+    "auto_14": "إذا لزم الأمر، يحول إلى وكيل بشري مع السياق الكامل (EN)",
+    "auto_15": "يتم حل المشكلة بسرعة ورضا العميل (EN)",
+    "auto_16": "انضم إلى مئات الشركات التي حسّنت رضا عملائها مع ساري (EN)",
+    "auto_17": "ابدأ تجربتك المجانية (EN)",
+    "auto_18": "تحدث مع خبير دعم (EN)"
+  },
+  "companyAbout": {
+    "auto_0": "نحن ساري (EN)",
+    "auto_1": "منصة سعودية رائدة في مجال الذكاء الاصطناعي للمبيعات عبر واتساب. نساعد التجار والشركات على تحويل محادثاتهم إلى مبيعات ونمو مستدام. (EN)",
+    "auto_2": "تمكين التجار والشركات السعودية من الاستفادة من قوة الذكاء الاصطناعي لتحسين تجربة العملاء وزيادة المبيعات عبر واتساب، القناة المفضلة للتواصل في المنطقة. (EN)",
+    "auto_3": "أن نكون المنصة الأولى في المملكة والخليج العربي لحلول الذكاء الاصطناعي التجارية عبر واتساب، ونساهم في التحول الرقمي للشركات الصغيرة والمتوسطة. (EN)",
+    "auto_4": "بدأت ساري من فكرة بسيطة: كيف يمكننا مساعدة التجار السعوديين على خدمة عملائهم بشكل أفضل عبر واتساب؟ لاحظنا أن معظم العملاء في المملكة يفضلون التواصل عبر واتساب، لكن التجار يواجهون صعوبة في إدارة المحادثات والرد السريع على الاستفسارات. (EN)",
+    "auto_5": "قررنا بناء حل ذكي يجمع بين قوة الذكاء الاصطناعي وفهم عميق للثقافة واللهجة السعودية. ساري ليست مجرد روبوت دردشة، بل وكيلة مبيعات ذكية تفهم عملاءك وتساعدهم في إيجاد ما يبحثون عنه. (EN)",
+    "auto_6": "اليوم، نخدم مئات التجار في المملكة، ونساعدهم على زيادة مبيعاتهم وتحسين تجربة عملائهم. ونواصل العمل على تطوير منصتنا لتقديم أفضل الحلول الذكية للسوق السعودي. (EN)",
+    "auto_7": "نضع احتياجات عملائنا في المقام الأول ونعمل باستمرار على تحسين تجربتهم (EN)",
+    "auto_8": "نبتكر حلولاً جديدة ونتبنى أحدث التقنيات لخدمة عملائنا بشكل أفضل (EN)",
+    "auto_9": "نلتزم بأعلى معايير الجودة في كل ما نقدمه من منتجات وخدمات (EN)",
+    "auto_10": "كن جزءاً من التحول الرقمي في المملكة وابدأ رحلتك معنا اليوم (EN)",
+    "auto_11": "ابدأ الآن مجاناً (EN)",
+    "auto_12": "تواصل معنا (EN)"
+  },
+  "contact": {
+    "auto_0": "تواصل (EN)",
+    "auto_1": "معنا (EN)",
+    "auto_2": "نحن هنا لمساعدتك. تواصل معنا وسنرد عليك في أقرب وقت ممكن (EN)",
+    "auto_3": "أرسل لنا رسالة (EN)",
+    "auto_4": "املأ النموذج أدناه وسنتواصل معك في أقرب وقت (EN)",
+    "auto_5": "الاسم الكامل * (EN)",
+    "auto_6": "البريد الإلكتروني * (EN)",
+    "auto_7": "رقم الهاتف (EN)",
+    "auto_8": "الموضوع * (EN)",
+    "auto_9": "الرسالة * (EN)",
+    "auto_10": "إرسال الرسالة (EN)",
+    "auto_11": "الدعم الفني (EN)",
+    "auto_12": "هل تواجه مشكلة تقنية؟ فريق الدعم الفني لدينا جاهز لمساعدتك على مدار الساعة. (EN)",
+    "auto_13": "افتح تذكرة دعم (EN)",
+    "auto_14": "المبيعات والاستفسارات (EN)",
+    "auto_15": "هل لديك استفسار عن الباقات أو الأسعار؟ تواصل مع فريق المبيعات لدينا. (EN)",
+    "auto_16": "الأسئلة الشائعة (EN)",
+    "auto_17": "ربما تجد إجابة سؤالك في مركز المساعدة الخاص بنا. (EN)",
+    "auto_18": "تصفح مركز المساعدة (EN)",
+    "auto_19": "موقعنا (EN)",
+    "auto_20": "الرياض، المملكة العربية السعودية (EN)",
+    "auto_21": "مركز الأعمال الرئيسي (EN)",
+    "auto_22": "أدخل اسمك الكامل (EN)",
+    "auto_23": "ما هو موضوع رسالتك؟ (EN)",
+    "auto_24": "اكتب رسالتك هنا... (EN)"
+  },
+  "terms": {
+    "auto_0": "الشروط (EN)",
+    "auto_1": "والأحكام (EN)",
+    "auto_2": "آخر تحديث: 8 ديسمبر 2024 (EN)",
+    "auto_3": "مقدمة (EN)",
+    "auto_4": "مرحباً بك في ساري! هذه الشروط والأحكام تحكم استخدامك لمنصة ساري وجميع الخدمات المرتبطة بها.\r\n                    يرجى قراءة هذه الشروط بعناية قبل استخدام خدماتنا. (EN)",
+    "auto_5": "باستخدامك لمنصة ساري، فإنك توافق على الالتزام بهذه الشروط والأحكام وجميع القوانين واللوائح المعمول بها.\r\n                    إذا كنت لا توافق على أي من هذه الشروط، يجب عليك عدم استخدام خدماتنا. (EN)",
+    "auto_6": "نحتفظ بالحق في تحديث هذه الشروط والأحكام في أي وقت. سيتم إخطارك بأي تغييرات جوهرية.\r\n                    استمرارك في استخدام الخدمة بعد التغييرات يعني موافقتك على الشروط المحدثة. (EN)"
+  },
+  "privacy": {
+    "auto_0": "سياسة (EN)",
+    "auto_1": "الخصوصية (EN)",
+    "auto_2": "آخر تحديث: 8 ديسمبر 2024 (EN)",
+    "auto_3": "التزامنا بخصوصيتك (EN)",
+    "auto_4": "في ساري، نأخذ خصوصيتك على محمل الجد. هذه السياسة توضح كيف نجمع ونستخدم ونحمي معلوماتك الشخصية\r\n                    عند استخدامك لمنصتنا. (EN)",
+    "auto_5": "نحن ملتزمون بحماية بياناتك وضمان الشفافية الكاملة في كيفية التعامل معها. باستخدامك لساري،\r\n                    فإنك توافق على الممارسات الموضحة في هذه السياسة. (EN)",
+    "auto_6": "حقوقك محفوظة ومحمية (EN)",
+    "auto_7": "نحن ملتزمون بحماية خصوصيتك وأمن بياناتك. إذا كان لديك أي أسئلة أو مخاوف،\r\n                      لا تتردد في التواصل معنا على privacy@sari.sa (EN)"
+  },
+  "blog": {
+    "auto_0": "مدونة (EN)",
+    "auto_1": "ساري (EN)",
+    "auto_2": "نصائح واستراتيجيات لتحسين مبيعاتك على واتساب (EN)",
+    "auto_3": "اقرأ المزيد (EN)",
+    "auto_4": "تحميل المزيد من المقالات (EN)",
+    "auto_5": "اشترك في نشرتنا الإخبارية (EN)",
+    "auto_6": "احصل على أحدث النصائح والاستراتيجيات مباشرة في بريدك الإلكتروني (EN)",
+    "auto_7": "اشترك الآن (EN)",
+    "auto_8": "ابحث في المقالات... (EN)",
+    "auto_9": "بريدك الإلكتروني (EN)"
+  },
+  "helpCenter": {
+    "auto_0": "مركز (EN)",
+    "auto_1": "المساعدة (EN)",
+    "auto_2": "كل ما تحتاج معرفته لتحقيق أقصى استفادة من ساري (EN)",
+    "auto_3": "تصفح حسب الموضوع (EN)",
+    "auto_4": "الأسئلة الشائعة (EN)",
+    "auto_5": "لم نجد أي نتائج لبحثك. جرب كلمات مختلفة أو تواصل معنا مباشرة. (EN)",
+    "auto_6": "لم تجد ما تبحث عنه؟ (EN)",
+    "auto_7": "فريق الدعم الفني لدينا جاهز لمساعدتك على مدار الساعة (EN)",
+    "auto_8": "تواصل معنا (EN)",
+    "auto_9": "شاهد الدروس التعليمية (EN)",
+    "auto_10": "ابحث عن إجابة... (EN)"
+  },
+  "successStories": {
+    "auto_0": "قصص (EN)",
+    "auto_1": "النجاح (EN)",
+    "auto_2": "اكتشف كيف ساعدت ساري مئات التجار في مضاعفة مبيعاتهم (EN)",
+    "auto_3": "تاجر ناجح (EN)",
+    "auto_4": "متوسط زيادة المبيعات (EN)",
+    "auto_5": "محادثة يومياً (EN)",
+    "auto_6": "تقييم العملاء (EN)",
+    "auto_7": "النتائج المحققة: (EN)",
+    "auto_8": "هل أنت مستعد لتكون قصة النجاح القادمة؟ (EN)",
+    "auto_9": "انضم إلى مئات التجار الذين ضاعفوا مبيعاتهم مع ساري (EN)",
+    "auto_10": "ابدأ الآن مجاناً (EN)",
+    "auto_11": "تواصل مع المبيعات (EN)"
   }
 }

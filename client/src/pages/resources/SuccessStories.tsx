@@ -146,6 +146,7 @@ export default function SuccessStories() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      <SeoHead {...useSeoConfig('resourcesSuccessStories')} />
       <Navbar />
       
       <main className="flex-1">
@@ -154,12 +155,9 @@ export default function SuccessStories() {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <Star className="h-16 w-16 text-primary mx-auto mb-6" />
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                قصص <span className="text-primary">النجاح</span>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('successStories.auto_0')}<span className="text-primary">{t('successStories.auto_1')}</span>
               </h1>
-              <p className="text-xl text-muted-foreground mb-8">
-                اكتشف كيف ساعدت ساري مئات التجار في مضاعفة مبيعاتهم
-              </p>
+              <p className="text-xl text-muted-foreground mb-8">{t('successStories.auto_2')}</p>
             </div>
           </div>
         </section>
@@ -170,19 +168,19 @@ export default function SuccessStories() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-5xl mx-auto">
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">500+</div>
-                <div className="text-muted-foreground">تاجر ناجح</div>
+                <div className="text-muted-foreground">{t('successStories.auto_3')}</div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">250%</div>
-                <div className="text-muted-foreground">متوسط زيادة المبيعات</div>
+                <div className="text-muted-foreground">{t('successStories.auto_4')}</div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">50K+</div>
-                <div className="text-muted-foreground">محادثة يومياً</div>
+                <div className="text-muted-foreground">{t('successStories.auto_5')}</div>
               </div>
               <div className="text-center">
                 <div className="text-4xl font-bold text-primary mb-2">4.9/5</div>
-                <div className="text-muted-foreground">تقييم العملاء</div>
+                <div className="text-muted-foreground">{t('successStories.auto_6')}</div>
               </div>
             </div>
           </div>
@@ -244,7 +242,7 @@ export default function SuccessStories() {
 
                       {/* Results */}
                       <div className="space-y-2">
-                        <h4 className="font-semibold mb-3">النتائج المحققة:</h4>
+                        <h4 className="font-semibold mb-3">{t('successStories.auto_7')}</h4>
                         <ul className="space-y-2">
                           {story.results.map((result, idx) => (
                             <li key={idx} className="flex items-start gap-2">
@@ -266,21 +264,13 @@ export default function SuccessStories() {
         <section className="py-16 bg-gradient-to-r from-primary to-primary/80 text-white">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                هل أنت مستعد لتكون قصة النجاح القادمة؟
-              </h2>
-              <p className="text-xl mb-8 opacity-90">
-                انضم إلى مئات التجار الذين ضاعفوا مبيعاتهم مع ساري
-              </p>
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('successStories.auto_8')}</h2>
+              <p className="text-xl mb-8 opacity-90">{t('successStories.auto_9')}</p>
               
               <div className="flex gap-4 justify-center flex-wrap">
-                <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">
-                  ابدأ الآن مجاناً
-                  <ArrowLeft className="mr-2 h-5 w-5" />
+                <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-white/90">{t('successStories.auto_10')}<ArrowLeft className="mr-2 h-5 w-5" />
                 </Button>
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                  تواصل مع المبيعات
-                </Button>
+                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">{t('successStories.auto_11')}</Button>
               </div>
             </div>
           </div>

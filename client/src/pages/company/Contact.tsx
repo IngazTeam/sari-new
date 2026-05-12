@@ -77,6 +77,7 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      <SeoHead {...useSeoConfig('contact')} />
       <Navbar />
       
       <main className="flex-1">
@@ -85,12 +86,9 @@ export default function Contact() {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <MessageCircle className="h-16 w-16 text-primary mx-auto mb-6" />
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                تواصل <span className="text-primary">معنا</span>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('contact.auto_0')}<span className="text-primary">{t('contact.auto_1')}</span>
               </h1>
-              <p className="text-xl text-muted-foreground">
-                نحن هنا لمساعدتك. تواصل معنا وسنرد عليك في أقرب وقت ممكن
-              </p>
+              <p className="text-xl text-muted-foreground">{t('contact.auto_2')}</p>
             </div>
           </div>
         </section>
@@ -125,27 +123,25 @@ export default function Contact() {
                 {/* Form */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-2xl">أرسل لنا رسالة</CardTitle>
-                    <CardDescription>
-                      املأ النموذج أدناه وسنتواصل معك في أقرب وقت
-                    </CardDescription>
+                    <CardTitle className="text-2xl">{t('contact.auto_3')}</CardTitle>
+                    <CardDescription>{t('contact.auto_4')}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-4">
                       <div>
-                        <Label htmlFor="name">الاسم الكامل *</Label>
+                        <Label htmlFor="name">{t('contact.auto_5')}</Label>
                         <Input
                           id="name"
                           name="name"
                           value={formData.name}
                           onChange={handleChange}
                           required
-                          placeholder="أدخل اسمك الكامل"
+                          placeholder={t('contact.auto_22')}
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="email">البريد الإلكتروني *</Label>
+                        <Label htmlFor="email">{t('contact.auto_6')}</Label>
                         <Input
                           id="email"
                           name="email"
@@ -158,7 +154,7 @@ export default function Contact() {
                       </div>
 
                       <div>
-                        <Label htmlFor="phone">رقم الهاتف</Label>
+                        <Label htmlFor="phone">{t('contact.auto_7')}</Label>
                         <Input
                           id="phone"
                           name="phone"
@@ -170,26 +166,26 @@ export default function Contact() {
                       </div>
 
                       <div>
-                        <Label htmlFor="subject">الموضوع *</Label>
+                        <Label htmlFor="subject">{t('contact.auto_8')}</Label>
                         <Input
                           id="subject"
                           name="subject"
                           value={formData.subject}
                           onChange={handleChange}
                           required
-                          placeholder="ما هو موضوع رسالتك؟"
+                          placeholder={t('contact.auto_23')}
                         />
                       </div>
 
                       <div>
-                        <Label htmlFor="message">الرسالة *</Label>
+                        <Label htmlFor="message">{t('contact.auto_9')}</Label>
                         <Textarea
                           id="message"
                           name="message"
                           value={formData.message}
                           onChange={handleChange}
                           required
-                          placeholder="اكتب رسالتك هنا..."
+                          placeholder={t('contact.auto_24')}
                           rows={5}
                         />
                       </div>
@@ -203,9 +199,7 @@ export default function Contact() {
                           "جاري الإرسال..."
                         ) : (
                           <>
-                            <Send className="ml-2 h-4 w-4" />
-                            إرسال الرسالة
-                          </>
+                            <Send className="ml-2 h-4 w-4" />{t('contact.auto_10')}</>
                         )}
                       </Button>
                     </form>
@@ -216,27 +210,21 @@ export default function Contact() {
                 <div className="space-y-6">
                   <Card>
                     <CardHeader>
-                      <CardTitle>الدعم الفني</CardTitle>
+                      <CardTitle>{t('contact.auto_11')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <p className="text-muted-foreground">
-                        هل تواجه مشكلة تقنية؟ فريق الدعم الفني لدينا جاهز لمساعدتك على مدار الساعة.
-                      </p>
+                      <p className="text-muted-foreground">{t('contact.auto_12')}</p>
                       <Button variant="outline" className="w-full">
-                        <MessageCircle className="ml-2 h-4 w-4" />
-                        افتح تذكرة دعم
-                      </Button>
+                        <MessageCircle className="ml-2 h-4 w-4" />{t('contact.auto_13')}</Button>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>المبيعات والاستفسارات</CardTitle>
+                      <CardTitle>{t('contact.auto_14')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <p className="text-muted-foreground">
-                        هل لديك استفسار عن الباقات أو الأسعار؟ تواصل مع فريق المبيعات لدينا.
-                      </p>
+                      <p className="text-muted-foreground">{t('contact.auto_15')}</p>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-primary" />
@@ -252,15 +240,11 @@ export default function Contact() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>الأسئلة الشائعة</CardTitle>
+                      <CardTitle>{t('contact.auto_16')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <p className="text-muted-foreground">
-                        ربما تجد إجابة سؤالك في مركز المساعدة الخاص بنا.
-                      </p>
-                      <Button variant="outline" className="w-full">
-                        تصفح مركز المساعدة
-                      </Button>
+                      <p className="text-muted-foreground">{t('contact.auto_17')}</p>
+                      <Button variant="outline" className="w-full">{t('contact.auto_18')}</Button>
                     </CardContent>
                   </Card>
                 </div>
@@ -273,16 +257,12 @@ export default function Contact() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-6xl mx-auto">
-              <h2 className="text-3xl font-bold text-center mb-8">موقعنا</h2>
+              <h2 className="text-3xl font-bold text-center mb-8">{t('contact.auto_19')}</h2>
               <div className="bg-accent/30 rounded-lg h-96 flex items-center justify-center">
                 <div className="text-center">
                   <MapPin className="h-12 w-12 text-primary mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    الرياض، المملكة العربية السعودية
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    مركز الأعمال الرئيسي
-                  </p>
+                  <p className="text-muted-foreground">{t('contact.auto_20')}</p>
+                  <p className="text-sm text-muted-foreground mt-2">{t('contact.auto_21')}</p>
                 </div>
               </div>
             </div>

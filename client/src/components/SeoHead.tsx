@@ -248,6 +248,50 @@ const seoConfigsAr = {
     canonicalUrl: `${BASE_URL}/login`,
     noindex: true,
   },
+  productChatbot: {
+    title: "روبوت دردشة ذكي للواتساب | ساري",
+    description: "أتمت محادثات العملاء بالكامل مع روبوت ساري الذكي — يفهم السياق ويرد بلغة طبيعية تعمل على مدار الساعة.",
+    keywords: "شات بوت واتساب, روبوت دردشة, أتمتة واتساب",
+    canonicalUrl: `${BASE_URL}/product/chatbot`,
+  },
+  productWhatsApp: {
+    title: "ربط وتكامل واتساب بزنس | ساري",
+    description: "اربط واتسابك بساري في دقائق بتكامل سلس ومزامنة فورية مع المتاجر الإلكترونية.",
+    keywords: "ربط واتساب, تكامل سلة واتساب, تكامل زد واتساب",
+    canonicalUrl: `${BASE_URL}/product/whatsapp`,
+  },
+  productBroadcasts: {
+    title: "رسائل البث الجماعي للواتساب | ساري",
+    description: "أرسل حملاتك التسويقية لآلاف العملاء في ثوانٍ مع استهداف ذكي وتقارير مفصلة.",
+    keywords: "بث جماعي واتساب, حملات واتساب, رسائل ترويجية",
+    canonicalUrl: `${BASE_URL}/product/broadcasts`,
+  },
+  productAI: {
+    title: "الذكاء الاصطناعي للمبيعات | ساري",
+    description: "وكيل ذكاء اصطناعي متقدم يتحدث باللهجة السعودية، يفهم عملاءك، ويحول المحادثات إلى مبيعات.",
+    keywords: "ذكاء اصطناعي, وكيل مبيعات ذكي, مساعد ذكي",
+    canonicalUrl: `${BASE_URL}/product/ai-agent`,
+  },
+  companyTerms: {
+    title: "الشروط والأحكام | ساري",
+    description: "الشروط والأحكام الخاصة باستخدام منصة ساري.",
+    canonicalUrl: `${BASE_URL}/company/terms`,
+  },
+  companyPrivacy: {
+    title: "سياسة الخصوصية | ساري",
+    description: "سياسة الخصوصية وحماية بيانات المستخدمين في منصة ساري.",
+    canonicalUrl: `${BASE_URL}/company/privacy`,
+  },
+  resourcesHelpCenter: {
+    title: "مركز المساعدة | ساري",
+    description: "دليلك الشامل لاستخدام ساري وأتمتة مبيعاتك بنجاح.",
+    canonicalUrl: `${BASE_URL}/resources/help-center`,
+  },
+  resourcesSuccessStories: {
+    title: "قصص النجاح | ساري",
+    description: "اكتشف كيف ساعدت ساري مئات المتاجر في مضاعفة مبيعاتهم.",
+    canonicalUrl: `${BASE_URL}/resources/success-stories`,
+  },
 };
 
 // ─── English SEO Configurations ─────────────────────────────
@@ -348,6 +392,50 @@ const seoConfigsEn = {
     description: "Log in to your Sari dashboard.",
     canonicalUrl: `${BASE_URL}/login`,
     noindex: true,
+  },
+  productChatbot: {
+    title: "Smart WhatsApp Chatbot | Sari",
+    description: "Automate customer conversations completely with Sari's smart chatbot. Understands context and replies naturally 24/7.",
+    keywords: "WhatsApp chatbot, smart auto reply, WhatsApp automation",
+    canonicalUrl: `${BASE_URL}/product/chatbot`,
+  },
+  productWhatsApp: {
+    title: "WhatsApp Business Integration | Sari",
+    description: "Connect your WhatsApp to Sari in minutes with seamless integration and instant synchronization with online stores.",
+    keywords: "WhatsApp integration, Salla integration, Zid integration",
+    canonicalUrl: `${BASE_URL}/product/whatsapp`,
+  },
+  productBroadcasts: {
+    title: "WhatsApp Broadcast Campaigns | Sari",
+    description: "Send marketing campaigns to thousands of customers in seconds with smart targeting and detailed reports.",
+    keywords: "WhatsApp broadcast, WhatsApp campaigns, promotional messages",
+    canonicalUrl: `${BASE_URL}/product/broadcasts`,
+  },
+  productAI: {
+    title: "AI Sales Agent | Sari",
+    description: "Advanced AI agent that speaks local dialects, understands your customers, and converts conversations into sales.",
+    keywords: "Artificial intelligence, smart sales agent, AI assistant",
+    canonicalUrl: `${BASE_URL}/product/ai-agent`,
+  },
+  companyTerms: {
+    title: "Terms and Conditions | Sari",
+    description: "Terms and conditions for using the Sari platform.",
+    canonicalUrl: `${BASE_URL}/company/terms`,
+  },
+  companyPrivacy: {
+    title: "Privacy Policy | Sari",
+    description: "Privacy policy and user data protection at Sari.",
+    canonicalUrl: `${BASE_URL}/company/privacy`,
+  },
+  resourcesHelpCenter: {
+    title: "Help Center | Sari",
+    description: "Your comprehensive guide to using Sari and successfully automating your sales.",
+    canonicalUrl: `${BASE_URL}/resources/help-center`,
+  },
+  resourcesSuccessStories: {
+    title: "Success Stories | Sari",
+    description: "Discover how Sari helped hundreds of stores double their sales.",
+    canonicalUrl: `${BASE_URL}/resources/success-stories`,
   },
 };
 

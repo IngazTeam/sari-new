@@ -108,6 +108,7 @@ export default function Terms() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      <SeoHead {...useSeoConfig('companyTerms')} />
       <Navbar />
       
       <main className="flex-1">
@@ -116,12 +117,9 @@ export default function Terms() {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <FileText className="h-16 w-16 text-primary mx-auto mb-6" />
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                الشروط <span className="text-primary">والأحكام</span>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('terms.auto_0')}<span className="text-primary">{t('terms.auto_1')}</span>
               </h1>
-              <p className="text-xl text-muted-foreground">
-                آخر تحديث: 8 ديسمبر 2024
-              </p>
+              <p className="text-xl text-muted-foreground">{t('terms.auto_2')}</p>
             </div>
           </div>
         </section>
@@ -132,17 +130,11 @@ export default function Terms() {
             <div className="max-w-4xl mx-auto">
               <Card className="mb-8">
                 <CardHeader>
-                  <CardTitle className="text-2xl">مقدمة</CardTitle>
+                  <CardTitle className="text-2xl">{t('terms.auto_3')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
-                  <p>
-                    مرحباً بك في ساري! هذه الشروط والأحكام تحكم استخدامك لمنصة ساري وجميع الخدمات المرتبطة بها.
-                    يرجى قراءة هذه الشروط بعناية قبل استخدام خدماتنا.
-                  </p>
-                  <p>
-                    باستخدامك لمنصة ساري، فإنك توافق على الالتزام بهذه الشروط والأحكام وجميع القوانين واللوائح المعمول بها.
-                    إذا كنت لا توافق على أي من هذه الشروط، يجب عليك عدم استخدام خدماتنا.
-                  </p>
+                  <p>{t('terms.auto_4')}</p>
+                  <p>{t('terms.auto_5')}</p>
                 </CardContent>
               </Card>
 
@@ -167,10 +159,7 @@ export default function Terms() {
               {/* Footer Note */}
               <Card className="mt-8 bg-accent/30">
                 <CardContent className="pt-6">
-                  <p className="text-sm text-muted-foreground text-center">
-                    نحتفظ بالحق في تحديث هذه الشروط والأحكام في أي وقت. سيتم إخطارك بأي تغييرات جوهرية.
-                    استمرارك في استخدام الخدمة بعد التغييرات يعني موافقتك على الشروط المحدثة.
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center">{t('terms.auto_6')}</p>
                 </CardContent>
               </Card>
             </div>

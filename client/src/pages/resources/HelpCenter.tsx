@@ -167,6 +167,7 @@ export default function HelpCenter() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      <SeoHead {...useSeoConfig('resourcesHelpCenter')} />
       <Navbar />
       
       <main className="flex-1">
@@ -175,19 +176,16 @@ export default function HelpCenter() {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <HelpCircle className="h-16 w-16 text-primary mx-auto mb-6" />
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                مركز <span className="text-primary">المساعدة</span>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('helpCenter.auto_0')}<span className="text-primary">{t('helpCenter.auto_1')}</span>
               </h1>
-              <p className="text-xl text-muted-foreground mb-8">
-                كل ما تحتاج معرفته لتحقيق أقصى استفادة من ساري
-              </p>
+              <p className="text-xl text-muted-foreground mb-8">{t('helpCenter.auto_2')}</p>
               
               {/* Search Bar */}
               <div className="relative max-w-xl mx-auto">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
                 <Input
                   type="text"
-                  placeholder="ابحث عن إجابة..."
+                  placeholder={t('helpCenter.auto_10')}
                   className="pr-10 h-12"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -200,9 +198,7 @@ export default function HelpCenter() {
         {/* Categories Grid */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              تصفح حسب الموضوع
-            </h2>
+            <h2 className="text-3xl font-bold text-center mb-12">{t('helpCenter.auto_3')}</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               {categories.map((category, index) => (
@@ -227,9 +223,7 @@ export default function HelpCenter() {
         {/* FAQ Section */}
         <section className="py-16 bg-accent/30">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">
-              الأسئلة الشائعة
-            </h2>
+            <h2 className="text-3xl font-bold text-center mb-12">{t('helpCenter.auto_4')}</h2>
             
             <div className="max-w-4xl mx-auto space-y-8">
               {filteredFaqs.map((category, catIndex) => (
@@ -260,9 +254,7 @@ export default function HelpCenter() {
 
             {filteredFaqs.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-muted-foreground text-lg">
-                  لم نجد أي نتائج لبحثك. جرب كلمات مختلفة أو تواصل معنا مباشرة.
-                </p>
+                <p className="text-muted-foreground text-lg">{t('helpCenter.auto_5')}</p>
               </div>
             )}
           </div>
@@ -272,22 +264,14 @@ export default function HelpCenter() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-2xl mx-auto text-center">
-              <h2 className="text-3xl font-bold mb-4">
-                لم تجد ما تبحث عنه؟
-              </h2>
-              <p className="text-muted-foreground mb-8">
-                فريق الدعم الفني لدينا جاهز لمساعدتك على مدار الساعة
-              </p>
+              <h2 className="text-3xl font-bold mb-4">{t('helpCenter.auto_6')}</h2>
+              <p className="text-muted-foreground mb-8">{t('helpCenter.auto_7')}</p>
               
               <div className="flex gap-4 justify-center">
                 <Button size="lg" className="bg-primary hover:bg-primary/90">
-                  <MessageCircle className="ml-2 h-5 w-5" />
-                  تواصل معنا
-                </Button>
+                  <MessageCircle className="ml-2 h-5 w-5" />{t('helpCenter.auto_8')}</Button>
                 <Button size="lg" variant="outline">
-                  <Book className="ml-2 h-5 w-5" />
-                  شاهد الدروس التعليمية
-                </Button>
+                  <Book className="ml-2 h-5 w-5" />{t('helpCenter.auto_9')}</Button>
               </div>
             </div>
           </div>

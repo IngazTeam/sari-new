@@ -14,26 +14,16 @@ export default function SolutionsSupport() {
       <section className="container py-20">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Headphones className="w-4 h-4" />
-            حلول الدعم الفني
-          </div>
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-l from-blue-600 to-blue-800 bg-clip-text text-transparent">
-            أسعد عملاءك وأجب على الاستفسارات بسرعة
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-            قدم إجابات فورية ودقيقة على مدار الساعة. حل معظم الاستفسارات دون تدخل بشري وقلل عبء العمل بنسبة تصل إلى 40%.
-          </p>
+            <Headphones className="w-4 h-4" />{t('solutionsSupport.auto_0')}</div>
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-l from-blue-600 to-blue-800 bg-clip-text text-transparent">{t('solutionsSupport.auto_1')}</h1>
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed">{t('solutionsSupport.auto_2')}</p>
           <div className="flex gap-4 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8">
-                ابدأ الآن مجاناً
-                <ArrowRight className="mr-2 h-5 w-5" />
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8">{t('solutionsSupport.auto_3')}<ArrowRight className="mr-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/pricing">
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                عرض الأسعار
-              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8">{t('solutionsSupport.auto_4')}</Button>
             </Link>
           </div>
         </div>
@@ -70,9 +60,7 @@ export default function SolutionsSupport() {
               <Zap className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text5')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              قدم إجابات فورية ودقيقة مستندة إلى قاعدة معرفتك على مدار الساعة. حل معظم الاستفسارات دون تدخل بشري.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSupport.auto_5')}</p>
           </Card>
 
           <Card className="p-8 hover:shadow-xl transition-all border-blue-100">
@@ -80,9 +68,7 @@ export default function SolutionsSupport() {
               <MessageCircle className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text6')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              وجّه المحادثات المعقدة إلى الوكيل البشري المناسب تلقائياً من خلال قواعد توجيه متقدمة. لا تضيع أي استفسار.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSupport.auto_6')}</p>
           </Card>
 
           <Card className="p-8 hover:shadow-xl transition-all border-blue-100">
@@ -90,9 +76,7 @@ export default function SolutionsSupport() {
               <Users className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text7')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              تعاون بشكل أفضل مع صندوق وارد موحد لجميع منصات المراسلة، مع علامات وسمات جهات الاتصال والتاريخ والمزيد.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSupport.auto_7')}</p>
           </Card>
 
           <Card className="p-8 hover:shadow-xl transition-all border-blue-100">
@@ -100,9 +84,7 @@ export default function SolutionsSupport() {
               <TrendingDown className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text8')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              عزز عمليات الدعم برؤى مبنية على البيانات حول وقت الاستجابة والحلول والأداء حسب الوكيل.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSupport.auto_8')}</p>
           </Card>
         </div>
       </section>
@@ -121,9 +103,7 @@ export default function SolutionsSupport() {
                 🌍
               </div>
               <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text11')}</h3>
-              <p className="text-gray-600 leading-relaxed">
-                يدعم العربية والإنجليزية ولغات متعددة. يفهم اللهجات المحلية ويرد بنفس الأسلوب.
-              </p>
+              <p className="text-gray-600 leading-relaxed">{t('solutionsSupport.auto_9')}</p>
             </Card>
 
             <Card className="p-8 text-center hover:shadow-xl transition-all">
@@ -131,9 +111,7 @@ export default function SolutionsSupport() {
                 🧠
               </div>
               <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text12')}</h3>
-              <p className="text-gray-600 leading-relaxed">
-                يفهم سياق المحادثة ويتذكر التفاعلات السابقة. ردود دقيقة وشخصية.
-              </p>
+              <p className="text-gray-600 leading-relaxed">{t('solutionsSupport.auto_10')}</p>
             </Card>
 
             <Card className="p-8 text-center hover:shadow-xl transition-all">
@@ -141,9 +119,7 @@ export default function SolutionsSupport() {
                 💙
               </div>
               <h3 className="text-2xl font-bold mb-4">{t('solutionsSupportPage.text13')}</h3>
-              <p className="text-gray-600 leading-relaxed">
-                يتعامل مع العملاء بتعاطف واحترافية. يعرف متى يحول إلى وكيل بشري.
-              </p>
+              <p className="text-gray-600 leading-relaxed">{t('solutionsSupport.auto_11')}</p>
             </Card>
           </div>
         </div>
@@ -162,9 +138,7 @@ export default function SolutionsSupport() {
               1
             </div>
             <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text16')}</h3>
-            <p className="text-gray-600">
-              العميل يرسل استفساره عبر واتساب
-            </p>
+            <p className="text-gray-600">{t('solutionsSupport.auto_12')}</p>
           </div>
 
           <div className="text-center">
@@ -172,9 +146,7 @@ export default function SolutionsSupport() {
               2
             </div>
             <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text17')}</h3>
-            <p className="text-gray-600">
-              ساري يرد فوراً بإجابة دقيقة من قاعدة المعرفة
-            </p>
+            <p className="text-gray-600">{t('solutionsSupport.auto_13')}</p>
           </div>
 
           <div className="text-center">
@@ -182,9 +154,7 @@ export default function SolutionsSupport() {
               3
             </div>
             <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text18')}</h3>
-            <p className="text-gray-600">
-              إذا لزم الأمر، يحول إلى وكيل بشري مع السياق الكامل
-            </p>
+            <p className="text-gray-600">{t('solutionsSupport.auto_14')}</p>
           </div>
 
           <div className="text-center">
@@ -192,9 +162,7 @@ export default function SolutionsSupport() {
               4
             </div>
             <h3 className="text-xl font-bold mb-2">{t('solutionsSupportPage.text19')}</h3>
-            <p className="text-gray-600">
-              يتم حل المشكلة بسرعة ورضا العميل
-            </p>
+            <p className="text-gray-600">{t('solutionsSupport.auto_15')}</p>
           </div>
         </div>
       </section>
@@ -204,20 +172,14 @@ export default function SolutionsSupport() {
         <Card className="bg-gradient-to-l from-blue-600 to-blue-800 text-white p-12 text-center">
           <Clock className="w-16 h-16 mx-auto mb-6 opacity-90" />
           <h2 className="text-4xl font-bold mb-4">{t('solutionsSupportPage.text20')}</h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            انضم إلى مئات الشركات التي حسّنت رضا عملائها مع ساري
-          </p>
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">{t('solutionsSupport.auto_16')}</p>
           <div className="flex gap-4 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8">
-                ابدأ تجربتك المجانية
-                <ArrowRight className="mr-2 h-5 w-5" />
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8">{t('solutionsSupport.auto_17')}<ArrowRight className="mr-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/company/contact">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8">
-                تحدث مع خبير دعم
-              </Button>
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8">{t('solutionsSupport.auto_18')}</Button>
             </Link>
           </div>
         </Card>

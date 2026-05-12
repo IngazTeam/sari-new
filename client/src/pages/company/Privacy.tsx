@@ -172,6 +172,7 @@ export default function Privacy() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      <SeoHead {...useSeoConfig('companyPrivacy')} />
       <Navbar />
       
       <main className="flex-1">
@@ -180,12 +181,9 @@ export default function Privacy() {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto text-center">
               <Shield className="h-16 w-16 text-primary mx-auto mb-6" />
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                سياسة <span className="text-primary">الخصوصية</span>
+              <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('privacy.auto_0')}<span className="text-primary">{t('privacy.auto_1')}</span>
               </h1>
-              <p className="text-xl text-muted-foreground">
-                آخر تحديث: 8 ديسمبر 2024
-              </p>
+              <p className="text-xl text-muted-foreground">{t('privacy.auto_2')}</p>
             </div>
           </div>
         </section>
@@ -196,17 +194,11 @@ export default function Privacy() {
             <div className="max-w-4xl mx-auto">
               <Card className="mb-8">
                 <CardHeader>
-                  <CardTitle className="text-2xl">التزامنا بخصوصيتك</CardTitle>
+                  <CardTitle className="text-2xl">{t('privacy.auto_3')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-muted-foreground">
-                  <p>
-                    في ساري، نأخذ خصوصيتك على محمل الجد. هذه السياسة توضح كيف نجمع ونستخدم ونحمي معلوماتك الشخصية
-                    عند استخدامك لمنصتنا.
-                  </p>
-                  <p>
-                    نحن ملتزمون بحماية بياناتك وضمان الشفافية الكاملة في كيفية التعامل معها. باستخدامك لساري،
-                    فإنك توافق على الممارسات الموضحة في هذه السياسة.
-                  </p>
+                  <p>{t('privacy.auto_4')}</p>
+                  <p>{t('privacy.auto_5')}</p>
                 </CardContent>
               </Card>
 
@@ -245,13 +237,8 @@ export default function Privacy() {
               <Card className="mt-8 bg-accent/30">
                 <CardContent className="pt-6">
                   <div className="space-y-3">
-                    <p className="text-sm text-muted-foreground text-center font-semibold">
-                      حقوقك محفوظة ومحمية
-                    </p>
-                    <p className="text-sm text-muted-foreground text-center">
-                      نحن ملتزمون بحماية خصوصيتك وأمن بياناتك. إذا كان لديك أي أسئلة أو مخاوف،
-                      لا تتردد في التواصل معنا على privacy@sari.sa
-                    </p>
+                    <p className="text-sm text-muted-foreground text-center font-semibold">{t('privacy.auto_6')}</p>
+                    <p className="text-sm text-muted-foreground text-center">{t('privacy.auto_7')}</p>
                   </div>
                 </CardContent>
               </Card>

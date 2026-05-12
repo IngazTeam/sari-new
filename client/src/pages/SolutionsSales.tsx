@@ -14,26 +14,16 @@ export default function SolutionsSales() {
       <section className="container py-20">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Target className="w-4 h-4" />
-            حلول المبيعات
-          </div>
-          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-l from-blue-600 to-blue-800 bg-clip-text text-transparent">
-            سرّع خط مبيعاتك وزد تحويلاتك
-          </h1>
-          <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-            حوّل كل محادثة على واتساب إلى فرصة مبيعات. أدر العملاء المحتملين، اختصر دورة المبيعات، وزد إيراداتك بنسبة تصل إلى 20%.
-          </p>
+            <Target className="w-4 h-4" />{t('solutionsSales.auto_0')}</div>
+          <h1 className="text-5xl font-bold mb-6 bg-gradient-to-l from-blue-600 to-blue-800 bg-clip-text text-transparent">{t('solutionsSales.auto_1')}</h1>
+          <p className="text-xl text-gray-600 mb-8 leading-relaxed">{t('solutionsSales.auto_2')}</p>
           <div className="flex gap-4 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8">
-                ابدأ الآن مجاناً
-                <ArrowRight className="mr-2 h-5 w-5" />
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8">{t('solutionsSales.auto_3')}<ArrowRight className="mr-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/pricing">
-              <Button size="lg" variant="outline" className="text-lg px-8">
-                عرض الأسعار
-              </Button>
+              <Button size="lg" variant="outline" className="text-lg px-8">{t('solutionsSales.auto_4')}</Button>
             </Link>
           </div>
         </div>
@@ -70,9 +60,7 @@ export default function SolutionsSales() {
               <Users className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text5')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              مساحة عمل واحدة لجميع مندوبي المبيعات للتعاون والتواصل وتحويل العملاء المحتملين. تتبع كل محادثة وتفاعل في مكان واحد.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSales.auto_5')}</p>
           </Card>
 
           <Card className="p-8 hover:shadow-xl transition-all border-blue-100">
@@ -80,9 +68,7 @@ export default function SolutionsSales() {
               <Target className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text6')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              تأكد من عدم ضياع أي عميل محتمل جاهز للشراء. تأهيل فوري في الوقت الفعلي على قناة المراسلة المفضلة لديك.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSales.auto_6')}</p>
           </Card>
 
           <Card className="p-8 hover:shadow-xl transition-all border-blue-100">
@@ -90,9 +76,7 @@ export default function SolutionsSales() {
               <MessageSquare className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text7')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              أدر حجم كبير من العملاء المحتملين بسهولة على واتساب. استخدم الذكاء الاصطناعي لتأهيل العملاء وتسليم الأفضل لمندوبيك تلقائياً.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSales.auto_7')}</p>
           </Card>
 
           <Card className="p-8 hover:shadow-xl transition-all border-blue-100">
@@ -100,9 +84,7 @@ export default function SolutionsSales() {
               <BarChart3 className="w-7 h-7 text-blue-600" />
             </div>
             <h3 className="text-2xl font-bold mb-4">{t('solutionsSalesPage.text8')}</h3>
-            <p className="text-gray-600 leading-relaxed">
-              راقب محادثات العملاء بسهولة وتأكد من تجربة عملاء عالية الجودة لتجنب مخاطر السمعة. تقارير مفصلة عن أداء الفريق.
-            </p>
+            <p className="text-gray-600 leading-relaxed">{t('solutionsSales.auto_8')}</p>
           </Card>
         </div>
       </section>
@@ -121,9 +103,7 @@ export default function SolutionsSales() {
                 1
               </div>
               <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text11')}</h3>
-              <p className="text-gray-600">
-                العميل يتواصل معك عبر واتساب من أي مصدر (إعلان، موقع، رابط)
-              </p>
+              <p className="text-gray-600">{t('solutionsSales.auto_9')}</p>
             </div>
 
             <div className="text-center">
@@ -131,9 +111,7 @@ export default function SolutionsSales() {
                 2
               </div>
               <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text12')}</h3>
-              <p className="text-gray-600">
-                ساري يؤهل العميل تلقائياً ويجمع المعلومات المهمة
-              </p>
+              <p className="text-gray-600">{t('solutionsSales.auto_10')}</p>
             </div>
 
             <div className="text-center">
@@ -141,9 +119,7 @@ export default function SolutionsSales() {
                 3
               </div>
               <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text13')}</h3>
-              <p className="text-gray-600">
-                يتم توزيع العميل المؤهل على المندوب المناسب تلقائياً
-              </p>
+              <p className="text-gray-600">{t('solutionsSales.auto_11')}</p>
             </div>
 
             <div className="text-center">
@@ -151,9 +127,7 @@ export default function SolutionsSales() {
                 4
               </div>
               <h3 className="text-xl font-bold mb-2">{t('solutionsSalesPage.text14')}</h3>
-              <p className="text-gray-600">
-                المندوب يتابع ويغلق الصفقة بسرعة أكبر
-              </p>
+              <p className="text-gray-600">{t('solutionsSales.auto_12')}</p>
             </div>
           </div>
         </div>
@@ -164,20 +138,14 @@ export default function SolutionsSales() {
         <Card className="bg-gradient-to-l from-blue-600 to-blue-800 text-white p-12 text-center">
           <Clock className="w-16 h-16 mx-auto mb-6 opacity-90" />
           <h2 className="text-4xl font-bold mb-4">{t('solutionsSalesPage.text15')}</h2>
-          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-            انضم إلى مئات التجار الذين ضاعفوا مبيعاتهم باستخدام ساري
-          </p>
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">{t('solutionsSales.auto_13')}</p>
           <div className="flex gap-4 justify-center">
             <Link href="/signup">
-              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8">
-                ابدأ تجربتك المجانية
-                <ArrowRight className="mr-2 h-5 w-5" />
+              <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8">{t('solutionsSales.auto_14')}<ArrowRight className="mr-2 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/company/contact">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8">
-                تحدث مع خبير مبيعات
-              </Button>
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8">{t('solutionsSales.auto_15')}</Button>
             </Link>
           </div>
         </Card>
