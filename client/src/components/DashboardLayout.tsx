@@ -84,7 +84,8 @@ import {
   Languages,
   Mic,
   FlaskConical,
-  Key as KeyIcon
+  Key as KeyIcon,
+  Brain
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -134,6 +135,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
 
   // 3. المساعد الذكي والواتساب (AI & Channels)
   { icon: Sparkles, label: t('sidebar.merchant.aiHub', 'مركز المساعد الذكي'), path: "/merchant/ai-hub", group: 'channels' },
+  { icon: Brain, label: t('sidebar.merchant.sariBrain', 'عقل ساري'), path: "/merchant/sari-brain", group: 'channels' },
   { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances', 'إدارة أرقام الواتساب'), path: "/merchant/whatsapp-instances", group: 'channels' },
   { icon: Bot, label: t('sidebar.merchant.botSettings', 'إعدادات البوت'), path: "/merchant/bot-settings", group: 'channels' },
   { icon: Activity, label: t('sidebar.merchant.sariPersonality', 'شخصية ساري'), path: "/merchant/sari-personality", group: 'channels' },

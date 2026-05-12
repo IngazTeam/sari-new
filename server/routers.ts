@@ -47,6 +47,7 @@ import { templateTranslationsRouter } from "./routers-template-translations";
 import { userNotificationsRouter } from "./routers-user-notifications";
 import { productsRouter } from "./routers-products";
 import { knowledgeDocsRouter } from "./routers-knowledge-docs";
+import { sariBrainRouter } from "./routers-sari-brain";
 import { aiSettingsRouter } from "./routers-ai-settings";
 import { googleAnalyticsRouter } from "./routers-google-analytics";
 import { dashboardRouter } from "./routers-dashboard";
@@ -8619,6 +8620,9 @@ export const appRouter = router({
 
   // Knowledge Base Documents — modularized to routers-knowledge-docs.ts
   knowledgeDocs: knowledgeDocsRouter,
+
+  // Sari Brain Management — modularized to routers-sari-brain.ts
+  sariBrain: sariBrainRouter,
 
   // AI Settings & Usage — modularized to routers-ai-settings.ts
   aiSettings: aiSettingsRouter,
