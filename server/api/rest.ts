@@ -305,7 +305,10 @@ export function generatePlatformKeyValue(platform: string): string {
 
 function validatePlatformKey(key: string): { platform: string } | null {
   for (const [platform, secret] of Object.entries(PLATFORM_KEYS)) {
-    if (key === secret) return { platform };
+    // PEN-R3-04: Use timing-safe comparison to prevent timing attacks
+    if (key.length === secret.length && crypto.timingSafeEqual(Buffer.from(key), Buffer.from(secret))) {
+      return { platform };
+    }
   }
   return null;
 }
@@ -726,9 +729,14 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     const hashedPassword = await bcrypt.hash(password, 12);
     const openId = `provision_${Date.now()}_${Math.random().toString(36).substring(7)}`;
 
+    // PEN-R3-02: Sanitize name to prevent stored XSS
+    const safeName = stripHtml(String(name || businessName)).substring(0, 100);
+    const safeBusinessName = stripHtml(String(businessName)).substring(0, 255);
+    const safePhone = phone ? stripHtml(String(phone)).replace(/[^0-9+\-\s()]/g, '').substring(0, 20) : null;
+
     const [userResult] = await (dbConn as any).execute(
       `INSERT INTO users (open_id, name, email, password, login_method, role, created_at, updated_at, last_signed_in) VALUES (?, ?, ?, ?, 'credentials', 'user', NOW(), NOW(), NOW())`,
-      [openId, name || businessName, String(email).toLowerCase().trim(), hashedPassword]
+      [openId, safeName, String(email).toLowerCase().trim(), hashedPassword]
     );
 
     const userId = (userResult as any).insertId;
@@ -736,7 +744,7 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     // Create merchant with platform source
     const [merchantResult] = await (dbConn as any).execute(
       `INSERT INTO merchants (user_id, business_name, phone, status, integration_source, platform_type, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())`,
-      [userId, String(businessName).substring(0, 255), phone || null, source, source === 'byaan' ? 'byaan' : 'none']
+      [userId, safeBusinessName, safePhone, source, source === 'byaan' ? 'byaan' : 'none']
     );
 
     const merchantId = (merchantResult as any).insertId;

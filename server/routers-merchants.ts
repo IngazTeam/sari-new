@@ -97,7 +97,7 @@ export const merchantsRouter = router({
 
             // Cascade delete all related data
             const tables = [
-                'api_keys',
+                'sari_api_keys',
                 'merchant_subscriptions',
                 'products',
                 'extracted_faqs',
