@@ -22,6 +22,8 @@ const HEADER_MAP: Record<string, string> = {
     'العنوان': 'name', 'item': 'name', 'item name': 'name',
     'اسم العنصر': 'name', 'الصنف': 'name', 'المادة': 'name',
     'اسم المادة': 'name', 'subject': 'name', 'الدورة': 'name',
+    'البرنامج': 'name', 'الباقة': 'name', 'الخدمة': 'name',
+    'اسم الورشة': 'name', 'workshop': 'name', 'workshop name': 'name',
 
     // ═══ DESCRIPTION variants ═══
     'description': 'description', 'الوصف': 'description', 'وصف': 'description',
@@ -39,6 +41,7 @@ const HEADER_MAP: Record<string, string> = {
     'الرسوم': 'price', 'المبلغ': 'price', 'amount': 'price',
     'سعر الدورة': 'price', 'course price': 'price', 'سعر الخدمة': 'price',
     'unit price': 'price', 'سعر الوحدة': 'price', 'rate': 'price',
+    'قيمة الاشتراك': 'price', 'subscription price': 'price',
 
     // ═══ IMAGE variants ═══
     'imageurl': 'imageUrl', 'image': 'imageUrl', 'الصورة': 'imageUrl',
@@ -57,6 +60,25 @@ const HEADER_MAP: Record<string, string> = {
     'القسم': 'category', 'department': 'category', 'section': 'category',
     'المجال': 'category', 'field': 'category', 'التخصص': 'category',
     'specialization': 'category',
+
+    // ═══ SERVICE/COURSE-specific (mapped as extras for rich description) ═══
+    'المدة': 'extra_duration', 'المدة (بالساعات)': 'extra_duration', 'المدة بالساعات': 'extra_duration',
+    'duration': 'extra_duration', 'عدد الساعات': 'extra_duration', 'hours': 'extra_duration',
+    'عدد الأيام': 'extra_days', 'days': 'extra_days', 'الأيام': 'extra_days',
+    'المدرب': 'extra_instructor', 'اسم المدرب': 'extra_instructor', 'المحاضر': 'extra_instructor',
+    'instructor': 'extra_instructor', 'trainer': 'extra_instructor', 'المدربة': 'extra_instructor',
+    'الموقع': 'extra_location', 'المكان': 'extra_location', 'العنوان التفصيلي': 'extra_location',
+    'location': 'extra_location', 'venue': 'extra_location', 'المدينة': 'extra_location',
+    'تاريخ البدء': 'extra_start_date', 'start date': 'extra_start_date', 'تاريخ البداية': 'extra_start_date',
+    'تاريخ الانتهاء': 'extra_end_date', 'end date': 'extra_end_date',
+    'الحالة': 'extra_status', 'status': 'extra_status', 'الاعتماد': 'extra_accreditation',
+    'is_accredited': 'extra_accreditation', 'معتمد': 'extra_accreditation', 'accredited': 'extra_accreditation',
+    'is_free': 'extra_is_free', 'مجاني': 'extra_is_free',
+    'is_published': 'extra_published', 'منشورة': 'extra_published',
+    'تاريخ الإنشاء': 'extra_created', 'created_at': 'extra_created', 'created': 'extra_created',
+    'اللغة': 'extra_language', 'language': 'extra_language',
+    'المتطلبات': 'extra_requirements', 'requirements': 'extra_requirements', 'الشروط': 'extra_requirements',
+    'الشهادة': 'extra_certificate', 'certificate': 'extra_certificate',
 };
 
 function normalizeHeader(header: string): string | null {
@@ -66,14 +88,25 @@ function normalizeHeader(header: string): string | null {
 
 /**
  * Smart header detection: if no column matches 'name' from the HEADER_MAP,
- * auto-assign the first text column as 'name' and merge remaining unmapped
+ * auto-assign the best candidate for name/price and merge remaining
  * columns into 'description'. This ensures NO file is ever rejected.
  */
+
+// Headers that indicate this is a service/course file (not physical products)
+const SERVICE_INDICATORS = /مدة|ساعات|أيام|مدرب|محاضر|اعتماد|accredited|instructor|duration|hours|days|trainer|شهادة|certificate|ورشة|workshop|دورة|برنامج|تدريب/i;
+
+// Headers that are metadata (skip in description, keep for AI analysis)
+const METADATA_HEADERS = /is_free|is_published|is_accredited|created_at|تاريخ الإنشاء|updated_at|id|#|الرقم|رقم/i;
+
 function smartMapHeaders(
     rawHeaders: { colNumber: number; value: string }[]
-): { columnMap: Record<number, string>; autoDetected: boolean; rawHeaderNames: Record<number, string> } {
+): { columnMap: Record<number, string>; autoDetected: boolean; rawHeaderNames: Record<number, string>; isServiceFile: boolean } {
     const columnMap: Record<number, string> = {};
     const rawHeaderNames: Record<number, string> = {};
+
+    // Check if this looks like a service/course file
+    const headerText = rawHeaders.map(h => h.value).join(' ');
+    const isServiceFile = SERVICE_INDICATORS.test(headerText);
 
     // Phase 1: try HEADER_MAP matches
     for (const h of rawHeaders) {
@@ -92,28 +125,50 @@ function smartMapHeaders(
                 columnMap[h.colNumber] = `extra_${h.colNumber}`;
             }
         }
-        return { columnMap, autoDetected: false, rawHeaderNames };
+        return { columnMap, autoDetected: false, rawHeaderNames, isServiceFile };
     }
 
-    // Phase 2: Smart fallback — auto-detect columns
-    // First column = name, first numeric-looking column = price, rest = extras for description
-    let nameAssigned = false;
+    // Phase 2: Smart fallback — scan ALL headers for best name/price candidates
+    let bestNameCol = -1;
+    let bestPriceCol = -1;
+    
     for (const h of rawHeaders) {
-        if (!nameAssigned) {
+        const val = h.value.trim().toLowerCase();
+        // Skip metadata columns for name assignment
+        if (METADATA_HEADERS.test(val)) continue;
+        
+        // Price detection: look for numeric-indicating headers
+        if (bestPriceCol === -1 && /سعر|price|cost|رسوم|مبلغ|amount|fees|تكلفة|قيمة/i.test(val)) {
+            bestPriceCol = h.colNumber;
+        }
+        // Name detection: first non-metadata, non-price text column
+        else if (bestNameCol === -1 && !METADATA_HEADERS.test(val)) {
+            bestNameCol = h.colNumber;
+        }
+    }
+
+    // If no name found at all, take literal first column
+    if (bestNameCol === -1 && rawHeaders.length > 0) {
+        bestNameCol = rawHeaders[0].colNumber;
+    }
+
+    // Assign detected columns
+    for (const h of rawHeaders) {
+        if (h.colNumber === bestNameCol) {
             columnMap[h.colNumber] = 'name';
-            nameAssigned = true;
-        } else if (!Object.values(columnMap).includes('price') && /سعر|price|cost|رسوم|مبلغ|amount/i.test(h.value)) {
+        } else if (h.colNumber === bestPriceCol) {
             columnMap[h.colNumber] = 'price';
         } else {
             columnMap[h.colNumber] = `extra_${h.colNumber}`;
         }
     }
 
-    return { columnMap, autoDetected: true, rawHeaderNames };
+    return { columnMap, autoDetected: true, rawHeaderNames, isServiceFile };
 }
 
 /**
  * Build a rich description from extra columns for a given row.
+ * Skips metadata fields (is_published, created_at, etc.) for cleaner output.
  * Example: "المدرب: أحمد | المدة: 5 ساعات | الموقع: الرياض"
  */
 function buildExtraDescription(
@@ -128,7 +183,12 @@ function buildExtraDescription(
         if (field.startsWith('extra_') && row[field]) {
             const colNumber = parseInt(colStr);
             const headerLabel = rawHeaderNames[colNumber] || field;
-            parts.push(`${headerLabel}: ${row[field]}`);
+            // Skip metadata fields from the visible description
+            if (METADATA_HEADERS.test(headerLabel)) continue;
+            // Skip empty/boolean-only values
+            const val = row[field].trim();
+            if (!val || val === 'لا' || val === 'نعم' || val === '0' || val === '1') continue;
+            parts.push(`${headerLabel}: ${val}`);
         }
     }
     return parts.join(' | ');
@@ -644,7 +704,7 @@ export const productsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'الملف لا يحتوي على أعمدة' });
             }
 
-            const { columnMap, autoDetected, rawHeaderNames } = smartMapHeaders(rawHeaders);
+            const { columnMap, autoDetected, rawHeaderNames, isServiceFile } = smartMapHeaders(rawHeaders);
 
             let successCount = 0;
             let errorCount = 0;
@@ -693,6 +753,8 @@ export const productsRouter = router({
                         imageUrl: row.imageUrl || null,
                         stock: row.stock ? parseInt(row.stock) : null,
                         category: row.category || null,
+                        // Auto-detect product type: service for courses/services files
+                        ...(isServiceFile ? { productType: 'service' as const } : {}),
                     });
                     successCount++;
 
