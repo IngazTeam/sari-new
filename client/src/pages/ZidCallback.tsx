@@ -1,3 +1,4 @@
+﻿import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { trpc } from '@/lib/trpc';

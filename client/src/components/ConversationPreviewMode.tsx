@@ -1,3 +1,4 @@
+﻿import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { WhatsAppPreview, PreviewMessage } from './WhatsAppPreview';
 import { Button } from '@/components/ui/button';
