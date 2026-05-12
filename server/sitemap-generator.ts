@@ -81,6 +81,108 @@ export async function generatePagesSitemap(): Promise<string> {
       changefreq: 'monthly',
       priority: 0.8,
     },
+    // ─── SEO Money Pages ───
+    {
+      loc: `${BASE_URL}/ai-whatsapp-sales-agent`,
+      changefreq: 'weekly',
+      priority: 0.95,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/ai-whatsapp-sales-agent` },
+        { lang: 'en', href: `${BASE_URL}/ai-whatsapp-sales-agent?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/whatsapp-ordering-system`,
+      changefreq: 'weekly',
+      priority: 0.9,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/whatsapp-ordering-system` },
+        { lang: 'en', href: `${BASE_URL}/whatsapp-ordering-system?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/whatsapp-booking-system`,
+      changefreq: 'weekly',
+      priority: 0.9,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/whatsapp-booking-system` },
+        { lang: 'en', href: `${BASE_URL}/whatsapp-booking-system?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/ai-customer-service-whatsapp`,
+      changefreq: 'weekly',
+      priority: 0.9,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/ai-customer-service-whatsapp` },
+        { lang: 'en', href: `${BASE_URL}/ai-customer-service-whatsapp?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/conversational-commerce-platform`,
+      changefreq: 'weekly',
+      priority: 0.9,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/conversational-commerce-platform` },
+        { lang: 'en', href: `${BASE_URL}/conversational-commerce-platform?lang=en` },
+      ],
+    },
+    // ─── SEO Vertical Industry Pages ───
+    {
+      loc: `${BASE_URL}/solutions/clinics`,
+      changefreq: 'weekly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/clinics` },
+        { lang: 'en', href: `${BASE_URL}/solutions/clinics?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/solutions/restaurants`,
+      changefreq: 'weekly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/restaurants` },
+        { lang: 'en', href: `${BASE_URL}/solutions/restaurants?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/solutions/salons`,
+      changefreq: 'weekly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/salons` },
+        { lang: 'en', href: `${BASE_URL}/solutions/salons?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/solutions/training-centers`,
+      changefreq: 'weekly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/training-centers` },
+        { lang: 'en', href: `${BASE_URL}/solutions/training-centers?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/solutions/real-estate`,
+      changefreq: 'weekly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/real-estate` },
+        { lang: 'en', href: `${BASE_URL}/solutions/real-estate?lang=en` },
+      ],
+    },
+    {
+      loc: `${BASE_URL}/solutions/consultants`,
+      changefreq: 'weekly',
+      priority: 0.85,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/consultants` },
+        { lang: 'en', href: `${BASE_URL}/solutions/consultants?lang=en` },
+      ],
+    },
+    // ─── Standard Pages ───
     {
       loc: `${BASE_URL}/resources/blog`,
       changefreq: 'weekly',

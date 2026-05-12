@@ -32,6 +32,17 @@ Sari (ساري) is a SaaS platform that connects to your online store (Salla, Zi
 - Pro Plan: Full features, priority support
 - Advanced Plan: Enterprise features, custom integrations
 
+## Industry Solutions
+
+Sari provides specialized AI solutions for specific industries:
+
+- **Clinics & Medical Centers**: Appointment booking, patient reminders, doctor schedule management via WhatsApp
+- **Restaurants & Cafés**: Order-by-chat, smart menu, delivery tracking, table reservations
+- **Salons & Beauty Centers**: Booking, specialist management, loyalty programs, marketing campaigns
+- **Training Centers**: Course registration, e-payment, class reminders, certificate delivery
+- **Real Estate**: Property listings, lead qualification, viewing booking, auto follow-up
+- **Consultants & Law Firms**: Consultation booking, advance payment, session management, client follow-up
+
 ## Technology
 
 Built with React 19, tRPC, Drizzle ORM, and Express. Supports Arabic (RTL) and English.

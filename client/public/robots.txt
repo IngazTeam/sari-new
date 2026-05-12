@@ -11,6 +11,21 @@ Allow: /company
 Allow: /try-sari
 Allow: /blog
 
+# SEO Landing Pages - Money Pages
+Allow: /ai-whatsapp-sales-agent
+Allow: /whatsapp-ordering-system
+Allow: /whatsapp-booking-system
+Allow: /ai-customer-service-whatsapp
+Allow: /conversational-commerce-platform
+
+# SEO Vertical Industry Pages
+Allow: /solutions/clinics
+Allow: /solutions/restaurants
+Allow: /solutions/salons
+Allow: /solutions/training-centers
+Allow: /solutions/real-estate
+Allow: /solutions/consultants
+
 # Disallow private/admin areas
 Disallow: /admin/
 Disallow: /merchant/
