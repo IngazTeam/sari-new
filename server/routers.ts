@@ -3121,7 +3121,28 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
+        // Rate limit: max 5 refreshes per 10 minutes per merchant
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const rateLimitCheck = checkRateLimit(`wa_refresh:${merchant.id}`, 5, 10 * 60 * 1000);
+        if (!rateLimitCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'يرجى الانتظار قبل المحاولة مرة أخرى' });
+        }
+
         const baseUrl = instance.apiUrl || 'https://api.green-api.com';
+
+        // SSRF guard — only allow Green API domains
+        try {
+          const parsed = new URL(baseUrl);
+          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+          const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
+          if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only Green API URLs are allowed' });
+          }
+        } catch (e) {
+          if (e instanceof TRPCError) throw e;
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
+        }
+
         const updates: any = {};
 
         // 1. Fetch phone number from Green API settings
@@ -3167,9 +3188,8 @@ export const appRouter = router({
         const updated = await db.getWhatsAppInstanceById(instance.id);
         return {
           success: true,
-          phoneNumber: updates.phoneNumber || instance.phoneNumber,
+          phoneNumber: updated?.phoneNumber || updates.phoneNumber || instance.phoneNumber,
           webhookRegistered: !!updates.webhookUrl,
-          instance: updated,
         };
       }),
 
@@ -3686,6 +3706,13 @@ export const appRouter = router({
           if (response.ok && data.stateInstance === 'authorized') {
             // Connection successful - create WhatsApp instance
             if (request.status === 'approved') {
+              // Race condition guard: check if instance already created by concurrent request
+              const existingInstances = await db.getWhatsAppInstancesByMerchantId(request.merchantId);
+              const alreadyExists = existingInstances.some((i: any) => i.instanceId === request.instanceId);
+              if (alreadyExists) {
+                return { connected: true, status: 'authorized', phoneNumber: data.phoneNumber };
+              }
+
               // Check WhatsApp number limit before creating instance
               const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
               await checkWhatsAppNumberLimit(request.merchantId);

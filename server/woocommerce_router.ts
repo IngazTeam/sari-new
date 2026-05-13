@@ -1,4 +1,4 @@
-﻿/**
+/**
  * WooCommerce tRPC Router
  * 
  * Handles all WooCommerce integration operations
@@ -10,6 +10,13 @@ import { TRPCError } from "@trpc/server";
 import * as db from "./db";
 import { createWooCommerceClient, validateStoreUrl } from "./woocommerce";
 import type { WooCommerceSettings } from "../drizzle/schema";
+
+/** Resolve merchantId from userId — ctx.user has no merchantId field */
+async function getMerchantId(userId: number): Promise<number> {
+  const merchant = await db.getMerchantByUserId(userId);
+  if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+  return merchant.id;
+}
 
 export const woocommerceRouter = router({
   // ==================== Settings ====================
