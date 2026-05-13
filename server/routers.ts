@@ -7555,15 +7555,17 @@ export const appRouter = router({
     // Get current connected platform
     getCurrentPlatform: protectedProcedure.query(async ({ ctx }) => {
       const { getCurrentPlatform } = await import('./integrations/platform-checker');
-      const merchantId = ctx.user.merchantId || ctx.user.id;
-      return await getCurrentPlatform(merchantId);
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      return await getCurrentPlatform(merchant.id);
     }),
 
     // Get all connected platforms (for debugging)
     getAllConnectedPlatforms: protectedProcedure.query(async ({ ctx }) => {
       const { getAllConnectedPlatforms } = await import('./integrations/platform-checker');
-      const merchantId = ctx.user.merchantId || ctx.user.id;
-      return await getAllConnectedPlatforms(merchantId);
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      return await getAllConnectedPlatforms(merchant.id);
     }),
   }),
 

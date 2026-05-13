@@ -1,4 +1,4 @@
-/**
+﻿/**
  * WooCommerce tRPC Router
  * 
  * Handles all WooCommerce integration operations
@@ -15,7 +15,7 @@ export const woocommerceRouter = router({
   // ==================== Settings ====================
 
   getSettings: protectedProcedure.query(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings(ctx.user.merchantId);
+    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
     
     // Don't expose sensitive keys to frontend
     if (settings) {
@@ -44,18 +44,18 @@ export const woocommerceRouter = router({
       if (!validateStoreUrl(input.storeUrl)) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: 'رابط المتجر غير صحيح',
+          message: 'ط±ط§ط¨ط· ط§ظ„ظ…طھط¬ط± ط؛ظٹط± طµط­ظٹط­',
         });
       }
 
       // Check if settings exist
-      const existingSettings = await db.getWooCommerceSettings(ctx.user.merchantId);
+      const existingSettings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
       
       // Only check for other platforms if creating new connection
       if (!existingSettings) {
         const { validateNewPlatformConnection } = await import('./integrations/platform-checker');
         try {
-          await validateNewPlatformConnection(ctx.user.merchantId, 'ووكومرس');
+          await validateNewPlatformConnection((await getMerchantId(ctx.user.id)), 'ظˆظˆظƒظˆظ…ط±ط³');
         } catch (error: any) {
           throw new TRPCError({ 
             code: 'BAD_REQUEST', 
@@ -66,7 +66,7 @@ export const woocommerceRouter = router({
 
       if (existingSettings) {
         // Update existing settings
-        await db.updateWooCommerceSettings(ctx.user.merchantId, {
+        await db.updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
           storeUrl: input.storeUrl,
           consumerKey: input.consumerKey,
           consumerSecret: input.consumerSecret,
@@ -79,7 +79,7 @@ export const woocommerceRouter = router({
       } else {
         // Create new settings
         await db.createWooCommerceSettings({
-          merchantId: ctx.user.merchantId,
+          merchantId: (await getMerchantId(ctx.user.id)),
           storeUrl: input.storeUrl,
           consumerKey: input.consumerKey,
           consumerSecret: input.consumerSecret,
@@ -91,16 +91,16 @@ export const woocommerceRouter = router({
         });
       }
 
-      return { success: true, message: 'تم حفظ الإعدادات بنجاح' };
+      return { success: true, message: 'طھظ… ط­ظپط¸ ط§ظ„ط¥ط¹ط¯ط§ط¯ط§طھ ط¨ظ†ط¬ط§ط­' };
     }),
 
   testConnection: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings(ctx.user.merchantId);
+    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
 
     if (!settings) {
       throw new TRPCError({
         code: 'NOT_FOUND',
-        message: 'لم يتم العثور على إعدادات WooCommerce',
+        message: 'ظ„ظ… ظٹطھظ… ط§ظ„ط¹ط«ظˆط± ط¹ظ„ظ‰ ط¥ط¹ط¯ط§ط¯ط§طھ WooCommerce',
       });
     }
 
@@ -109,20 +109,20 @@ export const woocommerceRouter = router({
 
     if (result.success) {
       // Update connection status
-      await db.updateWooCommerceConnectionStatus(ctx.user.merchantId, 'connected', result.storeInfo);
+      await db.updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'connected', result.storeInfo);
     } else {
-      await db.updateWooCommerceConnectionStatus(ctx.user.merchantId, 'error');
+      await db.updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'error');
     }
 
     return result;
   }),
 
   disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-    await db.deleteWooCommerceSettings(ctx.user.merchantId);
-    await db.deleteWooCommerceProductsByMerchant(ctx.user.merchantId);
-    await db.deleteWooCommerceOrdersByMerchant(ctx.user.merchantId);
+    await db.deleteWooCommerceSettings((await getMerchantId(ctx.user.id)));
+    await db.deleteWooCommerceProductsByMerchant((await getMerchantId(ctx.user.id)));
+    await db.deleteWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
 
-    return { success: true, message: 'تم فصل الاتصال بنجاح' };
+    return { success: true, message: 'طھظ… ظپطµظ„ ط§ظ„ط§طھطµط§ظ„ ط¨ظ†ط¬ط§ط­' };
   }),
 
   // ==================== Products ====================
@@ -137,8 +137,8 @@ export const woocommerceRouter = router({
       const limit = input.limit || 50;
       const offset = (page - 1) * limit;
 
-      const products = await db.getWooCommerceProducts(ctx.user.merchantId, limit, offset);
-      const stats = await db.getWooCommerceProductsStats(ctx.user.merchantId);
+      const products = await db.getWooCommerceProducts((await getMerchantId(ctx.user.id)), limit, offset);
+      const stats = await db.getWooCommerceProductsStats((await getMerchantId(ctx.user.id)));
 
       return {
         products,
@@ -157,17 +157,17 @@ export const woocommerceRouter = router({
       limit: z.number().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const products = await db.searchWooCommerceProducts(ctx.user.merchantId, input.search, input.limit || 20);
+      const products = await db.searchWooCommerceProducts((await getMerchantId(ctx.user.id)), input.search, input.limit || 20);
       return products;
     }),
 
   syncProducts: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings(ctx.user.merchantId);
+    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
 
     if (!settings || settings.connectionStatus !== 'connected') {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',
-        message: 'يجب الاتصال بـ WooCommerce أولاً',
+        message: 'ظٹط¬ط¨ ط§ظ„ط§طھطµط§ظ„ ط¨ظ€ WooCommerce ط£ظˆظ„ط§ظ‹',
       });
     }
 
@@ -175,7 +175,7 @@ export const woocommerceRouter = router({
 
     // Create sync log
     const logId = await db.createWooCommerceSyncLog({
-      merchantId: ctx.user.merchantId,
+      merchantId: (await getMerchantId(ctx.user.id)),
       syncType: 'products',
       direction: 'import',
       status: 'success',
@@ -205,10 +205,10 @@ export const woocommerceRouter = router({
 
           try {
             // Check if product already exists
-            const existingProduct = await db.getWooCommerceProductByWooId(ctx.user.merchantId, wooProduct.id);
+            const existingProduct = await db.getWooCommerceProductByWooId((await getMerchantId(ctx.user.id)), wooProduct.id);
 
             const productData = {
-              merchantId: ctx.user.merchantId,
+              merchantId: (await getMerchantId(ctx.user.id)),
               wooProductId: wooProduct.id,
               name: wooProduct.name,
               slug: wooProduct.slug,
@@ -255,13 +255,13 @@ export const woocommerceRouter = router({
       });
 
       // Update last sync time
-      await db.updateWooCommerceSettings(ctx.user.merchantId, {
+      await db.updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
         lastSyncAt: new Date().toISOString(),
       });
 
       return {
         success: true,
-        message: `تمت مزامنة ${itemsSuccess} منتج بنجاح`,
+        message: `طھظ…طھ ظ…ط²ط§ظ…ظ†ط© ${itemsSuccess} ظ…ظ†طھط¬ ط¨ظ†ط¬ط§ط­`,
         stats: {
           processed: itemsProcessed,
           success: itemsSuccess,
@@ -280,7 +280,7 @@ export const woocommerceRouter = router({
 
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: error.message || 'فشلت المزامنة',
+        message: error.message || 'ظپط´ظ„طھ ط§ظ„ظ…ط²ط§ظ…ظ†ط©',
       });
     }
   }),
@@ -300,12 +300,12 @@ export const woocommerceRouter = router({
 
       let orders;
       if (input.status) {
-        orders = await db.getWooCommerceOrdersByStatus(ctx.user.merchantId, input.status, limit);
+        orders = await db.getWooCommerceOrdersByStatus((await getMerchantId(ctx.user.id)), input.status, limit);
       } else {
-        orders = await db.getWooCommerceOrders(ctx.user.merchantId, limit, offset);
+        orders = await db.getWooCommerceOrders((await getMerchantId(ctx.user.id)), limit, offset);
       }
 
-      const stats = await db.getWooCommerceOrdersStats(ctx.user.merchantId);
+      const stats = await db.getWooCommerceOrdersStats((await getMerchantId(ctx.user.id)));
 
       return {
         orders,
@@ -325,10 +325,10 @@ export const woocommerceRouter = router({
     .query(async ({ ctx, input }) => {
       const order = await db.getWooCommerceOrderById(input.id);
 
-      if (!order || order.merchantId !== ctx.user.merchantId) {
+      if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
         throw new TRPCError({
           code: 'NOT_FOUND',
-          message: 'لم يتم العثور على الطلب',
+          message: 'ظ„ظ… ظٹطھظ… ط§ظ„ط¹ط«ظˆط± ط¹ظ„ظ‰ ط§ظ„ط·ظ„ط¨',
         });
       }
 
@@ -336,12 +336,12 @@ export const woocommerceRouter = router({
     }),
 
   syncOrders: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings(ctx.user.merchantId);
+    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
 
     if (!settings || settings.connectionStatus !== 'connected') {
       throw new TRPCError({
         code: 'PRECONDITION_FAILED',
-        message: 'يجب الاتصال بـ WooCommerce أولاً',
+        message: 'ظٹط¬ط¨ ط§ظ„ط§طھطµط§ظ„ ط¨ظ€ WooCommerce ط£ظˆظ„ط§ظ‹',
       });
     }
 
@@ -349,7 +349,7 @@ export const woocommerceRouter = router({
 
     // Create sync log
     const logId = await db.createWooCommerceSyncLog({
-      merchantId: ctx.user.merchantId,
+      merchantId: (await getMerchantId(ctx.user.id)),
       syncType: 'orders',
       direction: 'import',
       status: 'success',
@@ -379,10 +379,10 @@ export const woocommerceRouter = router({
 
           try {
             // Check if order already exists
-            const existingOrder = await db.getWooCommerceOrderByWooId(ctx.user.merchantId, wooOrder.id);
+            const existingOrder = await db.getWooCommerceOrderByWooId((await getMerchantId(ctx.user.id)), wooOrder.id);
 
             const orderData = {
-              merchantId: ctx.user.merchantId,
+              merchantId: (await getMerchantId(ctx.user.id)),
               wooOrderId: wooOrder.id,
               orderNumber: wooOrder.number,
               status: wooOrder.status,
@@ -437,13 +437,13 @@ export const woocommerceRouter = router({
       });
 
       // Update last sync time
-      await db.updateWooCommerceSettings(ctx.user.merchantId, {
+      await db.updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
         lastSyncAt: new Date().toISOString(),
       });
 
       return {
         success: true,
-        message: `تمت مزامنة ${itemsSuccess} طلب بنجاح`,
+        message: `طھظ…طھ ظ…ط²ط§ظ…ظ†ط© ${itemsSuccess} ط·ظ„ط¨ ط¨ظ†ط¬ط§ط­`,
         stats: {
           processed: itemsProcessed,
           success: itemsSuccess,
@@ -462,7 +462,7 @@ export const woocommerceRouter = router({
 
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
-        message: error.message || 'فشلت المزامنة',
+        message: error.message || 'ظپط´ظ„طھ ط§ظ„ظ…ط²ط§ظ…ظ†ط©',
       });
     }
   }),
@@ -474,7 +474,7 @@ export const woocommerceRouter = router({
       limit: z.number().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const logs = await db.getWooCommerceSyncLogs(ctx.user.merchantId, input.limit || 50);
+      const logs = await db.getWooCommerceSyncLogs((await getMerchantId(ctx.user.id)), input.limit || 50);
       return logs;
     }),
 
@@ -483,7 +483,7 @@ export const woocommerceRouter = router({
       syncType: z.enum(['products', 'orders', 'customers', 'manual']),
     }))
     .query(async ({ ctx, input }) => {
-      const log = await db.getLatestWooCommerceSyncLog(ctx.user.merchantId, input.syncType);
+      const log = await db.getLatestWooCommerceSyncLog((await getMerchantId(ctx.user.id)), input.syncType);
       return log;
     }),
 
@@ -500,20 +500,20 @@ export const woocommerceRouter = router({
         // Get order from local database
         const order = await db.getWooCommerceOrderById(input.orderId);
         
-        if (!order || order.merchantId !== ctx.user.merchantId) {
+        if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'الطلب غير موجود',
+            message: 'ط§ظ„ط·ظ„ط¨ ط؛ظٹط± ظ…ظˆط¬ظˆط¯',
           });
         }
 
         // Get WooCommerce settings
-        const settings = await db.getWooCommerceSettings(ctx.user.merchantId);
+        const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
         
         if (!settings) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'لم يتم العثور على إعدادات WooCommerce',
+            message: 'ظ„ظ… ظٹطھظ… ط§ظ„ط¹ط«ظˆط± ط¹ظ„ظ‰ ط¥ط¹ط¯ط§ط¯ط§طھ WooCommerce',
           });
         }
 
@@ -536,7 +536,7 @@ export const woocommerceRouter = router({
 
         return { 
           success: true, 
-          message: 'تم تحديث حالة الطلب بنجاح',
+          message: 'طھظ… طھط­ط¯ظٹط« ط­ط§ظ„ط© ط§ظ„ط·ظ„ط¨ ط¨ظ†ط¬ط§ط­',
           order: {
             ...order,
             status: input.status,
@@ -545,7 +545,7 @@ export const woocommerceRouter = router({
       } catch (error: any) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'فشل تحديث حالة الطلب',
+          message: error.message || 'ظپط´ظ„ طھط­ط¯ظٹط« ط­ط§ظ„ط© ط§ظ„ط·ظ„ط¨',
         });
       }
     }),
@@ -560,27 +560,27 @@ export const woocommerceRouter = router({
         // Get order from local database
         const order = await db.getWooCommerceOrderById(input.orderId);
         
-        if (!order || order.merchantId !== ctx.user.merchantId) {
+        if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
           throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'الطلب غير موجود',
+            message: 'ط§ظ„ط·ظ„ط¨ ط؛ظٹط± ظ…ظˆط¬ظˆط¯',
           });
         }
 
         if (!order.customerPhone) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'رقم هاتف العميل غير متوفر',
+            message: 'ط±ظ‚ظ… ظ‡ط§طھظپ ط§ظ„ط¹ظ…ظٹظ„ ط؛ظٹط± ظ…طھظˆظپط±',
           });
         }
 
         // Get merchant's WhatsApp connection
-        const whatsappConnection = await db.getWhatsAppConnectionByMerchantId(ctx.user.merchantId);
+        const whatsappConnection = await db.getWhatsAppConnectionByMerchantId((await getMerchantId(ctx.user.id)));
         
         if (!whatsappConnection || !whatsappConnection.isActive) {
           throw new TRPCError({
             code: 'PRECONDITION_FAILED',
-            message: 'لم يتم ربط حساب واتساب',
+            message: 'ظ„ظ… ظٹطھظ… ط±ط¨ط· ط­ط³ط§ط¨ ظˆط§طھط³ط§ط¨',
           });
         }
 
@@ -589,17 +589,17 @@ export const woocommerceRouter = router({
         
         // Prepare notification message
         const defaultMessage = `
-مرحباً ${order.customerName}! 👋
+ظ…ط±ط­ط¨ط§ظ‹ ${order.customerName}! ًں‘‹
 
-نود إعلامك بتحديث حالة طلبك #${order.orderNumber}
+ظ†ظˆط¯ ط¥ط¹ظ„ط§ظ…ظƒ ط¨طھط­ط¯ظٹط« ط­ط§ظ„ط© ط·ظ„ط¨ظƒ #${order.orderNumber}
 
-📦 حالة الطلب: ${getOrderStatusArabic(order.status)}
-💰 المبلغ الإجمالي: ${order.total} ${order.currency}
+ًں“¦ ط­ط§ظ„ط© ط§ظ„ط·ظ„ط¨: ${getOrderStatusArabic(order.status)}
+ًں’° ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ط¥ط¬ظ…ط§ظ„ظٹ: ${order.total} ${order.currency}
 
-المنتجات:
-${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${item.quantity}`).join('\n')}
+ط§ظ„ظ…ظ†طھط¬ط§طھ:
+${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— ${item.quantity}`).join('\n')}
 
-شكراً لثقتك بنا! 🙏
+ط´ظƒط±ط§ظ‹ ظ„ط«ظ‚طھظƒ ط¨ظ†ط§! ًں™ڈ
         `.trim();
 
         const messageToSend = input.message || defaultMessage;
@@ -621,12 +621,12 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
 
         return { 
           success: true, 
-          message: 'تم إرسال الإشعار بنجاح',
+          message: 'طھظ… ط¥ط±ط³ط§ظ„ ط§ظ„ط¥ط´ط¹ط§ط± ط¨ظ†ط¬ط§ط­',
         };
       } catch (error: any) {
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'فشل إرسال الإشعار',
+          message: error.message || 'ظپط´ظ„ ط¥ط±ط³ط§ظ„ ط§ظ„ط¥ط´ط¹ط§ط±',
         });
       }
     }),
@@ -640,7 +640,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
       endDate: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant(ctx.user.merchantId);
+      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -709,7 +709,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
       endDate: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant(ctx.user.merchantId);
+      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -753,7 +753,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
     }))
     .query(async ({ ctx, input }) => {
       // Get WooCommerce orders
-      const orders = await db.getWooCommerceOrdersByMerchant(ctx.user.merchantId);
+      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -765,7 +765,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
       }
 
       // Get WhatsApp conversations for the same period
-      const conversations = await db.getConversationsByMerchant(ctx.user.merchantId);
+      const conversations = await db.getConversationsByMerchant((await getMerchantId(ctx.user.id)));
       let filteredConversations = conversations;
       if (input.startDate && input.endDate) {
         filteredConversations = conversations.filter(conv => {
@@ -806,7 +806,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
       endDate: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant(ctx.user.merchantId);
+      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -846,7 +846,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
       endDate: z.string(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant(ctx.user.merchantId);
+      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range
       const filteredOrders = orders.filter(order => {
@@ -892,13 +892,13 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} × ${i
 // Helper function to get order status in Arabic
 function getOrderStatusArabic(status: string): string {
   const statusMap: Record<string, string> = {
-    'pending': 'قيد الانتظار',
-    'processing': 'قيد المعالجة',
-    'on-hold': 'معلق',
-    'completed': 'مكتمل',
-    'cancelled': 'ملغي',
-    'refunded': 'مسترجع',
-    'failed': 'فاشل',
+    'pending': 'ظ‚ظٹط¯ ط§ظ„ط§ظ†طھط¸ط§ط±',
+    'processing': 'ظ‚ظٹط¯ ط§ظ„ظ…ط¹ط§ظ„ط¬ط©',
+    'on-hold': 'ظ…ط¹ظ„ظ‚',
+    'completed': 'ظ…ظƒطھظ…ظ„',
+    'cancelled': 'ظ…ظ„ط؛ظٹ',
+    'refunded': 'ظ…ط³طھط±ط¬ط¹',
+    'failed': 'ظپط§ط´ظ„',
   };
   
   return statusMap[status] || status;
