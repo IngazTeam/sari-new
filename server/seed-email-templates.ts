@@ -3,7 +3,7 @@
  * يملأ جدول email_templates بالقوالب الافتراضية
  */
 
-import { db } from './db.js';
+import { getDb } from './db.js';
 import { emailTemplates } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 
@@ -404,6 +404,12 @@ const defaultTemplates = [
 async function seedEmailTemplates() {
   try {
     console.log('🌱 Starting email templates seed...');
+    
+    const db = await getDb();
+    if (!db) {
+      console.error('❌ Database not initialized — check DATABASE_URL');
+      return;
+    }
     
     for (const template of defaultTemplates) {
       try {
