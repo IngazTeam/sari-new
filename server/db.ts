@@ -249,6 +249,9 @@ import {
   merchantKnowledgeDocs,
   MerchantKnowledgeDoc,
   InsertMerchantKnowledgeDoc,
+  virtualAgents,
+  VirtualAgent,
+  InsertVirtualAgent,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import mysql from "mysql2/promise";

@@ -73,6 +73,14 @@ export const botSettings = mysqlTable("bot_settings", {
 	maxResponseLength: int("max_response_length").default(200),
 	tone: mysqlEnum(['friendly', 'professional', 'casual']).default('friendly').notNull(),
 	language: mysqlEnum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).default('ar').notNull(),
+	// Human Takeover settings
+	takeoverTimeoutMinutes: int("takeover_timeout_minutes").default(15),
+	takeoverResumeMessage: text("takeover_resume_message"),
+	takeoverCommandsEnabled: tinyint("takeover_commands_enabled").default(1).notNull(),
+	// Group settings
+	groupMode: mysqlEnum("group_mode", ['disabled', 'mention_only', 'keyword_only', 'private_redirect']).default('disabled').notNull(),
+	groupKeywords: text("group_keywords"),
+	groupRedirectMessage: text("group_redirect_message"),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
@@ -119,6 +127,13 @@ export const conversations = mysqlTable("conversations", {
 	lastActivityAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	purchaseCount: int().default(0).notNull(),
 	totalSpent: int().default(0).notNull(),
+	// Human Takeover fields
+	humanTakeover: tinyint("human_takeover").default(0).notNull(),
+	humanTakeoverAt: timestamp("human_takeover_at", { mode: 'string' }),
+	humanExpiresAt: timestamp("human_expires_at", { mode: 'string' }),
+	// Virtual Agent fields
+	currentAgentId: int("current_agent_id"),
+	agentHistory: text("agent_history"),
 });
 
 export const customerReviews = mysqlTable("customer_reviews", {
@@ -799,6 +814,29 @@ export const users = mysqlTable("users", {
 		index("users_openId_unique").on(table.openId),
 	]);
 
+
+export const virtualAgents = mysqlTable("virtual_agents", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	name: varchar({ length: 100 }).notNull(),
+	role: varchar({ length: 100 }).notNull(),
+	department: varchar({ length: 100 }),
+	personalityPrompt: text("personality_prompt").notNull(),
+	tone: mysqlEnum(['friendly', 'professional', 'casual', 'empathetic', 'persuasive']).default('friendly').notNull(),
+	avatarEmoji: varchar("avatar_emoji", { length: 10 }).default('👩‍💼'),
+	isDefault: tinyint("is_default").default(0).notNull(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	triggerKeywords: text("trigger_keywords"),
+	triggerIntents: text("trigger_intents"),
+	sortOrder: int("sort_order").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("virtual_agents_merchant_id_idx").on(table.merchantId),
+]);
+
+export type VirtualAgent = InferSelectModel<typeof virtualAgents>;
+export type InsertVirtualAgent = InferInsertModel<typeof virtualAgents>;
 
 
 export const weeklySentimentReports = mysqlTable("weekly_sentiment_reports", {
