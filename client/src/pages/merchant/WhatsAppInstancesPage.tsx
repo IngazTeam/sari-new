@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import {
   Plus, CheckCircle2, XCircle, Clock, AlertCircle, Smartphone, Phone,
   Building2, Send, Loader2, Star, StarOff, Power, PowerOff, Crown,
-  ArrowUpRight, Shield
+  ArrowUpRight, Shield, QrCode, RefreshCcw
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
 
@@ -28,6 +28,9 @@ export default function WhatsAppInstancesPage() {
     instanceId: number;
     phoneNumber?: string;
   } | null>(null);
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [connectingRequestId, setConnectingRequestId] = useState<number | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
 
   // Get current merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery(
@@ -57,6 +60,42 @@ export default function WhatsAppInstancesPage() {
     refetchInstances();
     refetchUsage();
     refetchRequests();
+  };
+
+  // QR Code query for approved request
+  const { data: qrCode, refetch: refetchQRCode, isFetching: qrFetching } = trpc.whatsappRequests.getQRCode.useQuery(
+    { requestId: connectingRequestId || 0 },
+    { enabled: !!connectingRequestId && showQRDialog, refetchInterval: false }
+  );
+
+  // Connection status check — polls every 3s when QR dialog is open
+  const { data: connectionCheck } = trpc.whatsappRequests.checkConnection.useQuery(
+    { requestId: connectingRequestId || 0 },
+    {
+      enabled: !!connectingRequestId && showQRDialog && isCheckingConnection,
+      refetchInterval: isCheckingConnection ? 3000 : false,
+    }
+  );
+
+  // Auto-close QR dialog when connected
+  useEffect(() => {
+    if (connectionCheck?.connected) {
+      setShowQRDialog(false);
+      setConnectingRequestId(null);
+      setIsCheckingConnection(false);
+      toast.success(t('whatsappManagement.toast.connected', 'تم ربط الواتساب بنجاح! 🎉'));
+      refetchAll();
+    }
+  }, [connectionCheck?.connected]);
+
+  const handleConnectWhatsApp = async (requestId: number) => {
+    setConnectingRequestId(requestId);
+    setShowQRDialog(true);
+    setIsCheckingConnection(true);
+  };
+
+  const handleRefreshQR = () => {
+    refetchQRCode();
   };
 
   // Mutations
@@ -361,6 +400,40 @@ export default function WhatsAppInstancesPage() {
         </Card>
       )}
 
+      {/* Approved Request — Connect WhatsApp Banner */}
+      {requests?.some((r: any) => r.status === 'approved') && (
+        <Card className="border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-green-100 dark:bg-green-900 rounded-2xl flex items-center justify-center">
+                  <QrCode className="w-7 h-7 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-green-900 dark:text-green-100">
+                    {t('whatsappManagement.readyToConnect', 'جاهز للربط! 🎉')}
+                  </h3>
+                  <p className="text-sm text-green-700 dark:text-green-300">
+                    {t('whatsappManagement.readyToConnectDesc', 'تمت الموافقة على طلبك. اضغط الزر لمسح QR Code وربط الواتساب.')}
+                  </p>
+                </div>
+              </div>
+              <Button
+                size="lg"
+                className="bg-green-600 hover:bg-green-700 text-white gap-2 shrink-0 shadow-lg"
+                onClick={() => {
+                  const approved = requests?.find((r: any) => r.status === 'approved');
+                  if (approved) handleConnectWhatsApp(approved.id);
+                }}
+              >
+                <QrCode className="w-5 h-5" />
+                {t('whatsappManagement.connectNow', 'ربط الواتساب الآن')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Requests History */}
       {requests && requests.length > 0 && (
         <Card>
@@ -371,15 +444,17 @@ export default function WhatsAppInstancesPage() {
           <CardContent>
             <div className="space-y-3">
               {requests.map((request: any) => (
-                <div key={request.id} className="flex items-center justify-between p-4 rounded-lg border">
+                <div key={request.id} className={`flex items-center justify-between p-4 rounded-lg border ${request.status === 'approved' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' : ''}`}>
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                       request.status === 'pending' ? 'bg-orange-100' :
-                      request.status === 'approved' || request.status === 'completed' ? 'bg-green-100' :
+                      request.status === 'approved' ? 'bg-blue-100' :
+                      request.status === 'completed' ? 'bg-green-100' :
                       'bg-red-100'
                     }`}>
                       {request.status === 'pending' ? <Clock className="w-5 h-5 text-orange-600" /> :
-                       request.status === 'approved' || request.status === 'completed' ? <CheckCircle2 className="w-5 h-5 text-green-600" /> :
+                       request.status === 'approved' ? <QrCode className="w-5 h-5 text-blue-600" /> :
+                       request.status === 'completed' ? <CheckCircle2 className="w-5 h-5 text-green-600" /> :
                        <XCircle className="w-5 h-5 text-red-600" />}
                     </div>
                     <div>
@@ -398,6 +473,16 @@ export default function WhatsAppInstancesPage() {
                       )}
                     </div>
                   </div>
+                  {/* Connect button for approved requests */}
+                  {request.status === 'approved' && (
+                    <Button
+                      onClick={() => handleConnectWhatsApp(request.id)}
+                      className="bg-green-600 hover:bg-green-700 gap-2 shrink-0"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      {t('whatsappManagement.connectWhatsApp', 'ربط الواتساب')}
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -485,6 +570,86 @@ export default function WhatsAppInstancesPage() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* QR Code Connection Dialog */}
+      <Dialog open={showQRDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowQRDialog(false);
+          setConnectingRequestId(null);
+          setIsCheckingConnection(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center flex items-center justify-center gap-2">
+              <QrCode className="w-5 h-5 text-green-600" />
+              {t('whatsappManagement.qr.title', 'ربط الواتساب')}
+            </DialogTitle>
+            <DialogDescription className="text-center">
+              {t('whatsappManagement.qr.description', 'امسح رمز QR من تطبيق الواتساب على هاتفك')}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col items-center space-y-4 py-4">
+            {qrFetching ? (
+              <div className="w-64 h-64 bg-muted rounded-lg flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : qrCode?.qrCodeUrl ? (
+              <div className="border-4 border-green-500 rounded-xl p-3 bg-white shadow-lg">
+                <img
+                  src={qrCode.qrCodeUrl}
+                  alt="WhatsApp QR Code"
+                  className="w-64 h-64"
+                />
+              </div>
+            ) : (
+              <div className="w-64 h-64 bg-red-50 rounded-lg flex flex-col items-center justify-center gap-2 text-red-600">
+                <XCircle className="w-8 h-8" />
+                <span className="text-sm">{t('whatsappManagement.qr.error', 'فشل تحميل QR Code')}</span>
+              </div>
+            )}
+
+            {/* Connection Status */}
+            <div className="flex items-center gap-2 text-sm">
+              {connectionCheck?.connected ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  <span className="text-green-600 font-medium">{t('whatsappManagement.qr.connected', 'تم الربط بنجاح! ✅')}</span>
+                </>
+              ) : isCheckingConnection ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  <span className="text-blue-600">{t('whatsappManagement.qr.waiting', 'بانتظار مسح الرمز...')}</span>
+                </>
+              ) : null}
+            </div>
+
+            {/* Refresh QR Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshQR}
+              disabled={qrFetching}
+              className="gap-2"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              {t('whatsappManagement.qr.refresh', 'تحديث الرمز')}
+            </Button>
+
+            {/* Instructions */}
+            <div className="space-y-2 text-sm text-muted-foreground text-center border-t pt-4">
+              <p className="font-medium">{t('whatsappManagement.qr.howTo', 'كيفية المسح:')}</p>
+              <ol className="list-decimal list-inside space-y-1 text-right">
+                <li>{t('whatsappManagement.qr.step1', 'افتح واتساب على هاتفك')}</li>
+                <li>{t('whatsappManagement.qr.step2', 'اذهب إلى الإعدادات ← الأجهزة المرتبطة')}</li>
+                <li>{t('whatsappManagement.qr.step3', 'اضغط "ربط جهاز"')}</li>
+                <li>{t('whatsappManagement.qr.step4', 'وجّه الكاميرا نحو رمز QR')}</li>
+              </ol>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
