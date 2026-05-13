@@ -104,11 +104,19 @@ export const whatsappRequestsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
             }
 
+            // Auto-derive api_url from instanceId if default was used
+            let resolvedApiUrl = input.apiUrl;
+            if (resolvedApiUrl === 'https://api.green-api.com' || resolvedApiUrl === 'https://api.greenapi.com') {
+              const prefix = input.instanceId.substring(0, 4);
+              resolvedApiUrl = `https://${prefix}.api.greenapi.com`;
+              console.log(`[approve] Auto-derived api_url: ${resolvedApiUrl} from instanceId: ${input.instanceId}`);
+            }
+
             const request = await db.approveWhatsAppRequest(
                 input.requestId,
                 input.instanceId,
                 input.token,
-                input.apiUrl,
+                resolvedApiUrl,
                 ctx.user.id
             );
 
@@ -220,11 +228,18 @@ export const whatsappRequestsRouter = router({
                         const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
                         await checkWhatsAppNumberLimit(request.merchantId);
 
+                        // Auto-derive api_url for new instance
+                        let instanceApiUrl = request.apiUrl || 'https://api.greenapi.com';
+                        if (instanceApiUrl === 'https://api.green-api.com' || instanceApiUrl === 'https://api.greenapi.com') {
+                          const prefix = request.instanceId.substring(0, 4);
+                          instanceApiUrl = `https://${prefix}.api.greenapi.com`;
+                        }
+
                         await db.createWhatsAppInstance({
                             merchantId: request.merchantId,
                             instanceId: request.instanceId,
                             token: request.token,
-                            apiUrl: request.apiUrl || 'https://api.green-api.com',
+                            apiUrl: instanceApiUrl,
                             status: 'active',
                             isPrimary: true,
                             connectedAt: new Date(),

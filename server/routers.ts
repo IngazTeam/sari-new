@@ -1294,12 +1294,22 @@ export const appRouter = router({
         }
 
         const userId = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
+
+        // Auto-derive api_url from instanceId if not explicitly provided
+        // Green API subdomain pattern: instanceId 7105411382 → https://7105.api.greenapi.com
+        let resolvedApiUrl = input.apiUrl;
+        if (resolvedApiUrl === 'https://api.green-api.com' || resolvedApiUrl === 'https://api.greenapi.com') {
+          const prefix = input.instanceId.substring(0, 4);
+          resolvedApiUrl = `https://${prefix}.api.greenapi.com`;
+          console.log(`[approveRequest] Auto-derived api_url: ${resolvedApiUrl} from instanceId: ${input.instanceId}`);
+        }
+
         await db.approveWhatsAppConnectionRequest(
           input.requestId,
           userId,
           input.instanceId,
           input.apiToken,
-          input.apiUrl
+          resolvedApiUrl
         );
 
         // Register Webhook URL in Green API
@@ -1313,7 +1323,7 @@ export const appRouter = router({
             input.instanceId,
             input.apiToken,
             webhookUrl,
-            input.apiUrl
+            resolvedApiUrl
           );
 
           if (webhookResult.success) {
@@ -3723,11 +3733,19 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request already processed' });
         }
 
+        // Auto-derive api_url from instanceId if default was used
+        let resolvedApiUrl = input.apiUrl;
+        if (resolvedApiUrl === 'https://api.green-api.com' || resolvedApiUrl === 'https://api.greenapi.com') {
+          const prefix = input.instanceId.substring(0, 4);
+          resolvedApiUrl = `https://${prefix}.api.greenapi.com`;
+          console.log(`[approve] Auto-derived api_url: ${resolvedApiUrl} from instanceId: ${input.instanceId}`);
+        }
+
         const request = await db.approveWhatsAppRequest(
           input.requestId,
           input.instanceId,
           input.token,
-          input.apiUrl,
+          resolvedApiUrl,
           ctx.user.id
         );
 

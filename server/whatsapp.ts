@@ -1,6 +1,19 @@
 import axios from 'axios';
 
 /**
+ * SSRF Guard — validates that a URL points to a legitimate Green API domain.
+ * Prevents internal network access if DB is compromised.
+ */
+function assertGreenApiUrl(url: string): void {
+  const parsed = new URL(url);
+  const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+  const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
+  if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+    throw new Error(`SSRF blocked: ${parsed.hostname} is not a Green API domain`);
+  }
+}
+
+/**
  * Green API WhatsApp Integration
  * 
  * This module provides functions to interact with Green API for WhatsApp messaging.
@@ -423,6 +436,7 @@ export async function setWebhookUrl(
   apiUrl: string = 'https://api.green-api.com'
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    assertGreenApiUrl(apiUrl);
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
     
     // Use the correct Green API endpoint: /setSettings/{apiToken}
@@ -574,6 +588,7 @@ export async function sendMessageWithCredentials(
   message: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
+    assertGreenApiUrl(apiUrl);
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
 
     // Format phone number (remove + and spaces)

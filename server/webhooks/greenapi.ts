@@ -501,55 +501,51 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
   } catch (error: any) {
     console.error('[Webhook] Error handling webhook:', error);
     
-    // Handle limit errors - try to notify customer if possible
+    // Handle limit errors - try to notify customer using merchant's instance
     const customerPhone = webhookData?.senderData?.chatId ? extractPhoneNumber(webhookData.senderData.chatId) : null;
+    const instanceId = webhookData?.instanceData?.idInstance?.toString();
     
-    if (error.message === 'CONVERSATION_LIMIT_REACHED' && customerPhone) {
+    // Look up merchant instance for sending limit notifications from correct number
+    let instance: any = null;
+    if (instanceId) {
       try {
-        await sendTextMessage(
-          customerPhone,
-          'عذراً، لقد وصلنا للحد الأقصى من المحادثات الشهرية. سنعود للتواصل معك قريباً! 🙏'
-        );
+        instance = await db.getWhatsAppInstanceByInstanceId(instanceId);
+      } catch (_) { /* ignore lookup errors in error handler */ }
+    }
+    
+    // Helper: send limit notification using merchant's credentials
+    const sendLimitNotification = async (message: string) => {
+      if (!customerPhone) return;
+      try {
+        if (instance?.instanceId && instance?.token) {
+          await sendMessageWithCredentials(
+            instance.instanceId,
+            instance.token,
+            instance.apiUrl || 'https://api.greenapi.com',
+            customerPhone,
+            message
+          );
+        } else {
+          await sendTextMessage(customerPhone, message);
+        }
       } catch (sendError) {
         console.error('[Webhook] Failed to send limit notification:', sendError);
       }
-      
-      return {
-        success: false,
-        message: 'Conversation limit reached'
-      };
+    };
+    
+    if (error.message === 'CONVERSATION_LIMIT_REACHED' && customerPhone) {
+      await sendLimitNotification('عذراً، لقد وصلنا للحد الأقصى من المحادثات الشهرية. سنعود للتواصل معك قريباً! 🙏');
+      return { success: false, message: 'Conversation limit reached' };
     }
     
     if (error.message === 'MESSAGE_LIMIT_REACHED' && customerPhone) {
-      try {
-        await sendTextMessage(
-          customerPhone,
-          'عذراً، لقد وصلنا للحد الأقصى من الرسائل الشهرية. شكراً لتواصلك! 🙏'
-        );
-      } catch (sendError) {
-        console.error('[Webhook] Failed to send limit notification:', sendError);
-      }
-      
-      return {
-        success: false,
-        message: 'Message limit reached'
-      };
+      await sendLimitNotification('عذراً، لقد وصلنا للحد الأقصى من الرسائل الشهرية. شكراً لتواصلك! 🙏');
+      return { success: false, message: 'Message limit reached' };
     }
     
     if (error.message === 'VOICE_LIMIT_REACHED' && customerPhone) {
-      try {
-        await sendTextMessage(
-          customerPhone,
-          'عذراً، لقد وصلنا للحد الأقصى من الرسائل الصوتية الشهرية. يمكنك إرسال رسالة نصية بدلاً من ذلك. 🙏'
-        );
-      } catch (sendError) {
-        console.error('[Webhook] Failed to send limit notification:', sendError);
-      }
-      
-      return {
-        success: false,
-        message: 'Voice message limit reached'
-      };
+      await sendLimitNotification('عذراً، لقد وصلنا للحد الأقصى من الرسائل الصوتية الشهرية. يمكنك إرسال رسالة نصية بدلاً من ذلك. 🙏');
+      return { success: false, message: 'Voice message limit reached' };
     }
     
     return {
