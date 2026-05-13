@@ -542,11 +542,38 @@ export async function createMerchant(merchant: InsertMerchant): Promise<Merchant
   return getMerchantById(insertedId);
 }
 
-export async function getMerchantById(id: number): Promise<Merchant | undefined> {
+export async function getMerchantById(id: number): Promise<Merchant & { email?: string | null } | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.select().from(merchants).where(eq(merchants.id, id)).limit(1);
+  const result = await db.select({
+    id: merchants.id,
+    userId: merchants.userId,
+    businessName: merchants.businessName,
+    phone: merchants.phone,
+    status: merchants.status,
+    subscriptionStatus: merchants.subscriptionStatus,
+    subscriptionId: merchants.subscriptionId,
+    currentSubscriptionId: merchants.currentSubscriptionId,
+    customerLimit: merchants.customerLimit,
+    currency: merchants.currency,
+    autoReplyEnabled: merchants.autoReplyEnabled,
+    onboardingCompleted: merchants.onboardingCompleted,
+    onboardingStep: merchants.onboardingStep,
+    industry: merchants.industry,
+    city: merchants.city,
+    website: merchants.website,
+    integrationSource: merchants.integrationSource,
+    platformType: merchants.platformType,
+    createdAt: merchants.createdAt,
+    updatedAt: merchants.updatedAt,
+    email: users.email,
+  })
+    .from(merchants)
+    .leftJoin(users, eq(merchants.userId, users.id))
+    .where(eq(merchants.id, id))
+    .limit(1);
+
   return result.length > 0 ? result[0] : undefined;
 }
 

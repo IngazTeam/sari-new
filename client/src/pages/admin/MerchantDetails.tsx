@@ -23,6 +23,7 @@ import {
   ArrowLeft, 
   Store, 
   Phone, 
+  Mail,
   Calendar, 
   CreditCard, 
   MessageSquare,
@@ -199,6 +200,16 @@ export default function MerchantDetails() {
                 <p className="font-medium">{merchant.businessName}</p>
               </div>
             </div>
+
+            {(merchant as any).email && (
+              <div className="flex items-center gap-3">
+                <Mail className="h-5 w-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm text-muted-foreground">الإيميل</p>
+                  <p className="font-medium" dir="ltr">{(merchant as any).email}</p>
+                </div>
+              </div>
+            )}
 
             {merchant.phone && (
               <div className="flex items-center gap-3">
