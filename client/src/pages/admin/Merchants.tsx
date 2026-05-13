@@ -133,29 +133,17 @@ export default function MerchantsManagement() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-0 text-xs">{t('adminMerchantsPage.text0')}</Badge>;
-      case 'suspended':
-        return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-0 text-xs">{t('adminMerchantsPage.text1')}</Badge>;
-      case 'pending':
-        return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-0 text-xs">{t('adminMerchantsPage.text2')}</Badge>;
-      default:
-        return <Badge variant="outline" className="text-xs">{status}</Badge>;
-    }
-  };
-
   const getSubscriptionBadge = (status: string) => {
     switch (status) {
       case 'active':
-        return <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 text-xs">{t('merchants.auto_2')}</Badge>;
+        return <Badge className="bg-emerald-50 text-emerald-600 hover:bg-emerald-50 border border-emerald-200 text-xs">مشترك</Badge>;
       case 'trial':
-        return <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 text-xs">{t('merchants.auto_3')}</Badge>;
+        return <Badge className="bg-blue-50 text-blue-600 hover:bg-blue-50 border border-blue-200 text-xs">تجريبي</Badge>;
       case 'expired':
-        return <Badge className="bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 text-xs">{t('merchants.auto_4')}</Badge>;
+        return <Badge className="bg-red-50 text-red-600 hover:bg-red-50 border border-red-200 text-xs">منتهي</Badge>;
+      case 'none':
       default:
-        return <Badge className="bg-gray-50 text-gray-500 hover:bg-gray-50 border border-gray-200 text-xs">{t('merchants.auto_5')}</Badge>;
+        return <Badge className="bg-gray-50 text-gray-400 hover:bg-gray-50 border border-gray-200 text-xs">بدون اشتراك</Badge>;
     }
   };
 
@@ -269,10 +257,9 @@ export default function MerchantsManagement() {
                       <TableHead className="min-w-[180px]">اسم المتجر</TableHead>
                       <TableHead className="min-w-[180px]">الإيميل</TableHead>
                       <TableHead className="min-w-[130px]">الهاتف</TableHead>
-                      <TableHead className="w-[80px] text-center">الباقة</TableHead>
-                      <TableHead className="w-[80px] text-center">الحالة</TableHead>
+                      <TableHead className="w-[90px] text-center">الاشتراك</TableHead>
                       <TableHead className="w-[100px] text-center">التسجيل</TableHead>
-                      <TableHead className="w-[130px] text-center">تغيير الحالة</TableHead>
+                      <TableHead className="w-[130px] text-center">الحالة</TableHead>
                       <TableHead className="w-[90px] text-center">إجراءات</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -303,9 +290,6 @@ export default function MerchantsManagement() {
                           {getSubscriptionBadge(merchant.subscriptionStatus)}
                         </TableCell>
                         <TableCell className="text-center">
-                          {getStatusBadge(merchant.status)}
-                        </TableCell>
-                        <TableCell className="text-center">
                           <span className="text-xs text-muted-foreground">
                             {new Date(merchant.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' })}
                           </span>
@@ -316,13 +300,17 @@ export default function MerchantsManagement() {
                             onValueChange={(value) => handleStatusChange(merchant.id, value)}
                             disabled={updateStatusMutation.isPending}
                           >
-                            <SelectTrigger className="h-8 w-[120px] text-xs mx-auto">
+                            <SelectTrigger className={`h-8 w-[120px] text-xs mx-auto ${
+                              merchant.status === 'active' ? 'border-emerald-300 text-emerald-700' :
+                              merchant.status === 'suspended' ? 'border-red-300 text-red-700' :
+                              'border-amber-300 text-amber-700'
+                            }`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="active">{t('adminMerchantsPage.text17')}</SelectItem>
-                              <SelectItem value="pending">{t('adminMerchantsPage.text18')}</SelectItem>
-                              <SelectItem value="suspended">{t('adminMerchantsPage.text19')}</SelectItem>
+                              <SelectItem value="active">✅ نشط</SelectItem>
+                              <SelectItem value="pending">⏳ قيد المراجعة</SelectItem>
+                              <SelectItem value="suspended">⛔ معلق</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
