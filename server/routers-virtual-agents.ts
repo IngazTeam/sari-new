@@ -35,6 +35,8 @@ export const virtualAgentsRouter = router({
       isDefault: z.boolean().optional(),
       triggerKeywords: z.string().max(2000).optional(), // JSON
       triggerIntents: z.string().max(2000).optional(),  // JSON
+      shiftStart: z.string().max(5).optional(), // HH:mm
+      shiftEnd: z.string().max(5).optional(),   // HH:mm
     }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -69,6 +71,8 @@ export const virtualAgentsRouter = router({
         isActive: 1,
         triggerKeywords: input.triggerKeywords || null,
         triggerIntents: input.triggerIntents || null,
+        shiftStart: input.shiftStart || null,
+        shiftEnd: input.shiftEnd || null,
         sortOrder: maxSort + 1,
       });
 
@@ -89,6 +93,8 @@ export const virtualAgentsRouter = router({
       isActive: z.boolean().optional(),
       triggerKeywords: z.string().max(2000).optional(),
       triggerIntents: z.string().max(2000).optional(),
+      shiftStart: z.string().max(5).nullable().optional(),
+      shiftEnd: z.string().max(5).nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -120,6 +126,8 @@ export const virtualAgentsRouter = router({
       if (data.isActive !== undefined) updateData.isActive = data.isActive ? 1 : 0;
       if (data.triggerKeywords !== undefined) updateData.triggerKeywords = data.triggerKeywords;
       if (data.triggerIntents !== undefined) updateData.triggerIntents = data.triggerIntents;
+      if (data.shiftStart !== undefined) updateData.shiftStart = data.shiftStart;
+      if (data.shiftEnd !== undefined) updateData.shiftEnd = data.shiftEnd;
 
       await pool.update(virtualAgents)
         .set(updateData)

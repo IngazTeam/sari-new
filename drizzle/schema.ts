@@ -828,6 +828,8 @@ export const virtualAgents = mysqlTable("virtual_agents", {
 	isActive: tinyint("is_active").default(1).notNull(),
 	triggerKeywords: text("trigger_keywords"),
 	triggerIntents: text("trigger_intents"),
+	shiftStart: varchar("shift_start", { length: 5 }), // HH:mm format e.g. "09:00"
+	shiftEnd: varchar("shift_end", { length: 5 }),     // HH:mm format e.g. "17:00"
 	sortOrder: int("sort_order").default(0).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
