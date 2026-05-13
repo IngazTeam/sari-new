@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Search, Book, MessageCircle, Settings, CreditCard, Smartphone, TrendingUp, HelpCircle } from "lucide-react";
+import { SeoHead, useSeoConfig } from "@/components/SeoHead";
 
 export default function HelpCenter() {
   const { t } = useTranslation();

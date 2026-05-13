@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText } from "lucide-react";
+import { SeoHead, useSeoConfig } from "@/components/SeoHead";
 
 export default function Terms() {
   const { t } = useTranslation();

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Quote, TrendingUp, Users, DollarSign, Star, ArrowLeft } from "lucide-react";
+import { SeoHead, useSeoConfig } from "@/components/SeoHead";
 
 export default function SuccessStories() {
   const { t } = useTranslation();

@@ -1,4 +1,4 @@
-﻿import { Card } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -172,6 +172,7 @@ function KPICard({ label, value, icon, loading, raw }: {
 
 // ============ GA Setup Card ============
 function GASetupCard({ config, onConfigured }: { config: any; onConfigured: () => void }) {
+  const { t } = useTranslation();
   const [propertyId, setPropertyId] = useState(config?.propertyId || "");
   const [saJson, setSaJson] = useState("");
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-
+import { SeoHead, useSeoConfig } from "@/components/SeoHead";
 import { Mail, Phone, MapPin, Clock, Send, MessageCircle } from "lucide-react";
 
 export default function Contact() {

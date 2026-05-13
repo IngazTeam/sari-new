@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, ArrowRight, ArrowLeft, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { SeoHead, useSeoConfig } from "@/components/SeoHead";
 
 export default function Blog() {
   const { t } = useTranslation();

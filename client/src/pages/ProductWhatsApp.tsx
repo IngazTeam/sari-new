@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, MessageCircle, Link as LinkIcon, Shield, Zap, CheckCircle2, ShoppingCart, Store, Phone } from "lucide-react";
+import { ArrowRight, MessageCircle, Link as LinkIcon, Shield, Zap, CheckCircle2, ShoppingCart, Store, Phone, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SeoHead, useSeoConfig } from '@/components/SeoHead';

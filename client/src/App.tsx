@@ -5,6 +5,7 @@ import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
+import PublicLayout from "./components/PublicLayout";
 import { IntegrationProvider } from "./hooks/useIntegration";
 import { lazy, Suspense } from "react";
 
@@ -234,13 +235,27 @@ function Router() {
       <Route path="/subscribe/:planId" component={SubscribePage} />
       <Route path="/payment/callback" component={PaymentCallback} />
       <Route path="/support" component={SupportPage} />
-      <Route path="/solutions/sales" component={SolutionsSales} />
-      <Route path="/solutions/marketing" component={SolutionsMarketing} />
-      <Route path="/solutions/support" component={SolutionsSupport} />
-      <Route path="/product/ai-agent" component={ProductAI} />
-      <Route path="/product/chatbot" component={ProductChatbot} />
-      <Route path="/product/whatsapp" component={ProductWhatsApp} />
-      <Route path="/product/broadcasts" component={ProductBroadcasts} />
+      <Route path="/solutions/sales">
+        <PublicLayout><SolutionsSales /></PublicLayout>
+      </Route>
+      <Route path="/solutions/marketing">
+        <PublicLayout><SolutionsMarketing /></PublicLayout>
+      </Route>
+      <Route path="/solutions/support">
+        <PublicLayout><SolutionsSupport /></PublicLayout>
+      </Route>
+      <Route path="/product/ai-agent">
+        <PublicLayout><ProductAI /></PublicLayout>
+      </Route>
+      <Route path="/product/chatbot">
+        <PublicLayout><ProductChatbot /></PublicLayout>
+      </Route>
+      <Route path="/product/whatsapp">
+        <PublicLayout><ProductWhatsApp /></PublicLayout>
+      </Route>
+      <Route path="/product/broadcasts">
+        <PublicLayout><ProductBroadcasts /></PublicLayout>
+      </Route>
       <Route path="/company/about" component={CompanyAbout} />
       <Route path="/resources/blog" component={Blog} />
       <Route path="/resources/help-center" component={HelpCenter} />
