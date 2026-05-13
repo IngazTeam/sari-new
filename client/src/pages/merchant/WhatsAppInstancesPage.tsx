@@ -136,6 +136,19 @@ export default function WhatsAppInstancesPage() {
     },
   });
 
+  const refreshInstanceMutation = trpc.whatsappInstances.refreshInstance.useMutation({
+    onSuccess: (data) => {
+      const msg = data.phoneNumber
+        ? t('whatsappManagement.toast.refreshed', `تم تحديث البيانات — الرقم: ${data.phoneNumber}`)
+        : t('whatsappManagement.toast.refreshedNoPhone', 'تم تحديث البيانات');
+      toast.success(msg);
+      refetchAll();
+    },
+    onError: (error) => {
+      toast.error(error.message || t('whatsappManagement.toast.refreshFailed', 'فشل التحديث'));
+    },
+  });
+
   const handleSubmitRequest = () => {
     if (!merchant) return;
     createRequestMutation.mutate({
@@ -309,6 +322,16 @@ export default function WhatsAppInstancesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refreshInstanceMutation.mutate({ instanceId: instance.id })}
+                      disabled={refreshInstanceMutation.isPending}
+                      className="gap-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      {refreshInstanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+                      {t('whatsappManagement.refresh', 'تحديث البيانات')}
+                    </Button>
                     {!instance.isPrimary && (
                       <Button
                         variant="outline"

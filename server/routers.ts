@@ -3107,6 +3107,72 @@ export const appRouter = router({
         return await db.getPrimaryWhatsAppInstance(input.merchantId);
       }),
 
+    // Refresh instance - fetch phone number from Green API and re-register webhook
+    refreshInstance: protectedProcedure
+      .input(z.object({ instanceId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const instance = await db.getWhatsAppInstanceById(input.instanceId);
+        if (!instance) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
+        }
+
+        const merchant = await db.getMerchantById(instance.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
+        const updates: any = {};
+
+        // 1. Fetch phone number from Green API settings
+        try {
+          const settingsUrl = `${baseUrl}/waInstance${instance.instanceId}/getSettings/${instance.token}`;
+          const settingsResponse = await fetch(settingsUrl);
+          const settingsData = await settingsResponse.json();
+          if (settingsData.wid) {
+            updates.phoneNumber = settingsData.wid.replace('@c.us', '');
+          }
+        } catch (e) {
+          console.error('[refreshInstance] Failed to get settings:', e);
+        }
+
+        // 2. Re-register webhook
+        try {
+          const { setWebhookUrl } = await import('./whatsapp');
+          const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
+          const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
+
+          const result = await setWebhookUrl(
+            instance.instanceId,
+            instance.token,
+            webhookUrl,
+            baseUrl
+          );
+
+          if (result.success) {
+            updates.webhookUrl = webhookUrl;
+            console.log(`[refreshInstance] Webhook registered for ${instance.instanceId}`);
+          } else {
+            console.error(`[refreshInstance] Webhook failed: ${result.error}`);
+          }
+        } catch (e) {
+          console.error('[refreshInstance] Webhook error:', e);
+        }
+
+        // 3. Update instance in DB
+        if (Object.keys(updates).length > 0) {
+          await db.updateWhatsAppInstance(instance.id, updates);
+        }
+
+        const updated = await db.getWhatsAppInstanceById(instance.id);
+        return {
+          success: true,
+          phoneNumber: updates.phoneNumber || instance.phoneNumber,
+          webhookRegistered: !!updates.webhookUrl,
+          instance: updated,
+        };
+      }),
+
     // Create new instance (ADMIN ONLY — merchants use whatsappRequests.create)
     create: protectedProcedure
       .input(
@@ -3624,18 +3690,56 @@ export const appRouter = router({
               const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
               await checkWhatsAppNumberLimit(request.merchantId);
 
+              // Get phone number from Green API settings
+              let phoneNumber = request.phoneNumber || '';
+              try {
+                const settingsUrl = `${baseUrl}/waInstance${request.instanceId}/getSettings/${request.token}`;
+                const settingsResponse = await fetch(settingsUrl);
+                const settingsData = await settingsResponse.json();
+                if (settingsData.wid) {
+                  // wid format: "966XXXXXXXXX@c.us"
+                  phoneNumber = settingsData.wid.replace('@c.us', '');
+                }
+              } catch (e) {
+                console.error('[checkConnection] Failed to get phone number from settings:', e);
+              }
+
+              // Create instance WITH phone number
               await db.createWhatsAppInstance({
                 merchantId: request.merchantId,
                 instanceId: request.instanceId,
                 token: request.token,
                 apiUrl: request.apiUrl || 'https://api.green-api.com',
+                phoneNumber: phoneNumber || null,
                 status: 'active',
                 isPrimary: true,
                 connectedAt: new Date(),
               });
 
               // Mark request as completed
-              await db.completeWhatsAppRequest(request.id, data.phoneNumber || '');
+              await db.completeWhatsAppRequest(request.id, phoneNumber);
+
+              // Register Webhook URL in Green API so bot can receive messages
+              try {
+                const { setWebhookUrl } = await import('./whatsapp');
+                const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
+                const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
+
+                const webhookResult = await setWebhookUrl(
+                  request.instanceId,
+                  request.token,
+                  webhookUrl,
+                  request.apiUrl || 'https://api.green-api.com'
+                );
+
+                if (webhookResult.success) {
+                  console.log(`[checkConnection] Webhook registered for instance ${request.instanceId}: ${webhookUrl}`);
+                } else {
+                  console.error(`[checkConnection] Webhook registration failed: ${webhookResult.error}`);
+                }
+              } catch (webhookError) {
+                console.error('[checkConnection] Error registering webhook:', webhookError);
+              }
             }
 
             return {
