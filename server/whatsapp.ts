@@ -425,8 +425,8 @@ export async function setWebhookUrl(
   try {
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
     
-    // Set webhook settings
-    const response = await axios.post(`${baseURL}/settings`, {
+    // Use the correct Green API endpoint: /setSettings/{apiToken}
+    const response = await axios.post(`${baseURL}/setSettings/${apiToken}`, {
       webhookUrl: webhookUrl,
       webhookUrlToken: '',
       delaySendMessagesMilliseconds: 1000,
@@ -440,32 +440,26 @@ export async function setWebhookUrl(
       statusInstanceWebhook: 'yes',
       stateWebhook: 'yes',
       keepOnlineStatus: 'yes',
-    }, {
-      headers: {
-        'Authorization': `Bearer ${apiToken}`,
-        'Content-Type': 'application/json',
-      },
     });
 
-    console.log('Webhook settings response:', response.data);
+    console.log('[setWebhookUrl] Response:', response.data);
 
-    if (response.data && response.data.saveSettings) {
+    if (response.data && response.data.saveSettings === true) {
       return { success: true };
     }
 
-    // Try alternative method using setSettings endpoint
-    const settingsResponse = await axios.post(`${baseURL}/setSettings/${apiToken}`, {
-      webhookUrl: webhookUrl,
-      incomingWebhook: 'yes',
-      outgoingWebhook: 'yes',
-      stateWebhook: 'yes',
-    });
+    // Green API sometimes returns 200 without saveSettings field
+    if (response.status === 200) {
+      console.log('[setWebhookUrl] Accepted (status 200)');
+      return { success: true };
+    }
 
-    console.log('Alternative webhook settings response:', settingsResponse.data);
-
-    return { success: true };
+    return {
+      success: false,
+      error: 'Unexpected response from Green API',
+    };
   } catch (error: any) {
-    console.error('Error setting webhook URL:', error.response?.data || error.message);
+    console.error('[setWebhookUrl] Error:', error.response?.data || error.message);
     return {
       success: false,
       error: error.response?.data?.message || error.message,
