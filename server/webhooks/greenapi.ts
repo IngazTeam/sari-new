@@ -355,6 +355,63 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     console.log('[Webhook] Received webhook:', JSON.stringify(payload, null, 2));
     
+    // ── Handle outgoing messages (Human Takeover detection) ──
+    if (payload.typeWebhook === 'outgoingMessageReceived' || payload.typeWebhook === 'outgoingAPIMessageWebhook') {
+      const instanceId = payload.instanceData.idInstance.toString();
+      const instance = await db.getWhatsAppInstanceByInstanceId(instanceId);
+      if (!instance) return { success: true, message: 'Instance not found' };
+
+      const chatId = (payload as any).chatId || (payload as any).senderData?.chatId;
+      if (!chatId || isGroupMessage(chatId)) return { success: true, message: 'Ignored' };
+      const customerPhone = extractPhoneNumber(chatId);
+
+      // Check for #stop / #start commands
+      const outText = extractMessageText(payload);
+      const botSettings = await db.getBotSettings(instance.merchantId);
+
+      if (outText && botSettings.takeoverCommandsEnabled) {
+        if (outText.trim() === '#stop') {
+          const convs = await db.getConversationsByMerchantId(instance.merchantId);
+          const conv = convs.find(c => c.customerPhone === customerPhone);
+          if (conv) {
+            await db.updateConversation(conv.id, {
+              humanTakeover: 1,
+              humanTakeoverAt: new Date(),
+              humanExpiresAt: null, // no expiry until #start
+            } as any);
+            console.log(`[Takeover] #stop — permanent takeover on conv ${conv.id}`);
+          }
+          return { success: true, message: 'Human takeover activated (permanent)' };
+        }
+        if (outText.trim() === '#start') {
+          const convs = await db.getConversationsByMerchantId(instance.merchantId);
+          const conv = convs.find(c => c.customerPhone === customerPhone);
+          if (conv) {
+            await db.updateConversation(conv.id, {
+              humanTakeover: 0,
+              humanExpiresAt: null,
+            } as any);
+            console.log(`[Takeover] #start — Sari resumed on conv ${conv.id}`);
+          }
+          return { success: true, message: 'Sari resumed' };
+        }
+      }
+
+      // Auto-detect: merchant replied manually → activate takeover
+      const convs = await db.getConversationsByMerchantId(instance.merchantId);
+      const conv = convs.find(c => c.customerPhone === customerPhone);
+      if (conv) {
+        const timeoutMin = botSettings.takeoverTimeoutMinutes || 15;
+        await db.updateConversation(conv.id, {
+          humanTakeover: 1,
+          humanTakeoverAt: new Date(),
+          humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
+        } as any);
+        console.log(`[Takeover] Human took over conv ${conv.id} for ${timeoutMin} min`);
+      }
+      return { success: true, message: 'Human takeover activated' };
+    }
+
     // Only process incoming messages
     if (payload.typeWebhook !== 'incomingMessageReceived') {
       console.log('[Webhook] Ignoring non-message webhook:', payload.typeWebhook);
@@ -364,13 +421,56 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       };
     }
     
-    // Ignore group messages
+    // ── Smart Group Handling ──
     if (isGroupMessage(payload.senderData.chatId)) {
-      console.log('[Webhook] Ignoring group message');
-      return {
-        success: true,
-        message: 'Group message ignored'
-      };
+      // Need instance to get settings
+      const gInstanceId = payload.instanceData.idInstance.toString();
+      const gInstance = await db.getWhatsAppInstanceByInstanceId(gInstanceId);
+      if (!gInstance) return { success: true, message: 'Group: instance not found' };
+
+      const gSettings = await db.getBotSettings(gInstance.merchantId);
+      const groupMode = gSettings.groupMode || 'disabled';
+
+      switch (groupMode) {
+        case 'disabled':
+          console.log('[Webhook] Group mode disabled — ignoring');
+          return { success: true, message: 'Group message ignored (disabled)' };
+
+        case 'mention_only': {
+          const msgText = extractMessageText(payload) || '';
+          const botWid = payload.instanceData.wid;
+          const botPhone = botWid ? botWid.split('@')[0] : '';
+          if (!msgText.includes(`@${botPhone}`)) {
+            return { success: true, message: 'Group: no mention' };
+          }
+          // Has mention — fall through to process normally
+          break;
+        }
+
+        case 'keyword_only': {
+          const msgText = extractMessageText(payload) || '';
+          const keywords: string[] = gSettings.groupKeywords ? JSON.parse(gSettings.groupKeywords) : [];
+          const hasKeyword = keywords.some(kw => msgText.includes(kw));
+          if (!hasKeyword) {
+            return { success: true, message: 'Group: no keyword match' };
+          }
+          break;
+        }
+
+        case 'private_redirect': {
+          const senderPhone = extractPhoneNumber(payload.senderData.sender || payload.senderData.chatId);
+          const redirectMsg = gSettings.groupRedirectMessage || 'مرحباً! شفت رسالتك في الجروب. أقدر أساعدك هنا بشكل أفضل 😊';
+          await sendResponseWithDelay({
+            customerPhone: senderPhone,
+            message: redirectMsg,
+            delayMs: 1000,
+            instanceId: gInstance.instanceId,
+            token: gInstance.token,
+            apiUrl: gInstance.apiUrl || undefined,
+          });
+          return { success: true, message: 'Group: redirected to private' };
+        }
+      }
     }
     
     // Extract customer info
@@ -440,6 +540,44 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     });
     
     console.log('[Webhook] Conversation ID:', conversationId);
+
+    // ── Human Takeover Check ──
+    const allConvs = await db.getConversationsByMerchantId(instance.merchantId);
+    const currentConv = allConvs.find(c => c.customerPhone === customerPhone);
+    if (currentConv && (currentConv as any).humanTakeover) {
+      const expiresAt = (currentConv as any).humanExpiresAt;
+      if (!expiresAt || new Date(expiresAt) > new Date()) {
+        // Human is still active — Sari stays silent, just save incoming message
+        console.log(`[Takeover] Sari silent — human active until ${expiresAt || 'manual #start'}`);
+        await db.createMessage({
+          conversationId,
+          direction: 'incoming',
+          messageType: 'text',
+          content: extractMessageText(payload) || '[media]',
+          voiceUrl: null,
+          isProcessed: 0,
+          aiResponse: null,
+        });
+        return { success: true, message: 'Human takeover active — Sari silent' };
+      } else {
+        // Takeover expired — resume Sari
+        await db.updateConversation(currentConv.id, {
+          humanTakeover: 0,
+          humanExpiresAt: null,
+        } as any);
+        console.log(`[Takeover] Expired — Sari resuming on conv ${currentConv.id}`);
+        // Send resume message
+        const resumeMsg = botSettings.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
+        await sendResponseWithDelay({
+          customerPhone,
+          message: resumeMsg,
+          delayMs: 500,
+          instanceId: instance.instanceId,
+          token: instance.token,
+          apiUrl: instance.apiUrl || undefined,
+        });
+      }
+    }
     
     // Process message based on type
     let response: string;

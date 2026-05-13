@@ -35,6 +35,14 @@ export const botSettingsRouter = router({
             maxResponseLength: z.number().min(50).max(500).optional(),
             tone: z.enum(['friendly', 'professional', 'casual']).optional(),
             language: z.enum(['ar', 'en', 'both']).optional(),
+            // Human Takeover settings
+            takeoverTimeoutMinutes: z.number().min(5).max(120).optional(),
+            takeoverResumeMessage: z.string().max(500).optional(),
+            takeoverCommandsEnabled: z.boolean().optional(),
+            // Group settings
+            groupMode: z.enum(['disabled', 'mention_only', 'keyword_only', 'private_redirect']).optional(),
+            groupKeywords: z.string().optional(), // JSON string of keywords array
+            groupRedirectMessage: z.string().max(500).optional(),
         }))
         .mutation(async ({ input, ctx }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -97,6 +105,26 @@ export const botSettingsRouter = router({
         }
 
         return { success: true, message: 'تم إرسال الرسالة التجريبية بنجاح!' };
+    }),
+
+    // Get conversations currently under human takeover
+    getTakeoverConversations: protectedProcedure.query(async ({ ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const allConversations = await db.getConversationsByMerchantId(merchant.id);
+        return allConversations
+            .filter((c: any) => c.humanTakeover === 1)
+            .map((c: any) => ({
+                id: c.id,
+                customerPhone: c.customerPhone,
+                customerName: c.customerName,
+                humanTakeoverAt: c.humanTakeoverAt,
+                humanExpiresAt: c.humanExpiresAt,
+                isPermanent: !c.humanExpiresAt,
+            }));
     }),
 });
 
