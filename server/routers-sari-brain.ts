@@ -357,16 +357,18 @@ export const sariBrainRouter = router({
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    // Rate limit — 60s cooldown for website analysis
-    checkDestructiveRateLimit(merchant.id, 60_000);
+    // Separate rate limiter — 20s cooldown (not shared with delete/reset)
+    checkTestRateLimit(merchant.id, 20_000);
 
-    if (!merchant.website) {
+    // Schema column is websiteUrl, not website
+    const websiteUrl = (merchant as any).websiteUrl || (merchant as any).website;
+    if (!websiteUrl) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد رابط موقع في إعدادات المتجر. أضف رابط الموقع أولاً من صفحة الإعدادات.' });
     }
 
     try {
       const { analyzeWebsite } = await import('./_core/websiteAnalyzer');
-      const result = await analyzeWebsite(merchant.website);
+      const result = await analyzeWebsite(websiteUrl);
 
       // Save to DB
       const dbConn = await db.getDb();
@@ -382,7 +384,7 @@ export const sariBrainRouter = router({
           `INSERT INTO website_analyses (merchant_id, url, title, description, industry, language, seo_score, overall_score, status, analyzed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'completed', NOW())`,
           [
             merchant.id,
-            merchant.website,
+            websiteUrl,
             result.title || '',
             result.description || '',
             result.industry || '',
@@ -393,8 +395,8 @@ export const sariBrainRouter = router({
         );
       }
 
-      await logBrainActivity(merchant.id, 'website_analyzed', `تم إعادة تحليل الموقع: ${merchant.website}`, {
-        url: merchant.website,
+      await logBrainActivity(merchant.id, 'website_analyzed', `تم إعادة تحليل الموقع: ${websiteUrl}`, {
+        url: websiteUrl,
         title: result.title,
         industry: result.industry,
         score: result.overallScore,
