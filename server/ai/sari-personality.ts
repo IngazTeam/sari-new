@@ -660,7 +660,28 @@ ${result.message}
     // Build system prompt with personality settings
     let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt;
 
-    // ── Virtual Agent Selection ──
+    // ── Resume Context Injection (after Human Takeover) ──
+    try {
+      if (params.conversationId) {
+        const convs = await db.getConversationsByMerchantId(params.merchantId);
+        const thisConv = convs.find((c: any) => c.id === params.conversationId);
+        const agentHistoryStr = (thisConv as any)?.agentHistory;
+        if (agentHistoryStr) {
+          const agentHistory = JSON.parse(agentHistoryStr);
+          if (agentHistory.resumeContext) {
+            systemPrompt += `\n\n## سياق مهم — استئناف بعد تدخل بشري:\nالتاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة. الآن عدت أنت للرد. هذا ملخص آخر المحادثة بينهم:\n---\n${sanitizeForPrompt(agentHistory.resumeContext)}\n---\n⚠️ تعليمات: لا تكرر ما قاله التاجر. أكمل المحادثة بسلاسة كأنك تتابع من حيث توقفوا. لا تقل "عدت" أو "أنا هنا مجدداً". فقط أكمل الخدمة بشكل طبيعي.\n`;
+
+            // Clear the resume context after first use
+            await db.updateConversation(params.conversationId, {
+              agentHistory: null,
+            } as any);
+            console.log('[AI] Injected resume context and cleared agentHistory');
+          }
+        }
+      }
+    } catch (resumeErr) {
+      console.warn('[AI] Failed to inject resume context:', resumeErr);
+    }
     let activeAgentName: string | null = null;
     try {
       const { eq } = await import('drizzle-orm');

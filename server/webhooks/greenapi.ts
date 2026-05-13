@@ -365,26 +365,33 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       if (!chatId || isGroupMessage(chatId)) return { success: true, message: 'Ignored' };
       const customerPhone = extractPhoneNumber(chatId);
 
-      // Check for #stop / #start commands
+      // Check for takeover commands (natural phrases + legacy hashtag fallback)
       const outText = extractMessageText(payload);
       const botSettings = await db.getBotSettings(instance.merchantId);
 
       if (outText && botSettings.takeoverCommandsEnabled) {
-        const cmd = outText.trim().toLowerCase();
-        if (cmd === '#stop') {
+        const cmd = outText.trim();
+        const cmdLower = cmd.toLowerCase();
+
+        // Stop commands: natural "سأتولى المحادثة" + legacy "#stop"
+        const isStopCmd = cmd.includes('سأتولى المحادثة') || cmd.includes('ساتولى المحادثة') || cmdLower === '#stop';
+        // Start commands: natural "يسعدنا خدمتكم" + legacy "#start"
+        const isStartCmd = cmd.includes('يسعدنا خدمتكم') || cmdLower === '#start';
+
+        if (isStopCmd) {
           const convs = await db.getConversationsByMerchantId(instance.merchantId);
           const conv = convs.find(c => c.customerPhone === customerPhone);
           if (conv) {
             await db.updateConversation(conv.id, {
               humanTakeover: 1,
               humanTakeoverAt: new Date(),
-              humanExpiresAt: null, // no expiry until #start
+              humanExpiresAt: null, // no expiry until resume command
             } as any);
-            console.log(`[Takeover] #stop — permanent takeover on conv ${conv.id}`);
+            console.log(`[Takeover] "سأتولى المحادثة" — permanent takeover on conv ${conv.id}`);
           }
           return { success: true, message: 'Human takeover activated (permanent)' };
         }
-        if (cmd === '#start') {
+        if (isStartCmd) {
           const convs = await db.getConversationsByMerchantId(instance.merchantId);
           const conv = convs.find(c => c.customerPhone === customerPhone);
           if (conv) {
@@ -392,9 +399,30 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
               humanTakeover: 0,
               humanExpiresAt: null,
             } as any);
-            console.log(`[Takeover] #start — Sari resumed on conv ${conv.id}`);
+            console.log(`[Takeover] "يسعدنا خدمتكم" — Sari resumed on conv ${conv.id}`);
+
+            // Context-aware resume: fetch last messages so Sari can understand the conversation
+            try {
+              const messages = await db.getMessagesByConversation(conv.id);
+              const recentMsgs = messages.slice(-6); // Last 6 messages for context
+              const contextSummary = recentMsgs.map(m =>
+                `${m.direction === 'incoming' ? 'العميل' : 'التاجر'}: ${m.content}`
+              ).join('\n');
+
+              // Trigger an AI-aware first response on the next incoming message
+              await db.updateConversation(conv.id, {
+                agentHistory: JSON.stringify({
+                  resumeContext: contextSummary,
+                  resumedAt: new Date().toISOString(),
+                  resumedBy: 'merchant_command',
+                }),
+              } as any);
+              console.log(`[Takeover] Stored ${recentMsgs.length} messages as resume context`);
+            } catch (ctxErr) {
+              console.warn('[Takeover] Failed to store resume context:', ctxErr);
+            }
           }
-          return { success: true, message: 'Sari resumed' };
+          return { success: true, message: 'Sari resumed with context' };
         }
       }
 
