@@ -542,39 +542,30 @@ export async function createMerchant(merchant: InsertMerchant): Promise<Merchant
   return getMerchantById(insertedId);
 }
 
-export async function getMerchantById(id: number): Promise<Merchant & { email?: string | null } | undefined> {
+export async function getMerchantById(id: number): Promise<(Merchant & { email?: string | null }) | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.select({
-    id: merchants.id,
-    userId: merchants.userId,
-    businessName: merchants.businessName,
-    phone: merchants.phone,
-    status: merchants.status,
-    subscriptionStatus: merchants.subscriptionStatus,
-    subscriptionId: merchants.subscriptionId,
-    currentSubscriptionId: merchants.currentSubscriptionId,
-    customerLimit: merchants.customerLimit,
-    currency: merchants.currency,
-    autoReplyEnabled: merchants.autoReplyEnabled,
-    onboardingCompleted: merchants.onboardingCompleted,
-    onboardingStep: merchants.onboardingStep,
-    industry: merchants.industry,
-    city: merchants.city,
-    website: merchants.website,
-    integrationSource: merchants.integrationSource,
-    platformType: merchants.platformType,
-    createdAt: merchants.createdAt,
-    updatedAt: merchants.updatedAt,
-    email: users.email,
-  })
+  const result = await db.select()
     .from(merchants)
-    .leftJoin(users, eq(merchants.userId, users.id))
     .where(eq(merchants.id, id))
     .limit(1);
 
-  return result.length > 0 ? result[0] : undefined;
+  if (result.length === 0) return undefined;
+
+  // Fetch email separately to avoid breaking the core merchant shape
+  let email: string | null = null;
+  try {
+    const userResult = await db.select({ email: users.email })
+      .from(users)
+      .where(eq(users.id, result[0].userId))
+      .limit(1);
+    email = userResult.length > 0 ? userResult[0].email : null;
+  } catch {
+    // Non-blocking: email is supplementary
+  }
+
+  return { ...result[0], email };
 }
 
 export async function getMerchantByUserId(userId: number): Promise<Merchant | undefined> {
