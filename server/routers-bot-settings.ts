@@ -41,7 +41,7 @@ export const botSettingsRouter = router({
             takeoverCommandsEnabled: z.boolean().optional(),
             // Group settings
             groupMode: z.enum(['disabled', 'mention_only', 'keyword_only', 'private_redirect']).optional(),
-            groupKeywords: z.string().optional(), // JSON string of keywords array
+            groupKeywords: z.string().max(5000).optional(), // JSON string of keywords array
             groupRedirectMessage: z.string().max(500).optional(),
         }))
         .mutation(async ({ input, ctx }) => {

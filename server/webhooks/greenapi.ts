@@ -405,14 +405,24 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             try {
               const messages = await db.getMessagesByConversation(conv.id);
               const recentMsgs = messages.slice(-6); // Last 6 messages for context
-              const contextSummary = recentMsgs.map(m =>
-                `${m.direction === 'incoming' ? 'العميل' : 'التاجر'}: ${m.content}`
-              ).join('\n');
+              // VULN-1 FIX: Sanitize + truncate each message to prevent prompt injection
+              const contextSummary = recentMsgs.map(m => {
+                const role = m.direction === 'incoming' ? 'العميل' : 'التاجر';
+                const safeContent = (m.content || '[media]')
+                  .substring(0, 300) // max 300 chars per message
+                  .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[...]')
+                  .replace(/\b(system|assistant|user)\s*:/gi, '[...]')
+                  .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[...]');
+                return `${role}: ${safeContent}`;
+              }).join('\n');
 
               // Trigger an AI-aware first response on the next incoming message
+              // VULN-4 FIX: Cap total context to 2000 chars
+              const cappedContext = contextSummary.substring(0, 2000);
+
               await db.updateConversation(conv.id, {
                 agentHistory: JSON.stringify({
-                  resumeContext: contextSummary,
+                  resumeContext: cappedContext,
                   resumedAt: new Date().toISOString(),
                   resumedBy: 'merchant_command',
                 }),

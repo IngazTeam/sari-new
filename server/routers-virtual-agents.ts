@@ -35,8 +35,8 @@ export const virtualAgentsRouter = router({
       isDefault: z.boolean().optional(),
       triggerKeywords: z.string().max(2000).optional(), // JSON
       triggerIntents: z.string().max(2000).optional(),  // JSON
-      shiftStart: z.string().max(5).optional(), // HH:mm
-      shiftEnd: z.string().max(5).optional(),   // HH:mm
+      shiftStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(), // HH:mm
+      shiftEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),   // HH:mm
     }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -93,8 +93,8 @@ export const virtualAgentsRouter = router({
       isActive: z.boolean().optional(),
       triggerKeywords: z.string().max(2000).optional(),
       triggerIntents: z.string().max(2000).optional(),
-      shiftStart: z.string().max(5).nullable().optional(),
-      shiftEnd: z.string().max(5).nullable().optional(),
+      shiftStart: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
+      shiftEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
