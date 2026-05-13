@@ -593,3 +593,129 @@ export async function sendSubscriptionExpiryEmail(
     return false;
   }
 }
+
+/**
+ * رسالة إعادة تعيين كلمة المرور
+ */
+export async function sendPasswordResetEmail(
+  email: string,
+  userName: string,
+  resetLink: string
+): Promise<boolean> {
+  const subject = '🔑 إعادة تعيين كلمة المرور - ساري';
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>إعادة تعيين كلمة المرور</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 20px 0;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+              
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); padding: 50px 30px; text-align: center;">
+                  <div style="background-color: white; width: 90px; height: 90px; border-radius: 50%; margin: 0 auto 25px; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 20px rgba(0,0,0,0.2);">
+                    <span style="font-size: 50px;">🔑</span>
+                  </div>
+                  <h1 style="color: white; margin: 0; font-size: 30px; font-weight: 700;">إعادة تعيين كلمة المرور</h1>
+                  <p style="color: rgba(255,255,255,0.95); margin: 15px 0 0 0; font-size: 16px;">لقد طلبت إعادة تعيين كلمة المرور الخاصة بك</p>
+                </td>
+              </tr>
+              
+              <!-- Main Content -->
+              <tr>
+                <td style="padding: 50px 40px;">
+                  <h2 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">مرحباً ${userName}،</h2>
+                  
+                  <p style="color: #4a4a4a; line-height: 1.9; font-size: 16px; margin: 0 0 25px 0;">
+                    تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في <strong style="color: #00d25e;">ساري</strong>.
+                  </p>
+                  
+                  <p style="color: #4a4a4a; line-height: 1.9; font-size: 16px; margin: 0 0 35px 0;">
+                    اضغط على الزر أدناه لإعادة تعيين كلمة المرور. هذا الرابط صالح لمدة <strong>ساعة واحدة</strong> فقط.
+                  </p>
+                  
+                  <!-- CTA Button -->
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
+                    <tr>
+                      <td align="center">
+                        <a href="${resetLink}" 
+                           style="background: linear-gradient(135deg, #00d25e 0%, #00a84d 100%); 
+                                  color: white; 
+                                  padding: 18px 50px; 
+                                  text-decoration: none; 
+                                  border-radius: 10px; 
+                                  display: inline-block;
+                                  font-weight: 700;
+                                  font-size: 17px;
+                                  box-shadow: 0 8px 20px rgba(0, 210, 94, 0.4);">
+                          🔄 إعادة تعيين كلمة المرور
+                        </a>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Security Notice -->
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background: #fffbeb; border-radius: 10px; padding: 20px; margin-bottom: 30px; border-right: 4px solid #fbbf24;">
+                    <tr>
+                      <td>
+                        <p style="color: #92400e; font-size: 14px; margin: 0; line-height: 1.7;">
+                          <strong>⚠️ ملاحظة أمنية:</strong> إذا لم تطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذا البريد. حسابك آمن ولن يتم إجراء أي تغييرات.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Alternative Link -->
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #e8e8e8;">
+                    <tr>
+                      <td>
+                        <p style="color: #6a6a6a; font-size: 13px; margin: 0 0 10px 0;">
+                          إذا لم يعمل الزر أعلاه، انسخ الرابط التالي والصقه في متصفحك:
+                        </p>
+                        <p style="color: #00d25e; font-size: 12px; margin: 0; word-break: break-all; direction: ltr; text-align: left;">
+                          ${resetLink}
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 30px; text-align: center; border-top: 1px solid #dee2e6;">
+                  <p style="color: #6c757d; font-size: 13px; margin: 0 0 8px 0; font-weight: 600;">
+                    © ${new Date().getFullYear()} ساري - مساعد المبيعات الذكي على الواتساب
+                  </p>
+                  <p style="margin: 8px 0 0 0;">
+                    <a href="https://sary.live" style="color: #00d25e; text-decoration: none; font-weight: 700; font-size: 14px;">sary.live</a>
+                  </p>
+                  <p style="color: #adb5bd; font-size: 11px; margin: 12px 0 0 0;">
+                    المملكة العربية السعودية 🇸🇦 | الرياض
+                  </p>
+                </td>
+              </tr>
+              
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+
+  try {
+    return await sendEmail({ to: email, subject, html });
+  } catch (error) {
+    console.error('[Password Reset Email] Error:', error);
+    return false;
+  }
+}
