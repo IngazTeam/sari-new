@@ -600,7 +600,7 @@ export default function WhatsAppInstancesPage() {
             ) : qrCode?.qrCodeUrl ? (
               <div className="border-4 border-green-500 rounded-xl p-3 bg-white shadow-lg">
                 <img
-                  src={qrCode.qrCodeUrl}
+                  src={qrCode.qrCodeUrl.startsWith('data:') || qrCode.qrCodeUrl.startsWith('http') ? qrCode.qrCodeUrl : `data:image/png;base64,${qrCode.qrCodeUrl}`}
                   alt="WhatsApp QR Code"
                   className="w-64 h-64"
                 />
