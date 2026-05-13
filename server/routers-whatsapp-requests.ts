@@ -170,10 +170,19 @@ export const whatsappRequestsRouter = router({
             }
 
             try {
-                const baseUrl = request.apiUrl || 'https://api.green-api.com';
+                // Auto-derive correct API URL from instanceId prefix
+                let baseUrl = request.apiUrl || 'https://api.green-api.com';
+                if (baseUrl === 'https://api.green-api.com' || baseUrl === 'https://api.greenapi.com') {
+                    const prefix = request.instanceId.substring(0, 4);
+                    baseUrl = `https://${prefix}.api.greenapi.com`;
+                }
                 const url = `${baseUrl}/waInstance${request.instanceId}/qr/${request.token}`;
 
-                const response = await fetch(url);
+                console.log(`[WhatsApp QR] Fetching QR from: ${url}`);
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 15000);
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeout);
                 const data = await response.json();
 
                 if (response.ok && data.type === 'qrCode') {
@@ -186,10 +195,18 @@ export const whatsappRequestsRouter = router({
                         qrCodeUrl: data.message,
                         expiresAt: new Date(Date.now() + 2 * 60 * 1000),
                     };
+                } else if (response.ok && data.type === 'alreadyLogged') {
+                    return {
+                        qrCodeUrl: null,
+                        alreadyConnected: true,
+                        message: 'الرقم مربوط بالفعل',
+                    };
                 } else {
-                    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get QR code' });
+                    console.error('[WhatsApp QR] Unexpected response:', data);
+                    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `فشل جلب QR Code: ${data.type || 'unknown response'}` });
                 }
             } catch (error) {
+                if (error instanceof TRPCError) throw error;
                 console.error('[WhatsApp QR] Error:', error instanceof Error ? error.message : error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
@@ -217,10 +234,18 @@ export const whatsappRequestsRouter = router({
             }
 
             try {
-                const baseUrl = request.apiUrl || 'https://api.green-api.com';
+                // Auto-derive correct API URL from instanceId prefix
+                let baseUrl = request.apiUrl || 'https://api.green-api.com';
+                if (baseUrl === 'https://api.green-api.com' || baseUrl === 'https://api.greenapi.com') {
+                    const prefix = request.instanceId.substring(0, 4);
+                    baseUrl = `https://${prefix}.api.greenapi.com`;
+                }
                 const url = `${baseUrl}/waInstance${request.instanceId}/getStateInstance/${request.token}`;
 
-                const response = await fetch(url);
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeout);
                 const data = await response.json();
 
                 if (response.ok && data.stateInstance === 'authorized') {
