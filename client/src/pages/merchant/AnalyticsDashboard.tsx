@@ -55,6 +55,7 @@ export default function AnalyticsDashboard() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const [dateRange, setDateRange] = useState<keyof typeof DATE_RANGE_DAYS>('30d');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const DATE_RANGES = {
     '7d': { label: t('analyticsDashboardPage.last7Days'), days: 7 },
@@ -104,7 +105,7 @@ export default function AnalyticsDashboard() {
       endDate,
       limit: 10,
     },
-    { enabled: !!merchant }
+    { enabled: !!merchant && (activeTab === 'overview' || activeTab === 'products') }
   );
 
   const { data: campaignAnalytics = [] } = trpc.analytics.getCampaignAnalytics.useQuery(
@@ -113,7 +114,7 @@ export default function AnalyticsDashboard() {
       startDate,
       endDate,
     },
-    { enabled: !!merchant }
+    { enabled: !!merchant && activeTab === 'campaigns' }
   );
 
   const { data: customerSegments = [] } = trpc.analytics.getCustomerSegments.useQuery(
@@ -122,7 +123,7 @@ export default function AnalyticsDashboard() {
       startDate,
       endDate,
     },
-    { enabled: !!merchant }
+    { enabled: !!merchant && (activeTab === 'overview' || activeTab === 'customers') }
   );
 
   const { data: hourlyAnalytics = [] } = trpc.analytics.getHourlyAnalytics.useQuery(
@@ -131,7 +132,7 @@ export default function AnalyticsDashboard() {
       startDate,
       endDate,
     },
-    { enabled: !!merchant }
+    { enabled: !!merchant && activeTab === 'time' }
   );
 
   const { data: weekdayAnalytics = [] } = trpc.analytics.getWeekdayAnalytics.useQuery(
@@ -140,7 +141,7 @@ export default function AnalyticsDashboard() {
       startDate,
       endDate,
     },
-    { enabled: !!merchant }
+    { enabled: !!merchant && activeTab === 'time' }
   );
 
   const { data: discountAnalytics = [] } = trpc.analytics.getDiscountCodeAnalytics.useQuery(
@@ -149,7 +150,7 @@ export default function AnalyticsDashboard() {
       startDate,
       endDate,
     },
-    { enabled: !!merchant }
+    { enabled: !!merchant && activeTab === 'campaigns' }
   );
 
   const { formatCurrency } = useCurrency();
@@ -256,7 +257,7 @@ export default function AnalyticsDashboard() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">{t('analyticsDashboardPage.tabOverview')}</TabsTrigger>
           <TabsTrigger value="products">{t('analyticsDashboardPage.tabProducts')}</TabsTrigger>

@@ -21,8 +21,10 @@ export default function MerchantDashboard() {
   const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery();
   const completeOnboarding = trpc.merchants.completeOnboarding.useMutation();
   const { data: subscription, isLoading: subscriptionLoading } = trpc.subscriptions.getCurrent.useQuery();
-  const { data: conversations, isLoading: conversationsLoading } = trpc.conversations.list.useQuery();
-  const { data: campaigns, isLoading: campaignsLoading } = trpc.campaigns.list.useQuery();
+  // Performance: load only 5 recent conversations instead of ALL
+  const { data: recentConversations, isLoading: conversationsLoading } = trpc.conversations.listRecent.useQuery({ limit: 5 });
+  const { data: conversationCount } = trpc.conversations.count.useQuery();
+  const { data: campaignStats, isLoading: campaignsLoading } = trpc.campaigns.getStats.useQuery();
 
   // Combined dashboard summary - reduces 5 requests to 1
   const { data: dashboardSummary, isLoading: summaryLoading } = trpc.dashboard.getSummary.useQuery({ days: dateRange, topProductsLimit: 5 });
@@ -163,7 +165,7 @@ export default function MerchantDashboard() {
                 <SelectItem value="90">{t('dashboard.last90Days', 'آخر 90 يوم')}</SelectItem>
               </SelectContent>
             </Select>
-            {(!conversations || conversations.length === 0) ? (
+            {(!recentConversations || recentConversations.length === 0) ? (
               <Link href="/merchant/whatsapp">
                 <Button className="shadow-lg">
                   <Smartphone className="ml-2 h-4 w-4" />
@@ -402,9 +404,9 @@ export default function MerchantDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {conversations && conversations.length > 0 ? (
+              {recentConversations && recentConversations.length > 0 ? (
                 <div className="space-y-4">
-                  {conversations.slice(0, 5).map((conv) => (
+                  {recentConversations.map((conv) => (
                     <div key={conv.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                         <MessageSquare className="h-5 w-5 text-primary" />

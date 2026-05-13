@@ -27,7 +27,6 @@ export default function Products() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
-  const { data: products, refetch, isLoading } = trpc.products.list.useQuery();
   const { data: merchant } = trpc.merchants.getCurrent.useQuery();
   const currency = merchant?.currency || 'SAR';
 
@@ -36,24 +35,34 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
+
+  // PERF-08: Debounce search to avoid spamming the server
+  const searchTimerRef = (globalThis as any).__prodSearchTimer;
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if ((globalThis as any).__prodSearchTimer) clearTimeout((globalThis as any).__prodSearchTimer);
+    (globalThis as any).__prodSearchTimer = setTimeout(() => {
+      setDebouncedSearch(value);
+      setCurrentPage(1);
+    }, 300);
+  };
 
   // Integration awareness — lock editing when managed by Byaan
   const { isLocked, term } = useIntegration();
 
-  // Filter and paginate products
-  const filteredProducts = (products || []).filter((p: any) =>
-    !searchQuery || p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  // PERF-03 FIX: Server-side pagination + search
+  const { data: productsData, refetch, isLoading } = trpc.products.list.useQuery({
+    page: currentPage,
+    pageSize: ITEMS_PER_PAGE,
+    search: debouncedSearch || undefined,
+  });
+  const products = productsData?.items || [];
+  const totalPages = productsData?.totalPages || 1;
+  const totalProducts = productsData?.total || 0;
+  const paginatedProducts = products; // Server already returns the correct page
 
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', imageUrl: '', stock: '',
@@ -472,7 +481,7 @@ export default function Products() {
               <Input
                 placeholder={`بحث في ${term('products')}...`}
                 value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pr-9"
               />
             </div>
@@ -574,7 +583,7 @@ export default function Products() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t">
                   <div className="text-sm text-muted-foreground">
-                    عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} من {filteredProducts.length} منتج
+                    عرض {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, totalProducts)} من {totalProducts} منتج
                   </div>
                   <div className="flex items-center gap-2">
                     <Button

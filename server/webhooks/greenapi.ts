@@ -390,6 +390,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         message: 'No merchant found for this instance'
       };
     }
+
+    // VULN-4 FIX: Only process messages for active instances
+    if (instance.status !== 'active') {
+      console.warn(`[Webhook] Ignoring message for ${instance.status} instance: ${instanceId} (merchant: ${instance.merchantId})`);
+      return {
+        success: false,
+        message: `Instance is ${instance.status}, not processing`
+      };
+    }
     
     console.log('[Webhook] Merchant ID:', instance.merchantId);
     

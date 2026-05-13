@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { MessageSquare, User, Bot, Clock, Search } from 'lucide-react';
+import { MessageSquare, User, Bot, Clock, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
@@ -22,8 +22,9 @@ export default function Conversations() {
   const { t } = useTranslation();
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const { data: conversations, isLoading } = trpc.conversations.list.useQuery();
+  const { data: conversationsData, isLoading } = trpc.conversations.list.useQuery({ page: currentPage, pageSize: 50 });
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
 
   const { data: messages } = trpc.conversations.getMessages.useQuery(
@@ -35,6 +36,8 @@ export default function Conversations() {
   if (isLoading) {
     return <ConversationsSkeleton />;
   }
+
+  const conversations = conversationsData?.items;
 
   const filteredConversations = conversations?.filter(conv =>
     conv.customerPhone.includes(searchQuery) ||
@@ -61,7 +64,7 @@ export default function Conversations() {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{conversations?.length || 0}</div>
+            <div className="text-2xl font-bold">{conversationsData?.total || 0}</div>
             <p className="text-xs text-muted-foreground">{t('conversationsPage.allConversations')}</p>
           </CardContent>
         </Card>

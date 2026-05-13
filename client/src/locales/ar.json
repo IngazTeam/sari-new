@@ -363,7 +363,19 @@
       }
     }
   },
-  "dashboard": {},
+  "dashboard": {
+    "totalOrders": "إجمالي الطلبات",
+    "totalRevenue": "إجمالي الإيرادات",
+    "averageOrderValue": "متوسط قيمة الطلب",
+    "averageOrder": "متوسط الطلب",
+    "completedOrders": "الطلبات المكتملة",
+    "successfulOrders": "الطلبات الناجحة",
+    "averageRating": "متوسط التقييم",
+    "reviews": "تقييم",
+    "last7Days": "آخر 7 أيام",
+    "last30Days": "آخر 30 يوم",
+    "last90Days": "آخر 90 يوم"
+  },
   "conversations": {},
   "customers": {
     "auto_0": "عرض وإدارة جميع عملائك",
@@ -1101,6 +1113,7 @@
     "cancelOrder": "إلغاء الطلب",
     "confirmCancel": "هل أنت متأكد من إلغاء هذا الطلب؟",
     "cancelledFromDashboard": "تم الإلغاء من لوحة التحكم",
+    "page": "الصفحة",
     "updateOrderStatus": "تحديث حالة الطلب",
     "newStatus": "الحالة الجديدة",
     "selectStatus": "اختر الحالة",

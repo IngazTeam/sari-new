@@ -9,7 +9,16 @@ import "./index.css";
 import "./lib/i18n";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 2 * 60 * 1000,  // PERF-10: 2 min — prevent refetch on every window focus
+      gcTime: 5 * 60 * 1000,     // 5 min garbage collection
+      refetchOnWindowFocus: false, // Don't spam server on tab switch
+      retry: 1,
+    },
+  },
+});
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;

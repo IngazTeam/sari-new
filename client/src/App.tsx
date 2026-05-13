@@ -190,7 +190,6 @@ const AdminDashboard = lazyLoad(() => import("./pages/admin/Dashboard"));
 const MerchantsManagement = lazyLoad(() => import("./pages/admin/Merchants"));
 const MerchantDetails = lazyLoad(() => import("./pages/admin/MerchantDetails"));
 const AdminSettings = lazyLoad(() => import("./pages/admin/Settings"));
-const WhatsAppRequests = lazyLoad(() => import("./pages/admin/WhatsAppRequests"));
 const WhatsAppRequestsPage = lazyLoad(() => import("./pages/admin/WhatsAppRequestsPage"));
 const PaymentGateways = lazyLoad(() => import("./pages/admin/PaymentGateways"));
 const AdminCampaigns = lazyLoad(() => import("./pages/admin/Campaigns"));

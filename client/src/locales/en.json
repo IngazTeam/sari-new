@@ -363,7 +363,19 @@
       }
     }
   },
-  "dashboard": {},
+  "dashboard": {
+    "totalOrders": "Total Orders",
+    "totalRevenue": "Total Revenue",
+    "averageOrderValue": "Average Order Value",
+    "averageOrder": "Average Order",
+    "completedOrders": "Completed Orders",
+    "successfulOrders": "Successful Orders",
+    "averageRating": "Average Rating",
+    "reviews": "reviews",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days"
+  },
   "conversations": {},
   "customers": {
     "auto_0": "عرض وإدارة جميع عملائك",
@@ -1101,6 +1113,7 @@
     "cancelOrder": "Cancel Order",
     "confirmCancel": "Are you sure you want to cancel this order?",
     "cancelledFromDashboard": "Cancelled from dashboard",
+    "page": "Page",
     "updateOrderStatus": "Update Order Status",
     "newStatus": "New Status",
     "selectStatus": "Select Status",

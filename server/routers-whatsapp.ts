@@ -15,6 +15,32 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
     return next({ ctx });
 });
 
+// VULN-7 FIX: Rate limiter for test messages (10 per merchant per day)
+const TEST_MSG_LIMIT = 10;
+const testMessageCounts = new Map<number, { count: number; resetAt: number }>();
+
+function checkTestMessageLimit(merchantId: number): void {
+    const now = Date.now();
+    const entry = testMessageCounts.get(merchantId);
+
+    if (!entry || now > entry.resetAt) {
+        // Reset: new day
+        const tomorrow = new Date();
+        tomorrow.setHours(24, 0, 0, 0);
+        testMessageCounts.set(merchantId, { count: 1, resetAt: tomorrow.getTime() });
+        return;
+    }
+
+    if (entry.count >= TEST_MSG_LIMIT) {
+        throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: `تجاوزت الحد الأقصى للرسائل التجريبية (${TEST_MSG_LIMIT} يومياً)`,
+        });
+    }
+
+    entry.count++;
+}
+
 export const whatsappRouter = router({
     // Request WhatsApp connection
     requestConnection: protectedProcedure
@@ -169,6 +195,15 @@ export const whatsappRouter = router({
 
             // Auto-create whatsapp_instances record so it appears in the instances page
             try {
+                // VULN-2 FIX: Deactivate any existing instances with this phone number for OTHER merchants
+                if (request.phoneNumber) {
+                    const conflicting = await db.getActiveInstanceByPhoneNumber(request.phoneNumber, request.merchantId);
+                    if (conflicting) {
+                        console.log(`[WhatsApp] Phone ${request.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${request.merchantId}`);
+                        await db.deactivateInstancesByPhoneNumber(request.phoneNumber, request.merchantId);
+                    }
+                }
+
                 const existingInstance = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
                 if (!existingInstance) {
                     await db.createWhatsAppInstance({
@@ -182,6 +217,20 @@ export const whatsappRouter = router({
                         connectedAt: new Date(),
                     });
                     console.log(`[WhatsApp] Auto-created instance record for merchant ${request.merchantId}`);
+                } else if (existingInstance.merchantId !== request.merchantId) {
+                    // Instance belongs to another merchant — deactivate it and create new
+                    console.log(`[WhatsApp] Instance ${input.instanceId} belonged to merchant ${existingInstance.merchantId}, deactivating`);
+                    await db.updateWhatsAppInstance(existingInstance.id, { status: 'inactive', isPrimary: false });
+                    await db.createWhatsAppInstance({
+                        merchantId: request.merchantId,
+                        instanceId: input.instanceId,
+                        token: input.apiToken,
+                        apiUrl: input.apiUrl,
+                        phoneNumber: request.phoneNumber,
+                        status: 'active',
+                        isPrimary: true,
+                        connectedAt: new Date(),
+                    });
                 } else {
                     await db.updateWhatsAppInstance(existingInstance.id, {
                         token: input.apiToken,
@@ -457,7 +506,7 @@ export const whatsappRouter = router({
             }
         }),
 
-    // Send test message
+    // Send test message (VULN-7 FIX: rate limited)
     sendTestMessage: protectedProcedure
         .input(z.object({
             instanceId: z.string(),
@@ -465,7 +514,13 @@ export const whatsappRouter = router({
             phoneNumber: z.string(),
             message: z.string(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+            checkTestMessageLimit(merchant.id);
+
             const axios = await import('axios');
             const instancePrefix = input.instanceId.substring(0, 4);
             const baseURL = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}`;
@@ -523,10 +578,21 @@ export const whatsappRouter = router({
                 await checkWhatsAppNumberLimit(merchant.id);
             }
             if (existing && existing.merchantId !== merchant.id) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Instance ID already in use' });
+                // VULN-1 FIX: Instead of blocking, deactivate old and allow transfer
+                console.log(`[WhatsApp] Instance ${input.instanceId} was used by merchant ${existing.merchantId}, deactivating for transfer to merchant ${merchant.id}`);
+                await db.updateWhatsAppInstance(existing.id, { status: 'inactive', isPrimary: false });
             }
 
-            if (existing) {
+            // VULN-1 FIX: Check phone number conflict and auto-deactivate
+            if (input.phoneNumber) {
+                const conflicting = await db.getActiveInstanceByPhoneNumber(input.phoneNumber, merchant.id);
+                if (conflicting) {
+                    console.log(`[WhatsApp] Phone ${input.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${merchant.id}`);
+                    await db.deactivateInstancesByPhoneNumber(input.phoneNumber, merchant.id);
+                }
+            }
+
+            if (existing && existing.merchantId === merchant.id) {
                 await db.updateWhatsAppInstance(existing.id, {
                     token: input.token,
                     phoneNumber: input.phoneNumber,
@@ -560,14 +626,25 @@ export const whatsappRouter = router({
         return await db.getPrimaryWhatsAppInstance(merchant.id);
     }),
 
-    // Get all WhatsApp instances
+    // Get all WhatsApp instances (VULN-6 FIX: strip sensitive fields)
     listInstances: protectedProcedure.query(async ({ ctx }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getWhatsAppInstancesByMerchantId(merchant.id);
+        const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
+        return instances.map((i: any) => ({
+            id: i.id,
+            merchantId: i.merchantId,
+            instanceId: i.instanceId,
+            phoneNumber: i.phoneNumber,
+            status: i.status,
+            isPrimary: i.isPrimary,
+            connectedAt: i.connectedAt,
+            expiresAt: i.expiresAt,
+            createdAt: i.createdAt,
+        }));
     }),
 
     // Delete WhatsApp instance

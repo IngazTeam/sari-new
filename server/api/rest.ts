@@ -1062,7 +1062,21 @@ sariApiRouter.put('/instances/:id', async (req: AuthenticatedRequest, res: Respo
     }
 
     if (typeof isActive === 'boolean') {
-      await db.updateWhatsAppInstance(instanceId, { isActive } as any);
+      const newStatus = isActive ? 'active' : 'inactive';
+
+      // VULN-3 FIX: Check phone conflict when activating
+      if (newStatus === 'active' && (instance as any).phoneNumber) {
+        const conflicting = await db.getActiveInstanceByPhoneNumber(
+          (instance as any).phoneNumber, req.merchant.id
+        );
+        if (conflicting) {
+          await db.deactivateInstancesByPhoneNumber(
+            (instance as any).phoneNumber, req.merchant.id
+          );
+        }
+      }
+
+      await db.updateWhatsAppInstance(instanceId, { status: newStatus });
     }
 
     res.json({ success: true });

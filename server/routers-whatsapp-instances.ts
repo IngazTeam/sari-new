@@ -64,10 +64,8 @@ export const whatsappInstancesRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
             }
 
-            // If activating, check subscription limit
+            // If activating, check subscription limit + phone conflict
             if (input.newStatus === 'active') {
-                const allInstances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
-                const activeCount = allInstances.filter((i: any) => i.status === 'active').length;
                 const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
                 // Only check limit if adding a NEW active one (not reactivating the same)
                 if (instance.status !== 'active') {
@@ -78,6 +76,15 @@ export const whatsappInstancesRouter = router({
                             code: 'FORBIDDEN',
                             message: 'لقد وصلت للحد الأقصى من الأرقام النشطة في باقتك. أوقف رقماً آخر أو قم بالترقية.',
                         });
+                    }
+                }
+
+                // Phone conflict: if this number is active for another merchant, deactivate it there
+                if (instance.phoneNumber) {
+                    const conflicting = await db.getActiveInstanceByPhoneNumber(instance.phoneNumber, input.merchantId);
+                    if (conflicting) {
+                        console.log(`[WhatsApp] Phone ${instance.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
+                        await db.deactivateInstancesByPhoneNumber(instance.phoneNumber, input.merchantId);
                     }
                 }
             }
@@ -161,9 +168,25 @@ export const whatsappInstancesRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const existing = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
-            if (existing) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Instance ID already exists' });
+            // Check: instanceId must be unique
+            const existingById = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
+            if (existingById) {
+                // If same instanceId exists for ANOTHER merchant, deactivate it
+                if (existingById.merchantId !== input.merchantId) {
+                    console.log(`[WhatsApp] Instance ${input.instanceId} was used by merchant ${existingById.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
+                    await db.updateWhatsAppInstance(existingById.id, { status: 'inactive', isPrimary: false });
+                } else {
+                    throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الرقم مسجل بالفعل في حسابك' });
+                }
+            }
+
+            // Check: if phone number is already active elsewhere, deactivate it
+            if (input.phoneNumber) {
+                const conflicting = await db.getActiveInstanceByPhoneNumber(input.phoneNumber, input.merchantId);
+                if (conflicting) {
+                    console.log(`[WhatsApp] Phone ${input.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
+                    await db.deactivateInstancesByPhoneNumber(input.phoneNumber, input.merchantId);
+                }
             }
 
             const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');

@@ -25,22 +25,16 @@ export default function WhatsAppRequestsPage() {
   const [adminNotes, setAdminNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const { data: requests, isLoading, refetch } = trpc.whatsapp.listRequests.useQuery({});
-  const approveMutation = trpc.whatsapp.approveRequest.useMutation();
-  const rejectMutation = trpc.whatsapp.rejectRequest.useMutation();
+  const { data: requests, isLoading, refetch } = trpc.whatsappRequests.listAll.useQuery();
+  const approveMutation = trpc.whatsappRequests.approve.useMutation();
+  const rejectMutation = trpc.whatsappRequests.reject.useMutation();
 
-  // Debug: log requests data
-  console.log('WhatsApp Requests Data:', requests);
-  if (requests && requests.length > 0) {
-    console.log('First request status:', requests[0].status, 'Type:', typeof requests[0].status);
-  }
 
   // Filter requests by status
   const pendingRequests = requests?.filter((r: any) => r.status === 'pending') || [];
   const approvedRequests = requests?.filter((r: any) => r.status === 'approved') || [];
   const rejectedRequests = requests?.filter((r: any) => r.status === 'rejected') || [];
-  const connectedRequests = requests?.filter((r: any) => r.status === 'connected') || [];
-  const completedRequests = connectedRequests; // Connected = Completed
+  const completedRequests = requests?.filter((r: any) => r.status === 'completed' || r.status === 'connected') || [];
 
   const handleApprove = () => {
     if (!selectedRequest) return;
@@ -53,8 +47,9 @@ export default function WhatsAppRequestsPage() {
       {
         requestId: selectedRequest.id,
         instanceId: instanceId,
-        apiToken: token,
+        token: token,
         apiUrl: apiUrl || 'https://api.green-api.com',
+        adminNotes: adminNotes || undefined,
       },
       {
         onSuccess: () => {
@@ -80,7 +75,7 @@ export default function WhatsAppRequestsPage() {
     rejectMutation.mutate(
       {
         requestId: selectedRequest.id,
-        reason: rejectionReason,
+        rejectionReason: rejectionReason,
       },
       {
         onSuccess: () => {
@@ -207,10 +202,10 @@ export default function WhatsAppRequestsPage() {
                       <span className="font-medium">{t('adminWhatsAppRequestsPagePage.text9', { var0: request.merchantId })}</span>
                       {getStatusBadge(request.status)}
                     </div>
-                    {request.fullNumber && (
+                    {(request.phoneNumber || request.businessName) && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Phone className="h-3 w-3" />
-                        {request.fullNumber}
+                        {request.phoneNumber || request.businessName}
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -260,10 +255,10 @@ export default function WhatsAppRequestsPage() {
                       <span className="font-medium">{t('adminWhatsAppRequestsPagePage.text12', { var0: request.merchantId })}</span>
                       {getStatusBadge(request.status)}
                     </div>
-                    {request.fullNumber && (
+                    {(request.phoneNumber || request.businessName) && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Phone className="h-3 w-3" />
-                        {request.fullNumber}
+                        {request.phoneNumber || request.businessName}
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">

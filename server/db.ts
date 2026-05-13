@@ -1,5 +1,5 @@
 import {
-  eq, and, or, desc, gte, lte, lt, gt, sql, like
+  eq, ne, and, or, desc, gte, lte, lt, gt, sql, like
 } from "drizzle-orm";
 
 // Helper function to format Date for MySQL timestamp comparison
@@ -867,11 +867,66 @@ export async function getProductById(id: number): Promise<Product | undefined> {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getProductsByMerchantId(merchantId: number): Promise<Product[]> {
+export async function getProductsByMerchantId(
+  merchantId: number,
+  opts?: { limit?: number; offset?: number; search?: string }
+): Promise<Product[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(products).where(eq(products.merchantId, merchantId)).orderBy(desc(products.createdAt));
+  const conditions = [eq(products.merchantId, merchantId)];
+
+  if (opts?.search) {
+    conditions.push(
+      or(
+        like(products.name, `%${opts.search}%`),
+        like(products.description, `%${opts.search}%`),
+        like(products.category, `%${opts.search}%`),
+        like(products.sku, `%${opts.search}%`)
+      ) as any
+    );
+  }
+
+  let query = db
+    .select()
+    .from(products)
+    .where(and(...conditions))
+    .orderBy(desc(products.createdAt))
+    .limit(opts?.limit ?? 500);
+
+  if (opts?.offset) {
+    query = query.offset(opts.offset) as any;
+  }
+
+  return query;
+}
+
+export async function getProductCountByMerchantId(
+  merchantId: number,
+  opts?: { search?: string }
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const conditions = [eq(products.merchantId, merchantId)];
+
+  if (opts?.search) {
+    conditions.push(
+      or(
+        like(products.name, `%${opts.search}%`),
+        like(products.description, `%${opts.search}%`),
+        like(products.category, `%${opts.search}%`),
+        like(products.sku, `%${opts.search}%`)
+      ) as any
+    );
+  }
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(products)
+    .where(and(...conditions));
+
+  return Number(result[0]?.count ?? 0);
 }
 
 export async function getActiveProductsByMerchantId(merchantId: number): Promise<Product[]> {
@@ -970,15 +1025,37 @@ export async function getConversationByMerchantAndPhone(
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getConversationsByMerchantId(merchantId: number): Promise<Conversation[]> {
+export async function getConversationsByMerchantId(
+  merchantId: number,
+  opts?: { limit?: number; offset?: number }
+): Promise<Conversation[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db
+  let query = db
     .select()
     .from(conversations)
     .where(eq(conversations.merchantId, merchantId))
-    .orderBy(desc(conversations.lastMessageAt));
+    .orderBy(desc(conversations.lastMessageAt))
+    .limit(opts?.limit ?? 500);
+
+  if (opts?.offset) {
+    query = query.offset(opts.offset) as any;
+  }
+
+  return query;
+}
+
+export async function getConversationCountByMerchantId(merchantId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(conversations)
+    .where(eq(conversations.merchantId, merchantId));
+
+  return Number(result[0]?.count ?? 0);
 }
 
 export async function updateConversation(id: number, data: Partial<InsertConversation>): Promise<void> {
@@ -1055,11 +1132,25 @@ export async function getCampaignById(id: number): Promise<Campaign | undefined>
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getCampaignsByMerchantId(merchantId: number): Promise<Campaign[]> {
+export async function getCampaignsByMerchantId(
+  merchantId: number,
+  opts?: { limit?: number; offset?: number }
+): Promise<Campaign[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(campaigns).where(eq(campaigns.merchantId, merchantId)).orderBy(desc(campaigns.createdAt));
+  let query = db
+    .select()
+    .from(campaigns)
+    .where(eq(campaigns.merchantId, merchantId))
+    .orderBy(desc(campaigns.createdAt))
+    .limit(opts?.limit ?? 500);
+
+  if (opts?.offset) {
+    query = query.offset(opts.offset) as any;
+  }
+
+  return query;
 }
 
 export async function getAllCampaigns(): Promise<Campaign[]> {
@@ -2502,6 +2593,47 @@ export async function getOccasionCampaignsStats(merchantId: number) {
 
 
 // ==================== WhatsApp Instances ====================
+
+/**
+ * Find an active WhatsApp instance by phone number (across ALL merchants)
+ * Used to detect if a number is already in use by another merchant
+ */
+export async function getActiveInstanceByPhoneNumber(phoneNumber: string, excludeMerchantId?: number): Promise<WhatsAppInstance | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const conditions = [
+    eq(whatsappInstances.phoneNumber, phoneNumber),
+    eq(whatsappInstances.status, 'active'),
+  ];
+  if (excludeMerchantId) {
+    conditions.push(ne(whatsappInstances.merchantId, excludeMerchantId));
+  }
+
+  const [instance] = await db.select().from(whatsappInstances)
+    .where(and(...conditions));
+
+  return instance;
+}
+
+/**
+ * Deactivate all instances with a specific phone number (except for a given merchant)
+ * Used when a number is being transferred/activated for a new merchant
+ */
+export async function deactivateInstancesByPhoneNumber(phoneNumber: string, exceptMerchantId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db.update(whatsappInstances)
+    .set({ status: 'inactive', isPrimary: false, updatedAt: new Date() })
+    .where(and(
+      eq(whatsappInstances.phoneNumber, phoneNumber),
+      ne(whatsappInstances.merchantId, exceptMerchantId),
+      eq(whatsappInstances.status, 'active')
+    ));
+
+  return result[0]?.affectedRows ?? 0;
+}
 
 /**
  * Create a new WhatsApp instance

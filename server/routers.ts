@@ -51,6 +51,7 @@ import { sariBrainRouter } from "./routers-sari-brain";
 import { aiSettingsRouter } from "./routers-ai-settings";
 import { googleAnalyticsRouter } from "./routers-google-analytics";
 import { dashboardRouter } from "./routers-dashboard";
+import { merchantsRouter } from "./routers-merchants";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -73,6 +74,9 @@ export const appRouter = router({
   // User Notifications — modularized to routers-user-notifications.ts
   notifications: userNotificationsRouter,
   system: systemRouter,
+
+  // Merchants — modularized to routers-merchants.ts
+  merchants: merchantsRouter,
 
   auth: router({
     me: protectedProcedure.query(opts => {
@@ -3709,6 +3713,13 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
+        // PEN-WA-01 FIX: Rate limit — max 3 requests per day per merchant
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const rateLimitCheck = checkRateLimit(`wa_request_merchant:${input.merchantId}`, 3, 24 * 60 * 60 * 1000);
+        if (!rateLimitCheck.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'تم تجاوز الحد الأقصى لطلبات الربط. حاول مرة أخرى غداً.' });
+        }
+
         // Check if there's already a pending request
         const existingRequests = await db.getWhatsAppRequestsByMerchantId(input.merchantId);
         const pendingRequest = existingRequests.find((r: WhatsAppRequest) => r.status === 'pending');
@@ -3741,23 +3752,15 @@ export const appRouter = router({
         return request;
       }),
 
-    // Get all requests (admin only)
-    listAll: protectedProcedure
-      .query(async ({ ctx }) => {
-        if (ctx.user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-        }
-
+    // PEN-WA-02 FIX: Use adminProcedure middleware instead of manual role check
+    listAll: adminProcedure
+      .query(async () => {
         return db.getAllWhatsAppRequests();
       }),
 
     // Get pending requests (admin only)
-    listPending: protectedProcedure
-      .query(async ({ ctx }) => {
-        if (ctx.user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
-        }
-
+    listPending: adminProcedure
+      .query(async () => {
         return db.getPendingWhatsAppRequests();
       }),
 
@@ -3773,8 +3776,8 @@ export const appRouter = router({
         return db.getWhatsAppRequestsByMerchantId(input.merchantId);
       }),
 
-    // Approve request and add instance details (admin only)
-    approve: protectedProcedure
+    // PEN-WA-02 FIX: Use adminProcedure + PEN-WA-03 FIX: Validate status
+    approve: adminProcedure
       .input(
         z.object({
           requestId: z.number(),
@@ -3785,8 +3788,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        // PEN-WA-03 FIX: Validate request exists and is pending
+        const existingRequest = await db.getWhatsAppRequestById(input.requestId);
+        if (!existingRequest) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
+        }
+        if (existingRequest.status !== 'pending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request already processed' });
         }
 
         const request = await db.approveWhatsAppRequest(
@@ -3804,8 +3812,8 @@ export const appRouter = router({
         return request;
       }),
 
-    // Reject request (admin only)
-    reject: protectedProcedure
+    // PEN-WA-02 FIX: Use adminProcedure + PEN-WA-03 FIX: Validate status
+    reject: adminProcedure
       .input(
         z.object({
           requestId: z.number(),
@@ -3813,8 +3821,13 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        if (ctx.user.role !== 'admin') {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
+        // PEN-WA-03 FIX: Validate request exists and is pending
+        const existingRequest = await db.getWhatsAppRequestById(input.requestId);
+        if (!existingRequest) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
+        }
+        if (existingRequest.status !== 'pending') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request already processed' });
         }
 
         return db.rejectWhatsAppRequest(

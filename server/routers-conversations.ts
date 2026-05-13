@@ -12,13 +12,43 @@ import * as db from "./db";
 
 export const conversationsRouter = router({
     // Get all conversations for current merchant
-    list: protectedProcedure.query(async ({ ctx }) => {
+    list: protectedProcedure
+        .input(z.object({
+            page: z.number().min(1).default(1),
+            pageSize: z.number().min(1).max(100).default(50),
+        }).optional())
+        .query(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+            const page = input?.page ?? 1;
+            const pageSize = input?.pageSize ?? 50;
+            const [items, total] = await Promise.all([
+                db.getConversationsByMerchantId(merchant.id, { limit: pageSize, offset: (page - 1) * pageSize }),
+                db.getConversationCountByMerchantId(merchant.id),
+            ]);
+            return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+        }),
+
+    // Lightweight: get only recent conversations (for Dashboard)
+    listRecent: protectedProcedure
+        .input(z.object({ limit: z.number().min(1).max(20).default(5) }))
+        .query(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+            return db.getConversationsByMerchantId(merchant.id, { limit: input.limit });
+        }),
+
+    // Lightweight: get count only (for Dashboard stats)
+    count: protectedProcedure.query(async ({ ctx }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-
-        return db.getConversationsByMerchantId(merchant.id);
+        return db.getConversationCountByMerchantId(merchant.id);
     }),
 
     // Get messages for a conversation

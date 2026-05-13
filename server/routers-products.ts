@@ -245,12 +245,35 @@ function buildSheetRows(
 }
 
 export const productsRouter = router({
-    // List products for merchant
-    list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        return await db.getProductsByMerchantId(merchant.id);
-    }),
+    // List products for merchant — PERF-03 FIX: server-side pagination + search
+    list: protectedProcedure
+        .input(z.object({
+            page: z.number().min(1).default(1),
+            pageSize: z.number().min(1).max(100).default(50),
+            search: z.string().max(200).optional(),
+        }).optional())
+        .query(async ({ ctx, input }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            const page = input?.page ?? 1;
+            const pageSize = input?.pageSize ?? 50;
+            const search = input?.search?.trim() || undefined;
+            const offset = (page - 1) * pageSize;
+
+            const [items, total] = await Promise.all([
+                db.getProductsByMerchantId(merchant.id, { limit: pageSize, offset, search }),
+                db.getProductCountByMerchantId(merchant.id, { search }),
+            ]);
+
+            return {
+                items,
+                total,
+                page,
+                pageSize,
+                totalPages: Math.ceil(total / pageSize),
+            };
+        }),
 
     // Create product (with advanced fields)
     create: protectedProcedure

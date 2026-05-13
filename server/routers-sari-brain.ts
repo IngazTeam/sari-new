@@ -122,18 +122,18 @@ export const sariBrainRouter = router({
       });
     }
 
-    // 2. Products
-    const products = await db.getProductsByMerchantId(merchant.id);
-    if (products.length > 0) {
+    // 2. Products — PERF-02 FIX: use COUNT instead of fetching all rows
+    const productCount = await db.getProductCountByMerchantId(merchant.id);
+    if (productCount > 0) {
       sources.push({
         id: `products-${merchant.id}`,
         type: 'products',
         icon: '🛍️',
-        name: `قائمة المنتجات (${products.length} منتج)`,
+        name: `قائمة المنتجات (${productCount} منتج)`,
         status: 'active',
         hasContent: true,
-        contentLength: products.length,
-        date: products[0]?.createdAt || new Date().toISOString(),
+        contentLength: productCount,
+        date: new Date().toISOString(),
         deletable: true,
       });
     }
@@ -226,7 +226,8 @@ export const sariBrainRouter = router({
           break;
         }
         case 'products': {
-          const count = (await db.getProductsByMerchantId(merchant.id)).length;
+          // PERF-02 FIX: use COUNT instead of fetching all rows
+          const count = await db.getProductCountByMerchantId(merchant.id);
           if (count === 0) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'لا توجد منتجات للحذف' });
           }
@@ -427,10 +428,11 @@ export const sariBrainRouter = router({
       sources.documentName = doc.fileName || '';
     }
 
-    const products = await db.getProductsByMerchantId(merchant.id);
-    if (products.length > 0) {
+    // PERF-02 FIX: use COUNT instead of fetching all rows
+    const prodCount = await db.getProductCountByMerchantId(merchant.id);
+    if (prodCount > 0) {
       sources.hasProducts = true;
-      sources.productCount = products.length;
+      sources.productCount = prodCount;
     }
 
     try {
@@ -505,12 +507,15 @@ export const sariBrainRouter = router({
       try {
         const { invokeLLM } = await import('./_core/llm');
 
-        // Get existing knowledge for conflict detection
-        const existingProducts = await db.getProductsByMerchantId(merchant.id);
+        // PERF-02+05 FIX: fetch only count + first 10 names instead of all products
+        const existingProductCount = await db.getProductCountByMerchantId(merchant.id);
+        const existingProductSample = existingProductCount > 0
+          ? await db.getProductsByMerchantId(merchant.id, { limit: 10 })
+          : [];
         const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
 
         const existingContext = [
-          existingProducts.length > 0 ? `المنتجات الحالية (${existingProducts.length}): ${existingProducts.slice(0, 10).map(p => p.name).join('، ')}` : 'لا توجد منتجات حالية',
+          existingProductCount > 0 ? `المنتجات الحالية (${existingProductCount}): ${existingProductSample.map(p => p.name).join('، ')}` : 'لا توجد منتجات حالية',
           existingDoc ? `ملف تعريفي موجود: ${existingDoc.fileName}` : 'لا يوجد ملف تعريفي',
           `اسم المتجر: ${merchant.businessName}`,
           merchant.industry ? `التخصص: ${merchant.industry}` : '',
