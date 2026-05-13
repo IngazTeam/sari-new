@@ -237,7 +237,7 @@ export class SallaIntegration {
             first_name: orderData.customerName.split(' ')[0],
             last_name: orderData.customerName.split(' ').slice(1).join(' ') || 'العميل',
             mobile: orderData.phone,
-            email: orderData.email || `${orderData.phone}@temp.sari.sa`
+            email: orderData.email || `${orderData.phone}@temp.sary.live`
           },
           items: orderData.items.map(item => ({
             product_id: item.sallaProductId,

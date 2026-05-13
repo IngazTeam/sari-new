@@ -52,7 +52,7 @@ export default function Contact() {
     {
       icon: Mail,
       title: "البريد الإلكتروني",
-      value: "support@sari.sa",
+      value: "support@sary.live",
       description: "راسلنا في أي وقت"
     },
     {
@@ -228,7 +228,7 @@ export default function Contact() {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-4 w-4 text-primary" />
-                          <span>sales@sari.sa</span>
+                          <span>sales@sary.live</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-4 w-4 text-primary" />

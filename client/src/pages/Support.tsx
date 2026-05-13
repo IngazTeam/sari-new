@@ -50,8 +50,8 @@ export default function Support() {
       icon: Mail,
       title: 'البريد الإلكتروني',
       description: 'أرسل لنا استفسارك عبر البريد',
-      action: 'support@sari.sa',
-      link: 'mailto:support@sari.sa',
+      action: 'support@sary.live',
+      link: 'mailto:support@sary.live',
     },
     {
       icon: Phone,

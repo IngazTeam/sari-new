@@ -172,8 +172,8 @@ export default function Footer() {
           <div className="grid md:grid-cols-3 gap-6 text-sm text-muted-foreground">
             <div className="flex items-start gap-2">
               <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              <a href="mailto:support@sari.sa" className="hover:text-foreground transition-colors">
-                support@sari.sa
+              <a href="mailto:support@sary.live" className="hover:text-foreground transition-colors">
+                support@sary.live
               </a>
             </div>
             <div className="flex items-start gap-2">
