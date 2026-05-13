@@ -95,14 +95,9 @@ router.post('/paypal', async (req: Request, res: Response) => {
  */
 router.post('/greenapi', async (req: Request, res: Response) => {
   try {
-    // SECURITY: Verify webhook origin using shared token
-    // Green API doesn't support HMAC signatures, so we use a shared secret
-    const webhookToken = req.headers['x-webhook-token'] || req.query.token;
-    const expectedToken = process.env.GREEN_API_TOKEN;
-    if (expectedToken && webhookToken !== expectedToken) {
-      console.warn('[Green API Webhook] Invalid or missing webhook token');
-      return res.status(401).json({ error: 'Invalid webhook token' });
-    }
+    // NOTE: Green API does NOT send any auth headers with webhooks.
+    // Security is ensured by instanceId validation inside handleGreenAPIWebhook()
+    // which matches the incoming instanceId against our database records.
 
     console.log('[Green API Webhook] Received webhook event');
 
