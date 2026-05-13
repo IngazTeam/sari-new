@@ -182,6 +182,7 @@ import {
   emailVerificationTokens,
   EmailVerificationToken,
   InsertEmailVerificationToken,
+  emailTemplates,
   merchantPaymentSettings,
   MerchantPaymentSettings,
   InsertMerchantPaymentSettings,
@@ -10787,4 +10788,54 @@ export async function getGoogleIntegrationStatus(merchantId: number): Promise<an
     console.error('[DB] Error getting Google integration status:', error);
     return null;
   }
+}
+
+// ============================================
+// Email Template Functions
+// ============================================
+
+export async function getAllEmailTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(emailTemplates)
+    .orderBy(emailTemplates.displayName);
+}
+
+export async function getEmailTemplateById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const results = await db
+    .select()
+    .from(emailTemplates)
+    .where(eq(emailTemplates.id, id))
+    .limit(1);
+
+  return results[0] || null;
+}
+
+export async function updateEmailTemplate(id: number, data: {
+  subject?: string;
+  body?: string;
+  htmlContent?: string;
+  textContent?: string;
+  isActive?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) return;
+
+  const updates: any = {};
+  if (data.subject !== undefined) updates.subject = data.subject;
+  if (data.htmlContent !== undefined) updates.htmlContent = data.htmlContent;
+  if (data.textContent !== undefined) updates.textContent = data.textContent;
+  // body maps to htmlContent for backward compat
+  if (data.body !== undefined) updates.htmlContent = data.body;
+
+  await db
+    .update(emailTemplates)
+    .set(updates)
+    .where(eq(emailTemplates.id, id));
 }
