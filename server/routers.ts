@@ -2988,15 +2988,11 @@ export const appRouter = router({
 
   // WhatsApp Instances Management
   whatsappInstances: router({
-    // List all instances for merchant (INTERNAL — returns full data including tokens)
-    list: protectedProcedure
+    // List all instances for merchant (ADMIN ONLY — returns full data including tokens)
+    // PEN-WA-10 FIX: Restricted to admin — merchants must use listSafe
+    list: adminProcedure
       .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await db.getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
-
+      .query(async ({ input }) => {
         return await db.getWhatsAppInstancesByMerchantId(input.merchantId);
       }),
 
@@ -3542,6 +3538,20 @@ export const appRouter = router({
         // Get QR code from Green API
         try {
           const baseUrl = request.apiUrl || 'https://api.green-api.com';
+
+          // PEN-WA-11 FIX: SSRF guard — only allow Green API domains
+          try {
+            const parsed = new URL(baseUrl);
+            const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+            const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
+            if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+              throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only Green API URLs are allowed' });
+            }
+          } catch (e) {
+            if (e instanceof TRPCError) throw e;
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL format' });
+          }
+
           const url = `${baseUrl}/waInstance${request.instanceId}/qr/${request.token}`;
 
           const response = await fetch(url);
@@ -3589,6 +3599,19 @@ export const appRouter = router({
 
         try {
           const baseUrl = request.apiUrl || 'https://api.green-api.com';
+
+          // PEN-WA-11 FIX: SSRF guard — only allow Green API domains
+          try {
+            const parsed = new URL(baseUrl);
+            const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+            const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
+            if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+              return { connected: false, status: 'error', error: 'Only Green API URLs are allowed' };
+            }
+          } catch {
+            return { connected: false, status: 'error', error: 'Invalid API URL' };
+          }
+
           const url = `${baseUrl}/waInstance${request.instanceId}/getStateInstance/${request.token}`;
 
           const response = await fetch(url);
