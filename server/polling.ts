@@ -45,9 +45,22 @@ export async function startPolling(merchantId: number): Promise<{ success: boole
       return { success: false, error: 'Missing Green API credentials' };
     }
 
-    console.log(`[Polling] Starting polling for merchant ${merchantId}`);
-
     const apiUrl = 'https://api.green-api.com';
+
+    // ── FIX: Check if this instance has a webhook URL configured ──
+    // Business instances use webhooks and should NOT be switched to polling.
+    // Clearing their webhook URL breaks message delivery!
+    try {
+      const currentSettings = await whatsapp.getWebhookSettings(connection.instanceId, connection.apiToken, apiUrl);
+      if (currentSettings.webhookUrl && currentSettings.webhookUrl.length > 5) {
+        console.log(`[Polling] ⏭️ Skipping merchant ${merchantId} — webhook already configured: ${currentSettings.webhookUrl}`);
+        return { success: true }; // Webhook is active, no need for polling
+      }
+    } catch (settingsErr) {
+      console.warn(`[Polling] Could not check webhook settings for merchant ${merchantId}, proceeding with polling`);
+    }
+
+    console.log(`[Polling] Starting polling for merchant ${merchantId} (no webhook configured)`);
 
     // Clear webhook URL before starting polling (required for polling to work)
     console.log(`[Polling] Clearing webhook URL for merchant ${merchantId} to enable polling mode...`);
@@ -55,7 +68,6 @@ export async function startPolling(merchantId: number): Promise<{ success: boole
     
     if (!clearResult.success) {
       console.warn(`[Polling] Warning: Failed to clear webhook URL for merchant ${merchantId}: ${clearResult.error}`);
-      // Continue anyway - the webhook might already be cleared or the API might have issues
     } else {
       console.log(`[Polling] Webhook URL cleared successfully for merchant ${merchantId}`);
       // Wait a moment for Green API to process the settings change
