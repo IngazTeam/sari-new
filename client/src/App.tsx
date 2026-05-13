@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
@@ -334,7 +334,7 @@ function Router() {
 
       <Route path="/merchant/whatsapp">
         <DashboardLayout>
-          <WhatsApp />
+          <WhatsAppInstancesPage />
         </DashboardLayout>
       </Route>
 
@@ -470,9 +470,7 @@ function Router() {
       </Route>
 
       <Route path="/merchant/whatsapp-setup">
-        <DashboardLayout>
-          <WhatsAppSetupWizard />
-        </DashboardLayout>
+        <Redirect to="/merchant/whatsapp" />
       </Route>
 
       <Route path="/merchant/whatsapp-test">
