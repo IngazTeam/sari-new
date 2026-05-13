@@ -5,6 +5,24 @@ interface TrackingPixel {
   trackingId: string;
 }
 
+// SEC-01: Sanitize tracking IDs to prevent XSS via stored injection
+// Only allow: alphanumeric, hyphens, underscores, dots, forward slashes (for GTM)
+const sanitizeTrackingId = (id: string): string =>
+  id.replace(/[^a-zA-Z0-9\-_.\/]/g, '').substring(0, 100);
+
+// SEC-02: Validate pixel shape from localStorage to prevent cache poisoning
+const isValidPixel = (p: unknown): p is TrackingPixel =>
+  typeof p === 'object' && p !== null &&
+  typeof (p as any).type === 'string' &&
+  typeof (p as any).trackingId === 'string' &&
+  (p as any).trackingId.length > 0 &&
+  (p as any).trackingId.length <= 100;
+
+const VALID_TYPES = new Set([
+  'google_analytics', 'ga4', 'google_ads', 'facebook_pixel', 'meta_pixel',
+  'snapchat_pixel', 'tiktok_pixel', 'twitter_pixel', 'google_tag_manager', 'gtm',
+]);
+
 /**
  * TrackingScripts — Loads tracking pixels from the admin SEO settings
  * and injects them into <head> dynamically.
@@ -17,7 +35,14 @@ export default function TrackingScripts() {
     // Load from localStorage cache first for instant page load
     const cached = localStorage.getItem('sari_tracking_pixels');
     if (cached) {
-      try { setPixels(JSON.parse(cached)); } catch { /* ignore */ }
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          // SEC-02: Validate every item shape before using
+          const valid = parsed.filter(isValidPixel).filter(p => VALID_TYPES.has(p.type));
+          if (valid.length > 0) setPixels(valid);
+        }
+      } catch { /* ignore corrupted cache */ }
     }
 
     // Fetch fresh from public API
@@ -26,8 +51,12 @@ export default function TrackingScripts() {
       .then((data) => {
         const result = data?.result?.data;
         if (Array.isArray(result) && result.length > 0) {
-          setPixels(result);
-          localStorage.setItem('sari_tracking_pixels', JSON.stringify(result));
+          // SEC-02: Validate before storing
+          const valid = result.filter(isValidPixel).filter(p => VALID_TYPES.has(p.type));
+          if (valid.length > 0) {
+            setPixels(valid);
+            localStorage.setItem('sari_tracking_pixels', JSON.stringify(valid));
+          }
         }
       })
       .catch(() => { /* tracking should never block the app */ });
@@ -50,7 +79,9 @@ export default function TrackingScripts() {
       return s;
     };
 
-    pixels.forEach(({ type, trackingId }) => {
+    pixels.forEach(({ type, trackingId: rawId }) => {
+      // SEC-01: Sanitize EVERY tracking ID before injection
+      const trackingId = sanitizeTrackingId(rawId);
       if (!trackingId) return;
 
       switch (type) {

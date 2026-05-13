@@ -5571,16 +5571,20 @@ export const appRouter = router({
     getPublicTrackingCodes: publicProcedure.query(async () => {
       const codes = await seoDb.getTrackingCodes();
       // Only return active codes, strip internal fields
+      // SEC-01: Sanitize trackingId server-side to prevent stored XSS
+      const sanitizeId = (id: string) => id.replace(/[^a-zA-Z0-9\-_.\/]/g, '').substring(0, 100);
       return (codes || [])
         .filter((c: any) => c.isActive === 1)
-        .map((c: any) => ({ type: c.trackingType, trackingId: c.trackingId }));
+        .map((c: any) => ({ type: c.trackingType, trackingId: sanitizeId(c.trackingId || '') }))
+        .filter((c: any) => c.trackingId.length > 0);
     }),
 
     createTrackingCode: adminProcedure
       .input(z.object({
         pageId: z.number().optional(),
         trackingType: z.enum(['google_analytics', 'google_tag_manager', 'facebook_pixel', 'tiktok_pixel', 'snapchat_pixel', 'custom']),
-        trackingId: z.string().min(1).max(200),
+        // SEC-01: Only allow safe characters in tracking IDs to prevent stored XSS
+        trackingId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9\-_.\/]+$/, 'Invalid tracking ID format'),
         trackingCode: z.string().max(5000).optional(),
         isActive: z.number().min(0).max(1).optional(),
       }))
