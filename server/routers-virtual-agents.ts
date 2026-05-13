@@ -16,7 +16,7 @@ export const virtualAgentsRouter = router({
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    const pool = db.getDb();
+    const pool = await db.getDb();
     const agents = await pool.select().from(virtualAgents)
       .where(eq(virtualAgents.merchantId, merchant.id))
       .orderBy(virtualAgents.sortOrder);
@@ -42,7 +42,7 @@ export const virtualAgentsRouter = router({
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = db.getDb();
+      const pool = await db.getDb();
 
       // If setting as default, unset existing default
       if (input.isDefault) {
@@ -100,7 +100,7 @@ export const virtualAgentsRouter = router({
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = db.getDb();
+      const pool = await db.getDb();
       const { id, ...data } = input;
 
       // Verify ownership
@@ -143,7 +143,7 @@ export const virtualAgentsRouter = router({
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = db.getDb();
+      const pool = await db.getDb();
       await pool.delete(virtualAgents)
         .where(and(eq(virtualAgents.id, input.id), eq(virtualAgents.merchantId, merchant.id)));
 
@@ -157,7 +157,7 @@ export const virtualAgentsRouter = router({
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = db.getDb();
+      const pool = await db.getDb();
 
       // Validate all IDs belong to this merchant
       const existing = await pool.select().from(virtualAgents)
@@ -185,7 +185,7 @@ export const virtualAgentsRouter = router({
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    const pool = db.getDb();
+    const pool = await db.getDb();
 
     // Check if already has agents
     const existing = await pool.select().from(virtualAgents)

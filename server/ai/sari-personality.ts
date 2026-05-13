@@ -685,7 +685,7 @@ ${result.message}
     let activeAgentName: string | null = null;
     try {
       const { eq } = await import('drizzle-orm');
-      const pool = db.getDb();
+      const pool = await db.getDb();
       const agents = await pool.select().from(virtualAgents)
         .where(eq(virtualAgents.merchantId, params.merchantId));
 
@@ -733,7 +733,7 @@ ${result.message}
               const thisConv = convs.find((c: any) => c.id === params.conversationId);
               const prevAgentId = (thisConv as any)?.currentAgentId;
               if (prevAgentId && prevAgentId !== selectedAgent.id) {
-                const prevAgents = await pool.select().from(virtualAgents)
+                const prevAgents = await (await db.getDb()).select().from(virtualAgents)
                   .where(eq(virtualAgents.id, prevAgentId));
                 if (prevAgents.length > 0) {
                   previousAgentName = prevAgents[0].name;
