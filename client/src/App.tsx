@@ -8,6 +8,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import PublicLayout from "./components/PublicLayout";
 import { IntegrationProvider } from "./hooks/useIntegration";
 import { lazy, Suspense } from "react";
+import TrackingScripts from "./components/TrackingScripts";
 
 // Essential pages - loaded immediately (fast initial load)
 import Home from "./pages/Home";
@@ -1088,6 +1089,7 @@ function App() {
         <TooltipProvider>
           <IntegrationProvider>
             <Toaster />
+            <TrackingScripts />
             <Router />
           </IntegrationProvider>
         </TooltipProvider>

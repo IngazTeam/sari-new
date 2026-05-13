@@ -5567,6 +5567,15 @@ export const appRouter = router({
       return await seoDb.getTrackingCodes();
     }),
 
+    // Public endpoint — tracking pixels must load for all visitors
+    getPublicTrackingCodes: publicProcedure.query(async () => {
+      const codes = await seoDb.getTrackingCodes();
+      // Only return active codes, strip internal fields
+      return (codes || [])
+        .filter((c: any) => c.isActive === 1)
+        .map((c: any) => ({ type: c.trackingType, trackingId: c.trackingId }));
+    }),
+
     createTrackingCode: adminProcedure
       .input(z.object({
         pageId: z.number().optional(),
