@@ -189,23 +189,46 @@ export default function SmartAnalysis() {
     return <Badge className={colors[platform || "unknown"] || ""}>{platform || "غير معروف"}</Badge>;
   };
 
-  const ActionButtons = ({ value, onChange, label }: { value: ActionType; onChange: (v: ActionType) => void; label: string }) => (
-    <div className="flex flex-wrap gap-2">
-      <Button size="sm" variant={value === 'replace' ? 'default' : 'outline'} onClick={() => onChange('replace')}
-        className={value === 'replace' ? 'bg-red-600 hover:bg-red-700' : ''}>
-        <Replace className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_0')}</Button>
-      <Button size="sm" variant={value === 'merge' ? 'default' : 'outline'} onClick={() => onChange('merge')}
-        className={value === 'merge' ? 'bg-blue-600 hover:bg-blue-700' : ''}>
-        <Plus className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_1')}</Button>
-      <Button size="sm" variant={value === 'skip' ? 'default' : 'outline'} onClick={() => onChange('skip')}
-        className={value === 'skip' ? 'bg-gray-600 hover:bg-gray-700' : ''}>
-        <SkipForward className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_2')}</Button>
+  const ActionButtons = ({ value, onChange, label, existingCount, newCount }: { value: ActionType; onChange: (v: ActionType) => void; label: string; existingCount?: number; newCount?: number }) => (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant={value === 'replace' ? 'default' : 'outline'} onClick={() => onChange('replace')}
+          className={value === 'replace' ? 'bg-red-600 hover:bg-red-700' : ''}>
+          <Replace className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_0')}</Button>
+        <Button size="sm" variant={value === 'merge' ? 'default' : 'outline'} onClick={() => onChange('merge')}
+          className={value === 'merge' ? 'bg-blue-600 hover:bg-blue-700' : ''}>
+          <Plus className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_1')}</Button>
+        <Button size="sm" variant={value === 'skip' ? 'default' : 'outline'} onClick={() => onChange('skip')}
+          className={value === 'skip' ? 'bg-gray-600 hover:bg-gray-700' : ''}>
+          <SkipForward className="w-3.5 h-3.5 ml-1" />{t('smartAnalysis.auto_2')}</Button>
+      </div>
+      {/* Contextual explanation of chosen action */}
+      <p className="text-xs text-muted-foreground leading-relaxed">
+        {value === 'replace' && (
+          <span className="text-red-600">
+            ⚠️ سيتم <strong>حذف جميع البيانات الحالية</strong> ({existingCount || 0}) واستبدالها بالبيانات الجديدة ({newCount || 0}).
+            {(existingCount || 0) > 0 && " لا يمكن التراجع عن هذا الإجراء."}
+          </span>
+        )}
+        {value === 'merge' && (
+          <span className="text-blue-600">
+            ✅ سيتم <strong>إضافة البيانات الجديدة</strong> ({newCount || 0}) إلى البيانات الحالية ({existingCount || 0}) مع تجاهل المكرر.
+            {(existingCount || 0) > 0 ? ` النتيجة المتوقعة: حتى ${(existingCount || 0) + (newCount || 0)} عنصر.` : ''}
+          </span>
+        )}
+        {value === 'skip' && (
+          <span className="text-gray-500">
+            ⏭️ لن يتم تغيير أي شيء — <strong>البيانات الحالية</strong> ({existingCount || 0}) ستبقى كما هي.
+          </span>
+        )}
+      </p>
     </div>
   );
 
-  const ComparisonSection = ({ title, icon: Icon, existingItems, newItems, action, onAction, renderItem }: {
+  const ComparisonSection = ({ title, icon: Icon, existingItems, newItems, action, onAction, renderItem, helpText }: {
     title: string; icon: any; existingItems: any[]; newItems: any[]; action: ActionType;
     onAction: (v: ActionType) => void; renderItem: (item: any, type: 'existing' | 'new') => React.ReactNode;
+    helpText?: string;
   }) => (
     <Card className="border-2">
       <CardHeader className="pb-3">
@@ -213,8 +236,9 @@ export default function SmartAnalysis() {
           <CardTitle className="text-lg flex items-center gap-2">
             <Icon className="w-5 h-5" /> {title}
           </CardTitle>
-          <ActionButtons value={action} onChange={onAction} label={title} />
+          <ActionButtons value={action} onChange={onAction} label={title} existingCount={existingItems.length} newCount={newItems.length} />
         </div>
+        {/* Summary badges */}
         <div className="flex gap-4 text-sm text-muted-foreground">
           <span>{t('smartAnalysis.auto_3')}<strong className="text-foreground">{existingItems.length}</strong></span>
           <span>{t('smartAnalysis.auto_4')}<strong className="text-emerald-600">{newItems.length}</strong></span>
@@ -222,6 +246,12 @@ export default function SmartAnalysis() {
           {action === 'merge' && <Badge className="bg-blue-100 text-blue-800 text-xs">{t('smartAnalysis.auto_6')}</Badge>}
           {action === 'skip' && <Badge variant="secondary" className="text-xs">{t('smartAnalysis.auto_7')}</Badge>}
         </div>
+        {/* Help text */}
+        {helpText && (
+          <p className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded-lg p-2 mt-2">
+            💡 {helpText}
+          </p>
+        )}
       </CardHeader>
       {action !== 'skip' && (
         <CardContent>
@@ -230,11 +260,14 @@ export default function SmartAnalysis() {
             <div className="space-y-2">
               <p className="text-sm font-medium text-muted-foreground mb-2">📦 البيانات الحالية ({existingItems.length})</p>
               {existingItems.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic p-3 bg-muted rounded-lg text-center">{t('smartAnalysis.auto_8')}</p>
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg text-center">
+                  <p className="text-xs text-amber-700 font-medium">لا توجد بيانات حالية</p>
+                  <p className="text-[11px] text-amber-600 mt-1">سيتم إضافة البيانات الجديدة مباشرة — لا يوجد شيء للمقارنة.</p>
+                </div>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {existingItems.slice(0, 10).map((item, i) => (
-                    <div key={i} className="text-sm p-2 bg-muted/50 rounded border">{renderItem(item, 'existing')}</div>
+                    <div key={i} className={`text-sm p-2 rounded border ${action === 'replace' ? 'bg-red-50/50 border-red-200 line-through opacity-70' : 'bg-muted/50'}`}>{renderItem(item, 'existing')}</div>
                   ))}
                   {existingItems.length > 10 && <p className="text-xs text-muted-foreground text-center">+{existingItems.length - 10} المزيد...</p>}
                 </div>
@@ -244,7 +277,10 @@ export default function SmartAnalysis() {
             <div className="space-y-2">
               <p className="text-sm font-medium text-emerald-700 mb-2">✨ البيانات الجديدة ({newItems.length})</p>
               {newItems.length === 0 ? (
-                <p className="text-xs text-muted-foreground italic p-3 bg-emerald-50 rounded-lg text-center">{t('smartAnalysis.auto_9')}</p>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                  <p className="text-xs text-gray-600 font-medium">لم يتم استخراج بيانات جديدة</p>
+                  <p className="text-[11px] text-gray-500 mt-1">قد يكون الموقع محمياً أو لا يحتوي على هذا النوع من البيانات.</p>
+                </div>
               ) : (
                 <div className="space-y-1.5 max-h-48 overflow-y-auto">
                   {newItems.slice(0, 10).map((item, i) => (
@@ -255,6 +291,20 @@ export default function SmartAnalysis() {
               )}
             </div>
           </div>
+          {/* Result preview */}
+          {(existingItems.length > 0 || newItems.length > 0) && (
+            <div className="mt-3 p-3 bg-muted/30 rounded-lg border border-dashed">
+              <p className="text-xs font-medium text-muted-foreground">📊 النتيجة بعد التطبيق:</p>
+              <p className="text-sm font-medium mt-1">
+                {action === 'replace' && (
+                  <span>{existingItems.length > 0 ? `سيتم حذف ${existingItems.length} عنصر حالي → ` : ''}إجمالي: <strong className="text-emerald-600">{newItems.length}</strong> عنصر</span>
+                )}
+                {action === 'merge' && (
+                  <span>الحالي ({existingItems.length}) + الجديد ({newItems.length}) = <strong className="text-blue-600">حتى {existingItems.length + newItems.length}</strong> عنصر (بدون مكرر)</span>
+                )}
+              </p>
+            </div>
+          )}
         </CardContent>
       )}
     </Card>
@@ -306,6 +356,7 @@ export default function SmartAnalysis() {
           newItems={preview.products}
           action={productsAction}
           onAction={setProductsAction}
+          helpText="المنتجات هي ما يستخدمه ساري للإجابة على استفسارات العملاء حول الأسعار والتوفر. إذا كان لديك منتجات حالية وتريد تحديثها، اختر 'استبدال'. إذا تريد إضافة منتجات جديدة مع الاحتفاظ بالحالية، اختر 'دمج'."
           renderItem={(item, type) => (
             <div className="flex justify-between items-center">
               <span className="truncate flex-1">{item.name}</span>
@@ -322,6 +373,7 @@ export default function SmartAnalysis() {
           newItems={preview.faqs}
           action={faqsAction}
           onAction={setFaqsAction}
+          helpText="الأسئلة الشائعة تساعد ساري في الرد على استفسارات العملاء المتكررة (سياسات الشحن، الإرجاع، طرق الدفع). كل سؤال يُحسّن دقة ردود البوت."
           renderItem={(item) => (
             <div>
               <p className="font-medium text-xs">{item.question}</p>
@@ -338,6 +390,7 @@ export default function SmartAnalysis() {
           newItems={preview.pages}
           action={pagesAction}
           onAction={setPagesAction}
+          helpText="الصفحات المكتشفة تُثري معرفة ساري بمحتوى موقعك (صفحة 'من نحن'، سياسة الشحن، صفحة التواصل). يستخدمها البوت لتقديم روابط ومعلومات دقيقة للعملاء."
           renderItem={(item) => (
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[10px] shrink-0">{item.pageType}</Badge>
