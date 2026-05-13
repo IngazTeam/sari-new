@@ -221,6 +221,7 @@ const EmailTemplates = lazyLoad(() => import("./pages/admin/EmailTemplates"));
 const TemplateTranslations = lazyLoad(() => import("./pages/admin/TemplateTranslations"));
 const SubscriptionReports = lazyLoad(() => import("./pages/admin/SubscriptionReports"));
 const AdminInvoices = lazyLoad(() => import("./pages/admin/Invoices"));
+const AdminMonitor = lazyLoad(() => import("./pages/admin/Monitor"));
 
 function Router() {
   return (
@@ -1071,6 +1072,12 @@ function Router() {
       <Route path="/admin/ai-settings">
         <DashboardLayout>
           <AISettings />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/admin/monitor">
+        <DashboardLayout>
+          <AdminMonitor />
         </DashboardLayout>
       </Route>
 

@@ -10,6 +10,7 @@ import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage }
 import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
 import { selectABTestVariant, recordABTestResult } from '../ai/ab-testing';
 import { isAppointmentRequest, handleAppointmentRequest } from '../appointmentBot';
+import { logDelivery } from '../routers-monitor';
 import {
   hasReachedConversationLimit,
   hasReachedMessageLimit,
@@ -533,15 +534,20 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     if (!instance) {
       console.error('[Webhook] No merchant found for instance:', instanceId);
+      // Can't log merchantId since we don't know it
       return {
         success: false,
         message: 'No merchant found for this instance'
       };
     }
 
+    // Track timing for response time measurement
+    const _deliveryStart = Date.now();
+
     // VULN-4 FIX: Only process messages for active instances
     if (instance.status !== 'active') {
       console.warn(`[Webhook] Ignoring message for ${instance.status} instance: ${instanceId} (merchant: ${instance.merchantId})`);
+      logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, status: 'dropped', failureReason: 'instance_inactive', failureDetails: `Instance status: ${instance.status}`, source: 'webhook' });
       return {
         success: false,
         message: `Instance is ${instance.status}, not processing`
@@ -554,6 +560,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     const subscription = await db.getActiveSubscriptionByMerchantId(instance.merchantId);
     if (!subscription) {
       console.warn(`[Webhook] No active subscription for merchant ${instance.merchantId} — dropping message`);
+      logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, status: 'failed', failureReason: 'subscription_expired', source: 'webhook' });
       return {
         success: false,
         message: 'Merchant subscription expired or inactive'
@@ -581,6 +588,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         }
       }
       
+      logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, status: 'dropped', failureReason: reason === 'Outside working hours' || reason === 'Outside working days' ? 'outside_working_hours' : 'auto_reply_disabled', failureDetails: reason, source: 'webhook' });
       return {
         success: true,
         message: 'Bot not responding: ' + reason
@@ -648,6 +656,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       
       if (!audioDownloadUrl) {
         console.error('[Webhook] No download URL for voice message. messageData keys:', Object.keys(payload.messageData));
+        logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: 'voice', status: 'failed', failureReason: 'voice_no_url', failureDetails: `Keys: ${Object.keys(payload.messageData).join(',')}`, source: 'webhook' });
         return {
           success: false,
           message: 'No download URL for voice message'
@@ -669,6 +678,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       
       if (!messageText) {
         console.log('[Webhook] No text content in message, ignoring');
+        logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: 'other', status: 'dropped', failureReason: 'no_text_content', failureDetails: `typeMessage: ${payload.messageData.typeMessage}`, source: 'webhook' });
         return {
           success: true,
           message: 'No text content in message'
@@ -695,6 +705,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     });
     
     console.log('[Webhook] Message processed successfully');
+    
+    const msgType = (payload.messageData.typeMessage === 'voiceMessage' || payload.messageData.typeMessage === 'audioMessage') ? 'voice' : 'text';
+    logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: msgType as any, status: 'delivered', responseTimeMs: Date.now() - _deliveryStart, source: 'webhook' });
     
     return {
       success: true,
@@ -737,11 +750,13 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     if (error.message === 'CONVERSATION_LIMIT_REACHED' && customerPhone) {
       await sendLimitNotification('عذراً، لقد وصلنا للحد الأقصى من المحادثات الشهرية. سنعود للتواصل معك قريباً! 🙏');
+      if (instance) logDelivery({ merchantId: instance.merchantId, instanceId: instanceId || '', customerPhone, status: 'failed', failureReason: 'conversation_limit', source: 'webhook' });
       return { success: false, message: 'Conversation limit reached' };
     }
     
     if (error.message === 'MESSAGE_LIMIT_REACHED' && customerPhone) {
       await sendLimitNotification('عذراً، لقد وصلنا للحد الأقصى من الرسائل الشهرية. شكراً لتواصلك! 🙏');
+      if (instance) logDelivery({ merchantId: instance.merchantId, instanceId: instanceId || '', customerPhone, status: 'failed', failureReason: 'message_limit', source: 'webhook' });
       return { success: false, message: 'Message limit reached' };
     }
     

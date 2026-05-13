@@ -176,6 +176,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
 
 const getAdminMenuItems = (t: any): MenuItem[] => [
   { icon: LayoutDashboard, label: t('sidebar.admin.dashboard'), path: "/admin/dashboard" },
+  { icon: Activity, label: t('sidebar.admin.monitor', 'مركز المراقبة'), path: "/admin/monitor" },
   { icon: Users, label: t('sidebar.admin.merchants'), path: "/admin/merchants" },
   { icon: Megaphone, label: t('sidebar.admin.campaigns'), path: "/admin/campaigns" },
   { icon: Smartphone, label: t('sidebar.admin.whatsappRequests'), path: "/admin/whatsapp-requests" },

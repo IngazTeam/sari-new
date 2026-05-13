@@ -53,6 +53,7 @@ import { aiSettingsRouter } from "./routers-ai-settings";
 import { googleAnalyticsRouter } from "./routers-google-analytics";
 import { dashboardRouter } from "./routers-dashboard";
 import { merchantsRouter } from "./routers-merchants";
+import { monitorRouter } from "./routers-monitor";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -8701,5 +8702,8 @@ export const appRouter = router({
 
   // Dashboard Analytics — modularized to routers-dashboard.ts
   dashboard: dashboardRouter,
+
+  // Message Delivery Monitor — modularized to routers-monitor.ts
+  monitor: monitorRouter,
 });
 export type AppRouter = typeof appRouter;

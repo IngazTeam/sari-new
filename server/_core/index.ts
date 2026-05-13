@@ -557,6 +557,16 @@ async function startServer() {
         }
       });
 
+      // Message Delivery Log Cleanup — 30 day retention (runs daily at 3:00 AM)
+      cron.schedule('0 3 * * *', async () => {
+        try {
+          const { cleanupOldDeliveryLogs } = await import('../routers-monitor');
+          await cleanupOldDeliveryLogs();
+        } catch (error) {
+          logError('[Cron] Delivery log cleanup failed', error);
+        }
+      });
+
       // Start WhatsApp message polling for all connected merchants
       // This is used for free Green API accounts that don't support webhooks
       setTimeout(async () => {
