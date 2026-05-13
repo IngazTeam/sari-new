@@ -170,7 +170,7 @@ export const appRouter = router({
           // Send verification email (token is NOT returned to client)
           try {
             const { sendEmail } = await import('./reports/email-sender');
-            const verifyLink = `${process.env.VITE_APP_URL || 'https://sari.sa'}/verify-email?token=${token}`;
+            const verifyLink = `${process.env.VITE_APP_URL || 'https://sary.live'}/verify-email?token=${token}`;
             await sendEmail({
               to: input.email,
               subject: 'تأكيد البريد الإلكتروني - ساري',
@@ -346,7 +346,7 @@ export const appRouter = router({
         // Send reset email
         try {
           const { sendPasswordResetEmail } = await import('./notifications/email-notifications');
-          const resetLink = `${process.env.VITE_FRONTEND_URL || 'https://sari.sa'}/reset-password?token=${token}`;
+          const resetLink = `${process.env.VITE_APP_URL || 'https://sary.live'}/reset-password/${token}`;
           await sendPasswordResetEmail(user.email!, user.name || 'المستخدم', resetLink);
         } catch (error) {
           console.error('[Password Reset] Failed to send email:', error);
@@ -478,7 +478,7 @@ export const appRouter = router({
           const { sendEmail } = await import('./reports/email-sender');
           const { getPasswordResetEmailTemplate } = await import('./email/templates/passwordReset');
 
-          const resetLink = `${process.env.VITE_APP_URL || 'http://localhost:3000'}/reset-password/${token}`;
+          const resetLink = `${process.env.VITE_APP_URL || 'https://sary.live'}/reset-password/${token}`;
 
           const emailTemplate = getPasswordResetEmailTemplate({
             userName: user.name || 'المستخدم',
