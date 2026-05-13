@@ -21,7 +21,12 @@ import {
   Info,
   Sparkles,
   Eye,
-  Send
+  Send,
+  Users,
+  AtSign,
+  KeyRound,
+  ArrowUpRight,
+  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -72,6 +77,12 @@ export default function BotSettings() {
     language: 'ar' as 'ar' | 'en' | 'both',
   });
 
+  // Group settings state
+  const [groupMode, setGroupMode] = useState<'disabled' | 'mention_only' | 'keyword_only' | 'private_redirect'>('disabled');
+  const [groupKeywords, setGroupKeywords] = useState<string[]>([]);
+  const [groupRedirectMessage, setGroupRedirectMessage] = useState('');
+  const [keywordInput, setKeywordInput] = useState('');
+
   // Update form when settings load
   useEffect(() => {
     if (settings) {
@@ -88,12 +99,22 @@ export default function BotSettings() {
         tone: settings.tone,
         language: settings.language,
       });
+      setGroupMode((settings as any).groupMode || 'disabled');
+      try {
+        setGroupKeywords((settings as any).groupKeywords ? JSON.parse((settings as any).groupKeywords) : []);
+      } catch { setGroupKeywords([]); }
+      setGroupRedirectMessage((settings as any).groupRedirectMessage || '');
     }
   }, [settings]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateMutation.mutate(formData);
+    updateMutation.mutate({
+      ...formData,
+      groupMode,
+      groupKeywords: JSON.stringify(groupKeywords),
+      groupRedirectMessage,
+    } as any);
   };
 
   const handleWorkingDayToggle = (day: number) => {
@@ -569,6 +590,117 @@ export default function BotSettings() {
             <strong>{t('botSettingsPage.note')}</strong> {t('botSettingsPage.infoNote')}
           </AlertDescription>
         </Alert>
+
+        {/* Smart Groups Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-600 text-white">
+                <Users className="h-4 w-4" />
+              </div>
+              سلوك الجروبات
+            </CardTitle>
+            <CardDescription>
+              تحكم في كيفية تعامل ساري مع رسائل الجروبات المشترك بها
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[
+              { value: 'disabled', icon: '🔴', label: 'إيقاف كامل', desc: 'لا يرد على أي رسالة في الجروبات' },
+              { value: 'mention_only', icon: '🟡', label: 'رد عند المنشن فقط', desc: 'يرد فقط عندما يُذكر بـ @' },
+              { value: 'keyword_only', icon: '🟢', label: 'رد على كلمات مفتاحية', desc: 'يرد عند ذكر كلمات محددة' },
+              { value: 'private_redirect', icon: '🔵', label: 'رد خاص', desc: 'يراسل العميل في محادثة خاصة' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setGroupMode(opt.value as any)}
+                className={`w-full text-right p-4 rounded-xl border-2 transition-all ${
+                  groupMode === opt.value
+                    ? 'border-primary bg-primary/5 shadow-sm'
+                    : 'border-muted hover:border-primary/30'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xl">{opt.icon}</span>
+                  <div>
+                    <p className="font-semibold">{opt.label}</p>
+                    <p className="text-sm text-muted-foreground">{opt.desc}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+
+            {/* Keywords Input — shown when keyword_only */}
+            {groupMode === 'keyword_only' && (
+              <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-from-top-2">
+                <Label className="font-semibold flex items-center gap-2">
+                  <KeyRound className="h-4 w-4" />
+                  الكلمات المفتاحية
+                </Label>
+                <div className="flex flex-wrap gap-2 min-h-[40px]">
+                  {groupKeywords.map((kw, i) => (
+                    <Badge key={i} variant="secondary" className="text-sm flex items-center gap-1 px-3 py-1">
+                      {kw}
+                      <button
+                        type="button"
+                        onClick={() => setGroupKeywords(prev => prev.filter((_, idx) => idx !== i))}
+                        className="hover:text-destructive ml-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={keywordInput}
+                    onChange={(e) => setKeywordInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && keywordInput.trim()) {
+                        e.preventDefault();
+                        setGroupKeywords(prev => [...prev, keywordInput.trim()]);
+                        setKeywordInput('');
+                      }
+                    }}
+                    placeholder="اكتب كلمة ثم Enter..."
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (keywordInput.trim()) {
+                        setGroupKeywords(prev => [...prev, keywordInput.trim()]);
+                        setKeywordInput('');
+                      }
+                    }}
+                  >
+                    أضف
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Redirect Message — shown when private_redirect */}
+            {groupMode === 'private_redirect' && (
+              <div className="space-y-3 p-4 rounded-xl bg-muted/50 animate-in slide-in-from-top-2">
+                <Label className="font-semibold flex items-center gap-2">
+                  <ArrowUpRight className="h-4 w-4" />
+                  رسالة التوجيه الخاص
+                </Label>
+                <Textarea
+                  value={groupRedirectMessage}
+                  onChange={(e) => setGroupRedirectMessage(e.target.value)}
+                  placeholder="مرحباً! شفت رسالتك في الجروب. أقدر أساعدك هنا بشكل أفضل 😊"
+                  rows={2}
+                  maxLength={500}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Action Buttons */}
         <div className="flex justify-between items-center">
