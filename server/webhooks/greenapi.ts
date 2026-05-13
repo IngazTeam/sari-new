@@ -370,7 +370,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       const botSettings = await db.getBotSettings(instance.merchantId);
 
       if (outText && botSettings.takeoverCommandsEnabled) {
-        if (outText.trim() === '#stop') {
+        const cmd = outText.trim().toLowerCase();
+        if (cmd === '#stop') {
           const convs = await db.getConversationsByMerchantId(instance.merchantId);
           const conv = convs.find(c => c.customerPhone === customerPhone);
           if (conv) {
@@ -383,7 +384,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           }
           return { success: true, message: 'Human takeover activated (permanent)' };
         }
-        if (outText.trim() === '#start') {
+        if (cmd === '#start') {
           const convs = await db.getConversationsByMerchantId(instance.merchantId);
           const conv = convs.find(c => c.customerPhone === customerPhone);
           if (conv) {
@@ -449,8 +450,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
         case 'keyword_only': {
           const msgText = extractMessageText(payload) || '';
-          const keywords: string[] = gSettings.groupKeywords ? JSON.parse(gSettings.groupKeywords) : [];
-          const hasKeyword = keywords.some(kw => msgText.includes(kw));
+          let keywords: string[] = [];
+          try { keywords = gSettings.groupKeywords ? JSON.parse(gSettings.groupKeywords) : []; } catch { keywords = []; }
+          const hasKeyword = keywords.some(kw => msgText.toLowerCase().includes(kw.toLowerCase()));
           if (!hasKeyword) {
             return { success: true, message: 'Group: no keyword match' };
           }

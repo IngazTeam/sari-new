@@ -29,12 +29,12 @@ export const virtualAgentsRouter = router({
       name: z.string().min(1).max(100),
       role: z.string().min(1).max(100),
       department: z.string().max(100).optional(),
-      personalityPrompt: z.string().min(1),
+      personalityPrompt: z.string().min(1).max(2000),
       tone: z.enum(['friendly', 'professional', 'casual', 'empathetic', 'persuasive']).optional(),
       avatarEmoji: z.string().max(10).optional(),
       isDefault: z.boolean().optional(),
-      triggerKeywords: z.string().optional(), // JSON
-      triggerIntents: z.string().optional(),  // JSON
+      triggerKeywords: z.string().max(2000).optional(), // JSON
+      triggerIntents: z.string().max(2000).optional(),  // JSON
     }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -49,9 +49,12 @@ export const virtualAgentsRouter = router({
           .where(eq(virtualAgents.merchantId, merchant.id));
       }
 
-      // Get max sort order
+      // Get max sort order + enforce limit
       const existing = await pool.select().from(virtualAgents)
         .where(eq(virtualAgents.merchantId, merchant.id));
+      if (existing.length >= 10) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى 10 شخصيات' });
+      }
       const maxSort = existing.length > 0 ? Math.max(...existing.map(a => a.sortOrder)) : -1;
 
       const result = await pool.insert(virtualAgents).values({
@@ -79,13 +82,13 @@ export const virtualAgentsRouter = router({
       name: z.string().min(1).max(100).optional(),
       role: z.string().min(1).max(100).optional(),
       department: z.string().max(100).optional(),
-      personalityPrompt: z.string().optional(),
+      personalityPrompt: z.string().max(2000).optional(),
       tone: z.enum(['friendly', 'professional', 'casual', 'empathetic', 'persuasive']).optional(),
       avatarEmoji: z.string().max(10).optional(),
       isDefault: z.boolean().optional(),
       isActive: z.boolean().optional(),
-      triggerKeywords: z.string().optional(),
-      triggerIntents: z.string().optional(),
+      triggerKeywords: z.string().max(2000).optional(),
+      triggerIntents: z.string().max(2000).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
@@ -141,12 +144,22 @@ export const virtualAgentsRouter = router({
 
   // Reorder agents
   reorder: protectedProcedure
-    .input(z.object({ orderedIds: z.array(z.number()) }))
+    .input(z.object({ orderedIds: z.array(z.number()).max(10) }))
     .mutation(async ({ input, ctx }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = db.getDb();
+
+      // Validate all IDs belong to this merchant
+      const existing = await pool.select().from(virtualAgents)
+        .where(eq(virtualAgents.merchantId, merchant.id));
+      const existingIds = new Set(existing.map(a => a.id));
+      const allValid = input.orderedIds.every(id => existingIds.has(id));
+      if (!allValid) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid agent IDs' });
+      }
+
       for (let i = 0; i < input.orderedIds.length; i++) {
         await pool.update(virtualAgents)
           .set({ sortOrder: i })
