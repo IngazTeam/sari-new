@@ -259,11 +259,17 @@ export async function setPlatformKey(platform: string, keyValue: string, label: 
   const dbConn = await db.getDb();
   if (!dbConn) throw new Error('DB unavailable');
 
-  await (dbConn as any).execute(
-    `INSERT INTO sari_platform_keys (platform, key_value, label) VALUES (?, ?, ?)
-     ON DUPLICATE KEY UPDATE key_value = VALUES(key_value), label = VALUES(label), is_active = 1, updated_at = NOW()`,
-    [platform, keyValue, label]
-  );
+  try {
+    // MySQL 8.0.20+ compatible — avoid deprecated VALUES() in ON DUPLICATE KEY UPDATE
+    await (dbConn as any).execute(
+      `INSERT INTO sari_platform_keys (platform, key_value, label, is_active) VALUES (?, ?, ?, 1)
+       ON DUPLICATE KEY UPDATE key_value = ?, label = ?, is_active = 1, updated_at = NOW()`,
+      [platform, keyValue, label, keyValue, label]
+    );
+  } catch (e: any) {
+    console.error('[SariAPI] setPlatformKey failed:', e?.message || e);
+    throw new Error('فشل حفظ مفتاح المنصة في قاعدة البيانات');
+  }
   // Update in-memory cache
   PLATFORM_KEYS[platform] = keyValue;
 }
