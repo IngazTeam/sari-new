@@ -8,6 +8,7 @@ import * as db from '../db';
 import { formatCurrency, type Currency } from '../../shared/currency';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
+import { virtualAgents } from '../../drizzle/schema';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { 
   isZidOrderRequest, 
@@ -657,7 +658,64 @@ ${result.message}
     });
 
     // Build system prompt with personality settings
-    const systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt;
+    let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt;
+
+    // ── Virtual Agent Selection ──
+    let activeAgentName: string | null = null;
+    try {
+      const { eq } = await import('drizzle-orm');
+      const pool = db.getDb();
+      const agents = await pool.select().from(virtualAgents)
+        .where(eq(virtualAgents.merchantId, params.merchantId));
+
+      const activeAgents = agents.filter(a => a.isActive);
+
+      if (activeAgents.length > 0) {
+        const messageLwr = params.message.toLowerCase();
+        let selectedAgent = null;
+
+        // 1. Try keyword matching
+        for (const agent of activeAgents) {
+          if (agent.triggerKeywords) {
+            try {
+              const keywords: string[] = JSON.parse(agent.triggerKeywords);
+              if (keywords.some(kw => messageLwr.includes(kw.toLowerCase()))) {
+                selectedAgent = agent;
+                break;
+              }
+            } catch { /* ignore parse errors */ }
+          }
+        }
+
+        // 2. Fallback to default agent
+        if (!selectedAgent) {
+          selectedAgent = activeAgents.find(a => a.isDefault) || activeAgents[0];
+        }
+
+        if (selectedAgent) {
+          activeAgentName = selectedAgent.name;
+          // Inject agent personality into system prompt
+          const agentPrompt = `\n\n## هويتك الحالية:\nاسمك: ${sanitizeForPrompt(selectedAgent.name)}\nدورك: ${sanitizeForPrompt(selectedAgent.role)}${selectedAgent.department ? `\nقسمك: ${sanitizeForPrompt(selectedAgent.department)}` : ''}\n\n## تعليمات الشخصية:\n${sanitizeForPrompt(selectedAgent.personalityPrompt)}\n\n⚠️ مهم: عرّف عن نفسك باسم "${sanitizeForPrompt(selectedAgent.name)}" وليس "ساري". تصرف بالضبط وفق تعليمات الشخصية أعلاه.\n`;
+          systemPrompt = systemPrompt.replace(
+            'أنت ساري، مساعد مبيعات ذكي وودود',
+            `أنت ${sanitizeForPrompt(selectedAgent.name)}، ${sanitizeForPrompt(selectedAgent.role)}`
+          ) + agentPrompt;
+
+          // Update conversation's current agent
+          if (params.conversationId) {
+            try {
+              await db.updateConversation(params.conversationId, {
+                currentAgentId: selectedAgent.id,
+              } as any);
+            } catch { /* silent */ }
+          }
+
+          console.log(`[VirtualAgent] Selected: ${selectedAgent.name} (${selectedAgent.role}) for conv ${params.conversationId}`);
+        }
+      }
+    } catch (agentError) {
+      console.warn('[VirtualAgent] Agent selection failed, using default Sari:', agentError);
+    }
 
     // Prepare messages with few-shot examples for better quality
     const messages: ChatMessage[] = [
