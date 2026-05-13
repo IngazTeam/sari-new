@@ -541,6 +541,16 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
     
     console.log('[Webhook] Merchant ID:', instance.merchantId);
+
+    // SEC-FIX: Verify merchant has active subscription before processing
+    const subscription = await db.getActiveSubscriptionByMerchantId(instance.merchantId);
+    if (!subscription) {
+      console.warn(`[Webhook] No active subscription for merchant ${instance.merchantId} — dropping message`);
+      return {
+        success: false,
+        message: 'Merchant subscription expired or inactive'
+      };
+    }
     
     // Check if bot should respond based on settings
     const { shouldRespond, reason } = await db.shouldBotRespond(instance.merchantId);

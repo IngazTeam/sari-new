@@ -754,6 +754,9 @@ export async function getActiveSubscriptionByMerchantId(merchantId: number): Pro
   const db = await getDb();
   if (!db) return undefined;
 
+  const now = new Date();
+  const nowStr = formatDateForDB(now);
+
   // Check NEW merchant_subscriptions table first
   const newResult = await db.select().from(merchantSubscriptions)
     .where(and(
@@ -767,7 +770,24 @@ export async function getActiveSubscriptionByMerchantId(merchantId: number): Pro
     .limit(1);
 
   if (newResult.length > 0) {
-    return newResult[0];
+    const sub = newResult[0];
+    // SEC-FIX: Validate endDate — auto-expire if past due
+    if (sub.endDate && new Date(sub.endDate) < now) {
+      console.warn(`[Subscription] Auto-expiring subscription ${sub.id} for merchant ${merchantId} (endDate: ${sub.endDate})`);
+      await db.update(merchantSubscriptions)
+        .set({ status: 'expired' })
+        .where(eq(merchantSubscriptions.id, sub.id));
+      return undefined; // Expired — treat as no subscription
+    }
+    // SEC-FIX: For trial, also check trialEndsAt
+    if (sub.status === 'trial' && sub.trialEndsAt && new Date(sub.trialEndsAt) < now) {
+      console.warn(`[Subscription] Auto-expiring trial ${sub.id} for merchant ${merchantId} (trialEndsAt: ${sub.trialEndsAt})`);
+      await db.update(merchantSubscriptions)
+        .set({ status: 'expired' })
+        .where(eq(merchantSubscriptions.id, sub.id));
+      return undefined;
+    }
+    return sub;
   }
 
   // Fallback: legacy subscriptions table

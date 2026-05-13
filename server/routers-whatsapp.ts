@@ -316,6 +316,15 @@ export const whatsappRouter = router({
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request not approved yet' });
         }
 
+        // SEC-FIX: Verify active subscription before allowing QR scan
+        const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+        if (!subscription) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'لا يوجد اشتراك نشط. يرجى تجديد اشتراكك لربط رقم الواتساب.',
+            });
+        }
+
         if (!request.instanceId || !request.apiToken) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Instance credentials not set by admin' });
         }
@@ -569,6 +578,15 @@ export const whatsappRouter = router({
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            // SEC-FIX: Verify active subscription before allowing instance save
+            const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            if (!subscription) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'لا يوجد اشتراك نشط. يرجى تجديد اشتراكك لربط رقم الواتساب.',
+                });
             }
 
             const existing = await db.getWhatsAppInstanceByInstanceId(input.instanceId);

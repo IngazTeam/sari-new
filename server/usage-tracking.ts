@@ -11,7 +11,7 @@ import * as db from './db';
 async function getActiveSubscription(merchantId: number) {
   const subscription = await db.getActiveSubscriptionByMerchantId(merchantId);
   
-  if (!subscription || subscription.status !== 'active') {
+  if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
     return null;
   }
   
