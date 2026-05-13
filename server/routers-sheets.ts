@@ -10,10 +10,15 @@ import * as sheetsSync from './sheetsSync';
 import * as sheetsReports from './sheetsReports';
 import * as db from './db';
 
+import { TRPCError } from '@trpc/server';
+
 export const sheetsRouter = router({
+  // Helper to get merchantId from user
   // الحصول على رابط التفويض
   getAuthUrl: protectedProcedure.query(async ({ ctx }) => {
-    const authUrl = sheets.getAuthorizationUrl(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    const authUrl = sheets.getAuthorizationUrl(merchant.id);
     return { authUrl };
   }),
 
@@ -23,17 +28,23 @@ export const sheetsRouter = router({
       code: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return await sheets.handleOAuthCallback(input.code, ctx.user.merchantId);
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      return await sheets.handleOAuthCallback(input.code, merchant.id);
     }),
 
   // الحصول على حالة الاتصال
   getStatus: protectedProcedure.query(async ({ ctx }) => {
-    return await sheets.getConnectionStatus(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheets.getConnectionStatus(merchant.id);
   }),
 
   // إعداد Spreadsheet الرئيسي
   setupSpreadsheet: protectedProcedure.mutation(async ({ ctx }) => {
-    return await sheetsSync.setupMerchantSpreadsheet(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheetsSync.setupMerchantSpreadsheet(merchant.id);
   }),
 
   // مزامنة طلب محدد
@@ -42,14 +53,13 @@ export const sheetsRouter = router({
       orderId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
       // SECURITY: Verify order belongs to this merchant
       const order = await db.getOrderById(input.orderId);
-      if (!order) {
-        throw new Error('Order not found');
-      }
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
-      if (!merchant || order.merchantId !== merchant.id) {
-        throw new Error('Access denied');
+      if (!order || order.merchantId !== merchant.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       return await sheetsSync.syncOrderToSheets(input.orderId);
@@ -67,7 +77,9 @@ export const sheetsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return await sheetsSync.syncLeadToSheets(ctx.user.merchantId, input);
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      return await sheetsSync.syncLeadToSheets(merchant.id, input);
     }),
 
   // تصدير المحادثات
@@ -76,35 +88,47 @@ export const sheetsRouter = router({
       conversationIds: z.array(z.number()),
     }))
     .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       return await sheetsSync.exportConversationsToSheets(
-        ctx.user.merchantId,
+        merchant.id,
         input.conversationIds
       );
     }),
 
   // مزامنة المخزون
   syncInventory: protectedProcedure.mutation(async ({ ctx }) => {
-    return await sheetsSync.syncInventoryToSheets(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheetsSync.syncInventoryToSheets(merchant.id);
   }),
 
   // تحديث المخزون من Sheets
   updateInventoryFromSheets: protectedProcedure.mutation(async ({ ctx }) => {
-    return await sheetsSync.updateInventoryFromSheets(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheetsSync.updateInventoryFromSheets(merchant.id);
   }),
 
   // توليد تقرير يومي
   generateDailyReport: protectedProcedure.mutation(async ({ ctx }) => {
-    return await sheetsReports.generateDailyReport(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheetsReports.generateDailyReport(merchant.id);
   }),
 
   // توليد تقرير أسبوعي
   generateWeeklyReport: protectedProcedure.mutation(async ({ ctx }) => {
-    return await sheetsReports.generateWeeklyReport(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheetsReports.generateWeeklyReport(merchant.id);
   }),
 
   // توليد تقرير شهري
   generateMonthlyReport: protectedProcedure.mutation(async ({ ctx }) => {
-    return await sheetsReports.generateMonthlyReport(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheetsReports.generateMonthlyReport(merchant.id);
   }),
 
   // توليد تقرير مخصص
@@ -114,8 +138,10 @@ export const sheetsRouter = router({
       endDate: z.date(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       return await sheetsReports.generateCustomReport(
-        ctx.user.merchantId,
+        merchant.id,
         input.startDate,
         input.endDate
       );
@@ -127,17 +153,20 @@ export const sheetsRouter = router({
       reportType: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
       // توليد التقرير أولاً
       let result;
       switch (input.reportType) {
         case 'يومي':
-          result = await sheetsReports.generateDailyReport(ctx.user.merchantId);
+          result = await sheetsReports.generateDailyReport(merchant.id);
           break;
         case 'أسبوعي':
-          result = await sheetsReports.generateWeeklyReport(ctx.user.merchantId);
+          result = await sheetsReports.generateWeeklyReport(merchant.id);
           break;
         case 'شهري':
-          result = await sheetsReports.generateMonthlyReport(ctx.user.merchantId);
+          result = await sheetsReports.generateMonthlyReport(merchant.id);
           break;
         default:
           return { success: false, message: 'نوع التقرير غير صحيح' };
@@ -149,7 +178,7 @@ export const sheetsRouter = router({
 
       // إرسال التقرير
       return await sheetsReports.sendReportViaWhatsApp(
-        ctx.user.merchantId,
+        merchant.id,
         input.reportType,
         result.data
       );
@@ -163,7 +192,10 @@ export const sheetsRouter = router({
       sendMonthlyReports: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const integration = await db.getGoogleIntegration(ctx.user.merchantId, 'sheets');
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
 
       if (!integration) {
         return { success: false, message: 'Google Sheets غير مربوط' };
@@ -181,7 +213,10 @@ export const sheetsRouter = router({
 
   // الحصول على إعدادات التقارير
   getReportSettings: protectedProcedure.query(async ({ ctx }) => {
-    const integration = await db.getGoogleIntegration(ctx.user.merchantId, 'sheets');
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
 
     if (!integration) {
       return {
@@ -202,6 +237,9 @@ export const sheetsRouter = router({
 
   // فصل الاتصال
   disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-    return await sheets.disconnect(ctx.user.merchantId);
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+    return await sheets.disconnect(merchant.id);
   }),
 });
+
