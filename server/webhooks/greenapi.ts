@@ -53,6 +53,14 @@ interface GreenAPIWebhookPayload {
       participant: string;
       typeMessage: string;
     };
+    // Green API puts file URLs in fileMessageData for voice/audio/image/video/document
+    fileMessageData?: {
+      downloadUrl?: string;
+      mimeType?: string;
+      fileName?: string;
+      jpegThumbnail?: string;
+      caption?: string;
+    };
     downloadUrl?: string;
     caption?: string;
     fileName?: string;
@@ -633,21 +641,27 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     let response: string;
     
     if (payload.messageData.typeMessage === 'voiceMessage' || payload.messageData.typeMessage === 'audioMessage') {
-      // Voice message
-      if (!payload.messageData.downloadUrl) {
-        console.error('[Webhook] No download URL for voice message');
+      // Voice message — downloadUrl can be at messageData.downloadUrl OR messageData.fileMessageData.downloadUrl
+      const audioDownloadUrl = payload.messageData.downloadUrl 
+        || payload.messageData.fileMessageData?.downloadUrl
+        || (payload.messageData as any).fileMessage?.downloadUrl;
+      
+      if (!audioDownloadUrl) {
+        console.error('[Webhook] No download URL for voice message. messageData keys:', Object.keys(payload.messageData));
         return {
           success: false,
           message: 'No download URL for voice message'
         };
       }
       
+      console.log('[Webhook] Voice message download URL found:', audioDownloadUrl.substring(0, 80) + '...');
+      
       response = await processVoiceMessageWebhook({
         merchantId: instance.merchantId,
         conversationId,
         customerPhone,
         customerName,
-        audioUrl: payload.messageData.downloadUrl,
+        audioUrl: audioDownloadUrl,
       });
     } else {
       // Text message
