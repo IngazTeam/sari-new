@@ -265,7 +265,7 @@ export default function HumanTakeoverSettings() {
                       <span className="text-xs text-muted-foreground">🇸🇦 عربي</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="font-mono text-sm px-3" dir="ltr">Sari resume</Badge>
+                      <Badge variant="outline" className="font-mono text-sm px-3" dir="ltr">Glad to help</Badge>
                       <span className="text-xs text-muted-foreground">🇬🇧 English</span>
                     </div>
                   </div>
@@ -292,7 +292,7 @@ export default function HumanTakeoverSettings() {
               المحادثات تحت إدارتك ({takeoverConvs.length})
             </CardTitle>
             <CardDescription>
-              ساري صامت في هذه المحادثات — أرسل <code className="font-mono">يسعدنا خدمتكم</code> أو <code className="font-mono">Sari resume</code> لإعادته
+              ساري صامت في هذه المحادثات — أرسل <code className="font-mono">يسعدنا خدمتكم</code> أو <code className="font-mono">Glad to help</code> لإعادته
             </CardDescription>
           </CardHeader>
           <CardContent>
