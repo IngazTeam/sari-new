@@ -141,6 +141,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Smartphone, label: t('sidebar.merchant.whatsappInstances', 'إدارة أرقام الواتساب'), path: "/merchant/whatsapp-instances", group: 'channels' },
   { icon: Bot, label: t('sidebar.merchant.botSettings', 'إعدادات البوت'), path: "/merchant/bot-settings", group: 'channels' },
   { icon: UserCheck, label: t('sidebar.merchant.humanTakeover', 'التدخل البشري'), path: "/merchant/human-takeover", group: 'channels' },
+  { icon: Users, label: t('sidebar.merchant.virtualTeam', 'فريق العمل الافتراضي'), path: "/merchant/virtual-team", group: 'channels' },
   { icon: Activity, label: t('sidebar.merchant.sariPersonality', 'شخصية ساري'), path: "/merchant/sari-personality", group: 'channels' },
   { icon: Zap, label: t('sidebar.merchant.quickResponses', 'الردود السريعة'), path: "/merchant/quick-responses", group: 'channels' },
   { icon: Clock, label: t('sidebar.merchant.scheduledMessages', 'الرسائل المجدولة'), path: "/merchant/scheduled-messages", group: 'channels' },

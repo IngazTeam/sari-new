@@ -128,6 +128,7 @@ const SariAnalytics = lazyLoad(() => import("./pages/SariAnalytics"));
 const WhatsAppWebhookSetup = lazyLoad(() => import("./pages/merchant/WhatsAppWebhookSetup"));
 const BotSettings = lazyLoad(() => import("./pages/merchant/BotSettings"));
 const HumanTakeoverSettings = lazyLoad(() => import("./pages/merchant/HumanTakeoverSettings"));
+const VirtualTeamPage = lazyLoad(() => import("./pages/merchant/VirtualTeamPage"));
 const SariBrain = lazyLoad(() => import("./pages/merchant/SariBrain"));
 const ScheduledMessages = lazyLoad(() => import("./pages/merchant/ScheduledMessages"));
 const SariPersonality = lazyLoad(() => import("./pages/merchant/SariPersonality"));
@@ -513,6 +514,12 @@ function Router() {
       <Route path="/merchant/human-takeover">
         <DashboardLayout>
           <HumanTakeoverSettings />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/virtual-team">
+        <DashboardLayout>
+          <VirtualTeamPage />
         </DashboardLayout>
       </Route>
 

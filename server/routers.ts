@@ -48,6 +48,7 @@ import { userNotificationsRouter } from "./routers-user-notifications";
 import { productsRouter } from "./routers-products";
 import { knowledgeDocsRouter } from "./routers-knowledge-docs";
 import { sariBrainRouter } from "./routers-sari-brain";
+import { virtualAgentsRouter } from "./routers-virtual-agents";
 import { aiSettingsRouter } from "./routers-ai-settings";
 import { googleAnalyticsRouter } from "./routers-google-analytics";
 import { dashboardRouter } from "./routers-dashboard";
@@ -526,6 +527,9 @@ export const appRouter = router({
 
   // Products Management (standalone module with uploadExcel, CSV, Google Sheets sync)
   products: productsRouter,
+
+  // Virtual Agents — AI team personas
+  virtualAgents: virtualAgentsRouter,
 
   // Campaign Management
   campaigns: router({
