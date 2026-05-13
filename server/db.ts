@@ -299,6 +299,15 @@ export async function getDb() {
 }
 
 /**
+ * Get the raw mysql2 pool for direct SQL execution
+ * Use for DDL (CREATE TABLE) or raw queries not supported by Drizzle
+ */
+export async function getPool(): Promise<mysql.Pool | null> {
+  await getDb(); // ensure pool is initialized
+  return _pool;
+}
+
+/**
  * Gracefully close the connection pool
  * Called during server shutdown
  */

@@ -216,9 +216,9 @@ let _platformKeysTableCreated = false;
 async function ensurePlatformKeysTable() {
   if (_platformKeysTableCreated) return;
   try {
-    const dbConn = await db.getDb();
-    if (!dbConn) return;
-    await (dbConn as any).execute(`
+    const pool = await db.getPool();
+    if (!pool) return;
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS sari_platform_keys (
         id INT AUTO_INCREMENT PRIMARY KEY,
         platform VARCHAR(50) NOT NULL UNIQUE,
@@ -239,9 +239,9 @@ async function ensurePlatformKeysTable() {
 
 async function loadPlatformKeysFromDb() {
   try {
-    const dbConn = await db.getDb();
-    if (!dbConn) return;
-    const [rows] = await (dbConn as any).execute(
+    const pool = await db.getPool();
+    if (!pool) return;
+    const [rows] = await pool.execute(
       `SELECT platform, key_value FROM sari_platform_keys WHERE is_active = 1`
     );
     for (const row of rows as any[]) {
@@ -256,12 +256,12 @@ setTimeout(() => loadPlatformKeysFromDb(), 3000);
 /** Admin: Set/update a platform key */
 export async function setPlatformKey(platform: string, keyValue: string, label: string = ''): Promise<void> {
   await ensurePlatformKeysTable();
-  const dbConn = await db.getDb();
-  if (!dbConn) throw new Error('DB unavailable');
+  const pool = await db.getPool();
+  if (!pool) throw new Error('DB unavailable');
 
   try {
     // MySQL 8.0.20+ compatible — avoid deprecated VALUES() in ON DUPLICATE KEY UPDATE
-    await (dbConn as any).execute(
+    await pool.execute(
       `INSERT INTO sari_platform_keys (platform, key_value, label, is_active) VALUES (?, ?, ?, 1)
        ON DUPLICATE KEY UPDATE key_value = ?, label = ?, is_active = 1, updated_at = NOW()`,
       [platform, keyValue, label, keyValue, label]
@@ -277,10 +277,10 @@ export async function setPlatformKey(platform: string, keyValue: string, label: 
 /** Admin: Get all platform keys */
 export async function getPlatformKeys(): Promise<Array<{ platform: string; keyPrefix: string; label: string; createdAt: string }>> {
   await ensurePlatformKeysTable();
-  const dbConn = await db.getDb();
-  if (!dbConn) return [];
+  const pool = await db.getPool();
+  if (!pool) return [];
 
-  const [rows] = await (dbConn as any).execute(
+  const [rows] = await pool.execute(
     `SELECT platform, key_value, label, created_at FROM sari_platform_keys WHERE is_active = 1`
   );
   return (rows as any[]).map(r => ({
@@ -294,10 +294,10 @@ export async function getPlatformKeys(): Promise<Array<{ platform: string; keyPr
 /** Admin: Delete a platform key */
 export async function deletePlatformKey(platform: string): Promise<void> {
   await ensurePlatformKeysTable();
-  const dbConn = await db.getDb();
-  if (!dbConn) return;
+  const pool = await db.getPool();
+  if (!pool) return;
 
-  await (dbConn as any).execute(
+  await pool.execute(
     `UPDATE sari_platform_keys SET is_active = 0 WHERE platform = ?`,
     [platform]
   );
