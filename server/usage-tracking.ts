@@ -143,11 +143,12 @@ export async function incrementConversationUsage(merchantId: number): Promise<vo
       return;
     }
     
+    const newCount = (subscription.conversationsUsed || 0) + 1;
     await db.updateSubscription(subscription.id, {
-      conversationsUsed: subscription.conversationsUsed + 1,
+      conversationsUsed: newCount,
     });
     
-    console.log(`[Usage] Incremented conversations for merchant ${merchantId}: ${subscription.conversationsUsed + 1}`);
+    console.log(`[Usage] Incremented conversations for merchant ${merchantId}: ${newCount}`);
   } catch (error: any) {
     console.error('[Usage] Error incrementing conversation usage:', error);
   }
@@ -165,11 +166,12 @@ export async function incrementMessageUsage(merchantId: number): Promise<void> {
       return;
     }
     
+    const newCount = (subscription.messagesUsed || 0) + 1;
     await db.updateSubscription(subscription.id, {
-      messagesUsed: subscription.messagesUsed + 1,
+      messagesUsed: newCount,
     });
     
-    console.log(`[Usage] Incremented messages for merchant ${merchantId}: ${subscription.messagesUsed + 1}`);
+    console.log(`[Usage] Incremented messages for merchant ${merchantId}: ${newCount}`);
   } catch (error: any) {
     console.error('[Usage] Error incrementing message usage:', error);
   }
@@ -187,11 +189,12 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
       return;
     }
     
+    const newCount = (subscription.voiceMessagesUsed || 0) + 1;
     await db.updateSubscription(subscription.id, {
-      voiceMessagesUsed: subscription.voiceMessagesUsed + 1,
+      voiceMessagesUsed: newCount,
     });
     
-    console.log(`[Usage] Incremented voice messages for merchant ${merchantId}: ${subscription.voiceMessagesUsed + 1}`);
+    console.log(`[Usage] Incremented voice messages for merchant ${merchantId}: ${newCount}`);
   } catch (error: any) {
     console.error('[Usage] Error incrementing voice message usage:', error);
   }
