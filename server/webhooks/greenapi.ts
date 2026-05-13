@@ -373,10 +373,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const cmd = outText.trim();
         const cmdLower = cmd.toLowerCase();
 
-        // Stop commands: natural "سأتولى المحادثة" + legacy "#stop"
-        const isStopCmd = cmd.includes('سأتولى المحادثة') || cmd.includes('ساتولى المحادثة') || cmdLower === '#stop';
-        // Start commands: natural "يسعدنا خدمتكم" + legacy "#start"
-        const isStartCmd = cmd.includes('يسعدنا خدمتكم') || cmdLower === '#start';
+        // Stop commands: Arabic "سأتولى المحادثة" + English "I'll take over" + legacy "#stop"
+        const isStopCmd = cmd.includes('سأتولى المحادثة') || cmd.includes('ساتولى المحادثة') || cmdLower.includes("i'll take over") || cmdLower.includes("i will take over") || cmdLower === '#stop';
+        // Start commands: Arabic "يسعدنا خدمتكم" + English "Sari resume" + legacy "#start"
+        const isStartCmd = cmd.includes('يسعدنا خدمتكم') || cmdLower.includes('sari resume') || cmdLower === '#start';
 
         if (isStopCmd) {
           const convs = await db.getConversationsByMerchantId(instance.merchantId);

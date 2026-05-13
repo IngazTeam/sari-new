@@ -221,11 +221,10 @@ export default function HumanTakeoverSettings() {
               <div className="space-y-1">
                 <Label className="text-base font-semibold flex items-center gap-2">
                   <Hash className="h-4 w-4" />
-                  أوامر سريعة
+                  أوامر التدخل البشري
                 </Label>
                 <p className="text-sm text-muted-foreground">
-                  اكتب <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">#stop</code> لإيقاف ساري بدون مدة
-                  و <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">#start</code> لإعادته
+                  عبارات طبيعية ترسلها للعميل — ساري يكتشفها ويتصرف تلقائياً
                 </p>
               </div>
               <Switch
@@ -235,12 +234,50 @@ export default function HumanTakeoverSettings() {
             </div>
 
             {commandsEnabled && (
-              <Alert className="bg-muted/50">
-                <Smartphone className="h-4 w-4" />
-                <AlertDescription className="text-sm">
-                  <span className="font-semibold">💡 نصيحة:</span> الأوامر مخفية عن العملاء — تُرسل من رقمك فقط ولا تظهر للعميل
-                </AlertDescription>
-              </Alert>
+              <div className="space-y-3">
+                {/* Stop Command */}
+                <div className="p-4 rounded-xl border-2 border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Pause className="h-4 w-4 text-red-500" />
+                    <span className="font-semibold text-red-700 dark:text-red-400">إيقاف ساري (بدون مدة)</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-sm px-3">سأتولى المحادثة</Badge>
+                      <span className="text-xs text-muted-foreground">🇸🇦 عربي</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-sm px-3" dir="ltr">I'll take over</Badge>
+                      <span className="text-xs text-muted-foreground">🇬🇧 English</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Start Command */}
+                <div className="p-4 rounded-xl border-2 border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/50 dark:bg-emerald-950/10">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Play className="h-4 w-4 text-emerald-500" />
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">إعادة تشغيل ساري</span>
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-sm px-3">يسعدنا خدمتكم</Badge>
+                      <span className="text-xs text-muted-foreground">🇸🇦 عربي</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="font-mono text-sm px-3" dir="ltr">Sari resume</Badge>
+                      <span className="text-xs text-muted-foreground">🇬🇧 English</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Alert className="bg-muted/50">
+                  <Smartphone className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    <span className="font-semibold">💡 نصيحة:</span> العبارات تظهر للعميل كرسالة طبيعية ومهذبة — لا يعرف أنها أمر تقني لساري
+                  </AlertDescription>
+                </Alert>
+              </div>
             )}
           </div>
         </CardContent>
@@ -255,7 +292,7 @@ export default function HumanTakeoverSettings() {
               المحادثات تحت إدارتك ({takeoverConvs.length})
             </CardTitle>
             <CardDescription>
-              ساري صامت في هذه المحادثات — أرسل <code className="font-mono">#start</code> لإعادته
+              ساري صامت في هذه المحادثات — أرسل <code className="font-mono">يسعدنا خدمتكم</code> أو <code className="font-mono">Sari resume</code> لإعادته
             </CardDescription>
           </CardHeader>
           <CardContent>
