@@ -558,11 +558,35 @@ export async function getMerchantByUserId(userId: number): Promise<Merchant | un
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getAllMerchants(): Promise<Merchant[]> {
+export async function getAllMerchants() {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(merchants).orderBy(desc(merchants.createdAt));
+  const results = await db.select({
+    id: merchants.id,
+    userId: merchants.userId,
+    businessName: merchants.businessName,
+    phone: merchants.phone,
+    status: merchants.status,
+    subscriptionStatus: merchants.subscriptionStatus,
+    createdAt: merchants.createdAt,
+    updatedAt: merchants.updatedAt,
+    currency: merchants.currency,
+    autoReplyEnabled: merchants.autoReplyEnabled,
+    onboardingCompleted: merchants.onboardingCompleted,
+    // From users
+    email: users.email,
+    userName: users.name,
+  })
+    .from(merchants)
+    .leftJoin(users, eq(merchants.userId, users.id))
+    .orderBy(desc(merchants.createdAt));
+
+  // Map to include phoneNumber from merchant.phone or users
+  return results.map(r => ({
+    ...r,
+    phoneNumber: r.phone,
+  }));
 }
 
 export async function updateMerchant(id: number, data: Partial<InsertMerchant>): Promise<void> {

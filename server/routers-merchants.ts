@@ -92,41 +92,57 @@ export const merchantsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const dbConn = await db.getDb();
-            if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+            const pool = await db.getPool();
+            if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
 
-            // Cascade delete all related data
+            // Cascade delete all related data (order matters for FK constraints)
             const tables = [
+                'brain_activity_log',
+                'notification_preferences',
+                'abandoned_carts',
+                'discount_codes',
+                'occasion_campaigns',
+                'scheduled_messages',
+                'campaign_logs',
+                'campaigns',
+                'messages',
+                'conversations',
+                'orders',
+                'customers',
+                'sari_conversions',
                 'sari_api_keys',
+                'merchant_addons',
                 'merchant_subscriptions',
                 'products',
                 'extracted_faqs',
                 'knowledge_docs',
-                'campaigns',
-                'conversations',
-                'messages',
-                'customers',
-                'orders',
-                'sari_conversions',
+                'bot_settings',
+                'sari_personality_settings',
                 'byaan_connections',
+                'salla_connections',
+                'whatsapp_connection_requests',
                 'whatsapp_instances',
-                'brain_activity_log',
             ];
 
             for (const table of tables) {
                 try {
-                    await (dbConn as any).execute(`DELETE FROM ${table} WHERE merchant_id = ?`, [input.merchantId]);
-                } catch (e) {
-                    // Table may not exist — skip silently
+                    await pool.execute(`DELETE FROM \`${table}\` WHERE merchant_id = ?`, [input.merchantId]);
+                } catch (e: any) {
+                    // Table may not exist or column name differs — try without underscore
+                    try {
+                        await pool.execute(`DELETE FROM \`${table}\` WHERE merchantId = ?`, [input.merchantId]);
+                    } catch {
+                        // Skip silently
+                    }
                 }
             }
 
             // Delete merchant
-            await (dbConn as any).execute('DELETE FROM merchants WHERE id = ?', [input.merchantId]);
+            await pool.execute('DELETE FROM `merchants` WHERE id = ?', [input.merchantId]);
 
             // Delete associated user
             if (merchant.userId) {
-                await (dbConn as any).execute('DELETE FROM users WHERE id = ?', [merchant.userId]);
+                await pool.execute('DELETE FROM `users` WHERE id = ?', [merchant.userId]);
             }
 
             console.log(`[Admin] Merchant DELETED: id=${input.merchantId}, business=${merchant.businessName}`);
