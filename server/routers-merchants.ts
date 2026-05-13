@@ -30,8 +30,8 @@ export const merchantsRouter = router({
     // Create merchant profile
     create: protectedProcedure
         .input(z.object({
-            businessName: z.string().min(1),
-            phone: z.string().optional(),
+            businessName: z.string().min(1).max(255), // SEC-R3-03
+            phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/).optional(), // SEC-R3-03
         }))
         .mutation(async ({ input, ctx }) => {
             const existing = await db.getMerchantByUserId(ctx.user.id);
@@ -52,8 +52,8 @@ export const merchantsRouter = router({
     // Update merchant profile
     update: protectedProcedure
         .input(z.object({
-            businessName: z.string().optional(),
-            phone: z.string().optional(),
+            businessName: z.string().min(1).max(255).optional(), // SEC-R3-03
+            phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/).optional(), // SEC-R3-03
             autoReplyEnabled: z.boolean().optional(),
             currency: z.enum(['SAR', 'USD']).optional(),
         }))
@@ -79,6 +79,11 @@ export const merchantsRouter = router({
             status: z.enum(['active', 'suspended', 'pending']),
         }))
         .mutation(async ({ input }) => {
+            // SEC-R3-02: Verify merchant exists before updating
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
             await db.updateMerchant(input.merchantId, { status: input.status });
             return { success: true };
         }),
@@ -107,6 +112,7 @@ export const merchantsRouter = router({
                 'campaigns',
                 'messages',
                 'conversations',
+                'invoices', // SEC-R3-06: was missing (no FK cascade)
                 'orders',
                 'customers',
                 'sari_conversions',
@@ -145,6 +151,14 @@ export const merchantsRouter = router({
                 await pool.execute('DELETE FROM `users` WHERE id = ?', [merchant.userId]);
             }
 
+            // SEC-R3-04: Persistent audit log for deletions
+            try {
+                await pool.execute(
+                    `INSERT INTO brain_activity_log (merchant_id, action_type, description, details, created_at) VALUES (0, 'merchant_deleted', ?, ?, NOW())`,
+                    [`Admin deleted merchant #${input.merchantId}: ${merchant.businessName}`, JSON.stringify({ deletedMerchantId: input.merchantId, businessName: merchant.businessName, userId: merchant.userId })]
+                );
+            } catch { /* audit log is best-effort */ }
+
             console.log(`[Admin] Merchant DELETED: id=${input.merchantId}, business=${merchant.businessName}`);
             return { success: true, deletedId: input.merchantId };
         }),
@@ -163,12 +177,8 @@ export const merchantsRouter = router({
             // Use merchant_subscriptions table (not legacy subscriptions table)
             const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
             if (subscription) {
-                // Auto-sync: if subscription is active but merchant status is stale, fix it
-                const merchant = await db.getMerchantById(input.merchantId);
-                if (merchant && merchant.status !== 'active' && (subscription.status === 'active' || subscription.status === 'trial')) {
-                    await db.updateMerchant(input.merchantId, { status: 'active' });
-                    await db.updateMerchantSubscriptionStatus(input.merchantId, subscription.status as any);
-                }
+                // SEC-R3-05: Removed auto-sync side-effect from query.
+                // Status sync should be handled by a dedicated mutation or scheduled job.
 
                 // Enrich with plan name
                 const plan = subscription.planId ? await db.getSubscriptionPlanById(subscription.planId) : null;
@@ -327,7 +337,7 @@ export const merchantsRouter = router({
 
     // Regenerate platform key (overwrites existing)
     regeneratePlatformKey: adminProcedure
-        .input(z.object({ platform: z.string() }))
+        .input(z.object({ platform: z.string().min(2).max(50) })) // SEC-R3-07
         .mutation(async ({ input }) => {
             const { generatePlatformKeyValue, setPlatformKey } = await import('./api/rest');
             const keyValue = generatePlatformKeyValue(input.platform);
@@ -337,7 +347,7 @@ export const merchantsRouter = router({
 
     // Delete platform key
     deletePlatformKey: adminProcedure
-        .input(z.object({ platform: z.string() }))
+        .input(z.object({ platform: z.string().min(2).max(50) })) // SEC-R3-07
         .mutation(async ({ input }) => {
             const { deletePlatformKey } = await import('./api/rest');
             await deletePlatformKey(input.platform);
@@ -355,11 +365,11 @@ export const merchantsRouter = router({
     syncGreenAPIData: adminProcedure
         .input(z.object({
             merchantId: z.number(),
-            instanceId: z.string(),
-            token: z.string(),
+            instanceId: z.string().min(1).max(50).regex(/^[a-zA-Z0-9]+$/), // SEC-R3-08
+            token: z.string().min(1).max(200), // SEC-R3-08
             syncChats: z.boolean().default(true),
             syncMessages: z.boolean().default(true),
-            limit: z.number().default(100),
+            limit: z.number().min(1).max(500).default(100), // SEC-R3-08: bound limit
         }))
         .mutation(async ({ input }) => {
             try {

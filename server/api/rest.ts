@@ -41,9 +41,9 @@ let _apiKeysTableCreated = false;
 async function ensureApiKeysTable() {
   if (_apiKeysTableCreated) return;
   try {
-    const dbConn = await db.getDb();
-    if (!dbConn) return;
-    await (dbConn as any).execute(`
+    const pool = await db.getPool();
+    if (!pool) return;
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS sari_api_keys (
         id INT AUTO_INCREMENT PRIMARY KEY,
         merchant_id INT NOT NULL,
@@ -68,15 +68,15 @@ async function ensureApiKeysTable() {
 /** Generate a new API key for a merchant */
 export async function generateApiKey(merchantId: number, label: string = 'Default Key'): Promise<{ key: string; prefix: string }> {
   await ensureApiKeysTable();
-  const dbConn = await db.getDb();
-  if (!dbConn) throw new Error('Database connection failed');
+  const pool = await db.getPool();
+  if (!pool) throw new Error('Database connection failed');
 
   // Generate: sari_sk_ + 32 random hex chars
   const rawKey = `sari_sk_${crypto.randomBytes(24).toString('hex')}`;
   const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
   const keyPrefix = rawKey.substring(0, 12); // sari_sk_xxxx
 
-  await (dbConn as any).execute(
+  await pool.execute(
     `INSERT INTO sari_api_keys (merchant_id, key_hash, key_prefix, label) VALUES (?, ?, ?, ?)`,
     [merchantId, keyHash, keyPrefix, label]
   );
@@ -87,12 +87,12 @@ export async function generateApiKey(merchantId: number, label: string = 'Defaul
 /** Validate an API key and return the merchant */
 async function validateApiKey(key: string): Promise<{ merchant: any; keyId: number } | null> {
   await ensureApiKeysTable();
-  const dbConn = await db.getDb();
-  if (!dbConn) return null;
+  const pool = await db.getPool();
+  if (!pool) return null;
 
   const keyHash = crypto.createHash('sha256').update(key).digest('hex');
 
-  const [rows] = await (dbConn as any).execute(
+  const [rows] = await pool.execute(
     `SELECT id, merchant_id, permissions, is_active, expires_at FROM sari_api_keys WHERE key_hash = ? LIMIT 1`,
     [keyHash]
   );
@@ -111,7 +111,7 @@ async function validateApiKey(key: string): Promise<{ merchant: any; keyId: numb
   if (!merchant) return null;
 
   // Update last_used_at (fire-and-forget)
-  (dbConn as any).execute(
+  pool.execute(
     `UPDATE sari_api_keys SET last_used_at = NOW() WHERE id = ?`,
     [apiKeyRow.id]
   ).catch(() => {});
@@ -709,11 +709,11 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
   }
 
   try {
-    const dbConn = await db.getDb();
-    if (!dbConn) throw new Error('DB unavailable');
+    const pool = await db.getPool();
+    if (!pool) throw new Error('DB unavailable');
 
     // Check if email already exists
-    const [existingUsers] = await (dbConn as any).execute(
+    const [existingUsers] = await pool.execute(
       `SELECT id FROM users WHERE email = ? LIMIT 1`,
       [String(email).toLowerCase().trim()]
     );
@@ -740,7 +740,7 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     const safeBusinessName = stripHtml(String(businessName)).substring(0, 255);
     const safePhone = phone ? stripHtml(String(phone)).replace(/[^0-9+\-\s()]/g, '').substring(0, 20) : null;
 
-    const [userResult] = await (dbConn as any).execute(
+    const [userResult] = await pool.execute(
       `INSERT INTO users (open_id, name, email, password, login_method, role, created_at, updated_at, last_signed_in) VALUES (?, ?, ?, ?, 'credentials', 'user', NOW(), NOW(), NOW())`,
       [openId, safeName, String(email).toLowerCase().trim(), hashedPassword]
     );
@@ -748,7 +748,7 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     const userId = (userResult as any).insertId;
 
     // Create merchant with platform source
-    const [merchantResult] = await (dbConn as any).execute(
+    const [merchantResult] = await pool.execute(
       `INSERT INTO merchants (user_id, business_name, phone, status, integration_source, platform_type, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())`,
       [userId, safeBusinessName, safePhone, source, source === 'byaan' ? 'byaan' : 'none']
     );
@@ -801,13 +801,13 @@ sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) =
   }
 
   try {
-    const dbConn = await db.getDb();
-    if (!dbConn) throw new Error('DB unavailable');
+    const pool = await db.getPool();
+    if (!pool) throw new Error('DB unavailable');
 
     let merchant = null;
 
     if (tenantDomain) {
-      const [rows] = await (dbConn as any).execute(
+      const [rows] = await pool.execute(
         `SELECT m.id, m.business_name, m.status, m.integration_source FROM merchants m 
          INNER JOIN byaan_connections bc ON bc.merchant_id = m.id 
          WHERE bc.tenant_domain = ? AND bc.is_active = 1 LIMIT 1`,
@@ -815,7 +815,7 @@ sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) =
       );
       merchant = (rows as any[])?.[0];
     } else if (email) {
-      const [rows] = await (dbConn as any).execute(
+      const [rows] = await pool.execute(
         `SELECT m.id, m.business_name, m.status, m.integration_source FROM merchants m 
          INNER JOIN users u ON u.id = m.user_id 
          WHERE u.email = ? AND m.integration_source = ? LIMIT 1`,
