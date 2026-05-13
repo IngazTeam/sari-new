@@ -564,9 +564,7 @@ function Router() {
       </Route>
 
       <Route path="/merchant/sari-personality">
-        <DashboardLayout>
-          <SariPersonality />
-        </DashboardLayout>
+        <Redirect to="/merchant/bot-settings" />
       </Route>
 
       <Route path="/merchant/quick-responses">

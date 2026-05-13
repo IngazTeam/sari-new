@@ -186,7 +186,7 @@ export default function BotSettings() {
             <h3 className="text-sm font-semibold mb-3">{t('botSettingsPage.generalTemplates')}</h3>
             <div className="grid md:grid-cols-3 gap-4">
               {generalTemplates.map((template) => (
-                <Card key={template.id} className="border-2 hover:border-primary/50 transition-colors">
+                <Card key={template.id} className={`border-2 transition-colors ${formData.tone === template.settings.tone ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}>
                   <CardHeader className="pb-3">
                     <div className="text-3xl mb-2">{template.icon}</div>
                     <CardTitle className="text-lg">{template.name}</CardTitle>
@@ -194,14 +194,27 @@ export default function BotSettings() {
                       {template.description}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0 space-y-3">
+                    {/* Live example */}
+                    <div className="p-3 rounded-lg bg-muted/50 text-sm">
+                      <p className="text-xs text-muted-foreground mb-1 font-semibold">💬 مثال على الرد:</p>
+                      {template.settings.tone === 'professional' && (
+                        <p className="text-foreground leading-relaxed">"نشكرك على تواصلك معنا. نودّ إعلامك بأن المنتج متوفر حالياً. هل تودّ الاطلاع على مزيد من التفاصيل؟"</p>
+                      )}
+                      {template.settings.tone === 'friendly' && (
+                        <p className="text-foreground leading-relaxed">"أهلاً وسهلاً! 😊 أكيد المنتج موجود عندنا. تبي أرسلك الأسعار والصور؟"</p>
+                      )}
+                      {template.settings.tone === 'casual' && (
+                        <p className="text-foreground leading-relaxed">"هلا! ✌️ إيه موجود. أرسلك التفاصيل الحين؟"</p>
+                      )}
+                    </div>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant={formData.tone === template.settings.tone ? 'default' : 'outline'}
                       className="w-full"
                       onClick={() => applyTemplate(template)}
                     >
-                      {t('botSettingsPage.apply')}
+                      {formData.tone === template.settings.tone ? '✓ مُطبّق' : t('botSettingsPage.apply')}
                     </Button>
                   </CardContent>
                 </Card>

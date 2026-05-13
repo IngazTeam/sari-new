@@ -4846,7 +4846,19 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.updateBotSettings(merchant.id, input);
+        const result = await db.updateBotSettings(merchant.id, input);
+
+        // Sync tone to personality settings so AI engine uses it
+        if (input.tone) {
+          try {
+            await db.getOrCreatePersonalitySettings(merchant.id);
+            await db.updateSariPersonalitySettings(merchant.id, { tone: input.tone as any });
+          } catch (e) {
+            console.error('[BotSettings] Failed to sync tone to personality:', e);
+          }
+        }
+
+        return result;
       }),
 
     // Check if bot should respond (for testing)
