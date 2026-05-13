@@ -694,8 +694,32 @@ ${result.message}
 
         if (selectedAgent) {
           activeAgentName = selectedAgent.name;
+
+          // Detect agent switch for handoff message
+          let previousAgentName: string | null = null;
+          if (params.conversationId) {
+            try {
+              const convs = await db.getConversationsByMerchantId(params.merchantId);
+              const thisConv = convs.find((c: any) => c.id === params.conversationId);
+              const prevAgentId = (thisConv as any)?.currentAgentId;
+              if (prevAgentId && prevAgentId !== selectedAgent.id) {
+                const prevAgents = await pool.select().from(virtualAgents)
+                  .where(eq(virtualAgents.id, prevAgentId));
+                if (prevAgents.length > 0) {
+                  previousAgentName = prevAgents[0].name;
+                }
+              }
+            } catch { /* ignore */ }
+          }
+
           // Inject agent personality into system prompt
-          const agentPrompt = `\n\n## هويتك الحالية:\nاسمك: ${sanitizeForPrompt(selectedAgent.name)}\nدورك: ${sanitizeForPrompt(selectedAgent.role)}${selectedAgent.department ? `\nقسمك: ${sanitizeForPrompt(selectedAgent.department)}` : ''}\n\n## تعليمات الشخصية:\n${sanitizeForPrompt(selectedAgent.personalityPrompt)}\n\n⚠️ مهم: عرّف عن نفسك باسم "${sanitizeForPrompt(selectedAgent.name)}" وليس "ساري". تصرف بالضبط وفق تعليمات الشخصية أعلاه.\n`;
+          let agentPrompt = `\n\n## هويتك الحالية:\nاسمك: ${sanitizeForPrompt(selectedAgent.name)}\nدورك: ${sanitizeForPrompt(selectedAgent.role)}${selectedAgent.department ? `\nقسمك: ${sanitizeForPrompt(selectedAgent.department)}` : ''}\n\n## تعليمات الشخصية:\n${sanitizeForPrompt(selectedAgent.personalityPrompt)}\n\n⚠️ مهم: عرّف عن نفسك باسم "${sanitizeForPrompt(selectedAgent.name)}" وليس "ساري". تصرف بالضبط وفق تعليمات الشخصية أعلاه.\n`;
+
+          // Add handoff instruction if switching agents
+          if (previousAgentName) {
+            agentPrompt += `\n## تحويل من زميل:\nالعميل كان يتحدث مع "${sanitizeForPrompt(previousAgentName)}". ابدأ ردك بتقديم نفسك بأسلوبك الخاص وأوضح أنه تم تحويله لك لأن تخصصك يناسب استفساره. مثال: "أهلاً! أنا ${sanitizeForPrompt(selectedAgent.name)} من ${sanitizeForPrompt(selectedAgent.department || 'فريقنا')}. ${sanitizeForPrompt(previousAgentName)} حولتك لي لأساعدك بشكل أفضل 😊"\n`;
+          }
+
           systemPrompt = systemPrompt.replace(
             'أنت ساري، مساعد مبيعات ذكي وودود',
             `أنت ${sanitizeForPrompt(selectedAgent.name)}، ${sanitizeForPrompt(selectedAgent.role)}`
@@ -710,7 +734,7 @@ ${result.message}
             } catch { /* silent */ }
           }
 
-          console.log(`[VirtualAgent] Selected: ${selectedAgent.name} (${selectedAgent.role}) for conv ${params.conversationId}`);
+          console.log(`[VirtualAgent] Selected: ${selectedAgent.name} (${selectedAgent.role})${previousAgentName ? ` [handoff from ${previousAgentName}]` : ''} for conv ${params.conversationId}`);
         }
       }
     } catch (agentError) {
