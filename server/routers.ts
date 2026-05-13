@@ -4837,8 +4837,8 @@ export const appRouter = router({
         outOfHoursMessage: z.string().optional(),
         responseDelay: z.number().min(1).max(10).optional(),
         maxResponseLength: z.number().min(50).max(500).optional(),
-        tone: z.enum(['friendly', 'professional', 'casual']).optional(),
-        language: z.enum(['ar', 'en', 'both']).optional(),
+        tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic', 'empathetic', 'persuasive']).optional(),
+        language: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
