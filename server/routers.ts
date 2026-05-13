@@ -3107,6 +3107,170 @@ export const appRouter = router({
         return await db.getPrimaryWhatsAppInstance(input.merchantId);
       }),
 
+    // ==================== Reconnect Flow (Change Number) ====================
+    
+    // Step 1: Logout from Green API to allow new QR scan
+    reconnect: protectedProcedure
+      .input(z.object({ instanceId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const instance = await db.getWhatsAppInstanceById(input.instanceId);
+        if (!instance) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
+        }
+
+        const merchant = await db.getMerchantById(instance.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
+
+        // SSRF guard
+        try {
+          const parsed = new URL(baseUrl);
+          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+          const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
+          if (!isAllowed) throw new Error('blocked');
+        } catch {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
+        }
+
+        // Logout from Green API to invalidate current session
+        try {
+          const logoutUrl = `${baseUrl}/waInstance${instance.instanceId}/logout/${instance.token}`;
+          await fetch(logoutUrl);
+          console.log(`[reconnect] Logged out instance ${instance.instanceId}`);
+        } catch (e) {
+          console.error('[reconnect] Logout error:', e);
+        }
+
+        // Mark instance as reconnecting
+        await db.updateWhatsAppInstance(instance.id, {
+          status: 'inactive',
+          phoneNumber: null,
+        });
+
+        return { success: true, message: 'تم تسجيل الخروج. امسح QR Code بالرقم الجديد.' };
+      }),
+
+    // Step 2: Get QR code for reconnection
+    getReconnectQR: protectedProcedure
+      .input(z.object({ instanceId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const instance = await db.getWhatsAppInstanceById(input.instanceId);
+        if (!instance) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
+        }
+
+        const merchant = await db.getMerchantById(instance.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
+
+        // SSRF guard
+        try {
+          const parsed = new URL(baseUrl);
+          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) throw new Error();
+        } catch {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
+        }
+
+        try {
+          const qrUrl = `${baseUrl}/waInstance${instance.instanceId}/qr/${instance.token}`;
+          const response = await fetch(qrUrl);
+          const data = await response.json();
+
+          if (response.ok && data.type === 'qrCode') {
+            return { qrCode: data.message, status: 'waiting' };
+          } else if (data.type === 'alreadyLogged') {
+            return { qrCode: null, status: 'already_connected' };
+          } else {
+            return { qrCode: null, status: 'error', error: 'QR code not available' };
+          }
+        } catch (e) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get QR code' });
+        }
+      }),
+
+    // Step 3: Confirm reconnection — check if authorized, update phone + webhook
+    confirmReconnect: protectedProcedure
+      .input(z.object({ instanceId: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const instance = await db.getWhatsAppInstanceById(input.instanceId);
+        if (!instance) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
+        }
+
+        const merchant = await db.getMerchantById(instance.merchantId);
+        if (!merchant || merchant.userId !== ctx.user.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const baseUrl = instance.apiUrl || 'https://api.green-api.com';
+
+        // SSRF guard
+        try {
+          const parsed = new URL(baseUrl);
+          const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
+          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) throw new Error();
+        } catch {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
+        }
+
+        try {
+          // Check state
+          const stateUrl = `${baseUrl}/waInstance${instance.instanceId}/getStateInstance/${instance.token}`;
+          const stateResponse = await fetch(stateUrl);
+          const stateData = await stateResponse.json();
+
+          if (stateData.stateInstance !== 'authorized') {
+            return { connected: false, status: stateData.stateInstance || 'not_authorized' };
+          }
+
+          // Get new phone number
+          let phoneNumber = '';
+          try {
+            const settingsUrl = `${baseUrl}/waInstance${instance.instanceId}/getSettings/${instance.token}`;
+            const settingsResponse = await fetch(settingsUrl);
+            const settingsData = await settingsResponse.json();
+            if (settingsData.wid) {
+              phoneNumber = settingsData.wid.replace('@c.us', '');
+            }
+          } catch (e) {
+            console.error('[confirmReconnect] Failed to get phone:', e);
+          }
+
+          // Update instance with new phone number and reactivate
+          await db.updateWhatsAppInstance(instance.id, {
+            status: 'active',
+            phoneNumber: phoneNumber || null,
+            connectedAt: new Date(),
+          });
+
+          // Re-register webhook
+          try {
+            const { setWebhookUrl } = await import('./whatsapp');
+            const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
+            const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
+            const result = await setWebhookUrl(instance.instanceId, instance.token, webhookUrl, baseUrl);
+            console.log(`[confirmReconnect] Webhook: ${result.success ? 'OK' : result.error}`);
+          } catch (e) {
+            console.error('[confirmReconnect] Webhook error:', e);
+          }
+
+          return {
+            connected: true,
+            status: 'authorized',
+            phoneNumber,
+          };
+        } catch (e) {
+          return { connected: false, status: 'error' };
+        }
+      }),
+
     // Refresh instance - fetch phone number from Green API and re-register webhook
     refreshInstance: protectedProcedure
       .input(z.object({ instanceId: z.number() }))

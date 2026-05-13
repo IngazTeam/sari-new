@@ -31,6 +31,9 @@ export default function WhatsAppInstancesPage() {
   const [showQRDialog, setShowQRDialog] = useState(false);
   const [connectingRequestId, setConnectingRequestId] = useState<number | null>(null);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [reconnectInstanceId, setReconnectInstanceId] = useState<number | null>(null);
+  const [showReconnectDialog, setShowReconnectDialog] = useState(false);
+  const [isPollingReconnect, setIsPollingReconnect] = useState(false);
 
   // Get current merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery(
@@ -148,6 +151,44 @@ export default function WhatsAppInstancesPage() {
       toast.error(error.message || t('whatsappManagement.toast.refreshFailed', 'فشل التحديث'));
     },
   });
+
+  // Reconnect flow
+  const reconnectMutation = trpc.whatsappInstances.reconnect.useMutation({
+    onSuccess: () => {
+      toast.success(t('whatsappManagement.toast.loggedOut', 'تم تسجيل الخروج. امسح QR Code بالرقم الجديد.'));
+      setShowReconnectDialog(true);
+      setIsPollingReconnect(true);
+      refetchAll();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const { data: reconnectQR, refetch: refetchReconnectQR } = trpc.whatsappInstances.getReconnectQR.useQuery(
+    { instanceId: reconnectInstanceId || 0 },
+    { enabled: !!reconnectInstanceId && showReconnectDialog, refetchInterval: showReconnectDialog ? 15000 : false }
+  );
+
+  const { data: reconnectStatus } = trpc.whatsappInstances.confirmReconnect.useQuery(
+    { instanceId: reconnectInstanceId || 0 },
+    { enabled: !!reconnectInstanceId && isPollingReconnect, refetchInterval: isPollingReconnect ? 3000 : false }
+  );
+
+  useEffect(() => {
+    if (reconnectStatus?.connected) {
+      setShowReconnectDialog(false);
+      setReconnectInstanceId(null);
+      setIsPollingReconnect(false);
+      toast.success(t('whatsappManagement.toast.reconnected', `تم ربط الرقم الجديد بنجاح! ${reconnectStatus.phoneNumber || ''} 🎉`));
+      refetchAll();
+    }
+  }, [reconnectStatus?.connected]);
+
+  const handleReconnect = (instanceId: number) => {
+    setReconnectInstanceId(instanceId);
+    reconnectMutation.mutate({ instanceId });
+  };
 
   const handleSubmitRequest = () => {
     if (!merchant) return;
@@ -331,6 +372,16 @@ export default function WhatsAppInstancesPage() {
                     >
                       {refreshInstanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
                       {t('whatsappManagement.refresh', 'تحديث البيانات')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleReconnect(instance.id)}
+                      disabled={reconnectMutation.isPending}
+                      className="gap-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                    >
+                      {reconnectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
+                      {t('whatsappManagement.changeNumber', 'تغيير الرقم')}
                     </Button>
                     {!instance.isPrimary && (
                       <Button
@@ -706,6 +757,54 @@ export default function WhatsAppInstancesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Reconnect Dialog — Change Number */}
+      <Dialog open={showReconnectDialog} onOpenChange={(open) => {
+        if (!open) {
+          setShowReconnectDialog(false);
+          setIsPollingReconnect(false);
+          setReconnectInstanceId(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <QrCode className="w-5 h-5 text-purple-600" />
+              {t('whatsappManagement.reconnect.title', 'تغيير رقم الواتساب')}
+            </DialogTitle>
+            <DialogDescription>
+              {t('whatsappManagement.reconnect.desc', 'امسح QR Code بالرقم الجديد الذي تريد ربطه')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            {reconnectQR?.qrCode ? (
+              <>
+                <div className="bg-white p-4 rounded-lg border">
+                  <img src={`data:image/png;base64,${reconnectQR.qrCode}`} alt="QR Code" className="w-64 h-64" />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t('whatsappManagement.reconnect.waiting', 'في انتظار مسح QR Code...')}
+                </div>
+                <Button variant="outline" size="sm" onClick={() => refetchReconnectQR()} className="gap-1">
+                  <RefreshCcw className="w-4 h-4" />
+                  {t('whatsappManagement.refreshQR', 'تحديث QR Code')}
+                </Button>
+              </>
+            ) : reconnectQR?.status === 'already_connected' ? (
+              <div className="text-center text-green-600">
+                <CheckCircle2 className="w-12 h-12 mx-auto mb-2" />
+                <p>{t('whatsappManagement.reconnect.alreadyConnected', 'الرقم متصل بالفعل!')}</p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>{t('whatsappManagement.reconnect.loading', 'جاري التحميل...')}</span>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
