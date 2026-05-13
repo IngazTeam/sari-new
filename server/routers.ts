@@ -1667,6 +1667,15 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
+        // SEC-FIX: Verify active subscription before allowing instance save
+        const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+        if (!subscription) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'لا يوجد اشتراك نشط. يرجى تجديد اشتراكك لربط رقم الواتساب.',
+          });
+        }
+
         // Check if instance already exists
         const existing = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
 

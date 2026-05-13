@@ -126,6 +126,13 @@ export async function sendCartReminder(cartId: number): Promise<boolean> {
       return false;
     }
 
+    // SEC-FIX: Verify active subscription before sending reminder
+    const subscription = await db.getActiveSubscriptionByMerchantId(cart.merchantId);
+    if (!subscription) {
+      console.warn(`[Abandoned Cart] Merchant ${cart.merchantId} has no active subscription — skipping cart ${cartId}`);
+      return false;
+    }
+
     // الحصول على اتصال الواتساب
     const connection = await db.getSallaConnectionByMerchantId(merchant.id);
     if (!connection) {

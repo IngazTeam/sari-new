@@ -4,7 +4,7 @@
  * يفحص الحملات المجدولة كل دقيقة ويرسلها تلقائياً عند حلول موعدها
  */
 
-import { getCampaignById, updateCampaign, getConversationsByMerchantId, getPrimaryWhatsAppInstance, getDb } from "../db.js";
+import { getCampaignById, updateCampaign, getConversationsByMerchantId, getPrimaryWhatsAppInstance, getDb, getActiveSubscriptionByMerchantId } from "../db.js";
 import { sendCampaign as sendWhatsAppCampaign } from "../whatsapp.js";
 
 /**
@@ -49,6 +49,15 @@ export async function checkScheduledCampaigns() {
     for (const campaign of scheduledCampaigns) {
       try {
         console.log(`[Scheduled Campaigns] Processing campaign ${campaign.id}: ${campaign.name}`);
+        
+        // SEC-FIX: Verify merchant has active subscription before sending
+        const subscription = await getActiveSubscriptionByMerchantId(campaign.merchantId);
+        if (!subscription) {
+          console.warn(`[Scheduled Campaigns] Merchant ${campaign.merchantId} has no active subscription — skipping campaign ${campaign.id}`);
+          await updateCampaign(campaign.id, { status: "failed" });
+          failed++;
+          continue;
+        }
         
         // تحديث الحالة إلى "sending"
         await updateCampaign(campaign.id, { status: "sending" });

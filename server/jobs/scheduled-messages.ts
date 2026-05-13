@@ -4,7 +4,7 @@
  * يفحص الرسائل المجدولة كل دقيقة ويرسلها تلقائياً عند حلول موعدها
  */
 
-import { getScheduledMessagesToSend, updateScheduledMessageLastSent, getConversationsByMerchantId, getDb } from "../db.js";
+import { getScheduledMessagesToSend, updateScheduledMessageLastSent, getConversationsByMerchantId, getDb, getActiveSubscriptionByMerchantId } from "../db.js";
 import { sendCampaign as sendWhatsAppCampaign } from "../whatsapp.js";
 
 /**
@@ -30,6 +30,14 @@ export async function checkScheduledMessages() {
     for (const message of messages) {
       try {
         console.log(`[Scheduled Messages] Processing message ${message.id}: ${message.title}`);
+        
+        // SEC-FIX: Verify merchant has active subscription before sending
+        const subscription = await getActiveSubscriptionByMerchantId(message.merchantId);
+        if (!subscription) {
+          console.warn(`[Scheduled Messages] Merchant ${message.merchantId} has no active subscription — skipping message ${message.id}`);
+          failed++;
+          continue;
+        }
         
         // التحقق من آخر إرسال (لتجنب الإرسال المتكرر في نفس الدقيقة)
         if (message.lastSentAt) {

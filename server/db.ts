@@ -9391,7 +9391,31 @@ export async function getMerchantCurrentSubscription(merchantId: number) {
     ))
     .orderBy(desc(merchantSubscriptions.createdAt))
     .limit(1);
-  return results[0];
+  
+  if (!results[0]) return undefined;
+
+  const sub = results[0];
+  const now = new Date();
+
+  // SEC-FIX: Auto-expire if endDate has passed
+  if (sub.endDate && new Date(sub.endDate) < now) {
+    console.warn(`[Subscription] Auto-expiring subscription ${sub.id} for merchant ${merchantId} (endDate: ${sub.endDate})`);
+    await db.update(merchantSubscriptions)
+      .set({ status: 'expired' })
+      .where(eq(merchantSubscriptions.id, sub.id));
+    return undefined;
+  }
+
+  // SEC-FIX: Auto-expire trial if trialEndsAt has passed
+  if (sub.status === 'trial' && sub.trialEndsAt && new Date(sub.trialEndsAt) < now) {
+    console.warn(`[Subscription] Auto-expiring trial ${sub.id} for merchant ${merchantId} (trialEndsAt: ${sub.trialEndsAt})`);
+    await db.update(merchantSubscriptions)
+      .set({ status: 'expired' })
+      .where(eq(merchantSubscriptions.id, sub.id));
+    return undefined;
+  }
+
+  return sub;
 }
 
 export async function getMerchantSubscriptionById(id: number) {
