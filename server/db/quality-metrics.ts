@@ -137,6 +137,17 @@ export async function recordMetric(data: {
   const pool = await db.getPool();
   if (!pool) return;
 
+  // SEC-V7-05 FIX: Daily cap — max 2000 records per merchant per day
+  try {
+    const [countRows] = await pool.execute(
+      `SELECT COUNT(*) as cnt FROM sari_quality_metrics 
+       WHERE merchant_id = ? AND created_at >= CURDATE()`,
+      [data.merchantId]
+    );
+    const todayCount = (countRows as any[])[0]?.cnt || 0;
+    if (todayCount >= 2000) return; // silent drop — prevent DB flooding
+  } catch { /* continue if count fails */ }
+
   const wasEmpty = !data.responseText || data.responseText.trim().length < 10;
 
   try {

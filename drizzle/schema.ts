@@ -139,7 +139,7 @@ export const conversations = mysqlTable("conversations", {
 export const customerReviews = mysqlTable("customer_reviews", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
-	orderId: int().notNull(),
+	orderId: int().notNull().references(() => orders.id, { onDelete: "cascade" }),
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
 	rating: int().notNull(),
@@ -240,7 +240,7 @@ export type InsertMerchantKnowledgeDoc = InferInsertModel<typeof merchantKnowled
 
 export const merchants = mysqlTable("merchants", {
 	id: int().autoincrement().primaryKey(),
-	userId: int().notNull(),
+	userId: int().notNull().references(() => users.id, { onDelete: "cascade" }),
 	businessName: varchar({ length: 255 }).notNull(),
 	phone: varchar({ length: 20 }),
 	status: mysqlEnum(['active', 'suspended', 'pending']).default('pending').notNull(),
@@ -276,7 +276,7 @@ export const merchants = mysqlTable("merchants", {
 
 export const messages = mysqlTable("messages", {
 	id: int().autoincrement().primaryKey(),
-	conversationId: int().notNull(),
+	conversationId: int().notNull().references(() => conversations.id, { onDelete: "cascade" }),
 	direction: mysqlEnum(['incoming', 'outgoing']).notNull(),
 	messageType: mysqlEnum(['text', 'voice', 'image', 'document']).default('text').notNull(),
 	content: text().notNull(),
@@ -301,7 +301,7 @@ export const notificationTemplates = mysqlTable("notification_templates", {
 
 export const notifications = mysqlTable("notifications", {
 	id: int().autoincrement().primaryKey(),
-	userId: int().notNull(),
+	userId: int().notNull().references(() => users.id, { onDelete: "cascade" }),
 	type: mysqlEnum(['info', 'success', 'warning', 'error']).default('info').notNull(),
 	title: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
@@ -341,7 +341,7 @@ export const orderNotifications = mysqlTable("order_notifications", {
 
 export const orderTrackingLogs = mysqlTable("order_tracking_logs", {
 	id: int().autoincrement().primaryKey(),
-	orderId: int().notNull(),
+	orderId: int().notNull().references(() => orders.id, { onDelete: "cascade" }),
 	oldStatus: varchar({ length: 50 }).notNull(),
 	newStatus: varchar({ length: 50 }).notNull(),
 	trackingNumber: varchar({ length: 255 }),
@@ -742,7 +742,7 @@ export const testDeals = mysqlTable("testDeals", {
 
 export const testMessages = mysqlTable("testMessages", {
 	id: int().autoincrement().primaryKey(),
-	conversationId: int().notNull(),
+	conversationId: int().notNull().references(() => testConversations.id, { onDelete: "cascade" }),
 	sender: mysqlEnum(['user', 'sari']).notNull(),
 	content: text().notNull(),
 	sentAt: timestamp({ mode: 'string' }).defaultNow().notNull(),

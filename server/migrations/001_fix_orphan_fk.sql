@@ -1,49 +1,68 @@
 -- ============================================
--- Migration 001: Fix Orphan Foreign Keys
--- Run BEFORE drizzle-kit push to prevent FK constraint errors
+-- Migration 001: Fix Orphan Foreign Keys (v2 — SEC-V7-01 + SEC-V7-07 FIX)
+-- 
+-- IMPORTANT: Column names in legacy tables use camelCase (merchantId)
+-- while dynamic tables use snake_case (merchant_id).
+-- This migration uses the CORRECT column name for each table.
+--
+-- Run BEFORE drizzle-kit push to prevent FK constraint errors.
 -- ============================================
 
--- Step 1: Clean orphan data (merchantId referencing deleted merchants)
--- Order matters: delete children before adding constraints
+-- ─────────────────────────────────────────────
+-- Step 1: Clean orphan data — LEGACY tables (column = merchantId)
+-- SEC-V7-07 FIX: Use LEFT JOIN for performance instead of NOT IN subquery
+-- ─────────────────────────────────────────────
 
-DELETE FROM abandoned_carts WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM analytics WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM automation_rules WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM campaigns WHERE merchantId NOT IN (SELECT id FROM merchants);
--- Note: conversations has child tables (messages, sentiment_analysis) — clean children first
-DELETE FROM messages WHERE conversationId IN (SELECT id FROM conversations WHERE merchantId NOT IN (SELECT id FROM merchants));
-DELETE FROM conversations WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM customer_reviews WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM discount_codes WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM occasion_campaigns WHERE merchantId NOT IN (SELECT id FROM merchants);
--- Note: orders has child tables (order_notifications) — clean children first
-DELETE FROM order_notifications WHERE merchant_id IN (SELECT merchant_id FROM order_notifications WHERE merchant_id NOT IN (SELECT id FROM merchants));
-DELETE FROM orders WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM payments WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM products WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM referral_codes WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM rewards WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM salla_connections WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM subscriptions WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM supportTickets WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM sync_logs WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM testConversations WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM testDeals WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM testMetricsDaily WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM whatsappConnections WHERE merchantId NOT IN (SELECT id FROM merchants);
-DELETE FROM whatsapp_connection_requests WHERE merchantId NOT IN (SELECT id FROM merchants);
+-- Clean children of conversations first (messages depend on conversations)
+DELETE m FROM messages m
+  LEFT JOIN conversations c ON m.conversationId = c.id
+  WHERE c.id IS NULL;
 
--- Step 2: Clean dynamic tables
-DELETE FROM sari_strategy_metrics WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM sari_quality_metrics WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM sari_weekly_reports WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM customer_profiles WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM knowledge_sections WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM knowledge_changelog WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM sari_response_cache WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM sales_quotations WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM sales_targets WHERE merchant_id NOT IN (SELECT id FROM merchants);
-DELETE FROM quotation_templates WHERE merchant_id NOT IN (SELECT id FROM merchants);
+-- Clean children of orders first
+DELETE otn FROM order_notifications otn
+  LEFT JOIN orders o ON otn.order_id = o.id
+  WHERE o.id IS NULL;
 
--- Step 3: Add FK constraints (run via drizzle-kit push after this script)
--- drizzle-kit will generate ALTER TABLE statements from schema.ts changes
+-- Now clean the 22 orphan tables (merchantId column = camelCase)
+DELETE t FROM abandoned_carts t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM analytics t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM automation_rules t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM campaigns t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM conversations t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM customer_reviews t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM discount_codes t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM occasion_campaigns t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM orders t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM payments t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM products t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM referral_codes t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM rewards t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM salla_connections t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM subscriptions t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM supportTickets t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM sync_logs t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM testConversations t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM testDeals t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM testMetricsDaily t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM whatsappConnections t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+DELETE t FROM whatsapp_connection_requests t LEFT JOIN merchants m ON t.merchantId = m.id WHERE m.id IS NULL;
+
+-- ─────────────────────────────────────────────
+-- Step 2: Clean orphan data — DYNAMIC tables (column = merchant_id)
+-- ─────────────────────────────────────────────
+
+DELETE t FROM sari_strategy_metrics t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM sari_quality_metrics t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM sari_weekly_reports t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM customer_profiles t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM knowledge_sections t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM knowledge_changelog t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM sari_response_cache t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM sales_quotations t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM sales_targets t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+DELETE t FROM quotation_templates t LEFT JOIN merchants m ON t.merchant_id = m.id WHERE m.id IS NULL;
+
+-- ─────────────────────────────────────────────
+-- Step 3: After this script, run drizzle-kit push
+-- FK constraints will be created automatically from schema.ts
+-- ─────────────────────────────────────────────
