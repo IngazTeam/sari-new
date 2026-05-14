@@ -438,7 +438,44 @@ export const sariBrainRouter = router({
         score: result.overallScore,
       });
 
-      return { success: true, title: result.title, industry: result.industry, score: result.overallScore };
+      // === Knowledge Engine v4: Classify scraped content into structured sections ===
+      let evolveResult = null;
+      try {
+        const scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
+        if (scrapedText.trim().length > 100) {
+          const { ingestContent } = await import('./ai/knowledge-engine');
+          const { embedAllSections } = await import('./ai/rag-engine');
+          
+          const ingestionResult = await ingestContent(
+            merchant.id,
+            scrapedText,
+            'website',
+            { businessName: merchant.businessName, industry: result.industry },
+            websiteUrl
+          );
+          evolveResult = ingestionResult.evolveResult;
+          
+          // Generate embeddings for all new sections
+          await embedAllSections(merchant.id);
+          
+          // Invalidate response cache (knowledge changed)
+          const knowledgeDb = await import('./db/knowledge');
+          await knowledgeDb.invalidateCache(merchant.id);
+          
+          console.log(`[SariBrain] Knowledge Engine: +${evolveResult.added} sections, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
+        }
+      } catch (keErr: any) {
+        // Non-blocking: Knowledge Engine failure doesn't break website analysis
+        console.warn('[SariBrain] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
+      }
+
+      return { 
+        success: true, 
+        title: result.title, 
+        industry: result.industry, 
+        score: result.overallScore,
+        knowledgeEvolution: evolveResult,
+      };
     } catch (error: any) {
       if (error?.code === 'TOO_MANY_REQUESTS') throw error;
       console.error('[SariBrain] Website re-analysis failed:', error);

@@ -61,6 +61,27 @@ export const knowledgeDocsRouter = router({
         extractionStatus: 'completed',
       });
 
+      // === Knowledge Engine v4: Classify document into structured sections ===
+      try {
+        if (text.trim().length > 100) {
+          const { ingestContent } = await import('./ai/knowledge-engine');
+          const { embedAllSections } = await import('./ai/rag-engine');
+          const knowledgeDb = await import('./db/knowledge');
+          
+          await ingestContent(
+            merchant.id,
+            text,
+            'document',
+            { businessName: merchant.businessName },
+          );
+          
+          await embedAllSections(merchant.id);
+          await knowledgeDb.invalidateCache(merchant.id);
+        }
+      } catch (keErr: any) {
+        console.warn('[KnowledgeDocs] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
+      }
+
       return { success: true, textLength: text.length };
     } catch (error) {
       console.error('[KnowledgeDocs] Reprocess failed:', error);
