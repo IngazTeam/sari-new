@@ -93,24 +93,6 @@ export default function SariBrain() {
     { icon: '✨', label: 'حفظ النتائج', detail: 'تحديث قاعدة المعرفة' },
   ];
 
-  useEffect(() => {
-    if (!reanalyzeMutation.isPending) {
-      if (!analysisResults && !analysisError) setAnalysisStep(0);
-      return;
-    }
-    const timer = setInterval(() => {
-      setAnalysisStep(prev => prev < ANALYSIS_STEPS.length - 1 ? prev + 1 : prev);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [reanalyzeMutation.isPending]);
-
-  const startAnalysis = () => {
-    setAnalysisResults(null);
-    setAnalysisError(null);
-    setAnalysisStep(0);
-    setAnalysisDialogOpen(true);
-    reanalyzeMutation.mutate();
-  };
 
   const deleteSourceMutation = trpc.sariBrain.deleteSource.useMutation({
     onSuccess: () => {
@@ -144,6 +126,27 @@ export default function SariBrain() {
       setAnalysisError(error.message);
     },
   });
+
+  // Effect must be AFTER reanalyzeMutation is declared (const is not hoisted)
+  useEffect(() => {
+    if (!reanalyzeMutation.isPending) {
+      if (!analysisResults && !analysisError) setAnalysisStep(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setAnalysisStep(prev => prev < ANALYSIS_STEPS.length - 1 ? prev + 1 : prev);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [reanalyzeMutation.isPending]);
+
+  const startAnalysis = () => {
+    setAnalysisResults(null);
+    setAnalysisError(null);
+    setAnalysisStep(0);
+    setAnalysisDialogOpen(true);
+    reanalyzeMutation.mutate();
+  };
+
 
   // Knowledge v4 mutations
   const createSectionMut = trpc.sariBrain.createSection.useMutation({
