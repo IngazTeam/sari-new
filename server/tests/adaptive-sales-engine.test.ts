@@ -10,7 +10,7 @@ import {
   detectIntent, detectTopicChange,
 } from '../ai/session-context';
 import { detectDialect, extractChildName, buildInitialCulturalProfile, buildCulturalPrompt } from '../ai/cultural-engine';
-import { selectPersuasion } from '../ai/sales-arsenal';
+import { selectPersuasion, buildCrossSellSuggestions } from '../ai/sales-arsenal';
 import { classifyTier, buildProfileContext } from '../db/customer-intelligence';
 
 // ═══════════════════════════════════════════════════════════════
@@ -237,10 +237,14 @@ describe('Sales Arsenal — Persuasion Selection', () => {
   const baseArsenal = {
     activeDiscounts: [],
     loyaltyPoints: 0,
+    loyaltyTier: null,
     availableRewards: [],
     abandonedCart: null,
     bestSellers: [{ name: 'Product A', price: 100 }],
     totalProducts: 10,
+    crossSellSuggestions: [],
+    upcomingBookings: [],
+    availableServices: [],
   };
 
   it('should prioritize cart recovery for abandoned cart', () => {
@@ -256,9 +260,38 @@ describe('Sales Arsenal — Persuasion Selection', () => {
 
   it('should use loyalty for VIP with points', () => {
     const vipProfile = { ...baseProfile, customerTier: 'vip' as const };
-    const arsenal = { ...baseArsenal, loyaltyPoints: 200 };
+    const arsenal = { ...baseArsenal, loyaltyPoints: 200, loyaltyTier: { name: 'ذهبي', icon: '🥇', discount: 15 } };
     const plan = selectPersuasion(vipProfile, arsenal, 'browsing', 'neutral', []);
     expect(plan.strategy).toBe('loyalty_reward');
+    expect(plan.prompt).toContain('ذهبي');
+  });
+
+  it('should use loyalty for loyal tier too (v6)', () => {
+    const loyalProfile = { ...baseProfile, customerTier: 'loyal' as const };
+    const arsenal = { ...baseArsenal, loyaltyPoints: 100 };
+    const plan = selectPersuasion(loyalProfile, arsenal, 'browsing', 'neutral', []);
+    expect(plan.strategy).toBe('loyalty_reward');
+  });
+
+  it('should use cross_sell when suggestions available (v6)', () => {
+    const arsenal = {
+      ...baseArsenal,
+      crossSellSuggestions: [{ productName: 'كفر iPhone', reason: 'من نفس فئة "iPhone 15"' }],
+    };
+    const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', []);
+    expect(plan.strategy).toBe('cross_sell');
+    expect(plan.prompt).toContain('كفر iPhone');
+  });
+
+  it('should use booking_followup when bookings exist (v6)', () => {
+    const arsenal = {
+      ...baseArsenal,
+      upcomingBookings: [{ serviceName: 'قص شعر', date: '2026-05-20' }],
+      availableServices: [{ name: 'صبغة', price: 150 }],
+    };
+    const plan = selectPersuasion(baseProfile, arsenal, 'browsing', 'neutral', []);
+    expect(plan.strategy).toBe('booking_followup');
+    expect(plan.prompt).toContain('قص شعر');
   });
 
   it('should use proactive discount for objecting customer', () => {
@@ -288,8 +321,47 @@ describe('Sales Arsenal — Persuasion Selection', () => {
 
   it('should return none when no tactics available', () => {
     const plan = selectPersuasion(baseProfile, baseArsenal, 'unknown', 'neutral',
-      ['cart_recovery', 'empathy_resolve', 'loyalty_reward', 'proactive_discount', 'social_proof', 'smart_upsell']);
+      ['cart_recovery', 'empathy_resolve', 'loyalty_reward', 'proactive_discount', 'social_proof', 'smart_upsell', 'cross_sell', 'booking_followup']);
     expect(plan.strategy).toBe('none');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// v6: Cross-sell Suggestions Builder
+// ═══════════════════════════════════════════════════════════════
+
+describe('Cross-sell Suggestions Builder (v6)', () => {
+  const mockProducts = [
+    { name: 'iPhone 15', category: 'phones', isActive: true, price: 4000 },
+    { name: 'Galaxy S24', category: 'phones', isActive: true, price: 3500 },
+    { name: 'AirPods', category: 'audio', isActive: true, price: 800 },
+    { name: 'كفر iPhone', category: 'accessories', isActive: true, price: 50 },
+    { name: 'شاحن سريع', category: 'accessories', isActive: true, price: 100 },
+  ];
+
+  it('should suggest same-category products', () => {
+    const suggestions = buildCrossSellSuggestions(['iPhone 15'], mockProducts);
+    expect(suggestions.length).toBeGreaterThan(0);
+    // Should suggest Galaxy S24 (same 'phones' category)
+    const phonesSuggestion = suggestions.find(s => s.productName === 'Galaxy S24');
+    expect(phonesSuggestion).toBeDefined();
+    expect(phonesSuggestion!.reason).toContain('iPhone 15');
+  });
+
+  it('should not suggest already-purchased products', () => {
+    const suggestions = buildCrossSellSuggestions(['iPhone 15', 'Galaxy S24'], mockProducts);
+    const names = suggestions.map(s => s.productName);
+    expect(names).not.toContain('iPhone 15');
+    expect(names).not.toContain('Galaxy S24');
+  });
+
+  it('should return empty for empty history', () => {
+    expect(buildCrossSellSuggestions([], mockProducts)).toEqual([]);
+  });
+
+  it('should cap at 3 suggestions', () => {
+    const suggestions = buildCrossSellSuggestions(['AirPods'], mockProducts);
+    expect(suggestions.length).toBeLessThanOrEqual(3);
   });
 });
 

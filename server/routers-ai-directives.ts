@@ -16,11 +16,20 @@ function assertAdmin(role: string) {
 const CATEGORIES = ['sales', 'culture', 'persuasion', 'examples', 'limits'] as const;
 
 export const aiDirectivesRouter = router({
-  // List all directives
+  // List all directives (auto-seeds on first empty load)
   list: protectedProcedure.query(async ({ ctx }) => {
     assertAdmin(ctx.user.role);
     const { getAllDirectives } = await import("./db/ai-directives");
-    return await getAllDirectives();
+    const directives = await getAllDirectives();
+    // Auto-seed foundational directives if table is empty
+    if (directives.length === 0) {
+      try {
+        const { seedDirectivesIfEmpty } = await import("./db/seed-ai-directives");
+        await seedDirectivesIfEmpty();
+        return await getAllDirectives();
+      } catch { /* seed is optional */ }
+    }
+    return directives;
   }),
 
   // Create new directive

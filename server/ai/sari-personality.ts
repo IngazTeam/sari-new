@@ -13,7 +13,7 @@ import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analys
 import type { SariPersonalitySetting } from '../../drizzle/schema';
 import { getSession, createSession, updateSession, detectIntent, detectTopicChange } from './session-context';
 import { getOrCreateProfile, updateProfile, buildProfileContext, type CustomerProfile } from '../db/customer-intelligence';
-import { loadArsenal, selectPersuasion } from './sales-arsenal';
+import { loadArsenal, selectPersuasion, recordStrategyUse, markStrategySuccess, buildCrossSellSuggestions } from './sales-arsenal';
 import { detectDialect, extractChildName, buildCulturalPrompt, buildInitialCulturalProfile, type CulturalProfile } from './cultural-engine';
 import { buildDirectivesPrompt } from '../db/ai-directives';
 import { virtualAgents } from '../../drizzle/schema';
@@ -707,6 +707,17 @@ ${result.message}
 
       if (persuasion.strategy !== 'none') {
         updateSession(params.merchantId, convId, { persuasionTactic: persuasion.strategy });
+        // v6: Record strategy use for metrics
+        recordStrategyUse({
+          merchantId: params.merchantId,
+          strategy: persuasion.strategy,
+          conversationId: params.conversationId,
+        }).catch(() => {});
+      }
+
+      // v6: If intent is ready_to_buy, mark last strategy as success
+      if (intent === 'ready_to_buy' && convId) {
+        markStrategySuccess(params.merchantId, convId).catch(() => {});
       }
 
       // Build system prompt from cached context
@@ -819,6 +830,16 @@ ${result.message}
     let arsenalPrompt = '';
     try {
       const arsenal = await loadArsenal(params.merchantId, params.customerPhone);
+
+      // v6: Build cross-sell suggestions from purchase history
+      if (customerProfile?.purchaseHistory) {
+        const allProducts = await db.getProductsByMerchantId(params.merchantId);
+        arsenal.crossSellSuggestions = buildCrossSellSuggestions(
+          customerProfile.purchaseHistory,
+          allProducts
+        );
+      }
+
       const intent = detectIntent(params.message);
       const persuasion = selectPersuasion(
         customerProfile || { customerTier: 'new' } as any,
@@ -828,6 +849,15 @@ ${result.message}
         []
       );
       arsenalPrompt = persuasion.prompt;
+
+      // v6: Record strategy use
+      if (persuasion.strategy !== 'none') {
+        recordStrategyUse({
+          merchantId: params.merchantId,
+          strategy: persuasion.strategy,
+          conversationId: params.conversationId,
+        }).catch(() => {});
+      }
 
       // Create session for future messages
       if (convId) {
