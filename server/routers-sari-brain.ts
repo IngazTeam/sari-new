@@ -406,7 +406,25 @@ export const sariBrainRouter = router({
     } catch (error: any) {
       if (error?.code === 'TOO_MANY_REQUESTS') throw error;
       console.error('[SariBrain] Website re-analysis failed:', error);
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل تحليل الموقع. تأكد من صحة الرابط وحاول مرة أخرى.' });
+
+      // Surface a meaningful reason to the merchant
+      let reason = 'خطأ غير معروف';
+      const msg = error?.message?.toLowerCase() || '';
+      if (msg.includes('timeout') || msg.includes('abort')) {
+        reason = 'الموقع لم يستجب في الوقت المحدد (timeout)';
+      } else if (msg.includes('enotfound') || msg.includes('dns')) {
+        reason = `الرابط غير صحيح أو الموقع غير موجود: ${websiteUrl}`;
+      } else if (msg.includes('403') || msg.includes('cloudflare') || msg.includes('blocked')) {
+        reason = 'الموقع محمي بجدار حماية (Cloudflare) ويمنع السحب';
+      } else if (msg.includes('certificate') || msg.includes('ssl') || msg.includes('tls')) {
+        reason = 'مشكلة في شهادة SSL للموقع';
+      } else if (msg.includes('econnrefused') || msg.includes('econnreset')) {
+        reason = 'السيرفر رفض الاتصال — تأكد من أن الموقع يعمل';
+      } else if (error?.message) {
+        reason = error.message.substring(0, 150);
+      }
+
+      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `فشل تحليل الموقع: ${reason}` });
     }
   }),
 
