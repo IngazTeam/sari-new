@@ -954,7 +954,8 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
             let locMatch;
             while ((locMatch = locRegex.exec(smResult.body)) !== null) {
               const pageUrl = locMatch[1].trim();
-              if (!seenUrls.has(pageUrl) && pageUrl.startsWith(baseOrigin)) {
+              // SEC-SITEMAP-01: Validate sitemap URLs (defense-in-depth: scrapeWebsite also checks)
+              if (!seenUrls.has(pageUrl) && pageUrl.startsWith(baseOrigin) && isUrlSafe(pageUrl)) {
                 seenUrls.add(pageUrl);
                 // Classify from URL path
                 const path = pageUrl.toLowerCase();
