@@ -237,8 +237,9 @@ export const adminAiAnalyticsRouter = router({
         const [dailyRows] = await pool.execute(
           `SELECT DATE(created_at) as day, status, COUNT(*) as count
            FROM message_delivery_log
-           WHERE created_at > DATE_SUB(NOW(), INTERVAL ${days} DAY)
-           GROUP BY day, status ORDER BY day`
+           WHERE created_at > DATE_SUB(NOW(), INTERVAL ? DAY)
+           GROUP BY day, status ORDER BY day`,
+          [days]
         );
 
         // Escalation rate (messages transferred to human)
@@ -248,7 +249,8 @@ export const adminAiAnalyticsRouter = router({
             `SELECT 
               ROUND(SUM(CASE WHEN escalated = 1 THEN 1 ELSE 0 END) / GREATEST(COUNT(*), 1) * 100, 1) as rate
              FROM conversations 
-             WHERE created_at > DATE_SUB(NOW(), INTERVAL ${days} DAY)`
+             WHERE created_at > DATE_SUB(NOW(), INTERVAL ? DAY)`,
+            [days]
           );
           escalationRate = (escRows as any[])[0]?.rate || 0;
         } catch { /* conversations table may not have escalated column */ }
@@ -259,8 +261,9 @@ export const adminAiAnalyticsRouter = router({
           const [sentRows] = await pool.execute(
             `SELECT sentiment, COUNT(*) as count
              FROM conversations 
-             WHERE created_at > DATE_SUB(NOW(), INTERVAL ${days} DAY) AND sentiment IS NOT NULL
-             GROUP BY sentiment`
+             WHERE created_at > DATE_SUB(NOW(), INTERVAL ? DAY) AND sentiment IS NOT NULL
+             GROUP BY sentiment`,
+            [days]
           );
           const sentMap: Record<string, number> = {};
           for (const r of sentRows as any[]) {
