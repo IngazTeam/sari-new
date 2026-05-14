@@ -242,6 +242,7 @@ export async function findCachedResponse(
 
 /**
  * Save a successful response to cache for future reuse.
+ * SEC-V4-02 FIX: 4-layer defense against cache poisoning
  */
 export async function cacheSuccessfulResponse(
   merchantId: number,
@@ -249,6 +250,49 @@ export async function cacheSuccessfulResponse(
   response: string
 ): Promise<void> {
   try {
+    // Defense 1: Minimum length — skip trivially short responses
+    if (response.trim().length < 30) return;
+
+    // Defense 2: Suspicious content filter — block prompt injection artifacts
+    const poisonPatterns = [
+      /تجاهل\s*(كل|جميع)/i,
+      /ignore\s*(all|previous|above)/i,
+      /forget\s*(everything|instructions)/i,
+      /system\s*prompt/i,
+      /\[INST\]/i,
+      /\[\/INST\]/i,
+    ];
+    if (poisonPatterns.some(p => p.test(question) || p.test(response))) {
+      console.warn(`[RAG] ⚠️ Cache poisoning blocked for merchant ${merchantId}`);
+      return;
+    }
+
+    // Defense 3: Per-merchant cache cap (max 500 entries)
+    const pool = await (await import('../db')).getPool();
+    if (pool) {
+      const [countRows] = await pool.execute(
+        `SELECT COUNT(*) as cnt FROM sari_response_cache WHERE merchant_id = ? AND is_valid = 1`,
+        [merchantId]
+      );
+      if (Number((countRows as any[])[0]?.cnt) >= 500) {
+        // Evict oldest unused — keep cache fresh
+        await pool.execute(
+          `UPDATE sari_response_cache SET is_valid = 0 
+           WHERE merchant_id = ? AND is_valid = 1 
+           ORDER BY last_used_at ASC LIMIT 50`,
+          [merchantId]
+        );
+      }
+
+      // Defense 4: TTL — invalidate entries not used in 30 days
+      await pool.execute(
+        `UPDATE sari_response_cache SET is_valid = 0 
+         WHERE merchant_id = ? AND is_valid = 1 
+         AND last_used_at < DATE_SUB(NOW(), INTERVAL 30 DAY)`,
+        [merchantId]
+      );
+    }
+
     const questionEmbedding = await generateEmbedding(question);
     const embeddingBuffer = questionEmbedding ? embeddingToBuffer(questionEmbedding) : undefined;
     

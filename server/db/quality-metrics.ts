@@ -232,9 +232,14 @@ export async function getQualityDashboard(
   );
   const topQuestions = (topRows as any[]).map((r: any) => r.question_text);
 
-  // Recent metrics
+  // SEC-V4-06 FIX: Truncate sensitive text — don't expose full conversations to dashboard
   const [recentRows] = await pool.execute(
-    `SELECT * FROM sari_quality_metrics 
+    `SELECT id, merchant_id, conversation_id,
+       LEFT(question_text, 80) as question_text,
+       LEFT(response_text, 80) as response_text,
+       response_time_ms, was_cache_hit, rag_sections_used,
+       customer_sentiment, feedback_rating, was_empty, was_escalated, created_at
+     FROM sari_quality_metrics 
      WHERE merchant_id = ? ORDER BY created_at DESC LIMIT 10`,
     [merchantId]
   );

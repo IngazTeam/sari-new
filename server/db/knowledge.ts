@@ -505,14 +505,15 @@ export async function cacheResponse(
   return (result as any).insertId;
 }
 
-/** Get all valid cached responses for a merchant */
+/** Get valid cached responses for a merchant (capped for memory safety) */
 export async function getValidCachedResponses(merchantId: number): Promise<CachedResponse[]> {
   await ensureKnowledgeTables();
   const pool = await db.getPool();
   if (!pool) return [];
 
+  // SEC-V4-04 FIX: LIMIT 200 — prevent unbounded memory load for embedding comparison
   const [rows] = await pool.execute(
-    `SELECT * FROM sari_response_cache WHERE merchant_id = ? AND is_valid = 1 ORDER BY hit_count DESC`,
+    `SELECT * FROM sari_response_cache WHERE merchant_id = ? AND is_valid = 1 ORDER BY hit_count DESC LIMIT 200`,
     [merchantId]
   );
   return rows as CachedResponse[];

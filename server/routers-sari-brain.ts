@@ -1274,6 +1274,9 @@ ${sanitizedContent}`
           const updated = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
           if (updated) await ragEngine.embedSection(updated, merchant.id);
         } catch { /* non-blocking */ }
+
+        // ARCH-03 FIX: Invalidate stale cached responses when knowledge changes
+        try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       }
 
       await logBrainActivity(merchant.id, 'section_updated', `تعديل قسم: ${input.title || existing.title || (existing as any).title}`);
@@ -1302,6 +1305,10 @@ ${sanitizedContent}`
       });
 
       await knowledgeDb.deleteSection(input.sectionId, merchant.id);
+
+      // ARCH-03 FIX: Purge stale cache after knowledge deletion
+      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
+
       await logBrainActivity(merchant.id, 'section_deleted', `حذف قسم: ${existing.title || (existing as any).title}`);
       return { success: true };
     }),
@@ -1428,6 +1435,9 @@ ${sanitizedContent}`
     .mutation(async ({ ctx, input }) => {
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      // SEC-V4-03 FIX: Rate limit — max 1 quotation per 2 seconds
+      checkTestRateLimit(merchant.id, 2_000);
 
       const quotationsDb = await import('./db/sales-quotations');
       const quotation = await quotationsDb.createQuotation({

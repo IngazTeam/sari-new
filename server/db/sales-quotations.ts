@@ -94,7 +94,12 @@ export async function createQuotation(data: {
   const pool = await db.getPool();
   if (!pool) throw new Error('DB unavailable');
 
-  const subtotal = data.items.reduce((sum, item) => sum + item.total, 0);
+  // SEC-V4-01 FIX: Re-calculate totals server-side — NEVER trust client values
+  const safeItems = data.items.map(item => ({
+    ...item,
+    total: Math.round(item.quantity * item.unitPrice * 100) / 100,
+  }));
+  const subtotal = safeItems.reduce((sum, item) => sum + item.total, 0);
   const taxRate = data.taxRate ?? 0.15;
   const taxAmount = Math.round(subtotal * taxRate * 100) / 100;
   const total = Math.round((subtotal + taxAmount) * 100) / 100;
@@ -118,7 +123,7 @@ export async function createQuotation(data: {
       data.customerPhone ?? null,
       data.customerName ?? null,
       quotationNumber,
-      JSON.stringify(data.items),
+      JSON.stringify(safeItems),
       subtotal,
       taxAmount,
       total,
@@ -141,7 +146,7 @@ export async function createQuotation(data: {
     customerPhone: data.customerPhone ?? null,
     customerName: data.customerName ?? null,
     quotationNumber,
-    items: data.items,
+    items: safeItems,
     subtotal,
     taxAmount,
     total,
