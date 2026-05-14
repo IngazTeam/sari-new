@@ -662,17 +662,32 @@ export function discoverPages(dom: JSDOM, baseUrl: string): DiscoveredPage[] {
 }
 
 /**
+ * Per-page crawl result — used by the Knowledge Dashboard
+ */
+export interface CrawledPageData {
+  url: string;
+  title: string;
+  pageType: DiscoveredPage['pageType'] | 'content';
+  content: string;     // extracted text
+  wordCount: number;
+  crawledAt: string;    // ISO date
+  success: boolean;
+}
+
+/**
  * Crawl discovered pages and extract FAQs + contact info
- * Limits to max 5 pages to avoid being blocked
+ * Returns per-page structured data for the Knowledge Dashboard
  */
 async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: ContactInfo): Promise<{
   faqs: ExtractedFAQ[];
   contactInfo: ContactInfo;
   enrichedText: string;
+  crawledPages: CrawledPageData[];
 }> {
   const faqs: ExtractedFAQ[] = [];
   let enrichedText = '';
   const mergedContact: ContactInfo = { ...existingContactInfo };
+  const crawledPages: CrawledPageData[] = [];
 
   // Prioritize high-value pages: contact, faq, about, then others
   const priorityOrder = ['contact', 'faq', 'about', 'shipping', 'returns', 'terms', 'privacy'];
@@ -686,6 +701,18 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
     try {
       console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
       const { dom, text, html } = await scrapeWebsite(page.url);
+
+      // Track per-page data for Knowledge Dashboard
+      const pageWordCount = text.trim().split(/\s+/).filter(Boolean).length;
+      crawledPages.push({
+        url: page.url,
+        title: page.title || page.pageType,
+        pageType: page.pageType as any,
+        content: text.substring(0, 50000), // Cap per-page content at 50KB
+        wordCount: pageWordCount,
+        crawledAt: new Date().toISOString(),
+        success: true,
+      });
 
       // SEC-04 FIX: Cap accumulated text at 500KB to prevent memory bloat
       if (enrichedText.length < 500000) {
@@ -733,17 +760,27 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
         });
       }
     } catch (err) {
+      // Track failed pages too
+      crawledPages.push({
+        url: page.url,
+        title: page.title || page.pageType,
+        pageType: page.pageType as any,
+        content: '',
+        wordCount: 0,
+        crawledAt: new Date().toISOString(),
+        success: false,
+      });
       console.warn(`[WebsiteAnalyzer] Failed to crawl ${page.url}:`, err instanceof Error ? err.message : 'unknown');
     }
   }
 
-  return { faqs, contactInfo: mergedContact, enrichedText };
+  return { faqs, contactInfo: mergedContact, enrichedText, crawledPages };
 }
 
 /**
  * تحليل شامل للموقع — مع multi-page crawling
  */
-export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult & { _scrapedHtml: string; _scrapedText: string }> {
+export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult & { _scrapedHtml: string; _scrapedText: string; _enrichedText: string; _crawledPages: CrawledPageData[] }> {
   try {
     console.log('[WebsiteAnalyzer] Analyzing website:', url);
 
@@ -776,6 +813,7 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
     let contactInfo = uxAnalysis.contactInfo;
     let totalWordCount = contentAnalysis.wordCount;
     let allEnrichedText = '';  // Accumulated text from ALL crawled sub-pages
+    let allCrawledPages: CrawledPageData[] = [];
 
     if (discoveredPages.length > 0) {
       try {
@@ -783,10 +821,11 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
         faqs = crawled.faqs;
         contactInfo = crawled.contactInfo;
         allEnrichedText = crawled.enrichedText;
+        allCrawledPages = crawled.crawledPages;
         // Update word count with enriched text
         const extraWords = crawled.enrichedText.trim().split(/\s+/).length;
         totalWordCount += extraWords;
-        console.log(`[WebsiteAnalyzer] Crawling complete: ${faqs.length} FAQs, ${contactInfo.phones.length} phones, ${contactInfo.emails.length} emails, +${extraWords} words, ${allEnrichedText.length} chars total`);
+        console.log(`[WebsiteAnalyzer] Crawling complete: ${allCrawledPages.length} pages (${allCrawledPages.filter(p => p.success).length} success), ${faqs.length} FAQs, +${extraWords} words`);
       } catch (crawlErr) {
         console.warn('[WebsiteAnalyzer] Multi-page crawling failed:', crawlErr instanceof Error ? crawlErr.message : 'unknown');
       }
@@ -857,6 +896,7 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       _scrapedHtml: html,
       _scrapedText: text,
       _enrichedText: allEnrichedText,  // Text from ALL crawled sub-pages
+      _crawledPages: allCrawledPages,  // Per-page data for Knowledge Dashboard
     };
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error analyzing website:', error);

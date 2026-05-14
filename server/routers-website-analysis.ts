@@ -144,6 +144,33 @@ export const websiteAnalysisRouter = router({
                 console.warn('[WebsiteAnalysis] Failed to save FAQs:', faqErr.message);
               }
             }
+
+            // Save crawled pages to discovered_pages table (Knowledge Dashboard)
+            if (result._crawledPages && result._crawledPages.length > 0) {
+              try {
+                const dbConn = await db.getDb();
+                if (dbConn) {
+                  // Clear old discovered pages
+                  await (dbConn as any).execute(
+                    `DELETE FROM discovered_pages WHERE merchant_id = ?`,
+                    [merchant.id]
+                  );
+                  // Save each crawled page
+                  const validTypes = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other'];
+                  for (const page of result._crawledPages) {
+                    if (!page.success) continue; // Skip failed pages
+                    const safeType = validTypes.includes(page.pageType) ? page.pageType : 'other';
+                    await (dbConn as any).execute(
+                      `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
+                      [merchant.id, safeType, page.title.substring(0, 500), page.url.substring(0, 1000), page.content.substring(0, 65000)]
+                    );
+                  }
+                  console.log(`[WebsiteAnalysis] Saved ${result._crawledPages.filter(p => p.success).length} discovered pages for merchant ${merchant.id}`);
+                }
+              } catch (pageErr: any) {
+                console.warn('[WebsiteAnalysis] Failed to save discovered pages:', pageErr.message);
+              }
+            }
           } catch (analysisError) {
             console.error('[WebsiteAnalysis] Phase 1 FAILED:', analysisError instanceof Error ? analysisError.message : analysisError);
             // Save partial info — title was already saved at creation, just add description

@@ -379,7 +379,7 @@ export const sariBrainRouter = router({
         }
       } catch { /* table may not exist yet — first run */ }
 
-      await db.createWebsiteAnalysis({
+      const analysisId = await db.createWebsiteAnalysis({
         merchantId: merchant.id,
         url: websiteUrl,
         title: result.title || '',
@@ -401,9 +401,35 @@ export const sariBrainRouter = router({
         imageCount: result.imageCount || 0,
         videoCount: result.videoCount || 0,
         overallScore: result.overallScore || 0,
-        scrapedContent: (result._scrapedText || '') + '\n\n' + ((result as any)._enrichedText || ''),
         status: 'completed',
       });
+
+      // Save scraped content separately (createWebsiteAnalysis doesn't accept this field)
+      await db.updateWebsiteAnalysis(analysisId, {
+        scrapedContent: (result._scrapedText || '') + '\n\n' + (result._enrichedText || ''),
+      });
+
+      // Save crawled pages to discovered_pages (Knowledge Dashboard)
+      if ((result as any)._crawledPages?.length > 0) {
+        try {
+          const dbConn = await db.getDb();
+          if (dbConn) {
+            await (dbConn as any).execute(`DELETE FROM discovered_pages WHERE merchant_id = ?`, [merchant.id]);
+            const validTypes = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other'];
+            for (const page of (result as any)._crawledPages) {
+              if (!page.success) continue;
+              const safeType = validTypes.includes(page.pageType) ? page.pageType : 'other';
+              await (dbConn as any).execute(
+                `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
+                [merchant.id, safeType, page.title.substring(0, 500), page.url.substring(0, 1000), page.content.substring(0, 65000)]
+              );
+            }
+            console.log(`[SariBrain] Saved ${(result as any)._crawledPages.filter((p: any) => p.success).length} discovered pages`);
+          }
+        } catch (pageErr: any) {
+          console.warn('[SariBrain] Failed to save discovered pages:', pageErr.message);
+        }
+      }
 
       await logBrainActivity(merchant.id, 'website_analyzed', `تم إعادة تحليل الموقع: ${websiteUrl}`, {
         url: websiteUrl,
@@ -814,6 +840,257 @@ ${sanitizedContent}`
         if (e?.code === 'FORBIDDEN') throw e;
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إلغاء المفتاح' });
       }
+    }),
+
+  // ═══════════════════════════════════════════
+  // Website Knowledge Dashboard Endpoints
+  // ═══════════════════════════════════════════
+
+  /**
+   * Get detailed website knowledge data for the dashboard
+   * Returns: analysis overview, crawled pages list, categories, coverage score
+   */
+  getWebsiteKnowledge: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    try {
+      const dbConn = await db.getDb();
+      if (!dbConn) return null;
+
+      // 1. Get latest analysis
+      const [analyses] = await (dbConn as any).execute(
+        `SELECT id, url, title, description, industry, language, overall_score, word_count, 
+                seo_score, performance_score, ux_score, content_quality,
+                has_contact_info, has_whatsapp, analyzed_at, status
+         FROM website_analyses WHERE merchant_id = ? ORDER BY analyzed_at DESC LIMIT 1`,
+        [merchant.id]
+      );
+      const analysis = (analyses as any[])?.[0];
+      if (!analysis) return null;
+
+      // 2. Get discovered pages
+      const [pages] = await (dbConn as any).execute(
+        `SELECT id, page_type, title, url, LENGTH(content) as content_length, 
+                is_active, use_in_bot, discovered_at
+         FROM discovered_pages WHERE merchant_id = ? ORDER BY page_type, title`,
+        [merchant.id]
+      );
+      const discoveredPages = (pages as any[]).map((p: any) => ({
+        id: p.id,
+        pageType: p.page_type,
+        title: p.title,
+        url: p.url,
+        contentLength: p.content_length || 0,
+        wordCount: Math.round((p.content_length || 0) / 5), // Approximate
+        isActive: !!p.is_active,
+        useInBot: !!p.use_in_bot,
+        discoveredAt: p.discovered_at,
+      }));
+
+      // 3. Get FAQs count
+      const faqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+
+      // 4. Calculate content categories
+      const PAGE_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
+        about: { label: 'من نحن', icon: '🏢' },
+        contact: { label: 'تواصل معنا', icon: '📞' },
+        faq: { label: 'أسئلة شائعة', icon: '❓' },
+        shipping: { label: 'الشحن والتوصيل', icon: '🚚' },
+        returns: { label: 'الإرجاع والاستبدال', icon: '🔄' },
+        privacy: { label: 'سياسة الخصوصية', icon: '🔒' },
+        terms: { label: 'الشروط والأحكام', icon: '📋' },
+        content: { label: 'محتوى عام', icon: '📄' },
+        other: { label: 'صفحات أخرى', icon: '📑' },
+      };
+
+      const categories = Object.entries(
+        discoveredPages.reduce((acc: Record<string, number>, p: any) => {
+          acc[p.pageType] = (acc[p.pageType] || 0) + 1;
+          return acc;
+        }, {})
+      ).map(([type, count]) => ({
+        type,
+        count,
+        ...(PAGE_TYPE_LABELS[type] || PAGE_TYPE_LABELS.other),
+      }));
+
+      // 5. Calculate Knowledge Coverage Score
+      const importantTypes = ['about', 'contact', 'faq', 'shipping', 'returns'];
+      const coveredTypes = importantTypes.filter(t => discoveredPages.some((p: any) => p.pageType === t));
+      const typeCoverage = coveredTypes.length / importantTypes.length;
+      const totalWords = analysis.word_count || 0;
+      const wordCoverage = Math.min(totalWords / 2000, 1); // 2000 words = 100%
+      const faqCoverage = Math.min(faqs.length / 10, 1); // 10 FAQs = 100%
+      const knowledgeScore = Math.round((typeCoverage * 40 + wordCoverage * 35 + faqCoverage * 25));
+
+      // 6. Identify what Sari can now answer about
+      const coverageTopics: string[] = [];
+      if (discoveredPages.some((p: any) => p.pageType === 'about')) coverageTopics.push('معلومات عن الشركة والنشاط');
+      if (discoveredPages.some((p: any) => p.pageType === 'contact')) coverageTopics.push('بيانات التواصل والموقع');
+      if (discoveredPages.some((p: any) => p.pageType === 'faq') || faqs.length > 0) coverageTopics.push('الأسئلة الشائعة');
+      if (discoveredPages.some((p: any) => p.pageType === 'shipping')) coverageTopics.push('الشحن والتوصيل');
+      if (discoveredPages.some((p: any) => p.pageType === 'returns')) coverageTopics.push('سياسة الإرجاع');
+      if (discoveredPages.some((p: any) => p.pageType === 'privacy' || p.pageType === 'terms')) coverageTopics.push('السياسات والشروط');
+      if (discoveredPages.some((p: any) => p.pageType === 'content' || p.pageType === 'other')) coverageTopics.push('محتوى وخدمات عامة');
+
+      const missingTopics: string[] = [];
+      if (!discoveredPages.some((p: any) => p.pageType === 'about')) missingTopics.push('من نحن');
+      if (!discoveredPages.some((p: any) => p.pageType === 'contact')) missingTopics.push('تواصل معنا');
+      if (!discoveredPages.some((p: any) => p.pageType === 'faq') && faqs.length === 0) missingTopics.push('أسئلة شائعة');
+      if (!discoveredPages.some((p: any) => p.pageType === 'shipping')) missingTopics.push('الشحن والتوصيل');
+
+      return {
+        analysis: {
+          url: analysis.url,
+          title: analysis.title,
+          description: analysis.description,
+          industry: analysis.industry,
+          language: analysis.language,
+          overallScore: analysis.overall_score,
+          wordCount: analysis.word_count,
+          seoScore: analysis.seo_score,
+          performanceScore: analysis.performance_score,
+          uxScore: analysis.ux_score,
+          contentQuality: analysis.content_quality,
+          hasContactInfo: !!analysis.has_contact_info,
+          hasWhatsapp: !!analysis.has_whatsapp,
+          analyzedAt: analysis.analyzed_at,
+          status: analysis.status,
+        },
+        pages: discoveredPages,
+        categories,
+        faqCount: faqs.length,
+        knowledgeScore,
+        coverageTopics,
+        missingTopics,
+        totalPages: discoveredPages.length,
+        activePages: discoveredPages.filter((p: any) => p.useInBot).length,
+      };
+    } catch (error) {
+      console.error('[SariBrain] getWebsiteKnowledge failed:', error);
+      return null;
+    }
+  }),
+
+  /**
+   * Add a custom URL to the knowledge base
+   * Crawls the URL and saves its content as a discovered page
+   */
+  addCustomUrl: protectedProcedure
+    .input(z.object({
+      url: z.string().url(),
+      title: z.string().max(500).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      checkTestRateLimit(merchant.id, 10_000); // 10s cooldown
+
+      // SSRF guard
+      const { isUrlSafe, scrapeWebsite } = await import('./_core/websiteAnalyzer');
+      if (!isUrlSafe(input.url)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به' });
+      }
+
+      try {
+        // PEN-KD-03: Enforce max page limit per merchant (DoS prevention)
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
+
+        const [countResult] = await (dbConn as any).execute(
+          `SELECT COUNT(*) as cnt FROM discovered_pages WHERE merchant_id = ?`,
+          [merchant.id]
+        );
+        if ((countResult as any[])?.[0]?.cnt >= 50) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'وصلت للحد الأقصى (50 صفحة). احذف صفحات قبل إضافة جديدة.' });
+        }
+
+        // PEN-KD-04: Check for duplicate URL
+        const [dupCheck] = await (dbConn as any).execute(
+          `SELECT id FROM discovered_pages WHERE merchant_id = ? AND url = ?`,
+          [merchant.id, input.url.substring(0, 1000)]
+        );
+        if ((dupCheck as any[])?.length > 0) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الرابط مضاف مسبقاً' });
+        }
+
+        // Scrape the page
+        const { text } = await scrapeWebsite(input.url);
+        const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+
+        if (wordCount < 10) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'الصفحة فارغة أو لا تحتوي على محتوى كافي' });
+        }
+
+        // Auto-detect page title from URL if not provided
+        const rawTitle = input.title || new URL(input.url).pathname.split('/').filter(Boolean).pop() || 'صفحة مخصصة';
+        // PEN-KD-01: Sanitize title — strip SQL/HTML dangerous chars
+        const pageTitle = rawTitle.replace(/[<>"'`;\\]/g, '').substring(0, 500);
+
+        await (dbConn as any).execute(
+          `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, 'other', ?, ?, ?, 1, 1, NOW())`,
+          [merchant.id, pageTitle, input.url.substring(0, 1000), text.substring(0, 65000)]
+        );
+
+        // PEN-KD-01 FIX: Append to scraped_content — fully parameterized (was SQL injection via ${pageTitle})
+        try {
+          await (dbConn as any).execute(
+            `UPDATE website_analyses SET scraped_content = CONCAT(IFNULL(scraped_content, ''), '\n\n--- ', ?, ' ---\n', ?) WHERE merchant_id = ? ORDER BY analyzed_at DESC LIMIT 1`,
+            [pageTitle, text.substring(0, 65000), merchant.id]
+          );
+        } catch { /* skip if no analysis exists */ }
+
+        await logBrainActivity(merchant.id, 'content_analyzed', `تم إضافة صفحة مخصصة: ${pageTitle} (${wordCount} كلمة)`, {
+          url: input.url,
+          wordCount,
+        });
+
+        return { success: true, title: pageTitle, wordCount };
+      } catch (error: any) {
+        if (error?.code === 'BAD_REQUEST' || error?.code === 'TOO_MANY_REQUESTS') throw error;
+        console.error('[SariBrain] addCustomUrl failed:', error);
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل سحب الصفحة: ' + (error?.message || 'خطأ').substring(0, 100) });
+      }
+    }),
+
+  /**
+   * Toggle whether a discovered page is used in bot responses
+   */
+  togglePageInBot: protectedProcedure
+    .input(z.object({
+      pageId: z.number(),
+      useInBot: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const dbConn = await db.getDb();
+      if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
+
+      // Verify ownership
+      const [rows] = await (dbConn as any).execute(
+        `SELECT id, title FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
+        [input.pageId, merchant.id]
+      );
+      if (!rows || (rows as any[]).length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
+      }
+
+      // PEN-KD-02 FIX: Defense-in-depth — include merchant_id in UPDATE too
+      await (dbConn as any).execute(
+        `UPDATE discovered_pages SET use_in_bot = ? WHERE id = ? AND merchant_id = ?`,
+        [input.useInBot ? 1 : 0, input.pageId, merchant.id]
+      );
+
+      const page = (rows as any[])[0];
+      await logBrainActivity(merchant.id, input.useInBot ? 'faq_updated' : 'faq_updated',
+        `${input.useInBot ? 'تفعيل' : 'إيقاف'} الصفحة "${page.title}" في ردود ساري`
+      );
+
+      return { success: true };
     }),
 });
 

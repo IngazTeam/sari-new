@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, MessageSquare, Sparkles, Shield, HelpCircle, Plus } from 'lucide-react';
+import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, MessageSquare, Sparkles, Shield, HelpCircle, Plus, Eye, EyeOff, BarChart3, ExternalLink, TrendingUp, Target, Zap, BookOpen, Link } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
@@ -173,6 +173,26 @@ export default function SariBrain() {
 
   // Integration awareness
   const { term } = useIntegration();
+
+  // Website Knowledge Dashboard
+  const { data: websiteKnowledge, isLoading: knowledgeLoading } = trpc.sariBrain.getWebsiteKnowledge.useQuery();
+  const [customUrl, setCustomUrl] = useState('');
+  const addUrlMutation = trpc.sariBrain.addCustomUrl.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم إضافة "${data.title}" — ${data.wordCount} كلمة`);
+      setCustomUrl('');
+      utils.sariBrain.getWebsiteKnowledge.invalidate();
+      utils.sariBrain.getSources.invalidate();
+      utils.sariBrain.getActivityLog.invalidate();
+    },
+    onError: (e) => toast.error('فشل إضافة الصفحة: ' + e.message),
+  });
+  const togglePageMutation = trpc.sariBrain.togglePageInBot.useMutation({
+    onSuccess: () => {
+      utils.sariBrain.getWebsiteKnowledge.invalidate();
+    },
+    onError: (e) => toast.error('فشل التحديث: ' + e.message),
+  });
 
   return (
     <div className="space-y-6">
@@ -400,6 +420,181 @@ export default function SariBrain() {
           )}
         </CardContent>
       </Card>
+
+      {/* ═══ Website Knowledge Dashboard ═══ */}
+      {websiteKnowledge && (
+        <Card className="border-primary/20 overflow-hidden">
+          <CardHeader className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="h-5 w-5 text-primary" />
+                  🌐 معرفة الموقع
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  {websiteKnowledge.analysis.title} — {websiteKnowledge.totalPages} صفحة مسحوبة
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Knowledge Score Ring */}
+                <div className="relative w-16 h-16">
+                  <svg className="w-16 h-16 -rotate-90" viewBox="0 0 36 36">
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted/20" />
+                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeDasharray={`${websiteKnowledge.knowledgeScore}, 100`} className={websiteKnowledge.knowledgeScore >= 70 ? 'stroke-green-500' : websiteKnowledge.knowledgeScore >= 40 ? 'stroke-yellow-500' : 'stroke-red-500'} strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease-in-out' }} />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-sm font-bold">{websiteKnowledge.knowledgeScore}%</span>
+                  </div>
+                </div>
+                <div className="text-left">
+                  <p className="text-xs text-muted-foreground">تغطية المعرفة</p>
+                  <p className={`text-sm font-semibold ${websiteKnowledge.knowledgeScore >= 70 ? 'text-green-600' : websiteKnowledge.knowledgeScore >= 40 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {websiteKnowledge.knowledgeScore >= 70 ? 'ممتاز' : websiteKnowledge.knowledgeScore >= 40 ? 'جيد' : 'يحتاج تحسين'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5 pt-5">
+            {/* Content Categories */}
+            {websiteKnowledge.categories.length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-primary" />
+                  تصنيفات المحتوى المسحوب
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {websiteKnowledge.categories.map((cat: any) => (
+                    <Badge key={cat.type} variant="secondary" className="text-xs px-3 py-1.5 gap-1.5">
+                      <span>{cat.icon}</span>
+                      {cat.label}
+                      <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-full text-[10px] font-bold">{cat.count}</span>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Crawled Pages Grid */}
+            <div>
+              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-primary" />
+                الصفحات المسحوبة ({websiteKnowledge.totalPages})
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {websiteKnowledge.pages.map((page: any) => {
+                  const typeIcons: Record<string, string> = {
+                    about: '🏢', contact: '📞', faq: '❓', shipping: '🚚',
+                    returns: '🔄', privacy: '🔒', terms: '📋', content: '📄', other: '📑',
+                  };
+                  return (
+                    <div key={page.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${page.useInBot ? 'bg-card' : 'bg-muted/50 opacity-60'}`}>
+                      <span className="text-lg shrink-0">{typeIcons[page.pageType] || '📄'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" title={page.title}>{page.title}</p>
+                        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                          ~{page.wordCount.toLocaleString()} كلمة
+                          <span className="mx-1">•</span>
+                          <a href={page.url} target="_blank" rel="noopener" className="text-primary hover:underline inline-flex items-center gap-0.5">
+                            عرض <ExternalLink className="h-2.5 w-2.5" />
+                          </a>
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost" size="sm" className="shrink-0 h-7 w-7 p-0"
+                        onClick={() => togglePageMutation.mutate({ pageId: page.id, useInBot: !page.useInBot })}
+                        title={page.useInBot ? 'إيقاف استخدام هذه الصفحة في الردود' : 'تفعيل استخدام هذه الصفحة في الردود'}
+                      >
+                        {page.useInBot ? <Eye className="h-3.5 w-3.5 text-green-600" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Coverage Topics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {websiteKnowledge.coverageTopics.length > 0 && (
+                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+                  <h4 className="text-sm font-semibold text-green-800 dark:text-green-300 mb-2 flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4" />
+                    ساري يقدر يرد على
+                  </h4>
+                  <ul className="space-y-1">
+                    {websiteKnowledge.coverageTopics.map((topic: string, i: number) => (
+                      <li key={i} className="text-xs text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                        <Zap className="h-3 w-3" /> {topic}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {websiteKnowledge.missingTopics.length > 0 && (
+                <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800">
+                  <h4 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300 mb-2 flex items-center gap-2">
+                    <Target className="h-4 w-4" />
+                    يحتاج تحسين
+                  </h4>
+                  <ul className="space-y-1">
+                    {websiteKnowledge.missingTopics.map((topic: string, i: number) => (
+                      <li key={i} className="text-xs text-yellow-700 dark:text-yellow-400 flex items-center gap-1.5">
+                        <AlertTriangle className="h-3 w-3" /> {topic}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-[10px] text-yellow-600 dark:text-yellow-500 mt-2">أضف صفحات تحتوي على هذه المعلومات لتحسين ردود ساري</p>
+                </div>
+              )}
+            </div>
+
+            {/* Add Custom URL */}
+            <div className="p-4 rounded-lg border border-dashed border-primary/30 space-y-3">
+              <p className="text-sm font-medium flex items-center gap-1">
+                <Link className="h-4 w-4" /> إضافة صفحة مخصصة
+              </p>
+              <p className="text-xs text-muted-foreground">أضف رابط صفحة محددة من موقعك ليسحب ساري محتواها ويستخدمه في الردود</p>
+              <div className="flex gap-2">
+                <Input
+                  value={customUrl}
+                  onChange={(e) => setCustomUrl(e.target.value)}
+                  placeholder="https://example.com/services"
+                  dir="ltr"
+                  className="font-mono text-sm"
+                />
+                <Button
+                  size="sm" className="shrink-0"
+                  onClick={() => addUrlMutation.mutate({ url: customUrl })}
+                  disabled={!customUrl.trim() || addUrlMutation.isPending}
+                >
+                  <Plus className="h-4 w-4 ml-1" />
+                  {addUrlMutation.isPending ? 'جاري السحب...' : 'سحب'}
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats Summary */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-bold text-primary">{websiteKnowledge.totalPages}</p>
+                <p className="text-[10px] text-muted-foreground">صفحة مسحوبة</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-bold text-blue-600">{(websiteKnowledge.analysis.wordCount || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">كلمة في المعرفة</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-bold text-green-600">{websiteKnowledge.faqCount}</p>
+                <p className="text-[10px] text-muted-foreground">سؤال شائع</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-bold text-purple-600">{websiteKnowledge.analysis.overallScore}/100</p>
+                <p className="text-[10px] text-muted-foreground">جودة الموقع</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ═══ FAQ Management — Custom Q&A ═══ */}
       <Card>
