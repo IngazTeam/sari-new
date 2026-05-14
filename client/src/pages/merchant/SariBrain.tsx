@@ -7,9 +7,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, MessageSquare, Sparkles, Shield, HelpCircle, Plus, Eye, EyeOff, BarChart3, ExternalLink, TrendingUp, Target, Zap, BookOpen, Link } from 'lucide-react';
+import { Brain, Trash2, RotateCcw, FileText, Package, Globe, Settings, Clock, Upload, Search, CheckCircle2, XCircle, AlertTriangle, MessageSquare, Sparkles, Shield, HelpCircle, Plus, Eye, EyeOff, BarChart3, ExternalLink, TrendingUp, Target, Zap, BookOpen, Link, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useIntegration, IntegrationLockBanner } from '@/hooks/useIntegration';
 import {
@@ -78,6 +78,40 @@ export default function SariBrain() {
   const [newSectionTitle, setNewSectionTitle] = useState('');
   const [newSectionContent, setNewSectionContent] = useState('');
 
+  // Reanalyze progress modal
+  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+  const [analysisStep, setAnalysisStep] = useState(0);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const ANALYSIS_STEPS = [
+    { icon: '🌐', label: 'الاتصال بالموقع', detail: 'فحص الرابط والاستجابة' },
+    { icon: '📥', label: 'سحب المحتوى', detail: 'قراءة النصوص والعناوين' },
+    { icon: '🔍', label: 'اكتشاف الصفحات', detail: 'سحب صفحات من البوليسي وشحن وFAQ' },
+    { icon: '🧠', label: 'تصنيف AI', detail: 'تحليل المعرفة بالذكاء الاصطناعي' },
+    { icon: '💎', label: 'ذكاء المبيعات', detail: 'استخراج نقاط القوة وإرشادات البيع' },
+    { icon: '🎯', label: 'فرص التطوير', detail: 'اكتشاف التحسينات الممكنة' },
+    { icon: '✨', label: 'حفظ النتائج', detail: 'تحديث قاعدة المعرفة' },
+  ];
+
+  useEffect(() => {
+    if (!reanalyzeMutation.isPending) {
+      if (!analysisResults && !analysisError) setAnalysisStep(0);
+      return;
+    }
+    const timer = setInterval(() => {
+      setAnalysisStep(prev => prev < ANALYSIS_STEPS.length - 1 ? prev + 1 : prev);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [reanalyzeMutation.isPending]);
+
+  const startAnalysis = () => {
+    setAnalysisResults(null);
+    setAnalysisError(null);
+    setAnalysisStep(0);
+    setAnalysisDialogOpen(true);
+    reanalyzeMutation.mutate();
+  };
+
   const deleteSourceMutation = trpc.sariBrain.deleteSource.useMutation({
     onSuccess: () => {
       toast.success('تم حذف المصدر بنجاح');
@@ -98,21 +132,17 @@ export default function SariBrain() {
 
   const reanalyzeMutation = trpc.sariBrain.reanalyzeWebsite.useMutation({
     onSuccess: (data: any) => {
-      const parts = [`✅ تم تحليل الموقع: ${data.title || 'بدون عنوان'} (${data.score}/100)`];
-      if (data.knowledgeEvolution) {
-        const ev = data.knowledgeEvolution;
-        parts.push(`📦 +${ev.added} قسم جديد، ↗${ev.evolved} تطوير، ⚠${ev.conflicts} تعارض`);
-      }
-      if (data.salesIntelSummary?.hasIntel) parts.push('💎 تم استخراج ذكاء المبيعات');
-      if (data.salesIntelSummary?.hasOpportunities) parts.push('🎯 تم اكتشاف فرص تطوير');
-      toast.success(parts.join('\n'), { duration: 8000 });
+      setAnalysisStep(ANALYSIS_STEPS.length); // All steps done
+      setAnalysisResults(data);
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
       utils.sariBrain.getWebsiteKnowledge.invalidate();
       utils.sariBrain.getKnowledgeSections.invalidate();
       utils.sariBrain.getHealthScore.invalidate();
     },
-    onError: (error) => toast.error('فشل التحليل: ' + error.message),
+    onError: (error) => {
+      setAnalysisError(error.message);
+    },
   });
 
   // Knowledge v4 mutations
@@ -336,9 +366,9 @@ export default function SariBrain() {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={() => reanalyzeMutation.mutate()} disabled={reanalyzeMutation.isPending}>
+        <Button variant="outline" size="sm" onClick={startAnalysis} disabled={reanalyzeMutation.isPending}>
           <Globe className="h-4 w-4 ml-2" />
-          {reanalyzeMutation.isPending ? 'جاري التحليل...' : '🔄 إعادة تحليل الموقع'}
+          🔄 إعادة تحليل الموقع
         </Button>
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/products')}>
           <Package className="h-4 w-4 ml-2" />
@@ -353,6 +383,129 @@ export default function SariBrain() {
           الإعدادات
         </Button>
       </div>
+
+      {/* ═══ Analysis Progress Modal ═══ */}
+      <Dialog open={analysisDialogOpen} onOpenChange={(open) => { if (analysisResults || analysisError) setAnalysisDialogOpen(open); }}>
+        <DialogContent className="max-w-lg [&>button]:hidden" onPointerDownOutside={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }}>
+          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+          {/* Top animated bar */}
+          {!analysisResults && !analysisError && (
+            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-lg bg-gradient-to-r from-primary via-emerald-500 to-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
+          )}
+          <DialogHeader>
+            <DialogTitle className="text-right flex items-center gap-3 justify-end">
+              {analysisResults ? (
+                <>✅ اكتمل التحليل بنجاح</>
+              ) : analysisError ? (
+                <>❌ فشل التحليل</>
+              ) : (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  🧠 ساري يحلل موقعك
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription className="text-right">
+              {analysisResults ? `${analysisResults.title || ''} — ${analysisResults.score}/100` : analysisError ? analysisError : 'العملية تأخذ 30-60 ثانية'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            {/* Step-by-step indicators */}
+            {ANALYSIS_STEPS.map((step, i) => {
+              const done = i < analysisStep || !!analysisResults;
+              const active = i === analysisStep && !analysisResults && !analysisError;
+              return (
+                <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all duration-500 ${
+                  done ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' :
+                  active ? 'bg-primary/5 border-primary/30 shadow-sm' :
+                  'bg-muted/20 border-transparent opacity-40'
+                }`}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-base">
+                    {done ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    ) : active ? (
+                      <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                    ) : (
+                      <span className="text-muted-foreground">{step.icon}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${
+                      done ? 'text-green-700 dark:text-green-300' : active ? 'text-foreground' : 'text-muted-foreground'
+                    }`}>{step.label}</p>
+                    <p className="text-[10px] text-muted-foreground">{step.detail}</p>
+                  </div>
+                  {done && <span className="text-xs text-green-600 font-medium">✅</span>}
+                </div>
+              );
+            })}
+
+            {/* Progress percentage */}
+            {!analysisResults && !analysisError && (
+              <div className="mt-2">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>التقدم</span>
+                  <span>{Math.round((analysisStep / ANALYSIS_STEPS.length) * 100)}%</span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary to-emerald-500 rounded-full transition-all duration-700" style={{ width: `${(analysisStep / ANALYSIS_STEPS.length) * 100}%` }} />
+                </div>
+              </div>
+            )}
+
+            {/* Results summary */}
+            {analysisResults && (
+              <div className="mt-3 p-4 rounded-lg bg-gradient-to-br from-primary/5 to-emerald-500/5 border border-primary/20 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="text-center p-2 rounded-lg bg-background border">
+                    <p className="text-2xl font-bold text-primary">{analysisResults.score}</p>
+                    <p className="text-[10px] text-muted-foreground">جودة الموقع</p>
+                  </div>
+                  <div className="text-center p-2 rounded-lg bg-background border">
+                    <p className="text-2xl font-bold text-emerald-600">{analysisResults.salesIntelSummary?.totalSections || 0}</p>
+                    <p className="text-[10px] text-muted-foreground">قسم معرفة</p>
+                  </div>
+                </div>
+                {analysisResults.knowledgeEvolution && (
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {analysisResults.knowledgeEvolution.added > 0 && <Badge className="bg-green-100 text-green-800 border-green-200">➕ {analysisResults.knowledgeEvolution.added} جديد</Badge>}
+                    {analysisResults.knowledgeEvolution.evolved > 0 && <Badge className="bg-blue-100 text-blue-800 border-blue-200">↗️ {analysisResults.knowledgeEvolution.evolved} تطوير</Badge>}
+                    {analysisResults.knowledgeEvolution.conflicts > 0 && <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">⚠️ {analysisResults.knowledgeEvolution.conflicts} تعارض</Badge>}
+                  </div>
+                )}
+                {analysisResults.salesIntelSummary?.hasIntel && (
+                  <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-300">
+                    <Sparkles className="h-4 w-4" /> تم استخراج ذكاء المبيعات
+                  </div>
+                )}
+                {analysisResults.salesIntelSummary?.hasOpportunities && (
+                  <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                    <Target className="h-4 w-4" /> تم اكتشاف فرص تطوير
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Error */}
+            {analysisError && (
+              <div className="mt-3 p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 text-center">
+                <XCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                <p className="text-sm text-red-700 dark:text-red-300">{analysisError}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Footer — only show close button when done */}
+          {(analysisResults || analysisError) && (
+            <DialogFooter className="flex-row-reverse">
+              <Button onClick={() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); }}>
+                {analysisResults ? '👍 ممتاز، إغلاق' : 'إغلاق'}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* ═══ Knowledge Engine v4: Health Score + Sections + Conflicts ═══ */}
 
