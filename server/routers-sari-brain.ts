@@ -508,8 +508,7 @@ export const sariBrainRouter = router({
           totalSections: allSections.filter((s: any) => !['sales_intel', 'opportunities'].includes(s.section_type || s.sectionType || '')).length,
           hasIntel: !!intelSection,
           hasOpportunities: !!oppsSection,
-          intelPreview: intelSection ? (intelSection.content || '').substring(0, 200) : null,
-          oppsPreview: oppsSection ? (oppsSection.content || '').substring(0, 200) : null,
+          // PEN-V8-01 FIX: Don't expose content previews in response — frontend reads from getKnowledgeSections
         };
       } catch { /* non-blocking */ }
 
