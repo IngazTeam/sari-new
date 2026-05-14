@@ -12,6 +12,11 @@ import { Input } from '@/components/ui/input';
 import { useState, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useIntegration, IntegrationLockBanner } from '@/hooks/useIntegration';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const ACTION_ICONS: Record<string, string> = {
   document_deleted: '🗑️', products_deleted: '🗑️', website_deleted: '🗑️',
@@ -51,6 +56,11 @@ export default function SariBrain() {
   const { data: activityLog } = trpc.sariBrain.getActivityLog.useQuery({ limit: 30 });
   const { data: faqs } = trpc.sariBrain.getFaqs.useQuery();
 
+  // Knowledge Engine v4 hooks
+  const { data: healthScore } = trpc.sariBrain.getHealthScore.useQuery();
+  const { data: knowledgeSections, isLoading: sectionsLoading } = trpc.sariBrain.getKnowledgeSections.useQuery();
+  const { data: pendingReviews } = trpc.sariBrain.getPendingReviews.useQuery();
+
   // FAQ state
   const [newFaqQ, setNewFaqQ] = useState('');
   const [newFaqA, setNewFaqA] = useState('');
@@ -61,6 +71,12 @@ export default function SariBrain() {
   const [testQuestion, setTestQuestion] = useState('');
   const [testResult, setTestResult] = useState<{ question: string; answer: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Knowledge v4 state
+  const [addSectionOpen, setAddSectionOpen] = useState(false);
+  const [newSectionType, setNewSectionType] = useState('custom');
+  const [newSectionTitle, setNewSectionTitle] = useState('');
+  const [newSectionContent, setNewSectionContent] = useState('');
 
   const deleteSourceMutation = trpc.sariBrain.deleteSource.useMutation({
     onSuccess: () => {
@@ -86,8 +102,43 @@ export default function SariBrain() {
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
       utils.sariBrain.getWebsiteKnowledge.invalidate();
+      utils.sariBrain.getKnowledgeSections.invalidate();
+      utils.sariBrain.getHealthScore.invalidate();
     },
     onError: (error) => toast.error('فشل التحليل: ' + error.message),
+  });
+
+  // Knowledge v4 mutations
+  const createSectionMut = trpc.sariBrain.createSection.useMutation({
+    onSuccess: () => {
+      toast.success('تم إضافة القسم بنجاح');
+      setAddSectionOpen(false);
+      setNewSectionTitle(''); setNewSectionContent('');
+      utils.sariBrain.getKnowledgeSections.invalidate();
+      utils.sariBrain.getHealthScore.invalidate();
+      utils.sariBrain.getActivityLog.invalidate();
+    },
+    onError: (e) => toast.error('فشل الإضافة: ' + e.message),
+  });
+
+  const deleteSectionMut = trpc.sariBrain.deleteSection.useMutation({
+    onSuccess: () => {
+      toast.success('تم حذف القسم');
+      utils.sariBrain.getKnowledgeSections.invalidate();
+      utils.sariBrain.getHealthScore.invalidate();
+      utils.sariBrain.getActivityLog.invalidate();
+    },
+    onError: (e) => toast.error('فشل الحذف: ' + e.message),
+  });
+
+  const approveSectionMut = trpc.sariBrain.approveSection.useMutation({
+    onSuccess: () => {
+      toast.success('تم حل التعارض');
+      utils.sariBrain.getKnowledgeSections.invalidate();
+      utils.sariBrain.getPendingReviews.invalidate();
+      utils.sariBrain.getHealthScore.invalidate();
+    },
+    onError: (e) => toast.error('فشل: ' + e.message),
   });
 
   const analyzeMutation = trpc.sariBrain.analyzeContent.useMutation({
@@ -295,6 +346,212 @@ export default function SariBrain() {
           الإعدادات
         </Button>
       </div>
+
+      {/* ═══ Knowledge Engine v4: Health Score + Sections + Conflicts ═══ */}
+
+      {/* Pending Conflicts Banner */}
+      {pendingReviews && pendingReviews.length > 0 && (
+        <Card className="border-yellow-400 bg-yellow-50/50 dark:bg-yellow-950/20">
+          <CardContent className="flex items-center gap-4 py-4">
+            <AlertTriangle className="h-8 w-8 text-yellow-500 shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold text-yellow-800 dark:text-yellow-200">⚠️ {pendingReviews.length} تعارض يحتاج مراجعتك</p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">ساري وجد معلومات متعارضة — البوت يستخدم البيانات القديمة حتى تراجع</p>
+            </div>
+            <div className="flex gap-2">
+              {pendingReviews.slice(0, 3).map((review: any) => (
+                <div key={review.id} className="flex gap-1">
+                  <Button size="sm" variant="outline" className="text-xs h-7 border-green-300 text-green-700 hover:bg-green-50" onClick={() => approveSectionMut.mutate({ sectionId: review.id, action: 'approve' })}>
+                    ✅ قبول
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-7 border-red-300 text-red-700 hover:bg-red-50" onClick={() => approveSectionMut.mutate({ sectionId: review.id, action: 'reject' })}>
+                    ❌ رفض
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Health Score Card */}
+      {healthScore && (
+        <Card className="border-primary/20 overflow-hidden">
+          <CardHeader className="bg-gradient-to-l from-primary/10 via-primary/5 to-transparent pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              🏥 صحة المعرفة
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-6">
+              {/* Score Ring */}
+              <div className="relative w-20 h-20 shrink-0">
+                <svg className="w-20 h-20 -rotate-90" viewBox="0 0 36 36">
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" className="text-muted/20" />
+                  <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" strokeWidth="3" strokeDasharray={`${healthScore.total}, 100`} className={healthScore.total >= 70 ? 'stroke-green-500' : healthScore.total >= 40 ? 'stroke-yellow-500' : 'stroke-red-500'} strokeLinecap="round" style={{ transition: 'stroke-dasharray 1s ease-in-out' }} />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-lg font-bold">{healthScore.total}%</span>
+                </div>
+              </div>
+              {/* Breakdown */}
+              <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-2">
+                {healthScore.breakdown.map((item: any) => (
+                  <div key={item.label} className={`flex items-center gap-2 p-2 rounded-lg border text-xs ${item.filled ? 'bg-green-50 dark:bg-green-950/20 border-green-200' : 'bg-muted/30 border-dashed'}`}>
+                    <span className="text-base">{item.filled ? '✅' : '⬜'}</span>
+                    <div>
+                      <p className="font-medium">{item.label}</p>
+                      {!item.filled && item.tip && <p className="text-[10px] text-muted-foreground">{item.tip}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Knowledge Sections Tree */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                🧠 أقسام المعرفة المصنفة
+              </CardTitle>
+              <CardDescription>أقسام مهيكلة بالذكاء الاصطناعي — يمكنك تعديلها أو إضافة أقسام يدوية</CardDescription>
+            </div>
+            <Dialog open={addSectionOpen} onOpenChange={setAddSectionOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 ml-1" />
+                  إضافة قسم
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle className="text-right">إضافة قسم معرفة جديد</DialogTitle>
+                  <DialogDescription className="text-right">أضف معلومات يدوية لساري (خدمات، سياسات، أسئلة شائعة...)</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label>نوع القسم</Label>
+                    <Select value={newSectionType} onValueChange={setNewSectionType}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="identity">🏢 هوية النشاط</SelectItem>
+                        <SelectItem value="services">🛍️ خدمات/منتجات</SelectItem>
+                        <SelectItem value="policies">📋 سياسات</SelectItem>
+                        <SelectItem value="faq">❓ أسئلة شائعة</SelectItem>
+                        <SelectItem value="contact">📞 بيانات تواصل</SelectItem>
+                        <SelectItem value="team">👥 فريق العمل</SelectItem>
+                        <SelectItem value="achievements">🏆 إنجازات</SelectItem>
+                        <SelectItem value="custom">📝 مخصص</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>العنوان</Label>
+                    <Input value={newSectionTitle} onChange={(e) => setNewSectionTitle(e.target.value)} placeholder="مثل: سياسة الشحن والتوصيل" dir="auto" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>المحتوى</Label>
+                    <Textarea value={newSectionContent} onChange={(e) => setNewSectionContent(e.target.value)} placeholder="اكتب المعلومات التي تريد أن يعرفها ساري..." className="min-h-[120px]" dir="auto" />
+                  </div>
+                </div>
+                <DialogFooter className="flex-row-reverse gap-2">
+                  <Button onClick={() => createSectionMut.mutate({ sectionType: newSectionType as any, title: newSectionTitle, content: newSectionContent })} disabled={!newSectionTitle.trim() || !newSectionContent.trim() || createSectionMut.isPending}>
+                    {createSectionMut.isPending ? 'جاري الحفظ...' : '💾 حفظ'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {sectionsLoading ? (
+            <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
+          ) : knowledgeSections && knowledgeSections.length > 0 ? (
+            <div className="space-y-2">
+              {(() => {
+                const SECTION_ICONS: Record<string, string> = {
+                  identity: '🏢', services: '🛍️', policies: '📋', faq: '❓', contact: '📞',
+                  team: '👥', achievements: '🏆', sales_intel: '💡', opportunities: '🎯', custom: '📝',
+                };
+                const SECTION_LABELS: Record<string, string> = {
+                  identity: 'هوية', services: 'خدمات', policies: 'سياسات', faq: 'أسئلة', contact: 'تواصل',
+                  team: 'فريق', achievements: 'إنجازات', sales_intel: 'ذكاء مبيعات', opportunities: 'فرص', custom: 'مخصص',
+                };
+                // Group by parent
+                const roots = (knowledgeSections as any[]).filter((s: any) => !s.parent_id && !s.parentId);
+                const children = (knowledgeSections as any[]).filter((s: any) => s.parent_id || s.parentId);
+                return roots.map((section: any) => {
+                  const sType = section.section_type || section.sectionType || 'custom';
+                  const sChildren = children.filter((c: any) => (c.parent_id || c.parentId) === section.id);
+                  const isBot = section.use_in_bot !== undefined ? section.use_in_bot : section.useInBot;
+                  return (
+                    <div key={section.id} className={`rounded-lg border overflow-hidden ${isBot ? 'bg-card' : 'bg-muted/50 opacity-70'}`}>
+                      <div className="flex items-center gap-3 p-3">
+                        <span className="text-xl">{SECTION_ICONS[sType] || '📄'}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{section.title}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <Badge variant="outline" className="text-[10px] h-4">{SECTION_LABELS[sType] || sType}</Badge>
+                            <Badge variant={section.source === 'manual' ? 'default' : 'secondary'} className="text-[10px] h-4">
+                              {section.source === 'manual' ? '✋ يدوي' : section.source === 'website' ? '🌐 موقع' : section.source === 'document' ? '📄 ملف' : '🤖 AI'}
+                            </Badge>
+                            {sChildren.length > 0 && <Badge variant="outline" className="text-[10px] h-4">📁 {sChildren.length} فرعي</Badge>}
+                          </div>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground max-w-[200px] truncate hidden md:block">{(section.summary || section.content || '').substring(0, 80)}</p>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500 hover:text-red-700">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-right">حذف "{section.title}"</AlertDialogTitle>
+                              <AlertDialogDescription className="text-right">سيتم حذف هذا القسم وجميع أقسامه الفرعية من ذاكرة ساري.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-row-reverse gap-2">
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteSectionMut.mutate({ sectionId: section.id })} className="bg-destructive text-destructive-foreground">حذف</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                      {sChildren.length > 0 && (
+                        <div className="border-t bg-muted/30 divide-y">
+                          {sChildren.map((child: any) => (
+                            <div key={child.id} className="flex items-center gap-3 px-3 py-2 pr-10">
+                              <span className="text-muted-foreground">└</span>
+                              <span className="text-sm">{SECTION_ICONS[child.section_type || child.sectionType || sType] || '📄'}</span>
+                              <p className="text-xs font-medium flex-1 truncate">{child.title}</p>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-400" onClick={() => deleteSectionMut.mutate({ sectionId: child.id })}>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          ) : (
+            <div className="text-center py-10">
+              <Brain className="mx-auto h-12 w-12 text-muted-foreground/40" />
+              <p className="mt-3 font-medium">لا توجد أقسام معرفة مصنفة بعد</p>
+              <p className="text-xs text-muted-foreground mt-1">حلل موقعك أو ارفع ملفاً ليصنفه ساري تلقائياً، أو أضف أقسام يدوية</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* ═══ Test Sari — Ask a test question ═══ */}
       <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
