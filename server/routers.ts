@@ -50,6 +50,7 @@ import { knowledgeDocsRouter } from "./routers-knowledge-docs";
 import { sariBrainRouter } from "./routers-sari-brain";
 import { virtualAgentsRouter } from "./routers-virtual-agents";
 import { aiSettingsRouter } from "./routers-ai-settings";
+import { aiDirectivesRouter } from "./routers-ai-directives";
 import { googleAnalyticsRouter } from "./routers-google-analytics";
 import { dashboardRouter } from "./routers-dashboard";
 import { merchantsRouter } from "./routers-merchants";
@@ -8710,6 +8711,9 @@ export const appRouter = router({
 
   // AI Settings & Usage — modularized to routers-ai-settings.ts
   aiSettings: aiSettingsRouter,
+
+  // AI Training Center — modularized to routers-ai-directives.ts
+  aiDirectives: aiDirectivesRouter,
 
   // Google Analytics 4 — modularized to routers-google-analytics.ts
   googleAnalytics: googleAnalyticsRouter,

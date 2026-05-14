@@ -200,6 +200,7 @@ const PaymentGateways = lazyLoad(() => import("./pages/admin/PaymentGateways"));
 const AdminCampaigns = lazyLoad(() => import("./pages/admin/Campaigns"));
 const SMTPSettings = lazyLoad(() => import("./pages/superadmin/SmtpSettings"));
 const AISettings = lazyLoad(() => import("./pages/admin/AISettings"));
+const AITrainingCenter = lazyLoad(() => import("./pages/admin/AITrainingCenter"));
 const SeoUnified = lazyLoad(() => import("./pages/admin/SeoUnified"));
 const AdminRecommendations = lazyLoad(() => import("./pages/admin/AdminRecommendations"));
 const RecommendationsAnalytics = lazyLoad(() => import("./pages/admin/RecommendationsAnalytics"));
@@ -1079,6 +1080,12 @@ function Router() {
       <Route path="/admin/ai-settings">
         <DashboardLayout>
           <AISettings />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/admin/ai-training">
+        <DashboardLayout>
+          <AITrainingCenter />
         </DashboardLayout>
       </Route>
 

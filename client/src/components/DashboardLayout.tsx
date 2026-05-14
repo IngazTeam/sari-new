@@ -210,6 +210,7 @@ const getAdminMenuItems = (t: any): MenuItem[] => [
   { icon: Database, label: t('sidebar.admin.dataSync'), path: "/admin/data-sync" },
   { icon: Globe, label: t('sidebar.admin.seoManagement'), path: "/admin/seo" },
   { icon: Sparkles, label: t('sidebar.admin.aiSettings', 'إعدادات AI'), path: "/admin/ai-settings" },
+  { icon: Brain, label: 'مركز تدريب ساري', path: "/admin/ai-training" },
   { icon: Key, label: 'مفاتيح المنصات', path: "/admin/platform-keys" },
 ];
 
