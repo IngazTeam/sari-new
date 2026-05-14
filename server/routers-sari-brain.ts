@@ -858,7 +858,7 @@ ${sanitizedContent}`
       const dbConn = await db.getDb();
       if (!dbConn) return null;
 
-      // 1. Get latest analysis
+      // 1. Get latest analysis — this is the primary data source
       const [analyses] = await (dbConn as any).execute(
         `SELECT id, url, title, description, industry, language, overall_score, word_count, 
                 seo_score, performance_score, ux_score, content_quality,
@@ -869,27 +869,36 @@ ${sanitizedContent}`
       const analysis = (analyses as any[])?.[0];
       if (!analysis) return null;
 
-      // 2. Get discovered pages
-      const [pages] = await (dbConn as any).execute(
-        `SELECT id, page_type, title, url, LENGTH(content) as content_length, 
-                is_active, use_in_bot, discovered_at
-         FROM discovered_pages WHERE merchant_id = ? ORDER BY page_type, title`,
-        [merchant.id]
-      );
-      const discoveredPages = (pages as any[]).map((p: any) => ({
-        id: p.id,
-        pageType: p.page_type,
-        title: p.title,
-        url: p.url,
-        contentLength: p.content_length || 0,
-        wordCount: Math.round((p.content_length || 0) / 5), // Approximate
-        isActive: !!p.is_active,
-        useInBot: !!p.use_in_bot,
-        discoveredAt: p.discovered_at,
-      }));
+      // 2. Get discovered pages — RESILIENT: if table doesn't exist or is empty, continue with empty array
+      let discoveredPages: any[] = [];
+      try {
+        const [pages] = await (dbConn as any).execute(
+          `SELECT id, page_type, title, url, LENGTH(content) as content_length, 
+                  is_active, use_in_bot, discovered_at
+           FROM discovered_pages WHERE merchant_id = ? ORDER BY page_type, title`,
+          [merchant.id]
+        );
+        discoveredPages = (pages as any[]).map((p: any) => ({
+          id: p.id,
+          pageType: p.page_type,
+          title: p.title,
+          url: p.url,
+          contentLength: p.content_length || 0,
+          wordCount: Math.round((p.content_length || 0) / 5), // Approximate
+          isActive: !!p.is_active,
+          useInBot: !!p.use_in_bot,
+          discoveredAt: p.discovered_at,
+        }));
+      } catch (pageErr) {
+        console.warn('[SariBrain] discovered_pages query failed (table may not exist yet):', (pageErr as any)?.message);
+        // Continue with empty pages — dashboard will still show analysis data
+      }
 
       // 3. Get FAQs count
-      const faqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      let faqs: any[] = [];
+      try {
+        faqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      } catch { /* table may not exist */ }
 
       // 4. Calculate content categories
       const PAGE_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
@@ -933,6 +942,8 @@ ${sanitizedContent}`
       if (discoveredPages.some((p: any) => p.pageType === 'returns')) coverageTopics.push('سياسة الإرجاع');
       if (discoveredPages.some((p: any) => p.pageType === 'privacy' || p.pageType === 'terms')) coverageTopics.push('السياسات والشروط');
       if (discoveredPages.some((p: any) => p.pageType === 'content' || p.pageType === 'other')) coverageTopics.push('محتوى وخدمات عامة');
+      // If no discovered pages but we have word count, the analysis itself provides general knowledge
+      if (discoveredPages.length === 0 && totalWords > 50) coverageTopics.push('محتوى الموقع الرئيسي');
 
       const missingTopics: string[] = [];
       if (!discoveredPages.some((p: any) => p.pageType === 'about')) missingTopics.push('من نحن');

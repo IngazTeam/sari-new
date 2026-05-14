@@ -85,6 +85,7 @@ export default function SariBrain() {
       toast.success(`تم تحليل الموقع بنجاح — ${data.title || 'بدون عنوان'} (${data.score}/100)`);
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
+      utils.sariBrain.getWebsiteKnowledge.invalidate();
     },
     onError: (error) => toast.error('فشل التحليل: ' + error.message),
   });
