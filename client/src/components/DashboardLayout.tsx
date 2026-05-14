@@ -109,12 +109,12 @@ type MenuItem = {
 
 // Menu groups for merchant
 const getMerchantMenuGroups = (t: any) => [
-  { id: 'main', label: t('sidebar.groups.main', 'الرئيسية والمتابعة'), icon: LayoutDashboard },
-  { id: 'operations', label: t('sidebar.groups.operations', 'المبيعات والتشغيل'), icon: ShoppingCart },
-  { id: 'channels', label: t('sidebar.groups.channels', 'المساعد الذكي والواتساب'), icon: Bot },
-  { id: 'marketing', label: t('sidebar.groups.marketing', 'التسويق والولاء'), icon: Megaphone },
-  { id: 'analytics', label: t('sidebar.groups.analytics', 'التحليلات'), icon: BarChart3 },
-  { id: 'settings', label: t('sidebar.groups.settings', 'الإعدادات والربط'), icon: Settings },
+  { id: 'main', label: t('sidebar.groups.main', 'الرئيسية والمتابعة'), icon: LayoutDashboard, color: 'text-slate-600 dark:text-slate-400', activeColor: 'text-slate-700', bgColor: 'bg-slate-100/60 dark:bg-slate-800/40', borderColor: 'border-slate-300 dark:border-slate-600' },
+  { id: 'operations', label: t('sidebar.groups.operations', 'المبيعات والتشغيل'), icon: ShoppingCart, color: 'text-emerald-600 dark:text-emerald-400', activeColor: 'text-emerald-700', bgColor: 'bg-emerald-50/60 dark:bg-emerald-900/20', borderColor: 'border-emerald-300 dark:border-emerald-700' },
+  { id: 'channels', label: t('sidebar.groups.channels', 'المساعد الذكي والواتساب'), icon: Bot, color: 'text-violet-600 dark:text-violet-400', activeColor: 'text-violet-700', bgColor: 'bg-violet-50/60 dark:bg-violet-900/20', borderColor: 'border-violet-300 dark:border-violet-700' },
+  { id: 'marketing', label: t('sidebar.groups.marketing', 'التسويق والولاء'), icon: Megaphone, color: 'text-orange-600 dark:text-orange-400', activeColor: 'text-orange-700', bgColor: 'bg-orange-50/60 dark:bg-orange-900/20', borderColor: 'border-orange-300 dark:border-orange-700' },
+  { id: 'analytics', label: t('sidebar.groups.analytics', 'التحليلات'), icon: BarChart3, color: 'text-blue-600 dark:text-blue-400', activeColor: 'text-blue-700', bgColor: 'bg-blue-50/60 dark:bg-blue-900/20', borderColor: 'border-blue-300 dark:border-blue-700' },
+  { id: 'settings', label: t('sidebar.groups.settings', 'الإعدادات والربط'), icon: Settings, color: 'text-gray-600 dark:text-gray-400', activeColor: 'text-gray-700', bgColor: 'bg-gray-50/60 dark:bg-gray-800/30', borderColor: 'border-gray-300 dark:border-gray-600' },
 ];
 
 // Menu items based on user role
@@ -457,14 +457,19 @@ function DashboardLayoutContent({
                   const GroupIcon = group.icon;
 
                   return (
-                    <div key={group.id} className="mb-1">
+                    <div key={group.id} className="mb-0.5">
                       {/* Group Header */}
                       <button
                         onClick={() => toggleGroup(group.id)}
-                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors hover:bg-accent/50 ${hasActiveItem ? 'text-primary bg-accent/30' : 'text-muted-foreground'
-                          } ${isCollapsed ? 'justify-center' : ''}`}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                          isExpanded
+                            ? `${group.bgColor} ${group.color} shadow-sm`
+                            : hasActiveItem
+                              ? `${group.color} bg-accent/20`
+                              : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground'
+                        } ${isCollapsed ? 'justify-center' : ''}`}
                       >
-                        <GroupIcon className="h-4 w-4 shrink-0" />
+                        <GroupIcon className={`h-4.5 w-4.5 shrink-0 ${isExpanded ? group.color : ''}`} />
                         {!isCollapsed && (
                           <>
                             <span className="flex-1 text-right truncate">{group.label}</span>
@@ -480,7 +485,7 @@ function DashboardLayoutContent({
                         }`}
                       >
                         <div className="overflow-hidden">
-                          <div className={`${!isCollapsed ? 'ml-2 border-l border-border/50' : ''}`}>
+                          <div className={`${!isCollapsed ? `mr-3 border-r-2 ${group.borderColor}` : ''} mt-0.5 mb-1`}>
                             {groupItems.map((item) => {
                               const isActive = location === item.path;
                               return (
@@ -489,10 +494,12 @@ function DashboardLayoutContent({
                                     isActive={isActive}
                                     onClick={() => setLocation(item.path)}
                                     tooltip={item.label}
-                                    className={`h-9 transition-all font-normal ${!isCollapsed ? 'ml-2' : ''}`}
+                                    className={`h-9 transition-all duration-200 font-normal rounded-lg ${!isCollapsed ? 'mr-2' : ''} ${
+                                      isActive ? `font-medium ${group.bgColor}` : 'hover:bg-accent/40'
+                                    }`}
                                   >
                                     <item.icon
-                                      className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                                      className={`h-4 w-4 transition-colors ${isActive ? group.color : 'text-muted-foreground'}`}
                                     />
                                     <span className="truncate">{item.label}</span>
                                   </SidebarMenuButton>
