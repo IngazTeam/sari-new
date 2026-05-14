@@ -375,11 +375,57 @@ export async function scrapeWebsite(url: string): Promise<{
     if (curlResult.ok && curlResult.body.length > 500 && !isCloudflareChallenge(curlResult.body)) {
       const result = parseHtml(curlResult.body);
       console.log(`[WebsiteAnalyzer] ✅ curl fallback succeeded for ${url} — ${curlResult.body.length} bytes, ${result.text.length} chars text`);
-      return result;
+      // If curl got HTML but text is still short (SPA), continue to Strategy 3
+      if (result.text.length > 200) {
+        return result;
+      }
+      console.log(`[WebsiteAnalyzer] curl got HTML but text too short (${result.text.length}), trying headless browser...`);
     }
   }
 
-  throw new Error(`Failed to scrape website after all attempts (fetch + curl): ${lastError?.message}`);
+  // Strategy 3: Puppeteer headless browser — renders JavaScript for SPA sites
+  try {
+    const puppeteer = await import('puppeteer').catch(() => null);
+    if (puppeteer) {
+      console.log(`[WebsiteAnalyzer] 🚀 Launching headless browser for SPA: ${url}`);
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+        timeout: 15000,
+      });
+      try {
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 15000 });
+        // Wait a bit more for lazy-loaded content
+        await new Promise(r => setTimeout(r, 3000));
+        
+        const html = await page.content();
+        const text = await page.evaluate(() => {
+          // Remove scripts, styles, and hidden elements
+          document.querySelectorAll('script, style, [hidden], .hidden, [aria-hidden="true"]').forEach(el => el.remove());
+          return document.body?.innerText || '';
+        });
+
+        await browser.close();
+
+        if (text.length > 100) {
+          const dom = new JSDOM(html);
+          console.log(`[WebsiteAnalyzer] ✅ Puppeteer extracted ${text.length} chars from ${url}`);
+          return { html, dom, text: text.replace(/\s+/g, ' ').trim() };
+        }
+        console.log(`[WebsiteAnalyzer] Puppeteer text still short (${text.length} chars)`);
+      } catch (pageError) {
+        console.warn(`[WebsiteAnalyzer] Puppeteer page error:`, (pageError as Error).message);
+        try { await browser.close(); } catch {}
+      }
+    }
+  } catch (puppeteerError) {
+    console.warn(`[WebsiteAnalyzer] Puppeteer not available:`, (puppeteerError as Error).message);
+  }
+
+  throw new Error(`Failed to scrape website after all attempts (fetch + curl + puppeteer): ${lastError?.message}`);
 }
 
 

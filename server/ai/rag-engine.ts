@@ -163,9 +163,10 @@ export async function searchRelevantSections(
   // Step 1: Embed the question
   const questionEmbedding = await generateEmbedding(question);
   if (!questionEmbedding) {
-    // Fallback: return all bot sections (old behavior)
+    // Fallback: return all bot sections with high similarity so they pass the 0.3 threshold
+    console.log(`[RAG] Embedding failed for question — injecting all ${(await getBotSections(merchantId)).length} sections as fallback`);
     const sections = await getBotSections(merchantId);
-    return sections.slice(0, limit).map(s => ({ section: s, similarity: 0 }));
+    return sections.slice(0, limit).map(s => ({ section: s, similarity: 1.0 }));
   }
 
   // Step 2: Get all sections with embeddings
