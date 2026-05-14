@@ -3784,8 +3784,9 @@ export async function shouldBotRespond(merchantId: number): Promise<{
     return { shouldRespond: true };
   }
 
-  // Check working hours
-  const now = new Date();
+  // Check working hours — use Saudi Arabia timezone (AST = UTC+3)
+  // CRITICAL FIX: Server runs in UTC, but merchants set hours in Saudi time
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Riyadh" }));
   const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, etc.
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 

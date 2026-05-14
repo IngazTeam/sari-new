@@ -612,9 +612,22 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     const currentConv = allConvs.find(c => c.customerPhone === customerPhone);
     if (currentConv && (currentConv as any).humanTakeover) {
       const expiresAt = (currentConv as any).humanExpiresAt;
-      if (!expiresAt || new Date(expiresAt) > new Date()) {
+      const takeoverAt = (currentConv as any).humanTakeoverAt;
+
+      // BUG FIX: Force-expire takeovers older than 24 hours (prevents permanent silence)
+      const takeoverAge = takeoverAt ? Date.now() - new Date(takeoverAt).getTime() : Infinity;
+      const MAX_TAKEOVER_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+      if (takeoverAge > MAX_TAKEOVER_MS) {
+        // Takeover stuck for 24+ hours — auto-expire
+        await db.updateConversation(currentConv.id, {
+          humanTakeover: 0,
+          humanExpiresAt: null,
+        } as any);
+        console.log(`[Takeover] ⚠️ Force-expired stuck takeover on conv ${currentConv.id} (age: ${Math.round(takeoverAge / 3600000)}h)`);
+      } else if (!expiresAt || new Date(expiresAt) > new Date()) {
         // Human is still active — Sari stays silent, just save incoming message
-        console.log(`[Takeover] Sari silent — human active until ${expiresAt || 'manual #start'}`);
+        console.log(`[Takeover] Sari silent — human active until ${expiresAt || 'manual #start'} (age: ${Math.round(takeoverAge / 60000)}min)`);
         await db.createMessage({
           conversationId,
           direction: 'incoming',
