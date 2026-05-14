@@ -147,6 +147,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: LinkIcon, label: t('sidebar.merchant.paymentLinks', 'روابط الدفع'), path: "/merchant/payment-links", group: 'operations' },
   { icon: HandCoins, label: t('sidebar.merchant.paymentsPage', 'المدفوعات'), path: "/merchant/payments", group: 'operations' },
   { icon: Star, label: t('sidebar.merchant.reviews', 'التقييمات'), path: "/merchant/reviews", group: 'operations' },
+  { icon: Receipt, label: t('sidebar.merchant.salesHub', 'مركز المبيعات'), path: "/merchant/sales-hub", group: 'operations' },
 
   // 3. المساعد الذكي والواتساب
   { icon: Wand2, label: t('sidebar.merchant.aiHub', 'مركز المساعد الذكي'), path: "/merchant/ai-hub", group: 'channels' },

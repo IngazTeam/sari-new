@@ -188,6 +188,7 @@ const CompetitorAnalysis = lazyLoad(() => import("./pages/CompetitorAnalysis"));
 const SmartAnalysis = lazyLoad(() => import("./pages/SmartAnalysis"));
 const AIWhatsAppHub = lazyLoad(() => import("./pages/merchant/AIWhatsAppHub"));
 const AnalyticsHub = lazyLoad(() => import("./pages/merchant/AnalyticsHub"));
+const SalesHub = lazyLoad(() => import("./pages/merchant/SalesHub"));
 
 // Admin pages - lazy loaded
 const AdminDashboard = lazyLoad(() => import("./pages/admin/Dashboard"));
@@ -555,6 +556,12 @@ function Router() {
       <Route path="/merchant/sari-analytics">
         <DashboardLayout>
           <SariAnalytics />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/sales-hub">
+        <DashboardLayout>
+          <SalesHub />
         </DashboardLayout>
       </Route>
 
