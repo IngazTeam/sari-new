@@ -470,11 +470,111 @@ export const sariBrainRouter = router({
       let evolveResult = null;
       let knowledgeError: string | null = null;
       try {
-        const scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
+        let scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
         console.log(`[SariBrain] Knowledge Engine input: scrapedText=${result._scrapedText?.length || 0} chars, enrichedText=${result._enrichedText?.length || 0} chars, combined=${scrapedText.trim().length} chars`);
         
+        // === SPA Fallback: If scraped text is empty (SPA/Zid/React sites), build context from available data ===
+        if (scrapedText.trim().length < 100) {
+          console.log(`[SariBrain] Primary scrape returned empty text — SPA detected. Building fallback context...`);
+          const fallbackParts: string[] = [];
+          
+          // 1. Basic business info (always available from meta tags)
+          if (result.title) fallbackParts.push(`اسم النشاط: ${result.title}`);
+          if (result.description) fallbackParts.push(`وصف النشاط: ${result.description}`);
+          if (result.industry && result.industry !== 'غير محدد') fallbackParts.push(`المجال: ${result.industry}`);
+          
+          // 2. Meta tags (og:title, keywords, etc.)
+          const meta = result.metaTags;
+          if (meta?.ogTitle && meta.ogTitle !== result.title) fallbackParts.push(`عنوان بديل: ${meta.ogTitle}`);
+          if (meta?.ogDescription && meta.ogDescription !== result.description) fallbackParts.push(`وصف بديل: ${meta.ogDescription}`);
+          if (meta?.keywords) fallbackParts.push(`كلمات مفتاحية: ${meta.keywords}`);
+          
+          // 3. Contact info (from UX analysis)
+          if (result.contactInfo) {
+            const ci = result.contactInfo;
+            if (ci.phones?.length > 0) fallbackParts.push(`هواتف التواصل: ${ci.phones.join(', ')}`);
+            if (ci.emails?.length > 0) fallbackParts.push(`بريد إلكتروني: ${ci.emails.join(', ')}`);
+            if (ci.whatsappNumber) fallbackParts.push(`واتساب: ${ci.whatsappNumber}`);
+            if (ci.address) fallbackParts.push(`العنوان: ${ci.address}`);
+          }
+          
+          // 4. FAQs (from multi-page crawling)
+          if (result.faqs && result.faqs.length > 0) {
+            fallbackParts.push('\nأسئلة شائعة:');
+            for (const faq of result.faqs.slice(0, 20)) {
+              fallbackParts.push(`س: ${faq.question}\nج: ${faq.answer}`);
+            }
+          }
+          
+          // 5. Extract text from raw HTML (headings, paragraphs, alt text, JSON-LD)
+          if ((result as any)._scrapedHtml) {
+            const html = (result as any)._scrapedHtml as string;
+            const htmlTexts: string[] = [];
+            
+            // Extract heading texts (h1-h6)
+            const headingRegex = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
+            let hMatch;
+            while ((hMatch = headingRegex.exec(html)) !== null) {
+              const t = hMatch[1].replace(/<[^>]*>/g, '').trim();
+              if (t.length > 3) htmlTexts.push(t);
+            }
+            
+            // Extract paragraph texts
+            const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+            let pMatch;
+            while ((pMatch = pRegex.exec(html)) !== null) {
+              const t = pMatch[1].replace(/<[^>]*>/g, '').trim();
+              if (t.length > 10) htmlTexts.push(t);
+            }
+            
+            // Extract image alt text
+            const altRegex = /alt=["']([^"']{5,})["']/gi;
+            let altMatch;
+            while ((altMatch = altRegex.exec(html)) !== null) {
+              htmlTexts.push(altMatch[1].trim());
+            }
+            
+            // Extract JSON-LD structured data
+            const jsonLdRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+            let ldMatch;
+            while ((ldMatch = jsonLdRegex.exec(html)) !== null) {
+              try {
+                const ldData = JSON.parse(ldMatch[1]);
+                const ldText = JSON.stringify(ldData, null, 0)
+                  .replace(/[{}\[\]"]/g, ' ')
+                  .replace(/@\w+/g, '')
+                  .replace(/https?:\/\/[^\s]+/g, '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                if (ldText.length > 20) htmlTexts.push('بيانات منظمة: ' + ldText.substring(0, 2000));
+              } catch { /* malformed JSON-LD */ }
+            }
+            
+            if (htmlTexts.length > 0) {
+              fallbackParts.push('\nمحتوى مستخرج من HTML:');
+              fallbackParts.push(htmlTexts.join('\n'));
+            }
+          }
+          
+          // 6. Content from crawled sub-pages (biggest source of real content)
+          if ((result as any)._crawledPages?.length > 0) {
+            for (const page of (result as any)._crawledPages) {
+              if (page.success && page.content && page.content.trim().length > 50) {
+                fallbackParts.push(`\n[صفحة: ${page.title}]\n${page.content.substring(0, 5000)}`);
+              }
+            }
+          }
+          
+          const fallbackText = fallbackParts.join('\n');
+          console.log(`[SariBrain] SPA fallback built: ${fallbackText.length} chars from ${fallbackParts.length} sources`);
+          
+          if (fallbackText.trim().length > 100) {
+            scrapedText = fallbackText;
+          }
+        }
+        
         if (scrapedText.trim().length > 100) {
-          console.log(`[SariBrain] Starting Knowledge Engine pipeline for merchant ${merchant.id}...`);
+          console.log(`[SariBrain] Starting Knowledge Engine pipeline for merchant ${merchant.id} with ${scrapedText.trim().length} chars...`);
           const { ingestContent } = await import('./ai/knowledge-engine');
           
           const ingestionResult = await ingestContent(
@@ -502,8 +602,8 @@ export const sariBrainRouter = router({
             await knowledgeDb.invalidateCache(merchant.id);
           } catch { /* non-blocking */ }
         } else {
-          console.warn(`[SariBrain] Knowledge Engine SKIPPED — scraped text too short (${scrapedText.trim().length} chars)`);
-          knowledgeError = `المحتوى المسحوب قصير جداً (${scrapedText.trim().length} حرف) — لم يتم التصنيف`;
+          console.warn(`[SariBrain] Knowledge Engine SKIPPED — no content available even after SPA fallback (${scrapedText.trim().length} chars)`);
+          knowledgeError = `الموقع لا يحتوي على محتوى نصي كافٍ (SPA) — جرب رفع ملف تعريفي من الإعدادات`;
         }
       } catch (keErr: any) {
         console.error('[SariBrain] ❌ Knowledge Engine pipeline FAILED:', keErr.message, keErr.stack);
