@@ -25,7 +25,7 @@ export const abTestResults = mysqlTable("ab_test_results", {
 
 export const abandonedCarts = mysqlTable("abandoned_carts", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
 	items: text().notNull(),
@@ -40,7 +40,7 @@ export const abandonedCarts = mysqlTable("abandoned_carts", {
 
 export const analytics = mysqlTable("analytics", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	date: timestamp({ mode: 'string' }).notNull(),
 	conversationsCount: int().default(0).notNull(),
 	messagesCount: int().default(0).notNull(),
@@ -51,7 +51,7 @@ export const analytics = mysqlTable("analytics", {
 
 export const automationRules = mysqlTable("automation_rules", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	type: mysqlEnum(['abandoned_cart', 'review_request', 'order_tracking', 'gift_notification', 'holiday_greeting', 'winback']).notNull(),
 	isEnabled: tinyint().default(1).notNull(),
 	settings: text(),
@@ -102,7 +102,7 @@ export const campaignLogs = mysqlTable("campaignLogs", {
 
 export const campaigns = mysqlTable("campaigns", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	name: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
 	imageUrl: varchar({ length: 500 }),
@@ -117,7 +117,7 @@ export const campaigns = mysqlTable("campaigns", {
 
 export const conversations = mysqlTable("conversations", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
 	status: mysqlEnum(['active', 'closed', 'archived']).default('active').notNull(),
@@ -138,7 +138,7 @@ export const conversations = mysqlTable("conversations", {
 
 export const customerReviews = mysqlTable("customer_reviews", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	orderId: int().notNull(),
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
@@ -154,7 +154,7 @@ export const customerReviews = mysqlTable("customer_reviews", {
 
 export const discountCodes = mysqlTable("discount_codes", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	code: varchar({ length: 50 }).notNull(),
 	type: mysqlEnum(['percentage', 'fixed']).notNull(),
 	value: int().notNull(),
@@ -312,7 +312,7 @@ export const notifications = mysqlTable("notifications", {
 
 export const occasionCampaigns = mysqlTable("occasion_campaigns", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	occasionType: mysqlEnum(['ramadan', 'eid_fitr', 'eid_adha', 'national_day', 'new_year', 'hijri_new_year']).notNull(),
 	year: int().notNull(),
 	enabled: tinyint().default(1).notNull(),
@@ -353,7 +353,7 @@ export const orderTrackingLogs = mysqlTable("order_tracking_logs", {
 
 export const orders = mysqlTable("orders", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	sallaOrderId: varchar({ length: 100 }),
 	orderNumber: varchar({ length: 100 }),
 	customerPhone: varchar({ length: 20 }).notNull(),
@@ -417,7 +417,7 @@ export const paymentGateways = mysqlTable("payment_gateways", {
 
 export const payments = mysqlTable("payments", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	subscriptionId: int().notNull(),
 	amount: int().notNull(),
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
@@ -454,7 +454,7 @@ export const plans = mysqlTable("plans", {
 
 export const products = mysqlTable("products", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	name: varchar({ length: 255 }).notNull(),
 	nameAr: varchar({ length: 255 }),
 	description: text(),
@@ -548,7 +548,7 @@ export const quickResponses = mysqlTable("quick_responses", {
 
 export const referralCodes = mysqlTable("referral_codes", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	code: varchar({ length: 50 }).notNull(),
 	referralCount: int().default(0).notNull(),
 	isActive: tinyint().default(1).notNull(),
@@ -574,7 +574,7 @@ export const referrals = mysqlTable("referrals", {
 
 export const rewards = mysqlTable("rewards", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	referralId: int().notNull(),
 	rewardType: mysqlEnum(['discount_10', 'free_month', 'analytics_upgrade']).notNull(),
 	status: mysqlEnum(['pending', 'claimed', 'expired']).default('pending').notNull(),
@@ -587,7 +587,7 @@ export const rewards = mysqlTable("rewards", {
 
 export const sallaConnections = mysqlTable("salla_connections", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	storeUrl: varchar({ length: 255 }).notNull(),
 	accessToken: text().notNull(),
 	syncStatus: mysqlEnum(['active', 'syncing', 'error', 'paused']).default('active').notNull(),
@@ -674,7 +674,7 @@ export const signupPromptVariants = mysqlTable("signup_prompt_variants", {
 
 export const subscriptions = mysqlTable("subscriptions", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	planId: int().notNull(),
 	status: mysqlEnum(['active', 'expired', 'cancelled', 'pending', 'trial']).default('pending').notNull(),
 	conversationsUsed: int().default(0).notNull(),
@@ -690,7 +690,7 @@ export const subscriptions = mysqlTable("subscriptions", {
 
 export const supportTickets = mysqlTable("supportTickets", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	subject: varchar({ length: 255 }).notNull(),
 	message: text().notNull(),
 	status: mysqlEnum(['open', 'in_progress', 'resolved', 'closed']).default('open').notNull(),
@@ -702,7 +702,7 @@ export const supportTickets = mysqlTable("supportTickets", {
 
 export const syncLogs = mysqlTable("sync_logs", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	syncType: mysqlEnum(['full_sync', 'stock_sync', 'single_product']).notNull(),
 	status: mysqlEnum(['success', 'failed', 'in_progress']).notNull(),
 	itemsSynced: int().default(0).notNull(),
@@ -713,7 +713,7 @@ export const syncLogs = mysqlTable("sync_logs", {
 
 export const testConversations = mysqlTable("testConversations", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	startedAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	endedAt: timestamp({ mode: 'string' }),
 	messageCount: int().default(0).notNull(),
@@ -730,7 +730,7 @@ export const testConversations = mysqlTable("testConversations", {
 export const testDeals = mysqlTable("testDeals", {
 	id: int().autoincrement().primaryKey(),
 	conversationId: int(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	dealValue: int().notNull(),
 	timeToConversion: int(),
 	messageCount: int().notNull(),
@@ -756,7 +756,7 @@ export const testMessages = mysqlTable("testMessages", {
 
 export const testMetricsDaily = mysqlTable("testMetricsDaily", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	// you can use { mode: 'date' }, if you want to have Date as type for this column
 	date: date({ mode: 'string' }).notNull(),
 	totalConversations: int().default(0).notNull(),
@@ -863,7 +863,7 @@ export const weeklySentimentReports = mysqlTable("weekly_sentiment_reports", {
 
 export const whatsappConnections = mysqlTable("whatsappConnections", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	phoneNumber: varchar({ length: 20 }),
 	instanceId: varchar({ length: 255 }),
 	apiToken: varchar({ length: 255 }),
@@ -880,7 +880,7 @@ export const whatsappConnections = mysqlTable("whatsappConnections", {
 
 export const whatsappConnectionRequests = mysqlTable("whatsapp_connection_requests", {
 	id: int().autoincrement().primaryKey(),
-	merchantId: int().notNull(),
+	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	countryCode: varchar({ length: 10 }).notNull(),
 	phoneNumber: varchar({ length: 20 }).notNull(),
 	fullNumber: varchar({ length: 30 }).notNull(),
@@ -2516,3 +2516,217 @@ export * from "./schema_push";
 export * from "./schema_notifications";
 export * from "./schema_subscriptions";
 export * from "./schema_coupons";
+
+// ============================================
+// Dynamic Tables (previously runtime-only CREATE TABLE IF NOT EXISTS)
+// Registered here for schema visibility, type-safety, and migration tracking.
+// The ensureTable() fallback in each module is kept as safety net.
+// ============================================
+
+// --- AI Directives (Training Center) ---
+export const sariAiDirectives = mysqlTable("sari_ai_directives", {
+	id: int().autoincrement().primaryKey(),
+	category: mysqlEnum(['sales', 'culture', 'persuasion', 'examples', 'limits']).notNull(),
+	title: varchar({ length: 200 }).notNull(),
+	content: text().notNull(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	priority: int().default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("idx_active").on(table.isActive, table.category, table.priority),
+]);
+
+// --- Strategy Metrics (Sales Arsenal Tracking) ---
+export const sariStrategyMetrics = mysqlTable("sari_strategy_metrics", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	strategy: varchar({ length: 50 }).notNull(),
+	wasUsed: tinyint("was_used").default(1).notNull(),
+	ledToPurchase: tinyint("led_to_purchase").default(0).notNull(),
+	conversationId: int("conversation_id"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_merchant_strategy").on(table.merchantId, table.strategy),
+	index("idx_created").on(table.createdAt),
+]);
+
+// --- Quality Metrics (Response Quality Tracking) ---
+export const sariQualityMetrics = mysqlTable("sari_quality_metrics", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id"),
+	questionText: text("question_text").notNull(),
+	responseText: text("response_text").notNull(),
+	responseTimeMs: int("response_time_ms").default(0).notNull(),
+	wasCacheHit: tinyint("was_cache_hit").default(0).notNull(),
+	ragSectionsUsed: int("rag_sections_used").default(0).notNull(),
+	customerSentiment: varchar("customer_sentiment", { length: 20 }),
+	feedbackRating: tinyint("feedback_rating"),
+	wasEmpty: tinyint("was_empty").default(0).notNull(),
+	wasEscalated: tinyint("was_escalated").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_merchant_date").on(table.merchantId, table.createdAt),
+	index("idx_merchant_empty").on(table.merchantId, table.wasEmpty),
+	index("idx_merchant_sentiment").on(table.merchantId, table.customerSentiment),
+]);
+
+// --- Weekly Reports (Quality Aggregation) ---
+export const sariWeeklyReports = mysqlTable("sari_weekly_reports", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	weekStart: date("week_start", { mode: 'string' }).notNull(),
+	weekEnd: date("week_end", { mode: 'string' }).notNull(),
+	totalMessages: int("total_messages").default(0).notNull(),
+	totalResponses: int("total_responses").default(0).notNull(),
+	avgResponseTimeMs: int("avg_response_time_ms").default(0).notNull(),
+	cacheHitRate: decimal("cache_hit_rate", { precision: 5, scale: 2 }).default('0').notNull(),
+	emptyResponseRate: decimal("empty_response_rate", { precision: 5, scale: 2 }).default('0').notNull(),
+	avgSentimentScore: decimal("avg_sentiment_score", { precision: 3, scale: 2 }).default('0').notNull(),
+	topQuestions: text("top_questions"), // JSON
+	escalationRate: decimal("escalation_rate", { precision: 5, scale: 2 }).default('0').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	uniqueIndex("idx_merchant_week").on(table.merchantId, table.weekStart),
+]);
+
+// --- Customer Profiles (Customer Intelligence) ---
+export const customerProfiles = mysqlTable("customer_profiles", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	displayName: varchar("display_name", { length: 100 }),
+	nickname: varchar({ length: 100 }),
+	childName: varchar("child_name", { length: 100 }),
+	preferences: text(), // JSON
+	painPoints: text("pain_points"), // JSON
+	purchaseHistory: text("purchase_history"), // JSON
+	totalSpent: decimal("total_spent", { precision: 12, scale: 2 }).default('0').notNull(),
+	totalConversations: int("total_conversations").default(0).notNull(),
+	sentimentAvg: varchar("sentiment_avg", { length: 20 }).default('neutral'),
+	customerTier: varchar("customer_tier", { length: 20 }).default('new'),
+	lastObjection: varchar("last_objection", { length: 50 }),
+	lastSeenAt: timestamp("last_seen_at", { mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_merchant_phone").on(table.merchantId, table.customerPhone),
+	index("idx_tier").on(table.merchantId, table.customerTier),
+	index("idx_last_seen").on(table.merchantId, table.lastSeenAt),
+]);
+
+// --- Knowledge Sections (Hierarchical Content Engine) ---
+export const knowledgeSections = mysqlTable("knowledge_sections", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	parentId: int("parent_id"),
+	sectionType: mysqlEnum("section_type", [
+		'identity', 'services', 'policies', 'faq', 'contact',
+		'team', 'achievements', 'sales_intel', 'opportunities', 'custom'
+	]).notNull(),
+	title: varchar({ length: 500 }).notNull(),
+	content: text().notNull(),
+	summary: varchar({ length: 1000 }),
+	source: mysqlEnum(['website', 'document', 'manual', 'ai_evolved', 'byaan_sync']).notNull(),
+	sourceUrl: varchar("source_url", { length: 2000 }),
+	confidence: decimal({ precision: 3, scale: 2 }).default('0.90'),
+	status: mysqlEnum(['auto_approved', 'approved', 'pending_review']).default('auto_approved'),
+	useInBot: tinyint("use_in_bot").default(1).notNull(),
+	injectAs: mysqlEnum("inject_as", ['fact', 'behavior', 'none']).default('fact'),
+	sortOrder: int("sort_order").default(0).notNull(),
+	merchantEdited: tinyint("merchant_edited").default(0).notNull(),
+	embedding: text(), // BLOB in DB, text placeholder in schema
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("idx_merchant_type").on(table.merchantId, table.sectionType),
+	index("idx_parent").on(table.parentId),
+	index("idx_merchant_status").on(table.merchantId, table.status),
+	index("idx_merchant_bot").on(table.merchantId, table.useInBot, table.injectAs),
+]);
+
+// --- Knowledge Changelog (Evolution History) ---
+export const knowledgeChangelog = mysqlTable("knowledge_changelog", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	sectionId: int("section_id"),
+	action: mysqlEnum(['add', 'merge', 'evolve', 'conflict', 'delete', 'manual_edit']).notNull(),
+	reason: text(),
+	oldContent: text("old_content"),
+	newContent: text("new_content"),
+	source: varchar({ length: 50 }),
+	resolved: tinyint().default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_merchant").on(table.merchantId, table.createdAt),
+	index("idx_unresolved").on(table.merchantId, table.resolved, table.action),
+]);
+
+// --- Response Cache (Smart Caching) ---
+export const sariResponseCache = mysqlTable("sari_response_cache", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	questionText: text("question_text").notNull(),
+	questionEmbedding: text("question_embedding"), // BLOB placeholder
+	responseText: text("response_text").notNull(),
+	hitCount: int("hit_count").default(0).notNull(),
+	isValid: tinyint("is_valid").default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	lastUsedAt: timestamp("last_used_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_merchant_valid").on(table.merchantId, table.isValid),
+]);
+
+// --- Sales Quotations ---
+export const salesQuotations = mysqlTable("sales_quotations", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }),
+	customerName: varchar("customer_name", { length: 255 }),
+	quotationNumber: varchar("quotation_number", { length: 50 }).notNull(),
+	items: text().notNull(), // JSON
+	subtotal: decimal({ precision: 10, scale: 2 }).notNull(),
+	taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default('0').notNull(),
+	total: decimal({ precision: 10, scale: 2 }).notNull(),
+	currency: varchar({ length: 3 }).default('SAR').notNull(),
+	status: mysqlEnum(['sent', 'viewed', 'accepted', 'rejected', 'expired']).default('sent').notNull(),
+	validUntil: date("valid_until", { mode: 'string' }),
+	pdfUrl: varchar("pdf_url", { length: 500 }),
+	conversationId: int("conversation_id"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_merchant").on(table.merchantId, table.createdAt),
+	index("idx_status").on(table.merchantId, table.status),
+]);
+
+// --- Sales Targets ---
+export const salesTargets = mysqlTable("sales_targets", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	periodType: mysqlEnum("period_type", ['monthly', 'quarterly', 'yearly']).default('monthly').notNull(),
+	periodStart: date("period_start", { mode: 'string' }).notNull(),
+	periodEnd: date("period_end", { mode: 'string' }).notNull(),
+	targetAmount: decimal("target_amount", { precision: 12, scale: 2 }).notNull(),
+	achievedAmount: decimal("achieved_amount", { precision: 12, scale: 2 }).default('0').notNull(),
+	quotationsSent: int("quotations_sent").default(0).notNull(),
+	quotationsWon: int("quotations_won").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	uniqueIndex("idx_merchant_period").on(table.merchantId, table.periodType, table.periodStart),
+]);
+
+// --- Quotation Templates ---
+export const quotationTemplates = mysqlTable("quotation_templates", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	name: varchar({ length: 255 }).notNull(),
+	headerImageUrl: varchar("header_image_url", { length: 500 }),
+	footerText: text("footer_text"),
+	termsText: text("terms_text"),
+	isDefault: tinyint("is_default").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_merchant").on(table.merchantId),
+]);
+
