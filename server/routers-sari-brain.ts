@@ -222,7 +222,12 @@ export const sariBrainRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'المصدر غير موجود' });
           }
           await db.deleteKnowledgeDoc(doc.id);
-          await logBrainActivity(merchant.id, 'document_deleted', 'تم حذف الملف التعريفي');
+          // CASCADE: Delete knowledge sections from document source
+          try {
+            const knowledgeDb = await import('./db/knowledge');
+            await knowledgeDb.deleteSectionsBySource(merchant.id, 'document');
+          } catch { /* non-blocking */ }
+          await logBrainActivity(merchant.id, 'document_deleted', 'تم حذف الملف التعريفي وأقسام المعرفة المرتبطة');
           break;
         }
         case 'products': {
@@ -246,12 +251,22 @@ export const sariBrainRouter = router({
               if ((result as any)?.affectedRows === 0) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد تحليل موقع للحذف' });
               }
+              // CASCADE: Delete discovered pages
+              await (dbConn as any).execute(
+                `DELETE FROM discovered_pages WHERE merchant_id = ?`,
+                [merchant.id]
+              );
             }
           } catch (e: any) {
             if (e?.code === 'NOT_FOUND') throw e;
             console.error('[SariBrain] Failed to delete website analysis:', e);
           }
-          await logBrainActivity(merchant.id, 'website_deleted', 'تم حذف تحليل الموقع');
+          // CASCADE: Delete knowledge sections from website source
+          try {
+            const knowledgeDb = await import('./db/knowledge');
+            await knowledgeDb.deleteSectionsBySource(merchant.id, 'website');
+          } catch { /* non-blocking */ }
+          await logBrainActivity(merchant.id, 'website_deleted', 'تم حذف تحليل الموقع وجميع البيانات المرتبطة');
           break;
         }
         case 'faqs': {
@@ -292,12 +307,16 @@ export const sariBrainRouter = router({
       deletedSources.push('products');
     } catch (e) { /* skip */ }
 
-    // Delete website analyses
+    // Delete website analyses + discovered pages
     try {
       const dbConn = await db.getDb();
       if (dbConn) {
         await (dbConn as any).execute(
           `DELETE FROM website_analyses WHERE merchant_id = ?`,
+          [merchant.id]
+        );
+        await (dbConn as any).execute(
+          `DELETE FROM discovered_pages WHERE merchant_id = ?`,
           [merchant.id]
         );
         deletedSources.push('website');
@@ -308,6 +327,13 @@ export const sariBrainRouter = router({
     try {
       await db.deleteAllExtractedFaqs(merchant.id);
       deletedSources.push('faqs');
+    } catch (e) { /* skip */ }
+
+    // Delete all knowledge sections + changelog
+    try {
+      const knowledgeDb = await import('./db/knowledge');
+      await knowledgeDb.deleteAllSections(merchant.id);
+      deletedSources.push('knowledge_sections');
     } catch (e) { /* skip */ }
 
     await logBrainActivity(merchant.id, 'brain_reset', 'تم إعادة ضبط عقل ساري بالكامل', { deletedSources });
@@ -471,12 +497,29 @@ export const sariBrainRouter = router({
         console.warn('[SariBrain] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
       }
 
+      // Build rich response for frontend toast
+      let salesIntelSummary = null;
+      try {
+        const knowledgeDb = await import('./db/knowledge');
+        const allSections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+        const intelSection = allSections.find((s: any) => (s.section_type || s.sectionType) === 'sales_intel');
+        const oppsSection = allSections.find((s: any) => (s.section_type || s.sectionType) === 'opportunities');
+        salesIntelSummary = {
+          totalSections: allSections.filter((s: any) => !['sales_intel', 'opportunities'].includes(s.section_type || s.sectionType || '')).length,
+          hasIntel: !!intelSection,
+          hasOpportunities: !!oppsSection,
+          intelPreview: intelSection ? (intelSection.content || '').substring(0, 200) : null,
+          oppsPreview: oppsSection ? (oppsSection.content || '').substring(0, 200) : null,
+        };
+      } catch { /* non-blocking */ }
+
       return { 
         success: true, 
         title: result.title, 
         industry: result.industry, 
         score: result.overallScore,
         knowledgeEvolution: evolveResult,
+        salesIntelSummary,
       };
     } catch (error: any) {
       if (error?.code === 'TOO_MANY_REQUESTS') throw error;

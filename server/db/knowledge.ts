@@ -405,6 +405,34 @@ export async function deleteAllSections(merchantId: number): Promise<void> {
     `DELETE FROM knowledge_sections WHERE merchant_id = ?`,
     [merchantId]
   );
+  // Also clear changelog
+  await pool.execute(
+    `DELETE FROM knowledge_changelog WHERE merchant_id = ?`,
+    [merchantId]
+  );
+}
+
+/** Delete sections by source type (website, document, etc.) */
+export async function deleteSectionsBySource(merchantId: number, source: SectionSource): Promise<number> {
+  await ensureKnowledgeTables();
+  const pool = await db.getPool();
+  if (!pool) return 0;
+
+  // Delete children of matching sections first
+  await pool.execute(
+    `DELETE cs FROM knowledge_sections cs 
+     INNER JOIN knowledge_sections ps ON cs.parent_id = ps.id 
+     WHERE ps.merchant_id = ? AND ps.source = ?`,
+    [merchantId, source]
+  );
+  // Then delete parent sections
+  const [result] = await pool.execute(
+    `DELETE FROM knowledge_sections WHERE merchant_id = ? AND source = ?`,
+    [merchantId, source]
+  );
+  const deleted = (result as any).affectedRows || 0;
+  console.log(`[KnowledgeEngine] Deleted ${deleted} sections with source '${source}' for merchant ${merchantId}`);
+  return deleted;
 }
 
 // ═══════════════════════════════════════════════════════════════

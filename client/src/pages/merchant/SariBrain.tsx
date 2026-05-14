@@ -97,8 +97,15 @@ export default function SariBrain() {
   });
 
   const reanalyzeMutation = trpc.sariBrain.reanalyzeWebsite.useMutation({
-    onSuccess: (data) => {
-      toast.success(`تم تحليل الموقع بنجاح — ${data.title || 'بدون عنوان'} (${data.score}/100)`);
+    onSuccess: (data: any) => {
+      const parts = [`✅ تم تحليل الموقع: ${data.title || 'بدون عنوان'} (${data.score}/100)`];
+      if (data.knowledgeEvolution) {
+        const ev = data.knowledgeEvolution;
+        parts.push(`📦 +${ev.added} قسم جديد، ↗${ev.evolved} تطوير، ⚠${ev.conflicts} تعارض`);
+      }
+      if (data.salesIntelSummary?.hasIntel) parts.push('💎 تم استخراج ذكاء المبيعات');
+      if (data.salesIntelSummary?.hasOpportunities) parts.push('🎯 تم اكتشاف فرص تطوير');
+      toast.success(parts.join('\n'), { duration: 8000 });
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
       utils.sariBrain.getWebsiteKnowledge.invalidate();
@@ -412,6 +419,89 @@ export default function SariBrain() {
         </Card>
       )}
 
+      {/* ═══ 💎 Sales Intelligence Card ═══ */}
+      {(() => {
+        const intelSection = (knowledgeSections as any[] || []).find((s: any) => (s.section_type || s.sectionType) === 'sales_intel');
+        if (!intelSection) return null;
+        const content = intelSection.content || '';
+        const uspsMatch = content.match(/نقاط القوة[:\s]*\n([\s\S]*?)(?=\n(?:إرشادات|$))/i);
+        const tipsMatch = content.match(/إرشادات البيع[:\s]*\n([\s\S]*?)$/i);
+        const usps = (uspsMatch?.[1] || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
+        const tips = (tipsMatch?.[1] || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
+        return (
+          <Card className="border-emerald-300 dark:border-emerald-700 overflow-hidden">
+            <CardHeader className="bg-gradient-to-l from-emerald-500/10 via-emerald-500/5 to-transparent pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Sparkles className="h-5 w-5 text-emerald-500" />
+                💎 ذكاء المبيعات
+              </CardTitle>
+              <CardDescription>يستخدمها ساري تلقائياً في المحادثات لإقناع العملاء</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4 space-y-4">
+              {usps.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">⭐ نقاط القوة الفريدة (USPs)</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {usps.map((usp: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
+                        <p className="text-sm">{usp}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {tips.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-1.5">🎯 إرشادات البيع للبوت</h4>
+                  <div className="space-y-1.5">
+                    {tips.map((tip: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                        <Zap className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                        <p className="text-sm">{tip}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {usps.length === 0 && tips.length === 0 && (
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{content}</p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
+      {/* ═══ 🎯 Opportunities Card ═══ */}
+      {(() => {
+        const oppsSection = (knowledgeSections as any[] || []).find((s: any) => (s.section_type || s.sectionType) === 'opportunities');
+        if (!oppsSection) return null;
+        const opps = (oppsSection.content || '').split('\n').filter((l: string) => l.trim().startsWith('•')).map((l: string) => l.replace('•', '').trim());
+        return (
+          <Card className="border-amber-300 dark:border-amber-700 overflow-hidden">
+            <CardHeader className="bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Target className="h-5 w-5 text-amber-500" />
+                🎯 فرص التطوير
+              </CardTitle>
+              <CardDescription>اقتراحات لتحسين أداء المبيعات — لا تظهر للعميل</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-2">
+                {opps.length > 0 ? opps.map((opp: string, i: number) => (
+                  <div key={i} className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                    <p className="text-sm">{opp}</p>
+                  </div>
+                )) : (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{oppsSection.content}</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Knowledge Sections Tree */}
       <Card>
         <CardHeader>
@@ -478,14 +568,17 @@ export default function SariBrain() {
               {(() => {
                 const SECTION_ICONS: Record<string, string> = {
                   identity: '🏢', services: '🛍️', policies: '📋', faq: '❓', contact: '📞',
-                  team: '👥', achievements: '🏆', sales_intel: '💡', opportunities: '🎯', custom: '📝',
+                  team: '👥', achievements: '🏆', custom: '📝',
                 };
                 const SECTION_LABELS: Record<string, string> = {
                   identity: 'هوية', services: 'خدمات', policies: 'سياسات', faq: 'أسئلة', contact: 'تواصل',
-                  team: 'فريق', achievements: 'إنجازات', sales_intel: 'ذكاء مبيعات', opportunities: 'فرص', custom: 'مخصص',
+                  team: 'فريق', achievements: 'إنجازات', custom: 'مخصص',
                 };
+                // Filter out sales_intel/opportunities (shown in dedicated cards above)
+                const HIDDEN_TYPES = ['sales_intel', 'opportunities'];
+                const filtered = (knowledgeSections as any[]).filter((s: any) => !HIDDEN_TYPES.includes(s.section_type || s.sectionType || ''));
                 // Group by parent
-                const roots = (knowledgeSections as any[]).filter((s: any) => !s.parent_id && !s.parentId);
+                const roots = filtered.filter((s: any) => !s.parent_id && !s.parentId);
                 const children = (knowledgeSections as any[]).filter((s: any) => s.parent_id || s.parentId);
                 return roots.map((section: any) => {
                   const sType = section.section_type || section.sectionType || 'custom';
