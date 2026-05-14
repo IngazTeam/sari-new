@@ -5,6 +5,8 @@
 
 import { callGPT4, ChatMessage } from './openai';
 import * as db from '../db';
+import { buildRAGContext, findCachedResponse, cacheSuccessfulResponse } from './rag-engine';
+import { getBotSections } from '../db/knowledge';
 import { formatCurrency, type Currency } from '../../shared/currency';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
@@ -296,6 +298,7 @@ async function buildEnhancedContextPrompt(context: {
   merchantId?: number;
   availableProducts?: Array<any>;
   isFirstMessage?: boolean;
+  customerMessage?: string;  // RAG: used for semantic search
 }): Promise<string> {
   let contextPrompt = '\n\n## السياق الحالي:\n';
 
@@ -311,8 +314,35 @@ async function buildEnhancedContextPrompt(context: {
     contextPrompt += `هذه أول رسالة من العميل - رحب به بحرارة!\n`;
   }
 
-  // === Inject website analysis summary (title, description, industry, etc.) ===
-  if (context.merchantId) {
+  // === RAG: Knowledge Sections (primary source — if available) ===
+  let usingRAG = false;
+  if (context.merchantId && context.customerMessage) {
+    try {
+      const sections = await getBotSections(context.merchantId);
+      if (sections.length > 0) {
+        // RAG mode: inject only the most relevant sections for this question
+        const ragContext = await buildRAGContext(context.merchantId, context.customerMessage);
+        usingRAG = ragContext.sectionsUsed > 0;
+
+        if (ragContext.facts) {
+          contextPrompt += `\n## معلومات عن النشاط التجاري (مصنفة بالذكاء الاصطناعي):\n`;
+          contextPrompt += sanitizeForPrompt(ragContext.facts) + '\n';
+        }
+
+        if (ragContext.behaviors) {
+          contextPrompt += `\n## إرشادات البيع (اتبعها في أسلوبك):\n`;
+          contextPrompt += sanitizeForPrompt(ragContext.behaviors) + '\n';
+        }
+
+        console.log(`[chatWithSari] RAG: ${ragContext.sectionsUsed} sections injected for merchant ${context.merchantId}`);
+      }
+    } catch (error) {
+      console.warn('[chatWithSari] RAG failed, falling back to legacy:', error);
+    }
+  }
+
+  // === Legacy fallback: Inject website analysis (only if RAG not active) ===
+  if (!usingRAG && context.merchantId) {
     try {
       const analyses = await db.getWebsiteAnalysesByMerchant(context.merchantId);
       const latestAnalysis = analyses.length > 0 ? analyses[0] : null;
@@ -337,8 +367,8 @@ async function buildEnhancedContextPrompt(context: {
     }
   }
 
-  // === Inject knowledge document (uploaded Word/PDF/Excel profile) ===
-  if (context.merchantId) {
+  // === Legacy fallback: Inject knowledge document (only if RAG not active) ===
+  if (!usingRAG && context.merchantId) {
     try {
       const knowledgeDoc = await db.getKnowledgeDocByMerchantId(context.merchantId);
       if (knowledgeDoc && knowledgeDoc.extractedText && knowledgeDoc.extractionStatus === 'completed') {
@@ -649,12 +679,25 @@ ${result.message}
       : allProducts.slice(0, 5);
 
     // Build enhanced context
+    // === RAG Cache Check: return cached response if 92%+ match ===
+    try {
+      const cached = await findCachedResponse(params.merchantId, params.message);
+      if (cached) {
+        console.log(`[chatWithSari] Cache HIT (${cached.similarity.toFixed(2)}) for merchant ${params.merchantId}`);
+        return cached.response;
+      }
+    } catch (cacheErr) {
+      // Non-blocking: cache failure → proceed to GPT-4
+      console.warn('[chatWithSari] Cache check failed:', cacheErr);
+    }
+
     const contextPrompt = await buildEnhancedContextPrompt({
       merchantName: merchant.businessName,
       merchantId: params.merchantId,
       customerName: params.customerName,
       availableProducts: productsToShow,
       isFirstMessage,
+      customerMessage: params.message,  // RAG: semantic search
     });
 
     // Build system prompt with personality settings
@@ -788,6 +831,15 @@ ${result.message}
 
     // Adjust response based on sentiment
     response = adjustResponseForSentiment(response, sentiment);
+
+    // === RAG: Cache successful response for future reuse ===
+    try {
+      if (response && response.length > 20) {
+        // Non-blocking cache save (fire-and-forget)
+        cacheSuccessfulResponse(params.merchantId, params.message, response)
+          .catch(err => console.warn('[chatWithSari] Cache save failed:', err));
+      }
+    } catch { /* silent */ }
 
     return response.trim();
   } catch (error: any) {
