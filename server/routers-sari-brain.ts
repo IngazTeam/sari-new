@@ -373,6 +373,25 @@ export const sariBrainRouter = router({
       // Save to DB
       const dbConn = await db.getDb();
       if (dbConn) {
+        // Ensure table exists
+        await (dbConn as any).execute(`
+          CREATE TABLE IF NOT EXISTS website_analyses (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            merchant_id INT NOT NULL,
+            url VARCHAR(500),
+            title VARCHAR(500),
+            description TEXT,
+            industry VARCHAR(200),
+            language VARCHAR(10) DEFAULT 'ar',
+            seo_score INT DEFAULT 0,
+            overall_score INT DEFAULT 0,
+            scraped_content LONGTEXT,
+            status VARCHAR(50) DEFAULT 'pending',
+            analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_merchant (merchant_id)
+          )
+        `);
+
         // Delete old analyses first
         await (dbConn as any).execute(
           `DELETE FROM website_analyses WHERE merchant_id = ?`,
