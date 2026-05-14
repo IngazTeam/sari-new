@@ -370,49 +370,40 @@ export const sariBrainRouter = router({
       const { analyzeWebsite } = await import('./_core/websiteAnalyzer');
       const result = await analyzeWebsite(websiteUrl);
 
-      // Save to DB
-      const dbConn = await db.getDb();
-      if (dbConn) {
-        // Ensure table exists
-        await (dbConn as any).execute(`
-          CREATE TABLE IF NOT EXISTS website_analyses (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            merchant_id INT NOT NULL,
-            url VARCHAR(500),
-            title VARCHAR(500),
-            description TEXT,
-            industry VARCHAR(200),
-            language VARCHAR(10) DEFAULT 'ar',
-            seo_score INT DEFAULT 0,
-            overall_score INT DEFAULT 0,
-            scraped_content LONGTEXT,
-            status VARCHAR(50) DEFAULT 'pending',
-            analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_merchant (merchant_id)
-          )
-        `);
+      // Delete old analyses, then create new one using the proper Drizzle ORM functions
+      // (same path as routers-website-analysis.ts — single source of truth)
+      try {
+        const existingAnalyses = await db.getWebsiteAnalysesByMerchant(merchant.id);
+        for (const old of existingAnalyses) {
+          await db.deleteWebsiteAnalysis(old.id);
+        }
+      } catch { /* table may not exist yet — first run */ }
 
-        // Delete old analyses first
-        await (dbConn as any).execute(
-          `DELETE FROM website_analyses WHERE merchant_id = ?`,
-          [merchant.id]
-        );
-
-        // Insert new
-        await (dbConn as any).execute(
-          `INSERT INTO website_analyses (merchant_id, url, title, description, industry, language, seo_score, overall_score, status, analyzed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'completed', NOW())`,
-          [
-            merchant.id,
-            websiteUrl,
-            result.title || '',
-            result.description || '',
-            result.industry || '',
-            result.language || 'ar',
-            result.seoScore || 0,
-            result.overallScore || 0,
-          ]
-        );
-      }
+      await db.createWebsiteAnalysis({
+        merchantId: merchant.id,
+        url: websiteUrl,
+        title: result.title || '',
+        description: result.description || '',
+        industry: result.industry || '',
+        language: result.language || 'ar',
+        seoScore: result.seoScore || 0,
+        seoIssues: result.seoIssues || [],
+        metaTags: result.metaTags || {},
+        performanceScore: result.performanceScore || 0,
+        loadTime: result.loadTime,
+        pageSize: result.pageSize,
+        uxScore: result.uxScore || 0,
+        mobileOptimized: result.mobileOptimized,
+        hasContactInfo: result.hasContactInfo,
+        hasWhatsapp: result.hasWhatsapp,
+        contentQuality: result.contentQuality || 0,
+        wordCount: result.wordCount || 0,
+        imageCount: result.imageCount || 0,
+        videoCount: result.videoCount || 0,
+        overallScore: result.overallScore || 0,
+        scrapedContent: (result._scrapedText || '') + '\n\n' + ((result as any)._enrichedText || ''),
+        status: 'completed',
+      });
 
       await logBrainActivity(merchant.id, 'website_analyzed', `تم إعادة تحليل الموقع: ${websiteUrl}`, {
         url: websiteUrl,
