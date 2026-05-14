@@ -468,11 +468,14 @@ export const sariBrainRouter = router({
 
       // === Knowledge Engine v4: Classify scraped content into structured sections ===
       let evolveResult = null;
+      let knowledgeError: string | null = null;
       try {
         const scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
+        console.log(`[SariBrain] Knowledge Engine input: scrapedText=${result._scrapedText?.length || 0} chars, enrichedText=${result._enrichedText?.length || 0} chars, combined=${scrapedText.trim().length} chars`);
+        
         if (scrapedText.trim().length > 100) {
+          console.log(`[SariBrain] Starting Knowledge Engine pipeline for merchant ${merchant.id}...`);
           const { ingestContent } = await import('./ai/knowledge-engine');
-          const { embedAllSections } = await import('./ai/rag-engine');
           
           const ingestionResult = await ingestContent(
             merchant.id,
@@ -483,18 +486,28 @@ export const sariBrainRouter = router({
           );
           evolveResult = ingestionResult.evolveResult;
           
-          // Generate embeddings for all new sections
-          await embedAllSections(merchant.id);
+          console.log(`[SariBrain] Knowledge Engine SUCCESS: +${evolveResult.added} sections, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
+          
+          // Generate embeddings for all new sections (non-blocking — don't let it kill the pipeline)
+          try {
+            const { embedAllSections } = await import('./ai/rag-engine');
+            await embedAllSections(merchant.id);
+          } catch (embedErr: any) {
+            console.warn('[SariBrain] Embedding generation failed (non-blocking):', embedErr.message);
+          }
           
           // Invalidate response cache (knowledge changed)
-          const knowledgeDb = await import('./db/knowledge');
-          await knowledgeDb.invalidateCache(merchant.id);
-          
-          console.log(`[SariBrain] Knowledge Engine: +${evolveResult.added} sections, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
+          try {
+            const knowledgeDb = await import('./db/knowledge');
+            await knowledgeDb.invalidateCache(merchant.id);
+          } catch { /* non-blocking */ }
+        } else {
+          console.warn(`[SariBrain] Knowledge Engine SKIPPED — scraped text too short (${scrapedText.trim().length} chars)`);
+          knowledgeError = `المحتوى المسحوب قصير جداً (${scrapedText.trim().length} حرف) — لم يتم التصنيف`;
         }
       } catch (keErr: any) {
-        // Non-blocking: Knowledge Engine failure doesn't break website analysis
-        console.warn('[SariBrain] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
+        console.error('[SariBrain] ❌ Knowledge Engine pipeline FAILED:', keErr.message, keErr.stack);
+        knowledgeError = `فشل محرك المعرفة: ${keErr.message?.substring(0, 200)}`;
       }
 
       // Build rich response for frontend toast
@@ -519,6 +532,7 @@ export const sariBrainRouter = router({
         score: result.overallScore,
         knowledgeEvolution: evolveResult,
         salesIntelSummary,
+        knowledgeError,
       };
     } catch (error: any) {
       if (error?.code === 'TOO_MANY_REQUESTS') throw error;
