@@ -1403,6 +1403,183 @@ ${sanitizedContent}`
     }
     return { success: true, report };
   }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // Sales Quotations — Create, Track, Manage
+  // ═══════════════════════════════════════════════════════════════
+
+  /** Create a quotation */
+  createQuotation: protectedProcedure
+    .input(z.object({
+      customerPhone: z.string().max(20).optional(),
+      customerName: z.string().max(255).optional(),
+      items: z.array(z.object({
+        name: z.string().min(1).max(500),
+        description: z.string().max(1000).optional(),
+        quantity: z.number().min(1).max(99999),
+        unitPrice: z.number().min(0),
+        total: z.number().min(0),
+      })).min(1).max(50),
+      taxRate: z.number().min(0).max(1).optional(),
+      currency: z.string().max(3).optional(),
+      validDays: z.number().min(1).max(365).optional(),
+      conversationId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      const quotation = await quotationsDb.createQuotation({
+        merchantId: merchant.id,
+        ...input,
+      });
+
+      await logBrainActivity(merchant.id, 'quotation_created',
+        `إنشاء عرض سعر #${quotation.quotationNumber} — ${quotation.total} ${quotation.currency}`
+      );
+
+      return quotation;
+    }),
+
+  /** Get quotations list */
+  getQuotations: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(200).optional() }))
+    .query(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      return quotationsDb.getQuotations(merchant.id, input.limit || 50);
+    }),
+
+  /** Get quotation stats */
+  getQuotationStats: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const quotationsDb = await import('./db/sales-quotations');
+    return quotationsDb.getQuotationStats(merchant.id);
+  }),
+
+  /** Update quotation status */
+  updateQuotationStatus: protectedProcedure
+    .input(z.object({
+      quotationId: z.number(),
+      status: z.enum(['sent', 'viewed', 'accepted', 'rejected', 'expired']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      await quotationsDb.updateQuotationStatus(input.quotationId, merchant.id, input.status);
+
+      await logBrainActivity(merchant.id, 'quotation_updated',
+        `تحديث حالة عرض سعر #${input.quotationId} → ${input.status}`
+      );
+      return { success: true };
+    }),
+
+  /** Format quotation for WhatsApp */
+  formatQuotationForWhatsApp: protectedProcedure
+    .input(z.object({ quotationId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      const quotation = await quotationsDb.getQuotationById(input.quotationId, merchant.id);
+      if (!quotation) throw new TRPCError({ code: 'NOT_FOUND', message: 'عرض السعر غير موجود' });
+
+      // Get default template
+      const templates = await quotationsDb.getTemplates(merchant.id);
+      const defaultTemplate = templates.find(t => t.isDefault) || templates[0] || null;
+
+      const message = quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate);
+      return { message, quotation };
+    }),
+
+  // ─── Sales Targets ─────────────────────────────
+
+  /** Get current target */
+  getCurrentTarget: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const quotationsDb = await import('./db/sales-quotations');
+    return quotationsDb.getCurrentTarget(merchant.id);
+  }),
+
+  /** Set monthly target */
+  setMonthlyTarget: protectedProcedure
+    .input(z.object({ targetAmount: z.number().min(0).max(999999999) }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      const target = await quotationsDb.setMonthlyTarget(merchant.id, input.targetAmount);
+
+      await logBrainActivity(merchant.id, 'target_set',
+        `تحديد هدف مبيعات شهري: ${input.targetAmount} ر.س`
+      );
+      return target;
+    }),
+
+  /** Get target history */
+  getTargetHistory: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(24).optional() }))
+    .query(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      return quotationsDb.getTargetHistory(merchant.id, input.limit || 12);
+    }),
+
+  // ─── Quotation Templates ─────────────────────────
+
+  /** Get templates */
+  getQuotationTemplates: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const quotationsDb = await import('./db/sales-quotations');
+    return quotationsDb.getTemplates(merchant.id);
+  }),
+
+  /** Create template */
+  createQuotationTemplate: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1).max(255),
+      footerText: z.string().max(5000).optional(),
+      termsText: z.string().max(5000).optional(),
+      isDefault: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      const id = await quotationsDb.createTemplate({
+        merchantId: merchant.id,
+        ...input,
+      });
+      return { success: true, templateId: id };
+    }),
+
+  /** Delete template */
+  deleteQuotationTemplate: protectedProcedure
+    .input(z.object({ templateId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      await quotationsDb.deleteTemplate(input.templateId, merchant.id);
+      return { success: true };
+    }),
 });
 
 export type SariBrainRouter = typeof sariBrainRouter;
