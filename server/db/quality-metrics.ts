@@ -257,8 +257,12 @@ export async function getQualityDashboard(
 
   const trend = (() => {
     const t = (trendRows as any[])[0] || {};
-    const recentRate = Number(t.recent_total) > 0 ? Number(t.recent_empty) / Number(t.recent_total) : 0;
-    const prevRate = Number(t.prev_total) > 0 ? Number(t.prev_empty) / Number(t.prev_total) : 0;
+    const recentTotal = Number(t.recent_total) || 0;
+    const prevTotal = Number(t.prev_total) || 0;
+    // Not enough data to compare — treat as stable
+    if (recentTotal < 5 || prevTotal < 5) return 'stable' as const;
+    const recentRate = Number(t.recent_empty) / recentTotal;
+    const prevRate = Number(t.prev_empty) / prevTotal;
     if (recentRate < prevRate - 0.05) return 'improving' as const;
     if (recentRate > prevRate + 0.05) return 'declining' as const;
     return 'stable' as const;
