@@ -190,12 +190,86 @@ export interface WebsiteInsight {
   confidence: number;
 }
 
+/**
+ * Extract readable text from raw HTML when JSDOM body text is empty (SPA sites).
+ * Uses regex to pull text from semantic elements, JSON-LD, noscript, etc.
+ */
+function extractTextFromHtml(html: string): string {
+  const parts: string[] = [];
+
+  // 1. noscript content (often contains full page for SEO on SPAs)
+  const noscriptRegex = /<noscript[^>]*>([\s\S]*?)<\/noscript>/gi;
+  let nsMatch;
+  while ((nsMatch = noscriptRegex.exec(html)) !== null) {
+    const t = nsMatch[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (t.length > 20) parts.push(t);
+  }
+
+  // 2. JSON-LD structured data (very rich on Zid/Shopify)
+  const jsonLdRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let ldMatch;
+  while ((ldMatch = jsonLdRegex.exec(html)) !== null) {
+    try {
+      const ldData = JSON.parse(ldMatch[1]);
+      const flat = JSON.stringify(ldData, null, 0)
+        .replace(/[{}\[\]"]/g, ' ')
+        .replace(/@\w+/g, '')
+        .replace(/https?:\/\/[^\s]+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (flat.length > 20) parts.push(flat);
+    } catch { /* malformed JSON-LD */ }
+  }
+
+  // 3. Text from semantic HTML elements
+  const tagPatterns = [
+    /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi,
+    /<p[^>]*>([\s\S]*?)<\/p>/gi,
+    /<li[^>]*>([\s\S]*?)<\/li>/gi,
+    /<td[^>]*>([\s\S]*?)<\/td>/gi,
+    /<th[^>]*>([\s\S]*?)<\/th>/gi,
+    /<span[^>]*>([\s\S]*?)<\/span>/gi,
+    /<div[^>]*>([\s\S]*?)<\/div>/gi,
+    /<a[^>]*>([\s\S]*?)<\/a>/gi,
+    /<label[^>]*>([\s\S]*?)<\/label>/gi,
+    /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/gi,
+    /<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi,
+    /<article[^>]*>([\s\S]*?)<\/article>/gi,
+    /<section[^>]*>([\s\S]*?)<\/section>/gi,
+  ];
+
+  for (const regex of tagPatterns) {
+    let m;
+    while ((m = regex.exec(html)) !== null) {
+      const t = m[1].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (t.length > 3 && !t.startsWith('{') && !t.startsWith('function')) {
+        parts.push(t);
+      }
+    }
+  }
+
+  // 4. Image alt text & title attributes
+  const attrRegex = /(?:alt|title|aria-label|placeholder|content)=["']([^"']{5,})["']/gi;
+  let attrMatch;
+  while ((attrMatch = attrRegex.exec(html)) !== null) {
+    const v = attrMatch[1].trim();
+    // Skip URLs, CSS, JS-like values
+    if (!v.startsWith('http') && !v.includes('{') && !v.includes(';') && v.length < 500) {
+      parts.push(v);
+    }
+  }
+
+  // Deduplicate and join
+  const unique = [...new Set(parts.filter(p => p.length > 3))];
+  return unique.join(' ').substring(0, 200000).trim();
+}
+
 // ============================================
 // Core Functions
 // ============================================
 
 /**
- * استخراج محتوى الموقع — with retry and anti-bot headers
+ * استخراج محتوى الموقع — with retry, anti-bot headers, and SPA fallback
  */
 export async function scrapeWebsite(url: string): Promise<{
   html: string;
@@ -212,12 +286,24 @@ export async function scrapeWebsite(url: string): Promise<{
     'Googlebot/2.1 (+http://www.google.com/bot.html)',
   ];
 
-  /** Helper: parse raw HTML into { html, dom, text } */
+  /** Helper: parse raw HTML into { html, dom, text } — with SPA fallback */
   const parseHtml = (html: string) => {
     const dom = new JSDOM(html);
     const document = dom.window.document;
-    document.querySelectorAll('script, style, noscript').forEach(el => el.remove());
-    const text = (document.body?.textContent || '').replace(/\s+/g, ' ').trim();
+    // Remove scripts/styles for text extraction
+    document.querySelectorAll('script, style').forEach(el => el.remove());
+    let text = (document.body?.textContent || '').replace(/\s+/g, ' ').trim();
+
+    // SPA Fallback: If DOM text is too short, extract from raw HTML
+    if (text.length < 100 && html.length > 500) {
+      console.log(`[WebsiteAnalyzer] SPA detected (DOM text=${text.length} chars, HTML=${html.length} bytes) — extracting from HTML`);
+      const htmlText = extractTextFromHtml(html);
+      if (htmlText.length > text.length) {
+        text = htmlText;
+        console.log(`[WebsiteAnalyzer] SPA fallback recovered ${text.length} chars from HTML`);
+      }
+    }
+
     return { html, dom, text };
   };
 
@@ -689,15 +775,15 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
   const mergedContact: ContactInfo = { ...existingContactInfo };
   const crawledPages: CrawledPageData[] = [];
 
-  // Prioritize high-value pages: contact, faq, about, then others
-  const priorityOrder = ['contact', 'faq', 'about', 'shipping', 'returns', 'terms', 'privacy'];
+  // Prioritize content-rich pages first, then info pages
+  const priorityOrder = ['services', 'products', 'courses', 'portfolio', 'about', 'contact', 'faq', 'shipping', 'returns', 'terms', 'privacy'];
   const sorted = [...pages].sort((a, b) => {
     const aIdx = priorityOrder.indexOf(a.pageType);
     const bIdx = priorityOrder.indexOf(b.pageType);
-    return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+    return (aIdx === -1 ? 50 : aIdx) - (bIdx === -1 ? 50 : bIdx);
   });
 
-  for (const page of sorted.slice(0, 30)) {
+  for (const page of sorted.slice(0, 50)) {
     try {
       console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
       const { dom, text, html } = await scrapeWebsite(page.url);
@@ -804,9 +890,45 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
     const isArabic = /[\u0600-\u06FF]/.test(text);
     const language = isArabic ? 'ar' : (htmlLang || 'en');
 
-    // Discover sub-pages
-    const discoveredPages = discoverPages(dom, url);
-    console.log(`[WebsiteAnalyzer] Discovered ${discoveredPages.length} sub-pages`);
+    // Discover sub-pages from HTML links
+    let discoveredPages = discoverPages(dom, url);
+    console.log(`[WebsiteAnalyzer] Discovered ${discoveredPages.length} sub-pages from HTML links`);
+
+    // Also try sitemap.xml for more pages (especially SPAs that have few HTML links)
+    try {
+      const baseOrigin = new URL(url).origin;
+      const sitemapUrls = [`${baseOrigin}/sitemap.xml`, `${baseOrigin}/sitemap_index.xml`];
+      const seenUrls = new Set(discoveredPages.map(p => p.url));
+      
+      for (const sitemapUrl of sitemapUrls) {
+        try {
+          const smResult = await curlFetch(sitemapUrl, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' });
+          if (smResult.ok && smResult.body.includes('<loc>')) {
+            const locRegex = /<loc>([^<]+)<\/loc>/g;
+            let locMatch;
+            while ((locMatch = locRegex.exec(smResult.body)) !== null) {
+              const pageUrl = locMatch[1].trim();
+              if (!seenUrls.has(pageUrl) && pageUrl.startsWith(baseOrigin)) {
+                seenUrls.add(pageUrl);
+                // Classify from URL path
+                const path = pageUrl.toLowerCase();
+                let pageType: string = 'other';
+                for (const [type, keywords] of Object.entries(PAGE_TYPE_KEYWORDS)) {
+                  if (keywords.some(k => path.includes(k))) { pageType = type; break; }
+                }
+                discoveredPages.push({
+                  pageType: pageType as any,
+                  title: pageUrl.split('/').pop()?.replace(/-/g, ' ') || 'page',
+                  url: pageUrl,
+                });
+              }
+            }
+            console.log(`[WebsiteAnalyzer] Sitemap found: ${sitemapUrl} — total pages now: ${discoveredPages.length}`);
+            break; // Found sitemap, no need to try alternatives
+          }
+        } catch { /* sitemap not found — ok */ }
+      }
+    } catch { /* sitemap discovery failed — non-blocking */ }
 
     // Multi-page crawling for richer data
     let faqs: ExtractedFAQ[] = [];
@@ -868,6 +990,10 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       console.warn('[WebsiteAnalyzer] Industry detection failed/timed out, continuing with default:', err instanceof Error ? err.message : err);
     }
 
+    // Build crawl stats for frontend
+    const mainPageWords = text.trim().split(/\s+/).filter(Boolean).length;
+    const successPages = allCrawledPages.filter(p => p.success);
+
     return {
       title,
       description,
@@ -897,6 +1023,15 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       _scrapedText: text,
       _enrichedText: allEnrichedText,  // Text from ALL crawled sub-pages
       _crawledPages: allCrawledPages,  // Per-page data for Knowledge Dashboard
+      _crawlStats: {
+        pagesDiscovered: discoveredPages.length,
+        pagesCrawled: allCrawledPages.length,
+        pagesSuccess: successPages.length,
+        mainPageWords,
+        totalWords: totalWordCount,
+        enrichedTextLength: allEnrichedText.length,
+        faqsFound: faqs.length,
+      },
     };
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error analyzing website:', error);

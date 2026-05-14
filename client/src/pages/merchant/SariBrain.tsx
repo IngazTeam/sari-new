@@ -85,8 +85,8 @@ export default function SariBrain() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const ANALYSIS_STEPS = [
     { icon: '🌐', label: 'الاتصال بالموقع', detail: 'فحص الرابط والاستجابة' },
-    { icon: '📥', label: 'سحب المحتوى', detail: 'قراءة النصوص والعناوين' },
-    { icon: '🔍', label: 'اكتشاف الصفحات', detail: 'سحب صفحات من البوليسي وشحن وFAQ' },
+    { icon: '📥', label: 'سحب المحتوى', detail: 'قراءة النصوص والعناوين من الصفحة الرئيسية' },
+    { icon: '🔍', label: 'اكتشاف وسحب كل الصفحات', detail: 'سحب جميع الصفحات الداخلية + sitemap.xml' },
     { icon: '🧠', label: 'تصنيف AI', detail: 'تحليل المعرفة بالذكاء الاصطناعي' },
     { icon: '💎', label: 'ذكاء المبيعات', detail: 'استخراج نقاط القوة وإرشادات البيع' },
     { icon: '🎯', label: 'فرص التطوير', detail: 'اكتشاف التحسينات الممكنة' },
@@ -439,7 +439,19 @@ export default function SariBrain() {
                     }`}>{step.label}</p>
                     <p className="text-[10px] text-muted-foreground">{step.detail}</p>
                   </div>
-                  {done && <span className="text-xs text-green-600 font-medium">✅</span>}
+                  {/* Show real stats next to completed steps */}
+                  {done && analysisResults?.crawlStats && (
+                    <span className="text-[10px] text-green-600 dark:text-green-400 font-mono whitespace-nowrap">
+                      {i === 0 && '✅'}
+                      {i === 1 && `${(analysisResults.crawlStats.mainPageWords || 0).toLocaleString()} كلمة`}
+                      {i === 2 && `${analysisResults.crawlStats.pagesSuccess || 0}/${analysisResults.crawlStats.pagesDiscovered || 0} صفحة`}
+                      {i === 3 && `${analysisResults.crawlStats.totalWords?.toLocaleString() || 0} كلمة`}
+                      {i === 4 && (analysisResults.salesIntelSummary?.hasIntel ? '✅' : '—')}
+                      {i === 5 && (analysisResults.salesIntelSummary?.hasOpportunities ? '✅' : '—')}
+                      {i === 6 && `${analysisResults.salesIntelSummary?.totalSections || 0} قسم`}
+                    </span>
+                  )}
+                  {done && !analysisResults?.crawlStats && <span className="text-xs text-green-600 font-medium">✅</span>}
                 </div>
               );
             })}

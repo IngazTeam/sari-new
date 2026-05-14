@@ -633,6 +633,7 @@ export const sariBrainRouter = router({
         knowledgeEvolution: evolveResult,
         salesIntelSummary,
         knowledgeError,
+        crawlStats: (result as any)._crawlStats || null,
       };
     } catch (error: any) {
       if (error?.code === 'TOO_MANY_REQUESTS') throw error;
