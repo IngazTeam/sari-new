@@ -1103,6 +1103,228 @@ ${sanitizedContent}`
 
       return { success: true };
     }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // Knowledge Engine v4 — Sections, Health, Changelog, Evolve
+  // ═══════════════════════════════════════════════════════════════
+
+  /** Get all knowledge sections (hierarchical) */
+  getKnowledgeSections: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const knowledgeDb = await import('./db/knowledge');
+    const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+    return sections;
+  }),
+
+  /** Get knowledge health score */
+  getHealthScore: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const knowledgeDb = await import('./db/knowledge');
+    return knowledgeDb.calculateHealthScore(merchant.id);
+  }),
+
+  /** Get pending review sections (conflicts) */
+  getPendingReviews: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const knowledgeDb = await import('./db/knowledge');
+    return knowledgeDb.getPendingReviewSections(merchant.id);
+  }),
+
+  /** Get knowledge changelog */
+  getChangelog: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(200).optional() }))
+    .query(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const knowledgeDb = await import('./db/knowledge');
+      return knowledgeDb.getChangelog(merchant.id, input.limit || 50);
+    }),
+
+  /** Create a manual knowledge section */
+  createSection: protectedProcedure
+    .input(z.object({
+      sectionType: z.enum(['identity', 'services', 'policies', 'faq', 'contact', 'team', 'achievements', 'custom']),
+      title: z.string().min(1).max(500),
+      content: z.string().min(1).max(50000),
+      parentId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const knowledgeDb = await import('./db/knowledge');
+      const sectionId = await knowledgeDb.createSection({
+        merchantId: merchant.id,
+        sectionType: input.sectionType,
+        title: input.title,
+        content: input.content,
+        parentId: input.parentId,
+        source: 'manual',
+        merchantEdited: true,
+        status: 'approved',
+      });
+
+      await knowledgeDb.logChange({
+        merchantId: merchant.id,
+        sectionId,
+        action: 'manual_edit',
+        reason: `إضافة يدوية: ${input.title}`,
+        newContent: input.content,
+        source: 'manual',
+      });
+
+      // Generate embedding for the new section
+      try {
+        const ragEngine = await import('./ai/rag-engine');
+        const section = await knowledgeDb.getSectionById(sectionId, merchant.id);
+        if (section) await ragEngine.embedSection(section, merchant.id);
+      } catch { /* non-blocking */ }
+
+      await logBrainActivity(merchant.id, 'section_created', `إضافة قسم: ${input.title}`);
+      return { success: true, sectionId };
+    }),
+
+  /** Update a knowledge section */
+  updateSection: protectedProcedure
+    .input(z.object({
+      sectionId: z.number(),
+      title: z.string().min(1).max(500).optional(),
+      content: z.string().min(1).max(50000).optional(),
+      useInBot: z.boolean().optional(),
+      status: z.enum(['auto_approved', 'approved', 'pending_review']).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const knowledgeDb = await import('./db/knowledge');
+      
+      // Verify ownership
+      const existing = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'القسم غير موجود' });
+
+      const oldContent = existing.content || (existing as any).content;
+
+      await knowledgeDb.updateSection(input.sectionId, merchant.id, {
+        ...(input.title && { title: input.title }),
+        ...(input.content && { content: input.content }),
+        ...(input.useInBot !== undefined && { useInBot: input.useInBot }),
+        ...(input.status && { status: input.status }),
+        merchantEdited: true,
+      });
+
+      if (input.content) {
+        await knowledgeDb.logChange({
+          merchantId: merchant.id,
+          sectionId: input.sectionId,
+          action: 'manual_edit',
+          reason: `تعديل يدوي: ${input.title || existing.title || (existing as any).title}`,
+          oldContent,
+          newContent: input.content,
+          source: 'manual',
+        });
+
+        // Re-embed after content change
+        try {
+          const ragEngine = await import('./ai/rag-engine');
+          const updated = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
+          if (updated) await ragEngine.embedSection(updated, merchant.id);
+        } catch { /* non-blocking */ }
+      }
+
+      await logBrainActivity(merchant.id, 'section_updated', `تعديل قسم: ${input.title || existing.title || (existing as any).title}`);
+      return { success: true };
+    }),
+
+  /** Delete a knowledge section */
+  deleteSection: protectedProcedure
+    .input(z.object({ sectionId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      checkDestructiveRateLimit(merchant.id);
+
+      const knowledgeDb = await import('./db/knowledge');
+      const existing = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'القسم غير موجود' });
+
+      await knowledgeDb.logChange({
+        merchantId: merchant.id,
+        sectionId: input.sectionId,
+        action: 'delete',
+        reason: `حذف: ${existing.title || (existing as any).title}`,
+        oldContent: existing.content || (existing as any).content,
+      });
+
+      await knowledgeDb.deleteSection(input.sectionId, merchant.id);
+      await logBrainActivity(merchant.id, 'section_deleted', `حذف قسم: ${existing.title || (existing as any).title}`);
+      return { success: true };
+    }),
+
+  /** Approve a pending review section (resolve conflict) */
+  approveSection: protectedProcedure
+    .input(z.object({
+      sectionId: z.number(),
+      action: z.enum(['approve', 'reject']),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const knowledgeDb = await import('./db/knowledge');
+      const section = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
+      if (!section) throw new TRPCError({ code: 'NOT_FOUND', message: 'القسم غير موجود' });
+
+      if (input.action === 'approve') {
+        await knowledgeDb.updateSection(input.sectionId, merchant.id, {
+          status: 'approved',
+          useInBot: true,
+        });
+        // Embed the newly approved section
+        try {
+          const ragEngine = await import('./ai/rag-engine');
+          const updated = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
+          if (updated) await ragEngine.embedSection(updated, merchant.id);
+        } catch { /* non-blocking */ }
+      } else {
+        await knowledgeDb.deleteSection(input.sectionId, merchant.id);
+      }
+
+      // Resolve related changelog conflicts
+      const changelog = await knowledgeDb.getUnresolvedConflicts(merchant.id);
+      for (const entry of changelog) {
+        if ((entry as any).section_id === input.sectionId || entry.sectionId === input.sectionId) {
+          await knowledgeDb.resolveConflict(entry.id, merchant.id);
+        }
+      }
+
+      await logBrainActivity(merchant.id, 'conflict_resolved',
+        `${input.action === 'approve' ? 'قبول' : 'رفض'} تعارض: ${section.title || (section as any).title}`
+      );
+      return { success: true };
+    }),
+
+  /** Trigger re-embedding of all sections */
+  reembedSections: protectedProcedure.mutation(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    checkDestructiveRateLimit(merchant.id, 60_000); // 1 min cooldown
+
+    const ragEngine = await import('./ai/rag-engine');
+    const count = await ragEngine.embedAllSections(merchant.id);
+    
+    await logBrainActivity(merchant.id, 'sections_reembedded', `إعادة تحويل ${count} قسم إلى vectors`);
+    return { success: true, embeddedCount: count };
+  }),
 });
 
 export type SariBrainRouter = typeof sariBrainRouter;
