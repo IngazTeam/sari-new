@@ -1362,6 +1362,47 @@ ${sanitizedContent}`
     await logBrainActivity(merchant.id, 'sections_reembedded', `إعادة تحويل ${count} قسم إلى vectors`);
     return { success: true, embeddedCount: count };
   }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // Quality Metrics — Dashboard, Weekly Reports
+  // ═══════════════════════════════════════════════════════════════
+
+  /** Get quality dashboard */
+  getQualityDashboard: protectedProcedure
+    .input(z.object({ days: z.number().min(1).max(90).optional() }))
+    .query(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const qualityDb = await import('./db/quality-metrics');
+      return qualityDb.getQualityDashboard(merchant.id, input.days || 30);
+    }),
+
+  /** Get weekly reports history */
+  getWeeklyReports: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(52).optional() }))
+    .query(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const qualityDb = await import('./db/quality-metrics');
+      return qualityDb.getWeeklyReports(merchant.id, input.limit || 12);
+    }),
+
+  /** Generate weekly report (manual trigger) */
+  generateWeeklyReport: protectedProcedure.mutation(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    checkTestRateLimit(merchant.id, 30_000);
+
+    const qualityDb = await import('./db/quality-metrics');
+    const report = await qualityDb.generateWeeklyReport(merchant.id);
+    if (!report) {
+      return { success: false, message: 'لا توجد بيانات كافية أو التقرير موجود بالفعل' };
+    }
+    return { success: true, report };
+  }),
 });
 
 export type SariBrainRouter = typeof sariBrainRouter;

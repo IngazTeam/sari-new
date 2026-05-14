@@ -7,6 +7,7 @@ import { callGPT4, ChatMessage } from './openai';
 import * as db from '../db';
 import { buildRAGContext, findCachedResponse, cacheSuccessfulResponse } from './rag-engine';
 import { getBotSections } from '../db/knowledge';
+import { recordMetric } from '../db/quality-metrics';
 import { formatCurrency, type Currency } from '../../shared/currency';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
@@ -680,10 +681,22 @@ ${result.message}
 
     // Build enhanced context
     // === RAG Cache Check: return cached response if 92%+ match ===
+    const _startTime = Date.now();
     try {
       const cached = await findCachedResponse(params.merchantId, params.message);
       if (cached) {
         console.log(`[chatWithSari] Cache HIT (${cached.similarity.toFixed(2)}) for merchant ${params.merchantId}`);
+        // Record cache-hit metric (fire-and-forget)
+        recordMetric({
+          merchantId: params.merchantId,
+          conversationId: params.conversationId ?? null,
+          questionText: params.message,
+          responseText: cached.response,
+          responseTimeMs: Date.now() - _startTime,
+          wasCacheHit: true,
+          ragSectionsUsed: 0,
+          customerSentiment: sentiment?.sentiment || null,
+        }).catch(() => {});
         return cached.response;
       }
     } catch (cacheErr) {
@@ -840,6 +853,18 @@ ${result.message}
           .catch(err => console.warn('[chatWithSari] Cache save failed:', err));
       }
     } catch { /* silent */ }
+
+    // === Quality Metrics: Record response quality (fire-and-forget) ===
+    recordMetric({
+      merchantId: params.merchantId,
+      conversationId: params.conversationId ?? null,
+      questionText: params.message,
+      responseText: response,
+      responseTimeMs: Date.now() - _startTime,
+      wasCacheHit: false,
+      ragSectionsUsed: 0, // TODO: pass from buildRAGContext
+      customerSentiment: sentiment?.sentiment || null,
+    }).catch(() => {});
 
     return response.trim();
   } catch (error: any) {

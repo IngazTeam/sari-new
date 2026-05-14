@@ -1059,6 +1059,92 @@ export default function SariBrain() {
           )}
         </CardContent>
       </Card>
+      {/* ═══ Quality Metrics Dashboard ═══ */}
+      {(() => {
+        const { data: qualityData } = trpc.sariBrain.getQualityDashboard.useQuery({ days: 30 });
+        if (!qualityData || qualityData.totalResponses === 0) return null;
+        const trendEmoji = qualityData.trend === 'improving' ? '📈' : qualityData.trend === 'declining' ? '📉' : '➡️';
+        const trendLabel = qualityData.trend === 'improving' ? 'تحسن' : qualityData.trend === 'declining' ? 'تراجع' : 'مستقر';
+        const trendColor = qualityData.trend === 'improving' ? 'text-green-600' : qualityData.trend === 'declining' ? 'text-red-600' : 'text-muted-foreground';
+        const totalSentiment = qualityData.sentimentBreakdown.positive + qualityData.sentimentBreakdown.neutral + qualityData.sentimentBreakdown.negative;
+        return (
+          <Card className="border-primary/10">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    📊 مقاييس الجودة
+                  </CardTitle>
+                  <CardDescription>آخر 30 يوم — {qualityData.totalResponses} رد</CardDescription>
+                </div>
+                <div className={`flex items-center gap-1 text-sm font-semibold ${trendColor}`}>
+                  <span>{trendEmoji}</span>
+                  <span>{trendLabel}</span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <p className="text-2xl font-bold text-blue-600">{qualityData.avgResponseTimeMs < 1000 ? `${qualityData.avgResponseTimeMs}ms` : `${(qualityData.avgResponseTimeMs / 1000).toFixed(1)}s`}</p>
+                  <p className="text-[10px] text-muted-foreground">⏱️ متوسط الرد</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <p className="text-2xl font-bold text-green-600">{qualityData.cacheHitRate}%</p>
+                  <p className="text-[10px] text-muted-foreground">⚡ كاش</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <p className={`text-2xl font-bold ${qualityData.emptyResponseRate > 10 ? 'text-red-600' : 'text-green-600'}`}>{qualityData.emptyResponseRate}%</p>
+                  <p className="text-[10px] text-muted-foreground">🚫 ردود فارغة</p>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-muted/50">
+                  <p className={`text-2xl font-bold ${qualityData.escalationRate > 20 ? 'text-orange-600' : 'text-green-600'}`}>{qualityData.escalationRate}%</p>
+                  <p className="text-[10px] text-muted-foreground">🔄 تحويل للتاجر</p>
+                </div>
+              </div>
+
+              {/* Sentiment Bar */}
+              {totalSentiment > 0 && (
+                <div className="mb-4">
+                  <p className="text-xs font-medium mb-2">😊 مزاج العملاء</p>
+                  <div className="flex h-3 rounded-full overflow-hidden">
+                    {qualityData.sentimentBreakdown.positive > 0 && (
+                      <div className="bg-green-500 transition-all" style={{ width: `${(qualityData.sentimentBreakdown.positive / totalSentiment) * 100}%` }} title={`إيجابي: ${qualityData.sentimentBreakdown.positive}`} />
+                    )}
+                    {qualityData.sentimentBreakdown.neutral > 0 && (
+                      <div className="bg-gray-300" style={{ width: `${(qualityData.sentimentBreakdown.neutral / totalSentiment) * 100}%` }} title={`محايد: ${qualityData.sentimentBreakdown.neutral}`} />
+                    )}
+                    {qualityData.sentimentBreakdown.negative > 0 && (
+                      <div className="bg-red-400" style={{ width: `${(qualityData.sentimentBreakdown.negative / totalSentiment) * 100}%` }} title={`سلبي: ${qualityData.sentimentBreakdown.negative}`} />
+                    )}
+                  </div>
+                  <div className="flex justify-between mt-1 text-[10px] text-muted-foreground">
+                    <span>😊 {qualityData.sentimentBreakdown.positive}</span>
+                    <span>😐 {qualityData.sentimentBreakdown.neutral}</span>
+                    <span>😠 {qualityData.sentimentBreakdown.negative}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Top Questions */}
+              {qualityData.topQuestions.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium mb-2">🔥 أكثر الأسئلة تكراراً</p>
+                  <div className="space-y-1">
+                    {qualityData.topQuestions.slice(0, 5).map((q: string, i: number) => (
+                      <div key={i} className="flex items-center gap-2 text-xs p-1.5 rounded bg-muted/30">
+                        <span className="text-muted-foreground font-mono">{i + 1}.</span>
+                        <span className="truncate">{q}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Activity Log */}
       <Card>
