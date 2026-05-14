@@ -27,6 +27,7 @@ import { useTranslation } from 'react-i18next';
 
 const PLATFORMS = [
   { id: 'byaan', name: 'بيان', nameEn: 'Byaan', description: 'منصة التدريب الأكاديمية', color: 'bg-blue-600' },
+  { id: 'custom', name: 'منصة مخصصة', nameEn: 'Custom', description: 'أي منصة خارجية أخرى', color: 'bg-gray-600' },
 ] as const;
 
 export default function PlatformKeys() {
