@@ -1171,11 +1171,11 @@ export async function getMessageById(id: number): Promise<Message | undefined> {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function getMessagesByConversationId(conversationId: number): Promise<Message[]> {
+export async function getMessagesByConversationId(conversationId: number, limit: number = 500): Promise<Message[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+  return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt).limit(limit);
 }
 
 export async function updateMessage(id: number, data: Partial<InsertMessage>): Promise<void> {

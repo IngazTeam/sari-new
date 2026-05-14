@@ -1758,14 +1758,28 @@ export const appRouter = router({
   // Conversations
   conversations: router({
     // Get all conversations for current merchant
-    list: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
+    list: protectedProcedure
+      .input(z.object({
+        page: z.number().min(1).default(1),
+        pageSize: z.number().min(1).max(100).default(50),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
 
-      return db.getConversationsByMerchantId(merchant.id);
-    }),
+        const page = input?.page ?? 1;
+        const pageSize = input?.pageSize ?? 50;
+        const offset = (page - 1) * pageSize;
+
+        const [items, total] = await Promise.all([
+          db.getConversationsByMerchantId(merchant.id, { limit: pageSize, offset }),
+          db.getConversationCountByMerchantId(merchant.id),
+        ]);
+
+        return { items, total, page, pageSize };
+      }),
 
     // Get messages for a conversation
     getMessages: protectedProcedure

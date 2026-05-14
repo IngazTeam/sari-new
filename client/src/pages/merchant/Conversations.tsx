@@ -355,7 +355,7 @@ export default function Conversations() {
 
                         if (uploadResult.success) {
                           toast.dismiss();
-                          toast.success(`t('toast.conversations.msg1')} (${uploadResult.size.toFixed(2)}MB)`);
+                          toast.success(`${t('toast.conversations.msg1')} (${uploadResult.size.toFixed(2)}MB)`);
 
                           // TODO: إرسال الرسالة الصوتية عبر WhatsApp
                           console.log('Audio URL:', uploadResult.audioUrl);
