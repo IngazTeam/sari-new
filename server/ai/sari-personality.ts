@@ -11,6 +11,11 @@ import { recordMetric } from '../db/quality-metrics';
 import { formatCurrency, type Currency } from '../../shared/currency';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
+import { getSession, createSession, updateSession, detectIntent, detectTopicChange } from './session-context';
+import { getOrCreateProfile, updateProfile, buildProfileContext, type CustomerProfile } from '../db/customer-intelligence';
+import { loadArsenal, selectPersuasion } from './sales-arsenal';
+import { detectDialect, extractChildName, buildCulturalPrompt, buildInitialCulturalProfile, type CulturalProfile } from './cultural-engine';
+import { buildDirectivesPrompt } from '../db/ai-directives';
 import { virtualAgents } from '../../drizzle/schema';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { 
@@ -654,39 +659,123 @@ ${result.message}
       }
     }
 
-    // Analyze sentiment
-    const sentiment = await analyzeSentiment(params.message);
-    
-    // Save sentiment analysis if we have a conversation
-    if (params.conversationId) {
-      // We'll save it after creating the message
-      // For now, just use it to adjust the response
+    // ═══════════════════════════════════════════════════
+    // ADAPTIVE SALES ENGINE — Session-aware pipeline
+    // ═══════════════════════════════════════════════════
+    const _startTime = Date.now();
+    const convId = params.conversationId || 0;
+
+    // --- Customer Profile (cross-conversation memory) ---
+    let customerProfile: CustomerProfile | null = null;
+    try {
+      customerProfile = await getOrCreateProfile(params.merchantId, params.customerPhone, params.customerName);
+    } catch (err) {
+      console.warn('[chatWithSari] Customer profile load failed:', err);
     }
+
+    // --- Extract child name from message (for أبو فلان) ---
+    const mentionedChildName = extractChildName(params.message);
+    if (mentionedChildName && customerProfile) {
+      updateProfile(params.merchantId, params.customerPhone, {
+        childName: mentionedChildName,
+        nickname: `أبو ${mentionedChildName}`,
+      }).catch(() => {});
+      customerProfile.childName = mentionedChildName;
+      customerProfile.nickname = `أبو ${mentionedChildName}`;
+    }
+
+    // --- Session Cache: skip RAG on messages 2+ ---
+    let existingSession = convId ? getSession(params.merchantId, convId) : null;
+    const needsTopicRebuild = existingSession && detectTopicChange(existingSession, params.message);
+
+    if (existingSession && !needsTopicRebuild) {
+      // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
+      const intent = detectIntent(params.message);
+      updateSession(params.merchantId, convId, {
+        intent,
+        sentiment: 'auto', // Lightweight — no GPT call for sentiment on cached path
+      });
+
+      // Select persuasion strategy
+      const persuasion = selectPersuasion(
+        customerProfile || { customerTier: 'new' } as any,
+        existingSession as any,
+        intent,
+        existingSession.sentimentTrajectory[existingSession.sentimentTrajectory.length - 1] || 'neutral',
+        existingSession.persuasionUsed
+      );
+
+      if (persuasion.strategy !== 'none') {
+        updateSession(params.merchantId, convId, { persuasionTactic: persuasion.strategy });
+      }
+
+      // Build system prompt from cached context
+      let systemPrompt = buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
+
+      // Inject persuasion prompt
+      if (persuasion.prompt) {
+        systemPrompt += persuasion.prompt;
+      }
+
+      // Inject customer profile context
+      if (customerProfile) {
+        systemPrompt += buildProfileContext(customerProfile);
+      }
+
+      const messages: ChatMessage[] = [
+        { role: 'system', content: systemPrompt },
+        ...FEW_SHOT_EXAMPLES,
+        ...previousMessages,
+        { role: 'user', content: sanitizeForPrompt(params.message.substring(0, 500)) },
+      ];
+
+      const maxTokens = Math.min(personalitySettings.maxResponseLength * 2, 600);
+      let response = await callGPT4(messages, { temperature: 0.7, maxTokens });
+
+      // Record metric (fire-and-forget)
+      recordMetric({
+        merchantId: params.merchantId,
+        conversationId: params.conversationId ?? null,
+        questionText: params.message,
+        responseText: response,
+        responseTimeMs: Date.now() - _startTime,
+        wasCacheHit: false,
+        ragSectionsUsed: 0,
+        customerSentiment: null,
+      }).catch(() => {});
+
+      console.log(`[chatWithSari] ⚡ FAST PATH: msg #${existingSession.messageCount + 1}, ${Date.now() - _startTime}ms, strategy=${persuasion.strategy}`);
+      return response.trim();
+    }
+
+    // ═══════════════════════════════════════════════════
+    // FULL PATH: First message or topic change — full pipeline
+    // ═══════════════════════════════════════════════════
+    if (needsTopicRebuild) {
+      console.log(`[chatWithSari] Topic change detected — rebuilding session`);
+    }
+
+    // Analyze sentiment (full GPT call — only on first message)
+    const sentiment = await analyzeSentiment(params.message);
 
     // Get all products
     const allProducts = await db.getProductsByMerchantId(params.merchantId);
-    console.log(`[chatWithSari] merchantId=${params.merchantId}, products in DB: ${allProducts.length}`, allProducts.length > 0 ? allProducts.map(p => p.name).join(', ') : 'NONE');
     
     // Smart product search based on customer message
     const relevantProducts = await searchRelevantProducts(
       params.message,
       allProducts,
-      5 // Top 5 most relevant
+      5
     );
-    
-    // If no relevant products found, use top 5 products
     const productsToShow = relevantProducts.length > 0 
       ? relevantProducts 
       : allProducts.slice(0, 5);
 
-    // Build enhanced context
-    // === RAG Cache Check: return cached response if 92%+ match ===
-    const _startTime = Date.now();
+    // === RAG Cache Check ===
     try {
       const cached = await findCachedResponse(params.merchantId, params.message);
       if (cached) {
-        console.log(`[chatWithSari] Cache HIT (${cached.similarity.toFixed(2)}) for merchant ${params.merchantId}`);
-        // Record cache-hit metric (fire-and-forget)
+        console.log(`[chatWithSari] Cache HIT (${cached.similarity.toFixed(2)})`);
         recordMetric({
           merchantId: params.merchantId,
           conversationId: params.conversationId ?? null,
@@ -700,7 +789,6 @@ ${result.message}
         return cached.response;
       }
     } catch (cacheErr) {
-      // Non-blocking: cache failure → proceed to GPT-4
       console.warn('[chatWithSari] Cache check failed:', cacheErr);
     }
 
@@ -710,11 +798,59 @@ ${result.message}
       customerName: params.customerName,
       availableProducts: productsToShow,
       isFirstMessage,
-      customerMessage: params.message,  // RAG: semantic search
+      customerMessage: params.message,
     });
 
-    // Build system prompt with personality settings
-    let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt;
+    // --- Cultural Intelligence ---
+    const culturalProfile = buildInitialCulturalProfile(
+      params.message,
+      customerProfile?.displayName || params.customerName,
+      customerProfile?.childName || mentionedChildName
+    );
+    const culturalPrompt = buildCulturalPrompt(culturalProfile);
+
+    // --- AI Directives (from SuperAdmin) ---
+    let directivesPrompt = '';
+    try {
+      directivesPrompt = await buildDirectivesPrompt();
+    } catch { /* silent — directives are optional */ }
+
+    // --- Sales Arsenal ---
+    let arsenalPrompt = '';
+    try {
+      const arsenal = await loadArsenal(params.merchantId, params.customerPhone);
+      const intent = detectIntent(params.message);
+      const persuasion = selectPersuasion(
+        customerProfile || { customerTier: 'new' } as any,
+        arsenal,
+        intent,
+        sentiment?.sentiment || 'neutral',
+        []
+      );
+      arsenalPrompt = persuasion.prompt;
+
+      // Create session for future messages
+      if (convId) {
+        createSession({
+          merchantId: params.merchantId,
+          conversationId: convId,
+          ragFacts: '', // Stored in contextPrompt
+          ragBehaviors: '',
+          relevantProducts: productsToShow,
+          contextPrompt: contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + (customerProfile ? buildProfileContext(customerProfile) : ''),
+          initialSentiment: sentiment?.sentiment || 'neutral',
+          initialIntent: intent,
+        });
+      }
+    } catch (arsenalErr) {
+      console.warn('[chatWithSari] Arsenal load failed:', arsenalErr);
+    }
+
+    // Build system prompt with personality settings + all engines
+    let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt;
+    if (customerProfile) {
+      systemPrompt += buildProfileContext(customerProfile);
+    }
 
     // ── Resume Context Injection (after Human Takeover) ──
     try {

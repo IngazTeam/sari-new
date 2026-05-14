@@ -1,0 +1,309 @@
+/**
+ * Customer Intelligence — Phase 2 of Adaptive Sales Engine
+ * 
+ * Builds persistent customer profiles that accumulate across conversations.
+ * Enables: "أهلاً أبو عبدالله! كيف الجهاز معاك؟"
+ */
+
+import * as db from '../db';
+
+// ═══════════════════════════════════════════════════════════════
+// Types
+// ═══════════════════════════════════════════════════════════════
+
+export interface CustomerProfile {
+  id?: number;
+  merchantId: number;
+  customerPhone: string;
+  displayName: string | null;
+  nickname: string | null;           // "أبو عبدالله" — only if child name was mentioned
+  childName: string | null;          // extracted from conversation
+  preferences: Record<string, any>; // { priceConscious: true, prefersQuality: false }
+  painPoints: string[];              // ["اشتكى من التأخير", "سأل عن الضمان"]
+  purchaseHistory: string[];         // last 10 products
+  totalSpent: number;
+  totalConversations: number;
+  sentimentAvg: string;              // overall sentiment
+  customerTier: CustomerTier;
+  lastObjection: string | null;      // "price" | "delivery" | "quality"
+  lastSeenAt: Date;
+  createdAt: Date;
+}
+
+export type CustomerTier = 'new' | 'returning' | 'loyal' | 'vip' | 'at_risk';
+
+// ═══════════════════════════════════════════════════════════════
+// Table Management (lazy creation)
+// ═══════════════════════════════════════════════════════════════
+
+let _tableCreated = false;
+
+async function ensureTable(): Promise<void> {
+  if (_tableCreated) return;
+  const pool = await db.getPool();
+  if (!pool) return;
+
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS customer_profiles (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      merchant_id INT NOT NULL,
+      customer_phone VARCHAR(20) NOT NULL,
+      display_name VARCHAR(100) DEFAULT NULL,
+      nickname VARCHAR(100) DEFAULT NULL,
+      child_name VARCHAR(100) DEFAULT NULL,
+      preferences JSON DEFAULT NULL,
+      pain_points JSON DEFAULT NULL,
+      purchase_history JSON DEFAULT NULL,
+      total_spent DECIMAL(12,2) DEFAULT 0,
+      total_conversations INT DEFAULT 0,
+      sentiment_avg VARCHAR(20) DEFAULT 'neutral',
+      customer_tier VARCHAR(20) DEFAULT 'new',
+      last_objection VARCHAR(50) DEFAULT NULL,
+      last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_merchant_phone (merchant_id, customer_phone),
+      INDEX idx_tier (merchant_id, customer_tier),
+      INDEX idx_last_seen (merchant_id, last_seen_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  _tableCreated = true;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CRUD
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Get or create customer profile. Called once at conversation start.
+ */
+export async function getOrCreateProfile(
+  merchantId: number,
+  customerPhone: string,
+  customerName?: string
+): Promise<CustomerProfile> {
+  await ensureTable();
+  const pool = await db.getPool();
+  if (!pool) return buildDefaultProfile(merchantId, customerPhone, customerName);
+
+  const [rows] = await pool.execute(
+    `SELECT * FROM customer_profiles WHERE merchant_id = ? AND customer_phone = ?`,
+    [merchantId, customerPhone]
+  );
+
+  const existing = (rows as any[])[0];
+  if (existing) {
+    // Update last seen + increment conversations
+    await pool.execute(
+      `UPDATE customer_profiles SET last_seen_at = NOW(), total_conversations = total_conversations + 1
+       WHERE id = ?`,
+      [existing.id]
+    );
+    return mapRow(existing);
+  }
+
+  // Create new profile
+  const [result] = await pool.execute(
+    `INSERT INTO customer_profiles (merchant_id, customer_phone, display_name, total_conversations)
+     VALUES (?, ?, ?, 1)`,
+    [merchantId, customerPhone, customerName || null]
+  );
+
+  return {
+    ...buildDefaultProfile(merchantId, customerPhone, customerName),
+    id: (result as any).insertId,
+  };
+}
+
+/**
+ * Update profile at end of conversation (fire-and-forget).
+ */
+export async function updateProfile(
+  merchantId: number,
+  customerPhone: string,
+  updates: Partial<Pick<CustomerProfile, 
+    'displayName' | 'nickname' | 'childName' | 'preferences' | 'painPoints' | 
+    'sentimentAvg' | 'lastObjection' | 'customerTier'
+  >>
+): Promise<void> {
+  await ensureTable();
+  const pool = await db.getPool();
+  if (!pool) return;
+
+  const setClauses: string[] = [];
+  const values: any[] = [];
+
+  if (updates.displayName !== undefined) { setClauses.push('display_name = ?'); values.push(updates.displayName); }
+  if (updates.nickname !== undefined) { setClauses.push('nickname = ?'); values.push(updates.nickname); }
+  if (updates.childName !== undefined) { setClauses.push('child_name = ?'); values.push(updates.childName); }
+  if (updates.preferences !== undefined) { setClauses.push('preferences = ?'); values.push(JSON.stringify(updates.preferences)); }
+  if (updates.painPoints !== undefined) { setClauses.push('pain_points = ?'); values.push(JSON.stringify(updates.painPoints)); }
+  if (updates.sentimentAvg !== undefined) { setClauses.push('sentiment_avg = ?'); values.push(updates.sentimentAvg); }
+  if (updates.lastObjection !== undefined) { setClauses.push('last_objection = ?'); values.push(updates.lastObjection); }
+  if (updates.customerTier !== undefined) { setClauses.push('customer_tier = ?'); values.push(updates.customerTier); }
+
+  if (setClauses.length === 0) return;
+
+  values.push(merchantId, customerPhone);
+  await pool.execute(
+    `UPDATE customer_profiles SET ${setClauses.join(', ')} WHERE merchant_id = ? AND customer_phone = ?`,
+    values
+  );
+}
+
+/**
+ * Record a purchase to the customer's history.
+ */
+export async function recordPurchase(
+  merchantId: number,
+  customerPhone: string,
+  productName: string,
+  amount: number
+): Promise<void> {
+  await ensureTable();
+  const pool = await db.getPool();
+  if (!pool) return;
+
+  // Get current history
+  const [rows] = await pool.execute(
+    `SELECT purchase_history, total_spent FROM customer_profiles WHERE merchant_id = ? AND customer_phone = ?`,
+    [merchantId, customerPhone]
+  );
+  
+  const existing = (rows as any[])[0];
+  if (!existing) return;
+
+  let history: string[] = [];
+  try { history = JSON.parse(existing.purchase_history || '[]'); } catch { history = []; }
+  history.push(productName);
+  if (history.length > 10) history = history.slice(-10); // Keep last 10
+
+  const newTotal = Number(existing.total_spent || 0) + amount;
+  const newTier = classifyTier(history.length, newTotal);
+
+  await pool.execute(
+    `UPDATE customer_profiles SET purchase_history = ?, total_spent = ?, customer_tier = ?
+     WHERE merchant_id = ? AND customer_phone = ?`,
+    [JSON.stringify(history), newTotal, newTier, merchantId, customerPhone]
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Tier Classification
+// ═══════════════════════════════════════════════════════════════
+
+export function classifyTier(purchaseCount: number, totalSpent: number): CustomerTier {
+  if (totalSpent >= 5000 || purchaseCount >= 10) return 'vip';
+  if (totalSpent >= 1000 || purchaseCount >= 3) return 'loyal';
+  if (purchaseCount >= 1) return 'returning';
+  return 'new';
+}
+
+/**
+ * Build a short context string for GPT injection.
+ */
+export function buildProfileContext(profile: CustomerProfile): string {
+  const parts: string[] = [];
+  
+  // Name/nickname
+  const name = profile.nickname || profile.displayName;
+  if (name) parts.push(`اسم العميل: ${name}`);
+  
+  // Tier
+  const tierLabels: Record<CustomerTier, string> = {
+    new: 'عميل جديد (أول محادثة)',
+    returning: 'عميل عائد',
+    loyal: 'عميل وفي',
+    vip: 'عميل VIP مميز',
+    at_risk: 'عميل بخطر الخسارة',
+  };
+  parts.push(`التصنيف: ${tierLabels[profile.customerTier]}`);
+  
+  // Spending
+  if (profile.totalSpent > 0) {
+    parts.push(`إجمالي المشتريات: ${profile.totalSpent} ريال`);
+  }
+  
+  // Preferences
+  if (profile.preferences && Object.keys(profile.preferences).length > 0) {
+    const prefs: string[] = [];
+    if (profile.preferences.priceConscious) prefs.push('يهتم بالسعر');
+    if (profile.preferences.qualityFocused) prefs.push('يهتم بالجودة');
+    if (profile.preferences.fastDelivery) prefs.push('يريد توصيل سريع');
+    if (prefs.length > 0) parts.push(`تفضيلات: ${prefs.join('، ')}`);
+  }
+  
+  // Pain points
+  if (profile.painPoints && profile.painPoints.length > 0) {
+    parts.push(`نقاط ألم سابقة: ${profile.painPoints.slice(-3).join('، ')}`);
+  }
+  
+  // Last objection
+  if (profile.lastObjection) {
+    const objLabels: Record<string, string> = {
+      price: 'اعترض على السعر سابقاً',
+      delivery: 'اشتكى من التوصيل',
+      quality: 'سأل عن الجودة/الضمان',
+    };
+    parts.push(`⚠️ ${objLabels[profile.lastObjection] || profile.lastObjection}`);
+  }
+  
+  // Purchase history
+  if (profile.purchaseHistory && profile.purchaseHistory.length > 0) {
+    parts.push(`مشتريات سابقة: ${profile.purchaseHistory.slice(-3).join('، ')}`);
+  }
+  
+  if (parts.length === 0) return '';
+  return `\n## ملف العميل (ذاكرة تراكمية):\n${parts.join('\n')}\n`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════════════════════════
+
+function buildDefaultProfile(merchantId: number, phone: string, name?: string): CustomerProfile {
+  return {
+    merchantId,
+    customerPhone: phone,
+    displayName: name || null,
+    nickname: null,
+    childName: null,
+    preferences: {},
+    painPoints: [],
+    purchaseHistory: [],
+    totalSpent: 0,
+    totalConversations: 1,
+    sentimentAvg: 'neutral',
+    customerTier: 'new',
+    lastObjection: null,
+    lastSeenAt: new Date(),
+    createdAt: new Date(),
+  };
+}
+
+function mapRow(row: any): CustomerProfile {
+  return {
+    id: row.id,
+    merchantId: row.merchant_id,
+    customerPhone: row.customer_phone,
+    displayName: row.display_name,
+    nickname: row.nickname,
+    childName: row.child_name,
+    preferences: safeJsonParse(row.preferences, {}),
+    painPoints: safeJsonParse(row.pain_points, []),
+    purchaseHistory: safeJsonParse(row.purchase_history, []),
+    totalSpent: Number(row.total_spent || 0),
+    totalConversations: Number(row.total_conversations || 0),
+    sentimentAvg: row.sentiment_avg || 'neutral',
+    customerTier: (row.customer_tier as CustomerTier) || 'new',
+    lastObjection: row.last_objection,
+    lastSeenAt: new Date(row.last_seen_at),
+    createdAt: new Date(row.created_at),
+  };
+}
+
+function safeJsonParse(val: any, fallback: any): any {
+  if (!val) return fallback;
+  if (typeof val === 'object') return val;
+  try { return JSON.parse(val); } catch { return fallback; }
+}
