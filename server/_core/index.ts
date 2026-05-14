@@ -354,6 +354,28 @@ async function startServer() {
 
         console.log(`[KnowledgeDocs] ✅ Extraction completed: merchant=${merchant.id}, chars=${text.length}, pages=${pageCount || 'N/A'}`);
 
+        // === Knowledge Engine v4: Classify document into structured sections ===
+        try {
+          if (finalText.trim().length > 100) {
+            const { ingestContent } = await import('../ai/knowledge-engine');
+            const { embedAllSections } = await import('../ai/rag-engine');
+            const knowledgeDb = await import('../db/knowledge');
+            
+            await ingestContent(
+              merchant.id,
+              finalText,
+              'document',
+              { businessName: merchant.businessName },
+            );
+            
+            await embedAllSections(merchant.id);
+            await knowledgeDb.invalidateCache(merchant.id);
+            console.log(`[KnowledgeDocs] ✅ Knowledge Engine processed uploaded document for merchant ${merchant.id}`);
+          }
+        } catch (keErr: any) {
+          console.warn('[KnowledgeDocs] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
+        }
+
         // Log to Sari Brain activity
         try {
           const { logBrainActivity } = await import('../routers-sari-brain');

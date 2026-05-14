@@ -475,7 +475,7 @@ export default function SariBrain() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="text-center p-2 rounded-lg bg-background border">
                     <p className="text-2xl font-bold text-primary">{analysisResults.score}</p>
-                    <p className="text-[10px] text-muted-foreground">جودة الموقع</p>
+                    <p className="text-[10px] text-muted-foreground">التقييم التقني (SEO)</p>
                   </div>
                   <div className="text-center p-2 rounded-lg bg-background border">
                     <p className="text-2xl font-bold text-emerald-600">{analysisResults.salesIntelSummary?.totalSections || 0}</p>
@@ -940,7 +940,7 @@ export default function SariBrain() {
             <div className="text-center py-12">
               <Brain className="mx-auto h-12 w-12 text-muted-foreground/50" />
               <p className="mt-4 text-lg font-medium">لا توجد مصادر معرفة</p>
-              <p className="text-sm text-muted-foreground mt-1">ارفع ملف تعريفي أو أضف منتجات ليتعلم ساري عن متجرك</p>
+              <p className="text-sm text-muted-foreground mt-1">ارفع ملف تعريفي أو أضف منتجات ليتعلم ساري عن نشاطك التجاري</p>
               <Button className="mt-4" onClick={() => setLocation('/merchant/settings')}>
                 <Upload className="h-4 w-4 ml-2" />
                 رفع ملف تعريفي
@@ -1118,7 +1118,7 @@ export default function SariBrain() {
               </div>
               <div className="text-center p-3 rounded-lg bg-muted/50">
                 <p className="text-2xl font-bold text-purple-600">{websiteKnowledge.analysis.overallScore}/100</p>
-                <p className="text-[10px] text-muted-foreground">جودة الموقع</p>
+                <p className="text-[10px] text-muted-foreground">التقييم التقني (SEO)</p>
               </div>
             </div>
           </CardContent>

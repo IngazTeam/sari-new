@@ -221,6 +221,63 @@ function extractTextFromHtml(html: string): string {
     } catch { /* malformed JSON-LD */ }
   }
 
+  // 2b. Inertia.js data-page payload (Byaan/Laravel apps)
+  const inertiaRegex = /data-page=['"]\s*({[\s\S]*?})\s*['"]/gi;
+  let inertiaMatch;
+  while ((inertiaMatch = inertiaRegex.exec(html)) !== null) {
+    try {
+      // Inertia stores page data as HTML-encoded JSON in data-page attribute
+      const decoded = inertiaMatch[1]
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#039;/g, "'");
+      const pageData = JSON.parse(decoded);
+      // Walk props tree and extract all string values
+      const extractStrings = (obj: any, depth: number = 0): string[] => {
+        if (depth > 5) return []; // Prevent infinite recursion
+        const strings: string[] = [];
+        if (typeof obj === 'string' && obj.length > 3 && obj.length < 5000) {
+          // Skip URLs, dates, UUIDs, base64
+          if (!/^(https?:|data:|[a-f0-9-]{36}$|\d{4}-\d{2}-\d{2})/i.test(obj)) {
+            strings.push(obj.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim());
+          }
+        } else if (Array.isArray(obj)) {
+          for (const item of obj.slice(0, 100)) {
+            strings.push(...extractStrings(item, depth + 1));
+          }
+        } else if (obj && typeof obj === 'object') {
+          for (const val of Object.values(obj).slice(0, 50)) {
+            strings.push(...extractStrings(val, depth + 1));
+          }
+        }
+        return strings;
+      };
+      const inertiaTexts = extractStrings(pageData.props || pageData);
+      if (inertiaTexts.length > 0) {
+        parts.push('بيانات Inertia: ' + inertiaTexts.filter(t => t.length > 3).join(' '));
+        console.log(`[WebsiteAnalyzer] Inertia.js extracted ${inertiaTexts.length} text fragments`);
+      }
+    } catch { /* malformed Inertia JSON */ }
+  }
+
+  // 2c. Next.js __NEXT_DATA__ (React SSR apps)
+  const nextDataRegex = /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let nextMatch;
+  while ((nextMatch = nextDataRegex.exec(html)) !== null) {
+    try {
+      const nextData = JSON.parse(nextMatch[1]);
+      const flat = JSON.stringify(nextData.props?.pageProps || {}, null, 0)
+        .replace(/[{}\[\]"]/g, ' ')
+        .replace(/@\w+/g, '')
+        .replace(/https?:\/\/[^\s]+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (flat.length > 20) parts.push(flat.substring(0, 50000));
+    } catch { /* malformed Next.js data */ }
+  }
+
   // 3. Text from semantic HTML elements
   const tagPatterns = [
     /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi,
