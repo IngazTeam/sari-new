@@ -94,8 +94,15 @@ const SEED_DIRECTIVES = [
 /**
  * Seed the directives table if empty.
  * Called once — safe to call multiple times (idempotent).
+ * SEC-V6-05 FIX: Guard against concurrent seeding with in-memory lock.
  */
+let _seedInProgress = false;
+
 export async function seedDirectivesIfEmpty(): Promise<number> {
+  // SEC-V6-05 FIX: prevent concurrent seed
+  if (_seedInProgress) return 0;
+  _seedInProgress = true;
+
   try {
     const existing = await getAllDirectives();
     if (existing.length > 0) {
@@ -105,11 +112,16 @@ export async function seedDirectivesIfEmpty(): Promise<number> {
 
     let seeded = 0;
     for (const directive of SEED_DIRECTIVES) {
-      await createDirective({
-        ...directive,
-        isActive: true,
-      });
-      seeded++;
+      try {
+        await createDirective({
+          ...directive,
+          isActive: true,
+        });
+        seeded++;
+      } catch {
+        // SEC-V6-05 FIX: skip if duplicate (another process seeded)
+        console.warn(`[AI Seed] Skipping directive "${directive.title}" (may already exist)`);
+      }
     }
 
     console.log(`[AI Seed] ✅ Seeded ${seeded} foundational directives`);
@@ -117,5 +129,7 @@ export async function seedDirectivesIfEmpty(): Promise<number> {
   } catch (error) {
     console.error('[AI Seed] Error seeding directives:', error);
     return 0;
+  } finally {
+    _seedInProgress = false;
   }
 }

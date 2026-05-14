@@ -12,6 +12,28 @@ import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence'
 import type { CustomerIntent, ConversationSession } from './session-context';
 
 // ═══════════════════════════════════════════════════════════════
+// SEC-V6-01 FIX: Shared prompt sanitizer for all user-controlled data
+// ═══════════════════════════════════════════════════════════════
+
+function sanitizeForArsenalPrompt(text: string): string {
+  if (!text) return '';
+  const normalized = text.normalize('NFKC');
+  return normalized
+    .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+    .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+    .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+    .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+    .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+    .replace(/do\s+not\s+follow/gi, '[filtered]')
+    .replace(/override\s+(system|all|your)/gi, '[filtered]')
+    .replace(/act\s+as\s+(a|an)?/gi, '[filtered]')
+    .replace(/pretend\s+(to\s+be|you\s+are)/gi, '[filtered]')
+    .replace(/تصرف\s*(كـ|ك)/gi, '[filtered]')
+    .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[filtered]')
+    .replace(/انس[َى]?\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد|اعداداتهم)/gi, '[filtered]');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════
 
@@ -274,11 +296,13 @@ export function selectPersuasion(
 // ═══════════════════════════════════════════════════════════════
 
 function buildCartRecoveryPrompt(cart: { items: string[]; total: number }, discountCode?: string): string {
-  let prompt = `\n## 🛒 فرصة بيع — سلة مهجورة:\nهذا العميل عنده سلة مهجورة فيها: ${cart.items.join('، ')} بمبلغ ${cart.total} ريال.\n`;
+  // SEC-V6-01 FIX: sanitize cart item names
+  const safeItems = cart.items.map(i => sanitizeForArsenalPrompt(i));
+  let prompt = `\n## 🛒 فرصة بيع — سلة مهجورة:\nهذا العميل عنده سلة مهجورة فيها: ${safeItems.join('، ')} بمبلغ ${cart.total} ريال.\n`;
   prompt += `- اذكر السلة بشكل طبيعي: "لاحظت إنك ما كملت طلبك السابق..."\n`;
   prompt += `- اسأل إذا يحتاج مساعدة لإكمال الطلب\n`;
   if (discountCode) {
-    prompt += `- إذا تردد، اعرض كود خصم "${discountCode}" كحافز إضافي\n`;
+    prompt += `- إذا تردد، اعرض كود خصم "${sanitizeForArsenalPrompt(discountCode)}" كحافز إضافي\n`;
   }
   prompt += `- ⚠️ لا تضغط — اجعلها محادثة طبيعية\n`;
   return prompt;
@@ -304,14 +328,18 @@ function buildLoyaltyPrompt(
   let prompt = `\n## 🌟 نظام الولاء — استخدمه بذكاء:\n`;
   prompt += `- عنده ${points} نقطة ولاء\n`;
   if (tier) {
-    prompt += `- مستواه: ${tier.icon} ${tier.name} (خصم ${tier.discount}%)\n`;
-    prompt += `- اذكر مستواه بفخر: "أنت عميل ${tier.name} عندنا!"\n`;
+    // SEC-V6-01 FIX: sanitize tier name
+    const safeTierName = sanitizeForArsenalPrompt(tier.name);
+    prompt += `- مستواه: ${tier.icon} ${safeTierName} (خصم ${tier.discount}%)\n`;
+    prompt += `- اذكر مستواه بفخر: "أنت عميل ${safeTierName} عندنا!"\n`;
   }
+  // SEC-V6-08 FIX: show max 2 rewards in prompt to reduce context bloat
   if (rewards && rewards.length > 0) {
     prompt += `- مكافآت يقدر يستبدلها:\n`;
-    rewards.forEach(r => {
+    rewards.slice(0, 2).forEach(r => {
       const canRedeem = points >= r.pointsCost;
-      prompt += `  • ${r.name} (${r.pointsCost} نقطة) ${canRedeem ? '✅ يقدر الآن' : '🔒'}\n`;
+      // SEC-V6-01 FIX: sanitize reward name
+      prompt += `  • ${sanitizeForArsenalPrompt(r.name)} (${r.pointsCost} نقطة) ${canRedeem ? '✅ يقدر الآن' : '🔒'}\n`;
     });
   }
   prompt += `- ⚠️ اذكر النقاط بشكل طبيعي: "بالمناسبة عندك ${points} نقطة!"\n`;
@@ -338,8 +366,10 @@ function buildUpsellPrompt(products: { name: string; price: number }[]): string 
 
 function buildCrossSellPrompt(suggestions: { productName: string; reason: string }[]): string {
   let prompt = `\n## 🔗 اقتراحات ذكية مبنية على مشترياته السابقة:\n`;
-  suggestions.forEach(s => {
-    prompt += `- "${s.productName}" (${s.reason})\n`;
+  // SEC-V6-08 FIX: show max 2 in prompt
+  suggestions.slice(0, 2).forEach(s => {
+    // SEC-V6-01 FIX: sanitize product names
+    prompt += `- "${sanitizeForArsenalPrompt(s.productName)}" (${sanitizeForArsenalPrompt(s.reason)})\n`;
   });
   prompt += `- ⚠️ اقترح واحد فقط بشكل طبيعي: "بما إنك أخذت X، ممكن يعجبك Y"\n`;
   prompt += `- لا تذكر كل الاقتراحات دفعة وحدة\n`;
@@ -351,17 +381,20 @@ function buildBookingFollowupPrompt(
   services: { name: string; price: number }[]
 ): string {
   let prompt = `\n## 📅 حجوزات وخدمات:\n`;
+  // SEC-V6-08 FIX: max 2 bookings + 2 services
   if (bookings.length > 0) {
     prompt += `- عنده حجوزات قادمة:\n`;
-    bookings.forEach(b => {
-      prompt += `  • ${b.serviceName} يوم ${b.date}\n`;
+    bookings.slice(0, 2).forEach(b => {
+      // SEC-V6-01 FIX: sanitize service name
+      prompt += `  • ${sanitizeForArsenalPrompt(b.serviceName)} يوم ${b.date}\n`;
     });
-    prompt += `- اسأله: "كيف استعداداتك لموعد ${bookings[0].serviceName}؟"\n`;
+    prompt += `- اسأله: "كيف استعداداتك لموعد ${sanitizeForArsenalPrompt(bookings[0].serviceName)}؟"\n`;
   }
   if (services.length > 0) {
     prompt += `- خدمات متاحة يمكن تقترحها:\n`;
-    services.slice(0, 3).forEach(s => {
-      prompt += `  • ${s.name}${s.price > 0 ? ` (${s.price} ريال)` : ''}\n`;
+    // SEC-V6-01 FIX: sanitize service names
+    services.slice(0, 2).forEach(s => {
+      prompt += `  • ${sanitizeForArsenalPrompt(s.name)}${s.price > 0 ? ` (${s.price} ريال)` : ''}\n`;
     });
   }
   prompt += `- ⚠️ اذكر الخدمات بشكل طبيعي فقط إذا مناسبة للسياق\n`;
@@ -433,6 +466,13 @@ import * as dbPool from '../db';
 
 let _metricsTableCreated = false;
 
+// SEC-V6-06 FIX: Strategy whitelist
+const VALID_STRATEGIES = new Set([
+  'cart_recovery', 'empathy_resolve', 'loyalty_reward', 'scarcity',
+  'proactive_discount', 'smart_upsell', 'social_proof', 'value_comparison',
+  'cross_sell', 'booking_followup', 'none'
+]);
+
 async function ensureMetricsTable(): Promise<void> {
   if (_metricsTableCreated) return;
   const pool = await dbPool.getPool();
@@ -454,7 +494,25 @@ async function ensureMetricsTable(): Promise<void> {
 }
 
 /**
+ * SEC-V6-02 FIX: Auto-cleanup old metrics (fire-and-forget, runs at most once/hour).
+ */
+let _lastCleanup = 0;
+async function cleanupOldMetrics(): Promise<void> {
+  if (Date.now() - _lastCleanup < 60 * 60 * 1000) return; // max once/hour
+  _lastCleanup = Date.now();
+  try {
+    const pool = await dbPool.getPool();
+    if (!pool) return;
+    await pool.execute(
+      `DELETE FROM sari_strategy_metrics WHERE created_at < DATE_SUB(NOW(), INTERVAL 90 DAY)`
+    );
+  } catch { /* fire and forget */ }
+}
+
+/**
  * Record that a strategy was used (fire-and-forget).
+ * SEC-V6-02 FIX: caps at 500 rows/merchant/day.
+ * SEC-V6-06 FIX: validates strategy against whitelist.
  */
 export async function recordStrategyUse(params: {
   merchantId: number;
@@ -463,13 +521,27 @@ export async function recordStrategyUse(params: {
   ledToPurchase?: boolean;
 }): Promise<void> {
   try {
+    // SEC-V6-06 FIX: validate strategy
+    if (!VALID_STRATEGIES.has(params.strategy)) return;
+
     await ensureMetricsTable();
     const pool = await dbPool.getPool();
     if (!pool) return;
+
+    // SEC-V6-02 FIX: check daily cap per merchant
+    const [countRows] = await pool.execute(
+      `SELECT COUNT(*) as cnt FROM sari_strategy_metrics WHERE merchant_id = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 DAY)`,
+      [params.merchantId]
+    );
+    if ((countRows as any[])[0]?.cnt >= 500) return; // daily cap
+
     await pool.execute(
       `INSERT INTO sari_strategy_metrics (merchant_id, strategy, conversation_id, led_to_purchase) VALUES (?, ?, ?, ?)`,
       [params.merchantId, params.strategy, params.conversationId || null, params.ledToPurchase ? 1 : 0]
     );
+
+    // SEC-V6-02 FIX: periodic cleanup
+    cleanupOldMetrics().catch(() => {});
   } catch { /* fire and forget */ }
 }
 
