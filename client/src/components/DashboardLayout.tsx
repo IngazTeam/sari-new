@@ -211,6 +211,7 @@ const getAdminMenuItems = (t: any): MenuItem[] => [
   { icon: Globe, label: t('sidebar.admin.seoManagement'), path: "/admin/seo" },
   { icon: Sparkles, label: t('sidebar.admin.aiSettings', 'إعدادات AI'), path: "/admin/ai-settings" },
   { icon: Brain, label: 'مركز تدريب ساري', path: "/admin/ai-training" },
+  { icon: BarChart3, label: '📊 ذكاء المنصة', path: "/admin/ai-analytics" },
   { icon: Key, label: 'مفاتيح المنصات', path: "/admin/platform-keys" },
 ];
 
