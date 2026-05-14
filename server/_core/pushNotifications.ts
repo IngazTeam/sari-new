@@ -8,20 +8,23 @@ import {
 
 // VAPID keys - MUST be set via environment variables
 // Generate with: npx web-push generate-vapid-keys
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
-
 let pushEnabled = false;
+let _vapidInitialized = false;
 
-if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-  console.warn("[Push] ⚠️ VAPID keys not set. Push notifications will not work. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env");
-} else {
+function ensureVapid() {
+  if (_vapidInitialized) return;
+  _vapidInitialized = true;
+
+  const pubKey = process.env.VAPID_PUBLIC_KEY || "";
+  const privKey = process.env.VAPID_PRIVATE_KEY || "";
+
+  if (!pubKey || !privKey) {
+    console.warn("[Push] ⚠️VAPID keys not set. Push notifications will not work. Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env");
+    return;
+  }
+
   try {
-    webpush.setVapidDetails(
-      "mailto:support@sari.app",
-      VAPID_PUBLIC_KEY,
-      VAPID_PRIVATE_KEY
-    );
+    webpush.setVapidDetails("mailto:support@sari.app", pubKey, privKey);
     pushEnabled = true;
     console.log("[Push] ✅ VAPID keys configured successfully");
   } catch (error) {
@@ -44,6 +47,7 @@ export async function sendPushNotification(
   merchantId: number,
   payload: PushNotificationPayload
 ): Promise<{ success: number; failed: number }> {
+  ensureVapid();
   if (!pushEnabled) {
     return { success: 0, failed: 0 };
   }
@@ -121,5 +125,6 @@ export async function sendPushNotification(
 }
 
 export function getVapidPublicKey(): string {
-  return VAPID_PUBLIC_KEY;
+  ensureVapid();
+  return process.env.VAPID_PUBLIC_KEY || "";
 }
