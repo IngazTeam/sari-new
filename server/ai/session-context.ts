@@ -69,7 +69,9 @@ export function getSession(merchantId: number, conversationId: number): Conversa
   // Check TTL
   if (Date.now() - session.lastActivityAt > SESSION_TTL_MS) {
     sessions.delete(key);
-    console.log(`[Session] Expired: ${key} (inactive ${Math.round((Date.now() - session.lastActivityAt) / 60000)}min)`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[Session] Expired: ${key} (inactive ${Math.round((Date.now() - session.lastActivityAt) / 60000)}min)`);
+    }
     return null;
   }
   
@@ -114,7 +116,9 @@ export function createSession(data: {
   };
   
   sessions.set(key, session);
-  console.log(`[Session] Created: ${key} (total active: ${sessions.size})`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[Session] Created: ${key} (total active: ${sessions.size})`);
+  }
   return session;
 }
 
@@ -152,10 +156,18 @@ export function updateSession(
   
   if (updates.topic && !session.topicsDiscussed.includes(updates.topic)) {
     session.topicsDiscussed.push(updates.topic);
+    // SEC-02 FIX: Cap at 20 to prevent memory DoS
+    if (session.topicsDiscussed.length > 20) {
+      session.topicsDiscussed = session.topicsDiscussed.slice(-20);
+    }
   }
   
   if (updates.persuasionTactic && !session.persuasionUsed.includes(updates.persuasionTactic)) {
     session.persuasionUsed.push(updates.persuasionTactic);
+    // SEC-02 FIX: Cap at 20
+    if (session.persuasionUsed.length > 20) {
+      session.persuasionUsed = session.persuasionUsed.slice(-20);
+    }
   }
   
   return session;
@@ -266,5 +278,5 @@ function evictOldestSessions(count: number): void {
   for (let i = 0; i < Math.min(count, entries.length); i++) {
     sessions.delete(entries[i][0]);
   }
-  console.log(`[Session] Evicted ${Math.min(count, entries.length)} oldest sessions`);
+  console.log(`[Session] Evicted ${Math.min(count, entries.length)} oldest sessions (remaining: ${sessions.size})`);
 }

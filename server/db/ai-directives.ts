@@ -98,8 +98,14 @@ function invalidateCache(): void {
 
 export async function createDirective(data: Omit<AIDirective, 'id' | 'createdAt' | 'updatedAt'>): Promise<number> {
   await ensureTable();
+  // SEC-06 FIX: Cap at 50 directives to prevent DB flood
   const pool = await db.getPool();
   if (!pool) return 0;
+
+  const [countRows] = await pool.execute(`SELECT COUNT(*) as cnt FROM sari_ai_directives`);
+  if ((countRows as any[])[0]?.cnt >= 50) {
+    throw new Error('الحد الأقصى للتوجيهات 50. احذف توجيهات قديمة أولاً.');
+  }
 
   const [result] = await pool.execute(
     `INSERT INTO sari_ai_directives (category, title, content, is_active, priority) VALUES (?, ?, ?, ?, ?)`,
@@ -182,7 +188,10 @@ export async function buildDirectivesPrompt(): Promise<string> {
   for (const [category, items] of Object.entries(grouped)) {
     prompt += `\n### ${CATEGORY_LABELS[category as DirectiveCategory] || category}:\n`;
     for (const item of items) {
-      prompt += `**${item.title}**: ${item.content}\n`;
+      // SEC-01 FIX: Sanitize directive content to prevent prompt injection
+      const safeTitle = sanitizeDirectiveContent(item.title);
+      const safeContent = sanitizeDirectiveContent(item.content);
+      prompt += `**${safeTitle}**: ${safeContent}\n`;
     }
   }
 
@@ -204,4 +213,23 @@ function mapRow(row: any): AIDirective {
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
   };
+}
+
+/**
+ * SEC-01 FIX: Sanitize directive content to prevent prompt injection.
+ * Strips role impersonation and system override attempts from admin-provided text.
+ */
+function sanitizeDirectiveContent(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+    .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+    .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+    .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+    .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+    .replace(/override\s+(system|all|your)/gi, '[filtered]')
+    .replace(/act\s+as\s+(a|an)?/gi, '[filtered]')
+    .replace(/pretend\s+(to\s+be|you\s+are)/gi, '[filtered]')
+    .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[filtered]')
+    .replace(/انس[َى]?\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[filtered]');
 }
