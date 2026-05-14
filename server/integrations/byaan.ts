@@ -373,15 +373,15 @@ export async function getConversions(merchantId: number, limit: number = 20, act
     if (!validTypes.includes(actionType)) return [];
 
     const [rows] = await (dbConn as any).execute(
-      `SELECT * FROM sari_conversions WHERE merchant_id = ? AND action_type = ? ORDER BY created_at DESC LIMIT ?`,
-      [merchantId, actionType, safeLimit]
+      `SELECT * FROM sari_conversions WHERE merchant_id = ? AND action_type = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+      [merchantId, actionType]
     );
     return rows as any[];
   }
 
   const [rows] = await (dbConn as any).execute(
-    `SELECT * FROM sari_conversions WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ?`,
-    [merchantId, safeLimit]
+    `SELECT * FROM sari_conversions WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+    [merchantId]
   );
   return rows as any[];
 }

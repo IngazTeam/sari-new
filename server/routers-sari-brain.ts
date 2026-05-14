@@ -328,9 +328,11 @@ export const sariBrainRouter = router({
         const dbConn = await db.getDb();
         if (!dbConn) return [];
 
+        // SEC-FIX: MySQL doesn't support LIMIT ? in prepared statements
+        const safeLimit = Math.min(Math.max(1, Number(input?.limit) || 50), 200);
         const [rows] = await (dbConn as any).execute(
-          `SELECT id, action_type, description, details, created_at FROM sari_activity_log WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ?`,
-          [merchant.id, input?.limit || 50]
+          `SELECT id, action_type, description, details, created_at FROM sari_activity_log WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+          [merchant.id]
         );
 
         // PEN-BRAIN-06: Cleanup old records (90 days TTL, async non-blocking)

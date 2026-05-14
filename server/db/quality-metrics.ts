@@ -402,8 +402,8 @@ export async function getWeeklyReports(merchantId: number, limit: number = 12): 
 
   const safeLimit = Math.min(Math.max(limit, 1), 52);
   const [rows] = await pool.execute(
-    `SELECT * FROM sari_weekly_reports WHERE merchant_id = ? ORDER BY week_start DESC LIMIT ?`,
-    [merchantId, safeLimit]
+    `SELECT * FROM sari_weekly_reports WHERE merchant_id = ? ORDER BY week_start DESC LIMIT ${safeLimit}`,
+    [merchantId]
   );
   return rows as WeeklyReport[];
 }

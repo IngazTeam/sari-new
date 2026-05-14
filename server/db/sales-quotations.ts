@@ -167,8 +167,8 @@ export async function getQuotations(merchantId: number, limit: number = 50): Pro
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
   const [rows] = await pool.execute(
-    `SELECT * FROM sales_quotations WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ?`,
-    [merchantId, safeLimit]
+    `SELECT * FROM sales_quotations WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+    [merchantId]
   );
 
   return (rows as any[]).map(row => ({
@@ -338,8 +338,8 @@ export async function getTargetHistory(merchantId: number, limit: number = 12): 
 
   const safeLimit = Math.min(Math.max(limit, 1), 24);
   const [rows] = await pool.execute(
-    `SELECT * FROM sales_targets WHERE merchant_id = ? ORDER BY period_start DESC LIMIT ?`,
-    [merchantId, safeLimit]
+    `SELECT * FROM sales_targets WHERE merchant_id = ? ORDER BY period_start DESC LIMIT ${safeLimit}`,
+    [merchantId]
   );
   return rows as SalesTarget[];
 }

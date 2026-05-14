@@ -449,8 +449,8 @@ export async function getChangelog(merchantId: number, limit: number = 50): Prom
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
   const [rows] = await pool.execute(
-    `SELECT * FROM knowledge_changelog WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ?`,
-    [merchantId, safeLimit]
+    `SELECT * FROM knowledge_changelog WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
+    [merchantId]
   );
   return rows as KnowledgeChangelogEntry[];
 }
