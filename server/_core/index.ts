@@ -74,11 +74,15 @@ async function startServer() {
   // Gzip compression for API responses (60-80% size reduction)
   app.use(compression());
 
-  // Request timeout middleware (30s) — prevents hung requests from exhausting resources
+  // Request timeout middleware — prevents hung requests from exhausting resources
+  // tRPC mutations (AI analysis, website crawling) get 120s; everything else gets 30s
   app.use((req, res, next) => {
     if (req.path === '/health' || req.path === '/ready') return next();
-    req.setTimeout(30000);
-    res.setTimeout(30000, () => {
+    // tRPC mutation calls can be heavy (AI pipeline, crawling 50 pages, embeddings)
+    const isHeavyRequest = req.method === 'POST' && req.path.startsWith('/api/trpc');
+    const timeout = isHeavyRequest ? 120000 : 30000;
+    req.setTimeout(timeout);
+    res.setTimeout(timeout, () => {
       if (!res.headersSent) {
         res.status(408).json({ error: 'Request Timeout', errorAr: 'انتهت مهلة الطلب', code: 'TIMEOUT' });
       }
