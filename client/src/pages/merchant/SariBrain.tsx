@@ -83,20 +83,44 @@ export default function SariBrain() {
   const [analysisStep, setAnalysisStep] = useState(0);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [fakeProgress, setFakeProgress] = useState(0);
+  const [reassuranceIdx, setReassuranceIdx] = useState(0);
+
+  // Fake progressive progress targets per step (never shows 0%)
+  const STEP_PROGRESS = [8, 22, 41, 67, 85, 93, 100];
+  // Cycling reassurance messages
+  const REASSURANCE = [
+    'ساري يبني فهمًا عميقًا لنشاطك...',
+    'يتعرف على خدماتك ومنتجاتك...',
+    'يحلل نقاط القوة في نشاطك...',
+    'يجهّز ردود ذكية لعملائك...',
+    'عادةً أقل من دقيقة...',
+  ];
+  // AI insight messages per step
+  const STEP_INSIGHTS: string[][] = [
+    ['🌐 جارٍ الاتصال بالموقع والتحقق من استجابته...'],
+    ['📄 يقرأ المحتوى ويتعرف على طبيعة نشاطك...'],
+    ['🔍 يبحث عن كل الصفحات الداخلية ويسحبها...'],
+    ['🧠 يصنّف المعرفة ويبني خريطة ذهنية لنشاطك...'],
+    ['💎 يحلل نقاط القوة ويجهّز عبارات بيعية...'],
+    ['🎯 يبحث عن فرص تحسين تزيد مبيعاتك...'],
+    ['✨ يحفظ كل شيء في قاعدة المعرفة...'],
+  ];
+
   const ANALYSIS_STEPS = [
-    { label: 'الاتصال بالموقع', detail: 'فحص الرابط والاستجابة',
+    { label: 'فهم الموقع', detail: 'جارٍ الاتصال واكتشاف نشاطك التجاري',
       svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><circle cx="12" cy="12" r="10" stroke="url(#g1)" strokeWidth="2"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" stroke="url(#g1)" strokeWidth="2"/><defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24"><stop stopColor="#6366f1"/><stop offset="1" stopColor="#06b6d4"/></linearGradient></defs></svg> },
-    { label: 'سحب المحتوى', detail: 'قراءة النصوص والعناوين من الصفحة الرئيسية',
+    { label: 'تحليل المحتوى', detail: 'تحليل الخدمات والمنتجات والمعلومات الرئيسية',
       svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="url(#g2)" strokeWidth="2" strokeLinejoin="round"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="url(#g2)" strokeWidth="2" strokeLinecap="round"/><defs><linearGradient id="g2" x1="4" y1="2" x2="20" y2="22"><stop stopColor="#818cf8"/><stop offset="1" stopColor="#c084fc"/></linearGradient></defs></svg> },
-    { label: 'اكتشاف وسحب كل الصفحات', detail: 'سحب جميع الصفحات الداخلية + sitemap.xml',
+    { label: 'اكتشاف كل الصفحات', detail: 'سحب جميع صفحات الموقع وتجميع المعرفة',
       svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><circle cx="11" cy="11" r="7" stroke="url(#g3)" strokeWidth="2"/><path d="m21 21-4.35-4.35" stroke="url(#g3)" strokeWidth="2" strokeLinecap="round"/><path d="M11 8v6M8 11h6" stroke="url(#g3)" strokeWidth="1.5" strokeLinecap="round"/><defs><linearGradient id="g3" x1="4" y1="4" x2="21" y2="21"><stop stopColor="#06b6d4"/><stop offset="1" stopColor="#6366f1"/></linearGradient></defs></svg> },
-    { label: 'تصنيف AI', detail: 'تحليل المعرفة بالذكاء الاصطناعي',
+    { label: 'بناء قاعدة المعرفة', detail: 'ساري يبني خريطة ذهنية لنشاطك بالذكاء الاصطناعي',
       svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="4" stroke="url(#g4)" strokeWidth="2"/><circle cx="9" cy="10" r="1.5" fill="url(#g4)"/><circle cx="15" cy="10" r="1.5" fill="url(#g4)"/><path d="M9 15c.83.83 2.17 1.5 3 1.5s2.17-.67 3-1.5" stroke="url(#g4)" strokeWidth="2" strokeLinecap="round"/><defs><linearGradient id="g4" x1="3" y1="3" x2="21" y2="21"><stop stopColor="#f472b6"/><stop offset="1" stopColor="#fb923c"/></linearGradient></defs></svg> },
-    { label: 'ذكاء المبيعات', detail: 'استخراج نقاط القوة وإرشادات البيع',
+    { label: 'ذكاء المبيعات', detail: 'استخراج نقاط القوة وتجهيز عبارات بيعية ذكية',
       svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="url(#g5)" strokeWidth="2" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#g5)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g5" x1="2" y1="2" x2="22" y2="22"><stop stopColor="#14b8a6"/><stop offset="1" stopColor="#6366f1"/></linearGradient></defs></svg> },
-    { label: 'فرص التطوير', detail: 'اكتشاف التحسينات الممكنة',
+    { label: 'فرص التطوير', detail: 'اكتشاف تحسينات تزيد مبيعاتك وتحويلاتك',
       svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 3l2.5 5.5L20 9.5l-4 4 1 5.5L12 16.5 7 19l1-5.5-4-4 5.5-1L12 3z" stroke="url(#g6)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g6" x1="3" y1="3" x2="20" y2="19"><stop stopColor="#fb923c"/><stop offset="1" stopColor="#f472b6"/></linearGradient></defs></svg> },
-    { label: 'حفظ النتائج', detail: 'تحديث قاعدة المعرفة',
+    { label: 'حفظ وتجهيز ساري', detail: 'تحديث قاعدة المعرفة وتجهيز ردود ذكية للعملاء',
       svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6z" fill="url(#g7)" opacity="0.2"/><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6z" stroke="url(#g7)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g7" x1="2" y1="2" x2="22" y2="22"><stop stopColor="#fbbf24"/><stop offset="1" stopColor="#f472b6"/></linearGradient></defs></svg> },
   ];
 
@@ -137,19 +161,34 @@ export default function SariBrain() {
   // Effect must be AFTER reanalyzeMutation is declared (const is not hoisted)
   useEffect(() => {
     if (!reanalyzeMutation.isPending) {
-      if (!analysisResults && !analysisError) setAnalysisStep(0);
+      if (!analysisResults && !analysisError) { setAnalysisStep(0); setFakeProgress(0); }
       return;
     }
-    const timer = setInterval(() => {
+    // Step progression timer
+    const stepTimer = setInterval(() => {
       setAnalysisStep(prev => prev < ANALYSIS_STEPS.length - 1 ? prev + 1 : prev);
     }, 5000);
-    return () => clearInterval(timer);
-  }, [reanalyzeMutation.isPending]);
+    // Smooth fake progress interpolation
+    const progressTimer = setInterval(() => {
+      setFakeProgress(prev => {
+        const target = STEP_PROGRESS[Math.min(analysisStep, STEP_PROGRESS.length - 1)];
+        if (prev >= target) return prev;
+        return Math.min(prev + Math.random() * 3 + 1, target);
+      });
+    }, 400);
+    // Reassurance message cycling
+    const reassTimer = setInterval(() => {
+      setReassuranceIdx(prev => (prev + 1) % REASSURANCE.length);
+    }, 4000);
+    return () => { clearInterval(stepTimer); clearInterval(progressTimer); clearInterval(reassTimer); };
+  }, [reanalyzeMutation.isPending, analysisStep]);
 
   const startAnalysis = () => {
     setAnalysisResults(null);
     setAnalysisError(null);
     setAnalysisStep(0);
+    setFakeProgress(8); // Start at 8%, never 0%
+    setReassuranceIdx(0);
     setAnalysisDialogOpen(true);
     reanalyzeMutation.mutate();
   };
@@ -397,30 +436,50 @@ export default function SariBrain() {
       {/* ═══ Analysis Progress Modal ═══ */}
       <Dialog open={analysisDialogOpen} onOpenChange={(open) => { if (analysisResults || analysisError) setAnalysisDialogOpen(open); }}>
         <DialogContent className="max-w-lg [&>button]:hidden max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }}>
-          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+          <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+              @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+              .insight-enter { animation: fadeInUp 0.5s ease-out; }`}</style>
           {/* Top animated bar */}
           {!analysisResults && !analysisError && (
-            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-lg bg-gradient-to-r from-primary via-emerald-500 to-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
+            <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-lg bg-gradient-to-r from-primary via-emerald-500 to-primary bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]" />
           )}
           <DialogHeader>
             <DialogTitle className="text-right flex items-center gap-3 justify-end">
               {analysisResults ? (
-                <>✅ اكتمل التحليل بنجاح</>
+                <>
+                  <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M20 6L9 17l-5-5" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  ساري جاهز لخدمة عملائك!
+                </>
               ) : analysisError ? (
-                <>❌ فشل التحليل</>
+                <>❌ حدث خطأ أثناء التحليل</>
               ) : (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  🧠 ساري يحلل موقعك
+                  🧠 ساري يبني عقله...
                 </>
               )}
             </DialogTitle>
             <DialogDescription className="text-right">
-              {analysisResults ? `${analysisResults.title || ''} — ${analysisResults.score}/100` : analysisError ? analysisError : 'العملية تأخذ 30-60 ثانية'}
+              {analysisResults ? `${analysisResults.title || ''} — تقييم ${analysisResults.score}/100` : analysisError ? analysisError : (
+                <span key={reassuranceIdx} className="insight-enter inline-block">{REASSURANCE[reassuranceIdx]}</span>
+              )}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-2">
+          <div className="space-y-2.5 py-2">
+            {/* Expected results preview — shown only at start */}
+            {!analysisResults && !analysisError && analysisStep < 2 && (
+              <div className="p-3 rounded-lg bg-gradient-to-br from-primary/5 to-emerald-500/5 border border-primary/10 mb-3 insight-enter">
+                <p className="text-xs font-medium text-muted-foreground mb-2">بعد التحليل سيقوم ساري بـ:</p>
+                <div className="grid grid-cols-2 gap-1.5 text-[11px] text-foreground/80">
+                  <span>✓ بناء قاعدة معرفة ذكية</span>
+                  <span>✓ فهم خدماتك ومنتجاتك</span>
+                  <span>✓ تجهيز ردود ذكية للعملاء</span>
+                  <span>✓ اكتشاف فرص زيادة المبيعات</span>
+                </div>
+              </div>
+            )}
+
             {/* Step-by-step indicators */}
             {ANALYSIS_STEPS.map((step, i) => {
               const done = i < analysisStep || !!analysisResults;
@@ -429,20 +488,27 @@ export default function SariBrain() {
                 <div key={i} className={`flex items-center gap-3 p-2.5 rounded-lg border transition-all duration-500 ${
                   done ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' :
                   active ? 'bg-primary/5 border-primary/30 shadow-sm' :
-                  'bg-muted/20 border-transparent opacity-40'
+                  'bg-muted/20 border-transparent opacity-60'
                 }`}>
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500 ${done ? 'bg-green-50 dark:bg-green-950/30 ring-2 ring-green-200 dark:ring-green-800' : active ? 'bg-primary/10 ring-2 ring-primary/30 animate-pulse' : 'bg-muted/30'}`}>
-                    {active ? (
-                      <Loader2 className="h-5 w-5 text-primary animate-spin" />
-                    ) : (
-                      <>{step.svg}</>
+                  <div className="relative w-9 h-9 shrink-0">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-500 ${done ? 'bg-green-50 dark:bg-green-950/30' : active ? 'bg-primary/10 ring-2 ring-primary/30' : 'bg-muted/30'}`}>
+                      {active ? (
+                        <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                      ) : (
+                        <>{step.svg}</>
+                      )}
+                    </div>
+                    {done && (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shadow-sm">
+                        <svg viewBox="0 0 12 12" className="w-2.5 h-2.5"><path d="M10 3L4.5 8.5 2 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium ${
                       done ? 'text-green-700 dark:text-green-300' : active ? 'text-foreground' : 'text-muted-foreground'
                     }`}>{step.label}</p>
-                    <p className="text-[10px] text-muted-foreground">{step.detail}</p>
+                    <p className="text-[10px] text-muted-foreground">{active ? STEP_INSIGHTS[i]?.[0] || step.detail : step.detail}</p>
                   </div>
                   {/* Show real stats next to completed steps */}
                   {done && analysisResults?.crawlStats && (
@@ -461,15 +527,15 @@ export default function SariBrain() {
               );
             })}
 
-            {/* Progress percentage */}
+            {/* Smooth progressive progress */}
             {!analysisResults && !analysisError && (
-              <div className="mt-2">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>التقدم</span>
-                  <span>{Math.round((analysisStep / ANALYSIS_STEPS.length) * 100)}%</span>
+              <div className="mt-3">
+                <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                  <span className="text-[10px] insight-enter" key={`insight-${analysisStep}`}>{STEP_INSIGHTS[analysisStep]?.[0] || ''}</span>
+                  <span className="font-mono font-semibold text-primary">{Math.round(fakeProgress)}%</span>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-primary to-emerald-500 rounded-full transition-all duration-700" style={{ width: `${(analysisStep / ANALYSIS_STEPS.length) * 100}%` }} />
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-primary via-emerald-400 to-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${fakeProgress}%` }} />
                 </div>
               </div>
             )}
