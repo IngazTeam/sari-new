@@ -723,6 +723,32 @@ ${result.message}
       // Build system prompt from cached context
       let systemPrompt = buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
 
+      // ── Virtual Agent override for FAST PATH ──
+      // Without this, message #2+ would lose agent personality and revert to Sari
+      try {
+        if (params.conversationId) {
+          const { eq } = await import('drizzle-orm');
+          const pool = await db.getDb();
+          const convs = await db.getConversationsByMerchantId(params.merchantId);
+          const thisConv = convs.find((c: any) => c.id === params.conversationId);
+          const agentId = (thisConv as any)?.currentAgentId;
+          if (agentId) {
+            const agentRows = await pool.select().from(virtualAgents)
+              .where(eq(virtualAgents.id, agentId));
+            if (agentRows.length > 0 && agentRows[0].isActive) {
+              const agent = agentRows[0];
+              systemPrompt = `أنت ${sanitizeForPrompt(agent.name)}، ${sanitizeForPrompt(agent.role)} عبر الواتساب.${agent.department ? ` تعمل في قسم ${sanitizeForPrompt(agent.department)}.` : ''}
+
+## تعليمات الشخصية:
+${sanitizeForPrompt(agent.personalityPrompt)}
+
+⚠️ مهم جداً: عرّف عن نفسك باسم "${sanitizeForPrompt(agent.name)}" وليس "ساري". تصرف بالضبط وفق تعليمات الشخصية أعلاه.
+` + existingSession.contextPrompt;
+            }
+          }
+        }
+      } catch { /* silent — fallback to Sari personality */ }
+
       // Inject persuasion prompt
       if (persuasion.prompt) {
         systemPrompt += persuasion.prompt;
