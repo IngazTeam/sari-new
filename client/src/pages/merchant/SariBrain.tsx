@@ -84,13 +84,20 @@ export default function SariBrain() {
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const ANALYSIS_STEPS = [
-    { icon: '🌐', label: 'الاتصال بالموقع', detail: 'فحص الرابط والاستجابة' },
-    { icon: '📥', label: 'سحب المحتوى', detail: 'قراءة النصوص والعناوين من الصفحة الرئيسية' },
-    { icon: '🔍', label: 'اكتشاف وسحب كل الصفحات', detail: 'سحب جميع الصفحات الداخلية + sitemap.xml' },
-    { icon: '🧠', label: 'تصنيف AI', detail: 'تحليل المعرفة بالذكاء الاصطناعي' },
-    { icon: '💎', label: 'ذكاء المبيعات', detail: 'استخراج نقاط القوة وإرشادات البيع' },
-    { icon: '🎯', label: 'فرص التطوير', detail: 'اكتشاف التحسينات الممكنة' },
-    { icon: '✨', label: 'حفظ النتائج', detail: 'تحديث قاعدة المعرفة' },
+    { label: 'الاتصال بالموقع', detail: 'فحص الرابط والاستجابة',
+      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><circle cx="12" cy="12" r="10" stroke="url(#g1)" strokeWidth="2"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z" stroke="url(#g1)" strokeWidth="2"/><defs><linearGradient id="g1" x1="0" y1="0" x2="24" y2="24"><stop stopColor="#6366f1"/><stop offset="1" stopColor="#06b6d4"/></linearGradient></defs></svg> },
+    { label: 'سحب المحتوى', detail: 'قراءة النصوص والعناوين من الصفحة الرئيسية',
+      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="url(#g2)" strokeWidth="2" strokeLinejoin="round"/><path d="M14 2v6h6M8 13h8M8 17h5" stroke="url(#g2)" strokeWidth="2" strokeLinecap="round"/><defs><linearGradient id="g2" x1="4" y1="2" x2="20" y2="22"><stop stopColor="#818cf8"/><stop offset="1" stopColor="#c084fc"/></linearGradient></defs></svg> },
+    { label: 'اكتشاف وسحب كل الصفحات', detail: 'سحب جميع الصفحات الداخلية + sitemap.xml',
+      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><circle cx="11" cy="11" r="7" stroke="url(#g3)" strokeWidth="2"/><path d="m21 21-4.35-4.35" stroke="url(#g3)" strokeWidth="2" strokeLinecap="round"/><path d="M11 8v6M8 11h6" stroke="url(#g3)" strokeWidth="1.5" strokeLinecap="round"/><defs><linearGradient id="g3" x1="4" y1="4" x2="21" y2="21"><stop stopColor="#06b6d4"/><stop offset="1" stopColor="#6366f1"/></linearGradient></defs></svg> },
+    { label: 'تصنيف AI', detail: 'تحليل المعرفة بالذكاء الاصطناعي',
+      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><rect x="3" y="3" width="18" height="18" rx="4" stroke="url(#g4)" strokeWidth="2"/><circle cx="9" cy="10" r="1.5" fill="url(#g4)"/><circle cx="15" cy="10" r="1.5" fill="url(#g4)"/><path d="M9 15c.83.83 2.17 1.5 3 1.5s2.17-.67 3-1.5" stroke="url(#g4)" strokeWidth="2" strokeLinecap="round"/><defs><linearGradient id="g4" x1="3" y1="3" x2="21" y2="21"><stop stopColor="#f472b6"/><stop offset="1" stopColor="#fb923c"/></linearGradient></defs></svg> },
+    { label: 'ذكاء المبيعات', detail: 'استخراج نقاط القوة وإرشادات البيع',
+      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke="url(#g5)" strokeWidth="2" strokeLinejoin="round"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#g5)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g5" x1="2" y1="2" x2="22" y2="22"><stop stopColor="#14b8a6"/><stop offset="1" stopColor="#6366f1"/></linearGradient></defs></svg> },
+    { label: 'فرص التطوير', detail: 'اكتشاف التحسينات الممكنة',
+      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 3l2.5 5.5L20 9.5l-4 4 1 5.5L12 16.5 7 19l1-5.5-4-4 5.5-1L12 3z" stroke="url(#g6)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g6" x1="3" y1="3" x2="20" y2="19"><stop stopColor="#fb923c"/><stop offset="1" stopColor="#f472b6"/></linearGradient></defs></svg> },
+    { label: 'حفظ النتائج', detail: 'تحديث قاعدة المعرفة',
+      svg: <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6"><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6z" fill="url(#g7)" opacity="0.2"/><path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1 3-6z" stroke="url(#g7)" strokeWidth="2" strokeLinejoin="round"/><defs><linearGradient id="g7" x1="2" y1="2" x2="22" y2="22"><stop stopColor="#fbbf24"/><stop offset="1" stopColor="#f472b6"/></linearGradient></defs></svg> },
   ];
 
 
@@ -389,7 +396,7 @@ export default function SariBrain() {
 
       {/* ═══ Analysis Progress Modal ═══ */}
       <Dialog open={analysisDialogOpen} onOpenChange={(open) => { if (analysisResults || analysisError) setAnalysisDialogOpen(open); }}>
-        <DialogContent className="max-w-lg [&>button]:hidden" onPointerDownOutside={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }}>
+        <DialogContent className="max-w-lg [&>button]:hidden max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }} onEscapeKeyDown={(e) => { if (!analysisResults && !analysisError) e.preventDefault(); }}>
           <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
           {/* Top animated bar */}
           {!analysisResults && !analysisError && (
@@ -424,13 +431,11 @@ export default function SariBrain() {
                   active ? 'bg-primary/5 border-primary/30 shadow-sm' :
                   'bg-muted/20 border-transparent opacity-40'
                 }`}>
-                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-base">
-                    {done ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                    ) : active ? (
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all duration-500 ${done ? 'bg-green-50 dark:bg-green-950/30 ring-2 ring-green-200 dark:ring-green-800' : active ? 'bg-primary/10 ring-2 ring-primary/30 animate-pulse' : 'bg-muted/30'}`}>
+                    {active ? (
                       <Loader2 className="h-5 w-5 text-primary animate-spin" />
                     ) : (
-                      <span className="text-muted-foreground">{step.icon}</span>
+                      <>{step.svg}</>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
