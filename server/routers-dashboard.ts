@@ -98,6 +98,18 @@ export const dashboardRouter = router({
             const { getDashboardSummary } = await import('./dashboard-analytics');
             return await getDashboardSummary(merchant.id, input.days, input.topProductsLimit);
         }),
+
+    // AI Opportunity Engine — "ساري يقترح"
+    getAiInsights: protectedProcedure
+        .query(async ({ ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
+            }
+
+            const { generateMerchantInsights } = await import('./ai/insights');
+            return await generateMerchantInsights(merchant.id);
+        }),
 });
 
 export type DashboardRouter = typeof dashboardRouter;

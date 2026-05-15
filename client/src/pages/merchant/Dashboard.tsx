@@ -60,6 +60,12 @@ export default function MerchantDashboard() {
   const topProducts = dashboardSummary?.topProducts;
   const { data: reviewStats } = trpc.reviews.getStats.useQuery({ merchantId: merchant?.id || 1 });
 
+  // AI Opportunity Engine
+  const { data: aiInsights, isLoading: insightsLoading } = trpc.dashboard.getAiInsights.useQuery(undefined, {
+    staleTime: 6 * 60 * 60 * 1000, // 6 hours — matches backend cache
+    retry: false, // Don't retry on failure — graceful degradation
+  });
+
   const isLoading = merchantLoading || subscriptionLoading || conversationsLoading || campaignsLoading || summaryLoading;
 
   // Show onboarding wizard for new merchants
@@ -232,6 +238,64 @@ export default function MerchantDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* ═══ AI Opportunity Engine — "ساري يقترح" ═══ */}
+        {(insightsLoading || (aiInsights && aiInsights.length > 0)) && (
+          <div>
+            <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              ساري يقترح
+            </h3>
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {insightsLoading ? (
+                /* Skeleton loading */
+                Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="p-4 rounded-xl border bg-muted/20 animate-pulse">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-muted" />
+                      <div className="h-4 w-32 bg-muted rounded" />
+                    </div>
+                    <div className="h-3 w-full bg-muted rounded mb-1.5" />
+                    <div className="h-3 w-2/3 bg-muted rounded" />
+                  </div>
+                ))
+              ) : aiInsights?.map((insight, i) => {
+                const colorMap: Record<string, string> = {
+                  opportunity: 'from-purple-500/10 to-indigo-500/5 border-purple-200 dark:border-purple-800',
+                  momentum: 'from-emerald-500/10 to-green-500/5 border-emerald-200 dark:border-emerald-800',
+                  alert: 'from-amber-500/10 to-yellow-500/5 border-amber-200 dark:border-amber-800',
+                  recovery: 'from-orange-500/10 to-red-500/5 border-orange-200 dark:border-orange-800',
+                  discovery: 'from-blue-500/10 to-cyan-500/5 border-blue-200 dark:border-blue-800',
+                };
+                const iconBgMap: Record<string, string> = {
+                  opportunity: 'from-purple-500 to-indigo-500',
+                  momentum: 'from-emerald-500 to-green-500',
+                  alert: 'from-amber-500 to-yellow-500',
+                  recovery: 'from-orange-500 to-red-500',
+                  discovery: 'from-blue-500 to-cyan-500',
+                };
+                return (
+                  <div key={i} className={`p-4 rounded-xl border bg-gradient-to-br ${colorMap[insight.type] || colorMap.discovery} transition-all hover:shadow-md hover:scale-[1.01]`}>
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${iconBgMap[insight.type] || iconBgMap.discovery} flex items-center justify-center text-white text-sm shadow-sm`}>
+                        {insight.emoji}
+                      </div>
+                      <h4 className="font-semibold text-sm">{insight.title}</h4>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed mb-3">{insight.body}</p>
+                    {insight.action && (
+                      <Link href={insight.action.href}>
+                        <Button variant="outline" size="sm" className="w-full text-xs h-8">
+                          {insight.action.label}
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Header with Welcome Message */}
         <div className="flex items-center justify-between flex-wrap gap-3">
