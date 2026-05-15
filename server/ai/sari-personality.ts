@@ -16,6 +16,7 @@ import { getOrCreateProfile, updateProfile, buildProfileContext, type CustomerPr
 import { loadArsenal, selectPersuasion, recordStrategyUse, markStrategySuccess, buildCrossSellSuggestions } from './sales-arsenal';
 import { detectDialect, extractChildName, buildCulturalPrompt, buildInitialCulturalProfile, type CulturalProfile } from './cultural-engine';
 import { buildDirectivesPrompt } from '../db/ai-directives';
+import { buildDNAPrompt, captureConversationSignals } from './learning-engine';
 import { virtualAgents } from '../../drizzle/schema';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { 
@@ -922,8 +923,14 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       console.warn('[chatWithSari] Arsenal load failed:', arsenalErr);
     }
 
+    // --- Behavioral DNA (Continuous Learning) ---
+    let dnaPrompt = '';
+    try {
+      dnaPrompt = await buildDNAPrompt(params.merchantId);
+    } catch { /* silent — DNA is supplementary */ }
+
     // Build system prompt with personality settings + all engines
-    let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt;
+    let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + dnaPrompt;
     let resumePrompt = ''; // Extracted so it survives agent personality rebuild
     if (customerProfile) {
       systemPrompt += buildProfileContext(customerProfile);
@@ -1081,6 +1088,14 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
           .catch(err => console.warn('[chatWithSari] Cache save failed:', err));
       }
     } catch { /* silent */ }
+
+    // === Learning Engine: Capture signals from this interaction (fire-and-forget) ===
+    captureConversationSignals({
+      merchantId: params.merchantId,
+      conversationId: params.conversationId || 0,
+      customerMessage: params.message,
+      botResponse: response,
+    }).catch(() => {});
 
     // === Quality Metrics: Record response quality (fire-and-forget) ===
     recordMetric({

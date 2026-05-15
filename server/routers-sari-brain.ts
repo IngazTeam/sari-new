@@ -1894,6 +1894,81 @@ ${sanitizedContent}`
       await quotationsDb.deleteTemplate(input.templateId, merchant.id);
       return { success: true };
     }),
+
+  // ═══════════════════════════════════════════════════════════════
+  // Learning Engine — Continuous Learning Dashboard
+  // ═══════════════════════════════════════════════════════════════
+
+  /** Get learning maturity dashboard */
+  getLearningDashboard: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const learningDb = await import('./db/learning');
+
+    const [totalSignals, totalConversations, generation, signalDistribution, activeDNA] = await Promise.all([
+      learningDb.getTotalSignals(merchant.id),
+      learningDb.getTotalConversations(merchant.id),
+      learningDb.getDNAGeneration(merchant.id),
+      learningDb.getSignalDistribution(merchant.id, 30),
+      learningDb.getActiveDNA(merchant.id),
+    ]);
+
+    // Calculate maturity level based on signals and generation
+    const maturityLevel = generation === 0 ? 'newborn'
+      : generation <= 2 ? 'learning'
+      : generation <= 5 ? 'growing'
+      : generation <= 10 ? 'experienced'
+      : 'expert';
+
+    // Sanitize DNA for frontend (no BLOBs, whitelist fields)
+    const dnaInsights = activeDNA.map((d: any) => ({
+      dimension: d.dimension,
+      insight: d.insight,
+      confidence: Number(d.confidence) || 0,
+      evidenceCount: Number(d.evidence_count || d.evidenceCount) || 0,
+      autoApplied: !!(d.auto_applied || d.autoApplied),
+      generation: Number(d.generation) || 0,
+    }));
+
+    return {
+      totalSignals,
+      totalConversations,
+      generation,
+      maturityLevel,
+      signalDistribution,
+      dnaInsights,
+    };
+  }),
+
+  /** Manually trigger learning analysis */
+  triggerLearningAnalysis: protectedProcedure.mutation(async ({ ctx }) => {
+    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const learningDb = await import('./db/learning');
+    const unanalyzed = await learningDb.countUnanalyzedSignals(merchant.id);
+
+    if (unanalyzed < 5) {
+      return {
+        success: false,
+        message: `يوجد فقط ${unanalyzed} إشارات جديدة — تحتاج 5 إشارات على الأقل للتحليل`,
+        signalCount: unanalyzed,
+      };
+    }
+
+    // Trigger analysis in background
+    const { triggerPatternAnalysis } = await import('./ai/learning-engine');
+    triggerPatternAnalysis(merchant.id).catch(err =>
+      console.error('[Learning] Manual trigger failed:', err)
+    );
+
+    return {
+      success: true,
+      message: `جاري تحليل ${unanalyzed} إشارة — ستظهر النتائج خلال دقيقة`,
+      signalCount: unanalyzed,
+    };
+  }),
 });
 
 export type SariBrainRouter = typeof sariBrainRouter;

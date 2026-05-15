@@ -11,6 +11,7 @@ import { extractKeywordsFromMessage } from '../ai/keyword-extraction';
 import { selectABTestVariant, recordABTestResult } from '../ai/ab-testing';
 import { isAppointmentRequest, handleAppointmentRequest } from '../appointmentBot';
 import { logDelivery } from '../routers-monitor';
+import { captureMerchantCorrection } from '../ai/learning-engine';
 import {
   hasReachedConversationLimit,
   hasReachedMessageLimit,
@@ -456,6 +457,23 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
         } as any);
         console.log(`[Takeover] Human took over conv ${conv.id} for ${timeoutMin} min`);
+
+        // Learning Engine: Capture merchant correction signal
+        // When the merchant sends a message, it means the bot's response was inadequate
+        if (outText) {
+          try {
+            const messages = await db.getMessagesByConversation(conv.id);
+            const lastBotMsg = messages.filter((m: any) => m.direction === 'outgoing').pop();
+            if (lastBotMsg) {
+              captureMerchantCorrection({
+                merchantId: instance.merchantId,
+                conversationId: conv.id,
+                lastBotMessage: (lastBotMsg as any).content || '',
+                merchantMessage: outText,
+              }).catch(() => {});
+            }
+          } catch { /* silent — learning is non-blocking */ }
+        }
       }
       return { success: true, message: 'Human takeover activated' };
     }
