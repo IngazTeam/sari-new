@@ -368,6 +368,26 @@ async function buildEnhancedContextPrompt(context: {
           contextPrompt += `${sanitizedContent}\n`;
         }
       }
+      
+      // SPA Fallback: If scrapedContent is empty, inject discovered_pages as context
+      if (!latestAnalysis?.scrapedContent || latestAnalysis.scrapedContent.trim().length < 50) {
+        const pages = await db.getDiscoveredPagesByMerchantId(context.merchantId);
+        const contentPages = pages.filter((p: any) => p.content && p.content.trim().length > 30 && p.useInBot !== false);
+        if (contentPages.length > 0) {
+          contextPrompt += `\n## محتوى صفحات الموقع (مسحوبة من الصفحات الفرعية):\n`;
+          for (const page of contentPages.slice(0, 6)) {
+            const typeLabels: Record<string, string> = {
+              about: 'عن المتجر', shipping: 'الشحن', returns: 'الاسترجاع',
+              faq: 'أسئلة شائعة', contact: 'التواصل', services: 'الخدمات',
+              products: 'المنتجات', courses: 'الدورات', other: 'أخرى',
+            };
+            contextPrompt += `### ${typeLabels[(page as any).pageType] || sanitizeForPrompt((page as any).title)}:\n`;
+            contextPrompt += `${sanitizeForPrompt((page as any).content.substring(0, 1500))}\n\n`;
+          }
+          contextPrompt += `⚠️ استخدم المعلومات أعلاه للرد على أسئلة العملاء بدقة.\n`;
+          console.log(`[chatWithSari] Legacy SPA fallback: injected ${contentPages.length} discovered pages`);
+        }
+      }
     } catch (error) {
       console.warn('[chatWithSari] Failed to load website analysis for bot context:', error);
     }

@@ -473,9 +473,21 @@ export const sariBrainRouter = router({
         let scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
         console.log(`[SariBrain] Knowledge Engine input: scrapedText=${result._scrapedText?.length || 0} chars, enrichedText=${result._enrichedText?.length || 0} chars, combined=${scrapedText.trim().length} chars`);
         
-        // === SPA Fallback: If scraped text is empty (SPA/Zid/React sites), build context from available data ===
-        if (scrapedText.trim().length < 100) {
-          console.log(`[SariBrain] Primary scrape returned empty text — SPA detected. Building fallback context...`);
+        // === ALWAYS inject merchant profile data as baseline context ===
+        const profileParts: string[] = [];
+        if (merchant.businessName) profileParts.push(`اسم النشاط التجاري: ${merchant.businessName}`);
+        if ((merchant as any).industry) profileParts.push(`المجال: ${(merchant as any).industry}`);
+        if ((merchant as any).description) profileParts.push(`الوصف: ${(merchant as any).description}`);
+        if ((merchant as any).phone) profileParts.push(`هاتف: ${(merchant as any).phone}`);
+        if ((merchant as any).email) profileParts.push(`بريد: ${(merchant as any).email}`);
+        if ((merchant as any).city) profileParts.push(`المدينة: ${(merchant as any).city}`);
+        if ((merchant as any).address) profileParts.push(`العنوان: ${(merchant as any).address}`);
+        if ((merchant as any).websiteUrl || (merchant as any).website) profileParts.push(`الموقع: ${(merchant as any).websiteUrl || (merchant as any).website}`);
+        const profileContext = profileParts.length > 0 ? `\n--- بيانات التاجر ---\n${profileParts.join('\n')}\n` : '';
+        
+        // === SPA Fallback: If scraped text is empty (SPA/Vue/Zid/React sites), build context from available data ===
+        if (scrapedText.trim().length < 200) {
+          console.log(`[SariBrain] Primary scrape returned low text (${scrapedText.trim().length} chars) — SPA likely. Building fallback context...`);
           const fallbackParts: string[] = [];
           
           // 1. Basic business info (always available from meta tags)
@@ -549,6 +561,23 @@ export const sariBrainRouter = router({
                 if (ldText.length > 20) htmlTexts.push('بيانات منظمة: ' + ldText.substring(0, 2000));
               } catch { /* malformed JSON-LD */ }
             }
+
+            // Extract Vue.js / Nuxt SSR state (__NUXT__, __INITIAL_STATE__)
+            const vueStateRegex = /window\.__(?:NUXT|INITIAL_STATE)__\s*=\s*(\{[\s\S]*?\});?\s*(?:<\/script>|$)/gi;
+            let vueMatch;
+            while ((vueMatch = vueStateRegex.exec(html)) !== null) {
+              try {
+                const stateText = vueMatch[1]
+                  .replace(/[{}\[\]"]/g, ' ')
+                  .replace(/https?:\/\/[^\s]+/g, '')
+                  .replace(/\s+/g, ' ')
+                  .trim();
+                if (stateText.length > 50) {
+                  htmlTexts.push('بيانات Vue SSR: ' + stateText.substring(0, 5000));
+                  console.log(`[SariBrain] Vue SSR state extracted: ${stateText.length} chars`);
+                }
+              } catch { /* malformed Vue state */ }
+            }
             
             if (htmlTexts.length > 0) {
               fallbackParts.push('\nمحتوى مستخرج من HTML:');
@@ -568,12 +597,16 @@ export const sariBrainRouter = router({
           const fallbackText = fallbackParts.join('\n');
           console.log(`[SariBrain] SPA fallback built: ${fallbackText.length} chars from ${fallbackParts.length} sources`);
           
-          if (fallbackText.trim().length > 100) {
+          if (fallbackText.trim().length > scrapedText.trim().length) {
             scrapedText = fallbackText;
           }
         }
         
-        if (scrapedText.trim().length > 100) {
+        // Always prepend merchant profile as baseline context
+        scrapedText = profileContext + scrapedText;
+        
+        // Lower threshold — run Knowledge Engine if we have ANY meaningful context (30+ chars)
+        if (scrapedText.trim().length > 30) {
           console.log(`[SariBrain] Starting Knowledge Engine pipeline for merchant ${merchant.id} with ${scrapedText.trim().length} chars...`);
           const { ingestContent } = await import('./ai/knowledge-engine');
           
@@ -602,7 +635,7 @@ export const sariBrainRouter = router({
             await knowledgeDb.invalidateCache(merchant.id);
           } catch { /* non-blocking */ }
         } else {
-          console.warn(`[SariBrain] Knowledge Engine SKIPPED — no content available even after SPA fallback (${scrapedText.trim().length} chars)`);
+          console.warn(`[SariBrain] Knowledge Engine SKIPPED — no content available even after all fallbacks (${scrapedText.trim().length} chars)`);
           knowledgeError = `الموقع لا يحتوي على محتوى نصي كافٍ (SPA) — جرب رفع ملف تعريفي من الإعدادات`;
         }
       } catch (keErr: any) {
