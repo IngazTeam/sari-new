@@ -586,7 +586,7 @@ export interface KnowledgeHealthScore {
 /** Calculate knowledge health score for a merchant */
 export async function calculateHealthScore(merchantId: number): Promise<KnowledgeHealthScore> {
   const sections = await getSectionsByMerchantId(merchantId);
-  const types = new Set(sections.map(s => s.sectionType));
+  const types = new Set(sections.map(s => (s as any).section_type || (s as any).sectionType));
 
   const pool = await db.getPool();
   let hasProducts = false;
