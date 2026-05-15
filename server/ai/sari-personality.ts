@@ -878,6 +878,7 @@ ${result.message}
 
     // Build system prompt with personality settings + all engines
     let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt;
+    let resumePrompt = ''; // Extracted so it survives agent personality rebuild
     if (customerProfile) {
       systemPrompt += buildProfileContext(customerProfile);
     }
@@ -891,7 +892,7 @@ ${result.message}
         if (agentHistoryStr) {
           const agentHistory = JSON.parse(agentHistoryStr);
           if (agentHistory.resumeContext) {
-            systemPrompt += `\n\n## سياق مهم — استئناف بعد تدخل بشري:\nالتاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة. الآن عدت أنت للرد. هذا ملخص آخر المحادثة بينهم:\n---\n${sanitizeForPrompt(agentHistory.resumeContext)}\n---\n⚠️ تعليمات: لا تكرر ما قاله التاجر. أكمل المحادثة بسلاسة كأنك تتابع من حيث توقفوا. لا تقل "عدت" أو "أنا هنا مجدداً". فقط أكمل الخدمة بشكل طبيعي.\n`;
+            resumePrompt = `\n\n## سياق مهم — استئناف بعد تدخل بشري:\nالتاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة. الآن عدت أنت للرد. هذا ملخص آخر المحادثة بينهم:\n---\n${sanitizeForPrompt(agentHistory.resumeContext)}\n---\n⚠️ تعليمات: لا تكرر ما قاله التاجر. أكمل المحادثة بسلاسة كأنك تتابع من حيث توقفوا. لا تقل "عدت" أو "أنا هنا مجدداً". فقط أكمل الخدمة بشكل طبيعي.\n`;
 
             // Clear the resume context after first use
             await db.updateConversation(params.conversationId, {
@@ -964,18 +965,28 @@ ${result.message}
             } catch { /* ignore */ }
           }
 
-          // Inject agent personality into system prompt
-          let agentPrompt = `\n\n## هويتك الحالية:\nاسمك: ${sanitizeForPrompt(selectedAgent.name)}\nدورك: ${sanitizeForPrompt(selectedAgent.role)}${selectedAgent.department ? `\nقسمك: ${sanitizeForPrompt(selectedAgent.department)}` : ''}\n\n## تعليمات الشخصية:\n${sanitizeForPrompt(selectedAgent.personalityPrompt)}\n\n⚠️ مهم: عرّف عن نفسك باسم "${sanitizeForPrompt(selectedAgent.name)}" وليس "ساري". تصرف بالضبط وفق تعليمات الشخصية أعلاه.\n`;
+          // ── Clean Agent Personality Override ──
+          // Replace Sari's ENTIRE base personality with agent's own personality
+          // to prevent conflicting tone/style/emoji instructions.
+          // Business context layers (RAG, Sales, Cultural, Directives) are preserved.
+          let agentBasePrompt = `أنت ${sanitizeForPrompt(selectedAgent.name)}، ${sanitizeForPrompt(selectedAgent.role)} عبر الواتساب.${selectedAgent.department ? ` تعمل في قسم ${sanitizeForPrompt(selectedAgent.department)}.` : ''}
+
+## تعليمات الشخصية:
+${sanitizeForPrompt(selectedAgent.personalityPrompt)}
+
+⚠️ مهم جداً: عرّف عن نفسك باسم "${sanitizeForPrompt(selectedAgent.name)}" وليس "ساري". تصرف بالضبط وفق تعليمات الشخصية أعلاه.
+`;
 
           // Add handoff instruction if switching agents
           if (previousAgentName) {
-            agentPrompt += `\n## تحويل من زميل:\nالعميل كان يتحدث مع "${sanitizeForPrompt(previousAgentName)}". ابدأ ردك بتقديم نفسك بأسلوبك الخاص وأوضح أنه تم تحويله لك لأن تخصصك يناسب استفساره. مثال: "أهلاً! أنا ${sanitizeForPrompt(selectedAgent.name)} من ${sanitizeForPrompt(selectedAgent.department || 'فريقنا')}. ${sanitizeForPrompt(previousAgentName)} حولتك لي لأساعدك بشكل أفضل 😊"\n`;
+            agentBasePrompt += `\n## تحويل من زميل:\nالعميل كان يتحدث مع "${sanitizeForPrompt(previousAgentName)}". ابدأ ردك بتقديم نفسك بأسلوبك الخاص وأوضح أنه تم تحويله لك لأن تخصصك يناسب استفساره. مثال: "أهلاً! أنا ${sanitizeForPrompt(selectedAgent.name)} من ${sanitizeForPrompt(selectedAgent.department || 'فريقنا')}. ${sanitizeForPrompt(previousAgentName)} حولتك لي لأساعدك بشكل أفضل 😊"\n`;
           }
 
-          systemPrompt = systemPrompt.replace(
-            'أنت ساري، مساعد مبيعات ذكي وودود',
-            `أنت ${sanitizeForPrompt(selectedAgent.name)}، ${sanitizeForPrompt(selectedAgent.role)}`
-          ) + agentPrompt;
+          // Rebuild: Agent personality + all business context layers (clean, no Sari base)
+          systemPrompt = agentBasePrompt + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt;
+          if (customerProfile) {
+            systemPrompt += buildProfileContext(customerProfile);
+          }
 
           // Update conversation's current agent
           if (params.conversationId) {
@@ -991,6 +1002,11 @@ ${result.message}
       }
     } catch (agentError) {
       console.warn('[VirtualAgent] Agent selection failed, using default Sari:', agentError);
+    }
+
+    // Append resume context after agent selection (preserved across rebuilds)
+    if (resumePrompt) {
+      systemPrompt += resumePrompt;
     }
 
     // Prepare messages with few-shot examples for better quality
