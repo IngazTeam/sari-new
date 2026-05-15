@@ -246,7 +246,8 @@ export async function getSectionsByMerchantId(merchantId: number): Promise<Knowl
   if (!pool) return [];
 
   const [rows] = await pool.execute(
-    `SELECT * FROM knowledge_sections WHERE merchant_id = ? ORDER BY sort_order, created_at`,
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+     FROM knowledge_sections WHERE merchant_id = ? ORDER BY sort_order, created_at`,
     [merchantId]
   );
   return rows as KnowledgeSection[];
@@ -259,7 +260,8 @@ export async function getBotSections(merchantId: number): Promise<KnowledgeSecti
   if (!pool) return [];
 
   const [rows] = await pool.execute(
-    `SELECT * FROM knowledge_sections 
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+     FROM knowledge_sections 
      WHERE merchant_id = ? AND use_in_bot = 1 AND status IN ('auto_approved', 'approved')
      ORDER BY inject_as, sort_order`,
     [merchantId]
@@ -274,7 +276,8 @@ export async function getPendingReviewSections(merchantId: number): Promise<Know
   if (!pool) return [];
 
   const [rows] = await pool.execute(
-    `SELECT * FROM knowledge_sections WHERE merchant_id = ? AND status = 'pending_review' ORDER BY created_at DESC`,
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+     FROM knowledge_sections WHERE merchant_id = ? AND status = 'pending_review' ORDER BY created_at DESC`,
     [merchantId]
   );
   return rows as KnowledgeSection[];
@@ -287,7 +290,8 @@ export async function getSectionById(sectionId: number, merchantId: number): Pro
   if (!pool) return null;
 
   const [rows] = await pool.execute(
-    `SELECT * FROM knowledge_sections WHERE id = ? AND merchant_id = ? LIMIT 1`,
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+     FROM knowledge_sections WHERE id = ? AND merchant_id = ? LIMIT 1`,
     [sectionId, merchantId]
   );
   const results = rows as KnowledgeSection[];

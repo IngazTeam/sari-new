@@ -132,8 +132,10 @@ async function startServer() {
   // REST API v1 — External service integration (API key auth)
   try {
     const { sariApiRouter, sariPlatformRouter } = await import('../api/rest');
-    app.use("/api/v1", sariApiRouter);
+    // ⚠️ CRITICAL: /platform MUST be mounted BEFORE /api/v1
+    // Otherwise Express matches /api/v1 first → authMiddleware rejects platform keys
     app.use("/api/v1/platform", sariPlatformRouter);
+    app.use("/api/v1", sariApiRouter);
     console.log('[Core] ✅ REST API v1 mounted at /api/v1');
     console.log('[Core] ✅ Platform API mounted at /api/v1/platform');
   } catch (e) {
