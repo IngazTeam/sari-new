@@ -96,7 +96,9 @@ export function embeddingToBuffer(embedding: Float32Array): Buffer {
  * Convert Buffer from MySQL BLOB back to Float32Array
  */
 export function bufferToEmbedding(buffer: Buffer): Float32Array {
-  return new Float32Array(buffer.buffer, buffer.byteOffset, buffer.length / 4);
+  // MySQL BLOB buffers have unaligned byteOffset — copy to ensure 4-byte alignment
+  const aligned = Buffer.from(buffer);
+  return new Float32Array(aligned.buffer, aligned.byteOffset, aligned.length / 4);
 }
 
 // ═══════════════════════════════════════════════════════════════
