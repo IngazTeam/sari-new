@@ -54,6 +54,22 @@ function sanitizeForPrompt(text: string): string {
   return text.replace(/[\n\r"'`${}\\]/g, '').substring(0, 100);
 }
 
+/** Fallback label when GPT returns empty action.label */
+function hrefToLabel(href: string): string {
+  const map: Record<string, string> = {
+    '/merchant/products': 'إدارة المنتجات',
+    '/merchant/campaigns/new': 'إطلاق حملة',
+    '/merchant/conversations': 'عرض المحادثات',
+    '/merchant/whatsapp': 'ربط واتساب',
+    '/merchant/sari-brain': 'إعداد عقل ساري',
+    '/merchant/reports': 'عرض التقارير',
+    '/merchant/orders': 'إدارة الطلبات',
+    '/merchant/settings': 'الإعدادات',
+    '/merchant/reviews': 'التقييمات',
+  };
+  return map[href] || 'ابدأ الآن';
+}
+
 /**
  * Main entry: Generate merchant insights (cached)
  */
@@ -237,7 +253,7 @@ ${JSON.stringify({
         title: String(item.title || '').substring(0, 100),
         body: String(item.body || '').substring(0, 200),
         action: item.action ? {
-          label: String(item.action.label || '').substring(0, 50),
+          label: String(item.action.label || '').substring(0, 50) || hrefToLabel(String(item.action.href || '')),
           href: ALLOWED_HREFS.has(String(item.action.href || '')) ? String(item.action.href) : '/merchant/reports',
         } : null,
         emoji: String(item.emoji || '🧠').substring(0, 4),

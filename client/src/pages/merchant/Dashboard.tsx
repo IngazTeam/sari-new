@@ -285,8 +285,8 @@ export default function MerchantDashboard() {
                     <p className="text-xs text-muted-foreground leading-relaxed mb-3">{insight.body}</p>
                     {insight.action && (
                       <Link href={insight.action.href}>
-                        <Button variant="outline" size="sm" className="w-full text-xs h-8">
-                          {insight.action.label}
+                        <Button size="sm" className="w-full text-xs h-8 bg-white/90 hover:bg-white text-foreground border shadow-sm dark:bg-gray-900/90 dark:hover:bg-gray-900">
+                          {insight.action.label || 'ابدأ الآن →'}
                         </Button>
                       </Link>
                     )}
