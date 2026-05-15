@@ -58,7 +58,7 @@ export default function SariBrain() {
 
   // Knowledge Engine v4 hooks
   const { data: healthScore } = trpc.sariBrain.getHealthScore.useQuery();
-  const { data: knowledgeSections, isLoading: sectionsLoading } = trpc.sariBrain.getKnowledgeSections.useQuery();
+  const { data: knowledgeSections, isLoading: sectionsLoading, error: sectionsError } = trpc.sariBrain.getKnowledgeSections.useQuery();
   const { data: pendingReviews } = trpc.sariBrain.getPendingReviews.useQuery();
 
   // FAQ state
@@ -884,6 +884,13 @@ export default function SariBrain() {
                   );
                 });
               })()}
+            </div>
+          ) : sectionsError ? (
+            <div className="text-center py-10 space-y-2">
+              <AlertTriangle className="mx-auto h-12 w-12 text-red-400" />
+              <p className="mt-3 font-medium text-red-600">خطأ في تحميل أقسام المعرفة</p>
+              <p className="text-xs text-muted-foreground" dir="ltr">{sectionsError.message}</p>
+              <Button variant="outline" size="sm" onClick={() => utils.sariBrain.getKnowledgeSections.invalidate()}>إعادة المحاولة</Button>
             </div>
           ) : (
             <div className="text-center py-10">

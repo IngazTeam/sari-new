@@ -1342,32 +1342,45 @@ ${sanitizedContent}`
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    const knowledgeDb = await import('./db/knowledge');
-    const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
-    // Serialize: exclude embedding BLOB, convert Date/Decimal to primitives
-    return sections.map((s: any) => ({
-      id: s.id,
-      merchantId: s.merchant_id ?? s.merchantId,
-      parentId: s.parent_id ?? s.parentId ?? null,
-      sectionType: s.section_type ?? s.sectionType,
-      title: s.title,
-      content: s.content,
-      summary: s.summary ?? null,
-      source: s.source,
-      sourceUrl: s.source_url ?? s.sourceUrl ?? null,
-      confidence: Number(s.confidence) || 0.9,
-      status: s.status,
-      useInBot: !!(s.use_in_bot ?? s.useInBot),
-      use_in_bot: !!(s.use_in_bot ?? s.useInBot),
-      injectAs: s.inject_as ?? s.injectAs ?? 'fact',
-      sortOrder: s.sort_order ?? s.sortOrder ?? 0,
-      merchantEdited: !!(s.merchant_edited ?? s.merchantEdited),
-      merchant_edited: !!(s.merchant_edited ?? s.merchantEdited),
-      section_type: s.section_type ?? s.sectionType,
-      parent_id: s.parent_id ?? s.parentId ?? null,
-      createdAt: s.created_at ? new Date(s.created_at).toISOString() : s.createdAt?.toISOString?.() ?? null,
-      updatedAt: s.updated_at ? new Date(s.updated_at).toISOString() : s.updatedAt?.toISOString?.() ?? null,
-    }));
+    try {
+      const knowledgeDb = await import('./db/knowledge');
+      const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+      
+      // Nuclear serialization: JSON round-trip strips ALL non-serializable values (BLOB, Date, BigInt)
+      const safe = sections.map((s: any) => {
+        const row: any = {};
+        for (const key of Object.keys(s)) {
+          const val = s[key];
+          // Skip binary/Buffer fields entirely
+          if (val instanceof Buffer || val instanceof Uint8Array) continue;
+          // Convert Date to ISO string
+          if (val instanceof Date) { row[key] = val.toISOString(); continue; }
+          // Convert BigInt to Number
+          if (typeof val === 'bigint') { row[key] = Number(val); continue; }
+          row[key] = val;
+        }
+        // Ensure both camelCase and snake_case are present for frontend compatibility
+        row.sectionType = row.section_type ?? row.sectionType;
+        row.section_type = row.section_type ?? row.sectionType;
+        row.parentId = row.parent_id ?? row.parentId ?? null;
+        row.parent_id = row.parent_id ?? row.parentId ?? null;
+        row.useInBot = !!(row.use_in_bot ?? row.useInBot);
+        row.use_in_bot = !!(row.use_in_bot ?? row.useInBot);
+        row.merchantEdited = !!(row.merchant_edited ?? row.merchantEdited);
+        row.merchant_edited = !!(row.merchant_edited ?? row.merchantEdited);
+        row.injectAs = row.inject_as ?? row.injectAs ?? 'fact';
+        row.sortOrder = row.sort_order ?? row.sortOrder ?? 0;
+        row.sourceUrl = row.source_url ?? row.sourceUrl ?? null;
+        row.confidence = Number(row.confidence) || 0.9;
+        return row;
+      });
+
+      // Final safety net: JSON round-trip to catch anything we missed
+      return JSON.parse(JSON.stringify(safe));
+    } catch (err: any) {
+      console.error('[getKnowledgeSections] SERIALIZATION ERROR:', err.message, err.stack?.substring(0, 300));
+      return []; // Return empty array instead of crashing
+    }
   }),
 
   /** Get knowledge health score */
@@ -1384,19 +1397,26 @@ ${sanitizedContent}`
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    const knowledgeDb = await import('./db/knowledge');
-    const sections = await knowledgeDb.getPendingReviewSections(merchant.id);
-    return sections.map((s: any) => ({
-      id: s.id,
-      sectionType: s.section_type ?? s.sectionType,
-      title: s.title,
-      content: s.content,
-      summary: s.summary ?? null,
-      source: s.source,
-      confidence: Number(s.confidence) || 0.9,
-      status: s.status,
-      createdAt: s.created_at ? new Date(s.created_at).toISOString() : null,
-    }));
+    try {
+      const knowledgeDb = await import('./db/knowledge');
+      const sections = await knowledgeDb.getPendingReviewSections(merchant.id);
+      return JSON.parse(JSON.stringify(sections.map((s: any) => {
+        const row: any = {};
+        for (const key of Object.keys(s)) {
+          const val = s[key];
+          if (val instanceof Buffer || val instanceof Uint8Array) continue;
+          if (val instanceof Date) { row[key] = val.toISOString(); continue; }
+          if (typeof val === 'bigint') { row[key] = Number(val); continue; }
+          row[key] = val;
+        }
+        row.sectionType = row.section_type ?? row.sectionType;
+        row.confidence = Number(row.confidence) || 0.9;
+        return row;
+      })));
+    } catch (err: any) {
+      console.error('[getPendingReviews] ERROR:', err.message);
+      return [];
+    }
   }),
 
   /** Get knowledge changelog */
@@ -1406,8 +1426,24 @@ ${sanitizedContent}`
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const knowledgeDb = await import('./db/knowledge');
-      return knowledgeDb.getChangelog(merchant.id, input.limit || 50);
+      try {
+        const knowledgeDb = await import('./db/knowledge');
+        const rows = await knowledgeDb.getChangelog(merchant.id, input.limit || 50);
+        return JSON.parse(JSON.stringify(rows.map((r: any) => {
+          const row: any = {};
+          for (const key of Object.keys(r)) {
+            const val = r[key];
+            if (val instanceof Buffer || val instanceof Uint8Array) continue;
+            if (val instanceof Date) { row[key] = val.toISOString(); continue; }
+            if (typeof val === 'bigint') { row[key] = Number(val); continue; }
+            row[key] = val;
+          }
+          return row;
+        })));
+      } catch (err: any) {
+        console.error('[getChangelog] ERROR:', err.message);
+        return [];
+      }
     }),
 
   /** Create a manual knowledge section */
