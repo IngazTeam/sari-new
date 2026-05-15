@@ -473,7 +473,6 @@ function DashboardLayoutContent({
                   const isExpanded = isSearching || expandedGroup === group.id;
                   const hasActiveItem = groupItems.some(item => item.path === location);
                   const GroupIcon = group.icon;
-                  const isAiGroup = group.id === 'channels';
 
                   return (
                     <div key={group.id} className="mb-0.5">
@@ -508,7 +507,7 @@ function DashboardLayoutContent({
                             {groupItems.map((item) => {
                               const isActive = location === item.path;
 
-                              {/* Hero Card — عقل ساري */}
+                              // Hero Card — عقل ساري
                               if (item.hero && !isCollapsed) {
                                 return (
                                   <SidebarMenuItem key={item.path}>
