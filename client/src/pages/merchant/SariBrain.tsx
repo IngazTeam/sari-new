@@ -146,6 +146,7 @@ export default function SariBrain() {
   const reanalyzeMutation = trpc.sariBrain.reanalyzeWebsite.useMutation({
     onSuccess: (data: any) => {
       setAnalysisStep(ANALYSIS_STEPS.length); // All steps done
+      setFakeProgress(100); // Snap to 100%
       setAnalysisResults(data);
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getActivityLog.invalidate();
@@ -530,9 +531,8 @@ export default function SariBrain() {
             {/* Smooth progressive progress */}
             {!analysisResults && !analysisError && (
               <div className="mt-3">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                  <span className="text-[10px] insight-enter" key={`insight-${analysisStep}`}>{STEP_INSIGHTS[analysisStep]?.[0] || ''}</span>
-                  <span className="font-mono font-semibold text-primary">{Math.round(fakeProgress)}%</span>
+                <div className="flex justify-end mb-1.5">
+                  <span className="font-mono font-semibold text-primary text-xs">{Math.round(fakeProgress)}%</span>
                 </div>
                 <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-primary via-emerald-400 to-primary rounded-full transition-all duration-500 ease-out" style={{ width: `${fakeProgress}%` }} />
@@ -595,7 +595,7 @@ export default function SariBrain() {
           {/* Footer — only show close button when done */}
           {(analysisResults || analysisError) && (
             <DialogFooter className="flex-row-reverse">
-              <Button onClick={() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); }}>
+              <Button onClick={() => { setAnalysisDialogOpen(false); setAnalysisResults(null); setAnalysisError(null); setFakeProgress(0); }}>
                 {analysisResults ? '👍 ممتاز، إغلاق' : 'إغلاق'}
               </Button>
             </DialogFooter>
