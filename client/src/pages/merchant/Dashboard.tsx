@@ -16,6 +16,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 function AnimatedNumber({ value, duration = 1200, prefix = '', suffix = '' }: { value: number; duration?: number; prefix?: string; suffix?: string }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<number>(0);
+  const rafRef = useRef<number>(0);
   useEffect(() => {
     if (!value) { setDisplay(0); return; }
     const start = ref.current;
@@ -24,13 +25,14 @@ function AnimatedNumber({ value, duration = 1200, prefix = '', suffix = '' }: { 
     const animate = (now: number) => {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+      const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(start + diff * eased);
       setDisplay(current);
-      if (progress < 1) requestAnimationFrame(animate);
+      if (progress < 1) rafRef.current = requestAnimationFrame(animate);
       else ref.current = value;
     };
-    requestAnimationFrame(animate);
+    rafRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafRef.current);
   }, [value, duration]);
   return <>{prefix}{display.toLocaleString()}{suffix}</>;
 }
