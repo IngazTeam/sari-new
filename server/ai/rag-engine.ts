@@ -13,6 +13,7 @@
 import { ENV } from '../_core/env';
 import {
   getBotSections,
+  getBotSectionsWithEmbedding,
   getValidCachedResponses,
   recordCacheHit,
   cacheResponse as dbCacheResponse,
@@ -131,7 +132,7 @@ export async function embedSection(section: KnowledgeSection, merchantId: number
  * Batch embed all sections that don't have embeddings yet.
  */
 export async function embedAllSections(merchantId: number): Promise<number> {
-  const sections = await getBotSections(merchantId);
+  const sections = await getBotSectionsWithEmbedding(merchantId);
   let embedded = 0;
 
   for (const section of sections) {
@@ -171,8 +172,8 @@ export async function searchRelevantSections(
     return sections.slice(0, limit).map(s => ({ section: s, similarity: 1.0 }));
   }
 
-  // Step 2: Get all sections with embeddings
-  const sections = await getBotSections(merchantId);
+  // Step 2: Get all sections WITH embeddings (for cosine similarity)
+  const sections = await getBotSectionsWithEmbedding(merchantId);
   
   // Step 3: Calculate similarities
   const scored = sections

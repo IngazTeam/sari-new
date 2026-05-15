@@ -253,7 +253,7 @@ export async function getSectionsByMerchantId(merchantId: number): Promise<Knowl
   return rows as KnowledgeSection[];
 }
 
-/** Get sections for bot injection (approved + use_in_bot) */
+/** Get sections for bot injection (approved + use_in_bot) — NO embedding */
 export async function getBotSections(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
   const pool = await db.getPool();
@@ -261,6 +261,22 @@ export async function getBotSections(merchantId: number): Promise<KnowledgeSecti
 
   const [rows] = await pool.execute(
     `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, created_at, updated_at
+     FROM knowledge_sections 
+     WHERE merchant_id = ? AND use_in_bot = 1 AND status IN ('auto_approved', 'approved')
+     ORDER BY inject_as, sort_order`,
+    [merchantId]
+  );
+  return rows as KnowledgeSection[];
+}
+
+/** Get sections WITH embedding for RAG semantic search — NOT for tRPC serialization! */
+export async function getBotSectionsWithEmbedding(merchantId: number): Promise<KnowledgeSection[]> {
+  await ensureKnowledgeTables();
+  const pool = await db.getPool();
+  if (!pool) return [];
+
+  const [rows] = await pool.execute(
+    `SELECT id, merchant_id, parent_id, section_type, title, content, summary, source, source_url, confidence, status, use_in_bot, inject_as, sort_order, merchant_edited, embedding, created_at, updated_at
      FROM knowledge_sections 
      WHERE merchant_id = ? AND use_in_bot = 1 AND status IN ('auto_approved', 'approved')
      ORDER BY inject_as, sort_order`,
