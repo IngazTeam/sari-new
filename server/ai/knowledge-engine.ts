@@ -108,19 +108,30 @@ ${content}
   ];
 
   try {
+    console.log(`[KnowledgeEngine] classifyContent: sending ${content.length} chars to GPT-4o...`);
     const response = await callGPT4(messages, {
       model: 'gpt-4o',
       temperature: 0.3,  // Low temp for consistency
       maxTokens: 4000,
     });
 
+    console.log(`[KnowledgeEngine] classifyContent: GPT response length=${response.length}, first 200 chars: ${response.substring(0, 200)}`);
+
     // Parse JSON from response (handle potential markdown wrapping)
-    const jsonStr = response
+    let jsonStr = response
       .replace(/```json\s*/g, '')
       .replace(/```\s*/g, '')
       .trim();
 
+    // Handle case where GPT wraps in extra text
+    const jsonStart = jsonStr.indexOf('[');
+    const jsonEnd = jsonStr.lastIndexOf(']');
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
+      jsonStr = jsonStr.substring(jsonStart, jsonEnd + 1);
+    }
+
     const sections: ClassifiedSection[] = JSON.parse(jsonStr);
+    console.log(`[KnowledgeEngine] classifyContent: parsed ${sections.length} sections: ${sections.map(s => `${s.sectionType}:"${s.title}"`).join(', ')}`);
 
     // Validate section types
     const validTypes: SectionType[] = [
@@ -128,9 +139,12 @@ ${content}
       'team', 'achievements', 'sales_intel', 'opportunities', 'custom',
     ];
 
-    return sections.filter(s => validTypes.includes(s.sectionType));
+    const filtered = sections.filter(s => validTypes.includes(s.sectionType));
+    console.log(`[KnowledgeEngine] classifyContent: ${filtered.length} sections passed validation (of ${sections.length})`);
+    return filtered;
   } catch (e: any) {
-    console.error('[KnowledgeEngine] classifyContent failed:', e.message);
+    console.error(`[KnowledgeEngine] classifyContent FAILED: ${e.message}`);
+    console.error(`[KnowledgeEngine] Stack: ${e.stack?.substring(0, 300)}`);
     return [];
   }
 }
@@ -461,8 +475,12 @@ export async function ingestContent(
   console.log(`[KnowledgeEngine] Starting ingestion for merchant ${merchantId} from ${source}`);
 
   // Step 1: Classify content
+  console.log(`[KnowledgeEngine] Raw content preview (first 500 chars): ${rawContent.substring(0, 500)}`);
   const classifiedSections = await classifyContent(rawContent, merchantContext);
   console.log(`[KnowledgeEngine] Classified ${classifiedSections.length} sections`);
+  if (classifiedSections.length === 0) {
+    console.error(`[KnowledgeEngine] ⚠️ ZERO SECTIONS — GPT may have failed to parse or classify the content. Content length was ${rawContent.length} chars.`);
+  }
 
   if (classifiedSections.length === 0) {
     return {
