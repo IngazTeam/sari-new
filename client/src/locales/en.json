@@ -2002,7 +2002,7 @@
     "text52": "Angry",
     "text53": "Sad",
     "text54": "Frustrated",
-    "text55": " : 'لا يوجد'}\r\n            </div>\r\n            <p className=\"text-xs text-muted-foreground mt-1\">\r\n              {peakHour ? ",
+    "text55": "message",
     "text56": "{{var0}}:00 - {{var1}} messages",
     "text57": "{{var0}} - {{var1}} messages",
     "text58": "Export PDF",
