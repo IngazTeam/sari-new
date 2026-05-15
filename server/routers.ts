@@ -1783,6 +1783,26 @@ export const appRouter = router({
         return { items, total, page, pageSize };
       }),
 
+    // Lightweight: get only recent conversations (for Dashboard)
+    listRecent: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(20).default(5) }))
+      .query(async ({ input, ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        return db.getConversationsByMerchantId(merchant.id, { limit: input.limit });
+      }),
+
+    // Lightweight: get count only (for Dashboard stats)
+    count: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+      return db.getConversationCountByMerchantId(merchant.id);
+    }),
+
     // Get messages for a conversation
     getMessages: protectedProcedure
       .input(z.object({ conversationId: z.number() }))
