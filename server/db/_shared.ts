@@ -11,5 +11,5 @@ export { eq, and, or, desc, gte, lte, lt, gt, sql, like, asc };
 
 // Import getDb from main db.ts to avoid duplication
 // Modules that need getDb should import it from here
-import { getDb, formatDateForDB } from "../db";
-export { getDb, formatDateForDB };
+import { getDb, getPool, formatDateForDB } from "../db";
+export { getDb, getPool, formatDateForDB };

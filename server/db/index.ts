@@ -4,7 +4,7 @@
  */
 
 // Shared utilities
-export { getDb, formatDateForDB } from "./_shared";
+export { getDb, getPool, formatDateForDB } from "./_shared";
 
 // Domain modules
 export * from "./products";

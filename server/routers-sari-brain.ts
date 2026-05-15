@@ -13,12 +13,21 @@ import * as db from "./db";
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 let _activityTableCreated = false;
 
+/**
+ * Get the raw mysql2 pool for direct SQL execution.
+ * CRITICAL: db.getDb() returns Drizzle ORM whose .execute() does NOT support
+ * parameterized `?` placeholders. Use this for all raw SQL with parameters.
+ */
+async function getRawPool() {
+  return await db.getPool();
+}
+
 async function ensureActivityTable() {
   if (_activityTableCreated) return;
   try {
-    const dbConn = await db.getDb();
-    if (!dbConn) return;
-    await (dbConn as any).execute(`
+    const pool = await getRawPool();
+    if (!pool) return;
+    await pool.execute(`
       CREATE TABLE IF NOT EXISTS sari_activity_log (
         id INT AUTO_INCREMENT PRIMARY KEY,
         merchant_id INT NOT NULL,
@@ -82,7 +91,7 @@ function checkTestRateLimit(merchantId: number, cooldownMs: number = 5_000): voi
 export async function logBrainActivity(merchantId: number, actionType: string, description: string, details?: any) {
   try {
     await ensureActivityTable();
-    const dbConn = await db.getDb();
+    const dbConn = await getRawPool();
     if (!dbConn) return;
 
     // PEN-BRAIN-04: Sanitize before insert
@@ -130,8 +139,6 @@ export const sariBrainRouter = router({
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const sources: any[] = [];
-    // ═══ DIAGNOSTIC: Remove after confirming ═══
-    console.log(`[getSources] merchant=${merchant.id} (${merchant.businessName})`);
 
     // 1. Knowledge Document (uploaded PDF/DOCX)
     const knowledgeDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
@@ -167,7 +174,7 @@ export const sariBrainRouter = router({
 
     // 3. Website Analysis
     try {
-      const dbConn = await db.getDb();
+      const dbConn = await getRawPool();
       if (dbConn) {
         const [analyses] = await (dbConn as any).execute(
           `SELECT id, url, title, industry, analyzed_at, overall_score FROM website_analyses WHERE merchant_id = ? ORDER BY analyzed_at DESC LIMIT 1`,
@@ -269,7 +276,7 @@ export const sariBrainRouter = router({
         }
         case 'website': {
           try {
-            const dbConn = await db.getDb();
+            const dbConn = await getRawPool();
             if (dbConn) {
               const [result] = await (dbConn as any).execute(
                 `DELETE FROM website_analyses WHERE merchant_id = ?`,
@@ -336,7 +343,7 @@ export const sariBrainRouter = router({
 
     // Delete website analyses + discovered pages
     try {
-      const dbConn = await db.getDb();
+      const dbConn = await getRawPool();
       if (dbConn) {
         await (dbConn as any).execute(
           `DELETE FROM website_analyses WHERE merchant_id = ?`,
@@ -378,7 +385,7 @@ export const sariBrainRouter = router({
 
       try {
         await ensureActivityTable();
-        const dbConn = await db.getDb();
+        const dbConn = await getRawPool();
         if (!dbConn) return [];
 
         // SEC-FIX: MySQL doesn't support LIMIT ? in prepared statements
@@ -467,7 +474,7 @@ export const sariBrainRouter = router({
       // Save crawled pages to discovered_pages (Knowledge Dashboard)
       if ((result as any)._crawledPages?.length > 0) {
         try {
-          const dbConn = await db.getDb();
+          const dbConn = await getRawPool();
           if (dbConn) {
             await (dbConn as any).execute(`DELETE FROM discovered_pages WHERE merchant_id = ?`, [merchant.id]);
             const validTypes = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other'];
@@ -748,7 +755,7 @@ export const sariBrainRouter = router({
     }
 
     try {
-      const dbConn = await db.getDb();
+      const dbConn = await getRawPool();
       if (dbConn) {
         const [analyses] = await (dbConn as any).execute(
           `SELECT url FROM website_analyses WHERE merchant_id = ? LIMIT 1`,
@@ -1043,7 +1050,7 @@ ${sanitizedContent}`
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     try {
-      const dbConn = await db.getDb();
+      const dbConn = await getRawPool();
       if (!dbConn) return [];
 
       const [rows] = await (dbConn as any).execute(
@@ -1072,7 +1079,7 @@ ${sanitizedContent}`
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       try {
-        const dbConn = await db.getDb();
+        const dbConn = await getRawPool();
         if (!dbConn) throw new Error('DB error');
 
         // Verify ownership
@@ -1111,7 +1118,7 @@ ${sanitizedContent}`
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     try {
-      const dbConn = await db.getDb();
+      const dbConn = await getRawPool();
       if (!dbConn) return null;
 
       // 1. Get latest analysis — this is the primary data source
@@ -1263,7 +1270,7 @@ ${sanitizedContent}`
 
       try {
         // PEN-KD-03: Enforce max page limit per merchant (DoS prevention)
-        const dbConn = await db.getDb();
+        const dbConn = await getRawPool();
         if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
 
         const [countResult] = await (dbConn as any).execute(
@@ -1334,7 +1341,7 @@ ${sanitizedContent}`
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const dbConn = await db.getDb();
+      const dbConn = await getRawPool();
       if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
 
       // Verify ownership
@@ -1372,9 +1379,6 @@ ${sanitizedContent}`
     try {
       const knowledgeDb = await import('./db/knowledge');
       const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
-      
-      // ═══ DIAGNOSTIC: Remove after confirming it works ═══
-      console.log(`[getKnowledgeSections] merchant=${merchant.id} (${merchant.businessName}) → ${sections.length} sections found`);
       
       // Nuclear serialization: JSON round-trip strips ALL non-serializable values (BLOB, Date, BigInt)
       const safe = sections.map((s: any) => {
