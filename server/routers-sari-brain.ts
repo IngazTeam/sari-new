@@ -1344,7 +1344,30 @@ ${sanitizedContent}`
 
     const knowledgeDb = await import('./db/knowledge');
     const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
-    return sections;
+    // Serialize: exclude embedding BLOB, convert Date/Decimal to primitives
+    return sections.map((s: any) => ({
+      id: s.id,
+      merchantId: s.merchant_id ?? s.merchantId,
+      parentId: s.parent_id ?? s.parentId ?? null,
+      sectionType: s.section_type ?? s.sectionType,
+      title: s.title,
+      content: s.content,
+      summary: s.summary ?? null,
+      source: s.source,
+      sourceUrl: s.source_url ?? s.sourceUrl ?? null,
+      confidence: Number(s.confidence) || 0.9,
+      status: s.status,
+      useInBot: !!(s.use_in_bot ?? s.useInBot),
+      use_in_bot: !!(s.use_in_bot ?? s.useInBot),
+      injectAs: s.inject_as ?? s.injectAs ?? 'fact',
+      sortOrder: s.sort_order ?? s.sortOrder ?? 0,
+      merchantEdited: !!(s.merchant_edited ?? s.merchantEdited),
+      merchant_edited: !!(s.merchant_edited ?? s.merchantEdited),
+      section_type: s.section_type ?? s.sectionType,
+      parent_id: s.parent_id ?? s.parentId ?? null,
+      createdAt: s.created_at ? new Date(s.created_at).toISOString() : s.createdAt?.toISOString?.() ?? null,
+      updatedAt: s.updated_at ? new Date(s.updated_at).toISOString() : s.updatedAt?.toISOString?.() ?? null,
+    }));
   }),
 
   /** Get knowledge health score */
@@ -1362,7 +1385,18 @@ ${sanitizedContent}`
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const knowledgeDb = await import('./db/knowledge');
-    return knowledgeDb.getPendingReviewSections(merchant.id);
+    const sections = await knowledgeDb.getPendingReviewSections(merchant.id);
+    return sections.map((s: any) => ({
+      id: s.id,
+      sectionType: s.section_type ?? s.sectionType,
+      title: s.title,
+      content: s.content,
+      summary: s.summary ?? null,
+      source: s.source,
+      confidence: Number(s.confidence) || 0.9,
+      status: s.status,
+      createdAt: s.created_at ? new Date(s.created_at).toISOString() : null,
+    }));
   }),
 
   /** Get knowledge changelog */
