@@ -585,42 +585,6 @@ export default function MerchantDashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Quick Actions */}
-        <Card className="border-2 bg-gradient-to-br from-primary/5 to-blue-50 dark:from-primary/5 dark:to-background">
-          <CardHeader>
-            <CardTitle>{t('dashboardPage.quickActions')}</CardTitle>
-            <CardDescription>{t('dashboardPage.quickActionsDesc')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Link href="/merchant/products">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <Package className="h-6 w-6" />
-                  <span>{t('dashboardPage.manageProducts')}</span>
-                </Button>
-              </Link>
-              <Link href="/merchant/campaigns/new">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <Send className="h-6 w-6" />
-                  <span>{t('dashboardPage.newCampaign')}</span>
-                </Button>
-              </Link>
-              <Link href="/merchant/conversations">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <MessageSquare className="h-6 w-6" />
-                  <span>{t('dashboardPage.conversations')}</span>
-                </Button>
-              </Link>
-              <Link href="/merchant/reports">
-                <Button variant="outline" className="w-full h-24 flex flex-col gap-2">
-                  <BarChart className="h-6 w-6" />
-                  <span>{t('dashboardPage.reports')}</span>
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </>
   );
