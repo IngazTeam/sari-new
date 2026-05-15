@@ -482,6 +482,54 @@ export const merchantsRouter = router({
         await db.completeOnboarding(merchant.id);
         return { success: true };
     }),
+
+    // ============================================
+    // Emergency Phone — Smart Escalation Alert Number
+    // ============================================
+
+    /** Get merchant's emergency phone for Sari escalation alerts */
+    getEmergencyPhone: protectedProcedure.query(async ({ ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        return {
+            emergencyPhone: (merchant as any).emergencyPhone || null,
+            phone: merchant.phone || null,
+        };
+    }),
+
+    /** Update merchant's emergency phone */
+    updateEmergencyPhone: protectedProcedure
+        .input(z.object({
+            emergencyPhone: z.string()
+                .max(20)
+                .regex(/^[0-9+\-\s()]*$/, 'رقم غير صالح')
+                .nullable(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            // Ensure column exists (auto-migration)
+            const pool = await db.getPool();
+            if (pool) {
+                try {
+                    await pool.execute(
+                        `ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`
+                    );
+                } catch { /* column already exists */ }
+            }
+
+            await db.updateMerchant(merchant.id, {
+                emergencyPhone: input.emergencyPhone,
+            } as any);
+
+            console.log(`[Escalation] 📱 Emergency phone updated for merchant ${merchant.id}: ${input.emergencyPhone ? '***' + input.emergencyPhone.slice(-4) : 'cleared'}`);
+            return { success: true };
+        }),
 });
 
 export type MerchantsRouter = typeof merchantsRouter;

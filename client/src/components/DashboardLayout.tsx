@@ -109,6 +109,7 @@ import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { SubscriptionBadge } from "./SubscriptionBadge";
+import { EmergencyPhoneButton } from "./EmergencyPhoneButton";
 import { useTranslation } from 'react-i18next';
 import { useIntegration } from '@/hooks/useIntegration';
 
@@ -614,6 +615,7 @@ function DashboardLayoutContent({
             </div>
             <div className="flex items-center gap-2">
               {!isAdmin && <SubscriptionBadge />}
+              {!isAdmin && <EmergencyPhoneButton />}
               <ThemeSwitcher variant="compact" />
               <LanguageSwitcher variant="compact" />
               <NotificationBell />
@@ -646,6 +648,7 @@ function DashboardLayoutContent({
           <div className="flex border-b h-14 items-center justify-start bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-3">
               {!isAdmin && <SubscriptionBadge />}
+              {!isAdmin && <EmergencyPhoneButton />}
               <ThemeSwitcher variant="compact" />
               <LanguageSwitcher variant="compact" />
               <NotificationBell />
