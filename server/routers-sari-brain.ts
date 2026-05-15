@@ -98,6 +98,31 @@ export async function logBrainActivity(merchantId: number, actionType: string, d
   }
 }
 
+/**
+ * UNIVERSAL tRPC Serialization Safety Net
+ * MySQL returns Date objects, BLOB Buffers, BigInt, Decimal strings
+ * that superjson can't serialize → "Unable to transform response".
+ * This function deep-cleans ANY data for safe tRPC transmission.
+ */
+function sanitizeForTRPC(data: any): any {
+  if (data === null || data === undefined) return data;
+  if (data instanceof Buffer || data instanceof Uint8Array) return undefined;
+  if (data instanceof Date) return data.toISOString();
+  if (typeof data === 'bigint') return Number(data);
+  if (Array.isArray(data)) return data.map(sanitizeForTRPC);
+  if (typeof data === 'object') {
+    const clean: any = {};
+    for (const [key, val] of Object.entries(data)) {
+      // Skip binary embedding fields
+      if (key === 'embedding' || key === 'questionEmbedding' || key === 'question_embedding') continue;
+      const sanitized = sanitizeForTRPC(val);
+      if (sanitized !== undefined) clean[key] = sanitized;
+    }
+    return clean;
+  }
+  return data;
+}
+
 export const sariBrainRouter = router({
   // Get all knowledge sources for the merchant
   getSources: protectedProcedure.query(async ({ ctx }) => {
@@ -198,7 +223,7 @@ export const sariBrainRouter = router({
       deletable: false,
     });
 
-    return sources;
+    return sanitizeForTRPC(sources);
   }),
 
   // Delete a specific knowledge source
@@ -367,13 +392,13 @@ export const sariBrainRouter = router({
           [merchant.id]
         ).catch(() => {}); // Fire-and-forget cleanup
 
-        return (rows as any[]).map((row: any) => ({
+        return sanitizeForTRPC((rows as any[]).map((row: any) => ({
           id: row.id,
           actionType: row.action_type,
           description: row.description,
           details: row.details ? (typeof row.details === 'string' ? JSON.parse(row.details) : row.details) : null,
           createdAt: row.created_at,
-        }));
+        })));
       } catch (error) {
         console.error('[SariBrain] Failed to get activity log:', error);
         return [];
@@ -914,7 +939,7 @@ ${sanitizedContent}`
   getFaqs: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await db.getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return await db.getExtractedFaqsByMerchantId(merchant.id);
+    return sanitizeForTRPC(await db.getExtractedFaqsByMerchantId(merchant.id));
   }),
 
   createFaq: protectedProcedure
@@ -1024,7 +1049,7 @@ ${sanitizedContent}`
         [merchant.id]
       );
 
-      return (rows as any[]).map((r: any) => ({
+      return sanitizeForTRPC((rows as any[]).map((r: any) => ({
         id: r.id,
         prefix: r.key_prefix,
         label: r.label,
@@ -1032,7 +1057,7 @@ ${sanitizedContent}`
         lastUsedAt: r.last_used_at,
         createdAt: r.created_at,
         expiresAt: r.expires_at,
-      }));
+      })));
     } catch (e) {
       return [];
     }
@@ -1180,7 +1205,7 @@ ${sanitizedContent}`
       if (!discoveredPages.some((p: any) => p.pageType === 'faq') && faqs.length === 0) missingTopics.push('أسئلة شائعة');
       if (!discoveredPages.some((p: any) => p.pageType === 'shipping')) missingTopics.push('الشحن والتوصيل');
 
-      return {
+      return sanitizeForTRPC({
         analysis: {
           url: analysis.url,
           title: analysis.title,
@@ -1206,7 +1231,7 @@ ${sanitizedContent}`
         missingTopics,
         totalPages: discoveredPages.length,
         activePages: discoveredPages.filter((p: any) => p.useInBot).length,
-      };
+      });
     } catch (error) {
       console.error('[SariBrain] getWebsiteKnowledge failed:', error);
       return null;
@@ -1389,7 +1414,7 @@ ${sanitizedContent}`
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const knowledgeDb = await import('./db/knowledge');
-    return knowledgeDb.calculateHealthScore(merchant.id);
+    return sanitizeForTRPC(await knowledgeDb.calculateHealthScore(merchant.id));
   }),
 
   /** Get pending review sections (conflicts) */
@@ -1644,7 +1669,7 @@ ${sanitizedContent}`
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const qualityDb = await import('./db/quality-metrics');
-      return qualityDb.getQualityDashboard(merchant.id, input.days || 30);
+      return sanitizeForTRPC(await qualityDb.getQualityDashboard(merchant.id, input.days || 30));
     }),
 
   /** Get weekly reports history */
@@ -1655,7 +1680,7 @@ ${sanitizedContent}`
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const qualityDb = await import('./db/quality-metrics');
-      return qualityDb.getWeeklyReports(merchant.id, input.limit || 12);
+      return sanitizeForTRPC(await qualityDb.getWeeklyReports(merchant.id, input.limit || 12));
     }),
 
   /** Generate weekly report (manual trigger) */
@@ -1670,7 +1695,7 @@ ${sanitizedContent}`
     if (!report) {
       return { success: false, message: 'لا توجد بيانات كافية أو التقرير موجود بالفعل' };
     }
-    return { success: true, report };
+    return sanitizeForTRPC({ success: true, report });
   }),
 
   // ═══════════════════════════════════════════════════════════════
@@ -1711,7 +1736,7 @@ ${sanitizedContent}`
         `إنشاء عرض سعر #${quotation.quotationNumber} — ${quotation.total} ${quotation.currency}`
       );
 
-      return quotation;
+      return sanitizeForTRPC(quotation);
     }),
 
   /** Get quotations list */
@@ -1722,7 +1747,7 @@ ${sanitizedContent}`
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
-      return quotationsDb.getQuotations(merchant.id, input.limit || 50);
+      return sanitizeForTRPC(await quotationsDb.getQuotations(merchant.id, input.limit || 50));
     }),
 
   /** Get quotation stats */
@@ -1731,7 +1756,7 @@ ${sanitizedContent}`
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
-    return quotationsDb.getQuotationStats(merchant.id);
+    return sanitizeForTRPC(await quotationsDb.getQuotationStats(merchant.id));
   }),
 
   /** Update quotation status */
@@ -1769,7 +1794,7 @@ ${sanitizedContent}`
       const defaultTemplate = templates.find(t => t.isDefault) || templates[0] || null;
 
       const message = quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate);
-      return { message, quotation };
+      return sanitizeForTRPC({ message, quotation });
     }),
 
   // ─── Sales Targets ─────────────────────────────
@@ -1780,7 +1805,7 @@ ${sanitizedContent}`
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
-    return quotationsDb.getCurrentTarget(merchant.id);
+    return sanitizeForTRPC(await quotationsDb.getCurrentTarget(merchant.id));
   }),
 
   /** Set monthly target */
@@ -1796,7 +1821,7 @@ ${sanitizedContent}`
       await logBrainActivity(merchant.id, 'target_set',
         `تحديد هدف مبيعات شهري: ${input.targetAmount} ر.س`
       );
-      return target;
+      return sanitizeForTRPC(target);
     }),
 
   /** Get target history */
@@ -1807,7 +1832,7 @@ ${sanitizedContent}`
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
-      return quotationsDb.getTargetHistory(merchant.id, input.limit || 12);
+      return sanitizeForTRPC(await quotationsDb.getTargetHistory(merchant.id, input.limit || 12));
     }),
 
   // ─── Quotation Templates ─────────────────────────
@@ -1818,7 +1843,7 @@ ${sanitizedContent}`
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
-    return quotationsDb.getTemplates(merchant.id);
+    return sanitizeForTRPC(await quotationsDb.getTemplates(merchant.id));
   }),
 
   /** Create template */
