@@ -130,6 +130,8 @@ export const sariBrainRouter = router({
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const sources: any[] = [];
+    // ═══ DIAGNOSTIC: Remove after confirming ═══
+    console.log(`[getSources] merchant=${merchant.id} (${merchant.businessName})`);
 
     // 1. Knowledge Document (uploaded PDF/DOCX)
     const knowledgeDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
@@ -1370,6 +1372,9 @@ ${sanitizedContent}`
     try {
       const knowledgeDb = await import('./db/knowledge');
       const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+      
+      // ═══ DIAGNOSTIC: Remove after confirming it works ═══
+      console.log(`[getKnowledgeSections] merchant=${merchant.id} (${merchant.businessName}) → ${sections.length} sections found`);
       
       // Nuclear serialization: JSON round-trip strips ALL non-serializable values (BLOB, Date, BigInt)
       const safe = sections.map((s: any) => {
