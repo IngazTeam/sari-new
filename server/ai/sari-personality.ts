@@ -1104,22 +1104,91 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       errorType: error.constructor?.name,
       stack: error.stack?.split('\n').slice(0, 3).join('\n'),
     });
-    
-    // Intelligent fallback based on error type
-    if (error.message?.includes('rate limit') || error.status === 429) {
-      return 'عذراً، الضغط كبير شوي الحين 😅 ممكن تعيد رسالتك بعد ثواني؟';
-    }
-    
-    if (error.message?.includes('API key') || error.message?.includes('authentication') || error.status === 401) {
-      console.error('[chatWithSari] CRITICAL: API key issue!');
-      return 'عذراً، نواجه مشكلة تقنية حالياً. فريقنا يعمل على حلها 🔧';
+
+    // ═══════════════════════════════════════════════════
+    // RETRY ONCE with a simpler, faster prompt
+    // ═══════════════════════════════════════════════════
+    try {
+      console.log('[chatWithSari] Attempting retry with simplified prompt...');
+      const merchant = await db.getMerchantById(params.merchantId);
+      const businessName = merchant?.businessName || 'نشاطنا التجاري';
+
+      // Build minimal context — just merchant name + message
+      const retryMessages: ChatMessage[] = [
+        {
+          role: 'system',
+          content: `أنت مساعد مبيعات ذكي تعمل في "${sanitizeForPrompt(businessName)}". رد بإيجاز ولطف على رسالة العميل. إذا لم تعرف الإجابة، اعتذر بأسلوب لطيف واقترح التواصل المباشر مع الفريق. لا ترد برسالة خطأ أو تقول "حصل مشكلة". كن طبيعياً.`,
+        },
+        { role: 'user', content: sanitizeForPrompt(params.message.substring(0, 300)) },
+      ];
+
+      const retryResponse = await callGPT4(retryMessages, {
+        model: 'gpt-4o-mini',  // Faster, cheaper model for retry
+        temperature: 0.7,
+        maxTokens: 300,
+      });
+
+      if (retryResponse && retryResponse.trim().length > 10) {
+        console.log('[chatWithSari] ✅ Retry succeeded');
+
+        // Save the retry response as outgoing message
+        if (params.conversationId) {
+          try {
+            await db.createMessage({
+              conversationId: params.conversationId,
+              direction: 'outgoing',
+              messageType: 'text',
+              content: retryResponse.trim(),
+              voiceUrl: null,
+              isProcessed: 1,
+              aiwResponse: retryResponse.trim(),
+            });
+          } catch { /* silent */ }
+        }
+
+        return retryResponse.trim();
+      }
+    } catch (retryError: any) {
+      console.error('[chatWithSari] Retry also failed:', retryError.message);
     }
 
-    if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
-      return 'عذراً، الرد تأخر شوي 😅 ممكن تعيد رسالتك؟';
+    // ═══════════════════════════════════════════════════
+    // ALL RETRIES FAILED — Smart fallback based on error type
+    // ═══════════════════════════════════════════════════
+    
+    // Rate limit: brief, human-like delay suggestion
+    if (error.message?.includes('rate limit') || error.status === 429) {
+      return 'الضغط كبير شوي الحين 😅 أقدر أساعدك خلال لحظات';
     }
     
-    return 'عذراً، حصل خطأ مؤقت. ممكن تعيد رسالتك مرة ثانية؟ 🙏';
+    // API key issue: internal error, don't expose
+    if (error.message?.includes('API key') || error.message?.includes('authentication') || error.status === 401) {
+      console.error('[chatWithSari] CRITICAL: API key issue!');
+    }
+
+    // Timeout
+    if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
+      return 'أحتاج لحظة للتحقق من المعلومات 🔍 ممكن تعيد سؤالك؟';
+    }
+
+    // Context-aware fallback: use merchant info to give a helpful response
+    try {
+      const merchant = await db.getMerchantById(params.merchantId);
+      if (merchant) {
+        const name = merchant.businessName || '';
+        const phone = (merchant as any).phone || '';
+        const website = (merchant as any).website || '';
+        
+        let fallback = `أهلاً! أنا هنا لمساعدتك بخصوص ${name}. `;
+        fallback += `ممكن توضح لي أكثر وش تحتاج وأساعدك؟`;
+        if (phone) fallback += `\nأو تقدر تتواصل مباشرة على: ${phone}`;
+        if (website) fallback += `\nأو زور موقعنا: ${website}`;
+        return fallback;
+      }
+    } catch { /* silent */ }
+    
+    // Absolute last resort — still sounds human, not robotic
+    return 'أهلاً! وش أقدر أساعدك فيه؟ 😊';
   }
 }
 
