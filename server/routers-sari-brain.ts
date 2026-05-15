@@ -1380,37 +1380,37 @@ ${sanitizedContent}`
       const knowledgeDb = await import('./db/knowledge');
       const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
       
-      // Nuclear serialization: JSON round-trip strips ALL non-serializable values (BLOB, Date, BigInt)
-      const safe = sections.map((s: any) => {
-        const row: any = {};
-        for (const key of Object.keys(s)) {
-          const val = s[key];
-          // Skip binary/Buffer fields entirely
-          if (val instanceof Buffer || val instanceof Uint8Array) continue;
-          // Convert Date to ISO string
-          if (val instanceof Date) { row[key] = val.toISOString(); continue; }
-          // Convert BigInt to Number
-          if (typeof val === 'bigint') { row[key] = Number(val); continue; }
-          row[key] = val;
-        }
-        // Ensure both camelCase and snake_case are present for frontend compatibility
-        row.sectionType = row.section_type ?? row.sectionType;
-        row.section_type = row.section_type ?? row.sectionType;
-        row.parentId = row.parent_id ?? row.parentId ?? null;
-        row.parent_id = row.parent_id ?? row.parentId ?? null;
-        row.useInBot = !!(row.use_in_bot ?? row.useInBot);
-        row.use_in_bot = !!(row.use_in_bot ?? row.useInBot);
-        row.merchantEdited = !!(row.merchant_edited ?? row.merchantEdited);
-        row.merchant_edited = !!(row.merchant_edited ?? row.merchantEdited);
-        row.injectAs = row.inject_as ?? row.injectAs ?? 'fact';
-        row.sortOrder = row.sort_order ?? row.sortOrder ?? 0;
-        row.sourceUrl = row.source_url ?? row.sourceUrl ?? null;
-        row.confidence = Number(row.confidence) || 0.9;
-        return row;
-      });
+      // Whitelist approach: only include fields we KNOW are safe
+      const safe = sections.map((s: any) => ({
+        id: Number(s.id),
+        merchantId: Number(s.merchant_id ?? s.merchantId),
+        parentId: s.parent_id ?? s.parentId ?? null,
+        sectionType: s.section_type ?? s.sectionType ?? 'custom',
+        section_type: s.section_type ?? s.sectionType ?? 'custom',
+        title: String(s.title || ''),
+        content: String(s.content || ''),
+        summary: s.summary ? String(s.summary) : null,
+        source: String(s.source || 'manual'),
+        sourceUrl: s.source_url ?? s.sourceUrl ?? null,
+        source_url: s.source_url ?? s.sourceUrl ?? null,
+        confidence: Number(s.confidence) || 0.9,
+        status: String(s.status || 'auto_approved'),
+        useInBot: !!(s.use_in_bot ?? s.useInBot),
+        use_in_bot: !!(s.use_in_bot ?? s.useInBot),
+        injectAs: s.inject_as ?? s.injectAs ?? 'fact',
+        inject_as: s.inject_as ?? s.injectAs ?? 'fact',
+        sortOrder: Number(s.sort_order ?? s.sortOrder ?? 0),
+        sort_order: Number(s.sort_order ?? s.sortOrder ?? 0),
+        merchantEdited: !!(s.merchant_edited ?? s.merchantEdited),
+        merchant_edited: !!(s.merchant_edited ?? s.merchantEdited),
+        createdAt: s.created_at instanceof Date ? s.created_at.toISOString() : String(s.created_at ?? s.createdAt ?? ''),
+        created_at: s.created_at instanceof Date ? s.created_at.toISOString() : String(s.created_at ?? s.createdAt ?? ''),
+        updatedAt: s.updated_at instanceof Date ? s.updated_at.toISOString() : String(s.updated_at ?? s.updatedAt ?? ''),
+        updated_at: s.updated_at instanceof Date ? s.updated_at.toISOString() : String(s.updated_at ?? s.updatedAt ?? ''),
+        // NO embedding field - explicitly excluded
+      }));
 
-      // Final safety net: JSON round-trip to catch anything we missed
-      return JSON.parse(JSON.stringify(safe));
+      return safe;
     } catch (err: any) {
       console.error('[getKnowledgeSections] SERIALIZATION ERROR:', err.message, err.stack?.substring(0, 300));
       return []; // Return empty array instead of crashing
@@ -1434,19 +1434,26 @@ ${sanitizedContent}`
     try {
       const knowledgeDb = await import('./db/knowledge');
       const sections = await knowledgeDb.getPendingReviewSections(merchant.id);
-      return JSON.parse(JSON.stringify(sections.map((s: any) => {
-        const row: any = {};
-        for (const key of Object.keys(s)) {
-          const val = s[key];
-          if (val instanceof Buffer || val instanceof Uint8Array) continue;
-          if (val instanceof Date) { row[key] = val.toISOString(); continue; }
-          if (typeof val === 'bigint') { row[key] = Number(val); continue; }
-          row[key] = val;
-        }
-        row.sectionType = row.section_type ?? row.sectionType;
-        row.confidence = Number(row.confidence) || 0.9;
-        return row;
-      })));
+      return sections.map((s: any) => ({
+        id: Number(s.id),
+        merchantId: Number(s.merchant_id ?? s.merchantId),
+        parentId: s.parent_id ?? s.parentId ?? null,
+        sectionType: s.section_type ?? s.sectionType ?? 'custom',
+        section_type: s.section_type ?? s.sectionType ?? 'custom',
+        title: String(s.title || ''),
+        content: String(s.content || ''),
+        summary: s.summary ? String(s.summary) : null,
+        source: String(s.source || 'manual'),
+        sourceUrl: s.source_url ?? s.sourceUrl ?? null,
+        confidence: Number(s.confidence) || 0.9,
+        status: String(s.status || 'pending_review'),
+        useInBot: !!(s.use_in_bot ?? s.useInBot),
+        injectAs: s.inject_as ?? s.injectAs ?? 'fact',
+        sortOrder: Number(s.sort_order ?? s.sortOrder ?? 0),
+        merchantEdited: !!(s.merchant_edited ?? s.merchantEdited),
+        createdAt: s.created_at instanceof Date ? s.created_at.toISOString() : String(s.created_at ?? s.createdAt ?? ''),
+        updatedAt: s.updated_at instanceof Date ? s.updated_at.toISOString() : String(s.updated_at ?? s.updatedAt ?? ''),
+      }));
     } catch (err: any) {
       console.error('[getPendingReviews] ERROR:', err.message);
       return [];
@@ -1463,17 +1470,18 @@ ${sanitizedContent}`
       try {
         const knowledgeDb = await import('./db/knowledge');
         const rows = await knowledgeDb.getChangelog(merchant.id, input.limit || 50);
-        return JSON.parse(JSON.stringify(rows.map((r: any) => {
-          const row: any = {};
-          for (const key of Object.keys(r)) {
-            const val = r[key];
-            if (val instanceof Buffer || val instanceof Uint8Array) continue;
-            if (val instanceof Date) { row[key] = val.toISOString(); continue; }
-            if (typeof val === 'bigint') { row[key] = Number(val); continue; }
-            row[key] = val;
-          }
-          return row;
-        })));
+        return rows.map((r: any) => ({
+          id: Number(r.id),
+          merchantId: Number(r.merchant_id ?? r.merchantId),
+          sectionId: r.section_id ?? r.sectionId ?? null,
+          action: String(r.action || ''),
+          reason: r.reason ? String(r.reason) : null,
+          oldContent: r.old_content ?? r.oldContent ?? null,
+          newContent: r.new_content ?? r.newContent ?? null,
+          source: r.source ? String(r.source) : null,
+          resolved: !!(r.resolved),
+          createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at ?? r.createdAt ?? ''),
+        }));
       } catch (err: any) {
         console.error('[getChangelog] ERROR:', err.message);
         return [];
