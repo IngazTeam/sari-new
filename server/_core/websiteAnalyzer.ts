@@ -408,7 +408,14 @@ export async function scrapeWebsite(url: string): Promise<{
 
       const result = parseHtml(html);
       console.log(`[WebsiteAnalyzer] Scraped ${url} — ${html.length} bytes, ${result.text.length} chars text`);
-      return result;
+      // SPA guard: if we got HTML but text is very short, this is likely a SPA shell
+      // Continue to Strategy 2/3 instead of returning empty content
+      if (result.text.length > 200) {
+        return result;
+      }
+      console.log(`[WebsiteAnalyzer] ⚠️ fetch got HTML but text too short (${result.text.length} chars) — SPA likely, trying next strategy...`);
+      lastError = new Error(`SPA detected: only ${result.text.length} chars of text extracted`);
+      break; // Skip remaining UAs, go to Strategy 2
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       console.warn(`[WebsiteAnalyzer] Fetch attempt failed (${ua.substring(0, 20)}...):`, lastError.message);
@@ -442,11 +449,19 @@ export async function scrapeWebsite(url: string): Promise<{
 
   // Strategy 3: Puppeteer headless browser — renders JavaScript for SPA sites
   try {
-    const puppeteer = await import('puppeteer').catch(() => null);
-    if (puppeteer) {
-      console.log(`[WebsiteAnalyzer] 🚀 Launching headless browser for SPA: ${url}`);
-      const browser = await puppeteer.launch({
+    const puppeteerCore = await import('puppeteer-core').catch(() => null);
+    let chromiumPath: string | null = null;
+    try {
+      // @ts-ignore — chromium package has no type declarations
+      const chromium = await import('chromium');
+      chromiumPath = (chromium as any).default?.path || (chromium as any).path || null;
+    } catch { /* chromium package not available */ }
+    
+    if (puppeteerCore && chromiumPath) {
+      console.log(`[WebsiteAnalyzer] 🚀 Launching headless browser for SPA: ${url} (chromium: ${chromiumPath})`);
+      const browser = await puppeteerCore.launch({
         headless: true,
+        executablePath: chromiumPath,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
         timeout: 15000,
       });
@@ -477,9 +492,11 @@ export async function scrapeWebsite(url: string): Promise<{
         console.warn(`[WebsiteAnalyzer] Puppeteer page error:`, (pageError as Error).message);
         try { await browser.close(); } catch {}
       }
+    } else {
+      console.warn(`[WebsiteAnalyzer] Puppeteer/Chromium not available — headless browser scraping disabled.`);
     }
   } catch (puppeteerError) {
-    console.warn(`[WebsiteAnalyzer] Puppeteer not available:`, (puppeteerError as Error).message);
+    console.warn(`[WebsiteAnalyzer] Puppeteer init error:`, (puppeteerError as Error).message);
   }
 
   throw new Error(`Failed to scrape website after all attempts (fetch + curl + puppeteer): ${lastError?.message}`);
