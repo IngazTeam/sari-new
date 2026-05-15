@@ -1,0 +1,308 @@
+/**
+ * Smart Escalation Protocol — Professional Sales Agent Behavior
+ * 
+ * When the bot doesn't know an answer:
+ * 1. Respond professionally — "Let me check with the team" (NOT "call this number")
+ * 2. Alert the merchant via WhatsApp with the customer's question
+ * 3. When merchant replies — relay the answer to the customer
+ * 4. Cache the Q&A for future reuse (the bot learns permanently)
+ * 
+ * Based on professional customer service frameworks:
+ * - Acknowledge & validate the question
+ * - Set clear expectations (timeframe)
+ * - Follow up proactively
+ * - Never send customers to external channels
+ */
+
+import * as db from '../db';
+import { sendMessageWithCredentials } from '../whatsapp';
+import {
+  createEscalation,
+  markEscalationNotified,
+  resolveEscalation,
+  getActiveEscalation,
+  type EscalationItem,
+} from '../db/learning';
+import { cacheSuccessfulResponse } from './rag-engine';
+import { captureSignal } from '../db/learning';
+import { sendNotification } from '../_core/notificationService';
+
+// ═══════════════════════════════════════════════════════════════
+// Professional Hold Responses — What Sari tells the customer
+// ═══════════════════════════════════════════════════════════════
+
+const HOLD_RESPONSES_BUSINESS_HOURS = [
+  'سؤال ممتاز! 👌 أبغى أتأكد من المعلومة الدقيقة عشان ما أعطيك شي غلط. خلني أرجع لك خلال دقائق 🙏',
+  'سؤال مهم 🎯 خلني أرجع للفريق المختص عشان أعطيك الإجابة الصحيحة. ما يأخذ وقت إن شاء الله!',
+  'أحب أتأكد وأعطيك المعلومة الأكيدة ✅ خلني أتحقق وأرد عليك بأسرع وقت!',
+];
+
+const HOLD_RESPONSES_AFTER_HOURS = [
+  'شكراً على سؤالك! ☺️ سؤالك مسجل عندي وبرد عليك أول ما أحصل الجواب — غالباً خلال الصباح 🌅',
+  'سؤال حلو! 👌 الفريق مو متوفر حالياً لكن سؤالك مسجل — بكرة الصبح بإذن الله أرد عليك',
+];
+
+const FOLLOW_UP_RESPONSES = [
+  'مرحباً 👋 لسا أتابع موضوعك — ما نسيتك! أعدك أرد عليك اليوم إن شاء الله 🙏',
+  'أهلاً! لسا أنتظر الجواب من الفريق — بس تأكد إنك أولوية عندي! 🎯',
+];
+
+// ═══════════════════════════════════════════════════════════════
+// Core Escalation Logic
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Handle a knowledge gap professionally.
+ * Returns the hold message to send to the customer.
+ */
+export async function handleSmartEscalation(params: {
+  merchantId: number;
+  conversationId: number;
+  customerPhone: string;
+  customerName?: string;
+  customerQuestion: string;
+  botResponse?: string;
+}): Promise<string> {
+  try {
+    // 1. Create escalation entry
+    const escalationId = await createEscalation({
+      merchantId: params.merchantId,
+      conversationId: params.conversationId,
+      customerPhone: params.customerPhone,
+      customerName: params.customerName,
+      question: params.customerQuestion,
+      botResponse: params.botResponse,
+      priority: 'standard',
+    });
+
+    if (!escalationId) {
+      // Fallback: couldn't create escalation — return a professional generic response
+      return HOLD_RESPONSES_BUSINESS_HOURS[0];
+    }
+
+    // 2. Alert the merchant (fire-and-forget)
+    notifyMerchantOfEscalation({
+      merchantId: params.merchantId,
+      escalationId,
+      customerPhone: params.customerPhone,
+      customerName: params.customerName || 'عميل',
+      question: params.customerQuestion,
+    }).catch(err => console.warn('[Escalation] Merchant notification failed:', err.message));
+
+    // 3. Capture learning signal
+    captureSignal({
+      merchantId: params.merchantId,
+      conversationId: params.conversationId,
+      signalType: 'knowledge_gap',
+      signalWeight: 1.5,
+      customerMessage: params.customerQuestion.substring(0, 500),
+      botMessage: params.botResponse?.substring(0, 500),
+      contextSummary: 'تم تصعيد السؤال للتاجر عبر بروتوكول التصعيد الذكي',
+    }).catch(() => {});
+
+    // 4. Choose response based on time of day
+    const hour = new Date().getHours();
+    const isBusinessHours = hour >= 8 && hour < 22;
+
+    if (isBusinessHours) {
+      const idx = Math.floor(Math.random() * HOLD_RESPONSES_BUSINESS_HOURS.length);
+      return HOLD_RESPONSES_BUSINESS_HOURS[idx];
+    } else {
+      const idx = Math.floor(Math.random() * HOLD_RESPONSES_AFTER_HOURS.length);
+      return HOLD_RESPONSES_AFTER_HOURS[idx];
+    }
+  } catch (err: any) {
+    console.error('[Escalation] handleSmartEscalation failed:', err.message);
+    return HOLD_RESPONSES_BUSINESS_HOURS[0];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Merchant WhatsApp Notification
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Send escalation alert to the merchant via WhatsApp.
+ * Uses the bot's own WhatsApp instance to message the merchant's personal number.
+ */
+async function notifyMerchantOfEscalation(params: {
+  merchantId: number;
+  escalationId: number;
+  customerPhone: string;
+  customerName: string;
+  question: string;
+}): Promise<void> {
+  // Get merchant's WhatsApp instance and contact number
+  const merchant = await db.getMerchantById(params.merchantId);
+  if (!merchant) return;
+
+  // Get the merchant's emergency contact number (or phone number)
+  const merchantPhone = (merchant as any).emergencyPhone || merchant.phone;
+  if (!merchantPhone) {
+    console.warn(`[Escalation] No merchant phone for merchant ${params.merchantId} — using push only`);
+    // Fallback to push notification
+    await sendNotification({
+      merchantId: params.merchantId,
+      type: 'new_message',
+      title: '❓ سؤال عميل يحتاج ردك',
+      body: `عميل ${params.customerName} يسأل: "${params.question.substring(0, 100)}"`,
+      url: '/merchant/conversations',
+      metadata: { escalationId: params.escalationId, customerPhone: params.customerPhone },
+    });
+    return;
+  }
+
+  // Get bot's WhatsApp instance
+  const instances = await db.getWhatsAppInstancesByMerchantId(params.merchantId);
+  const activeInstance = instances.find((i: any) => i.status === 'active');
+
+  if (!activeInstance) {
+    console.warn(`[Escalation] No active WhatsApp instance for merchant ${params.merchantId}`);
+    // Fallback to push notification
+    await sendNotification({
+      merchantId: params.merchantId,
+      type: 'new_message',
+      title: '❓ سؤال عميل يحتاج ردك',
+      body: `عميل ${params.customerName} يسأل: "${params.question.substring(0, 100)}"`,
+      url: '/merchant/conversations',
+    });
+    return;
+  }
+
+  // Send WhatsApp message to merchant
+  const alertMessage = `🔔 *تنبيه من ساري — سؤال عميل*
+
+👤 *العميل:* ${params.customerName} (${params.customerPhone})
+❓ *السؤال:* ${params.question.substring(0, 300)}
+
+💡 *رد على هذه الرسالة بالجواب وساري سيوصله للعميل تلقائياً*
+⏰ العميل ينتظر ردك...`;
+
+  try {
+    await sendMessageWithCredentials(
+      (activeInstance as any).instanceId,
+      (activeInstance as any).token,
+      (activeInstance as any).apiUrl || 'https://api.green-api.com',
+      merchantPhone,
+      alertMessage
+    );
+
+    await markEscalationNotified(params.escalationId, params.merchantId);
+    console.log(`[Escalation] ✅ Merchant ${params.merchantId} notified via WhatsApp`);
+  } catch (err: any) {
+    console.error('[Escalation] WhatsApp notification failed:', err.message);
+    // Fallback to push
+    await sendNotification({
+      merchantId: params.merchantId,
+      type: 'new_message',
+      title: '❓ سؤال عميل يحتاج ردك',
+      body: `عميل ${params.customerName} يسأل: "${params.question.substring(0, 100)}"`,
+      url: '/merchant/conversations',
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Merchant Reply Handler — Relay answer to customer
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Handle merchant's reply to an escalation.
+ * Called from webhook when merchant sends a message that matches an active escalation.
+ */
+export async function handleMerchantEscalationReply(params: {
+  merchantId: number;
+  merchantPhone: string;
+  replyText: string;
+}): Promise<{ handled: boolean; escalation?: EscalationItem }> {
+  try {
+    // Find active escalation for this merchant
+    // The merchant's reply comes from their personal number
+    const resolved = await resolveEscalation({
+      merchantId: params.merchantId,
+      customerPhone: '', // We need to find by merchant, not customer
+      merchantAnswer: params.replyText,
+    });
+
+    if (!resolved) return { handled: false };
+
+    // Get WhatsApp instance to send reply to customer
+    const instances = await db.getWhatsAppInstancesByMerchantId(params.merchantId);
+    const activeInstance = instances.find((i: any) => i.status === 'active');
+
+    if (activeInstance && resolved.customerPhone) {
+      // Build a natural response incorporating the merchant's answer
+      const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${params.replyText}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
+
+      await sendMessageWithCredentials(
+        (activeInstance as any).instanceId,
+        (activeInstance as any).token,
+        (activeInstance as any).apiUrl || 'https://api.green-api.com',
+        resolved.customerPhone,
+        customerReply
+      );
+
+      console.log(`[Escalation] ✅ Answer delivered to customer ${resolved.customerPhone}`);
+
+      // Cache this Q&A for future reuse — the bot learns permanently
+      try {
+        await cacheSuccessfulResponse(
+          params.merchantId,
+          resolved.question,
+          params.replyText
+        );
+        console.log(`[Escalation] 🧬 Q&A cached for future use`);
+      } catch { /* cache is optional */ }
+    }
+
+    return { handled: true, escalation: resolved };
+  } catch (err: any) {
+    console.error('[Escalation] handleMerchantEscalationReply failed:', err.message);
+    return { handled: false };
+  }
+}
+
+/**
+ * Get a follow-up message for waiting customers.
+ * Called periodically (e.g., every 15 minutes).
+ */
+export function getFollowUpMessage(): string {
+  const idx = Math.floor(Math.random() * FOLLOW_UP_RESPONSES.length);
+  return FOLLOW_UP_RESPONSES[idx];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Knowledge Gap Digest — Daily/Weekly summary for merchant
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Build and send daily knowledge gap digest.
+ * Shows the merchant what customers are asking about that the bot can't answer.
+ */
+export async function sendKnowledgeGapDigest(merchantId: number): Promise<void> {
+  try {
+    const { getDailyKnowledgeGaps } = await import('../db/learning');
+    const gaps = await getDailyKnowledgeGaps(merchantId);
+
+    if (gaps.length === 0) return;
+
+    const gapList = gaps
+      .map((g, i) => `${i + 1}. "${g.question.substring(0, 80)}" — سأل عنها ${g.count} عميل`)
+      .join('\n');
+
+    const body = `❓ أسئلة لم أجد لها إجابة اليوم:\n${gapList}\n\n💡 أضف هذه المعلومات في عقل ساري لأتمكن من الرد تلقائياً في المستقبل`;
+
+    await sendNotification({
+      merchantId,
+      type: 'custom',
+      title: '📋 تقرير ساري — فجوات المعرفة',
+      body,
+      url: '/merchant/sari-brain',
+      metadata: { type: 'knowledge_gap_digest', gapCount: gaps.length },
+    });
+
+    console.log(`[Escalation] 📋 Gap digest sent to merchant ${merchantId}: ${gaps.length} gaps`);
+  } catch (err: any) {
+    console.error('[Escalation] Gap digest failed:', err.message);
+  }
+}

@@ -574,6 +574,30 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     console.log('[Webhook] Merchant ID:', instance.merchantId);
 
+    // ── Smart Escalation: Check if this is the merchant replying to an escalation alert ──
+    try {
+      const merchant = await db.getMerchantById(instance.merchantId);
+      const merchantPhone = (merchant as any)?.emergencyPhone || merchant?.phone;
+      const incomingText = extractMessageText(payload);
+
+      if (merchantPhone && customerPhone === merchantPhone.replace(/[^0-9]/g, '') && incomingText) {
+        const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
+        const result = await handleMerchantEscalationReply({
+          merchantId: instance.merchantId,
+          merchantPhone: customerPhone,
+          replyText: incomingText,
+        });
+
+        if (result.handled) {
+          console.log(`[Escalation] ✅ Merchant reply routed to customer ${result.escalation?.customerPhone}`);
+          return { success: true, message: 'Escalation reply handled' };
+        }
+        // Not an escalation reply — continue normal flow
+      }
+    } catch (escErr) {
+      console.warn('[Escalation] Reply check failed:', escErr);
+    }
+
     // SEC-FIX: Verify merchant has active subscription before processing
     const subscription = await db.getActiveSubscriptionByMerchantId(instance.merchantId);
     if (!subscription) {

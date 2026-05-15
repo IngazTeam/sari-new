@@ -390,6 +390,36 @@ ${formatSignalsForPrompt(signalGroups)}
     await markSignalsAnalyzed(merchantId, signalIds);
 
     console.log(`[Learning] 🧬 Evolution complete: Generation ${newGeneration}, ${analysis.updates?.length || 0} updates, ${signals.length} signals analyzed`);
+
+    // === Learning Milestone Notifications ===
+    try {
+      const milestones: Record<number, string> = {
+        1: '🧒 ساري بدأ يتعلم! أول أنماط مبيعات مكتشفة من محادثاتك — شاهد التفاصيل في لوحة التحكم',
+        3: '📚 ساري ينمو! تعلم 3 أنماط جديدة عن أسلوب عملائك في الشراء',
+        5: '💪 ساري أصبح محترف! يفهم أسلوب عملائك بثقة عالية ويطبق ما تعلمه تلقائياً',
+        10: '🏆 ساري خبير مبيعات! الجيل 10 — أتقن كل أبعاد البيع الذكي لعملائك',
+      };
+
+      const milestoneMessage = milestones[newGeneration];
+      if (milestoneMessage) {
+        const { sendNotification } = await import('../_core/notificationService');
+        await sendNotification({
+          merchantId,
+          type: 'custom',
+          title: `🧬 ساري تطور — الجيل ${newGeneration}`,
+          body: milestoneMessage,
+          url: '/merchant/sari-brain',
+          metadata: { type: 'learning_milestone', generation: newGeneration },
+        });
+        console.log(`[Learning] 🎉 Milestone notification sent: Generation ${newGeneration}`);
+      }
+    } catch { /* milestone notifications are non-blocking */ }
+
+    // === Daily Knowledge Gap Digest (if gaps found) ===
+    try {
+      const { sendKnowledgeGapDigest } = await import('./smart-escalation');
+      sendKnowledgeGapDigest(merchantId).catch(() => {});
+    } catch { /* non-blocking */ }
   } catch (err: any) {
     console.error('[Learning] Pattern analysis failed:', err.message);
   } finally {

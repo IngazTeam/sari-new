@@ -112,6 +112,29 @@ export async function ensureLearningTables(): Promise<void> {
       )
     `);
 
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS sari_escalation_queue (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        merchant_id INT NOT NULL,
+        conversation_id INT NOT NULL,
+        customer_phone VARCHAR(30) NOT NULL,
+        customer_name VARCHAR(100) DEFAULT NULL,
+        question TEXT NOT NULL,
+        bot_response TEXT DEFAULT NULL,
+        status VARCHAR(20) DEFAULT 'pending',
+        merchant_answer TEXT DEFAULT NULL,
+        priority VARCHAR(10) DEFAULT 'standard',
+        merchant_notified_at TIMESTAMP NULL,
+        merchant_answered_at TIMESTAMP NULL,
+        followed_up TINYINT(1) DEFAULT 0,
+        expires_at TIMESTAMP NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_merchant_status (merchant_id, status),
+        INDEX idx_merchant_date (merchant_id, created_at DESC),
+        INDEX idx_customer (merchant_id, customer_phone, status)
+      )
+    `);
+
     _tablesCreated = true;
     console.log('[Learning] ✅ Tables initialized');
   } catch (e: any) {
@@ -344,4 +367,210 @@ export async function getTotalSignals(merchantId: number): Promise<number> {
     );
     return (rows as any[])[0]?.cnt || 0;
   } catch { return 0; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Escalation Queue — Smart Escalation Protocol
+// ═══════════════════════════════════════════════════════════════
+
+export type EscalationStatus = 'pending' | 'notified' | 'answered' | 'expired' | 'auto_resolved';
+export type EscalationPriority = 'urgent' | 'standard' | 'low';
+
+export interface EscalationItem {
+  id: number;
+  merchantId: number;
+  conversationId: number;
+  customerPhone: string;
+  customerName: string | null;
+  question: string;
+  botResponse: string | null;
+  status: EscalationStatus;
+  merchantAnswer: string | null;
+  priority: EscalationPriority;
+  merchantNotifiedAt: Date | null;
+  merchantAnsweredAt: Date | null;
+  followedUp: boolean;
+  expiresAt: Date | null;
+  createdAt: Date;
+}
+
+/** Create a new escalation entry */
+export async function createEscalation(data: {
+  merchantId: number;
+  conversationId: number;
+  customerPhone: string;
+  customerName?: string;
+  question: string;
+  botResponse?: string;
+  priority?: EscalationPriority;
+}): Promise<number | null> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return null;
+
+  // Daily cap: max 50 escalations per merchant per day
+  try {
+    const [countRows] = await pool.execute(
+      `SELECT COUNT(*) as cnt FROM sari_escalation_queue 
+       WHERE merchant_id = ? AND created_at >= CURDATE()`,
+      [data.merchantId]
+    );
+    if ((countRows as any[])[0]?.cnt >= 50) return null;
+  } catch { /* continue */ }
+
+  // Check for duplicate active escalation for same customer
+  try {
+    const [existing] = await pool.execute(
+      `SELECT id FROM sari_escalation_queue 
+       WHERE merchant_id = ? AND customer_phone = ? AND status IN ('pending', 'notified')
+       LIMIT 1`,
+      [data.merchantId, data.customerPhone]
+    );
+    if ((existing as any[]).length > 0) return (existing as any[])[0].id;
+  } catch { /* continue */ }
+
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  try {
+    const [result] = await pool.execute(
+      `INSERT INTO sari_escalation_queue 
+       (merchant_id, conversation_id, customer_phone, customer_name, question, bot_response, priority, expires_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        data.merchantId,
+        data.conversationId,
+        data.customerPhone.substring(0, 30),
+        data.customerName?.substring(0, 100) ?? null,
+        data.question.substring(0, 2000),
+        data.botResponse?.substring(0, 2000) ?? null,
+        data.priority || 'standard',
+        expiresAt,
+      ]
+    );
+    return (result as any).insertId;
+  } catch (e: any) {
+    console.error('[Escalation] createEscalation failed:', e.message);
+    return null;
+  }
+}
+
+/** Mark escalation as notified (merchant was alerted) */
+export async function markEscalationNotified(escalationId: number, merchantId: number): Promise<void> {
+  const pool = await db.getPool();
+  if (!pool) return;
+  await pool.execute(
+    `UPDATE sari_escalation_queue SET status = 'notified', merchant_notified_at = NOW() 
+     WHERE id = ? AND merchant_id = ?`,
+    [escalationId, merchantId]
+  );
+}
+
+/** Resolve escalation with merchant's answer */
+export async function resolveEscalation(data: {
+  merchantId: number;
+  customerPhone: string;
+  merchantAnswer: string;
+}): Promise<EscalationItem | null> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return null;
+
+  let rows: any[];
+
+  if (data.customerPhone) {
+    // Find by specific customer
+    const [result] = await pool.execute(
+      `SELECT * FROM sari_escalation_queue 
+       WHERE merchant_id = ? AND customer_phone = ? AND status IN ('pending', 'notified')
+       ORDER BY created_at DESC LIMIT 1`,
+      [data.merchantId, data.customerPhone]
+    );
+    rows = result as any[];
+  } else {
+    // Merchant reply — find the most recent pending escalation
+    const [result] = await pool.execute(
+      `SELECT * FROM sari_escalation_queue 
+       WHERE merchant_id = ? AND status IN ('pending', 'notified')
+       ORDER BY created_at DESC LIMIT 1`,
+      [data.merchantId]
+    );
+    rows = result as any[];
+  }
+
+  const escalation = rows[0];
+  if (!escalation) return null;
+
+  await pool.execute(
+    `UPDATE sari_escalation_queue 
+     SET status = 'answered', merchant_answer = ?, merchant_answered_at = NOW()
+     WHERE id = ? AND merchant_id = ?`,
+    [data.merchantAnswer.substring(0, 2000), escalation.id, data.merchantId]
+  );
+
+  return { ...escalation, status: 'answered', merchantAnswer: data.merchantAnswer } as EscalationItem;
+}
+
+/** Get active escalation for a customer */
+export async function getActiveEscalation(
+  merchantId: number,
+  customerPhone: string
+): Promise<EscalationItem | null> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return null;
+
+  const [rows] = await pool.execute(
+    `SELECT * FROM sari_escalation_queue 
+     WHERE merchant_id = ? AND customer_phone = ? AND status IN ('pending', 'notified')
+     ORDER BY created_at DESC LIMIT 1`,
+    [merchantId, customerPhone]
+  );
+
+  return (rows as any[])[0] as EscalationItem || null;
+}
+
+/** Get escalations needing follow-up (>15 min, not followed up yet) */
+export async function getEscalationsNeedingFollowUp(merchantId: number): Promise<EscalationItem[]> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return [];
+
+  const [rows] = await pool.execute(
+    `SELECT * FROM sari_escalation_queue 
+     WHERE merchant_id = ? AND status IN ('pending', 'notified') 
+     AND followed_up = 0
+     AND created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)`,
+    [merchantId]
+  );
+  return rows as EscalationItem[];
+}
+
+/** Expire stale escalations (>24 hours unanswered) */
+export async function expireStaleEscalations(): Promise<number> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return 0;
+
+  const [result] = await pool.execute(
+    `UPDATE sari_escalation_queue 
+     SET status = 'expired' 
+     WHERE status IN ('pending', 'notified') AND expires_at < NOW()`
+  );
+  return (result as any).affectedRows || 0;
+}
+
+/** Get today's unanswered questions for gap digest */
+export async function getDailyKnowledgeGaps(merchantId: number): Promise<{ question: string; count: number }[]> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return [];
+
+  const [rows] = await pool.execute(
+    `SELECT question, COUNT(*) as count 
+     FROM sari_escalation_queue 
+     WHERE merchant_id = ? AND created_at >= CURDATE()
+     GROUP BY question ORDER BY count DESC LIMIT 10`,
+    [merchantId]
+  );
+  return (rows as any[]).map(r => ({ question: r.question, count: Number(r.count) }));
 }
