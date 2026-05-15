@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { AgentAvatar, AVATAR_OPTIONS, AVATAR_LABELS, type AvatarKey } from '@/components/AgentAvatars';
 
 const TONE_OPTIONS = [
   { value: 'friendly', label: 'ودود', color: 'bg-emerald-100 text-emerald-700 border-emerald-300', gradient: 'from-emerald-500 to-teal-600' },
@@ -24,8 +25,6 @@ const TONE_OPTIONS = [
   { value: 'empathetic', label: 'متعاطف', color: 'bg-purple-100 text-purple-700 border-purple-300', gradient: 'from-purple-500 to-violet-600' },
   { value: 'persuasive', label: 'مقنع', color: 'bg-amber-100 text-amber-700 border-amber-300', gradient: 'from-amber-500 to-yellow-600' },
 ];
-
-const EMOJI_OPTIONS = ['👩‍💼', '👨‍💼', '👩‍💻', '👨‍💻', '👩‍⚕️', '👨‍⚕️', '👩‍🍳', '👨‍🍳', '🧑‍💼', '🤵', '👸', '🦸‍♀️'];
 
 type AgentFormData = {
   name: string;
@@ -40,7 +39,7 @@ type AgentFormData = {
 
 const emptyForm: AgentFormData = {
   name: '', role: '', department: '', personalityPrompt: '',
-  tone: 'friendly', avatarEmoji: '👩‍💼', isDefault: false, triggerKeywords: [],
+  tone: 'friendly', avatarEmoji: 'reception', isDefault: false, triggerKeywords: [],
 };
 
 export default function VirtualTeamPage() {
@@ -89,7 +88,7 @@ export default function VirtualTeamPage() {
       department: agent.department || '',
       personalityPrompt: agent.personalityPrompt,
       tone: agent.tone,
-      avatarEmoji: agent.avatarEmoji || '👩‍💼',
+      avatarEmoji: agent.avatarEmoji || 'default',
       isDefault: agent.isDefault === 1,
       triggerKeywords: keywords,
     });
@@ -206,9 +205,7 @@ export default function VirtualTeamPage() {
 
                 {/* Avatar overlapping header */}
                 <div className="flex justify-center -mt-8 relative z-10">
-                  <div className="text-5xl bg-background rounded-2xl p-2 shadow-lg border-2 border-background">
-                    {agent.avatarEmoji || '👩‍💼'}
-                  </div>
+                  <AgentAvatar avatar={agent.avatarEmoji || 'default'} size="lg" />
                 </div>
 
                 <CardContent className="pt-3 pb-5 text-center space-y-3">
@@ -314,14 +311,14 @@ export default function VirtualTeamPage() {
               </div>
               <div className="flex justify-end">
                 <div className="bg-[#005c4b] text-white px-3 py-2 rounded-xl rounded-tr-sm max-w-[80%]">
-                  <div className="text-xs text-emerald-300 mb-1">{agents[0]?.avatarEmoji} {agents[0]?.name}</div>
-                  لحظة أحولك لزميل{agents.length > 1 && agents[1].avatarEmoji?.includes('👩') ? 'تي' : 'ي'} {agents.length > 1 ? agents[1].name : ''} من {agents.length > 1 ? agents[1].department || 'الدعم' : 'الدعم'}
+                  <div className="text-xs text-emerald-300 mb-1">{agents[0]?.name}</div>
+                  لحظة أحولك لزميلي {agents.length > 1 ? agents[1].name : ''} من {agents.length > 1 ? agents[1].department || 'الدعم' : 'الدعم'}
                 </div>
               </div>
               {agents.length > 1 && (
                 <div className="flex justify-end">
                   <div className="bg-[#005c4b] text-white px-3 py-2 rounded-xl rounded-tr-sm max-w-[80%]">
-                    <div className="text-xs text-emerald-300 mb-1">{agents[1].avatarEmoji} {agents[1].name}</div>
+                    <div className="text-xs text-emerald-300 mb-1">{agents[1].name}</div>
                     أهلاً! أنا {agents[1].name}. أقدر أساعدك في موضوع الإرجاع 😊
                   </div>
                 </div>
@@ -348,22 +345,23 @@ export default function VirtualTeamPage() {
           </DialogHeader>
 
           <div className="space-y-5 py-2">
-            {/* Emoji Picker */}
+            {/* Avatar Picker */}
             <div className="space-y-2">
-              <Label className="font-semibold text-sm">الإيموجي</Label>
-              <div className="flex flex-wrap gap-1.5 p-3 bg-muted/40 rounded-xl">
-                {EMOJI_OPTIONS.map(emoji => (
+              <Label className="font-semibold text-sm">الصورة الرمزية</Label>
+              <div className="grid grid-cols-6 gap-2 p-3 bg-muted/40 rounded-xl">
+                {AVATAR_OPTIONS.map(key => (
                   <button
-                    key={emoji}
+                    key={key}
                     type="button"
-                    onClick={() => setForm(f => ({ ...f, avatarEmoji: emoji }))}
-                    className={`text-2xl p-2 rounded-xl transition-all ${
-                      form.avatarEmoji === emoji
-                        ? 'bg-violet-100 dark:bg-violet-900/40 ring-2 ring-violet-500 scale-110 shadow-md'
+                    onClick={() => setForm(f => ({ ...f, avatarEmoji: key }))}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
+                      form.avatarEmoji === key
+                        ? 'bg-violet-100 dark:bg-violet-900/40 ring-2 ring-violet-500 scale-105 shadow-md'
                         : 'hover:bg-muted hover:scale-105'
                     }`}
                   >
-                    {emoji}
+                    <AgentAvatar avatar={key} size="sm" />
+                    <span className="text-[10px] text-muted-foreground">{AVATAR_LABELS[key]}</span>
                   </button>
                 ))}
               </div>
