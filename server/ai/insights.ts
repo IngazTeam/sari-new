@@ -37,9 +37,22 @@ interface MerchantSignals {
   daysSinceSignup: number;
 }
 
-// ═══ Cache — 6 hours per merchant ═══
+// ═══ Cache — 6 hours per merchant, max 500 entries ═══
 const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+const MAX_CACHE_SIZE = 500;
 const insightsCache = new Map<number, { insights: AiInsight[]; expiresAt: number }>();
+
+// Allowed internal routes for action hrefs (prevents open redirect)
+const ALLOWED_HREFS = new Set([
+  '/merchant/products', '/merchant/campaigns/new', '/merchant/conversations',
+  '/merchant/whatsapp', '/merchant/sari-brain', '/merchant/reports',
+  '/merchant/orders', '/merchant/settings', '/merchant/reviews',
+]);
+
+/** Sanitize text for GPT prompt injection prevention */
+function sanitizeForPrompt(text: string): string {
+  return text.replace(/[\n\r"'`${}\\]/g, '').substring(0, 100);
+}
 
 /**
  * Main entry: Generate merchant insights (cached)
@@ -63,7 +76,11 @@ export async function generateMerchantInsights(merchantId: number): Promise<AiIn
     // 2. Generate insights via GPT
     const insights = await gptInterpret(signals);
 
-    // 3. Cache
+    // 3. Cache (with LRU eviction)
+    if (insightsCache.size >= MAX_CACHE_SIZE) {
+      const oldestKey = insightsCache.keys().next().value;
+      if (oldestKey !== undefined) insightsCache.delete(oldestKey);
+    }
     insightsCache.set(merchantId, {
       insights,
       expiresAt: Date.now() + CACHE_TTL,
@@ -179,15 +196,13 @@ async function gptInterpret(signals: MerchantSignals): Promise<AiInsight[]> {
     },
     {
       role: 'user',
-      content: `بيانات النشاط التجاري "${signals.businessName}":
+      content: `بيانات النشاط التجاري:
 ${JSON.stringify({
   نمو_الطلبات: `${signals.salesGrowth}%`,
   نمو_الإيرادات: `${signals.revenueGrowth}%`,
   إجمالي_الطلبات_آخر_30_يوم: signals.totalOrders,
-  إجمالي_الإيرادات: signals.totalRevenue,
   طلبات_معلقة: signals.pendingOrders,
-  متوسط_قيمة_الطلب: signals.avgOrderValue,
-  أفضل_منتج: signals.topProduct || 'لا يوجد',
+  أفضل_منتج: sanitizeForPrompt(signals.topProduct || 'لا يوجد'),
   عدد_المحادثات: signals.conversationCount,
   عدد_الحملات: signals.campaignCount,
   واتساب_مربوط: signals.hasWhatsapp,
@@ -223,7 +238,7 @@ ${JSON.stringify({
         body: String(item.body || '').substring(0, 200),
         action: item.action ? {
           label: String(item.action.label || '').substring(0, 50),
-          href: String(item.action.href || '/merchant/reports').substring(0, 100),
+          href: ALLOWED_HREFS.has(String(item.action.href || '')) ? String(item.action.href) : '/merchant/reports',
         } : null,
         emoji: String(item.emoji || '🧠').substring(0, 4),
       }))
