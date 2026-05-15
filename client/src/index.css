@@ -142,9 +142,20 @@
   /* Prevent Radix react-remove-scroll from shifting layout */
   html {
     padding-right: 0 !important;
+    padding-left: 0 !important;
     margin-right: 0 !important;
+    margin-left: 0 !important;
     overflow: auto !important;
     scrollbar-gutter: stable;
+  }
+
+  /* Block all Radix scroll-lock body mutations */
+  body,
+  body[data-scroll-locked] {
+    padding-right: 0 !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    width: auto !important;
   }
 
   /* Override Tailwind font-normal on sidebar items */
