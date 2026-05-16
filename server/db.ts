@@ -292,7 +292,7 @@ export async function getDb() {
         ...(sslParam ? { ssl: JSON.parse(sslParam) } : {}),
       });
 
-      _db = drizzle({ client: _pool, schema });
+      _db = drizzle({ client: _pool, schema, mode: 'default' });
       console.log('[Database] ✅ Connection pool initialized (25 connections, queue limit: 100)');
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
