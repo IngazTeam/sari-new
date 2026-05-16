@@ -174,8 +174,20 @@ export const authRouter = router({
                     const { createByaanConnection } = await import('./integrations/byaan');
                     const cleanDomain = input.domain.replace(/<[^>]*>/g, '').trim().substring(0, 255);
                     if (/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(cleanDomain)) {
-                        await createByaanConnection(merchant.id, cleanDomain);
-                        console.log(`[Signup] Byaan auto-linked: merchant=${merchant.id}, domain=${cleanDomain}`);
+                        // SEC-AUTH-1: Verify no other merchant already owns this domain
+                        const pool = await db.getPool();
+                        if (pool) {
+                            const [existing] = await pool.execute(
+                                `SELECT merchant_id FROM byaan_connections WHERE tenant_domain = ? AND is_active = 1 LIMIT 1`,
+                                [cleanDomain]
+                            );
+                            if ((existing as any[])?.length > 0) {
+                                console.warn(`[Signup] Byaan domain hijack blocked: domain=${cleanDomain} already owned by merchant=${(existing as any[])[0].merchant_id}`);
+                            } else {
+                                await createByaanConnection(merchant.id, cleanDomain);
+                                console.log(`[Signup] Byaan auto-linked: merchant=${merchant.id}, domain=${cleanDomain}`);
+                            }
+                        }
                     }
                 } catch (e) {
                     console.error('[Signup] Byaan auto-link failed (non-blocking):', e);

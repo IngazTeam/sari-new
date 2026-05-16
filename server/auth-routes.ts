@@ -104,11 +104,33 @@ router.post('/login', async (req, res) => {
       try {
         const merchant = await db.getMerchantByUserId(user.id);
         if (merchant) {
-          const { createByaanConnection } = await import('./integrations/byaan');
+          const { createByaanConnection, getByaanConnection } = await import('./integrations/byaan');
           const cleanDomain = domain.replace(/<[^>]*>/g, '').trim().substring(0, 255);
           if (/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(cleanDomain)) {
-            await createByaanConnection(merchant.id, cleanDomain);
-            console.log(`[Auth] Byaan auto-linked on login: merchant=${merchant.id}, domain=${cleanDomain}`);
+            // SEC-AUTH-1: Check if this merchant is already linked (idempotent re-link is OK)
+            const existingConnection = await getByaanConnection(merchant.id);
+            if (existingConnection && existingConnection.tenant_domain === cleanDomain) {
+              // Already linked to same domain — skip silently
+              console.log(`[Auth] Byaan already linked: merchant=${merchant.id}, domain=${cleanDomain}`);
+            } else if (existingConnection) {
+              // Merchant already linked to a DIFFERENT domain — don't overwrite
+              console.warn(`[Auth] Byaan link blocked: merchant=${merchant.id} already linked to ${existingConnection.tenant_domain}, tried ${cleanDomain}`);
+            } else {
+              // SEC-AUTH-1: Verify no OTHER merchant owns this domain
+              const pool = await db.getPool();
+              if (pool) {
+                const [existing] = await pool.execute(
+                  `SELECT merchant_id FROM byaan_connections WHERE tenant_domain = ? AND is_active = 1 LIMIT 1`,
+                  [cleanDomain]
+                );
+                if ((existing as any[])?.length > 0) {
+                  console.warn(`[Auth] Byaan domain hijack blocked: domain=${cleanDomain} already owned by merchant=${(existing as any[])[0].merchant_id}`);
+                } else {
+                  await createByaanConnection(merchant.id, cleanDomain);
+                  console.log(`[Auth] Byaan auto-linked on login: merchant=${merchant.id}, domain=${cleanDomain}`);
+                }
+              }
+            }
           }
         }
       } catch (e) {
