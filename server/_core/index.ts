@@ -28,6 +28,7 @@ import { initWeeklyReportCron } from "../weeklyReportCron";
 import { startSubscriptionJobs } from "../cron/subscription-jobs";
 import { startEscalationCascadeJob } from "../jobs/escalation-cascade";
 import { startCoachingTriggerJob } from "../jobs/coaching-trigger";
+import { startTakeoverExpiryJob } from "../jobs/takeover-expiry";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { validateEnv } from "./validateEnv";
@@ -540,6 +541,9 @@ async function startServer() {
 
       // Initialize Coaching Trigger job (runs every 6h — Priority Engine micro-training)
       startCoachingTriggerJob();
+
+      // Initialize Takeover Expiry job (runs every 60s — auto-clears expired takeovers & responds to pending messages)
+      startTakeoverExpiryJob();
 
       // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
       cron.schedule('0 9 * * *', async () => {
