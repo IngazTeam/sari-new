@@ -1,11 +1,13 @@
 /**
- * Smart Escalation Protocol — Professional Sales Agent Behavior
+ * Smart Escalation Protocol — Cascading Multi-Phone Escalation
  * 
  * When the bot doesn't know an answer:
  * 1. Respond professionally — "Let me check with the team" (NOT "call this number")
- * 2. Alert the merchant via WhatsApp with the customer's question
- * 3. When merchant replies — relay the answer to the customer
- * 4. Cache the Q&A for future reuse (the bot learns permanently)
+ * 2. Alert phone #1 in the escalation chain via WhatsApp
+ * 3. If no reply after 5 minutes → cascade to phone #2
+ * 4. If no reply after another 5 min → cascade to phone #3
+ * 5. If ALL phones exhausted → send customer a professional apology
+ * 6. When ANY contact replies — relay the answer to the customer + cache Q&A
  * 
  * Based on professional customer service frameworks:
  * - Acknowledge & validate the question
@@ -19,13 +21,26 @@ import { sendMessageWithCredentials } from '../whatsapp';
 import {
   createEscalation,
   markEscalationNotified,
+  updateEscalationLevel,
+  markEscalationExhausted,
   resolveEscalation,
   getActiveEscalation,
+  getEscalationsNeedingCascade,
   type EscalationItem,
 } from '../db/learning';
 import { cacheSuccessfulResponse } from './rag-engine';
 import { captureSignal } from '../db/learning';
 import { sendNotification } from '../_core/notificationService';
+
+// ═══════════════════════════════════════════════════════════════
+// Escalation Contact Chain Types
+// ═══════════════════════════════════════════════════════════════
+
+export interface EscalationContact {
+  phone: string;
+  label: string;
+  order: number;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Professional Hold Responses — What Sari tells the customer
@@ -46,6 +61,80 @@ const FOLLOW_UP_RESPONSES = [
   'مرحباً 👋 لسا أتابع موضوعك — ما نسيتك! أعدك أرد عليك اليوم إن شاء الله 🙏',
   'أهلاً! لسا أنتظر الجواب من الفريق — بس تأكد إنك أولوية عندي! 🎯',
 ];
+
+/** Final message when ALL escalation contacts have been exhausted */
+const EXHAUSTION_MESSAGE = 'شكراً على صبرك! 🙏 سجلنا استفسارك وسنرد عليك في أقرب وقت ممكن. تقدر تسأل نفس السؤال لاحقاً وبيكون الجواب جاهز إن شاء الله ✅';
+
+// ═══════════════════════════════════════════════════════════════
+// Alert Message Templates — per escalation level
+// ═══════════════════════════════════════════════════════════════
+
+function buildAlertMessage(params: {
+  customerName: string;
+  customerPhone: string;
+  question: string;
+  level: number;
+  totalLevels: number;
+}): string {
+  const { customerName, customerPhone, question, level } = params;
+  const q = question.substring(0, 300);
+
+  if (level === 0) {
+    // Level 1 — Initial alert
+    return `🔔 *تنبيه من ساري — سؤال عميل*
+
+👤 *العميل:* ${customerName} (${customerPhone})
+❓ *السؤال:* ${q}
+
+💡 *رد على هذه الرسالة بالجواب وساري سيوصله للعميل تلقائياً*
+⏰ العميل ينتظر ردك...`;
+  }
+
+  if (level === 1) {
+    // Level 2 — Escalated (5 min passed)
+    return `🔴 *تصعيد عاجل من ساري — لم يُرد على سؤال العميل*
+
+👤 *العميل:* ${customerName} (${customerPhone})
+❓ *السؤال:* ${q}
+
+⚠️ لم يرد المسؤول الأول خلال 5 دقائق
+💡 *رد على هذه الرسالة بالجواب وساري سيوصله للعميل فوراً*`;
+  }
+
+  // Level 3+ — Final escalation
+  const minutesPassed = (level + 1) * 5;
+  return `🚨 *تصعيد أخير من ساري — عميل ينتظر!*
+
+👤 *العميل:* ${customerName} (${customerPhone})
+❓ *السؤال:* ${q}
+
+⛔ لم يرد أحد خلال ${minutesPassed} دقيقة — العميل ما زال ينتظر!
+💡 *رد على هذه الرسالة الآن لإنقاذ العميل*`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Helper: Get merchant's escalation phone chain
+// ═══════════════════════════════════════════════════════════════
+
+async function getEscalationChain(merchantId: number): Promise<EscalationContact[]> {
+  const merchant = await db.getMerchantById(merchantId);
+  if (!merchant) return [];
+
+  // Try JSON escalation chain first
+  try {
+    const raw = (merchant as any).escalationPhones;
+    if (raw) {
+      const chain = JSON.parse(raw) as EscalationContact[];
+      if (chain.length > 0) return chain.sort((a, b) => a.order - b.order);
+    }
+  } catch { /* invalid JSON */ }
+
+  // Fallback to legacy single phone
+  const phone = (merchant as any).emergencyPhone || merchant.phone;
+  if (phone) return [{ phone, label: 'المسؤول', order: 1 }];
+
+  return [];
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Core Escalation Logic
@@ -80,13 +169,14 @@ export async function handleSmartEscalation(params: {
       return HOLD_RESPONSES_BUSINESS_HOURS[0];
     }
 
-    // 2. Alert the merchant (fire-and-forget)
-    notifyMerchantOfEscalation({
+    // 2. Alert first contact in the chain (fire-and-forget)
+    notifyEscalationContact({
       merchantId: params.merchantId,
       escalationId,
       customerPhone: params.customerPhone,
       customerName: params.customerName || 'عميل',
       question: params.customerQuestion,
+      level: 0, // First contact
     }).catch(err => console.warn('[Escalation] Merchant notification failed:', err.message));
 
     // 3. Capture learning signal
@@ -118,29 +208,25 @@ export async function handleSmartEscalation(params: {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Merchant WhatsApp Notification
+// Notify Escalation Contact — Send alert to specific phone
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Send escalation alert to the merchant via WhatsApp.
- * Uses the bot's own WhatsApp instance to message the merchant's personal number.
+ * Send escalation alert to a specific contact in the chain.
+ * Level 0 = first contact, Level 1 = second, etc.
  */
-async function notifyMerchantOfEscalation(params: {
+async function notifyEscalationContact(params: {
   merchantId: number;
   escalationId: number;
   customerPhone: string;
   customerName: string;
   question: string;
+  level: number;
 }): Promise<void> {
-  // Get merchant's WhatsApp instance and contact number
-  const merchant = await db.getMerchantById(params.merchantId);
-  if (!merchant) return;
+  const chain = await getEscalationChain(params.merchantId);
 
-  // Get the merchant's emergency contact number (or phone number)
-  const merchantPhone = (merchant as any).emergencyPhone || merchant.phone;
-  if (!merchantPhone) {
-    console.warn(`[Escalation] No merchant phone for merchant ${params.merchantId} — using push only`);
-    // Fallback to push notification
+  if (chain.length === 0) {
+    console.warn(`[Escalation] No escalation phones for merchant ${params.merchantId} — using push only`);
     await sendNotification({
       merchantId: params.merchantId,
       type: 'new_message',
@@ -152,13 +238,20 @@ async function notifyMerchantOfEscalation(params: {
     return;
   }
 
+  // Which phone to notify at this level?
+  const contact = chain[params.level];
+  if (!contact) {
+    // All phones exhausted — this shouldn't happen here, handled by cascading job
+    console.warn(`[Escalation] Level ${params.level} exceeds chain length ${chain.length}`);
+    return;
+  }
+
   // Get bot's WhatsApp instance
   const instances = await db.getWhatsAppInstancesByMerchantId(params.merchantId);
   const activeInstance = instances.find((i: any) => i.status === 'active');
 
   if (!activeInstance) {
     console.warn(`[Escalation] No active WhatsApp instance for merchant ${params.merchantId}`);
-    // Fallback to push notification
     await sendNotification({
       merchantId: params.merchantId,
       type: 'new_message',
@@ -169,28 +262,29 @@ async function notifyMerchantOfEscalation(params: {
     return;
   }
 
-  // Send WhatsApp message to merchant
-  const alertMessage = `🔔 *تنبيه من ساري — سؤال عميل*
-
-👤 *العميل:* ${params.customerName} (${params.customerPhone})
-❓ *السؤال:* ${params.question.substring(0, 300)}
-
-💡 *رد على هذه الرسالة بالجواب وساري سيوصله للعميل تلقائياً*
-⏰ العميل ينتظر ردك...`;
+  // Build message based on escalation level
+  const alertMessage = buildAlertMessage({
+    customerName: params.customerName,
+    customerPhone: params.customerPhone,
+    question: params.question,
+    level: params.level,
+    totalLevels: chain.length,
+  });
 
   try {
     await sendMessageWithCredentials(
       (activeInstance as any).instanceId,
       (activeInstance as any).token,
       (activeInstance as any).apiUrl || 'https://api.green-api.com',
-      merchantPhone,
+      contact.phone,
       alertMessage
     );
 
-    await markEscalationNotified(params.escalationId, params.merchantId);
-    console.log(`[Escalation] ✅ Merchant ${params.merchantId} notified via WhatsApp`);
+    await markEscalationNotified(params.escalationId, params.merchantId, params.level);
+    const levelLabel = params.level === 0 ? 'أول' : params.level === 1 ? 'ثاني' : `${params.level + 1}`;
+    console.log(`[Escalation] ✅ Level ${params.level + 1} (${contact.label || levelLabel}) notified: ${contact.phone.slice(-4)}`);
   } catch (err: any) {
-    console.error('[Escalation] WhatsApp notification failed:', err.message);
+    console.error(`[Escalation] WhatsApp notification failed for level ${params.level}:`, err.message);
     // Fallback to push
     await sendNotification({
       merchantId: params.merchantId,
@@ -203,12 +297,91 @@ async function notifyMerchantOfEscalation(params: {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Cascading Job — Check & escalate to next phone every minute
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Process pending escalations that need cascading.
+ * Called by a background interval (every 60 seconds).
+ * If 5 minutes passed without reply → try next phone in chain.
+ * If all phones exhausted → send customer apology.
+ */
+export async function processCascadingEscalations(): Promise<number> {
+  try {
+    const pending = await getEscalationsNeedingCascade();
+    if (pending.length === 0) return 0;
+
+    let processed = 0;
+
+    for (const escalation of pending) {
+      const esc = escalation as any; // raw DB row with snake_case
+      const merchantId = esc.merchant_id || esc.merchantId;
+      const currentLevel = esc.current_escalation_level ?? esc.currentEscalationLevel ?? 0;
+      const nextLevel = currentLevel + 1;
+
+      const chain = await getEscalationChain(merchantId);
+
+      if (nextLevel >= chain.length) {
+        // ═══ All phones exhausted — send customer apology ═══
+        console.log(`[Escalation] ⛔ All ${chain.length} contacts exhausted for escalation #${esc.id} — sending apology to customer`);
+
+        // Send apology to customer
+        const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+        const activeInstance = instances.find((i: any) => i.status === 'active');
+        const customerPhone = esc.customer_phone || esc.customerPhone;
+
+        if (activeInstance && customerPhone) {
+          try {
+            await sendMessageWithCredentials(
+              (activeInstance as any).instanceId,
+              (activeInstance as any).token,
+              (activeInstance as any).apiUrl || 'https://api.green-api.com',
+              customerPhone,
+              EXHAUSTION_MESSAGE
+            );
+            console.log(`[Escalation] 📩 Apology sent to customer ${customerPhone.slice(-4)}`);
+          } catch (sendErr: any) {
+            console.error(`[Escalation] Failed to send apology:`, sendErr.message);
+          }
+        }
+
+        await markEscalationExhausted(esc.id);
+        processed++;
+        continue;
+      }
+
+      // ═══ Cascade to next phone ═══
+      console.log(`[Escalation] 🔁 Cascading escalation #${esc.id} to level ${nextLevel + 1}/${chain.length}`);
+
+      await notifyEscalationContact({
+        merchantId,
+        escalationId: esc.id,
+        customerPhone: esc.customer_phone || esc.customerPhone,
+        customerName: esc.customer_name || esc.customerName || 'عميل',
+        question: esc.question,
+        level: nextLevel,
+      });
+
+      processed++;
+    }
+
+    if (processed > 0) {
+      console.log(`[Escalation] 🔄 Processed ${processed} cascading escalation(s)`);
+    }
+    return processed;
+  } catch (err: any) {
+    console.error('[Escalation] processCascadingEscalations failed:', err.message);
+    return 0;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Merchant Reply Handler — Relay answer to customer
 // ═══════════════════════════════════════════════════════════════
 
 /**
  * Handle merchant's reply to an escalation.
- * Called from webhook when merchant sends a message that matches an active escalation.
+ * Called from webhook when ANY phone in the chain sends a reply.
  */
 export async function handleMerchantEscalationReply(params: {
   merchantId: number;
@@ -217,7 +390,7 @@ export async function handleMerchantEscalationReply(params: {
 }): Promise<{ handled: boolean; escalation?: EscalationItem }> {
   try {
     // Find active escalation for this merchant
-    // The merchant's reply comes from their personal number
+    // The merchant's reply comes from their personal number (any phone in the chain)
     const resolved = await resolveEscalation({
       merchantId: params.merchantId,
       customerPhone: '', // We need to find by merchant, not customer
@@ -260,6 +433,18 @@ export async function handleMerchantEscalationReply(params: {
     console.error('[Escalation] handleMerchantEscalationReply failed:', err.message);
     return { handled: false };
   }
+}
+
+/**
+ * Check if a phone number belongs to a merchant's escalation chain.
+ * Used by the webhook to detect if an incoming message is an escalation reply.
+ */
+export async function isPhoneInEscalationChain(merchantId: number, phone: string): Promise<boolean> {
+  const chain = await getEscalationChain(merchantId);
+  // Normalize: strip leading + and whitespace
+  const normalize = (p: string) => p.replace(/[\s+\-()]/g, '');
+  const normalizedPhone = normalize(phone);
+  return chain.some(c => normalize(c.phone) === normalizedPhone);
 }
 
 /**

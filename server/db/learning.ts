@@ -135,6 +135,14 @@ export async function ensureLearningTables(): Promise<void> {
       )
     `);
 
+    // Cascading escalation columns (auto-migration)
+    try {
+      await pool.execute(`ALTER TABLE sari_escalation_queue ADD COLUMN IF NOT EXISTS current_escalation_level INT DEFAULT 0`);
+      await pool.execute(`ALTER TABLE sari_escalation_queue ADD COLUMN IF NOT EXISTS last_escalated_at TIMESTAMP NULL`);
+      await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS escalation_phones TEXT DEFAULT NULL`);
+      await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
+    } catch { /* columns already exist */ }
+
     _tablesCreated = true;
     console.log('[Learning] ✅ Tables initialized');
   } catch (e: any) {
@@ -392,6 +400,9 @@ export interface EscalationItem {
   followedUp: boolean;
   expiresAt: Date | null;
   createdAt: Date;
+  // Cascading escalation
+  currentEscalationLevel: number;
+  lastEscalatedAt: Date | null;
 }
 
 /** Create a new escalation entry */
@@ -454,14 +465,53 @@ export async function createEscalation(data: {
   }
 }
 
-/** Mark escalation as notified (merchant was alerted) */
-export async function markEscalationNotified(escalationId: number, merchantId: number): Promise<void> {
+/** Mark escalation as notified (merchant was alerted) at given level */
+export async function markEscalationNotified(escalationId: number, merchantId: number, level: number = 0): Promise<void> {
   const pool = await db.getPool();
   if (!pool) return;
   await pool.execute(
-    `UPDATE sari_escalation_queue SET status = 'notified', merchant_notified_at = NOW() 
+    `UPDATE sari_escalation_queue 
+     SET status = 'notified', merchant_notified_at = NOW(),
+         current_escalation_level = ?, last_escalated_at = NOW()
      WHERE id = ? AND merchant_id = ?`,
-    [escalationId, merchantId]
+    [level, escalationId, merchantId]
+  );
+}
+
+/** Update escalation level (cascade to next phone) */
+export async function updateEscalationLevel(escalationId: number, level: number): Promise<void> {
+  const pool = await db.getPool();
+  if (!pool) return;
+  await pool.execute(
+    `UPDATE sari_escalation_queue 
+     SET current_escalation_level = ?, last_escalated_at = NOW()
+     WHERE id = ?`,
+    [level, escalationId]
+  );
+}
+
+/** Get escalations that need cascading to next phone (notified > 5 min ago, not answered) */
+export async function getEscalationsNeedingCascade(): Promise<EscalationItem[]> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return [];
+
+  const [rows] = await pool.execute(
+    `SELECT * FROM sari_escalation_queue 
+     WHERE status = 'notified'
+     AND last_escalated_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)
+     AND expires_at > NOW()`
+  );
+  return rows as EscalationItem[];
+}
+
+/** Mark escalation as exhausted (all phones tried, no answer) */
+export async function markEscalationExhausted(escalationId: number): Promise<void> {
+  const pool = await db.getPool();
+  if (!pool) return;
+  await pool.execute(
+    `UPDATE sari_escalation_queue SET status = 'expired', followed_up = 1 WHERE id = ?`,
+    [escalationId]
   );
 }
 

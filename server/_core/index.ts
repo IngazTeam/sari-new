@@ -26,6 +26,7 @@ import { startCronJobs } from "../cronJobs";
 import { startAllSheetsCronJobs } from "../sheetsCronJobs";
 import { initWeeklyReportCron } from "../weeklyReportCron";
 import { startSubscriptionJobs } from "../cron/subscription-jobs";
+import { startEscalationCascadeJob } from "../jobs/escalation-cascade";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { validateEnv } from "./validateEnv";
@@ -532,6 +533,9 @@ async function startServer() {
 
       // Initialize Subscription Management cron jobs
       startSubscriptionJobs();
+
+      // Initialize Escalation Cascade job (runs every 60s — cascading phone alerts)
+      startEscalationCascadeJob();
 
       // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
       cron.schedule('0 9 * * *', async () => {

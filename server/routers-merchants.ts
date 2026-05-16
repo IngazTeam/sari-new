@@ -484,10 +484,76 @@ export const merchantsRouter = router({
     }),
 
     // ============================================
-    // Emergency Phone — Smart Escalation Alert Number
+    // Escalation Phone Chain — Smart Escalation Alert Numbers
     // ============================================
 
-    /** Get merchant's emergency phone for Sari escalation alerts */
+    /** Get merchant's escalation phone chain */
+    getEscalationPhones: protectedProcedure.query(async ({ ctx }) => {
+        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Parse escalation phones JSON, fallback to legacy emergencyPhone
+        let phones: { phone: string; label: string; order: number }[] = [];
+        try {
+            const raw = (merchant as any).escalationPhones;
+            if (raw) phones = JSON.parse(raw);
+        } catch { /* invalid JSON */ }
+
+        // Backward compat: if no escalation phones, use legacy emergencyPhone
+        if (phones.length === 0 && (merchant as any).emergencyPhone) {
+            phones = [{ phone: (merchant as any).emergencyPhone, label: 'المسؤول الأول', order: 1 }];
+        }
+
+        return {
+            phones: phones.sort((a, b) => a.order - b.order),
+            // Legacy field for backward compat
+            emergencyPhone: (merchant as any).emergencyPhone || null,
+        };
+    }),
+
+    /** Update merchant's escalation phone chain */
+    updateEscalationPhones: protectedProcedure
+        .input(z.object({
+            phones: z.array(z.object({
+                phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/, 'رقم غير صالح'),
+                label: z.string().max(50).default(''),
+                order: z.number().int().min(1).max(5),
+            })).max(5),
+        }))
+        .mutation(async ({ input, ctx }) => {
+            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            // Ensure columns exist (auto-migration)
+            const pool = await db.getPool();
+            if (pool) {
+                try {
+                    await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS escalation_phones TEXT DEFAULT NULL`);
+                    await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
+                } catch { /* columns already exist */ }
+            }
+
+            // Clean phones
+            const cleaned = input.phones
+                .map(p => ({ ...p, phone: p.phone.replace(/\s/g, '') }))
+                .filter(p => p.phone.length > 0)
+                .sort((a, b) => a.order - b.order);
+
+            // Save JSON to escalation_phones + first phone to legacy emergency_phone
+            await db.updateMerchant(merchant.id, {
+                escalationPhones: cleaned.length > 0 ? JSON.stringify(cleaned) : null,
+                emergencyPhone: cleaned.length > 0 ? cleaned[0].phone : null,
+            } as any);
+
+            console.log(`[Escalation] 📱 Chain updated for merchant ${merchant.id}: ${cleaned.length} contacts`);
+            return { success: true, count: cleaned.length };
+        }),
+
+    // Legacy endpoint — backward compat
     getEmergencyPhone: protectedProcedure.query(async ({ ctx }) => {
         const merchant = await db.getMerchantByUserId(ctx.user.id);
         if (!merchant) {
@@ -499,35 +565,22 @@ export const merchantsRouter = router({
         };
     }),
 
-    /** Update merchant's emergency phone */
     updateEmergencyPhone: protectedProcedure
         .input(z.object({
-            emergencyPhone: z.string()
-                .max(20)
-                .regex(/^[0-9+\-\s()]*$/, 'رقم غير صالح')
-                .nullable(),
+            emergencyPhone: z.string().max(20).regex(/^[0-9+\-\s()]*$/, 'رقم غير صالح').nullable(),
         }))
         .mutation(async ({ input, ctx }) => {
             const merchant = await db.getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
-
-            // Ensure column exists (auto-migration)
             const pool = await db.getPool();
             if (pool) {
                 try {
-                    await pool.execute(
-                        `ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`
-                    );
+                    await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
                 } catch { /* column already exists */ }
             }
-
-            await db.updateMerchant(merchant.id, {
-                emergencyPhone: input.emergencyPhone,
-            } as any);
-
-            console.log(`[Escalation] 📱 Emergency phone updated for merchant ${merchant.id}: ${input.emergencyPhone ? '***' + input.emergencyPhone.slice(-4) : 'cleared'}`);
+            await db.updateMerchant(merchant.id, { emergencyPhone: input.emergencyPhone } as any);
             return { success: true };
         }),
 });

@@ -274,6 +274,8 @@ export const merchants = mysqlTable("merchants", {
 	currentCustomersCount: int("current_customers_count").default(0),
 	// Smart Escalation — merchant's personal phone for urgent alerts
 	emergencyPhone: varchar("emergency_phone", { length: 20 }),
+	// Cascading Escalation Chain — JSON array: [{phone, label, order}]
+	escalationPhones: text("escalation_phones"),
 });
 
 export const messages = mysqlTable("messages", {
