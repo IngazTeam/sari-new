@@ -8,6 +8,13 @@
       "when": 1771770982503,
       "tag": "0000_plain_betty_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778954269097,
+      "tag": "0001_fine_meteorite",
+      "breakpoints": true
     }
   ]
 }

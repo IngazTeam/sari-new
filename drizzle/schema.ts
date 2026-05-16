@@ -224,7 +224,7 @@ export const merchantKnowledgeDocs = mysqlTable("merchant_knowledge_docs", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	fileName: varchar("file_name", { length: 255 }).notNull(),
-	fileType: mysqlEnum("file_type", ['pdf', 'docx']).notNull(),
+	fileType: mysqlEnum("file_type", ['pdf', 'docx', 'xlsx']).notNull(),
 	fileUrl: text("file_url"),
 	fileSize: int("file_size").notNull(),
 	extractedText: text("extracted_text"),
