@@ -20,7 +20,7 @@ export interface CulturalProfile {
   rapportLevel: 'cold' | 'warm' | 'friendly';
   preferredAddress: string;    // "محمد" / "أبو عبدالله" / "يا باشا"
   childName: string | null;    // ONLY if customer mentioned it
-  culturalGreeting: string;    // "يا هلا" / "أهلاً يا معلم" / "Hi"
+  culturalGreeting: string;    // "يا هلا" / "أهلاً بيك" / "Hi"
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -151,15 +151,16 @@ export function buildCulturalPrompt(cultural: CulturalProfile): string {
       break;
 
     case 'egyptian':
-      prompt += `- تحدث باللهجة المصرية: استخدم "عايز، ازاي، كده، يعني، طب، ماشي"\n`;
-      prompt += `- الترحيب: "أهلاً يا معلم!" أو "نورت يا باشا!"\n`;
+      prompt += `- تحدث باللهجة المصرية المهذبة: استخدم "عايز، ازاي، كده، يعني، طب، ماشي، تمام"\n`;
+      prompt += `- الترحيب: "أهلاً بيك!" أو "أهلاً وسهلاً!"\n`;
       prompt += `- المناداة: `;
       if (cultural.preferredAddress) {
-        prompt += `"${cultural.preferredAddress}"\n`;
+        prompt += `"أستاذ ${cultural.preferredAddress}" أو "${cultural.preferredAddress}"\n`;
       } else {
-        prompt += `"يا باشا" أو "يا معلم" أو الاسم\n`;
+        prompt += `"حضرتك" أو "أستاذ" أو الاسم مباشرة\n`;
       }
-      prompt += `- التحفيز: "فرصة ما تتعوضش!" / "والنبي هتعجبك!"\n`;
+      prompt += `- التحفيز: "فرصة ممتازة!" / "هتعجبك جداً!"\n`;
+      prompt += `- ⛔ ممنوع: "يا معلم"، "يا باشا"، "نورت"، "والنبي"، "يا حج" — لغة شوارع غير مقبولة في خدمة العملاء\n`;
       break;
 
     case 'gulf':
@@ -253,7 +254,7 @@ export function buildInitialCulturalProfile(
 function getGreeting(dialect: Dialect): string {
   switch (dialect) {
     case 'saudi': return 'يا هلا والله!';
-    case 'egyptian': return 'أهلاً يا باشا!';
+    case 'egyptian': return 'أهلاً بيك!';
     case 'gulf': return 'هلا والله!';
     case 'shami': return 'أهلين!';
     case 'maghrebi': return 'مرحبا!';
