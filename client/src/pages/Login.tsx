@@ -21,6 +21,11 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Read Byaan query params: ?domain=iht.com.sa&platform=byaan
+  const urlParams = new URLSearchParams(window.location.search);
+  const byaanDomain = urlParams.get('domain') || '';
+  const byaanPlatform = urlParams.get('platform') || '';
+
   // تحميل بيانات "تذكرني" عند تحميل الصفحة (البريد فقط - بدون كلمة المرور لأسباب أمنية)
   useEffect(() => {
     const savedEmail = localStorage.getItem('sari_remember_email');
@@ -41,7 +46,12 @@ export default function Login() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          // Byaan auto-link params
+          ...(byaanDomain && byaanPlatform ? { domain: byaanDomain, platform: byaanPlatform } : {}),
+        }),
         credentials: 'include',
       });
 
@@ -124,6 +134,14 @@ export default function Login() {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {byaanPlatform === 'byaan' && byaanDomain && (
+                <Alert>
+                  <AlertDescription className="text-sm">
+                    ✨ سيتم ربط حسابك تلقائياً مع منصة <strong>بيان</strong> ({byaanDomain})
+                  </AlertDescription>
                 </Alert>
               )}
               <div className="space-y-2">

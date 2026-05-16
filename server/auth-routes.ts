@@ -98,6 +98,24 @@ router.post('/login', async (req, res) => {
 
     console.log('🟢 [AUTH] Login successful for:', user.email);
 
+    // Byaan auto-link: if domain + platform=byaan, create byaan_connections for existing merchant
+    const { domain, platform } = req.body;
+    if (platform === 'byaan' && domain && typeof domain === 'string') {
+      try {
+        const merchant = await db.getMerchantByUserId(user.id);
+        if (merchant) {
+          const { createByaanConnection } = await import('./integrations/byaan');
+          const cleanDomain = domain.replace(/<[^>]*>/g, '').trim().substring(0, 255);
+          if (/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(cleanDomain)) {
+            await createByaanConnection(merchant.id, cleanDomain);
+            console.log(`[Auth] Byaan auto-linked on login: merchant=${merchant.id}, domain=${cleanDomain}`);
+          }
+        }
+      } catch (e) {
+        console.error('[Auth] Byaan auto-link on login failed (non-blocking):', e);
+      }
+    }
+
     return res.json({
       success: true,
       token: sessionToken,
