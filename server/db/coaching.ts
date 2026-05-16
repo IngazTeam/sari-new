@@ -172,17 +172,19 @@ export async function getActiveSession(merchantId: number): Promise<CoachingSess
   return (rows as any[])[0] as CoachingSession || null;
 }
 
-/** Get the current question for an active session */
-export async function getCurrentQuestion(sessionId: number, currentIndex: number): Promise<CoachingQuestion | null> {
+/** Get the current question for an active session — PEN-COACH-02 FIX: merchant_id guard */
+export async function getCurrentQuestion(sessionId: number, currentIndex: number, merchantId?: number): Promise<CoachingQuestion | null> {
   const pool = await db.getPool();
   if (!pool) return null;
 
-  const [rows] = await pool.execute(
-    `SELECT * FROM sari_coaching_questions
-     WHERE session_id = ? AND question_order = ?`,
-    [sessionId, currentIndex + 1] // question_order is 1-indexed
-  );
+  const query = merchantId
+    ? `SELECT * FROM sari_coaching_questions WHERE session_id = ? AND question_order = ? AND merchant_id = ?`
+    : `SELECT * FROM sari_coaching_questions WHERE session_id = ? AND question_order = ?`;
+  const params = merchantId
+    ? [sessionId, currentIndex + 1, merchantId]
+    : [sessionId, currentIndex + 1];
 
+  const [rows] = await pool.execute(query, params);
   return (rows as any[])[0] as CoachingQuestion || null;
 }
 
@@ -204,23 +206,38 @@ export async function recordVerdict(
   );
 }
 
+/** PEN-COACH-01/02 FIX: Whitelist columns + merchant_id guard */
+const VERDICT_COLUMN_MAP: Record<string, string> = {
+  correct: 'correct_count',
+  corrected: 'corrected_count',
+  skipped: 'skipped_count',
+};
+
 /** Advance session to next question, returns new index */
-export async function advanceSession(sessionId: number, verdict: QuestionVerdict): Promise<number> {
+export async function advanceSession(sessionId: number, verdict: QuestionVerdict, merchantId?: number): Promise<number> {
   const pool = await db.getPool();
   if (!pool) return -1;
 
-  // Update counters
-  const countField = verdict === 'correct' ? 'correct_count'
-    : verdict === 'corrected' ? 'corrected_count'
-    : 'skipped_count';
+  // PEN-COACH-01 FIX: Whitelist column name — never interpolate user-derived values
+  const countField = VERDICT_COLUMN_MAP[verdict] || 'skipped_count';
 
-  await pool.execute(
-    `UPDATE sari_coaching_sessions
-     SET current_question_index = current_question_index + 1,
-         ${countField} = ${countField} + 1
-     WHERE id = ?`,
-    [sessionId]
-  );
+  if (merchantId) {
+    await pool.execute(
+      `UPDATE sari_coaching_sessions
+       SET current_question_index = current_question_index + 1,
+           ${countField} = ${countField} + 1
+       WHERE id = ? AND merchant_id = ?`,
+      [sessionId, merchantId]
+    );
+  } else {
+    await pool.execute(
+      `UPDATE sari_coaching_sessions
+       SET current_question_index = current_question_index + 1,
+           ${countField} = ${countField} + 1
+       WHERE id = ?`,
+      [sessionId]
+    );
+  }
 
   // Return new index
   const [rows] = await pool.execute(
@@ -231,17 +248,26 @@ export async function advanceSession(sessionId: number, verdict: QuestionVerdict
   return (rows as any[])[0]?.current_question_index ?? -1;
 }
 
-/** Complete a coaching session */
-export async function completeSession(sessionId: number): Promise<void> {
+/** Complete a coaching session — PEN-COACH-02 FIX: merchant_id guard */
+export async function completeSession(sessionId: number, merchantId?: number): Promise<void> {
   const pool = await db.getPool();
   if (!pool) return;
 
-  await pool.execute(
-    `UPDATE sari_coaching_sessions
-     SET status = 'completed', completed_at = NOW()
-     WHERE id = ?`,
-    [sessionId]
-  );
+  if (merchantId) {
+    await pool.execute(
+      `UPDATE sari_coaching_sessions
+       SET status = 'completed', completed_at = NOW()
+       WHERE id = ? AND merchant_id = ?`,
+      [sessionId, merchantId]
+    );
+  } else {
+    await pool.execute(
+      `UPDATE sari_coaching_sessions
+       SET status = 'completed', completed_at = NOW()
+       WHERE id = ?`,
+      [sessionId]
+    );
+  }
 }
 
 /** Expire stale sessions (> 2 hours without response) */

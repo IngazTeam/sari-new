@@ -36,6 +36,9 @@ const MIN_HOURS_BETWEEN_SESSIONS = 24;
 const SESSION_TIMEOUT_HOURS = 2;
 const MIN_CANDIDATES_TO_TRIGGER = 3; // Need 3+ unreviewed Q&As before triggering
 
+// PEN-COACH-03 FIX: Rate limit for #علم_ساري commands (max 10/day per merchant)
+const _teachRateLimit: Record<number, { count: number; resetAt: number }> = {};
+
 // Confirmation keywords (Arabic/English)
 const CONFIRM_KEYWORDS = ['صح', 'صحيح', 'تمام', 'ممتاز', 'اي', 'نعم', 'صحيحة', 'yes', 'correct', 'ok', '👍', '✅'];
 const SKIP_KEYWORDS = ['تخطى', 'تخطي', 'skip', 'لا', 'تجاوز'];
@@ -60,6 +63,18 @@ export async function handleTeachCommand(
   const instruction = match[1].trim();
   if (instruction.length < 10) {
     return { handled: true, response: 'التعليمة قصيرة جداً 😅 حاول تكتب مثلاً:\n#علم_ساري إذا سأل العميل عن الضمان قل له الضمان سنتين شامل' };
+  }
+
+  // PEN-COACH-03 FIX: Rate limit (max 10 per day per merchant)
+  const now = Date.now();
+  const limit = _teachRateLimit[merchantId];
+  if (limit && limit.resetAt > now && limit.count >= 10) {
+    return { handled: true, response: 'وصلت الحد اليومي (10 تعليمات) 😅 جرب بكرة!' };
+  }
+  if (!limit || limit.resetAt <= now) {
+    _teachRateLimit[merchantId] = { count: 1, resetAt: now + 24 * 60 * 60 * 1000 };
+  } else {
+    _teachRateLimit[merchantId].count++;
   }
 
   // Parse "إذا سأل عن X قل/رد Y" pattern
@@ -197,7 +212,8 @@ async function sendCoachingQuestion(
     ? `🧠 *جلسة تطوير سريعة من ساري*\n\nعندي ${totalQuestions} ${totalQuestions === 1 ? 'سؤال' : 'سؤالين'} بس — ما ياخذ دقيقة 😊\n\n`
     : '';
 
-  const q = question.customerQuestion?.substring(0, 200) || '';
+  // PEN-COACH-04 FIX: Scrub PII from customer messages before showing to merchant
+  const q = scrubPII(question.customerQuestion?.substring(0, 200) || '');
   const a = question.botResponse?.substring(0, 200) || '';
 
   const message = `${intro}📝 *سؤال ${questionIndex + 1} من ${totalQuestions}:*\n\n👤 العميل سأل: "${q}"\n🤖 رديت: "${a}"\n\n✅ رد بـ *صح* إذا ردي صحيح\n✏️ أو اكتب *الجواب الأصح*\n⏭ أو *تخطى*`;
@@ -237,7 +253,7 @@ export async function handleCoachingReply(
     );
     if (!currentQ) {
       // No more questions — complete
-      await completeSession(session.id);
+      await completeSession(session.id, merchantId);
       return { handled: false };
     }
 
@@ -301,11 +317,11 @@ export async function handleCoachingReply(
     await recordVerdict(qId, merchantId, verdict, correction);
 
     // Advance to next question
-    const newIndex = await advanceSession(session.id, verdict);
+    const newIndex = await advanceSession(session.id, verdict, merchantId);
 
     if (newIndex >= totalQ) {
       // Session complete — send summary
-      await completeSession(session.id);
+      await completeSession(session.id, merchantId);
 
       const correctCount = ((session as any).correct_count ?? session.correctCount ?? 0) + (verdict === 'correct' ? 1 : 0);
       const correctedCount = ((session as any).corrected_count ?? session.correctedCount ?? 0) + (verdict === 'corrected' ? 1 : 0);
@@ -356,7 +372,8 @@ async function sendNextQuestion(
   const inst = instances.find((i: any) => i.status === 'active');
   if (!inst) return;
 
-  const q = question.customerQuestion?.substring(0, 200) || '';
+  // PEN-COACH-04 FIX: Scrub PII from customer messages
+  const q = scrubPII(question.customerQuestion?.substring(0, 200) || '');
   const a = question.botResponse?.substring(0, 200) || '';
 
   const message = `${previousFeedback}\n\n📝 *سؤال ${questionIndex + 1} من ${totalQuestions}:*\n\n👤 العميل سأل: "${q}"\n🤖 رديت: "${a}"\n\n✅ *صح*  |  ✏️ *اكتب الأصح*  |  ⏭ *تخطى*`;
@@ -407,4 +424,16 @@ export async function processCoachingMaintenance(): Promise<void> {
   } catch (err: any) {
     console.error('[Coaching] Maintenance failed:', err.message);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PEN-COACH-04 FIX: PII Scrubbing
+// ═══════════════════════════════════════════════════════════════
+
+/** Remove potential PII (credit cards, emails, IBAN) from text before showing to merchant */
+function scrubPII(text: string): string {
+  return text
+    .replace(/\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, '[رقم محذوف]')
+    .replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z]{2,}\b/gi, '[بريد محذوف]')
+    .replace(/\b(?:SA)?\d{2}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\s?\d{4}\b/g, '[حساب محذوف]');
 }
