@@ -49,9 +49,15 @@ export default function MerchantSettings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = useCallback(async (file: File) => {
-    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('نوع الملف غير مدعوم. يرجى رفع PDF أو Word فقط.');
+      toast.error('نوع الملف غير مدعوم. يرجى رفع PDF أو Word أو Excel فقط.');
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -357,7 +363,7 @@ export default function MerchantSettings() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.doc"
+              accept=".pdf,.docx,.doc,.xlsx,.xls"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -375,7 +381,7 @@ export default function MerchantSettings() {
                 <p className="text-sm font-medium">
                   {knowledgeDoc ? 'اسحب ملفاً جديداً هنا أو اضغط للاستبدال' : 'اسحب الملف هنا أو اضغط لاختيار ملف'}
                 </p>
-                <p className="text-xs text-muted-foreground">{t('settings.auto_8')}</p>
+                <p className="text-xs text-muted-foreground">PDF, DOCX, XLSX — {t('settings.auto_8')}</p>
               </div>
             )}
           </div>

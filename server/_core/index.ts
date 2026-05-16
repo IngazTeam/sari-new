@@ -207,11 +207,13 @@ async function startServer() {
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/msword',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
       ];
       if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
       } else {
-        cb(new Error('نوع الملف غير مدعوم. يرجى رفع ملف PDF أو Word فقط.'));
+        cb(new Error('نوع الملف غير مدعوم. يرجى رفع ملف PDF أو Word أو Excel فقط.'));
       }
     },
   });

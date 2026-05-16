@@ -1,20 +1,22 @@
 /**
  * Document Parser Module
- * Extracts text from PDF and DOCX files for the Knowledge Base feature
+ * Extracts text from PDF, DOCX, and Excel files for the Knowledge Base feature
  */
 
 const MAX_TEXT_LENGTH = 8000; // Maximum characters to extract
 
 /**
- * Extract text content from a PDF or DOCX buffer
+ * Extract text content from a PDF, DOCX, or Excel buffer
  */
 export async function extractTextFromDocument(
   buffer: Buffer,
-  fileType: 'pdf' | 'docx'
+  fileType: 'pdf' | 'docx' | 'xlsx'
 ): Promise<{ text: string; pageCount?: number }> {
   try {
     if (fileType === 'pdf') {
       return await extractFromPdf(buffer);
+    } else if (fileType === 'xlsx') {
+      return await extractFromExcel(buffer);
     } else {
       return await extractFromDocx(buffer);
     }
@@ -46,6 +48,68 @@ async function extractFromDocx(buffer: Buffer): Promise<{ text: string }> {
 
   return {
     text: cleanAndTruncateText(result.value),
+  };
+}
+
+/**
+ * Extract text from an Excel file (xlsx/xls) using exceljs
+ * Reads all worksheets and formats cell values into structured text
+ */
+async function extractFromExcel(buffer: Buffer): Promise<{ text: string; pageCount: number }> {
+  const ExcelJS = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+
+  const sections: string[] = [];
+  let sheetCount = 0;
+
+  workbook.eachSheet((worksheet) => {
+    sheetCount++;
+    const sheetName = worksheet.name || `Sheet ${sheetCount}`;
+    const rows: string[] = [];
+    let headerRow: string[] = [];
+
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      const cells: string[] = [];
+      row.eachCell({ includeEmpty: true }, (cell) => {
+        let value = '';
+        if (cell.value !== null && cell.value !== undefined) {
+          if (typeof cell.value === 'object' && 'text' in cell.value) {
+            // Rich text or hyperlink
+            value = (cell.value as any).text || String(cell.value);
+          } else if (cell.value instanceof Date) {
+            value = cell.value.toLocaleDateString('ar-SA');
+          } else {
+            value = String(cell.value);
+          }
+        }
+        cells.push(value.trim());
+      });
+
+      const line = cells.filter(c => c.length > 0).join('\t');
+      if (line.trim().length === 0) return;
+
+      if (rowNumber === 1) {
+        headerRow = cells;
+        rows.push(`📋 [${sheetName}]`);
+        rows.push(line);
+      } else {
+        rows.push(line);
+      }
+    });
+
+    if (rows.length > 0) {
+      sections.push(rows.join('\n'));
+    }
+  });
+
+  if (sections.length === 0) {
+    throw new Error('الملف فارغ أو لا يحتوي على بيانات');
+  }
+
+  return {
+    text: cleanAndTruncateText(sections.join('\n\n')),
+    pageCount: sheetCount,
   };
 }
 
@@ -85,13 +149,19 @@ function cleanAndTruncateText(raw: string): string {
 /**
  * Detect file type from MIME type
  */
-export function getFileTypeFromMime(mimeType: string): 'pdf' | 'docx' | null {
+export function getFileTypeFromMime(mimeType: string): 'pdf' | 'docx' | 'xlsx' | null {
   if (mimeType === 'application/pdf') return 'pdf';
   if (
     mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     mimeType === 'application/msword'
   ) {
     return 'docx';
+  }
+  if (
+    mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    mimeType === 'application/vnd.ms-excel'
+  ) {
+    return 'xlsx';
   }
   return null;
 }
