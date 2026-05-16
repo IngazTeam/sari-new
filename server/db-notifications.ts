@@ -250,12 +250,17 @@ export async function deleteWhatsappAutoNotification(id: number) {
 export async function getIntegrationStats(merchantId: number, platform?: string, days = 30) {
   const db = await getDb();
   if (!db) return [];
-  if (platform) {
-    const result = await db.execute(sql`SELECT * FROM integration_stats WHERE merchant_id = ${merchantId} AND platform = ${platform} AND stat_date >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY) ORDER BY stat_date DESC`);
+  try {
+    if (platform) {
+      const result = await db.execute(sql`SELECT * FROM integration_stats WHERE merchant_id = ${merchantId} AND platform = ${platform} AND stat_date >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY) ORDER BY stat_date DESC`);
+      return (result as any)[0] || [];
+    }
+    const result = await db.execute(sql`SELECT * FROM integration_stats WHERE merchant_id = ${merchantId} AND stat_date >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY) ORDER BY stat_date DESC`);
     return (result as any)[0] || [];
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return [];
+    throw e;
   }
-  const result = await db.execute(sql`SELECT * FROM integration_stats WHERE merchant_id = ${merchantId} AND stat_date >= DATE_SUB(CURDATE(), INTERVAL ${days} DAY) ORDER BY stat_date DESC`);
-  return (result as any)[0] || [];
 }
 
 export async function recordIntegrationStats(data: {
@@ -267,13 +272,18 @@ export async function recordIntegrationStats(data: {
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.execute(sql`INSERT INTO integration_stats (merchant_id, platform, stat_date, sync_count, success_count, error_count, last_sync_at)
-    VALUES (${data.merchantId}, ${data.platform}, CURDATE(), ${data.syncCount ?? 1}, ${data.successCount ?? 0}, ${data.errorCount ?? 0}, NOW())
-    ON DUPLICATE KEY UPDATE
-      sync_count = sync_count + VALUES(sync_count),
-      success_count = success_count + VALUES(success_count),
-      error_count = error_count + VALUES(error_count),
-      last_sync_at = NOW()`);
+  try {
+    await db.execute(sql`INSERT INTO integration_stats (merchant_id, platform, stat_date, sync_count, success_count, error_count, last_sync_at)
+      VALUES (${data.merchantId}, ${data.platform}, CURDATE(), ${data.syncCount ?? 1}, ${data.successCount ?? 0}, ${data.errorCount ?? 0}, NOW())
+      ON DUPLICATE KEY UPDATE
+        sync_count = sync_count + VALUES(sync_count),
+        success_count = success_count + VALUES(success_count),
+        error_count = error_count + VALUES(error_count),
+        last_sync_at = NOW()`);
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return;
+    console.error('[IntegrationStats] recordIntegrationStats failed:', e);
+  }
 }
 
 // Integration Errors
@@ -286,37 +296,59 @@ export async function createIntegrationError(data: {
 }) {
   const db = await getDb();
   if (!db) return 0;
-  const result = await db.execute(sql`INSERT INTO integration_errors 
-    (merchant_id, platform, error_type, error_message, error_details)
-    VALUES (${data.merchantId}, ${data.platform}, ${data.errorType}, ${data.errorMessage}, ${data.errorDetails})`);
-  return (result as any)[0]?.insertId || 0;
+  try {
+    const result = await db.execute(sql`INSERT INTO integration_errors 
+      (merchant_id, platform, error_type, error_message, error_details)
+      VALUES (${data.merchantId}, ${data.platform}, ${data.errorType}, ${data.errorMessage}, ${data.errorDetails})`);
+    return (result as any)[0]?.insertId || 0;
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return 0;
+    throw e;
+  }
 }
 
 export async function getIntegrationErrors(merchantId: number, platform?: string, limit = 50) {
   const db = await getDb();
   if (!db) return [];
-  if (platform) {
-    const result = await db.execute(sql`SELECT * FROM integration_errors WHERE merchant_id = ${merchantId} AND platform = ${platform} ORDER BY created_at DESC LIMIT ${limit}`);
+  try {
+    if (platform) {
+      const result = await db.execute(sql`SELECT * FROM integration_errors WHERE merchant_id = ${merchantId} AND platform = ${platform} ORDER BY created_at DESC LIMIT ${limit}`);
+      return (result as any)[0] || [];
+    }
+    const result = await db.execute(sql`SELECT * FROM integration_errors WHERE merchant_id = ${merchantId} ORDER BY created_at DESC LIMIT ${limit}`);
     return (result as any)[0] || [];
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return [];
+    throw e;
   }
-  const result = await db.execute(sql`SELECT * FROM integration_errors WHERE merchant_id = ${merchantId} ORDER BY created_at DESC LIMIT ${limit}`);
-  return (result as any)[0] || [];
 }
 
 export async function getUnresolvedErrors(merchantId: number) {
   const db = await getDb();
   if (!db) return [];
-  const result = await db.execute(sql`SELECT * FROM integration_errors WHERE merchant_id = ${merchantId} AND resolved = FALSE ORDER BY created_at DESC`);
-  return (result as any)[0] || [];
+  try {
+    const result = await db.execute(sql`SELECT * FROM integration_errors WHERE merchant_id = ${merchantId} AND resolved = FALSE ORDER BY created_at DESC`);
+    return (result as any)[0] || [];
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return [];
+    throw e;
+  }
 }
+
+
+
 
 export async function resolveIntegrationError(id: number) {
   const db = await getDb();
   if (!db) return;
-  await db.execute(sql`UPDATE integration_errors SET resolved = TRUE, resolved_at = NOW() WHERE id = ${id}`);
+  try {
+    await db.execute(sql`UPDATE integration_errors SET resolved = TRUE, resolved_at = NOW() WHERE id = ${id}`);
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return;
+    throw e;
+  }
 }
 
-// Webhook Security Logs
 export async function createWebhookSecurityLog(data: {
   merchantId?: number;
   platform: string;
@@ -328,26 +360,41 @@ export async function createWebhookSecurityLog(data: {
 }) {
   const db = await getDb();
   if (!db) return 0;
-  const result = await db.execute(sql`INSERT INTO webhook_security_logs 
-    (merchant_id, platform, ip_address, signature_valid, request_path, request_method, error_message)
-    VALUES (${data.merchantId}, ${data.platform}, ${data.ipAddress}, ${data.signatureValid}, ${data.requestPath}, ${data.requestMethod}, ${data.errorMessage})`);
-  return (result as any)[0]?.insertId || 0;
+  try {
+    const result = await db.execute(sql`INSERT INTO webhook_security_logs 
+      (merchant_id, platform, ip_address, signature_valid, request_path, request_method, error_message)
+      VALUES (${data.merchantId}, ${data.platform}, ${data.ipAddress}, ${data.signatureValid}, ${data.requestPath}, ${data.requestMethod}, ${data.errorMessage})`);
+    return (result as any)[0]?.insertId || 0;
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return 0;
+    throw e;
+  }
 }
 
 export async function getWebhookSecurityLogs(merchantId?: number, limit = 100) {
   const db = await getDb();
   if (!db) return [];
-  if (merchantId) {
-    const result = await db.execute(sql`SELECT * FROM webhook_security_logs WHERE merchant_id = ${merchantId} ORDER BY created_at DESC LIMIT ${limit}`);
+  try {
+    if (merchantId) {
+      const result = await db.execute(sql`SELECT * FROM webhook_security_logs WHERE merchant_id = ${merchantId} ORDER BY created_at DESC LIMIT ${limit}`);
+      return (result as any)[0] || [];
+    }
+    const result = await db.execute(sql`SELECT * FROM webhook_security_logs ORDER BY created_at DESC LIMIT ${limit}`);
     return (result as any)[0] || [];
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return [];
+    throw e;
   }
-  const result = await db.execute(sql`SELECT * FROM webhook_security_logs ORDER BY created_at DESC LIMIT ${limit}`);
-  return (result as any)[0] || [];
 }
 
 export async function getFailedWebhookAttempts(hours = 24) {
   const db = await getDb();
   if (!db) return [];
-  const result = await db.execute(sql`SELECT * FROM webhook_security_logs WHERE signature_valid = FALSE AND created_at >= DATE_SUB(NOW(), INTERVAL ${hours} HOUR) ORDER BY created_at DESC`);
-  return (result as any)[0] || [];
+  try {
+    const result = await db.execute(sql`SELECT * FROM webhook_security_logs WHERE signature_valid = FALSE AND created_at >= DATE_SUB(NOW(), INTERVAL ${hours} HOUR) ORDER BY created_at DESC`);
+    return (result as any)[0] || [];
+  } catch (e: any) {
+    if (e?.code === 'ER_NO_SUCH_TABLE' || e?.message?.includes("doesn't exist")) return [];
+    throw e;
+  }
 }
