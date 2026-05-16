@@ -574,20 +574,47 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     console.log('[Webhook] Merchant ID:', instance.merchantId);
 
-    // ── PEN-ESC-01 FIX: Smart Escalation reply detection ──
-    // Only treat as escalation reply if:
-    // 1. Sender is in the merchant's escalation phone chain
-    // 2. There IS an active (pending/notified) escalation waiting for an answer
-    // Without check #2, any normal message from a chain member would be
-    // incorrectly forwarded to a customer — cross-customer data leakage.
+    // ── #علم_ساري: Natural WhatsApp Training Command ──
+    // Allows merchant to teach Sari directly via WhatsApp hashtag
     try {
       const incomingText = extractMessageText(payload);
       if (incomingText) {
-        const { handleMerchantEscalationReply, isPhoneInEscalationChain } = await import('../ai/smart-escalation');
+        const { isPhoneInEscalationChain } = await import('../ai/smart-escalation');
         const isChainMember = await isPhoneInEscalationChain(instance.merchantId, customerPhone);
 
         if (isChainMember) {
-          // PEN-ESC-01: Verify there's actually a pending escalation before treating as reply
+          // Priority 1: #علم_ساري command
+          if (incomingText.trim().startsWith('#علم')) {
+            const { handleTeachCommand } = await import('../ai/coaching-engine');
+            const teachResult = await handleTeachCommand(instance.merchantId, incomingText);
+            if (teachResult.handled && teachResult.response) {
+              const instances = await db.getWhatsAppInstancesByMerchantId(instance.merchantId);
+              const inst = instances.find((i: any) => i.status === 'active');
+              if (inst) {
+                const { sendMessageWithCredentials } = await import('../whatsapp');
+                await sendMessageWithCredentials(
+                  (inst as any).instanceId, (inst as any).token,
+                  (inst as any).apiUrl || 'https://api.green-api.com',
+                  customerPhone, teachResult.response
+                );
+              }
+              return { success: true, message: 'Teach command processed' };
+            }
+          }
+
+          // Priority 2: Coaching session reply
+          const { getActiveSession, handleCoachingReply } = await import('../ai/coaching-engine');
+          const activeCoaching = await getActiveSession(instance.merchantId);
+          if (activeCoaching) {
+            const coachResult = await handleCoachingReply(instance.merchantId, incomingText);
+            if (coachResult.handled) {
+              console.log(`[Coaching] ✅ Training reply processed for merchant ${instance.merchantId}`);
+              return { success: true, message: 'Coaching reply processed' };
+            }
+          }
+
+          // Priority 3: Escalation reply
+          const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
           const { getActiveEscalationForMerchant } = await import('../db/learning');
           const hasActiveEscalation = await getActiveEscalationForMerchant(instance.merchantId);
 
@@ -603,11 +630,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
               return { success: true, message: 'Escalation reply handled' };
             }
           }
-          // No active escalation or not matched — continue normal customer flow
+          // No active coaching/escalation — continue normal customer flow
         }
       }
     } catch (escErr) {
-      console.warn('[Escalation] Reply check failed:', escErr);
+      console.warn('[Webhook] Chain member reply check failed:', escErr);
     }
 
     // SEC-FIX: Verify merchant has active subscription before processing

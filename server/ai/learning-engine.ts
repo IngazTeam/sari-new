@@ -47,7 +47,7 @@ const VALID_DIMENSIONS: DNADimension[] = [
  * Customer messages can contain prompt injection that flows through:
  * customer message → signal → GPT analysis → DNA insight → system prompt
  */
-function sanitizeDNAText(text: string): string {
+export function sanitizeDNAText(text: string): string {
   if (!text) return '';
   return text
     .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')

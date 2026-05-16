@@ -27,6 +27,7 @@ import { startAllSheetsCronJobs } from "../sheetsCronJobs";
 import { initWeeklyReportCron } from "../weeklyReportCron";
 import { startSubscriptionJobs } from "../cron/subscription-jobs";
 import { startEscalationCascadeJob } from "../jobs/escalation-cascade";
+import { startCoachingTriggerJob } from "../jobs/coaching-trigger";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { validateEnv } from "./validateEnv";
@@ -536,6 +537,9 @@ async function startServer() {
 
       // Initialize Escalation Cascade job (runs every 60s — cascading phone alerts)
       startEscalationCascadeJob();
+
+      // Initialize Coaching Trigger job (runs every 6h — Priority Engine micro-training)
+      startCoachingTriggerJob();
 
       // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
       cron.schedule('0 9 * * *', async () => {
