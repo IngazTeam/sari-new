@@ -50,9 +50,9 @@ async function runTakeoverExpiryCheck(): Promise<void> {
     // CASE A: Timed takeovers that have expired
     // ═══════════════════════════════════════════════════════
     const expiredConvs = await pool.execute(
-      `SELECT c.id, c.merchant_id, c.customer_phone, c.human_expires_at
+      `SELECT c.id, c.merchantId, c.customerPhone, c.human_expires_at
        FROM conversations c
-       WHERE c.human_takeover = 1
+       WHERE c.humanTakeover = 1
          AND c.human_expires_at IS NOT NULL
          AND c.human_expires_at < NOW()`,
     );
@@ -68,11 +68,11 @@ async function runTakeoverExpiryCheck(): Promise<void> {
     // CASE B: Permanent takeovers (humanExpiresAt IS NULL)
     // ═══════════════════════════════════════════════════════
     const permanentConvs = await pool.execute(
-      `SELECT c.id, c.merchant_id, c.customer_phone, c.customer_name,
+      `SELECT c.id, c.merchantId, c.customerPhone, c.customerName,
               c.human_takeover_at,
               TIMESTAMPDIFF(MINUTE, c.human_takeover_at, NOW()) as age_minutes
        FROM conversations c
-       WHERE c.human_takeover = 1
+       WHERE c.humanTakeover = 1
          AND c.human_expires_at IS NULL
          AND c.human_takeover_at IS NOT NULL`,
     );
@@ -95,7 +95,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
           // Only send if there are ACTUAL unprocessed messages waiting
           const [pendingCheck] = await pool.execute(
             `SELECT COUNT(*) as count FROM messages
-             WHERE conversation_id = ? AND direction = 'incoming' AND is_processed = 0`,
+             WHERE conversationId = ? AND direction = 'incoming' AND isProcessed = 0`,
             [conv.id],
           );
           const hasPending = (pendingCheck as any[])?.[0]?.count > 0;
@@ -139,16 +139,16 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
       humanExpiresAt: null,
     } as any);
 
-    console.log(`[TakeoverExpiry] ✅ Auto-cleared takeover on conv ${conv.id} (reason: ${reason}, merchant: ${conv.merchant_id})`);
+    console.log(`[TakeoverExpiry] ✅ Auto-cleared takeover on conv ${conv.id} (reason: ${reason}, merchant: ${conv.merchantId})`);
 
     // 2. Check for unprocessed incoming messages
     const unprocessedMsgs = await pool.execute(
-      `SELECT id, content, created_at
+      `SELECT id, content, createdAt
        FROM messages
-       WHERE conversation_id = ?
+       WHERE conversationId = ?
          AND direction = 'incoming'
-         AND is_processed = 0
-       ORDER BY created_at DESC
+         AND isProcessed = 0
+       ORDER BY createdAt DESC
        LIMIT 1`,
       [conv.id],
     );
@@ -163,31 +163,31 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
     // If the webhook handler processes the same message simultaneously,
     // it will see is_processed=1 and skip it.
     await pool.execute(
-      `UPDATE messages SET is_processed = 1 WHERE id = ?`,
+      `UPDATE messages SET isProcessed = 1 WHERE id = ?`,
       [lastMsg.id],
     );
 
     // 3. Get merchant's WhatsApp instance
-    const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchant_id);
+    const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchantId);
     const activeInstance = instances.find((i: any) => i.status === 'active');
 
     if (!activeInstance) {
-      console.warn(`[TakeoverExpiry] No active WhatsApp instance for merchant ${conv.merchant_id}`);
+      console.warn(`[TakeoverExpiry] No active WhatsApp instance for merchant ${conv.merchantId}`);
       return;
     }
 
     // 4. Get bot settings
-    const botSettings = await db.getBotSettings(conv.merchant_id);
+    const botSettings = await db.getBotSettings(conv.merchantId);
     const resumeMsg = botSettings.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
 
     // 5. Generate AI response for the pending message
     try {
       const { chatWithSari } = await import('../ai/sari-personality');
       const response = await chatWithSari({
-        merchantId: conv.merchant_id,
+        merchantId: conv.merchantId,
         message: lastMsg.content || '',
         conversationId: conv.id,
-        customerPhone: conv.customer_phone,
+        customerPhone: conv.customerPhone,
       });
 
       // 6. Send via WhatsApp
@@ -197,7 +197,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
         activeInstance.instanceId,
         activeInstance.token,
         apiUrl,
-        conv.customer_phone,
+        conv.customerPhone,
         response,
       );
 
@@ -215,7 +215,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
       // 8. Track usage
       try {
         const { incrementMessageCount } = await import('../usage-tracking');
-        await incrementMessageCount(conv.merchant_id);
+        await incrementMessageCount(conv.merchantId);
       } catch { /* non-blocking */ }
 
       console.log(`[TakeoverExpiry] ✅ Auto-responded to pending message on conv ${conv.id}`);
@@ -230,7 +230,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
           activeInstance.instanceId,
           activeInstance.token,
           apiUrl,
-          conv.customer_phone,
+          conv.customerPhone,
           resumeMsg,
         );
       } catch { /* silent */ }
@@ -254,51 +254,51 @@ async function sendMerchantReminder(pool: any, conv: any): Promise<void> {
     const [pendingResult] = await pool.execute(
       `SELECT COUNT(DISTINCT c.id) as count
        FROM conversations c
-       INNER JOIN messages m ON m.conversation_id = c.id
-       WHERE c.merchant_id = ?
-         AND c.human_takeover = 1
+       INNER JOIN messages m ON m.conversationId = c.id
+       WHERE c.merchantId = ?
+         AND c.humanTakeover = 1
          AND m.direction = 'incoming'
-         AND m.is_processed = 0`,
-      [conv.merchant_id],
+         AND m.isProcessed = 0`,
+      [conv.merchantId],
     );
     const pendingCount = (pendingResult as any[])?.[0]?.count || 1;
 
     // Get merchant info to find their phone
-    const merchant = await db.getMerchantById(conv.merchant_id);
+    const merchant = await db.getMerchantById(conv.merchantId);
     if (!merchant) return;
 
-    const customerName = conv.customer_name || conv.customer_phone;
+    const customerName = conv.customerName || conv.customerPhone;
     const ageHours = Math.round((conv.age_minutes || 60) / 60);
 
     // ── PRIMARY: In-app notification (always safe, no loop risk) ──
     try {
       const { notifyNewMessage } = await import('../_core/notificationService');
       await notifyNewMessage(
-        conv.merchant_id,
+        conv.merchantId,
         'ساري ⚠️',
         `${pendingCount} ${pendingCount > 1 ? 'عملاء' : 'عميل'} بانتظار ردك منذ ${ageHours} ساعة — أرسل "يسعدنا خدمتكم" لاستئناف ساري`,
       );
-      console.log(`[TakeoverExpiry] 📢 In-app notification sent to merchant ${conv.merchant_id}`);
+      console.log(`[TakeoverExpiry] 📢 In-app notification sent to merchant ${conv.merchantId}`);
     } catch { /* non-blocking */ }
 
     // ── SECONDARY: WhatsApp reminder (with VULN-2 guard) ──
     const merchantPhone = (merchant as any).emergencyPhone || merchant.phone;
     if (!merchantPhone) {
-      console.warn(`[TakeoverExpiry] No phone for merchant ${conv.merchant_id} — skipping WhatsApp reminder`);
+      console.warn(`[TakeoverExpiry] No phone for merchant ${conv.merchantId} — skipping WhatsApp reminder`);
       return;
     }
 
     // ── VULN-2 GUARD: Don't send if merchant phone IS the customer phone ──
     // This prevents: reminder sent → outgoing webhook → new takeover activated
     const normalizedMerchant = merchantPhone.replace(/[^0-9]/g, '');
-    const normalizedCustomer = (conv.customer_phone || '').replace(/[^0-9]/g, '');
+    const normalizedCustomer = (conv.customerPhone || '').replace(/[^0-9]/g, '');
     if (normalizedMerchant === normalizedCustomer) {
       console.warn(`[TakeoverExpiry] Merchant phone === customer phone — skipping WhatsApp reminder to prevent loop`);
       return;
     }
 
     // Get the WhatsApp instance to send the reminder
-    const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchant_id);
+    const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchantId);
     const activeInstance = instances.find((i: any) => i.status === 'active');
     if (!activeInstance) return;
 
@@ -323,7 +323,7 @@ ${pendingCount === 1 ? `👤 *${customerName}* ينتظر ردك` : `👤 آخر
       reminderMessage,
     );
 
-    console.log(`[TakeoverExpiry] 📢 WhatsApp reminder sent to merchant ${conv.merchant_id} (${merchantPhone}) — ${pendingCount} pending customer(s)`);
+    console.log(`[TakeoverExpiry] 📢 WhatsApp reminder sent to merchant ${conv.merchantId} (${merchantPhone}) — ${pendingCount} pending customer(s)`);
 
   } catch (err: any) {
     console.error(`[TakeoverExpiry] Failed to send merchant reminder:`, err.message);

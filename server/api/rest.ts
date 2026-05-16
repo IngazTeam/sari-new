@@ -741,7 +741,7 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     const safePhone = phone ? stripHtml(String(phone)).replace(/[^0-9+\-\s()]/g, '').substring(0, 20) : null;
 
     const [userResult] = await pool.execute(
-      `INSERT INTO users (open_id, name, email, password, login_method, role, created_at, updated_at, last_signed_in) VALUES (?, ?, ?, ?, 'credentials', 'user', NOW(), NOW(), NOW())`,
+      `INSERT INTO users (openId, name, email, password, loginMethod, role, createdAt, updatedAt, lastSignedIn) VALUES (?, ?, ?, ?, 'credentials', 'user', NOW(), NOW(), NOW())`,
       [openId, safeName, String(email).toLowerCase().trim(), hashedPassword]
     );
 
@@ -749,8 +749,8 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
 
     // Create merchant with platform source
     const [merchantResult] = await pool.execute(
-      `INSERT INTO merchants (user_id, business_name, phone, status, integration_source, platform_type, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?, NOW(), NOW())`,
-      [userId, safeBusinessName, safePhone, source, source === 'byaan' ? 'byaan' : 'none']
+      `INSERT INTO merchants (userId, businessName, phone, status, platformType, createdAt, updatedAt) VALUES (?, ?, ?, 'active', ?, NOW(), NOW())`,
+      [userId, safeBusinessName, safePhone, source === 'byaan' ? 'byaan' : null]
     );
 
     const merchantId = (merchantResult as any).insertId;
