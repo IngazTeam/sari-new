@@ -227,12 +227,15 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
 
     if (method === 'push' || method === 'both') {
       try {
-        pushSuccess = await sendPushNotification({
-          merchantId: payload.merchantId,
-          title: payload.title,
-          body: payload.body,
-          url: payload.url,
-        });
+        const pushResult = await sendPushNotification(
+          payload.merchantId,
+          {
+            title: payload.title,
+            body: payload.body,
+            url: payload.url,
+          }
+        );
+        pushSuccess = pushResult.success > 0;
       } catch (error) {
         console.error('[Notification] Push failed:', error);
       }
