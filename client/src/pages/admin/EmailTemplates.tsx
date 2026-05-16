@@ -220,32 +220,32 @@ export default function EmailTemplates() {
 
       {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{selectedTemplate?.displayName}</DialogTitle>
             <DialogDescription>{selectedTemplate?.description}</DialogDescription>
           </DialogHeader>
           
-          <Tabs defaultValue="html" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="html" className="w-full flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-3 shrink-0">
               <TabsTrigger value="html">{t('adminEmailTemplatesPage.text8')}</TabsTrigger>
               <TabsTrigger value="text">{t('adminEmailTemplatesPage.text9')}</TabsTrigger>
               <TabsTrigger value="variables">{t('adminEmailTemplatesPage.text10')}</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="html" className="mt-4">
-              <div className="border rounded-lg p-4 bg-white">
-                <div dangerouslySetInnerHTML={{ __html: selectedTemplate?.htmlContent }} />
+            <TabsContent value="html" className="mt-4 flex-1 overflow-y-auto">
+              <div className="border rounded-lg p-4 bg-white overflow-hidden">
+                <div className="[&_*]:max-w-full" dangerouslySetInnerHTML={{ __html: selectedTemplate?.htmlContent }} />
               </div>
             </TabsContent>
             
-            <TabsContent value="text" className="mt-4">
+            <TabsContent value="text" className="mt-4 flex-1 overflow-y-auto">
               <div className="border rounded-lg p-4 bg-muted">
                 <pre className="whitespace-pre-wrap text-sm">{selectedTemplate?.textContent}</pre>
               </div>
             </TabsContent>
             
-            <TabsContent value="variables" className="mt-4">
+            <TabsContent value="variables" className="mt-4 flex-1 overflow-y-auto">
               <div className="border rounded-lg p-4">
                 <h4 className="font-semibold mb-2">{t('adminEmailTemplatesPage.text11')}</h4>
                 <div className="flex flex-wrap gap-2">
