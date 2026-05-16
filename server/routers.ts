@@ -5706,6 +5706,12 @@ export const appRouter = router({
         if (input.completedAt) updateData.completedAt = input.completedAt;
         return await seoDb.updateRecommendation(input.id, updateData);
       }),
+
+    // Seed all SEO data (one-time admin action)
+    seedAllData: adminProcedure.mutation(async () => {
+      const { seedAllSeoData } = await import('./seo-seed');
+      return await seedAllSeoData();
+    }),
   }),
 
   // Setup Wizard APIs
