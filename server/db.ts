@@ -8,6 +8,7 @@ function formatDateForDB(date: Date): string {
 }
 import { drizzle } from "drizzle-orm/mysql2";
 import "../drizzle/relations";
+import * as schema from "../drizzle/schema";
 import {
   InsertUser,
   users,
