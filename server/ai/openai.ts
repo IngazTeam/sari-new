@@ -51,11 +51,14 @@ const circuitBreaker = {
   failures: 0,
   lastFailure: 0,
   isOpen: false,
-  cooldownMs: 60_000,   // 60 seconds cooldown after circuit opens
-  threshold: 5,          // 5 consecutive failures → open circuit
+  halfOpenSuccesses: 0,      // PEN-RES-02 FIX: track consecutive successes in half-open
+  cooldownMs: 60_000,        // 60 seconds cooldown after circuit opens
+  threshold: 5,              // 5 consecutive failures → open circuit
+  recoveryThreshold: 2,      // Need 2 consecutive successes to close
 
   recordFailure() {
     this.failures++;
+    this.halfOpenSuccesses = 0;  // Reset half-open progress
     this.lastFailure = Date.now();
     if (this.failures >= this.threshold) {
       this.isOpen = true;
@@ -64,11 +67,20 @@ const circuitBreaker = {
   },
 
   recordSuccess() {
-    if (this.failures > 0) {
-      console.log(`[OpenAI] 🟢 Circuit recovered after ${this.failures} failures`);
+    if (this.isOpen) {
+      // PEN-RES-02 FIX: In half-open, require multiple successes to confirm recovery
+      this.halfOpenSuccesses++;
+      if (this.halfOpenSuccesses >= this.recoveryThreshold) {
+        console.log(`[OpenAI] 🟢 Circuit CLOSED — confirmed recovery after ${this.halfOpenSuccesses} consecutive successes`);
+        this.failures = 0;
+        this.isOpen = false;
+        this.halfOpenSuccesses = 0;
+      } else {
+        console.log(`[OpenAI] 🟡 Half-open success ${this.halfOpenSuccesses}/${this.recoveryThreshold} — awaiting confirmation`);
+      }
+    } else {
+      this.failures = 0;
     }
-    this.failures = 0;
-    this.isOpen = false;
   },
 
   canAttempt(): boolean {
@@ -101,6 +113,7 @@ export async function callGPT4(
     model?: string;
     temperature?: number;
     maxTokens?: number;
+    noRetry?: boolean; // PEN-RES-03 FIX: Skip internal retry (used when caller already handles retry)
   }
 ): Promise<string> {
   const primaryModel = options?.model || 'gpt-4o';
@@ -129,6 +142,12 @@ export async function callGPT4(
 
     // Don't retry on auth errors — they'll fail again
     if (err1.message?.includes('401') || err1.message?.includes('API key')) {
+      circuitBreaker.recordFailure();
+      throw err1;
+    }
+
+    // PEN-RES-03 FIX: Skip internal retry when caller handles its own retry
+    if (options?.noRetry) {
       circuitBreaker.recordFailure();
       throw err1;
     }
@@ -256,13 +275,29 @@ export async function transcribeAudio(
       formData.append('language', language);
     }
 
-    const response = await fetch(`${OPENAI_API_URL}/audio/transcriptions`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: formData,
-    });
+    // PEN-RES-04 FIX: 30s timeout for audio transcription
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+    let response: globalThis.Response;
+    try {
+      response = await fetch(`${OPENAI_API_URL}/audio/transcriptions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: formData,
+        signal: controller.signal,
+      });
+    } catch (fetchErr: any) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') {
+        throw new Error('Whisper transcription timeout after 30s');
+      }
+      throw fetchErr;
+    }
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const error = await response.json();

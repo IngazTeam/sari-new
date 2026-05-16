@@ -339,14 +339,30 @@ export async function invokeLLM(params: InvokeParams & { merchantId?: number }):
     payload.response_format = normalizedResponseFormat;
   }
 
-  const response = await fetch(resolveApiUrl(), {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  // PEN-RES-01 FIX: 30s timeout to prevent hanging forever
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+  let response: Response;
+  try {
+    response = await fetch(resolveApiUrl(), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+  } catch (fetchErr: any) {
+    clearTimeout(timeoutId);
+    if (fetchErr.name === 'AbortError') {
+      throw new Error('LLM invoke timeout after 30s');
+    }
+    throw fetchErr;
+  }
+
+  clearTimeout(timeoutId);
 
   if (!response.ok) {
     const errorText = await response.text();

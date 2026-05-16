@@ -1145,9 +1145,10 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       ];
 
       const retryResponse = await callGPT4(retryMessages, {
-        model: 'gpt-4o-mini',  // Faster, cheaper model
+        model: 'gpt-4o-mini',
         temperature: 0.7,
         maxTokens: 300,
+        noRetry: true, // PEN-RES-03 FIX: Already in retry — don't trigger 3 more internal attempts
       });
 
       if (retryResponse && retryResponse.trim().length > 10) {
