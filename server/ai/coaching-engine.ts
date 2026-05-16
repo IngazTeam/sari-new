@@ -27,6 +27,9 @@ import { captureSignal } from '../db/learning';
 import { cacheSuccessfulResponse } from './rag-engine';
 import { sanitizeDNAText } from './learning-engine';
 
+// Re-export for consumers that import from coaching-engine
+export { getActiveSession };
+
 // ═══════════════════════════════════════════════════════════════
 // Constants
 // ═══════════════════════════════════════════════════════════════

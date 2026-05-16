@@ -631,8 +631,10 @@ process.on('unhandledRejection', (reason) => {
 });
 
 process.on('uncaughtException', (error) => {
-  logError('Uncaught Exception — shutting down', error);
-  process.exit(1);
+  // HOTFIX: Do NOT exit — log and continue. PM2 restart loop was killing WhatsApp connectivity.
+  // Only truly fatal errors (OOM, segfault) should crash the process.
+  logError('Uncaught Exception (non-fatal — process continues)', error);
+  console.error('[CRITICAL] uncaughtException:', error?.message || error);
 });
 
 startServer().catch(console.error);

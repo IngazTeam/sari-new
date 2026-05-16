@@ -4,10 +4,10 @@
  * مع دعم تفضيلات التاجر وساعات الهدوء
  */
 
-import { db } from "../db";
+import { getDb } from "../db";
 import { sendPushNotification } from "./pushNotifications";
 import { sendEmail } from "./emailService";
-import { notificationPreferences, notificationLogs, notificationSettings } from "../../drizzle/schema";
+import { notificationPreferences, notificationLogs, notificationSettings, merchants } from "../../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 export type NotificationType = 
@@ -57,13 +57,18 @@ function isInQuietHours(startTime: string, endTime: string): boolean {
  * الحصول على تفضيلات الإشعارات للتاجر
  */
 async function getMerchantPreferences(merchantId: number) {
-  const prefs = await db.query.notificationPreferences.findFirst({
-    where: eq(notificationPreferences.merchantId, merchantId),
-  });
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(notificationPreferences)
+    .where(eq(notificationPreferences.merchantId, merchantId))
+    .limit(1);
+
+  if (result.length > 0) return result[0];
 
   // إذا لم توجد تفضيلات، إنشاء تفضيلات افتراضية
-  if (!prefs) {
-    const [newPrefs] = await db.insert(notificationPreferences).values({
+  try {
+    const [insertResult] = await db.insert(notificationPreferences).values({
       merchantId,
       newOrdersEnabled: true,
       newMessagesEnabled: true,
@@ -79,22 +84,29 @@ async function getMerchantPreferences(merchantId: number) {
       batchNotifications: false,
       batchInterval: 30,
     });
-    return await db.query.notificationPreferences.findFirst({
-      where: eq(notificationPreferences.id, newPrefs.insertId),
-    });
+    const newId = Number(insertResult.insertId);
+    const newResult = await db.select().from(notificationPreferences)
+      .where(eq(notificationPreferences.id, newId))
+      .limit(1);
+    return newResult.length > 0 ? newResult[0] : null;
+  } catch (e) {
+    console.warn('[Notification] Failed to create default preferences:', e);
+    return null;
   }
-
-  return prefs;
 }
 
 /**
  * التحقق من الإعدادات العامة للنظام
  */
 async function getGlobalSettings() {
-  const settings = await db.query.notificationSettings.findFirst();
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.select().from(notificationSettings).limit(1);
+  if (result.length > 0) return result[0];
   
   // إذا لم توجد إعدادات، إنشاء إعدادات افتراضية
-  if (!settings) {
+  try {
     const [newSettings] = await db.insert(notificationSettings).values({
       newOrdersGlobalEnabled: true,
       newMessagesGlobalEnabled: true,
@@ -106,12 +118,15 @@ async function getGlobalSettings() {
       weeklyReportDay: 0,
       weeklyReportTime: '09:00',
     });
-    return await db.query.notificationSettings.findFirst({
-      where: eq(notificationSettings.id, newSettings.insertId),
-    });
+    const newId = Number(newSettings.insertId);
+    const newResult = await db.select().from(notificationSettings)
+      .where(eq(notificationSettings.id, newId))
+      .limit(1);
+    return newResult.length > 0 ? newResult[0] : null;
+  } catch (e) {
+    console.warn('[Notification] Failed to create global settings:', e);
+    return null;
   }
-
-  return settings;
 }
 
 /**
@@ -190,6 +205,9 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
     }
 
     // تسجيل الإشعار في قاعدة البيانات
+    const db = await getDb();
+    if (!db) return false;
+
     const [logResult] = await db.insert(notificationLogs).values({
       merchantId: payload.merchantId,
       type: payload.type,
@@ -223,9 +241,10 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
     if (method === 'email' || method === 'both') {
       try {
         // الحصول على بريد التاجر
-        const merchant = await db.query.merchants.findFirst({
-          where: (merchants, { eq }) => eq(merchants.id, payload.merchantId),
-        });
+        const merchantResult = await db.select().from(merchants)
+          .where(eq(merchants.id, payload.merchantId))
+          .limit(1);
+        const merchant = merchantResult.length > 0 ? merchantResult[0] : null;
 
         if (merchant?.email) {
           emailSuccess = await sendEmail({
@@ -253,13 +272,17 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
                     (method === 'push' && pushSuccess) ||
                     (method === 'email' && emailSuccess);
 
-    await db.update(notificationLogs)
-      .set({
-        status: success ? 'sent' : 'failed',
-        sentAt: success ? new Date() : null,
-        error: success ? null : 'Failed to send notification',
-      })
-      .where(eq(notificationLogs.id, logId));
+    try {
+      await db.update(notificationLogs)
+        .set({
+          status: success ? 'sent' : 'failed',
+          sentAt: success ? new Date() : null,
+          error: success ? null : 'Failed to send notification',
+        })
+        .where(eq(notificationLogs.id, logId));
+    } catch (e) {
+      console.warn('[Notification] Failed to update log status:', e);
+    }
 
     return success;
   } catch (error) {

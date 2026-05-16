@@ -413,7 +413,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
             // Context-aware resume: fetch last messages so Sari can understand the conversation
             try {
-              const messages = await db.getMessagesByConversation(conv.id);
+              const messages = await db.getMessagesByConversationId(conv.id);
               const recentMsgs = messages.slice(-6); // Last 6 messages for context
               // VULN-1 FIX: Sanitize + truncate each message to prevent prompt injection
               const contextSummary = recentMsgs.map(m => {
@@ -462,7 +462,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         // When the merchant sends a message, it means the bot's response was inadequate
         if (outText) {
           try {
-            const messages = await db.getMessagesByConversation(conv.id);
+            const messages = await db.getMessagesByConversationId(conv.id);
             const lastBotMsg = messages.filter((m: any) => m.direction === 'outgoing').pop();
             if (lastBotMsg) {
               captureMerchantCorrection({

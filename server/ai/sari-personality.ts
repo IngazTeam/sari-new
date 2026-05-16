@@ -721,12 +721,13 @@ ${result.orderUrl}
       });
 
       // Select persuasion strategy
+      const trajectory = existingSession.sentimentTrajectory || [];
       const persuasion = selectPersuasion(
         customerProfile || { customerTier: 'new' } as any,
         existingSession as any,
         intent,
-        existingSession.sentimentTrajectory[existingSession.sentimentTrajectory.length - 1] || 'neutral',
-        existingSession.persuasionUsed
+        trajectory[trajectory.length - 1] || 'neutral',
+        existingSession.persuasionUsed || []
       );
 
       if (persuasion.strategy !== 'none') {

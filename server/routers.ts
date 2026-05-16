@@ -8317,12 +8317,9 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        const prefs = await db.query.notificationPreferences.findFirst({
-          where: (notificationPreferences, { eq }) => eq(notificationPreferences.merchantId, input.merchantId),
-        });
-
-        // Return default preferences if not found
-        if (!prefs) {
+        const dbConn = await db.getDb();
+        if (!dbConn) {
+          // Return default preferences if DB not available
           return {
             merchantId: input.merchantId,
             newOrdersEnabled: true,
@@ -8341,7 +8338,31 @@ export const appRouter = router({
           };
         }
 
-        return prefs;
+        const result = await dbConn.select().from(notificationPreferences)
+          .where(eq(notificationPreferences.merchantId, input.merchantId))
+          .limit(1);
+
+        // Return default preferences if not found
+        if (result.length === 0) {
+          return {
+            merchantId: input.merchantId,
+            newOrdersEnabled: true,
+            newMessagesEnabled: true,
+            appointmentsEnabled: true,
+            orderStatusEnabled: true,
+            missedMessagesEnabled: true,
+            whatsappDisconnectEnabled: true,
+            preferredMethod: 'both' as const,
+            quietHoursEnabled: false,
+            quietHoursStart: '22:00',
+            quietHoursEnd: '08:00',
+            instantNotifications: true,
+            batchNotifications: false,
+            batchInterval: 30,
+          };
+        }
+
+        return result[0];
       }),
 
     // Update notification preferences
@@ -8368,21 +8389,24 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+
         const { merchantId, ...updateData } = input;
 
         // Check if preferences exist
-        const existing = await db.query.notificationPreferences.findFirst({
-          where: (notificationPreferences, { eq }) => eq(notificationPreferences.merchantId, merchantId),
-        });
+        const existing = await dbConn.select().from(notificationPreferences)
+          .where(eq(notificationPreferences.merchantId, merchantId))
+          .limit(1);
 
-        if (existing) {
+        if (existing.length > 0) {
           // Update existing preferences
-          await db.update(notificationPreferences)
+          await dbConn.update(notificationPreferences)
             .set(updateData)
             .where(eq(notificationPreferences.merchantId, merchantId));
         } else {
           // Create new preferences
-          await db.insert(notificationPreferences).values({
+          await dbConn.insert(notificationPreferences).values({
             merchantId,
             ...updateData,
           });
@@ -8396,9 +8420,10 @@ export const appRouter = router({
   emailTemplates: router({
     // List all email templates
     list: adminProcedure.query(async () => {
-      const templates = await db.query.emailTemplates.findMany({
-        orderBy: (emailTemplates, { asc }) => [asc(emailTemplates.displayName)],
-      });
+      const dbConn = await db.getDb();
+      if (!dbConn) return [];
+      const templates = await dbConn.select().from(emailTemplates)
+        .orderBy(emailTemplates.displayName);
       return templates;
     }),
 
@@ -8406,15 +8431,17 @@ export const appRouter = router({
     get: adminProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
-        const template = await db.query.emailTemplates.findFirst({
-          where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
-        });
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+        const result = await dbConn.select().from(emailTemplates)
+          .where(eq(emailTemplates.id, input.id))
+          .limit(1);
 
-        if (!template) {
+        if (result.length === 0) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
         }
 
-        return template;
+        return result[0];
       }),
 
     // Update template
@@ -8426,9 +8453,11 @@ export const appRouter = router({
         textContent: z.string(),
       }))
       .mutation(async ({ input }) => {
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
         const { id, ...updateData } = input;
 
-        await db.update(emailTemplates)
+        await dbConn.update(emailTemplates)
           .set({
             ...updateData,
             isCustom: 1,
@@ -8442,18 +8471,20 @@ export const appRouter = router({
     reset: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
         // Get template name
-        const template = await db.query.emailTemplates.findFirst({
-          where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
-        });
+        const result = await dbConn.select().from(emailTemplates)
+          .where(eq(emailTemplates.id, input.id))
+          .limit(1);
 
-        if (!template) {
+        if (result.length === 0) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
         }
 
         // Reset to default (this would require storing default templates)
         // For now, just mark as not custom
-        await db.update(emailTemplates)
+        await dbConn.update(emailTemplates)
           .set({ isCustom: 0 })
           .where(eq(emailTemplates.id, input.id));
 
@@ -8467,13 +8498,16 @@ export const appRouter = router({
         email: z.string().email(),
       }))
       .mutation(async ({ input }) => {
-        const template = await db.query.emailTemplates.findFirst({
-          where: (emailTemplates, { eq }) => eq(emailTemplates.id, input.id),
-        });
+        const dbConn = await db.getDb();
+        if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+        const result = await dbConn.select().from(emailTemplates)
+          .where(eq(emailTemplates.id, input.id))
+          .limit(1);
 
-        if (!template) {
+        if (result.length === 0) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
         }
+        const template = result[0];
 
         // Send test email with sample data
         const { sendEmail } = await import('./reports/email-sender');

@@ -52,11 +52,17 @@ export async function extractKeywordsFromMessage(
 "متى يوصل الطلب؟" → [{"keyword": "توصيل", "category": "shipping", "confidence": 90}]`;
 
     const response = await callGPT4([
-      { role: 'system', content: 'أنت محلل ذكي للكلمات المفتاحية في رسائل العملاء.' },
+      { role: 'system', content: 'أنت محلل ذكي للكلمات المفتاحية في رسائل العملاء. أجب بـ JSON فقط بدون أي تنسيق markdown.' },
       { role: 'user', content: prompt }
     ]);
 
-    const result: KeywordExtractionResult = JSON.parse(response);
+    // Strip markdown code blocks (GPT sometimes wraps JSON in ```json...```)
+    const cleanResponse = response
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim();
+
+    const result: KeywordExtractionResult = JSON.parse(cleanResponse);
 
     // حفظ الكلمات المفتاحية في قاعدة البيانات
     for (const kw of result.keywords) {
