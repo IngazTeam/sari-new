@@ -722,9 +722,16 @@ ${result.orderUrl}
 
       // Select persuasion strategy
       const trajectory = existingSession.sentimentTrajectory || [];
+      // Fast path: no arsenal loaded — pass empty to avoid undefined.length crashes
+      const emptyArsenal = {
+        activeDiscounts: [], loyaltyPoints: 0, loyaltyTier: null,
+        availableRewards: [], abandonedCart: null, bestSellers: [],
+        totalProducts: 0, crossSellSuggestions: [], upcomingBookings: [],
+        availableServices: [],
+      };
       const persuasion = selectPersuasion(
         customerProfile || { customerTier: 'new' } as any,
-        existingSession as any,
+        emptyArsenal,
         intent,
         trajectory[trajectory.length - 1] || 'neutral',
         existingSession.persuasionUsed || []

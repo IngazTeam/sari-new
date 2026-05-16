@@ -198,20 +198,36 @@ export function selectPersuasion(
   lastSentiment: string,
   usedTactics: string[]
 ): PersuasionPlan {
+  // Defensive: normalize parameters to prevent undefined.length crashes
+  // (e.g., when ConversationSession is accidentally passed as arsenal)
+  if (!arsenal || typeof arsenal !== 'object') return { strategy: 'none', prompt: '' };
+  const safeArsenal: SalesArsenal = {
+    activeDiscounts: arsenal.activeDiscounts || [],
+    loyaltyPoints: arsenal.loyaltyPoints || 0,
+    loyaltyTier: arsenal.loyaltyTier || null,
+    availableRewards: arsenal.availableRewards || [],
+    abandonedCart: arsenal.abandonedCart || null,
+    bestSellers: arsenal.bestSellers || [],
+    totalProducts: arsenal.totalProducts || 0,
+    crossSellSuggestions: arsenal.crossSellSuggestions || [],
+    upcomingBookings: arsenal.upcomingBookings || [],
+    availableServices: arsenal.availableServices || [],
+  };
+  const safeTactics = usedTactics || [];
   
   // 1. Abandoned cart → highest priority recovery
-  if (arsenal.abandonedCart && !usedTactics.includes('cart_recovery')) {
-    const sweetener = arsenal.activeDiscounts[0]?.code;
+  if (safeArsenal.abandonedCart && !safeTactics.includes('cart_recovery')) {
+    const sweetener = safeArsenal.activeDiscounts[0]?.code;
     return {
       strategy: 'cart_recovery',
-      prompt: buildCartRecoveryPrompt(arsenal.abandonedCart, sweetener),
+      prompt: buildCartRecoveryPrompt(safeArsenal.abandonedCart, sweetener),
       sweetener,
     };
   }
 
   // 2. Angry/frustrated → empathy + compensation
-  if ((lastSentiment === 'angry' || lastSentiment === 'frustrated') && !usedTactics.includes('empathy_resolve')) {
-    const sweetener = arsenal.activeDiscounts[0]?.code;
+  if ((lastSentiment === 'angry' || lastSentiment === 'frustrated') && !safeTactics.includes('empathy_resolve')) {
+    const sweetener = safeArsenal.activeDiscounts[0]?.code;
     return {
       strategy: 'empathy_resolve',
       prompt: buildEmpathyPrompt(sweetener),
@@ -220,16 +236,16 @@ export function selectPersuasion(
   }
 
   // 3. VIP/loyal with loyalty points → reward (enhanced v6)
-  if ((profile.customerTier === 'vip' || profile.customerTier === 'loyal') && arsenal.loyaltyPoints > 50 && !usedTactics.includes('loyalty_reward')) {
+  if ((profile.customerTier === 'vip' || profile.customerTier === 'loyal') && safeArsenal.loyaltyPoints > 50 && !safeTactics.includes('loyalty_reward')) {
     return {
       strategy: 'loyalty_reward',
-      prompt: buildLoyaltyPrompt(arsenal.loyaltyPoints, arsenal.loyaltyTier, arsenal.availableRewards),
+      prompt: buildLoyaltyPrompt(safeArsenal.loyaltyPoints, safeArsenal.loyaltyTier, safeArsenal.availableRewards),
     };
   }
 
   // 4. Price objection → value comparison + proactive discount
-  if (intent === 'objecting' && !usedTactics.includes('proactive_discount') && arsenal.activeDiscounts.length > 0) {
-    const discount = arsenal.activeDiscounts[0];
+  if (intent === 'objecting' && !safeTactics.includes('proactive_discount') && safeArsenal.activeDiscounts.length > 0) {
+    const discount = safeArsenal.activeDiscounts[0];
     return {
       strategy: 'proactive_discount',
       prompt: buildDiscountPrompt(discount),
@@ -238,7 +254,7 @@ export function selectPersuasion(
   }
 
   // 5. Comparing → social proof
-  if (intent === 'comparing' && !usedTactics.includes('social_proof')) {
+  if (intent === 'comparing' && !safeTactics.includes('social_proof')) {
     return {
       strategy: 'social_proof',
       prompt: buildSocialProofPrompt(),
@@ -246,31 +262,31 @@ export function selectPersuasion(
   }
 
   // 6. Ready to buy → smart upsell
-  if (intent === 'ready_to_buy' && arsenal.bestSellers.length > 1 && !usedTactics.includes('smart_upsell')) {
+  if (intent === 'ready_to_buy' && safeArsenal.bestSellers.length > 1 && !safeTactics.includes('smart_upsell')) {
     return {
       strategy: 'smart_upsell',
-      prompt: buildUpsellPrompt(arsenal.bestSellers),
+      prompt: buildUpsellPrompt(safeArsenal.bestSellers),
     };
   }
 
   // 7. Cross-sell from purchase history (v6)
-  if (arsenal.crossSellSuggestions.length > 0 && !usedTactics.includes('cross_sell')) {
+  if (safeArsenal.crossSellSuggestions.length > 0 && !safeTactics.includes('cross_sell')) {
     return {
       strategy: 'cross_sell',
-      prompt: buildCrossSellPrompt(arsenal.crossSellSuggestions),
+      prompt: buildCrossSellPrompt(safeArsenal.crossSellSuggestions),
     };
   }
 
   // 8. Upcoming booking → follow-up (v6)
-  if (arsenal.upcomingBookings.length > 0 && !usedTactics.includes('booking_followup')) {
+  if (safeArsenal.upcomingBookings.length > 0 && !safeTactics.includes('booking_followup')) {
     return {
       strategy: 'booking_followup',
-      prompt: buildBookingFollowupPrompt(arsenal.upcomingBookings, arsenal.availableServices),
+      prompt: buildBookingFollowupPrompt(safeArsenal.upcomingBookings, safeArsenal.availableServices),
     };
   }
 
   // 9. New customer → social proof welcome
-  if (profile.customerTier === 'new' && !usedTactics.includes('social_proof')) {
+  if (profile.customerTier === 'new' && !safeTactics.includes('social_proof')) {
     return {
       strategy: 'social_proof',
       prompt: buildSocialProofPrompt(),
@@ -278,8 +294,8 @@ export function selectPersuasion(
   }
 
   // 10. Has active discounts but hasn't been offered → offer naturally
-  if (arsenal.activeDiscounts.length > 0 && !usedTactics.includes('proactive_discount')) {
-    const discount = arsenal.activeDiscounts[0];
+  if (safeArsenal.activeDiscounts.length > 0 && !safeTactics.includes('proactive_discount')) {
+    const discount = safeArsenal.activeDiscounts[0];
     return {
       strategy: 'proactive_discount',
       prompt: buildDiscountPrompt(discount),
