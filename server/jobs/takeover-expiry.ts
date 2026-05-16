@@ -169,7 +169,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
 
     // 3. Get merchant's WhatsApp instance
     const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchant_id);
-    const activeInstance = instances.find((i: any) => i.isActive || i.is_active);
+    const activeInstance = instances.find((i: any) => i.status === 'active');
 
     if (!activeInstance) {
       console.warn(`[TakeoverExpiry] No active WhatsApp instance for merchant ${conv.merchant_id}`);
@@ -299,7 +299,7 @@ async function sendMerchantReminder(pool: any, conv: any): Promise<void> {
 
     // Get the WhatsApp instance to send the reminder
     const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchant_id);
-    const activeInstance = instances.find((i: any) => i.isActive || i.is_active);
+    const activeInstance = instances.find((i: any) => i.status === 'active');
     if (!activeInstance) return;
 
     const reminderMessage = `${SYSTEM_MSG_PREFIX}

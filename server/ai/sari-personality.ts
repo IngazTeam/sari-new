@@ -161,7 +161,7 @@ ${settings.customGreeting}
 3. **لا تكرر الترحيب أبداً**: إذا سبق أن رحبت بالعميل، لا تقل "مرحباً" أو "أهلاً" مرة أخرى. ادخل في صلب الموضوع مباشرة
 4. **افهم الإشارات الضمنية**: إذا قال العميل "هات التفاصيل" فهو يطلب تفصيل آخر موضوع تم مناقشته — ارجع للسياق
 5. **لا تقل أبداً "هل يمكنك توضيح؟"** إذا كان السياق واضحاً من الرسائل السابقة
-6. **لا تقل "خلني أتأكد وأرد عليك"** — أجب فوراً بما تعرفه. إذا ما عندك معلومة دقيقة، قل ما تعرفه ثم اعرض ربط العميل بالمتخصص
+6. **إذا ما عندك المعلومة الدقيقة** — قل "خلني أتأكد من المعلومة وأرد عليك" ولا تختلق معلومات أبداً. فريق العمل سيتلقى السؤال فوراً ويرد عليك بالجواب
 7. **تابع خيط المحادثة**: إذا كان العميل يناقش عدة مواضيع، تتبع كل موضوع وأجب عليه بترتيب
 8. **هدفك الأساسي هو البيع**: لا تتخلص من العميل بردود عامة. كل رد يجب أن يقرّب العميل خطوة من الشراء أو الاشتراك
 
@@ -187,6 +187,46 @@ ${settings.customGreeting}
 تذكر: أنت تمثل هذا المتجر فقط. لا تخرج عن نطاقه أبداً! هدفك الأول والأخير: تحقيق المبيعات بذكاء 🎯`;
 
   return prompt;
+}
+
+/**
+ * Detect if GPT's response indicates a knowledge gap
+ * (AI succeeded but didn't actually answer the question)
+ * Returns true if escalation to merchant is needed.
+ */
+function isKnowledgeGapResponse(botResponse: string, customerMessage: string): boolean {
+  const resp = botResponse.toLowerCase();
+  const msg = customerMessage.toLowerCase();
+
+  // Skip greetings, thanks, and simple exchanges — no escalation needed
+  if (msg.match(/^(سلام|مرحب|هلا|أهل|hi|hello|شكر|مع السلامة|باي|تمام|أوك|ok|حياك)/)) return false;
+  if (resp.length < 30) return false; // Very short = probably a simple reply
+
+  // Detect Arabic/English knowledge gap indicators in Sari's response
+  const gapIndicators = [
+    'خلني أتأكد',
+    'خلني أتحقق',
+    'خلني أرجع لك',
+    'بتأكد وأرد',
+    'أتأكد من المعلومة',
+    'أرجع لك',
+    'ما عندي معلومات دقيقة',
+    'ما أقدر أجاوبك',
+    'أتواصل مع الفريق',
+    'أرجع للفريق',
+    'أسأل المختص',
+    'لا أملك هذه المعلومة',
+    'أبغى أتأكد',
+    'ما عندي تفاصيل',
+    'أحتاج أتأكد',
+    'أحتاج أرجع',
+    "i'll check",
+    "let me verify",
+    "i'm not sure",
+    "let me get back",
+  ];
+
+  return gapIndicators.some(indicator => resp.includes(indicator));
 }
 
 /**
@@ -824,6 +864,19 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         customerSentiment: null,
       }).catch(() => {});
 
+      // ═══ Knowledge Gap Detection — FAST PATH ═══
+      if (isKnowledgeGapResponse(response, params.message)) {
+        console.log(`[chatWithSari] 📨 FAST PATH: Knowledge gap detected — escalating to merchant`);
+        handleSmartEscalation({
+          merchantId: params.merchantId,
+          conversationId: params.conversationId || 0,
+          customerPhone: params.customerPhone,
+          customerName: params.customerName,
+          customerQuestion: params.message,
+          botResponse: response,
+        }).catch((err) => console.warn('[Escalation] Post-response escalation failed:', err.message));
+      }
+
       console.log(`[chatWithSari] ⚡ FAST PATH: msg #${existingSession.messageCount + 1}, ${Date.now() - _startTime}ms, strategy=${persuasion.strategy}`);
       return response.trim();
     }
@@ -1102,9 +1155,24 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     // Adjust response based on sentiment
     response = adjustResponseForSentiment(response, sentiment);
 
+    // ═══ Knowledge Gap Detection — FULL PATH ═══
+    // If GPT responded but couldn't provide specific info → escalate to merchant
+    if (isKnowledgeGapResponse(response, params.message)) {
+      console.log(`[chatWithSari] 📨 FULL PATH: Knowledge gap detected — escalating to merchant`);
+      handleSmartEscalation({
+        merchantId: params.merchantId,
+        conversationId: params.conversationId || 0,
+        customerPhone: params.customerPhone,
+        customerName: params.customerName,
+        customerQuestion: params.message,
+        botResponse: response,
+      }).catch((err) => console.warn('[Escalation] Post-response escalation failed:', err.message));
+    }
+
     // === RAG: Cache successful response for future reuse ===
     try {
-      if (response && response.length > 20) {
+      // Don't cache knowledge gap responses — they're not useful
+      if (response && response.length > 20 && !isKnowledgeGapResponse(response, params.message)) {
         // Non-blocking cache save (fire-and-forget)
         cacheSuccessfulResponse(params.merchantId, params.message, response)
           .catch(err => console.warn('[chatWithSari] Cache save failed:', err));
