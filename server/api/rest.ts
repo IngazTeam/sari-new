@@ -749,7 +749,7 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
 
     // Create merchant with platform source
     const [merchantResult] = await pool.execute(
-      `INSERT INTO merchants (userId, businessName, phone, status, platformType, createdAt, updatedAt) VALUES (?, ?, ?, 'active', ?, NOW(), NOW())`,
+      `INSERT INTO merchants (userId, businessName, phone, status, platform_type, createdAt, updatedAt) VALUES (?, ?, ?, 'active', ?, NOW(), NOW())`,
       [userId, safeBusinessName, safePhone, source === 'byaan' ? 'byaan' : null]
     );
 

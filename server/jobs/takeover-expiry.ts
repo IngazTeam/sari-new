@@ -52,7 +52,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
     const expiredConvs = await pool.execute(
       `SELECT c.id, c.merchantId, c.customerPhone, c.human_expires_at
        FROM conversations c
-       WHERE c.humanTakeover = 1
+       WHERE c.human_takeover = 1
          AND c.human_expires_at IS NOT NULL
          AND c.human_expires_at < NOW()`,
     );
@@ -72,7 +72,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
               c.human_takeover_at,
               TIMESTAMPDIFF(MINUTE, c.human_takeover_at, NOW()) as age_minutes
        FROM conversations c
-       WHERE c.humanTakeover = 1
+       WHERE c.human_takeover = 1
          AND c.human_expires_at IS NULL
          AND c.human_takeover_at IS NOT NULL`,
     );
@@ -256,7 +256,7 @@ async function sendMerchantReminder(pool: any, conv: any): Promise<void> {
        FROM conversations c
        INNER JOIN messages m ON m.conversationId = c.id
        WHERE c.merchantId = ?
-         AND c.humanTakeover = 1
+         AND c.human_takeover = 1
          AND m.direction = 'incoming'
          AND m.isProcessed = 0`,
       [conv.merchantId],
