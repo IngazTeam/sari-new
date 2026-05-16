@@ -117,6 +117,9 @@ export const authRouter = router({
                 .regex(/[0-9]/, 'Password must contain at least one number'),
             businessName: z.string().min(2),
             phone: z.string().optional(),
+            // Byaan integration: auto-link merchant to tenant domain on signup
+            domain: z.string().max(255).optional(),
+            platform: z.string().max(50).optional(),
         }))
         .mutation(async ({ input, ctx }) => {
             // SEC-07 FIX: Rate limit signup attempts by IP
@@ -158,12 +161,26 @@ export const authRouter = router({
             // Activate trial period (7 days)
             await db.activateUserTrial(user.id);
 
-            await db.createMerchant({
+            const merchant = await db.createMerchant({
                 userId: user.id,
                 businessName: input.businessName,
                 phone: input.phone || null,
                 status: 'active', // LAUNCH-FIX: Set active immediately (was 'pending' with no activation path)
             });
+
+            // Byaan auto-link: if domain + platform=byaan, create byaan_connections entry
+            if (input.platform === 'byaan' && input.domain && merchant) {
+                try {
+                    const { createByaanConnection } = await import('./integrations/byaan');
+                    const cleanDomain = input.domain.replace(/<[^>]*>/g, '').trim().substring(0, 255);
+                    if (/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(cleanDomain)) {
+                        await createByaanConnection(merchant.id, cleanDomain);
+                        console.log(`[Signup] Byaan auto-linked: merchant=${merchant.id}, domain=${cleanDomain}`);
+                    }
+                } catch (e) {
+                    console.error('[Signup] Byaan auto-link failed (non-blocking):', e);
+                }
+            }
 
             // Send welcome email
             try {

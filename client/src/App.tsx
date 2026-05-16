@@ -232,6 +232,14 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/signup" component={SignUp} />
+      {/* Byaan sends to /register — redirect to /signup preserving query params */}
+      <Route path="/register">
+        {() => {
+          const search = window.location.search;
+          window.location.replace(`/signup${search}`);
+          return null;
+        }}
+      </Route>
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/products" component={ProductsPage} />

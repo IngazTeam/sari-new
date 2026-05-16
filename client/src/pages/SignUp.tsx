@@ -28,6 +28,11 @@ export default function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Read Byaan query params: ?domain=iht.com.sa&platform=byaan
+  const urlParams = new URLSearchParams(window.location.search);
+  const byaanDomain = urlParams.get('domain') || '';
+  const byaanPlatform = urlParams.get('platform') || '';
+
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (data) => {
       // Redirect based on role
@@ -79,6 +84,8 @@ export default function SignUp() {
       password: formData.password,
       businessName: formData.businessName,
       phone: formData.phone,
+      // Byaan auto-link params
+      ...(byaanDomain && byaanPlatform ? { domain: byaanDomain, platform: byaanPlatform } : {}),
     });
   };
 
@@ -108,6 +115,14 @@ export default function SignUp() {
               {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {byaanPlatform === 'byaan' && byaanDomain && (
+                <Alert>
+                  <AlertDescription className="text-sm">
+                    ✨ سيتم ربط حسابك تلقائياً مع منصة <strong>بيان</strong> ({byaanDomain})
+                  </AlertDescription>
                 </Alert>
               )}
 
