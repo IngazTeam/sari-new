@@ -56,7 +56,8 @@ async function extractFromDocx(buffer: Buffer): Promise<{ text: string }> {
  * Reads all worksheets and formats cell values into structured text
  */
 async function extractFromExcel(buffer: Buffer): Promise<{ text: string; pageCount: number }> {
-  const ExcelJS = await import('exceljs');
+  const ExcelJSModule = await import('exceljs');
+  const ExcelJS = ExcelJSModule.default || ExcelJSModule;
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
 
