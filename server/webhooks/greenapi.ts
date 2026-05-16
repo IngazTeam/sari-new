@@ -447,6 +447,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       }
 
       // Auto-detect: merchant replied manually → activate takeover
+      // ── VULN-2 FIX: Skip system-generated messages (cron reminders, API messages) ──
+      if (outText && (
+        outText.startsWith('⚠️ *تنبيه من ساري:*') || // System reminder from takeover-expiry job
+        payload.typeWebhook === 'outgoingAPIMessageWebhook'  // Message sent via API (Sari's own responses)
+      )) {
+        console.log('[Takeover] Skipping system/API message — not a manual merchant reply');
+        return { success: true, message: 'System message ignored' };
+      }
+
       const convs = await db.getConversationsByMerchantId(instance.merchantId);
       const conv = convs.find(c => c.customerPhone === customerPhone);
       if (conv) {
