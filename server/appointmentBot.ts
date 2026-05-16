@@ -253,7 +253,7 @@ ${formatAvailableSlots(availableSlots)}
 أي وقت يناسبك؟ (اكتب الرقم أو الوقت)`;
   } catch (error) {
     console.error("[AppointmentBot] Error handling appointment:", error);
-    return "عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى أو التواصل معنا مباشرة.";
+    return "خلني أتحقق من المواعيد المتاحة وأرجع لك 🔍 أو تقدر تتواصل معنا مباشرة 🙏";
   }
 }
 
@@ -339,7 +339,7 @@ ${staff ? `• الموظف: ${staff.name}` : ""}
     console.error("[AppointmentBot] Error confirming appointment:", error);
     return {
       success: false,
-      message: "عذراً، حدث خطأ أثناء تأكيد الموعد. يرجى المحاولة مرة أخرى.",
+      message: "خلني أتأكد من تأكيد موعدك وأرجع لك 🔍 جرب مرة ثانية أو تواصل معنا مباشرة 🙏",
     };
   }
 }

@@ -276,7 +276,7 @@ ${tier ? `\n✨ مزاياك:\n• خصم ${tier.discountPercentage}%${tier.free
     return message;
   } catch (error) {
     console.error('[Loyalty] Error getting customer info:', error);
-    return 'عذراً، حدث خطأ في جلب معلومات نقاط الولاء.';
+    return 'خلني أتحقق من رصيد نقاطك وأرجع لك 🔍';
   }
 }
 
@@ -319,6 +319,6 @@ export async function getAvailableRewardsInfo(merchantId: number, customerPhone:
     return message;
   } catch (error) {
     console.error('[Loyalty] Error getting rewards info:', error);
-    return 'عذراً، حدث خطأ في جلب المكافآت المتاحة.';
+    return 'خلني أتحقق من المكافآت المتاحة لك وأرجع لك بالتفاصيل 🎁';
   }
 }

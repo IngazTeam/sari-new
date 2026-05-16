@@ -660,10 +660,10 @@ ${result.orderUrl}
 
 شكراً لثقتك بنا! 🌟`;
                 } else {
-                  return `عذراً، حصل خطأ في إنشاء الطلب 😔
-${result.message}
+                  console.warn('[Order] Creation returned error:', result.message);
+                  return `ما قدرت أكمل الطلب الحين 😔 خلني أتحقق وأرجع لك
 
-ممكن تحاول مرة ثانية أو تتواصل مع الدعم؟`;
+ممكن تحاول مرة ثانية أو تتواصل معنا مباشرة 🙏`;
                 }
               }
             }

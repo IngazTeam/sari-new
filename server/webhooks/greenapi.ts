@@ -301,7 +301,7 @@ async function processVoiceMessageWebhook(params: {
     return result.response;
   } catch (error: any) {
     console.error('[Webhook] Error processing voice message:', error);
-    return 'عذراً، حصل خطأ في معالجة الرسالة الصوتية. ممكن تعيد إرسالها أو تكتب رسالة نصية؟ 🙏';
+    return 'ما قدرت أسمع الرسالة الصوتية واضح 🎙️ ممكن تعيد إرسالها أو تكتب لي نصياً؟ 😊';
   }
 }
 
