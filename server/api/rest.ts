@@ -839,6 +839,520 @@ sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) =
 });
 
 // ════════════════════════════════════════════════════════════════
+// Platform Helper — Resolve merchant from X-Tenant-Domain
+// ════════════════════════════════════════════════════════════════
+
+/**
+ * Resolve a merchant from the tenantDomain header.
+ * Used by all platform/merchant/* and platform/sync/* endpoints.
+ * Returns merchant object or null if not found.
+ */
+async function resolveMerchantByDomain(tenantDomain: string | undefined): Promise<any | null> {
+  if (!tenantDomain) return null;
+
+  const cleanDomain = stripHtml(String(tenantDomain));
+  if (!isValidDomain(cleanDomain)) return null;
+
+  try {
+    const pool = await db.getPool();
+    if (!pool) return null;
+
+    const [rows] = await pool.execute(
+      `SELECT m.* FROM merchants m
+       INNER JOIN byaan_connections bc ON bc.merchant_id = m.id
+       WHERE bc.tenant_domain = ? AND bc.is_active = 1 LIMIT 1`,
+      [cleanDomain]
+    );
+
+    return (rows as any[])?.[0] || null;
+  } catch (e) {
+    console.error('[SariAPI] resolveMerchantByDomain failed:', e);
+    return null;
+  }
+}
+
+/** Standard 404 response when merchant not found for a domain */
+function merchantNotFound(res: Response) {
+  return res.status(404).json({
+    error: 'Merchant not found for this domain',
+    errorAr: 'لا يوجد تاجر مرتبط بهذا الدومين',
+    hint: 'Ensure the merchant registered on sary.live and linked to this tenant domain',
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// Platform Sync Endpoints — X-Platform-Key authenticated
+// (Byaan sends data → Sari stores locally)
+// ════════════════════════════════════════════════════════════════
+
+// ── POST /api/v1/platform/sync/products — Sync products via Platform Key ──
+sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Response) => {
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkSyncLimit(`platform_sync_p_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
+  }
+
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  const { products, mode: rawMode } = req.body;
+  // SEC-2: Whitelist mode parameter
+  const mode = rawMode === 'replace' ? 'replace' : 'append';
+  if (!Array.isArray(products)) {
+    return res.status(400).json({ error: 'products array is required', errorAr: 'مصفوفة المنتجات مطلوبة' });
+  }
+  if (products.length > 500) {
+    return res.status(400).json({ error: 'Max 500 products per sync', errorAr: 'الحد الأقصى 500 منتج' });
+  }
+
+  try {
+    const merchantId = merchant.id;
+
+    if (mode === 'replace') {
+      await db.deleteAllProductsByMerchantId(merchantId);
+    }
+
+    let created = 0;
+    for (const p of products) {
+      if (!p.name) continue;
+      // SEC-3: Sanitize all text fields to prevent stored XSS
+      await db.createProduct({
+        merchantId,
+        name: stripHtml(String(p.name)).substring(0, 255),
+        description: p.description ? stripHtml(String(p.description)).substring(0, 2000) : undefined,
+        price: p.price ? Number(p.price) : undefined,
+        category: p.category ? stripHtml(String(p.category)).substring(0, 100) : undefined,
+        imageUrl: p.imageUrl ? stripHtml(String(p.imageUrl)).substring(0, 500) : undefined,
+        inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
+      });
+      created++;
+    }
+
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(merchantId, 'products_imported', `Platform Sync: ${created} منتج (${mode || 'append'})`, { count: created, mode, source: 'platform' });
+
+    res.json({ success: true, created, mode: mode || 'append' });
+  } catch (e) {
+    console.error('[SariAPI] Platform product sync failed:', e);
+    res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت المزامنة' });
+  }
+});
+
+// ── POST /api/v1/platform/sync/trainees — Sync trainees via Platform Key ──
+sariPlatformRouter.post('/sync/trainees', async (req: PlatformRequest, res: Response) => {
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkSyncLimit(`platform_sync_t_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
+  }
+
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  const { trainees, mode } = req.body;
+  if (!Array.isArray(trainees)) {
+    return res.status(400).json({ error: 'trainees array is required', errorAr: 'مصفوفة المتدربين مطلوبة' });
+  }
+  if (trainees.length > 500) {
+    return res.status(400).json({ error: 'Max 500 trainees per sync', errorAr: 'الحد الأقصى 500 متدرب' });
+  }
+
+  try {
+    const { syncTrainees } = await import('../integrations/byaan');
+    const result = await syncTrainees(merchant.id, trainees);
+
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(merchant.id, 'settings_changed',
+      `Platform Sync متدربين: ${result.created} جديد، ${result.updated} محدث، ${result.linked} مربوط`,
+      { ...result, source: 'platform' }
+    );
+
+    res.json({ success: true, ...result, mode: mode || 'upsert' });
+  } catch (e) {
+    console.error('[SariAPI] Platform trainee sync failed:', e);
+    res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة المتدربين' });
+  }
+});
+
+// ── POST /api/v1/platform/sync/settings — Sync settings via Platform Key ──
+sariPlatformRouter.post('/sync/settings', async (req: PlatformRequest, res: Response) => {
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkSyncLimit(`platform_sync_s_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
+  }
+
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  const { settings } = req.body;
+  if (!settings || typeof settings !== 'object') {
+    return res.status(400).json({ error: 'settings object is required', errorAr: 'كائن الإعدادات مطلوب' });
+  }
+
+  try {
+    const { syncSettings } = await import('../integrations/byaan');
+    const result = await syncSettings(merchant.id, settings);
+
+    if (result.updated.length > 0) {
+      const { logBrainActivity } = await import('../routers-sari-brain');
+      await logBrainActivity(merchant.id, 'settings_changed',
+        `Platform Settings Sync: ${result.updated.join(', ')}`,
+        { updated: result.updated, source: 'platform' }
+      );
+    }
+
+    res.json({ success: true, ...result });
+  } catch (e) {
+    console.error('[SariAPI] Platform settings sync failed:', e);
+    res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة الإعدادات' });
+  }
+});
+
+// ── POST /api/v1/platform/sync/faqs — Sync FAQs via Platform Key ──
+sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response) => {
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkSyncLimit(`platform_sync_f_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
+  }
+
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  const { faqs, mode: rawFaqMode } = req.body;
+  // SEC-2: Whitelist mode parameter
+  const mode = rawFaqMode === 'replace' ? 'replace' : 'append';
+  if (!Array.isArray(faqs)) {
+    return res.status(400).json({ error: 'faqs array is required', errorAr: 'مصفوفة الأسئلة مطلوبة' });
+  }
+  if (faqs.length > 50) {
+    return res.status(400).json({ error: 'Max 50 FAQs per sync', errorAr: 'الحد الأقصى 50 سؤال' });
+  }
+
+  try {
+    const merchantId = merchant.id;
+
+    if (mode === 'replace') {
+      await db.deleteAllExtractedFaqs(merchantId);
+    }
+
+    let created = 0;
+    for (const f of faqs) {
+      if (!f.question || !f.answer) continue;
+      // SEC-5: Sanitize all text fields to prevent stored XSS
+      await db.createExtractedFaq({
+        merchantId,
+        question: stripHtml(String(f.question)).substring(0, 500),
+        answer: stripHtml(String(f.answer)).substring(0, 2000),
+        category: f.category ? stripHtml(String(f.category)).substring(0, 100) : 'عام',
+        isActive: true,
+        useInBot: true,
+      });
+      created++;
+    }
+
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(merchantId, 'faq_created', `Platform Sync: ${created} سؤال شائع (${mode || 'append'})`, { count: created, source: 'platform' });
+
+    res.json({ success: true, created, mode: mode || 'append' });
+  } catch (e) {
+    console.error('[SariAPI] Platform FAQ sync failed:', e);
+    res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت المزامنة' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// Platform Dashboard Endpoints — /api/v1/platform/merchant/*
+// (Byaan dashboard reads Sari data for a specific tenant)
+// ════════════════════════════════════════════════════════════════
+
+// ── GET /api/v1/platform/merchant/stats — Dashboard statistics ──
+sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Response) => {
+  // SEC-1: Rate limit dashboard reads
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkApiRateLimit(`platform_dash_${keyPrefix}`, 60, 60_000)) {
+    return res.status(429).json({ error: 'Dashboard rate limit exceeded', errorAr: 'تجاوزت حد طلبات لوحة التحكم' });
+  }
+
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  try {
+    const merchantId = merchant.id;
+
+    const [conversations, products, faqs] = await Promise.all([
+      db.getConversationsByMerchantId(merchantId),
+      db.getProductsByMerchantId(merchantId),
+      db.getExtractedFaqsByMerchantId(merchantId),
+    ]);
+
+    // Calculate enrollments from sari_conversions
+    let totalEnrollments = 0;
+    let totalRevenue = 0;
+    try {
+      const { getConversions } = await import('../integrations/byaan');
+      const conversions = await getConversions(merchantId, 200);
+      totalEnrollments = conversions.filter((c: any) => c.action_type === 'enrollment').length;
+      totalRevenue = conversions.reduce((sum: number, c: any) => sum + (Number(c.amount) || 0), 0);
+    } catch (e) { /* sari_conversions table may not exist yet */ }
+
+    // Calculate response rate: conversations with at least one bot reply / total
+    const totalConversations = conversations.length;
+    const respondedConversations = conversations.filter((c: any) =>
+      c.messageCount > 1 || c.status === 'completed'
+    ).length;
+    const responseRate = totalConversations > 0
+      ? Math.round((respondedConversations / totalConversations) * 100)
+      : 0;
+
+    res.json({
+      totalConversations,
+      totalEnrollments,
+      totalRevenue,
+      responseRate,
+      // Extra fields for richer dashboards
+      totalProducts: products.length,
+      totalFaqs: faqs.length,
+    });
+  } catch (e) {
+    console.error('[SariAPI] Platform merchant stats failed:', e);
+    res.status(500).json({ error: 'Failed to fetch stats', errorAr: 'فشل جلب الإحصائيات' });
+  }
+});
+
+// ── GET /api/v1/platform/merchant/conversations — Paginated conversations ──
+sariPlatformRouter.get('/merchant/conversations', async (req: PlatformRequest, res: Response) => {
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 15, 1), 100);
+    const page = Math.max(parseInt(req.query.page as string) || 1, 1);
+    // SEC-4: Whitelist status filter values
+    const rawStatus = req.query.status as string;
+    const validStatuses = ['all', 'active', 'completed', 'expired', 'pending'];
+    const statusFilter = rawStatus && validStatuses.includes(rawStatus) ? rawStatus : undefined;
+    const offset = (page - 1) * limit;
+
+    // Get total count for pagination
+    const totalCount = await db.getConversationCountByMerchantId(merchant.id);
+
+    // Get paginated conversations
+    const conversations = await db.getConversationsByMerchantId(merchant.id, { limit: limit + 1, offset });
+
+    // Check if there's a next page
+    const hasNext = conversations.length > limit;
+    const paginatedConversations = conversations.slice(0, limit);
+
+    // Filter by status if requested
+    const filtered = statusFilter && statusFilter !== 'all'
+      ? paginatedConversations.filter((c: any) => c.status === statusFilter)
+      : paginatedConversations;
+
+    const totalPages = Math.ceil(totalCount / limit);
+
+    res.json({
+      conversations: filtered.map((c: any) => ({
+        id: `conv_${c.id}`,
+        customerName: c.customerName || 'غير معروف',
+        phone: c.customerPhone,
+        lastMessage: c.lastMessage || '',
+        messageCount: c.messageCount || 0,
+        date: c.lastMessageAt ? new Date(c.lastMessageAt).toISOString().split('T')[0] : c.createdAt ? new Date(c.createdAt).toISOString().split('T')[0] : null,
+        status: c.status || 'active',
+      })),
+      pagination: {
+        from: offset + 1,
+        to: Math.min(offset + filtered.length, totalCount),
+        total: totalCount,
+        prevPage: page > 1 ? page - 1 : null,
+        nextPage: hasNext ? page + 1 : null,
+        currentPage: page,
+        totalPages,
+      },
+    });
+  } catch (e) {
+    console.error('[SariAPI] Platform merchant conversations failed:', e);
+    res.status(500).json({ error: 'Failed to fetch conversations', errorAr: 'فشل جلب المحادثات' });
+  }
+});
+
+// ── GET /api/v1/platform/merchant/instances — WhatsApp instances ──
+sariPlatformRouter.get('/merchant/instances', async (req: PlatformRequest, res: Response) => {
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  try {
+    const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
+
+    res.json({
+      total: instances.length,
+      instances: instances.map((i: any) => ({
+        id: i.id,
+        instanceId: i.instanceId,
+        phoneNumber: i.phoneNumber,
+        displayName: i.displayName,
+        status: i.status,
+        isPrimary: i.isPrimary,
+        isActive: i.isActive,
+        createdAt: i.createdAt,
+      })),
+    });
+  } catch (e) {
+    console.error('[SariAPI] Platform merchant instances failed:', e);
+    res.status(500).json({ error: 'Failed to fetch instances', errorAr: 'فشل جلب الأرقام' });
+  }
+});
+
+// ── GET /api/v1/platform/merchant/enrollments — Enrollment report ──
+sariPlatformRouter.get('/merchant/enrollments', async (req: PlatformRequest, res: Response) => {
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  try {
+    // SEC-4: Whitelist period values
+    const rawPeriod = req.query.period as string;
+    const validPeriods = ['week', 'month', 'year'];
+    const period = rawPeriod && validPeriods.includes(rawPeriod) ? rawPeriod : 'month';
+    const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 50, 1), 200);
+
+    // Get conversions filtered by period
+    const { getConversions } = await import('../integrations/byaan');
+    const allConversions = await getConversions(merchant.id, limit);
+
+    // Filter by period
+    const now = new Date();
+    let periodStart: Date;
+    switch (period) {
+      case 'week':
+        periodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'year':
+        periodStart = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    }
+
+    const filtered = allConversions.filter((c: any) =>
+      new Date(c.created_at) >= periodStart
+    );
+
+    const enrollments = filtered.filter((c: any) => c.action_type === 'enrollment');
+    const payments = filtered.filter((c: any) => c.action_type === 'payment');
+
+    res.json({
+      period,
+      totalEnrollments: enrollments.length,
+      totalPayments: payments.length,
+      totalRevenue: filtered.reduce((sum: number, c: any) => sum + (Number(c.amount) || 0), 0),
+      enrollments: enrollments.map((c: any) => ({
+        id: c.id,
+        customerName: c.customer_name,
+        phone: c.customer_phone,
+        productName: c.product_name,
+        amount: Number(c.amount) || 0,
+        status: c.status,
+        date: c.created_at,
+      })),
+    });
+  } catch (e) {
+    console.error('[SariAPI] Platform merchant enrollments failed:', e);
+    res.status(500).json({ error: 'Failed to fetch enrollments', errorAr: 'فشل جلب التسجيلات' });
+  }
+});
+
+// ── GET /api/v1/platform/merchant/status — Connection status ──
+sariPlatformRouter.get('/merchant/status', async (req: PlatformRequest, res: Response) => {
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+
+  if (!merchant) {
+    return res.json({ connected: false, merchant: null });
+  }
+
+  try {
+    // Get Byaan connection details
+    const { getByaanConnection } = await import('../integrations/byaan');
+    const connection = await getByaanConnection(merchant.id);
+
+    // Get WhatsApp instances count
+    const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
+    const activeInstances = instances.filter((i: any) => i.status === 'active');
+
+    res.json({
+      connected: true,
+      merchant: {
+        id: merchant.id,
+        businessName: merchant.businessName,
+        status: merchant.status,
+      },
+      whatsapp: {
+        totalInstances: instances.length,
+        activeInstances: activeInstances.length,
+        hasActiveNumber: activeInstances.length > 0,
+      },
+      sync: connection ? {
+        status: connection.sync_status,
+        lastSyncAt: connection.last_sync_at,
+        errors: connection.sync_errors,
+      } : null,
+    });
+  } catch (e) {
+    console.error('[SariAPI] Platform merchant status failed:', e);
+    res.status(500).json({ error: 'Failed to fetch status', errorAr: 'فشل جلب الحالة' });
+  }
+});
+
+// ── PUT /api/v1/platform/merchant/instances/:id — Toggle WhatsApp instance ──
+sariPlatformRouter.put('/merchant/instances/:id', async (req: PlatformRequest, res: Response) => {
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  try {
+    const instanceId = parseInt(req.params.id);
+    if (isNaN(instanceId)) {
+      return res.status(400).json({ error: 'Invalid instance ID', errorAr: 'معرف الرقم غير صالح' });
+    }
+
+    // Verify ownership — instance must belong to this merchant
+    const instance = await db.getWhatsAppInstanceById(instanceId);
+    if (!instance || (instance as any).merchantId !== merchant.id) {
+      return res.status(404).json({ error: 'Instance not found', errorAr: 'الرقم غير موجود' });
+    }
+
+    const { isActive, isPrimary } = req.body;
+
+    if (isPrimary === true) {
+      await db.setWhatsAppInstanceAsPrimary(instanceId, merchant.id);
+    }
+
+    if (typeof isActive === 'boolean') {
+      const newStatus = isActive ? 'active' : 'inactive';
+
+      // Check phone conflict when activating
+      if (newStatus === 'active' && (instance as any).phoneNumber) {
+        const conflicting = await db.getActiveInstanceByPhoneNumber(
+          (instance as any).phoneNumber, merchant.id
+        );
+        if (conflicting) {
+          await db.deactivateInstancesByPhoneNumber(
+            (instance as any).phoneNumber, merchant.id
+          );
+        }
+      }
+
+      await db.updateWhatsAppInstance(instanceId, { status: newStatus });
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    console.error('[SariAPI] Platform merchant instance toggle failed:', e);
+    res.status(500).json({ error: 'Failed to update instance', errorAr: 'فشل تحديث الرقم' });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
 // Byaan Integration — Merchant-Authenticated Endpoints  
 // (Uses Bearer API key, scoped to merchant)
 // ════════════════════════════════════════════════════════════════
