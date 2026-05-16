@@ -1124,14 +1124,18 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     });
 
     // ═══════════════════════════════════════════════════
-    // RETRY ONCE with a simpler, faster prompt
+    // ALL RETRIES FAILED — Smart fallback based on error type
     // ═══════════════════════════════════════════════════
+    // Note: callGPT4 already has 3-attempt retry + circuit breaker.
+    // If we're here, ALL 3 internal attempts failed.
+    // Try ONE more time with stripped-down context (different strategy).
+
     try {
-      console.log('[chatWithSari] Attempting retry with simplified prompt...');
+      console.log('[chatWithSari] callGPT4 exhausted (3 internal attempts failed). Trying stripped-context fallback...');
       const merchant = await db.getMerchantById(params.merchantId);
       const businessName = merchant?.businessName || 'نشاطنا التجاري';
 
-      // Build minimal context — just merchant name + message
+      // Minimal prompt — no RAG, no context, no personality layers
       const retryMessages: ChatMessage[] = [
         {
           role: 'system',
@@ -1141,13 +1145,13 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       ];
 
       const retryResponse = await callGPT4(retryMessages, {
-        model: 'gpt-4o-mini',  // Faster, cheaper model for retry
+        model: 'gpt-4o-mini',  // Faster, cheaper model
         temperature: 0.7,
         maxTokens: 300,
       });
 
       if (retryResponse && retryResponse.trim().length > 10) {
-        console.log('[chatWithSari] ✅ Retry succeeded');
+        console.log('[chatWithSari] ✅ Stripped-context fallback succeeded');
 
         // Save the retry response as outgoing message
         if (params.conversationId) {
@@ -1167,15 +1171,17 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         return retryResponse.trim();
       }
     } catch (retryError: any) {
-      console.error('[chatWithSari] Retry also failed:', retryError.message);
+      console.error('[chatWithSari] Stripped-context fallback also failed:', retryError.message);
     }
 
     // ═══════════════════════════════════════════════════
-    // ALL RETRIES FAILED — Smart fallback based on error type
+    // ABSOLUTE FALLBACK — No GPT available at all
     // ═══════════════════════════════════════════════════
-    
-    // Rate limit: brief, human-like delay suggestion
-    if (error.message?.includes('rate limit') || error.status === 429) {
+    // Rule: NEVER show "خطأ" or "error" to the customer.
+    // Always respond with something helpful and human.
+
+    // Rate limit / circuit breaker: brief, human-like response
+    if (error.message?.includes('rate limit') || error.status === 429 || error.message?.includes('circuit breaker')) {
       return 'الضغط كبير شوي الحين 😅 أقدر أساعدك خلال لحظات';
     }
     
@@ -1186,10 +1192,10 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
 
     // Timeout
     if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
-      return 'أحتاج لحظة للتحقق من المعلومات 🔍 ممكن تعيد سؤالك؟';
+      return 'خلني أتحقق من المعلومة وأرجع لك 🔍';
     }
 
-    // Context-aware fallback: use merchant info to give a helpful response
+    // Context-aware fallback: use merchant info + auto-escalate to merchant
     try {
       const merchant = await db.getMerchantById(params.merchantId);
       if (merchant) {

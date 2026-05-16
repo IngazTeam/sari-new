@@ -332,13 +332,13 @@ export async function generateAIResponse(
     });
 
     const content = response.choices[0]?.message?.content;
-    const aiReply = typeof content === 'string' ? content : 'عذراً، حدث خطأ في معالجة رسالتك. يرجى المحاولة مرة أخرى.';
+    const aiReply = typeof content === 'string' ? content : 'خلني أتأكد من المعلومة وأرجع لك 🔍';
     
     return aiReply.trim();
 
   } catch (error) {
     console.error('[AI] Error generating response:', error);
-    return 'عذراً، حدث خطأ مؤقت. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.';
+    return 'أهلاً! خلني أتأكد من المعلومة وأرد عليك بأسرع وقت 🙏';
   }
 }
 
