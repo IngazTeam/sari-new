@@ -687,10 +687,10 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
   const { name, email, password, businessName, phone, tenantDomain, callbackUrl, webhookSecret } = req.body;
   const source = req.platform || 'external';
 
-  if (!email || !password || !businessName) {
+  if (!email || !password || !businessName || !phone) {
     return res.status(400).json({
-      error: 'email, password, and businessName are required',
-      errorAr: 'الإيميل وكلمة المرور واسم النشاط مطلوبة',
+      error: 'email, password, businessName, and phone are required',
+      errorAr: 'الإيميل وكلمة المرور واسم النشاط ورقم الجوال مطلوبة',
     });
   }
 
@@ -783,7 +783,8 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
       created: true,
       merchantId,
       email: String(email).toLowerCase().trim(),
-      loginUrl: 'https://sari.app/login',
+      loginUrl: 'https://sary.live/login',
+      dashboardUrl: 'https://sary.live/merchant/whatsapp-setup',
       apiKey: apiKeyResult.key,
       platform: source,
     });
