@@ -12,6 +12,9 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import * as db from "./db";
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
 
+// PEN-ESC-05 FIX: Rate limiter for escalation phone chain updates
+const _escalationPhoneRateLimit: Record<number, number> = {};
+
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
     if (ctx.user.role !== 'admin') {
@@ -527,6 +530,17 @@ export const merchantsRouter = router({
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
+
+            // PEN-ESC-05 FIX: Rate limit phone chain updates (10s cooldown)
+            const now = Date.now();
+            const lastUpdate = _escalationPhoneRateLimit[merchant.id];
+            if (lastUpdate && now - lastUpdate < 10_000) {
+                throw new TRPCError({
+                    code: 'TOO_MANY_REQUESTS',
+                    message: 'يرجى الانتظار قبل تحديث أرقام التصعيد مرة أخرى',
+                });
+            }
+            _escalationPhoneRateLimit[merchant.id] = now;
 
             // Ensure columns exist (auto-migration)
             const pool = await db.getPool();

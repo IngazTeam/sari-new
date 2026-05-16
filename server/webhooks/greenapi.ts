@@ -574,7 +574,12 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     console.log('[Webhook] Merchant ID:', instance.merchantId);
 
-    // ── Smart Escalation: Check if this is ANY phone in the chain replying to an alert ──
+    // ── PEN-ESC-01 FIX: Smart Escalation reply detection ──
+    // Only treat as escalation reply if:
+    // 1. Sender is in the merchant's escalation phone chain
+    // 2. There IS an active (pending/notified) escalation waiting for an answer
+    // Without check #2, any normal message from a chain member would be
+    // incorrectly forwarded to a customer — cross-customer data leakage.
     try {
       const incomingText = extractMessageText(payload);
       if (incomingText) {
@@ -582,17 +587,23 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const isChainMember = await isPhoneInEscalationChain(instance.merchantId, customerPhone);
 
         if (isChainMember) {
-          const result = await handleMerchantEscalationReply({
-            merchantId: instance.merchantId,
-            merchantPhone: customerPhone,
-            replyText: incomingText,
-          });
+          // PEN-ESC-01: Verify there's actually a pending escalation before treating as reply
+          const { getActiveEscalationForMerchant } = await import('../db/learning');
+          const hasActiveEscalation = await getActiveEscalationForMerchant(instance.merchantId);
 
-          if (result.handled) {
-            console.log(`[Escalation] ✅ Chain member reply routed to customer ${result.escalation?.customerPhone}`);
-            return { success: true, message: 'Escalation reply handled' };
+          if (hasActiveEscalation) {
+            const result = await handleMerchantEscalationReply({
+              merchantId: instance.merchantId,
+              merchantPhone: customerPhone,
+              replyText: incomingText,
+            });
+
+            if (result.handled) {
+              console.log(`[Escalation] ✅ Chain member reply routed to customer ${result.escalation?.customerPhone?.slice(-4)}`);
+              return { success: true, message: 'Escalation reply handled' };
+            }
           }
-          // Not an escalation reply — continue normal flow
+          // No active escalation or not matched — continue normal customer flow
         }
       }
     } catch (escErr) {

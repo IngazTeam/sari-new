@@ -131,7 +131,8 @@ export async function ensureLearningTables(): Promise<void> {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_merchant_status (merchant_id, status),
         INDEX idx_merchant_date (merchant_id, created_at DESC),
-        INDEX idx_customer (merchant_id, customer_phone, status)
+        INDEX idx_customer (merchant_id, customer_phone, status),
+        INDEX idx_cascade (status, last_escalated_at)
       )
     `);
 
@@ -478,16 +479,25 @@ export async function markEscalationNotified(escalationId: number, merchantId: n
   );
 }
 
-/** Update escalation level (cascade to next phone) */
-export async function updateEscalationLevel(escalationId: number, level: number): Promise<void> {
+/** Update escalation level (cascade to next phone) — PEN-ESC-03 FIX: merchant_id guard */
+export async function updateEscalationLevel(escalationId: number, level: number, merchantId?: number): Promise<void> {
   const pool = await db.getPool();
   if (!pool) return;
-  await pool.execute(
-    `UPDATE sari_escalation_queue 
-     SET current_escalation_level = ?, last_escalated_at = NOW()
-     WHERE id = ?`,
-    [level, escalationId]
-  );
+  if (merchantId) {
+    await pool.execute(
+      `UPDATE sari_escalation_queue 
+       SET current_escalation_level = ?, last_escalated_at = NOW()
+       WHERE id = ? AND merchant_id = ?`,
+      [level, escalationId, merchantId]
+    );
+  } else {
+    await pool.execute(
+      `UPDATE sari_escalation_queue 
+       SET current_escalation_level = ?, last_escalated_at = NOW()
+       WHERE id = ?`,
+      [level, escalationId]
+    );
+  }
 }
 
 /** Get escalations that need cascading to next phone (notified > 5 min ago, not answered) */
@@ -496,23 +506,32 @@ export async function getEscalationsNeedingCascade(): Promise<EscalationItem[]> 
   const pool = await db.getPool();
   if (!pool) return [];
 
+  // PEN-ESC-02 FIX: LIMIT 20 per cycle to prevent unbounded processing
   const [rows] = await pool.execute(
     `SELECT * FROM sari_escalation_queue 
      WHERE status = 'notified'
      AND last_escalated_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)
-     AND expires_at > NOW()`
+     AND expires_at > NOW()
+     LIMIT 20`
   );
   return rows as EscalationItem[];
 }
 
-/** Mark escalation as exhausted (all phones tried, no answer) */
-export async function markEscalationExhausted(escalationId: number): Promise<void> {
+/** Mark escalation as exhausted (all phones tried, no answer) — PEN-ESC-03 FIX */
+export async function markEscalationExhausted(escalationId: number, merchantId?: number): Promise<void> {
   const pool = await db.getPool();
   if (!pool) return;
-  await pool.execute(
-    `UPDATE sari_escalation_queue SET status = 'expired', followed_up = 1 WHERE id = ?`,
-    [escalationId]
-  );
+  if (merchantId) {
+    await pool.execute(
+      `UPDATE sari_escalation_queue SET status = 'expired', followed_up = 1 WHERE id = ? AND merchant_id = ?`,
+      [escalationId, merchantId]
+    );
+  } else {
+    await pool.execute(
+      `UPDATE sari_escalation_queue SET status = 'expired', followed_up = 1 WHERE id = ?`,
+      [escalationId]
+    );
+  }
 }
 
 /** Resolve escalation with merchant's answer */
@@ -579,6 +598,29 @@ export async function getActiveEscalation(
   return (rows as any[])[0] as EscalationItem || null;
 }
 
+/**
+ * PEN-ESC-01 FIX: Check if merchant has ANY active escalation pending.
+ * Used by webhook to verify an escalation reply is expected before processing.
+ * Without this check, any message from a chain member phone would be
+ * incorrectly treated as an escalation reply — causing cross-customer data leakage.
+ */
+export async function getActiveEscalationForMerchant(
+  merchantId: number
+): Promise<EscalationItem | null> {
+  await ensureLearningTables();
+  const pool = await db.getPool();
+  if (!pool) return null;
+
+  const [rows] = await pool.execute(
+    `SELECT * FROM sari_escalation_queue 
+     WHERE merchant_id = ? AND status IN ('pending', 'notified')
+     ORDER BY created_at DESC LIMIT 1`,
+    [merchantId]
+  );
+
+  return (rows as any[])[0] as EscalationItem || null;
+}
+
 /** Get escalations needing follow-up (>15 min, not followed up yet) */
 export async function getEscalationsNeedingFollowUp(merchantId: number): Promise<EscalationItem[]> {
   await ensureLearningTables();
@@ -595,16 +637,18 @@ export async function getEscalationsNeedingFollowUp(merchantId: number): Promise
   return rows as EscalationItem[];
 }
 
-/** Expire stale escalations (>24 hours unanswered) */
+/** Expire stale escalations (>24 hours unanswered) — PEN-INFO-03 FIX: batch limit */
 export async function expireStaleEscalations(): Promise<number> {
   await ensureLearningTables();
   const pool = await db.getPool();
   if (!pool) return 0;
 
+  // PEN-INFO-03: Limit to 500 per cycle to prevent table locks
   const [result] = await pool.execute(
     `UPDATE sari_escalation_queue 
      SET status = 'expired' 
-     WHERE status IN ('pending', 'notified') AND expires_at < NOW()`
+     WHERE status IN ('pending', 'notified') AND expires_at < NOW()
+     LIMIT 500`
   );
   return (result as any).affectedRows || 0;
 }

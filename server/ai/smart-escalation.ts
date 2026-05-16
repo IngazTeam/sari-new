@@ -31,6 +31,7 @@ import {
 import { cacheSuccessfulResponse } from './rag-engine';
 import { captureSignal } from '../db/learning';
 import { sendNotification } from '../_core/notificationService';
+import { z } from 'zod';
 
 // ═══════════════════════════════════════════════════════════════
 // Escalation Contact Chain Types
@@ -78,12 +79,16 @@ function buildAlertMessage(params: {
 }): string {
   const { customerName, customerPhone, question, level } = params;
   const q = question.substring(0, 300);
+  // PEN-ESC-06 FIX: Mask customer phone to protect privacy (PDPL compliance)
+  const maskedPhone = customerPhone.length > 6
+    ? customerPhone.slice(0, 3) + '***' + customerPhone.slice(-3)
+    : '***';
 
   if (level === 0) {
     // Level 1 — Initial alert
     return `🔔 *تنبيه من ساري — سؤال عميل*
 
-👤 *العميل:* ${customerName} (${customerPhone})
+👤 *العميل:* ${customerName} (${maskedPhone})
 ❓ *السؤال:* ${q}
 
 💡 *رد على هذه الرسالة بالجواب وساري سيوصله للعميل تلقائياً*
@@ -94,7 +99,7 @@ function buildAlertMessage(params: {
     // Level 2 — Escalated (5 min passed)
     return `🔴 *تصعيد عاجل من ساري — لم يُرد على سؤال العميل*
 
-👤 *العميل:* ${customerName} (${customerPhone})
+👤 *العميل:* ${customerName} (${maskedPhone})
 ❓ *السؤال:* ${q}
 
 ⚠️ لم يرد المسؤول الأول خلال 5 دقائق
@@ -105,7 +110,7 @@ function buildAlertMessage(params: {
   const minutesPassed = (level + 1) * 5;
   return `🚨 *تصعيد أخير من ساري — عميل ينتظر!*
 
-👤 *العميل:* ${customerName} (${customerPhone})
+👤 *العميل:* ${customerName} (${maskedPhone})
 ❓ *السؤال:* ${q}
 
 ⛔ لم يرد أحد خلال ${minutesPassed} دقيقة — العميل ما زال ينتظر!
@@ -116,18 +121,28 @@ function buildAlertMessage(params: {
 // Helper: Get merchant's escalation phone chain
 // ═══════════════════════════════════════════════════════════════
 
+// PEN-ESC-07 FIX: Schema validation for escalation chain JSON
+const escalationChainSchema = z.array(z.object({
+  phone: z.string().min(1),
+  label: z.string().default(''),
+  order: z.number().int().min(1).max(10),
+})).max(5);
+
 async function getEscalationChain(merchantId: number): Promise<EscalationContact[]> {
   const merchant = await db.getMerchantById(merchantId);
   if (!merchant) return [];
 
-  // Try JSON escalation chain first
+  // Try JSON escalation chain first — with schema validation
   try {
     const raw = (merchant as any).escalationPhones;
     if (raw) {
-      const chain = JSON.parse(raw) as EscalationContact[];
+      const parsed = JSON.parse(raw);
+      const chain = escalationChainSchema.parse(parsed);
       if (chain.length > 0) return chain.sort((a, b) => a.order - b.order);
     }
-  } catch { /* invalid JSON */ }
+  } catch (parseErr: any) {
+    console.warn(`[Escalation] Invalid escalation_phones JSON for merchant ${merchantId}:`, parseErr.message);
+  }
 
   // Fallback to legacy single phone
   const phone = (merchant as any).emergencyPhone || merchant.phone;
@@ -345,7 +360,7 @@ export async function processCascadingEscalations(): Promise<number> {
           }
         }
 
-        await markEscalationExhausted(esc.id);
+        await markEscalationExhausted(esc.id, merchantId);
         processed++;
         continue;
       }
@@ -415,16 +430,20 @@ export async function handleMerchantEscalationReply(params: {
         customerReply
       );
 
-      console.log(`[Escalation] ✅ Answer delivered to customer ${resolved.customerPhone}`);
+      console.log(`[Escalation] ✅ Answer delivered to customer ***${resolved.customerPhone?.slice(-4)}`);
 
       // Cache this Q&A for future reuse — the bot learns permanently
+      // PEN-ESC-04 FIX: Sanitize reply before caching to prevent knowledge poisoning
       try {
+        const safeReply = params.replyText
+          .substring(0, 2000)
+          .replace(/https?:\/\/[^\s]+/g, '[رابط]'); // Strip URLs to prevent phishing in cached answers
         await cacheSuccessfulResponse(
           params.merchantId,
           resolved.question,
-          params.replyText
+          safeReply
         );
-        console.log(`[Escalation] 🧬 Q&A cached for future use`);
+        console.log(`[Escalation] 🧬 Q&A cached for future use (sanitized)`);
       } catch { /* cache is optional */ }
     }
 
