@@ -5,7 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone, Brain, Sparkles, Zap, Target } from 'lucide-react';
+import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone, Brain, Sparkles, Zap, Target, GraduationCap, Dna, AlertTriangle, TrendingDown } from 'lucide-react';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
 import { TrialBanner } from '@/components/TrialBanner';
@@ -64,6 +64,16 @@ export default function MerchantDashboard() {
   const { data: aiInsights, isLoading: insightsLoading } = trpc.dashboard.getAiInsights.useQuery(undefined, {
     staleTime: 6 * 60 * 60 * 1000, // 6 hours — matches backend cache
     retry: false, // Don't retry on failure — graceful degradation
+  });
+
+  // 🧬 Sari Maturity — Learning Dashboard
+  const { data: learningData } = trpc.sariBrain.getLearningDashboard.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000, // 5 min cache
+    retry: false,
+  });
+  const { data: healthScore } = trpc.sariBrain.getHealthScore.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 
   const isLoading = merchantLoading || subscriptionLoading || conversationsLoading || campaignsLoading || summaryLoading;
@@ -295,6 +305,176 @@ export default function MerchantDashboard() {
               })}
             </div>
           </div>
+        )}
+
+        {/* ═══ 🧬 Sari Maturity — بطاقة أداء ساري ═══ */}
+        {learningData && (
+          (() => {
+            const maturityConfig: Record<string, { emoji: string; label: string; color: string; bg: string; progress: number; border: string }> = {
+              newborn:     { emoji: '🐣', label: 'مولود جديد',  color: 'text-gray-500',    bg: 'from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900', progress: 10,  border: 'border-gray-200 dark:border-gray-700' },
+              learning:    { emoji: '📖', label: 'يتعلم',       color: 'text-blue-500',    bg: 'from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20', progress: 30,  border: 'border-blue-200 dark:border-blue-800' },
+              growing:     { emoji: '🌱', label: 'ينمو',        color: 'text-emerald-500', bg: 'from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20', progress: 55,  border: 'border-emerald-200 dark:border-emerald-800' },
+              experienced: { emoji: '💪', label: 'محترف',       color: 'text-purple-500',  bg: 'from-purple-50 to-violet-50 dark:from-purple-900/20 dark:to-violet-900/20', progress: 80,  border: 'border-purple-200 dark:border-purple-800' },
+              expert:      { emoji: '🏆', label: 'خبير مبيعات', color: 'text-amber-500',   bg: 'from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20', progress: 100, border: 'border-amber-200 dark:border-amber-800' },
+            };
+            const config = maturityConfig[learningData.maturityLevel] || maturityConfig.newborn;
+            const generation = learningData.generation || 0;
+            const totalSignals = learningData.totalSignals || 0;
+            const totalConversations = learningData.totalConversations || 0;
+            const dnaInsights = learningData.dnaInsights || [];
+            const knowledgeGaps = dnaInsights.filter((d: any) => d.dimension === 'knowledge_gaps');
+            const activeInsights = dnaInsights.filter((d: any) => d.dimension !== 'knowledge_gaps' && d.autoApplied);
+            const knowledgeScore = typeof healthScore === 'object' && healthScore ? (healthScore as any).overallScore ?? (healthScore as any).overall ?? 0 : 0;
+
+            return (
+              <Card className={`border-2 ${config.border} bg-gradient-to-br ${config.bg} overflow-hidden relative`}>
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                  learningData.maturityLevel === 'expert' ? 'from-amber-400 via-yellow-400 to-amber-400' :
+                  learningData.maturityLevel === 'experienced' ? 'from-purple-400 via-violet-400 to-purple-400' :
+                  learningData.maturityLevel === 'growing' ? 'from-emerald-400 via-green-400 to-emerald-400' :
+                  learningData.maturityLevel === 'learning' ? 'from-blue-400 via-indigo-400 to-blue-400' :
+                  'from-gray-300 via-gray-400 to-gray-300'
+                }`} />
+                <CardContent className="pt-5 pb-4">
+                  <div className="flex items-start justify-between flex-wrap gap-4">
+                    {/* Maturity Badge */}
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg ${
+                          learningData.maturityLevel === 'expert' ? 'bg-gradient-to-br from-amber-400 to-yellow-500' :
+                          learningData.maturityLevel === 'experienced' ? 'bg-gradient-to-br from-purple-400 to-violet-500' :
+                          learningData.maturityLevel === 'growing' ? 'bg-gradient-to-br from-emerald-400 to-green-500' :
+                          learningData.maturityLevel === 'learning' ? 'bg-gradient-to-br from-blue-400 to-indigo-500' :
+                          'bg-gradient-to-br from-gray-300 to-gray-400'
+                        }`}>
+                          {config.emoji}
+                        </div>
+                        {generation > 0 && (
+                          <span className="absolute -bottom-1 -right-1 text-[10px] font-bold bg-background border-2 border-current rounded-full w-6 h-6 flex items-center justify-center shadow-sm" style={{ color: 'inherit' }}>
+                            G{generation}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className={`text-lg font-bold ${config.color}`}>
+                            {config.label}
+                          </h3>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-background/80 border text-muted-foreground font-medium">
+                            الجيل {generation}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-0.5">
+                          مستوى نضج موظف المبيعات الذكي
+                        </p>
+                        {/* Progress Bar */}
+                        <div className="mt-2 w-48">
+                          <div className="h-2 rounded-full bg-background/60 border overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                                learningData.maturityLevel === 'expert' ? 'bg-gradient-to-r from-amber-400 to-yellow-400' :
+                                learningData.maturityLevel === 'experienced' ? 'bg-gradient-to-r from-purple-400 to-violet-400' :
+                                learningData.maturityLevel === 'growing' ? 'bg-gradient-to-r from-emerald-400 to-green-400' :
+                                learningData.maturityLevel === 'learning' ? 'bg-gradient-to-r from-blue-400 to-indigo-400' :
+                                'bg-gray-400'
+                              }`}
+                              style={{ width: `${config.progress}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <Link href="/merchant/sari-brain">
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Dna className="h-4 w-4" />
+                        تفاصيل التطور
+                      </Button>
+                    </Link>
+                  </div>
+
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/60 border">
+                      <MessageSquare className="h-4 w-4 text-blue-500 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-lg font-bold text-blue-600 leading-none"><AnimatedNumber value={totalConversations} /></p>
+                        <p className="text-[10px] text-muted-foreground">محادثة تعلّم منها</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/60 border">
+                      <Zap className="h-4 w-4 text-amber-500 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-lg font-bold text-amber-600 leading-none"><AnimatedNumber value={totalSignals} /></p>
+                        <p className="text-[10px] text-muted-foreground">إشارة سلوكية</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/60 border">
+                      <GraduationCap className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-lg font-bold text-emerald-600 leading-none"><AnimatedNumber value={activeInsights.length} /></p>
+                        <p className="text-[10px] text-muted-foreground">نمط مكتشف</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/60 border">
+                      <Brain className="h-4 w-4 text-purple-500 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-lg font-bold text-purple-600 leading-none">{knowledgeScore}%</p>
+                        <p className="text-[10px] text-muted-foreground">تغطية المعرفة</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DNA Insights + Knowledge Gaps */}
+                  {(activeInsights.length > 0 || knowledgeGaps.length > 0) && (
+                    <div className="grid md:grid-cols-2 gap-3 mt-3">
+                      {/* Active Discoveries */}
+                      {activeInsights.length > 0 && (
+                        <div className="p-3 rounded-xl bg-background/60 border">
+                          <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                            <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                            أنماط مكتشفة تلقائياً
+                          </p>
+                          <div className="space-y-1.5">
+                            {activeInsights.slice(0, 3).map((d: any, i: number) => (
+                              <div key={i} className="flex items-start gap-2">
+                                <span className="text-emerald-500 text-xs mt-0.5">✓</span>
+                                <p className="text-xs text-foreground/80 leading-relaxed">{d.insight?.substring(0, 80)}</p>
+                              </div>
+                            ))}
+                            {activeInsights.length > 3 && (
+                              <p className="text-[10px] text-muted-foreground">+{activeInsights.length - 3} أنماط أخرى</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {/* Knowledge Gaps */}
+                      {knowledgeGaps.length > 0 && (
+                        <div className="p-3 rounded-xl bg-background/60 border border-amber-200/50 dark:border-amber-800/50">
+                          <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                            فجوات معرفية — تحتاج تحسين
+                          </p>
+                          <div className="space-y-1.5">
+                            {knowledgeGaps.slice(0, 2).map((d: any, i: number) => (
+                              <div key={i} className="flex items-start gap-2">
+                                <span className="text-amber-500 text-xs mt-0.5">⚠</span>
+                                <p className="text-xs text-foreground/80 leading-relaxed">{d.insight?.substring(0, 80)}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <Link href="/merchant/sari-brain">
+                            <Button variant="ghost" size="sm" className="mt-2 h-7 text-xs text-amber-600 hover:text-amber-700 p-0">
+                              حسّن معرفة ساري →
+                            </Button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()
         )}
 
         {/* Header with Welcome Message */}
