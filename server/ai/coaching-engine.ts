@@ -200,7 +200,7 @@ async function sendCoachingQuestion(
   questionIndex: number,
   totalQuestions: number
 ): Promise<void> {
-  const question = await getCurrentQuestion(sessionId, questionIndex);
+  const question = await getCurrentQuestion(sessionId, questionIndex, merchantId);
   if (!question) return;
 
   // Get merchant's phone
@@ -252,7 +252,8 @@ export async function handleCoachingReply(
 
     const currentQ = await getCurrentQuestion(
       session.id,
-      (session as any).current_question_index ?? session.currentQuestionIndex ?? 0
+      (session as any).current_question_index ?? session.currentQuestionIndex ?? 0,
+      merchantId
     );
     if (!currentQ) {
       // No more questions — complete
@@ -295,7 +296,9 @@ export async function handleCoachingReply(
       replyMsg = '📝 شكراً على التصحيح! سجلتها';
 
       // Cache the correction (Merchant Approved Knowledge — tier 2)
-      const safeCorrection = correction.replace(/https?:\/\/[^\s]+/g, '[رابط]');
+      const safeCorrection = correction
+        .replace(/https?:\/\/[^\s]+/g, '[رابط]')
+        .replace(/\[.*?\]\(.*?\)/g, '[رابط]');  // COACH-03 FIX: Strip markdown links too
       cacheSuccessfulResponse(
         merchantId,
         currentQ.customerQuestion || '',
@@ -365,7 +368,7 @@ async function sendNextQuestion(
   totalQuestions: number,
   previousFeedback: string
 ): Promise<void> {
-  const question = await getCurrentQuestion(sessionId, questionIndex);
+  const question = await getCurrentQuestion(sessionId, questionIndex, merchantId);
   if (!question) return;
 
   const targetPhone = await getMerchantCoachingPhone(merchantId);

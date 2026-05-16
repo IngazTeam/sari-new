@@ -37,7 +37,9 @@ export function startDailyReportsCron() {
           console.log(`[Sheets Cron] Daily report generated for merchant ${merchant.id}`);
 
           // إرسال التقرير عبر WhatsApp (اختياري)
-          const settings = integration.settings ? JSON.parse(integration.settings) : {};
+          // RPT-04 FIX: Safe JSON parse
+          let settings: any = {};
+          try { settings = integration.settings ? JSON.parse(integration.settings) : {}; } catch { /* corrupted */ }
           if (settings.sendDailyReports) {
             await sendReportViaWhatsApp(merchant.id, 'يومي', result.data);
           }
@@ -74,7 +76,9 @@ export function startWeeklyReportsCron() {
         if (result.success && result.data) {
           console.log(`[Sheets Cron] Weekly report generated for merchant ${merchant.id}`);
 
-          const settings = integration.settings ? JSON.parse(integration.settings) : {};
+          // RPT-04 FIX: Safe JSON parse
+          let settings: any = {};
+          try { settings = integration.settings ? JSON.parse(integration.settings) : {}; } catch { /* corrupted */ }
           if (settings.sendWeeklyReports) {
             await sendReportViaWhatsApp(merchant.id, 'أسبوعي', result.data);
           }
@@ -121,7 +125,9 @@ export function startMonthlyReportsCron() {
         if (result.success && result.data) {
           console.log(`[Sheets Cron] Monthly report generated for merchant ${merchant.id}`);
 
-          const settings = integration.settings ? JSON.parse(integration.settings) : {};
+          // RPT-04 FIX: Safe JSON parse
+          let settings: any = {};
+          try { settings = integration.settings ? JSON.parse(integration.settings) : {}; } catch { /* corrupted */ }
           if (settings.sendMonthlyReports) {
             await sendReportViaWhatsApp(merchant.id, 'شهري', result.data);
           }

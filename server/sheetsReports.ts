@@ -120,44 +120,87 @@ async function collectReportData(
   startDate: Date,
   endDate: Date
 ): Promise<ReportData> {
-  // جلب الطلبات
-  const orders = await db.getOrdersByMerchantId(merchantId);
-  const periodOrders = orders.filter(order => {
-    const orderDate = new Date(order.createdAt);
-    return orderDate >= startDate && orderDate < endDate;
-  });
+  const pool = await db.getPool();
 
-  // حساب الإيرادات
-  const totalRevenue = periodOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-
-  // جلب المحادثات
-  const conversations = await db.getConversationsByMerchantId(merchantId);
-  const periodConversations = conversations.filter(conv => {
-    const convDate = new Date(conv.createdAt);
-    return convDate >= startDate && convDate < endDate;
-  });
-
-  // حساب عدد الرسائل
-  let totalMessages = 0;
-  for (const conv of periodConversations) {
-    const messages = await db.getMessagesByConversationId(conv.id);
-    totalMessages += messages.length;
+  // RPT-03 FIX: Filter orders in SQL instead of loading all into memory
+  let periodOrders: any[] = [];
+  if (pool) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT * FROM orders WHERE merchant_id = ? AND created_at >= ? AND created_at < ?`,
+        [merchantId, startDate.toISOString(), endDate.toISOString()]
+      );
+      periodOrders = rows as any[];
+    } catch {
+      // Fallback to in-memory filter if SQL fails
+      const orders = await db.getOrdersByMerchantId(merchantId);
+      periodOrders = orders.filter(order => {
+        const orderDate = new Date(order.createdAt);
+        return orderDate >= startDate && orderDate < endDate;
+      });
+    }
   }
 
-  // حساب العملاء الجدد
-  const newCustomers = periodConversations.length;
+  // حساب الإيرادات
+  const totalRevenue = periodOrders.reduce((sum, order) => {
+    const amount = order.totalAmount ?? order.total_amount ?? 0;
+    return sum + Number(amount);
+  }, 0);
+
+  // RPT-02 FIX: Count conversations and messages with aggregate SQL queries
+  let totalConversations = 0;
+  let totalMessages = 0;
+  let newCustomers = 0;
+
+  if (pool) {
+    try {
+      // Conversation count
+      const [convRows] = await pool.execute(
+        `SELECT COUNT(*) as cnt FROM conversations 
+         WHERE merchant_id = ? AND created_at >= ? AND created_at < ?`,
+        [merchantId, startDate.toISOString(), endDate.toISOString()]
+      );
+      totalConversations = Number((convRows as any[])[0]?.cnt) || 0;
+      newCustomers = totalConversations;
+
+      // Message count — single aggregate instead of N+1
+      const [msgRows] = await pool.execute(
+        `SELECT COUNT(*) as cnt FROM messages m
+         INNER JOIN conversations c ON c.id = m.conversation_id
+         WHERE c.merchant_id = ? AND m.created_at >= ? AND m.created_at < ?`,
+        [merchantId, startDate.toISOString(), endDate.toISOString()]
+      );
+      totalMessages = Number((msgRows as any[])[0]?.cnt) || 0;
+    } catch (e: any) {
+      console.warn('[Sheets Reports] Aggregate query fallback:', e.message);
+      // Fallback to old logic
+      const conversations = await db.getConversationsByMerchantId(merchantId);
+      const periodConversations = conversations.filter(conv => {
+        const convDate = new Date(conv.createdAt);
+        return convDate >= startDate && convDate < endDate;
+      });
+      totalConversations = periodConversations.length;
+      newCustomers = periodConversations.length;
+      for (const conv of periodConversations) {
+        const messages = await db.getMessagesByConversationId(conv.id);
+        totalMessages += messages.length;
+      }
+    }
+  }
 
   // حساب أكثر المنتجات مبيعاً
   const productCounts: { [key: string]: number } = {};
   for (const order of periodOrders) {
-    if (order.items) {
+    const rawItems = order.items;
+    if (rawItems) {
       try {
-        const items = JSON.parse(order.items);
+        const items = typeof rawItems === 'string' ? JSON.parse(rawItems) : rawItems;
         for (const item of items) {
-          productCounts[item.name] = (productCounts[item.name] || 0) + item.quantity;
+          const name = item.name || item.productName || 'غير معروف';
+          productCounts[name] = (productCounts[name] || 0) + (item.quantity || 1);
         }
       } catch (e) {
-        console.error('[Sheets Reports] Error parsing order items:', e);
+        // Silent — skip malformed items
       }
     }
   }
@@ -170,14 +213,15 @@ async function collectReportData(
   // حساب الطلبات حسب الحالة
   const ordersByStatus: { [key: string]: number } = {};
   for (const order of periodOrders) {
-    ordersByStatus[order.status] = (ordersByStatus[order.status] || 0) + 1;
+    const status = order.status || 'unknown';
+    ordersByStatus[status] = (ordersByStatus[status] || 0) + 1;
   }
 
   return {
     period: `${startDate.toLocaleDateString('ar-SA')} - ${endDate.toLocaleDateString('ar-SA')}`,
     totalOrders: periodOrders.length,
     totalRevenue,
-    totalConversations: periodConversations.length,
+    totalConversations,
     totalMessages,
     newCustomers,
     topProducts,
@@ -314,6 +358,14 @@ export async function sendReportViaWhatsApp(
       return { success: false, message: 'رقم التاجر غير متوفر' };
     }
 
+    // RPT-01 FIX: Use merchant's own WhatsApp instance (not global ENV credentials)
+    const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+    const activeInstance = instances.find((i: any) => i.status === 'active');
+    if (!activeInstance) {
+      console.warn(`[Sheets Reports] No active WhatsApp instance for merchant ${merchantId} — skipping report send`);
+      return { success: false, message: 'لا يوجد اتصال واتساب نشط' };
+    }
+
     // تنسيق التقرير
     const reportMessage = `
 📊 *تقرير ${reportType}*
@@ -327,19 +379,31 @@ export async function sendReportViaWhatsApp(
 👥 *عملاء جدد:* ${data.newCustomers}
 
 🏆 *أكثر المنتجات مبيعاً:*
-${data.topProducts.map((p, i) => `${i + 1}. ${p.name} (${p.count})`).join('\n')}
+${data.topProducts.length > 0 ? data.topProducts.map((p, i) => `${i + 1}. ${p.name} (${p.count})`).join('\n') : 'لا توجد مبيعات في هذه الفترة'}
 
 📈 *الطلبات حسب الحالة:*
-${Object.entries(data.ordersByStatus).map(([status, count]) => `• ${translateOrderStatus(status)}: ${count}`).join('\n')}
+${Object.keys(data.ordersByStatus).length > 0 ? Object.entries(data.ordersByStatus).map(([status, count]) => `• ${translateOrderStatus(status)}: ${count}`).join('\n') : 'لا توجد طلبات'}
 
 ---
 تم إنشاء التقرير بواسطة ساري 🤖
     `.trim();
 
-    // إرسال الرسالة عبر WhatsApp
-    const { sendTextMessage } = await import('./whatsapp');
-    await sendTextMessage(merchant.phone, reportMessage);
+    // إرسال الرسالة عبر WhatsApp instance التاجر
+    const { sendMessageWithCredentials } = await import('./whatsapp');
+    const result = await sendMessageWithCredentials(
+      (activeInstance as any).instanceId,
+      (activeInstance as any).token,
+      (activeInstance as any).apiUrl || 'https://api.green-api.com',
+      merchant.phone,
+      reportMessage
+    );
 
+    if (!result.success) {
+      console.error(`[Sheets Reports] WhatsApp send failed for merchant ${merchantId}:`, result.error);
+      return { success: false, message: result.error || 'فشل إرسال التقرير' };
+    }
+
+    console.log(`[Sheets Reports] ✅ ${reportType} report sent via WhatsApp to merchant ${merchantId}`);
     return {
       success: true,
       message: 'تم إرسال التقرير بنجاح',
