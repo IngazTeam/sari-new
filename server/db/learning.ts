@@ -128,6 +128,8 @@ export async function ensureLearningTables(): Promise<void> {
         merchant_answered_at TIMESTAMP NULL,
         followed_up TINYINT(1) DEFAULT 0,
         expires_at TIMESTAMP NULL,
+        current_escalation_level INT DEFAULT 0,
+        last_escalated_at TIMESTAMP NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         INDEX idx_merchant_status (merchant_id, status),
         INDEX idx_merchant_date (merchant_id, created_at DESC),
@@ -136,10 +138,8 @@ export async function ensureLearningTables(): Promise<void> {
       )
     `);
 
-    // Cascading escalation columns (auto-migration)
+    // Additional merchant columns for escalation chain (auto-migration)
     try {
-      await pool.execute(`ALTER TABLE sari_escalation_queue ADD COLUMN IF NOT EXISTS current_escalation_level INT DEFAULT 0`);
-      await pool.execute(`ALTER TABLE sari_escalation_queue ADD COLUMN IF NOT EXISTS last_escalated_at TIMESTAMP NULL`);
       await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS escalation_phones TEXT DEFAULT NULL`);
       await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
     } catch { /* columns already exist */ }
