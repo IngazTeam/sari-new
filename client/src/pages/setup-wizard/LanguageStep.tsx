@@ -25,23 +25,21 @@ const languages: Language[] = [
 ];
 
 interface LanguageStepProps {
-  data: {
-    botLanguage?: string;
-    currency?: string;
-  };
-  onUpdate: (data: any) => void;
+  wizardData: Record<string, any>;
+  updateWizardData: (data: any) => void;
   goToNextStep: () => void;
+  skipStep?: () => void;
 }
 
-export default function LanguageStep({ data, onUpdate, goToNextStep }: LanguageStepProps) {
+export default function LanguageStep({ wizardData, updateWizardData, goToNextStep }: LanguageStepProps) {
   const { t } = useTranslation();
-  const [selectedLanguage, setSelectedLanguage] = useState(data.botLanguage || 'ar');
+  const [selectedLanguage, setSelectedLanguage] = useState(wizardData.botLanguage || 'ar');
 
   useEffect(() => {
     // Update parent when language changes
     const lang = languages.find(l => l.code === selectedLanguage);
     if (lang) {
-      onUpdate({
+      updateWizardData({
         botLanguage: lang.code,
         currency: lang.currency,
         currencySymbol: lang.currencySymbol,

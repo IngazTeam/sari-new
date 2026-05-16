@@ -5768,9 +5768,16 @@ export async function completeSetupWizard(merchantId: number) {
     .set({ isCompleted: 1, completedAt: now })
     .where(eq(setupWizardProgress.merchantId, merchantId));
 
-  // Also update merchant table
+  // Also update merchant table — mark both setup AND onboarding as completed
+  // to prevent the duplicate OnboardingWizard popup from appearing on dashboard
   await db.update(merchants)
-    .set({ setupCompleted: 1, setupCompletedAt: now })
+    .set({
+      setupCompleted: 1,
+      setupCompletedAt: now,
+      onboardingCompleted: true,
+      onboardingStep: 4,
+      onboardingCompletedAt: new Date(),
+    })
     .where(eq(merchants.id, merchantId));
 }
 

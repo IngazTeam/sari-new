@@ -5,7 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone, Brain, Sparkles, Zap, Target, GraduationCap, Dna, AlertTriangle, TrendingDown } from 'lucide-react';
+import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone, Brain, Sparkles, Zap, Target, GraduationCap, Dna, AlertTriangle, TrendingDown, Rocket, Circle } from 'lucide-react';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
 import { TrialBanner } from '@/components/TrialBanner';
@@ -188,6 +188,70 @@ export default function MerchantDashboard() {
         {/* Trial Banner */}
         <TrialBanner />
 
+        {/* ═══ Getting Started Checklist — للتجار الجدد ═══ */}
+        {(conversationCount === 0 && (dashboardStats?.totalOrders || 0) === 0) && (
+          <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-emerald-500/5 to-background shadow-lg overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-primary via-emerald-400 to-green-500" />
+            <CardContent className="pt-6 pb-5">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-emerald-500 flex items-center justify-center shadow-md">
+                  <Rocket className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold">🚀 ابدأ رحلتك مع ساري</h2>
+                  <p className="text-sm text-muted-foreground">أكمل هذه الخطوات ليبدأ ساري بالعمل لك</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {/* Step 1: Setup — always completed if they're here */}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-green-800 dark:text-green-200">إعداد النشاط التجاري</p>
+                    <p className="text-xs text-green-600 dark:text-green-400">تم بنجاح ✓</p>
+                  </div>
+                </div>
+
+                {/* Step 2: Connect WhatsApp */}
+                <Link href="/merchant/whatsapp">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-700 cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all">
+                    <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center shadow-sm">
+                      <Smartphone className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-green-800 dark:text-green-200">اربط واتسابك الآن</p>
+                      <p className="text-xs text-green-600 dark:text-green-400">الخطوة الأهم — ساري يبدأ يرد على عملائك فوراً</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-green-600" />
+                  </div>
+                </Link>
+
+                {/* Step 3: Add Products */}
+                <Link href="/merchant/products">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-background/60 border border-border cursor-pointer hover:shadow-sm hover:border-primary/30 transition-all">
+                    <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">أضف منتجاتك أو خدماتك</p>
+                      <p className="text-xs text-muted-foreground">ساري يعرضها للعملاء ويساعدهم بالشراء</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </Link>
+
+                {/* Step 4: First Conversation */}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-background/60 border border-border">
+                  <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">استقبل أول محادثة</p>
+                    <p className="text-xs text-muted-foreground">ساري يتعلم ويتطور مع كل محادثة جديدة</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* ═══ AI Presence Card — "ساري اليوم" ═══ */}
         <Card className="border-0 bg-gradient-to-br from-primary/10 via-emerald-500/5 to-background shadow-lg overflow-hidden relative">
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary via-emerald-400 to-primary" />
@@ -308,7 +372,7 @@ export default function MerchantDashboard() {
         )}
 
         {/* ═══ 🧬 Sari Maturity — بطاقة أداء ساري ═══ */}
-        {learningData && (
+        {learningData && (learningData.totalConversations || 0) >= 5 && (
           (() => {
             const maturityConfig: Record<string, { emoji: string; label: string; color: string; bg: string; progress: number; border: string }> = {
               newborn:     { emoji: '🐣', label: 'مولود جديد',  color: 'text-gray-500',    bg: 'from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-900', progress: 10,  border: 'border-gray-200 dark:border-gray-700' },
