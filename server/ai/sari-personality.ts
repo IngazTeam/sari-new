@@ -189,6 +189,23 @@ ${settings.customGreeting}
   return prompt;
 }
 
+// PEN-GAP-03 FIX: In-memory debounce to prevent double-escalation on rapid messages
+const _escalationDebounce = new Map<string, number>();
+function shouldEscalate(merchantId: number, customerPhone: string): boolean {
+  const key = `${merchantId}:${customerPhone}`;
+  const last = _escalationDebounce.get(key);
+  if (last && Date.now() - last < 10_000) return false; // 10 second window
+  _escalationDebounce.set(key, Date.now());
+  return true;
+}
+// Cleanup stale entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, ts] of _escalationDebounce) {
+    if (now - ts > 60_000) _escalationDebounce.delete(key);
+  }
+}, 300_000);
+
 /**
  * Detect if GPT's response indicates a knowledge gap
  * (AI succeeded but didn't actually answer the question)
@@ -209,8 +226,8 @@ function isKnowledgeGapResponse(botResponse: string, customerMessage: string): b
     'خلني أرجع لك',
     'بتأكد وأرد',
     'أتأكد من المعلومة',
-    'أرجع لك',
-    'ما عندي معلومات دقيقة',
+    'أرجع لك خلال',
+    'وأرد عليك',
     'ما أقدر أجاوبك',
     'أتواصل مع الفريق',
     'أرجع للفريق',
@@ -865,7 +882,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       }).catch(() => {});
 
       // ═══ Knowledge Gap Detection — FAST PATH ═══
-      if (isKnowledgeGapResponse(response, params.message)) {
+      if (isKnowledgeGapResponse(response, params.message) && shouldEscalate(params.merchantId, params.customerPhone)) {
         console.log(`[chatWithSari] 📨 FAST PATH: Knowledge gap detected — escalating to merchant`);
         handleSmartEscalation({
           merchantId: params.merchantId,
@@ -908,18 +925,24 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     try {
       const cached = await findCachedResponse(params.merchantId, params.message);
       if (cached) {
-        console.log(`[chatWithSari] Cache HIT (${cached.similarity.toFixed(2)})`);
-        recordMetric({
-          merchantId: params.merchantId,
-          conversationId: params.conversationId ?? null,
-          questionText: params.message,
-          responseText: cached.response,
-          responseTimeMs: Date.now() - _startTime,
-          wasCacheHit: true,
-          ragSectionsUsed: 0,
-          customerSentiment: sentiment?.sentiment || null,
-        }).catch(() => {});
-        return cached.response;
+        // PEN-GAP-02 FIX: Don't serve cached knowledge gap responses — they're stale
+        if (isKnowledgeGapResponse(cached.response, params.message)) {
+          console.log(`[chatWithSari] Cache HIT but response is a knowledge gap — skipping cache, will re-generate`);
+          // Fall through to full GPT pipeline
+        } else {
+          console.log(`[chatWithSari] Cache HIT (${cached.similarity.toFixed(2)})`);
+          recordMetric({
+            merchantId: params.merchantId,
+            conversationId: params.conversationId ?? null,
+            questionText: params.message,
+            responseText: cached.response,
+            responseTimeMs: Date.now() - _startTime,
+            wasCacheHit: true,
+            ragSectionsUsed: 0,
+            customerSentiment: sentiment?.sentiment || null,
+          }).catch(() => {});
+          return cached.response;
+        }
       }
     } catch (cacheErr) {
       console.warn('[chatWithSari] Cache check failed:', cacheErr);
@@ -1157,7 +1180,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
 
     // ═══ Knowledge Gap Detection — FULL PATH ═══
     // If GPT responded but couldn't provide specific info → escalate to merchant
-    if (isKnowledgeGapResponse(response, params.message)) {
+    if (isKnowledgeGapResponse(response, params.message) && shouldEscalate(params.merchantId, params.customerPhone)) {
       console.log(`[chatWithSari] 📨 FULL PATH: Knowledge gap detected — escalating to merchant`);
       handleSmartEscalation({
         merchantId: params.merchantId,

@@ -419,8 +419,14 @@ export async function handleMerchantEscalationReply(params: {
     const activeInstance = instances.find((i: any) => i.status === 'active');
 
     if (activeInstance && resolved.customerPhone) {
-      // Build a natural response incorporating the merchant's answer
-      const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${params.replyText}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
+      // PEN-GAP-04 FIX: Sanitize reply before sending to customer AND caching
+      const safeReplyText = params.replyText
+        .substring(0, 2000)
+        .replace(/https?:\/\/[^\s]+/g, '[رابط]')      // Strip raw URLs
+        .replace(/\[.*?\]\(.*?\)/g, '[رابط]');          // Strip markdown links
+
+      // Build a natural response incorporating the merchant's sanitized answer
+      const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${safeReplyText}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
 
       await sendMessageWithCredentials(
         (activeInstance as any).instanceId,
@@ -433,15 +439,11 @@ export async function handleMerchantEscalationReply(params: {
       console.log(`[Escalation] ✅ Answer delivered to customer ***${resolved.customerPhone?.slice(-4)}`);
 
       // Cache this Q&A for future reuse — the bot learns permanently
-      // PEN-ESC-04 FIX: Sanitize reply before caching to prevent knowledge poisoning
       try {
-        const safeReply = params.replyText
-          .substring(0, 2000)
-          .replace(/https?:\/\/[^\s]+/g, '[رابط]'); // Strip URLs to prevent phishing in cached answers
         await cacheSuccessfulResponse(
           params.merchantId,
           resolved.question,
-          safeReply
+          safeReplyText
         );
         console.log(`[Escalation] 🧬 Q&A cached for future use (sanitized)`);
       } catch { /* cache is optional */ }
