@@ -32,43 +32,6 @@ export interface CustomerProfile {
 
 export type CustomerTier = 'new' | 'returning' | 'loyal' | 'vip' | 'at_risk';
 
-// ═══════════════════════════════════════════════════════════════
-// Table Management (lazy creation)
-// ═══════════════════════════════════════════════════════════════
-
-let _tableCreated = false;
-
-async function ensureTable(): Promise<void> {
-  if (_tableCreated) return;
-  const pool = await db.getPool();
-  if (!pool) return;
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS customer_profiles (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      merchant_id INT NOT NULL,
-      customer_phone VARCHAR(20) NOT NULL,
-      display_name VARCHAR(100) DEFAULT NULL,
-      nickname VARCHAR(100) DEFAULT NULL,
-      child_name VARCHAR(100) DEFAULT NULL,
-      preferences JSON DEFAULT NULL,
-      pain_points JSON DEFAULT NULL,
-      purchase_history JSON DEFAULT NULL,
-      total_spent DECIMAL(12,2) DEFAULT 0,
-      total_conversations INT DEFAULT 0,
-      sentiment_avg VARCHAR(20) DEFAULT 'neutral',
-      customer_tier VARCHAR(20) DEFAULT 'new',
-      last_objection VARCHAR(50) DEFAULT NULL,
-      last_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      UNIQUE KEY uq_merchant_phone (merchant_id, customer_phone),
-      INDEX idx_tier (merchant_id, customer_tier),
-      INDEX idx_last_seen (merchant_id, last_seen_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-  _tableCreated = true;
-}
 
 // ═══════════════════════════════════════════════════════════════
 // CRUD
@@ -82,7 +45,6 @@ export async function getOrCreateProfile(
   customerPhone: string,
   customerName?: string
 ): Promise<CustomerProfile> {
-  await ensureTable();
   const pool = await db.getPool();
   if (!pool) return buildDefaultProfile(merchantId, customerPhone, customerName);
 
@@ -126,7 +88,6 @@ export async function updateProfile(
     'sentimentAvg' | 'lastObjection' | 'customerTier'
   >>
 ): Promise<void> {
-  await ensureTable();
   const pool = await db.getPool();
   if (!pool) return;
 
@@ -160,7 +121,6 @@ export async function recordPurchase(
   productName: string,
   amount: number
 ): Promise<void> {
-  await ensureTable();
   const pool = await db.getPool();
   if (!pool) return;
 

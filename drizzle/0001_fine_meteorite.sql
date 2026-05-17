@@ -1,4 +1,4 @@
-CREATE TABLE `customer_profiles` (
+CREATE TABLE IF NOT EXISTS `customer_profiles` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`customer_phone` varchar(20) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE `customer_profiles` (
 	CONSTRAINT `uq_merchant_phone` UNIQUE(`merchant_id`,`customer_phone`)
 );
 --> statement-breakpoint
-CREATE TABLE `knowledge_changelog` (
+CREATE TABLE IF NOT EXISTS `knowledge_changelog` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`section_id` int,
@@ -34,7 +34,7 @@ CREATE TABLE `knowledge_changelog` (
 	CONSTRAINT `knowledge_changelog_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `knowledge_sections` (
+CREATE TABLE IF NOT EXISTS `knowledge_sections` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`parent_id` int,
@@ -56,7 +56,7 @@ CREATE TABLE `knowledge_sections` (
 	CONSTRAINT `knowledge_sections_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `merchant_knowledge_docs` (
+CREATE TABLE IF NOT EXISTS `merchant_knowledge_docs` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`file_name` varchar(255) NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE `merchant_knowledge_docs` (
 	CONSTRAINT `merchant_knowledge_docs_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `product_categories` (
+CREATE TABLE IF NOT EXISTS `product_categories` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`name` varchar(100) NOT NULL,
@@ -83,7 +83,7 @@ CREATE TABLE `product_categories` (
 	CONSTRAINT `product_categories_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `product_options` (
+CREATE TABLE IF NOT EXISTS `product_options` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`product_id` int NOT NULL,
 	`merchant_id` int NOT NULL,
@@ -95,7 +95,7 @@ CREATE TABLE `product_options` (
 	CONSTRAINT `product_options_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `product_variants` (
+CREATE TABLE IF NOT EXISTS `product_variants` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`product_id` int NOT NULL,
 	`merchant_id` int NOT NULL,
@@ -116,7 +116,7 @@ CREATE TABLE `product_variants` (
 	CONSTRAINT `product_variants_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `quotation_templates` (
+CREATE TABLE IF NOT EXISTS `quotation_templates` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`name` varchar(255) NOT NULL,
@@ -128,7 +128,7 @@ CREATE TABLE `quotation_templates` (
 	CONSTRAINT `quotation_templates_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `sales_quotations` (
+CREATE TABLE IF NOT EXISTS `sales_quotations` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`customer_phone` varchar(20),
@@ -147,7 +147,7 @@ CREATE TABLE `sales_quotations` (
 	CONSTRAINT `sales_quotations_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `sales_targets` (
+CREATE TABLE IF NOT EXISTS `sales_targets` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`period_type` enum('monthly','quarterly','yearly') NOT NULL DEFAULT 'monthly',
@@ -162,7 +162,7 @@ CREATE TABLE `sales_targets` (
 	CONSTRAINT `idx_merchant_period` UNIQUE(`merchant_id`,`period_type`,`period_start`)
 );
 --> statement-breakpoint
-CREATE TABLE `sari_ai_directives` (
+CREATE TABLE IF NOT EXISTS `sari_ai_directives` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`category` enum('sales','culture','persuasion','examples','limits') NOT NULL,
 	`title` varchar(200) NOT NULL,
@@ -174,7 +174,7 @@ CREATE TABLE `sari_ai_directives` (
 	CONSTRAINT `sari_ai_directives_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `sari_quality_metrics` (
+CREATE TABLE IF NOT EXISTS `sari_quality_metrics` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`conversation_id` int,
@@ -191,7 +191,7 @@ CREATE TABLE `sari_quality_metrics` (
 	CONSTRAINT `sari_quality_metrics_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `sari_response_cache` (
+CREATE TABLE IF NOT EXISTS `sari_response_cache` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`question_text` text NOT NULL,
@@ -204,7 +204,7 @@ CREATE TABLE `sari_response_cache` (
 	CONSTRAINT `sari_response_cache_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `sari_strategy_metrics` (
+CREATE TABLE IF NOT EXISTS `sari_strategy_metrics` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`strategy` varchar(50) NOT NULL,
@@ -215,7 +215,7 @@ CREATE TABLE `sari_strategy_metrics` (
 	CONSTRAINT `sari_strategy_metrics_id` PRIMARY KEY(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `sari_weekly_reports` (
+CREATE TABLE IF NOT EXISTS `sari_weekly_reports` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`week_start` date NOT NULL,
@@ -233,7 +233,7 @@ CREATE TABLE `sari_weekly_reports` (
 	CONSTRAINT `idx_merchant_week` UNIQUE(`merchant_id`,`week_start`)
 );
 --> statement-breakpoint
-CREATE TABLE `virtual_agents` (
+CREATE TABLE IF NOT EXISTS `virtual_agents` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`merchant_id` int NOT NULL,
 	`name` varchar(100) NOT NULL,
