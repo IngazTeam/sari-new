@@ -107,8 +107,8 @@ export async function selectAction(params: {
 - لا تصعّد للتاجر إلا للمشاكل الحقيقية
 - أجب بـ JSON فقط`;
 
-    const userPrompt = `رسالة العميل: "${customerMessage.substring(0, 200)}"
-رد البوت: "${botResponse.substring(0, 200)}"
+    const userPrompt = `رسالة العميل: "${sanitizeActionText(customerMessage.substring(0, 200))}"
+رد البوت: "${sanitizeActionText(botResponse.substring(0, 200))}"
 نية العميل: ${intent}
 تصنيف العميل: ${profile?.customerTier || 'new'}
 

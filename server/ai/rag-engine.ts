@@ -392,8 +392,11 @@ async function buildProductContext(merchantId: number, question: string): Promis
 
   if (keywords.length === 0) return '';
 
+  // Escape LIKE wildcards to prevent broad matching attacks
+  const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&');
+
   const likeClauses = keywords.map(() => `(p.name LIKE ? OR p.description LIKE ?)`).join(' OR ');
-  const likeParams = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+  const likeParams = keywords.flatMap(k => { const ek = escapeLike(k); return [`%${ek}%`, `%${ek}%`]; });
 
   try {
     const [rows] = await pool.execute(

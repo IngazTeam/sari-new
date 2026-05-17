@@ -25,6 +25,28 @@ function getTextContent(content: string | (TextContent | ImageContent | FileCont
   return '';
 }
 
+// Sanitization: Strip prompt injection from customer-controlled text before system prompt injection
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi,
+  /\b(system|assistant|user)\s*:/gi,
+  /you\s+are\s+now\s+/gi,
+  /forget\s+(everything|all|your)/gi,
+  /override\s+(system|all|your)/gi,
+  /act\s+as\s+(a|an)?/gi,
+  /تصرف\s*(كـ|ك)/gi,
+  /تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi,
+  /أنت\s+(الآن|الحين)\s+/gi,
+];
+
+function sanitizeStateText(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  let safe = text.normalize('NFKC');
+  for (const pattern of INJECTION_PATTERNS) {
+    safe = safe.replace(pattern, '[...]');
+  }
+  return safe.substring(0, 100).trim();
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════
@@ -147,7 +169,7 @@ function detectPendingQuestions(messages: ChatMessage[]): string[] {
 
     if (!nextAssistant) {
       // No response to this question yet
-      pending.push(content.substring(0, 80));
+      pending.push(sanitizeStateText(content.substring(0, 80)));
       continue;
     }
 
@@ -164,7 +186,7 @@ function detectPendingQuestions(messages: ChatMessage[]): string[] {
     ];
 
     if (EVASIVE_PATTERNS.some(p => p.test(assistantContent))) {
-      pending.push(content.substring(0, 80));
+      pending.push(sanitizeStateText(content.substring(0, 80)));
     }
   }
 
@@ -301,12 +323,12 @@ function formatStateSummary(
     const highlights: string[] = [];
 
     if (profile.painPoints && profile.painPoints.length > 0) {
-      highlights.push(`نقاط ألم: ${profile.painPoints.slice(-2).join('، ')}`);
+      highlights.push(`نقاط ألم: ${profile.painPoints.slice(-2).map(p => sanitizeStateText(p)).join('، ')}`);
     }
 
     const interestTags = (profile.preferences as any)?.interestTags;
     if (interestTags && Array.isArray(interestTags) && interestTags.length > 0) {
-      highlights.push(`اهتمامات: ${interestTags.slice(0, 3).join('، ')}`);
+      highlights.push(`اهتمامات: ${interestTags.slice(0, 3).map((t: string) => sanitizeStateText(t)).join('، ')}`);
     }
 
     if (highlights.length > 0) {
@@ -329,7 +351,7 @@ function buildReturningCustomerBrief(profile: CustomerProfile): string {
   parts.push(`🔄 عميل عائد — المحادثة رقم ${profile.totalConversations}`);
 
   if (profile.purchaseHistory && profile.purchaseHistory.length > 0) {
-    const lastPurchase = profile.purchaseHistory[profile.purchaseHistory.length - 1];
+    const lastPurchase = sanitizeStateText(profile.purchaseHistory[profile.purchaseHistory.length - 1]);
     parts.push(`🛒 آخر شراء: ${lastPurchase}`);
     parts.push(`📌 توجيه: اذكر "${lastPurchase}" طبيعياً واسأل كيف تجربته`);
   }
@@ -341,11 +363,11 @@ function buildReturningCustomerBrief(profile: CustomerProfile): string {
       quality: 'الجودة — اذكر الضمان',
       trust: 'الثقة — استخدم دليل اجتماعي',
     };
-    parts.push(`⚠️ آخر اعتراض: ${objLabels[profile.lastObjection] || profile.lastObjection}`);
+    parts.push(`⚠️ آخر اعتراض: ${objLabels[profile.lastObjection] || sanitizeStateText(profile.lastObjection)}`);
   }
 
   if (profile.painPoints && profile.painPoints.length > 0) {
-    parts.push(`🧠 نقاط ألم: ${profile.painPoints.slice(-2).join('، ')}`);
+    parts.push(`🧠 نقاط ألم: ${profile.painPoints.slice(-2).map(p => sanitizeStateText(p)).join('، ')}`);
   }
 
   return parts.join('\n') + '\n';
