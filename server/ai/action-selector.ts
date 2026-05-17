@@ -298,7 +298,7 @@ export async function executeAction(params: {
           const pool = await getPool();
           if (pool) {
             const [rows] = await pool.execute(
-              `SELECT code, type, value FROM discount_codes 
+              `SELECT id, code, type, value FROM discount_codes 
                WHERE merchantId = ? AND isActive = 1 
                AND (expiresAt IS NULL OR expiresAt > NOW())
                AND (maxUses IS NULL OR usedCount < maxUses)
@@ -312,7 +312,9 @@ export async function executeAction(params: {
               await sendMessage(customerPhone,
                 `🎁 عندنا عرض خاص لك!\n\nاستخدم كود الخصم: *${d.code}*\nقيمة الخصم: *${valueStr}*\n\nالعرض لفترة محدودة! ⏰`
               );
-              console.log(`[ActionSelector] ✅ Sent discount code: ${d.code}`);
+              // Track discount usage
+              await db.incrementDiscountCodeUsage(d.code);
+              console.log(`[ActionSelector] ✅ Sent discount code: ${d.code} (usage tracked)`);
             } else {
               console.log(`[ActionSelector] ℹ️ No active discounts for merchant ${merchantId}`);
             }
@@ -382,13 +384,163 @@ export async function executeAction(params: {
       }
 
       case 'confirm_order': {
-        // Send order confirmation prompt
-        if (action.items.length > 0) {
+        // ══════════════════════════════════════════════════════════
+        // REAL ORDER CREATION — creates DB record + Tap payment
+        // ══════════════════════════════════════════════════════════
+        if (action.items.length === 0) break;
+
+        try {
+          // 1. Match requested items to real products
+          const allProducts = await db.getProductsByMerchantId(merchantId);
+          const matchedItems: Array<{ productId: number; name: string; price: number; quantity: number }> = [];
+          let totalAmount = 0;
+
+          for (const itemName of action.items) {
+            const match = allProducts.find((p: any) =>
+              (p.name || '').toLowerCase().includes(itemName.toLowerCase()) ||
+              itemName.toLowerCase().includes((p.name || '').toLowerCase())
+            );
+            if (match) {
+              matchedItems.push({
+                productId: match.id,
+                name: match.name,
+                price: match.price,
+                quantity: 1,
+              });
+              totalAmount += match.price;
+            }
+          }
+
+          if (matchedItems.length === 0) {
+            // No products matched — send confirmation prompt only
+            const itemsList = action.items.map((item, i) => `${i + 1}. ${item}`).join('\n');
+            await sendMessage(customerPhone,
+              `📋 *تأكيد الطلب*\n\nالمنتجات:\n${itemsList}\n\nتبي تأكد الطلب؟ أرسل "نعم" 🛒`
+            );
+            console.log(`[ActionSelector] ⚠️ No products matched — sent text confirmation only`);
+            break;
+          }
+
+          // 2. Create order in DB
+          const order = await db.createOrder({
+            merchantId,
+            customerPhone,
+            customerName: customerPhone, // Will be enriched from profile if available
+            items: JSON.stringify(matchedItems.map(i => ({
+              name: i.name,
+              quantity: i.quantity,
+              price: i.price,
+            }))),
+            totalAmount,
+            status: 'pending',
+          });
+
+          if (!order) {
+            throw new Error('Failed to create order in DB');
+          }
+
+          console.log(`[ActionSelector] ✅ Order #${order.id} created in DB (${matchedItems.length} items, ${totalAmount} ر.س)`);
+
+          // 3. Try to create Tap payment link
+          let paymentUrl: string | null = null;
+          try {
+            const paymentSettings = await db.getMerchantPaymentSettings(merchantId);
+            if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey) {
+              const merchant = await db.getMerchantById(merchantId);
+              const chargeData = {
+                amount: totalAmount / 100, // هللات → ريال
+                currency: paymentSettings.defaultCurrency || 'SAR',
+                customer: {
+                  first_name: 'Customer',
+                  phone: {
+                    country_code: '966',
+                    number: customerPhone.replace(/^\+?966/, '').replace(/^0/, ''),
+                  },
+                },
+                source: { id: 'src_all' },
+                redirect: {
+                  url: `${process.env.VITE_APP_URL || 'https://sari.manus.space'}/payment/callback`,
+                },
+                description: `طلب #${order.id} من ${merchant?.businessName || 'المتجر'}`,
+                metadata: {
+                  merchantId: merchantId.toString(),
+                  orderId: order.id.toString(),
+                  type: 'whatsapp_order',
+                },
+              };
+
+              const tapResponse = await fetch('https://api.tap.company/v2/charges', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${paymentSettings.tapSecretKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(chargeData),
+              });
+
+              const tapResult = await tapResponse.json();
+              if (tapResponse.ok && (tapResult.transaction?.url || tapResult.redirect?.url)) {
+                paymentUrl = tapResult.transaction?.url || tapResult.redirect?.url;
+
+                // Save payment record
+                const { createOrderPayment } = await import('../db_payments');
+                await createOrderPayment({
+                  merchantId,
+                  orderId: order.id,
+                  bookingId: null,
+                  customerPhone,
+                  amount: totalAmount,
+                  currency: paymentSettings.defaultCurrency || 'SAR',
+                  tapChargeId: tapResult.id,
+                  tapPaymentUrl: paymentUrl,
+                  status: 'pending',
+                  description: `طلب واتساب #${order.id}`,
+                });
+
+                console.log(`[ActionSelector] ✅ Tap payment link created: ${paymentUrl}`);
+              }
+            }
+          } catch (tapErr: any) {
+            console.warn(`[ActionSelector] Tap payment failed (non-blocking): ${tapErr.message}`);
+          }
+
+          // 4. Send confirmation message to customer
+          const itemsText = matchedItems.map((item, i) =>
+            `${i + 1}. *${item.name}* — ${item.price} ر.س`
+          ).join('\n');
+
+          if (paymentUrl) {
+            // Full order with payment link
+            await sendMessage(customerPhone,
+              `✅ *تم إنشاء طلبك بنجاح!*\n\n` +
+              `📦 *رقم الطلب:* #${order.id}\n\n` +
+              `*المنتجات:*\n${itemsText}\n\n` +
+              `💰 *الإجمالي:* ${totalAmount} ر.س\n\n` +
+              `🔗 *لإتمام الدفع:*\n${paymentUrl}\n\n` +
+              `⏰ الرابط صالح لمدة 24 ساعة\n` +
+              `📱 سنرسل لك تحديثات عن حالة طلبك\n\n` +
+              `شكراً لثقتك بنا! 🌟`
+            );
+          } else {
+            // Order created but no payment link (Tap not configured)
+            await sendMessage(customerPhone,
+              `✅ *تم تسجيل طلبك!*\n\n` +
+              `📦 *رقم الطلب:* #${order.id}\n\n` +
+              `*المنتجات:*\n${itemsText}\n\n` +
+              `💰 *الإجمالي:* ${totalAmount} ر.س\n\n` +
+              `سيتواصل معك فريقنا لإتمام الطلب والدفع 🙏`
+            );
+          }
+
+          console.log(`[ActionSelector] ✅ Order #${order.id} — confirmation sent to customer (payment: ${paymentUrl ? 'Tap' : 'manual'})`);
+
+        } catch (orderErr: any) {
+          console.warn(`[ActionSelector] Order creation failed: ${orderErr.message}`);
+          // Fallback: send text-only confirmation
           const itemsList = action.items.map((item, i) => `${i + 1}. ${item}`).join('\n');
           await sendMessage(customerPhone,
-            `📋 *تأكيد الطلب*\n\nالمنتجات:\n${itemsList}\n\nهل تبغى تأكد الطلب؟ أرسل "نعم" أو أضف/عدّل المنتجات 🛒`
+            `📋 *تأكيد الطلب*\n\nالمنتجات:\n${itemsList}\n\nسيتواصل معك فريقنا لإتمام الطلب 🙏`
           );
-          console.log(`[ActionSelector] ✅ Order confirmation sent (${action.items.length} items)`);
         }
         break;
       }
@@ -400,3 +552,4 @@ export async function executeAction(params: {
     console.warn(`[ActionSelector] Action execution failed: ${err.message}`);
   }
 }
+
