@@ -102,6 +102,21 @@ function sanitizeForPrompt(text: string): string {
 /**
  * Extract message text from different message types
  * Includes quoted/replied message context when available
+ * 
+ * GreenAPI sends quoted replies in two possible structures:
+ * 
+ * 1. typeMessage: "quotedMessage" → extendedTextMessageData.text (new text),
+ *    extendedTextMessageData.stanzaId (original msg ID), 
+ *    extendedTextMessageData.participant (original sender)
+ * 
+ * 2. typeMessage: "extendedTextMessage" → extendedTextMessageData.text,
+ *    possibly with messageData.quotedMessage (top-level) containing the quoted context
+ * 
+ * The quoted original text may appear in:
+ *   - messageData.quotedMessage.textMessage
+ *   - messageData.quotedMessage.extendedTextMessage?.text
+ *   - messageData.quotedMessage.conversation
+ *   - (messageData.extendedTextMessageData as any).quotedMessage (undocumented nesting)
  */
 function extractMessageText(payload: GreenAPIWebhookPayload): string | null {
   const { messageData } = payload;
@@ -110,11 +125,18 @@ function extractMessageText(payload: GreenAPIWebhookPayload): string | null {
   if (messageData.extendedTextMessageData?.text) {
     let text = messageData.extendedTextMessageData.text;
     
-    // Include quoted/replied message as context
-    const quoted = (messageData.extendedTextMessageData as any).quotedMessage;
+    // ── Quoted/Reply Context Extraction ──
+    // Try multiple paths where GreenAPI may place the quoted original text:
+    //   Path A: messageData.quotedMessage (top-level, per GreenAPI docs for quotedMessage type)
+    //   Path B: extendedTextMessageData.quotedMessage (nested, observed in some webhook variants)
+    const quotedTopLevel = (messageData as any).quotedMessage;
+    const quotedNested = (messageData.extendedTextMessageData as any).quotedMessage;
+    const quoted = quotedTopLevel || quotedNested;
+    
     if (quoted) {
       const quotedText = quoted.textMessage 
         || quoted.extendedTextMessage?.text 
+        || quoted.caption
         || quoted.conversation
         || '';
       if (quotedText) {
@@ -122,6 +144,13 @@ function extractMessageText(payload: GreenAPIWebhookPayload): string | null {
         const safeQuoted = sanitizeForPrompt(quotedText.substring(0, 300));
         text = `[رد على رسالة: "${safeQuoted}"]\n${text}`;
       }
+    } else if ((messageData.extendedTextMessageData as any).stanzaId) {
+      // GreenAPI quotedMessage type: stanzaId is present but original text is not in payload.
+      // Log this so we can track when quoted context is missing.
+      const stanzaId = (messageData.extendedTextMessageData as any).stanzaId;
+      const participant = (messageData.extendedTextMessageData as any).participant || '';
+      console.log(`[QuotedMsg] 📎 Reply detected via stanzaId: ${stanzaId}, participant: ${participant?.slice(-8) || 'unknown'}`);
+      text = `[رد على رسالة سابقة]\n${text}`;
     }
     return text;
   }
@@ -137,6 +166,34 @@ function extractMessageText(payload: GreenAPIWebhookPayload): string | null {
   }
   
   return null;
+}
+
+/**
+ * Extract quoted message text from a GreenAPI webhook payload.
+ * Checks all possible paths where the quoted text may appear:
+ *   - messageData.quotedMessage (top-level, documented for quotedMessage type)
+ *   - messageData.extendedTextMessageData.quotedMessage (nested, some variants)
+ * Returns the quoted text (sanitized) or empty string if none found.
+ */
+function extractQuotedText(payload: any): string {
+  const md = payload?.messageData;
+  if (!md) return '';
+  
+  // Path A: top-level quotedMessage on messageData
+  const quotedTopLevel = md.quotedMessage;
+  // Path B: nested under extendedTextMessageData
+  const quotedNested = md.extendedTextMessageData?.quotedMessage;
+  const quoted = quotedTopLevel || quotedNested;
+  
+  if (quoted) {
+    return quoted.textMessage
+      || quoted.extendedTextMessage?.text
+      || quoted.caption
+      || quoted.conversation
+      || '';
+  }
+  
+  return '';
 }
 
 /**
@@ -500,11 +557,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       // 2. Confirm delivery to the merchant
       // 3. AI-analyze the reply quality and suggest improvements or praise
       if (outText) {
-        const quotedMsg = (payload as any).messageData?.extendedTextMessageData?.quotedMessage;
-        const quotedText = quotedMsg?.textMessage 
-          || quotedMsg?.extendedTextMessage?.text 
-          || quotedMsg?.conversation 
-          || '';
+        const quotedText = extractQuotedText(payload);
         
         const isReplyToSariAlert = quotedText.includes('تنبيه من ساري') 
           || quotedText.includes('سؤال عميل')
@@ -806,11 +859,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           // Priority 3: Escalation reply — ONLY if message quotes a Sari alert
           // FIX: Previously ANY message from a chain member was treated as escalation reply,
           // which prevented the merchant from being served as a normal customer
-          const quotedMsg = (payload as any).messageData?.extendedTextMessageData?.quotedMessage;
-          const quotedText = quotedMsg?.textMessage 
-            || quotedMsg?.extendedTextMessage?.text 
-            || quotedMsg?.conversation 
-            || '';
+          const quotedText = extractQuotedText(payload);
           
           const isReplyToAlert = quotedText.includes('تنبيه من ساري')
             || quotedText.includes('سؤال عميل')
