@@ -1031,9 +1031,29 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         || payload.messageData.caption
         || '';
       
-      if (!imageDownloadUrl) {
-        console.warn('[Webhook] No download URL for image/video. Keys:', Object.keys(payload.messageData));
-        // Fall through to text if there's a caption
+      // PEN-IMG-02 FIX: Validate image URL to prevent SSRF
+      let safeImageUrl: string | undefined;
+      if (imageDownloadUrl) {
+        try {
+          const parsed = new URL(imageDownloadUrl);
+          const isTrustedDomain = parsed.protocol === 'https:'
+            && (parsed.hostname.endsWith('.digitaloceanspaces.com')
+              || parsed.hostname.endsWith('.whatsapp.net')
+              || parsed.hostname.endsWith('.green-api.com')
+              || parsed.hostname.endsWith('.wa.me'));
+          
+          if (isTrustedDomain) {
+            safeImageUrl = imageDownloadUrl;
+          } else {
+            console.warn(`[Webhook] ⚠️ Untrusted image URL domain blocked: ${parsed.hostname}`);
+          }
+        } catch {
+          console.warn(`[Webhook] ⚠️ Invalid image URL format: ${String(imageDownloadUrl).substring(0, 60)}`);
+        }
+      }
+      
+      if (!safeImageUrl) {
+        // No valid image URL — process caption-only if available
         if (caption) {
           response = await processTextMessage({
             merchantId: instance.merchantId,
@@ -1041,6 +1061,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             customerPhone,
             customerName,
             messageText: caption,
+          });
+        } else if (imageDownloadUrl) {
+          // URL exists but untrusted — still acknowledge the image
+          response = await processTextMessage({
+            merchantId: instance.merchantId,
+            conversationId,
+            customerPhone,
+            customerName,
+            messageText: '[صورة من العميل]',
           });
         } else {
           logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: 'other', status: 'dropped', failureReason: 'image_no_url', failureDetails: `typeMessage: ${payload.messageData.typeMessage}`, source: 'webhook' });
@@ -1050,7 +1079,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const mediaType = payload.messageData.typeMessage === 'imageMessage' ? 'صورة' : 'فيديو';
         const messageText = caption || `[${mediaType} من العميل — صفها وتفاعل معها]`;
         
-        console.log(`[Webhook] 🖼️ Image/video message with URL: ${imageDownloadUrl.substring(0, 80)}...${caption ? ` caption: ${caption.substring(0, 50)}` : ''}`);
+        console.log(`[Webhook] 🖼️ Image/video message with URL: ${safeImageUrl.substring(0, 80)}...${caption ? ` caption: ${caption.substring(0, 50)}` : ''}`);
         
         response = await processTextMessage({
           merchantId: instance.merchantId,
@@ -1058,7 +1087,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           customerPhone,
           customerName,
           messageText,
-          imageUrl: imageDownloadUrl,
+          imageUrl: safeImageUrl,
         });
       }
     } else {
