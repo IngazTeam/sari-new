@@ -850,7 +850,8 @@ ${result.orderUrl}
               .where(eq(virtualAgents.id, agentId));
             if (agentRows.length > 0 && agentRows[0].isActive) {
               const agent = agentRows[0];
-              systemPrompt = `أنت ${sanitizeForPrompt(agent.name)}، ${sanitizeForPrompt(agent.role)} عبر الواتساب.${agent.department ? ` تعمل في قسم ${sanitizeForPrompt(agent.department)}.` : ''}
+              // Preserve Mission Block — agent gets sales intelligence too
+              systemPrompt = missionPrompt + `أنت ${sanitizeForPrompt(agent.name)}، ${sanitizeForPrompt(agent.role)} عبر الواتساب.${agent.department ? ` تعمل في قسم ${sanitizeForPrompt(agent.department)}.` : ''}
 
 ## تعليمات الشخصية:
 ${sanitizeForPrompt(agent.personalityPrompt)}
@@ -1157,8 +1158,8 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
             agentBasePrompt += `\n## تحويل من زميل:\nالعميل كان يتحدث مع "${sanitizeForPrompt(previousAgentName)}". ابدأ ردك بتقديم نفسك بأسلوبك الخاص وأوضح أنه تم تحويله لك لأن تخصصك يناسب استفساره. مثال: "أهلاً! أنا ${sanitizeForPrompt(selectedAgent.name)} من ${sanitizeForPrompt(selectedAgent.department || 'فريقنا')}. ${sanitizeForPrompt(previousAgentName)} حولتك لي لأساعدك بشكل أفضل 😊"\n`;
           }
 
-          // Rebuild: Agent personality + all business context layers (clean, no Sari base)
-          systemPrompt = agentBasePrompt + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt;
+          // Rebuild: Mission Block + Agent personality + all business context layers (clean, no Sari base)
+          systemPrompt = missionPrompt + agentBasePrompt + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt;
           if (customerProfile) {
             systemPrompt += buildProfileContext(customerProfile);
           }
