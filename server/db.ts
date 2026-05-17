@@ -2056,6 +2056,19 @@ export async function getOrdersByMerchantId(merchantId: number): Promise<Order[]
   return db.select().from(orders).where(eq(orders.merchantId, merchantId)).orderBy(desc(orders.createdAt));
 }
 
+export async function getOrdersByCustomerPhone(merchantId: number, customerPhone: string, limit = 3): Promise<Order[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(orders)
+    .where(and(
+      eq(orders.merchantId, merchantId),
+      eq(orders.customerPhone, customerPhone)
+    ))
+    .orderBy(desc(orders.createdAt))
+    .limit(limit);
+}
+
 export async function updateOrderStatus(id: number, status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'cancelled', trackingNumber?: string): Promise<void> {
   const db = await getDb();
   if (!db) return;

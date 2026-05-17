@@ -33,7 +33,8 @@ export type SariAction =
   | { type: 'send_catalog'; category: string }
   | { type: 'schedule_followup'; delayHours: number; reason: string }
   | { type: 'request_merchant_info'; question: string }
-  | { type: 'confirm_order'; items: string[] };
+  | { type: 'confirm_order'; items: string[] }
+  | { type: 'check_order_status' };
 
 // ═══════════════════════════════════════════════════════════════
 // Signal-Based Pre-Filter (avoid GPT call when unnecessary)
@@ -50,6 +51,8 @@ const ACTION_SIGNALS: { signal: RegExp; possibleActions: SariAction['type'][] }[
   { signal: /مشكلة|شكوى|عيب|كسر|استرجاع/i, possibleActions: ['escalate_to_merchant'] },
   // Hesitation → follow-up
   { signal: /بفكر|أفكر|بشوف|بعدين|مو الحين/i, possibleActions: ['schedule_followup'] },
+  // Order tracking → check status
+  { signal: /وين طلبي|أين طلبي|حالة الطلب|وصل الطلب|تتبع|شحن/i, possibleActions: ['check_order_status'] },
 ];
 
 /**
@@ -86,8 +89,11 @@ export async function selectAction(params: {
     return { type: 'text_only' };
   }
 
-  // Skip for post_purchase (support-only mode)
+  // For post_purchase, only allow check_order_status
   if (intent === 'post_purchase') {
+    if (/وين طلبي|أين طلبي|حالة الطلب|وصل|تتبع|شحن/i.test(customerMessage)) {
+      return { type: 'check_order_status' };
+    }
     return { type: 'text_only' };
   }
 
@@ -103,11 +109,13 @@ export async function selectAction(params: {
 6. schedule_followup — جدول متابعة (إذا العميل متردد وقال بعدين)
 7. request_merchant_info — اطلب معلومة من التاجر (البوت ما يعرف الجواب)
 8. confirm_order — ابدأ عملية الطلب (العميل جاهز)
+9. check_order_status — استعلم عن حالة طلب سابق (العميل يسأل وين طلبه)
 
 قواعد:
 - اختر text_only إذا الرد النصي كافي (هذا هو الافتراضي)
 - لا تقترح خصم إلا إذا العميل اعترض بقوة على السعر
 - لا تصعّد للتاجر إلا للمشاكل الحقيقية
+- اختر check_order_status إذا العميل يسأل عن طلب سابق أو شحنة
 - أجب بـ JSON فقط`;
 
     const userPrompt = `رسالة العميل: "${sanitizeActionText(customerMessage.substring(0, 200))}"
@@ -222,6 +230,9 @@ function mapDecisionToAction(decision: any): SariAction {
           ? decision.details.items.slice(0, 5).map((i: string) => sanitizeActionText(String(i)))
           : [],
       };
+
+    case 'check_order_status':
+      return { type: 'check_order_status' };
 
     default:
       return { type: 'text_only' };
@@ -401,10 +412,11 @@ export async function executeAction(params: {
         if (action.items.length === 0) break;
 
         try {
-          // 1. Match requested items to real products
+          // 1. Match requested items to real products (with variant support)
           const allProducts = await db.getProductsByMerchantId(merchantId);
-          const matchedItems: Array<{ productId: number; name: string; price: number; quantity: number }> = [];
-          let totalAmount = 0;
+          const { getVariantsByProductId } = await import('../db/products');
+          const matchedItems: Array<{ productId: number; variantId?: number; name: string; price: number; quantity: number }> = [];
+          let subtotal = 0;
 
           for (const itemName of action.items) {
             const match = allProducts.find((p: any) =>
@@ -412,13 +424,36 @@ export async function executeAction(params: {
               itemName.toLowerCase().includes((p.name || '').toLowerCase())
             );
             if (match) {
+              // Check if product has variants
+              if (match.hasVariants) {
+                try {
+                  const variants = await getVariantsByProductId(match.id);
+                  // Try to match variant name (e.g. "أزرق XL")
+                  const variantMatch = variants.find((v: any) =>
+                    itemName.toLowerCase().includes((v.name || '').toLowerCase()) ||
+                    (v.name || '').toLowerCase().includes(itemName.toLowerCase())
+                  );
+                  if (variantMatch && variantMatch.isActive) {
+                    matchedItems.push({
+                      productId: match.id,
+                      variantId: variantMatch.id,
+                      name: `${match.name} - ${variantMatch.name}`,
+                      price: variantMatch.price || match.price,
+                      quantity: 1,
+                    });
+                    subtotal += variantMatch.price || match.price;
+                    continue;
+                  }
+                } catch { /* fallback to base product */ }
+              }
+              // No variants or no variant match → use base product
               matchedItems.push({
                 productId: match.id,
                 name: match.name,
                 price: match.price,
                 quantity: 1,
               });
-              totalAmount += match.price;
+              subtotal += match.price;
             }
           }
 
@@ -432,7 +467,20 @@ export async function executeAction(params: {
             break;
           }
 
-          // 2. Create order in DB (enrich customer name from profile)
+          // 2. Calculate VAT if enabled
+          let taxAmount = 0;
+          let totalAmount = subtotal;
+          let taxRate = 0;
+          try {
+            const paySettings = await db.getMerchantPaymentSettings(merchantId);
+            if ((paySettings as any)?.taxEnabled && (paySettings as any)?.taxRate) {
+              taxRate = Number((paySettings as any).taxRate);
+              taxAmount = Math.round(subtotal * taxRate / 100);
+              totalAmount = subtotal + taxAmount;
+            }
+          } catch { /* no tax */ }
+
+          // 3. Create order in DB (enrich customer name from profile)
           let customerName = customerPhone;
           try {
             const { getOrCreateProfile } = await import('../db/customer-intelligence');
@@ -522,18 +570,22 @@ export async function executeAction(params: {
             console.warn(`[ActionSelector] Tap payment failed (non-blocking): ${tapErr.message}`);
           }
 
-          // 4. Send confirmation message to customer
+          // 5. Send confirmation message to customer
           const itemsText = matchedItems.map((item, i) =>
             `${i + 1}. *${item.name}* — ${item.price} ر.س`
           ).join('\n');
+
+          const taxLine = taxAmount > 0
+            ? `\n🧾 *المبلغ قبل الضريبة:* ${subtotal} ر.س\n💰 *الضريبة (${taxRate}%):* ${taxAmount} ر.س\n💵 *الإجمالي:* ${totalAmount} ر.س`
+            : `\n💰 *الإجمالي:* ${totalAmount} ر.س`;
 
           if (paymentUrl) {
             // Full order with payment link
             await sendMessage(customerPhone,
               `✅ *تم إنشاء طلبك بنجاح!*\n\n` +
               `📦 *رقم الطلب:* #${order.id}\n\n` +
-              `*المنتجات:*\n${itemsText}\n\n` +
-              `💰 *الإجمالي:* ${totalAmount} ر.س\n\n` +
+              `*المنتجات:*\n${itemsText}\n` +
+              taxLine + `\n\n` +
               `🔗 *لإتمام الدفع:*\n${paymentUrl}\n\n` +
               `⏰ الرابط صالح لمدة 24 ساعة\n` +
               `📱 سنرسل لك تحديثات عن حالة طلبك\n\n` +
@@ -544,8 +596,8 @@ export async function executeAction(params: {
             await sendMessage(customerPhone,
               `✅ *تم تسجيل طلبك!*\n\n` +
               `📦 *رقم الطلب:* #${order.id}\n\n` +
-              `*المنتجات:*\n${itemsText}\n\n` +
-              `💰 *الإجمالي:* ${totalAmount} ر.س\n\n` +
+              `*المنتجات:*\n${itemsText}\n` +
+              taxLine + `\n\n` +
               `سيتواصل معك فريقنا لإتمام الطلب والدفع 🙏`
             );
           }
@@ -559,6 +611,43 @@ export async function executeAction(params: {
           await sendMessage(customerPhone,
             `📋 *تأكيد الطلب*\n\nالمنتجات:\n${itemsList}\n\nسيتواصل معك فريقنا لإتمام الطلب 🙏`
           );
+        }
+        break;
+      }
+
+      case 'check_order_status': {
+        // ══════════════════════════════════════════════════════════
+        // ORDER STATUS LOOKUP — find customer's recent orders
+        // ══════════════════════════════════════════════════════════
+        try {
+          const recentOrders = await db.getOrdersByCustomerPhone(merchantId, customerPhone, 3);
+          if (recentOrders.length === 0) {
+            await sendMessage(customerPhone,
+              `📦 ما لقيت طلبات مسجلة على رقمك\n\nإذا طلبت من قبل، تواصل معنا وسنساعدك 🙏`
+            );
+          } else {
+            const statusMap: Record<string, string> = {
+              pending: '⏳ قيد المعالجة',
+              paid: '✅ تم الدفع',
+              processing: '🔄 جاري التجهيز',
+              shipped: '🚚 تم الشحن',
+              delivered: '📬 تم التوصيل',
+              cancelled: '❌ ملغي',
+            };
+            const orderLines = recentOrders.map((o: any) => {
+              const status = statusMap[o.status] || o.status;
+              const date = new Date(o.createdAt).toLocaleDateString('ar-SA');
+              let line = `📦 *طلب #${o.id}* — ${status}\n   📅 ${date} | 💰 ${o.totalAmount} ر.س`;
+              if (o.trackingNumber) line += `\n   🔗 رقم التتبع: ${o.trackingNumber}`;
+              return line;
+            }).join('\n\n');
+            await sendMessage(customerPhone,
+              `📋 *طلباتك الأخيرة:*\n\n${orderLines}\n\nتبي تفاصيل أكثر عن طلب معين؟ أرسل رقمه 📝`
+            );
+          }
+          console.log(`[ActionSelector] ✅ Order status sent (${recentOrders.length} orders found)`);
+        } catch (statusErr: any) {
+          console.warn(`[ActionSelector] Order status check failed: ${statusErr.message}`);
         }
         break;
       }
