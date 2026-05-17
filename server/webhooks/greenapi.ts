@@ -1127,6 +1127,37 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     const msgType = (payload.messageData.typeMessage === 'voiceMessage' || payload.messageData.typeMessage === 'audioMessage') ? 'voice' : (payload.messageData.typeMessage === 'imageMessage' || payload.messageData.typeMessage === 'videoMessage') ? 'image' : 'text';
     logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: msgType as any, status: 'delivered', responseTimeMs: Date.now() - _deliveryStart, source: 'webhook' });
     
+    // === Action Selector: Decide supplementary actions (fire-and-forget) ===
+    try {
+      const { selectAction, executeAction } = await import('../ai/action-selector');
+      const messageText = extractMessageText(payload) || '';
+      
+      selectAction({
+        merchantId: instance.merchantId,
+        customerMessage: messageText,
+        botResponse: response,
+        intent: 'unknown', // Lightweight — intent was already computed inside chatWithSari
+        profile: null,     // Profile already used inside chatWithSari
+      }).then(async (action) => {
+        if (action.type !== 'text_only') {
+          console.log(`[ActionSelector] 🎯 Action selected: ${action.type}`);
+          await executeAction({
+            action,
+            merchantId: instance.merchantId,
+            customerPhone,
+            conversationId,
+            sendMessage: async (phone, msg) => {
+              await sendMessageWithCredentials(
+                instance.instanceId, instance.token,
+                instance.apiUrl || 'https://api.green-api.com',
+                phone, msg
+              );
+            },
+          });
+        }
+      }).catch(() => {}); // Non-blocking
+    } catch { /* action selector is supplementary */ }
+    
     return {
       success: true,
       message: 'Message processed and response sent'
