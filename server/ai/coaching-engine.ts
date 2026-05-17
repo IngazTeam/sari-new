@@ -59,7 +59,7 @@ export async function handleTeachCommand(
   merchantId: number,
   messageText: string
 ): Promise<{ handled: boolean; response?: string }> {
-  const teachPattern = /^#علم[_\s]?ساري\s+(.+)/s;
+  const teachPattern = /#علم[_\s]?ساري\s+(.+)/s;
   const match = messageText.trim().match(teachPattern);
   if (!match) return { handled: false };
 

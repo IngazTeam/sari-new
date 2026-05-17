@@ -773,8 +773,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const isChainMember = await isPhoneInEscalationChain(instance.merchantId, customerPhone);
 
         if (isChainMember) {
-          // Priority 1: #علم_ساري command
-          if (incomingText.trim().startsWith('#علم')) {
+          // Priority 1: #علم_ساري command (check with .includes to work with quoted reply prefix)
+          if (incomingText.includes('#علم')) {
             const { handleTeachCommand } = await import('../ai/coaching-engine');
             const teachResult = await handleTeachCommand(instance.merchantId, incomingText);
             if (teachResult.handled && teachResult.response) {
