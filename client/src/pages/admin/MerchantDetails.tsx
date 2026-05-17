@@ -33,7 +33,12 @@ import {
   Plus,
   CalendarPlus,
   Ban,
-  Zap
+  Zap,
+  Pencil,
+  Save,
+  X,
+  KeyRound,
+  User
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
@@ -52,6 +57,15 @@ export default function MerchantDetails() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [extendDays, setExtendDays] = useState(30);
   const [showExtendForm, setShowExtendForm] = useState(false);
+
+  // State for edit mode
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editBusinessName, setEditBusinessName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
 
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getById.useQuery(
     { merchantId },
@@ -74,6 +88,44 @@ export default function MerchantDetails() {
   );
 
   const utils = trpc.useUtils();
+
+  const adminUpdateMutation = trpc.merchants.adminUpdate.useMutation({
+    onSuccess: () => {
+      toast.success('تم تحديث بيانات التاجر بنجاح');
+      setIsEditing(false);
+      utils.merchants.getById.invalidate({ merchantId });
+      utils.merchants.list.invalidate();
+    },
+    onError: (error) => toast.error(error.message || 'فشل تحديث البيانات'),
+  });
+
+  const adminResetPasswordMutation = trpc.merchants.adminResetPassword.useMutation({
+    onSuccess: () => {
+      toast.success('تم تغيير كلمة المرور بنجاح');
+      setShowPasswordReset(false);
+      setNewPassword('');
+    },
+    onError: (error) => toast.error(error.message || 'فشل تغيير كلمة المرور'),
+  });
+
+  const startEditing = () => {
+    if (!merchant) return;
+    setEditBusinessName(merchant.businessName || '');
+    setEditName((merchant as any).userName || '');
+    setEditEmail((merchant as any).email || '');
+    setEditPhone(merchant.phone || '');
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    adminUpdateMutation.mutate({
+      merchantId,
+      businessName: editBusinessName || undefined,
+      name: editName || undefined,
+      email: editEmail || undefined,
+      phone: editPhone || undefined,
+    });
+  };
 
   const assignMutation = trpc.merchants.assignSubscription.useMutation({
     onSuccess: (data) => {
@@ -189,50 +241,111 @@ export default function MerchantDetails() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Basic Info */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>{t('adminMerchantDetailsPage.text10')}</CardTitle>
+            <div className="flex gap-2">
+              {!isEditing ? (
+                <Button size="sm" variant="outline" onClick={startEditing} className="gap-1">
+                  <Pencil className="h-4 w-4" /> تعديل
+                </Button>
+              ) : (
+                <>
+                  <Button size="sm" onClick={handleSaveEdit} disabled={adminUpdateMutation.isPending} className="gap-1">
+                    <Save className="h-4 w-4" /> {adminUpdateMutation.isPending ? 'جاري الحفظ...' : 'حفظ'}
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="gap-1">
+                    <X className="h-4 w-4" /> إلغاء
+                  </Button>
+                </>
+              )}
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Store className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text11')}</p>
-                <p className="font-medium">{merchant.businessName}</p>
-              </div>
-            </div>
-
-            {(merchant as any).email && (
-              <div className="flex items-center gap-3">
-                <Mail className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">الإيميل</p>
-                  <p className="font-medium" dir="ltr">{(merchant as any).email}</p>
+            {isEditing ? (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground flex items-center gap-1"><User className="h-3.5 w-3.5" /> اسم المستخدم</label>
+                  <Input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="اسم المستخدم" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground flex items-center gap-1"><Store className="h-3.5 w-3.5" /> اسم المتجر</label>
+                  <Input value={editBusinessName} onChange={(e) => setEditBusinessName(e.target.value)} placeholder="اسم المتجر" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> الإيميل</label>
+                  <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="البريد الإلكتروني" dir="ltr" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-sm text-muted-foreground flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> رقم الهاتف</label>
+                  <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="رقم الهاتف" dir="ltr" />
                 </div>
               </div>
-            )}
-
-            {merchant.phone && (
-              <div className="flex items-center gap-3">
-                <Phone className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text12')}</p>
-                  <p className="font-medium">{merchant.phone}</p>
+            ) : (
+              <>
+                {(merchant as any).userName && (
+                  <div className="flex items-center gap-3">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">اسم المستخدم</p>
+                      <p className="font-medium">{(merchant as any).userName}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <Store className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text11')}</p>
+                    <p className="font-medium">{merchant.businessName}</p>
+                  </div>
                 </div>
-              </div>
+                {(merchant as any).email && (
+                  <div className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">الإيميل</p>
+                      <p className="font-medium" dir="ltr">{(merchant as any).email}</p>
+                    </div>
+                  </div>
+                )}
+                {merchant.phone && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text12')}</p>
+                      <p className="font-medium">{merchant.phone}</p>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text13')}</p>
+                    <p className="font-medium">
+                      {new Date(merchant.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
 
-            <div className="flex items-center gap-3">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground">{t('adminMerchantDetailsPage.text13')}</p>
-                <p className="font-medium">
-                  {new Date(merchant.createdAt).toLocaleDateString('ar-SA', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
+            {/* Password Reset */}
+            <div className="border-t pt-3 mt-3">
+              {!showPasswordReset ? (
+                <Button size="sm" variant="outline" onClick={() => setShowPasswordReset(true)} className="gap-1 w-full">
+                  <KeyRound className="h-4 w-4" /> تغيير كلمة المرور
+                </Button>
+              ) : (
+                <div className="space-y-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <label className="text-sm font-medium flex items-center gap-1"><KeyRound className="h-3.5 w-3.5" /> كلمة المرور الجديدة</label>
+                  <Input type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="أدخل كلمة المرور الجديدة" dir="ltr" />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => { if (newPassword.length < 6) { toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; } adminResetPasswordMutation.mutate({ merchantId, newPassword }); }} disabled={adminResetPasswordMutation.isPending}>
+                      {adminResetPasswordMutation.isPending ? 'جاري التغيير...' : 'تأكيد التغيير'}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setShowPasswordReset(false); setNewPassword(''); }}>إلغاء</Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

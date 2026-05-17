@@ -543,7 +543,7 @@ export async function createMerchant(merchant: InsertMerchant): Promise<Merchant
   return getMerchantById(insertedId);
 }
 
-export async function getMerchantById(id: number): Promise<(Merchant & { email?: string | null }) | undefined> {
+export async function getMerchantById(id: number): Promise<(Merchant & { email?: string | null; userName?: string | null }) | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
@@ -554,19 +554,21 @@ export async function getMerchantById(id: number): Promise<(Merchant & { email?:
 
   if (result.length === 0) return undefined;
 
-  // Fetch email separately to avoid breaking the core merchant shape
+  // Fetch email and name separately to avoid breaking the core merchant shape
   let email: string | null = null;
+  let userName: string | null = null;
   try {
-    const userResult = await db.select({ email: users.email })
+    const userResult = await db.select({ email: users.email, name: users.name })
       .from(users)
       .where(eq(users.id, result[0].userId))
       .limit(1);
     email = userResult.length > 0 ? userResult[0].email : null;
+    userName = userResult.length > 0 ? userResult[0].name : null;
   } catch {
-    // Non-blocking: email is supplementary
+    // Non-blocking: email/name is supplementary
   }
 
-  return { ...result[0], email };
+  return { ...result[0], email, userName };
 }
 
 export async function getMerchantByUserId(userId: number): Promise<Merchant | undefined> {

@@ -91,6 +91,123 @@ export const merchantsRouter = router({
             return { success: true };
         }),
 
+    // Admin: Update merchant profile data (email, phone, business name)
+    adminUpdate: adminProcedure
+        .input(z.object({
+            merchantId: z.number(),
+            businessName: z.string().min(1).max(255).optional(),
+            phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/).optional(),
+            email: z.string().email().optional(),
+            name: z.string().min(2).max(255).optional(),
+        }))
+        .mutation(async ({ input }) => {
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+
+            // Update merchant fields
+            const merchantUpdate: Record<string, any> = {};
+            if (input.businessName) merchantUpdate.businessName = input.businessName;
+            if (input.phone !== undefined) merchantUpdate.phone = input.phone || null;
+
+            if (Object.keys(merchantUpdate).length > 0) {
+                await db.updateMerchant(input.merchantId, merchantUpdate);
+            }
+
+            // Update user fields (email, name)
+            if (merchant.userId && (input.email || input.name)) {
+                const userUpdate: Record<string, any> = {};
+                if (input.email) {
+                    // Check email uniqueness
+                    const existingUser = await db.getUserByEmail(input.email);
+                    if (existingUser && existingUser.id !== merchant.userId) {
+                        throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الإيميل مسجل بالفعل لحساب آخر' });
+                    }
+                    userUpdate.email = input.email;
+                }
+                if (input.name) userUpdate.name = input.name;
+
+                if (Object.keys(userUpdate).length > 0) {
+                    await db.updateUser(merchant.userId, userUpdate);
+                }
+            }
+
+            console.log(`[Admin] Merchant UPDATED: id=${input.merchantId}, fields=${Object.keys({ ...merchantUpdate, ...(input.email ? { email: 1 } : {}), ...(input.name ? { name: 1 } : {}) }).join(',')}`);
+            return { success: true };
+        }),
+
+    // Admin: Reset merchant password
+    adminResetPassword: adminProcedure
+        .input(z.object({
+            merchantId: z.number(),
+            newPassword: z.string().min(6).max(128),
+        }))
+        .mutation(async ({ input }) => {
+            const merchant = await db.getMerchantById(input.merchantId);
+            if (!merchant) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+            }
+            if (!merchant.userId) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد مستخدم مرتبط بهذا التاجر' });
+            }
+
+            const bcrypt = await import('bcryptjs');
+            const hashedPassword = await bcrypt.hash(input.newPassword, 10);
+            await db.updateUserPassword(merchant.userId, hashedPassword);
+
+            console.log(`[Admin] Password RESET for merchant: id=${input.merchantId}`);
+            return { success: true };
+        }),
+
+    // Admin: Create a new merchant + user
+    adminCreate: adminProcedure
+        .input(z.object({
+            name: z.string().min(2).max(255),
+            email: z.string().email(),
+            password: z.string().min(6).max(128),
+            businessName: z.string().min(1).max(255),
+            phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/).optional(),
+            status: z.enum(['active', 'pending', 'suspended']).default('active'),
+        }))
+        .mutation(async ({ input }) => {
+            // Check email uniqueness
+            const existingUser = await db.getUserByEmail(input.email);
+            if (existingUser) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الإيميل مسجل بالفعل' });
+            }
+
+            const bcrypt = await import('bcryptjs');
+            const crypto = await import('node:crypto');
+            const hashedPassword = await bcrypt.hash(input.password, 10);
+            const openId = `admin_${crypto.randomBytes(16).toString('hex')}`;
+
+            // Create user
+            const user = await db.createUser({
+                openId,
+                name: input.name,
+                email: input.email,
+                password: hashedPassword,
+                loginMethod: 'email',
+                role: 'user',
+            });
+
+            if (!user) {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إنشاء المستخدم' });
+            }
+
+            // Create merchant
+            const merchant = await db.createMerchant({
+                userId: user.id,
+                businessName: input.businessName,
+                phone: input.phone || null,
+                status: input.status,
+            });
+
+            console.log(`[Admin] Merchant CREATED: id=${merchant?.id}, email=${input.email}, business=${input.businessName}`);
+            return { success: true, merchantId: merchant?.id, userId: user.id };
+        }),
+
     // Delete merchant and all related data (Admin only)
     delete: adminProcedure
         .input(z.object({ merchantId: z.number() }))

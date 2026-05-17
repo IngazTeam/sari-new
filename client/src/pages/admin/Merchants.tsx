@@ -31,9 +31,18 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Store, Eye, Trash2, ChevronRight, ChevronLeft, Search, Users, UserCheck, UserX } from 'lucide-react';
+import { Store, Eye, Trash2, ChevronRight, ChevronLeft, Search, Users, UserCheck, UserX, Plus } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 const PAGE_SIZE = 30;
 
@@ -47,6 +56,8 @@ export default function MerchantsManagement() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createForm, setCreateForm] = useState({ name: '', email: '', password: '', businessName: '', phone: '', status: 'active' as 'active' | 'pending' | 'suspended' });
 
   const { data: merchants, isLoading } = trpc.merchants.list.useQuery();
 
@@ -72,6 +83,16 @@ export default function MerchantsManagement() {
       toast.error('فشل حذف التاجر: ' + error.message);
       setDeleteTarget(null);
     },
+  });
+
+  const createMutation = trpc.merchants.adminCreate.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم إنشاء التاجر بنجاح (ID: ${data.merchantId})`);
+      setShowCreateDialog(false);
+      setCreateForm({ name: '', email: '', password: '', businessName: '', phone: '', status: 'active' });
+      utils.merchants.list.invalidate();
+    },
+    onError: (error) => toast.error(error.message || 'فشل إنشاء التاجر'),
   });
 
   // Filter & search
@@ -154,10 +175,14 @@ export default function MerchantsManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{t('adminMerchantsPage.text4')}</h1>
-        <p className="text-muted-foreground mt-2">{t('merchants.auto_0')}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">{t('adminMerchantsPage.text4')}</h1>
+          <p className="text-muted-foreground mt-2">{t('merchants.auto_0')}</p>
+        </div>
+        <Button onClick={() => setShowCreateDialog(true)} className="gap-1">
+          <Plus className="h-4 w-4" /> إضافة تاجر
+        </Button>
       </div>
 
       {/* Stats Cards */}
@@ -451,6 +476,68 @@ export default function MerchantsManagement() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Create Merchant Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent dir="rtl" className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>إضافة تاجر جديد</DialogTitle>
+            <DialogDescription>أنشئ حساب تاجر جديد مع بيانات الدخول</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>الاسم الكامل *</Label>
+              <Input value={createForm.name} onChange={(e) => setCreateForm(p => ({ ...p, name: e.target.value }))} placeholder="اسم صاحب المتجر" />
+            </div>
+            <div className="space-y-1">
+              <Label>اسم المتجر *</Label>
+              <Input value={createForm.businessName} onChange={(e) => setCreateForm(p => ({ ...p, businessName: e.target.value }))} placeholder="اسم المتجر أو النشاط" />
+            </div>
+            <div className="space-y-1">
+              <Label>البريد الإلكتروني *</Label>
+              <Input type="email" value={createForm.email} onChange={(e) => setCreateForm(p => ({ ...p, email: e.target.value }))} placeholder="email@example.com" dir="ltr" />
+            </div>
+            <div className="space-y-1">
+              <Label>كلمة المرور *</Label>
+              <Input type="text" value={createForm.password} onChange={(e) => setCreateForm(p => ({ ...p, password: e.target.value }))} placeholder="6 أحرف على الأقل" dir="ltr" />
+            </div>
+            <div className="space-y-1">
+              <Label>رقم الهاتف</Label>
+              <Input value={createForm.phone} onChange={(e) => setCreateForm(p => ({ ...p, phone: e.target.value }))} placeholder="966500000000" dir="ltr" />
+            </div>
+            <div className="space-y-1">
+              <Label>الحالة</Label>
+              <Select value={createForm.status} onValueChange={(v: any) => setCreateForm(p => ({ ...p, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">✅ نشط</SelectItem>
+                  <SelectItem value="pending">⏳ قيد المراجعة</SelectItem>
+                  <SelectItem value="suspended">⛔ معلق</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="flex-row-reverse gap-2">
+            <Button onClick={() => setShowCreateDialog(false)} variant="ghost">إلغاء</Button>
+            <Button
+              onClick={() => {
+                if (!createForm.name || !createForm.email || !createForm.password || !createForm.businessName) {
+                  toast.error('يرجى تعبئة جميع الحقول المطلوبة');
+                  return;
+                }
+                if (createForm.password.length < 6) {
+                  toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+                  return;
+                }
+                createMutation.mutate(createForm);
+              }}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? 'جاري الإنشاء...' : 'إنشاء التاجر'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
