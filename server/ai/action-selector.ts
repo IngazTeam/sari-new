@@ -18,6 +18,9 @@ import type { CustomerProfile } from '../db/customer-intelligence';
 import type { CustomerIntent } from './session-context';
 import * as db from '../db';
 
+// Rate-limit map: prevent sending discount codes too frequently to the same customer
+const _discountRateLimit = new Map<string, number>();
+
 // ═══════════════════════════════════════════════════════════════
 // Action Types
 // ═══════════════════════════════════════════════════════════════
@@ -292,6 +295,13 @@ export async function executeAction(params: {
       }
 
       case 'offer_discount': {
+        // Rate-limit: max 1 discount per customer per hour
+        const discountKey = `${merchantId}:${customerPhone}`;
+        const lastSent = _discountRateLimit.get(discountKey);
+        if (lastSent && Date.now() - lastSent < 3600_000) {
+          console.log(`[ActionSelector] ⏳ Discount rate-limited for ${customerPhone.slice(-4)}`);
+          break;
+        }
         // Find active discount codes for this merchant
         try {
           const { getPool } = await import('../db');
@@ -312,9 +322,10 @@ export async function executeAction(params: {
               await sendMessage(customerPhone,
                 `🎁 عندنا عرض خاص لك!\n\nاستخدم كود الخصم: *${d.code}*\nقيمة الخصم: *${valueStr}*\n\nالعرض لفترة محدودة! ⏰`
               );
-              // Track discount usage
+              // Track discount usage + rate-limit
               await db.incrementDiscountCodeUsage(d.code);
-              console.log(`[ActionSelector] ✅ Sent discount code: ${d.code} (usage tracked)`);
+              _discountRateLimit.set(discountKey, Date.now());
+              console.log(`[ActionSelector] ✅ Sent discount code: ${d.code} (usage tracked, rate-limited 1h)`);
             } else {
               console.log(`[ActionSelector] ℹ️ No active discounts for merchant ${merchantId}`);
             }
