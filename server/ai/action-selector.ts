@@ -421,11 +421,18 @@ export async function executeAction(params: {
             break;
           }
 
-          // 2. Create order in DB
+          // 2. Create order in DB (enrich customer name from profile)
+          let customerName = customerPhone;
+          try {
+            const { getOrCreateProfile } = await import('../db/customer-intelligence');
+            const profile = await getOrCreateProfile(merchantId, customerPhone);
+            if (profile?.displayName) customerName = profile.displayName;
+          } catch { /* use phone as fallback */ }
+
           const order = await db.createOrder({
             merchantId,
             customerPhone,
-            customerName: customerPhone, // Will be enriched from profile if available
+            customerName,
             items: JSON.stringify(matchedItems.map(i => ({
               name: i.name,
               quantity: i.quantity,
@@ -451,7 +458,7 @@ export async function executeAction(params: {
                 amount: totalAmount / 100, // هللات → ريال
                 currency: paymentSettings.defaultCurrency || 'SAR',
                 customer: {
-                  first_name: 'Customer',
+                  first_name: customerName || 'Customer',
                   phone: {
                     country_code: '966',
                     number: customerPhone.replace(/^\+?966/, '').replace(/^0/, ''),
