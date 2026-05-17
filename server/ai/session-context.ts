@@ -347,7 +347,8 @@ export function detectIntent(
 export function getSessionStats(): { active: number; totalCreated: number } {
   // Cleanup expired sessions
   const now = Date.now();
-  for (const [key, session] of sessions) {
+  const entries = Array.from(sessions.entries());
+  for (const [key, session] of entries) {
     if (now - session.lastActivityAt > SESSION_TTL_MS) {
       sessions.delete(key);
     }
