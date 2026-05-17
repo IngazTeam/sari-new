@@ -202,11 +202,26 @@ export function classifyTier(purchaseCount: number, totalSpent: number): Custome
 /**
  * Build a short context string for GPT injection.
  */
+// SEC-SALES-02: Sanitize customer data before prompt injection
+function sanitizeProfileData(text: string): string {
+  if (!text) return '';
+  return text.normalize('NFKC')
+    .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+    .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+    .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+    .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+    .replace(/override\s+(system|all|your)/gi, '[filtered]')
+    .replace(/act\s+as\s+(a|an)?/gi, '[filtered]')
+    .replace(/تصرف\s*(كـ|ك)/gi, '[filtered]')
+    .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[filtered]')
+    .substring(0, 200);
+}
+
 export function buildProfileContext(profile: CustomerProfile): string {
   const parts: string[] = [];
   
   // Name/nickname
-  const name = profile.nickname || profile.displayName;
+  const name = profile.nickname ? sanitizeProfileData(profile.nickname) : (profile.displayName ? sanitizeProfileData(profile.displayName) : null);
   if (name) parts.push(`اسم العميل: ${name}`);
   
   // Tier — with ACTIVE behavioral directives
@@ -260,12 +275,12 @@ export function buildProfileContext(profile: CustomerProfile): string {
       delivery: '📌 توجيه: أكد سرعة التوصيل وسهولة التتبع — العميل اشتكى من التوصيل سابقاً',
       quality: '📌 توجيه: ركز على الضمان والاعتماد — العميل سأل عن الجودة سابقاً',
     };
-    parts.push(objDirectives[profile.lastObjection] || `⚠️ ${profile.lastObjection}`);
+    parts.push(objDirectives[profile.lastObjection] || `⚠️ ${sanitizeProfileData(profile.lastObjection)}`);
   }
   
   // Purchase history — with cross-sell directive
   if (profile.purchaseHistory && profile.purchaseHistory.length > 0) {
-    const lastPurchase = profile.purchaseHistory[profile.purchaseHistory.length - 1];
+    const lastPurchase = sanitizeProfileData(profile.purchaseHistory[profile.purchaseHistory.length - 1]);
     const daysSinceLastSeen = profile.lastSeenAt
       ? Math.floor((Date.now() - new Date(profile.lastSeenAt).getTime()) / (1000 * 60 * 60 * 24))
       : 999;
@@ -277,7 +292,7 @@ export function buildProfileContext(profile: CustomerProfile): string {
         parts.push(`📌 توجيه: اذكر "${lastPurchase}" طبيعياً واسأل كيف تجربته — ثم اقترح منتج مكمل`);
       }
     } else {
-      parts.push(`مشتريات سابقة: ${profile.purchaseHistory.slice(-3).join('، ')}`);
+      parts.push(`مشتريات سابقة: ${profile.purchaseHistory.slice(-3).map(p => sanitizeProfileData(p)).join('، ')}`);
     }
   }
   

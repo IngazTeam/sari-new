@@ -9,7 +9,6 @@
  * 2. FAST PATH: keyword-based update for messages 2-20 (zero cost)
  */
 
-import { callGPT4 } from './openai';
 import type { CustomerIntent, HesitationAnalysis } from './session-context';
 import { analyzeHesitation } from './session-context';
 import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
@@ -92,15 +91,24 @@ export function hasCriticalSignal(message: string): boolean {
   return false;
 }
 
-/**
- * Detect which critical signal category was triggered.
- */
-function detectCriticalCategory(message: string): string | null {
-  const msg = message.toLowerCase();
-  for (const [category, signals] of Object.entries(CRITICAL_SIGNALS)) {
-    if (signals.some(s => msg.includes(s))) return category;
-  }
-  return null;
+// SEC-SALES-01: Sanitize customer data before prompt injection
+function sanitizeForMission(text: string): string {
+  if (!text) return '';
+  const normalized = text.normalize('NFKC');
+  return normalized
+    .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+    .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+    .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+    .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+    .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+    .replace(/do\s+not\s+follow/gi, '[filtered]')
+    .replace(/override\s+(system|all|your)/gi, '[filtered]')
+    .replace(/act\s+as\s+(a|an)?/gi, '[filtered]')
+    .replace(/pretend\s+(to\s+be|you\s+are)/gi, '[filtered]')
+    .replace(/تصرف\s*(كـ|ك)/gi, '[filtered]')
+    .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[filtered]')
+    .replace(/انس[َى]?\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد|اعداداتهم)/gi, '[filtered]')
+    .substring(0, 200); // Truncate to prevent prompt bloat
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -236,7 +244,7 @@ function buildMemoryDirectives(
 
   // Returning customer with recent purchase → mention it
   if (intent === 'returning' && profile.purchaseHistory.length > 0 && daysSinceLastSeen < 90) {
-    const lastPurchase = profile.purchaseHistory[profile.purchaseHistory.length - 1];
+    const lastPurchase = sanitizeForMission(profile.purchaseHistory[profile.purchaseHistory.length - 1]);
     directives.push({
       type: 'last_purchase',
       value: lastPurchase,
@@ -269,11 +277,12 @@ function buildMemoryDirectives(
 
   // Nickname (أبو فلان) — only Gulf context
   if (profile.nickname && daysSinceLastSeen < 90) {
+    const safeNickname = sanitizeForMission(profile.nickname);
     directives.push({
       type: 'nickname',
-      value: profile.nickname,
+      value: safeNickname,
       priority: 'medium',
-      usageHint: `نادِه "${profile.nickname}" بطريقة طبيعية`,
+      usageHint: `نادِه "${safeNickname}" بطريقة طبيعية`,
     });
   }
 
