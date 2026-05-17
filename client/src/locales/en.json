@@ -726,140 +726,140 @@
     "auto_15": "الدعم الفني"
   },
   "toast": {
+    "support": {
+      "msg1": "تم إرسال رسالتك للدعم الفني بنجاح."
+    },
     "products": {
-      "msg1": "Product added successfully",
-      "msg2": "Failed to add product",
-      "msg3": "Product updated successfully",
-      "msg4": "Failed to update product",
-      "msg5": "Product deleted successfully",
-      "msg6": "Failed to delete product",
-      "msg7": "Please enter product name and price",
-      "msg8": "products successfully"
+      "msg1": "تم إضافة المنتج بنجاح",
+      "msg2": "فشل إضافة المنتج",
+      "msg3": "تم تحديث المنتج بنجاح",
+      "msg4": "فشل تحديث المنتج",
+      "msg5": "تم حذف المنتج بنجاح",
+      "msg6": "فشل حذف المنتج",
+      "msg7": "يرجى إدخال اسم المنتج والسعر",
+      "msg8": "منتج بنجاح"
     },
     "orders": {
-      "msg1": "Order status updated successfully",
-      "msg2": "Order status updated",
-      "msg3": "Failed to update order status",
-      "msg4": "Order cancelled",
-      "msg5": "Failed to cancel order",
-      "msg6": "Connection request sent successfully",
-      "msg7": "Failed to send request",
-      "msg8": "Request sent successfully! Will be reviewed soon",
-      "msg9": "Request approved successfully",
-      "msg10": "Failed to approve request",
-      "msg11": "Request rejected successfully",
-      "msg12": "Request rejected",
-      "msg13": "Failed to reject request",
-      "msg14": "Request approved successfully",
-      "msg15": "Failed to approve request"
+      "msg1": "تم تحديث حالة الطلب بنجاح",
+      "msg2": "تم تحديث حالة الطلب",
+      "msg3": "فشل تحديث حالة الطلب",
+      "msg4": "تم إلغاء الطلب",
+      "msg5": "فشل إلغاء الطلب",
+      "msg6": "تم إرسال طلب الربط بنجاح",
+      "msg7": "فشل إرسال الطلب",
+      "msg8": "تم إرسال الطلب بنجاح! سيتم مراجعته قريباً",
+      "msg9": "تم قبول الطلب بنجاح",
+      "msg10": "فشل قبول الطلب",
+      "msg11": "تم رفض الطلب بنجاح",
+      "msg12": "تم رفض الطلب",
+      "msg13": "فشل رفض الطلب",
+      "msg14": "تمت الموافقة على الطلب بنجاح",
+      "msg15": "فشلت الموافقة على الطلب"
     },
     "campaigns": {
-      "msg1": "Campaign created successfully",
-      "msg2": "Failed to create campaign",
-      "msg3": "Campaign deleted successfully",
-      "msg4": "Failed to delete campaign",
-      "msg5": "Campaign sending started successfully",
-      "msg6": "Failed to send campaign",
-      "msg7": "Please enter campaign name",
-      "msg8": "Campaign status updated successfully"
+      "msg1": "تم إنشاء الحملة بنجاح",
+      "msg2": "فشل إنشاء الحملة",
+      "msg3": "تم حذف الحملة بنجاح",
+      "msg4": "فشل حذف الحملة",
+      "msg5": "تم بدء إرسال الحملة بنجاح",
+      "msg6": "فشل إرسال الحملة",
+      "msg7": "يرجى إدخال اسم الحملة",
+      "msg8": "تم تحديث حالة الحملة بنجاح"
     },
     "conversations": {
-      "msg1": "Recording uploaded successfully",
-      "msg2": "Failed to upload recording",
-      "msg3": "Recording cancelled"
+      "msg1": "تم رفع التسجيل بنجاح",
+      "msg2": "فشل رفع التسجيل",
+      "msg3": "تم إلغاء التسجيل"
     },
     "discounts": {
-      "msg1": "Discount code created successfully",
-      "msg2": "Failed to create discount code",
-      "msg3": "Discount code updated",
-      "msg4": "Failed to update discount code",
-      "msg5": "Discount code deleted",
-      "msg6": "Failed to delete discount code",
-      "msg7": "Code updated"
+      "msg1": "تم إنشاء كود الخصم بنجاح",
+      "msg2": "فشل إنشاء كود الخصم",
+      "msg3": "تم تحديث كود الخصم",
+      "msg4": "فشل تحديث كود الخصم",
+      "msg5": "تم حذف كود الخصم",
+      "msg6": "فشل حذف كود الخصم",
+      "msg7": "تم تحديث الكود"
     },
     "whatsapp": {
-      "msg1": "WhatsApp connected successfully!"
+      "msg1": "تم ربط واتساب بنجاح!"
     },
     "settings": {
-      "msg1": "Account information updated successfully",
-      "msg2": "Failed to update account information",
-      "msg3": "Store information updated successfully",
-      "msg4": "Failed to update store information",
-      "msg5": "Store name is required",
-      "msg6": "Please enter store URL and token"
+      "msg1": "تم تحديث معلومات الحساب بنجاح",
+      "msg2": "فشل تحديث معلومات الحساب",
+      "msg3": "تم تحديث معلومات المتجر بنجاح",
+      "msg4": "فشل تحديث معلومات المتجر",
+      "msg5": "اسم المتجر مطلوب",
+      "msg6": "يرجى إدخال رابط المتجر والـ Token"
     },
     "subscriptions": {
-      "msg1": "You are already subscribed to this plan",
-      "msg2": "Plan added successfully",
-      "msg3": "Failed to add plan",
-      "msg4": "Plan updated successfully",
-      "msg5": "Failed to update plan"
+      "msg1": "أنت مشترك بالفعل في هذه الباقة",
+      "msg2": "تم إضافة الباقة بنجاح",
+      "msg3": "فشل إضافة الباقة",
+      "msg4": "تم تحديث الباقة بنجاح",
+      "msg5": "فشل تحديث الباقة"
     },
     "carts": {
-      "msg1": "Cart status updated successfully"
+      "msg1": "تم تحديث حالة السلة بنجاح"
     },
     "instances": {
-      "msg1": "Instance added successfully",
-      "msg2": "Failed to add instance",
-      "msg3": "Instance updated successfully",
-      "msg4": "Failed to update instance",
-      "msg5": "Instance set as primary",
-      "msg6": "Instance deleted successfully",
-      "msg7": "Failed to delete instance",
-      "msg8": "Please enter Instance ID and Token",
-      "msg9": "Connection successful! Status",
-      "msg10": "Connection failed"
+      "msg1": "تم إضافة Instance بنجاح",
+      "msg2": "فشل إضافة Instance",
+      "msg3": "تم تحديث Instance بنجاح",
+      "msg4": "فشل تحديث Instance",
+      "msg5": "تم تعيين Instance كـ Primary",
+      "msg6": "تم حذف Instance بنجاح",
+      "msg7": "فشل حذف Instance",
+      "msg8": "يرجى إدخال Instance ID و Token",
+      "msg9": "الاتصال ناجح! الحالة",
+      "msg10": "فشل الاتصال"
     },
     "notifications": {
-      "msg1": "Notification enabled",
-      "msg2": "Notification disabled",
-      "msg3": "Failed to update notification",
-      "msg4": "Template saved successfully",
-      "msg5": "Failed to save template"
+      "msg1": "تم تفعيل الإشعار",
+      "msg2": "تم تعطيل الإشعار",
+      "msg3": "فشل تحديث الإشعار",
+      "msg4": "تم حفظ القالب بنجاح",
+      "msg5": "فشل حفظ القالب"
     },
     "analytics": {
-      "msg1": "PDF report exported successfully",
-      "msg2": "Failed to export PDF",
-      "msg3": "Excel report exported successfully",
-      "msg4": "Failed to export Excel"
+      "msg1": "تم تصدير التقرير PDF بنجاح",
+      "msg2": "فشل تصدير PDF",
+      "msg3": "تم تصدير التقرير Excel بنجاح",
+      "msg4": "فشل تصدير Excel"
     },
     "upload": {
-      "msg1": "Imported",
-      "msg2": "Failed to upload file",
-      "msg3": "Please select CSV file only",
-      "msg4": "Please select CSV file first"
+      "msg1": "تم استيراد",
+      "msg2": "فشل رفع الملف",
+      "msg3": "يرجى اختيار ملف CSV فقط",
+      "msg4": "يرجى اختيار ملف CSV أولاً"
     },
     "merchants": {
-      "msg1": "Merchant status updated successfully",
-      "msg2": "Failed to update merchant status"
-    },
-    "support": {
-      "msg1": "Reminder message sent successfully"
+      "msg1": "تم تحديث حالة التاجر بنجاح",
+      "msg2": "فشل تحديث حالة التاجر"
     },
     "common": {
-      "msg1": "Failed to update status",
-      "msg2": "Please enter message text",
-      "msg3": "Please fill all required fields",
-      "msg4": "Please enter phone number",
-      "msg5": "Invalid phone number",
-      "msg6": "Name is required",
-      "msg7": "Please select payment method",
-      "msg8": "Failed to set as primary",
-      "msg9": "Connection successful! Status",
-      "msg10": "Connection failed",
-      "msg11": "Failed to test connection",
-      "msg12": "Failed to read file",
-      "msg13": "Please enter rejection reason",
-      "msg14": "Please enter rejection reason",
-      "msg15": "Settings saved successfully",
-      "msg16": "Connection successful!",
-      "msg17": "Connection failed",
-      "msg18": "Disconnected",
-      "msg19": "Failed to disconnect",
-      "msg20": "Synced ✅",
-      "msg21": "Sync failed",
-      "msg22": "Error",
-      "msg23": "Your message has been sent successfully! We will reply soon."
+      "msg1": "فشل تحديث الحالة",
+      "msg2": "يرجى إدخال نص الرسالة",
+      "msg3": "يرجى ملء جميع الحقول المطلوبة",
+      "msg4": "الرجاء إدخال رقم الهاتف",
+      "msg5": "رقم الهاتف غير صحيح",
+      "msg6": "الاسم مطلوب",
+      "msg7": "الرجاء اختيار طريقة الدفع",
+      "msg8": "فشل تعيين Primary",
+      "msg9": "الاتصال ناجح! الحالة",
+      "msg10": "فشل الاتصال",
+      "msg11": "فشل اختبار الاتصال",
+      "msg12": "فشل قراءة الملف",
+      "msg13": "الرجاء إدخال سبب الرفض",
+      "msg14": "يرجى إدخال سبب الرفض",
+      "msg15": "تم حفظ الإعدادات بنجاح",
+      "msg16": "نجح الربط!",
+      "msg17": "فشل الربط",
+      "msg18": "تم الفصل",
+      "msg19": "فشل الفصل",
+      "msg20": "تمت المزامنة ✅",
+      "msg21": "فشلت المزامنة",
+      "msg22": "خطأ",
+      "msg23": "تم إرسال رسالتك بنجاح! سنرد عليك في أقرب وقت."
     }
   },
   "errors": {
@@ -4963,19 +4963,19 @@
     "text29": "Order Details #{{selectedOrderId}}"
   },
   "companyAboutPage": {
-    "text0": "Our Mission",
-    "text1": "Our Vision",
-    "text2": "Our Story",
-    "text3": "Our Values",
-    "text4": "The principles that guide our work",
-    "text5": "Customer First",
-    "text6": "Continuous Innovation",
-    "text7": "Quality and Professionalism",
-    "text8": "Active Merchants",
-    "text9": "Monthly Conversations",
-    "text10": "Customer Satisfaction",
-    "text11": "Technical Support",
-    "text12": "Join the Sari Family"
+    "text0": "رسالتنا ورؤيتنا",
+    "text1": "ما الذي يحركنا كل يوم",
+    "text2": "نؤمن في ساري بأن التجارة الإلكترونية يجب أن تكون تفاعلية ومتاحة للجميع. نسعى لتسليح التجار بأفضل أدوات الذكاء الاصطناعي.",
+    "text3": "فريقنا",
+    "text4": "الخبراء وراء ساري",
+    "text5": "فريق من المهندسين والمصممين وخبراء المبيعات الشغوفين ببناء مستقبل التجارة الحوارية.",
+    "text6": "انضم إلينا",
+    "text7": "هل أنت شغوف بالذكاء الاصطناعي والتجارة الإلكترونية؟",
+    "text8": "نحن نبحث دائماً عن المواهب الاستثنائية للانضمام إلى فريقنا. استكشف الفرص المتاحة وكن جزءاً من قصة نجاحنا.",
+    "text9": "تواصل معنا",
+    "text10": "المناصب المتاحة",
+    "text11": "تاريخنا",
+    "text12": "كيف بدأنا"
   },
   "comparePlansPage": {
     "text0": "Compare Plans",
@@ -5470,41 +5470,41 @@
     "text19": "Easy management:"
   },
   "pricingPage": {
-    "text0": "Can I change my plan later?",
-    "text1": "Yes, you can upgrade or downgrade at any time. The price difference will be calculated proportionally.",
-    "text2": "What happens if I exceed the conversation limit?",
-    "text3": "Auto-reply will be temporarily paused until next month, or you can upgrade to a higher plan immediately.",
-    "text4": "Is there a free trial?",
-    "text5": "Yes, we offer a 7-day free trial for all plans without requiring a credit card.",
-    "text6": "Can I cancel my subscription anytime?",
-    "text7": "Yes, you can cancel your subscription at any time without additional fees. Service will continue until the end of the paid period.",
-    "text8": "Loading plans...",
-    "text9": "An error occurred while loading plans",
-    "text10": "Monthly",
-    "text11": "No plans available currently"
+    "text0": "باقات مرنة تناسب حجم متجرك",
+    "text1": "اختر الباقة الأنسب لمبيعاتك وميزانيتك، بدون عقود معقدة أو رسوم خفية.",
+    "text2": "الأسئلة الشائعة حول التسعير",
+    "text3": "كل ما تحتاج لمعرفته حول باقاتنا والاشتراكات.",
+    "text4": "هل هناك فترة تجريبية مجانية؟",
+    "text5": "نعم، نوفر فترة تجريبية مجانية لمدة 7 أيام لجميع الباقات بدون الحاجة لبطاقة ائتمانية.",
+    "text6": "هل يمكنني إلغاء الاشتراك في أي وقت؟",
+    "text7": "نعم، يمكنك إلغاء الاشتراك في أي وقت دون أي رسوم إضافية. ستستمر الخدمة حتى نهاية الفترة المدفوعة.",
+    "text8": "جاري تحميل الباقات...",
+    "text9": "حدث خطأ أثناء تحميل الباقات",
+    "text10": "شهرياً",
+    "text11": "لا توجد باقات متاحة حالياً"
   },
   "productAIPage": {
-    "text0": "Sari's Unique Personality",
-    "text1": "Multilingual",
-    "text2": "Speaks Arabic with natural Saudi dialect and fluent English",
-    "text3": "Friendly and Professional",
-    "text4": "Interacts with customers in a friendly yet professional manner",
-    "text5": "Smart and Contextual",
-    "text6": "Understands context and remembers conversation details",
-    "text7": "Hello, I'm looking for a gift for my brother",
-    "text8": "Hello! Welcome 😊 I'll definitely help you find a special gift. Can you tell me about his interests? Sports, tech, fashion?",
-    "text9": "Sari's Smart Capabilities",
-    "text10": "Advanced technology for an exceptional customer experience",
-    "text11": "Natural Language Understanding",
-    "text12": "Smart Product Search",
-    "text13": "Instant 24/7 Responses",
-    "text14": "How Does Sari Help You?",
-    "text15": "Versatile use cases for every type of business",
-    "text16": "E-commerce",
-    "text17": "Professional Services",
-    "text18": "Healthcare",
-    "text19": "Education",
-    "text20": "Ready to experience the power of AI?"
+    "text0": "ذكاء اصطناعي بشخصية حقيقية",
+    "text1": "فهم عميق للهجات",
+    "text2": "متدرب على فهم العامية السعودية ومختلف اللهجات العربية ليقدم تجربة قريبة للقلب.",
+    "text3": "الذكاء العاطفي",
+    "text4": "يدرك غضب العميل أو استعجاله ويقوم بتهدئة الموقف أو تحويله لموظف بشري عند الحاجة.",
+    "text5": "التعلم المستمر",
+    "text6": "كلما تحدث ساري مع عملائك أكثر، زادت دقته وقدرته على الإقناع بفضل الـ Machine Learning.",
+    "text7": "متوفر عندكم العطر الجديد؟",
+    "text8": "أهلاً بك! نعم العطر الجديد (عود وزعفران) متوفر حالياً. سعره 299 ريال شامل التوصيل. أجهز لك طلب؟",
+    "text9": "ميزات محرك الذكاء الاصطناعي",
+    "text10": "أحدث التقنيات مسخرة لخدمة مبيعاتك",
+    "text11": "معالجة اللغة الطبيعية (NLP)",
+    "text12": "تحليل النوايا",
+    "text13": "التعلم الآلي (ML)",
+    "text14": "حالات الاستخدام",
+    "text15": "كيف يمكن لساري مساعدتك في مجالك؟",
+    "text16": "المتاجر الإلكترونية",
+    "text17": "الشركات والمؤسسات",
+    "text18": "العيادات والمراكز",
+    "text19": "التدريب والتعليم",
+    "text20": "مستعد لتوظيف وكيلك الذكي؟"
   },
   "resetPasswordPage": {
     "text0": "Password changed!",
@@ -5794,68 +5794,68 @@
     "text10": "Website analysis failed"
   },
   "solutionsMarketingPage": {
-    "text0": "Lower customer acquisition cost",
-    "text1": "Higher ROI",
-    "text2": "Higher response rate",
-    "text3": "The Power of WhatsApp Marketing",
-    "text4": "Advanced marketing tools for exceptional results",
-    "text5": "Instant Conversation Conversion",
-    "text6": "Smart Advertising",
-    "text7": "Smart Automated Conversations",
-    "text8": "Powerful Insights",
-    "text9": "Marketing Campaign Types",
-    "text10": "Various campaigns for every marketing goal",
-    "text11": "Advertising Campaigns",
-    "text12": "Custom Campaigns",
-    "text13": "Retargeting Campaigns",
-    "text14": "How Does It Work?",
-    "text15": "From ad to conversion in simple steps",
-    "text16": "Advertisement",
-    "text17": "Chat",
-    "text18": "Engagement",
-    "text19": "Conversion",
-    "text20": "Ready to transform your marketing?"
+    "text0": "98%",
+    "text1": "معدل القراءة",
+    "text2": "5x",
+    "text3": "معدل النقر",
+    "text4": "40%",
+    "text5": "زيادة في المبيعات",
+    "text6": "ميزات التسويق",
+    "text7": "كل ما تحتاجه لإطلاق حملات تسويقية ناجحة عبر الواتساب",
+    "text8": "حملات البث الجماعي",
+    "text9": "أرسل العروض الترويجية والخصومات لآلاف العملاء بضغطة زر وبدون حظر.",
+    "text10": "استهداف ذكي",
+    "text11": "قسّم عملائك بناءً على سلوكياتهم الشرائية وأرسل رسائل مخصصة تهمهم.",
+    "text12": "تتبع وتقارير",
+    "text13": "احصل على تقارير مفصلة حول معدلات القراءة والتفاعل لتقييم حملاتك.",
+    "text14": "أتمتة السلال المهجورة",
+    "text15": "أعد العملاء المترددين واسترجع المبيعات المفقودة برسائل تلقائية.",
+    "text16": "خطوات إطلاق حملة ناجحة",
+    "text17": "الاستهداف",
+    "text18": "المحتوى",
+    "text19": "الإرسال",
+    "text20": "القياس"
   },
   "solutionsSalesPage": {
-    "text0": "Reduction in sales cycle",
-    "text1": "Faster responses",
-    "text2": "Revenue growth",
-    "text3": "How Does Sari Help You with Sales?",
-    "text4": "Powerful tools for the modern sales team",
-    "text5": "Unified Workspace",
-    "text6": "Instant Customer Qualification",
-    "text7": "Smart Lead Management",
-    "text8": "Quality Monitoring",
-    "text9": "How Does It Work?",
-    "text10": "Four simple steps to convert sales",
-    "text11": "Receive Customer",
-    "text12": "Smart Qualification",
-    "text13": "Auto Distribution",
-    "text14": "Close the Deal",
-    "text15": "Ready to increase your sales?"
+    "text0": "زيادة في المبيعات",
+    "text1": "توفير في الوقت",
+    "text2": "تقليل السلال المهجورة",
+    "text3": "الميزات المخصصة للمبيعات",
+    "text4": "أدوات مصممة خصيصاً لمساعدتك على إغلاق المزيد من الصفقات",
+    "text5": "الردود التفاعلية",
+    "text6": "متابعة العملاء",
+    "text7": "ربط المتجر",
+    "text8": "تقارير المبيعات",
+    "text9": "كيف يعمل؟",
+    "text10": "عملية بسيطة لتحقيق مبيعات أكثر",
+    "text11": "الاستفسار",
+    "text12": "العرض",
+    "text13": "الشراء",
+    "text14": "الولاء",
+    "text15": "استثمر في مبيعاتك"
   },
   "solutionsSupportPage": {
-    "text0": "Workload reduction",
-    "text1": "Of FAQs resolved by AI",
-    "text2": "Faster solutions",
-    "text3": "Advanced AI-Powered Support",
-    "text4": "Powerful tools for an exceptional support team",
-    "text5": "Instant 24/7 Responses",
-    "text6": "Smart Routing",
-    "text7": "Unified Inbox",
-    "text8": "Data-Driven Insights",
-    "text9": "AI Capabilities",
-    "text10": "A smart support agent that understands your customers",
-    "text11": "Multilingual",
-    "text12": "Contextual",
-    "text13": "Empathetic",
-    "text14": "How Does It Work?",
-    "text15": "From inquiry to solution in seconds",
-    "text16": "Inquiry",
-    "text17": "Instant Response",
-    "text18": "Escalation",
-    "text19": "Resolution",
-    "text20": "Ready to improve your support?"
+    "text0": "80%",
+    "text1": "توفير وقت الدعم الفني",
+    "text2": "95%",
+    "text3": "سرعة استجابة فائقة",
+    "text4": "70%",
+    "text5": "تقليل تكاليف التشغيل",
+    "text6": "ميزات الدعم الفني",
+    "text7": "ميزات مصممة لتوفير تجربة دعم استثنائية لعملائك",
+    "text8": "أتمتة الردود",
+    "text9": "توجيه المحادثات",
+    "text10": "تحليلات الدعم",
+    "text11": "تحديثات لحظية",
+    "text12": "الأسئلة الشائعة",
+    "text13": "التعامل مع المشاكل",
+    "text14": "التقييم المستمر",
+    "text15": "التحديثات الآلية",
+    "text16": "جاهز لتغيير طريقة الدعم الفني؟",
+    "text17": "الاستجابة الفورية",
+    "text18": "توجيه ذكي للوكيل",
+    "text19": "استرجاع حالة الطلب",
+    "text20": "تحديثات تلقائية"
   },
   "staffManagementPage": {
     "text0": "Staff member added successfully",
@@ -5908,41 +5908,41 @@
     "text23": "Payment link not obtained"
   },
   "supportPage": {
-    "text0": "WhatsApp Support",
-    "text1": "Contact us directly via WhatsApp",
-    "text2": "Start Chat",
-    "text3": "Email",
-    "text4": "Send us your inquiry via email",
-    "text5": "Phone",
-    "text6": "Call us directly",
-    "text7": "Knowledge Base",
-    "text8": "Comprehensive articles and guides for using Sari",
-    "text9": "Tutorial Videos",
-    "text10": "Step-by-step video tutorials",
-    "text11": "FAQ",
-    "text12": "Answers to the most common questions",
-    "text13": "How do I get started with Sari?",
-    "text14": "Register a free account, link your store's WhatsApp number, add your products, and start using auto-reply immediately.",
-    "text15": "Does Sari support Arabic?",
-    "text16": "Yes, Sari is specifically designed for the Saudi market and speaks in natural Saudi dialect.",
-    "text17": "How do I link my WhatsApp number?",
-    "text18": "From the dashboard, go to ",
-    "text19": "Can I temporarily disable auto-reply?",
-    "text20": "Yes, you can enable or disable auto-reply at any time from the settings page.",
-    "text21": "What happens if Sari doesn't understand the question?",
-    "text22": "Sari will ask the customer to rephrase the question, or you can reply manually from the dashboard.",
-    "text23": "Is my data safe?",
-    "text24": "Yes, we use the highest security standards to protect your data and conversations.",
-    "text25": "Sunday - Thursday",
-    "text26": "Friday - Saturday",
-    "text27": "Working Hours",
-    "text28": "Name",
-    "text29": "Enter your name",
-    "text30": "Email",
-    "text31": "Subject",
-    "text32": "Message subject",
-    "text33": "Message",
-    "text34": "Write your message here..."
+    "text0": "قنوات الدعم الفني",
+    "text1": "دعم واتساب",
+    "text2": "دعم عبر الهاتف",
+    "text3": "تذاكر الدعم",
+    "text4": "المقالات والشروحات",
+    "text5": "دعم استباقي",
+    "text6": "مستوى الدعم",
+    "text7": "دعم الـ VIP متوفر في باقات المؤسسات.",
+    "text8": "مقالات وأدلة شاملة لاستخدام ساري",
+    "text9": "فيديوهات تعليمية",
+    "text10": "شروحات مصورة خطوة بخطوة",
+    "text11": "الأسئلة الشائعة",
+    "text12": "إجابات على أكثر الأسئلة شيوعاً",
+    "text13": "كيف أبدأ مع ساري؟",
+    "text14": "سجل حساباً مجانياً، اربط رقم واتساب متجرك، أضف منتجاتك، وابدأ باستخدام الرد الآلي فوراً.",
+    "text15": "هل يدعم ساري اللغة العربية؟",
+    "text16": "نعم، ساري مصمم خصيصاً للسوق السعودي ويتحدث باللهجة السعودية بشكل طبيعي.",
+    "text17": "كيف أربط رقم الواتساب؟",
+    "text18": "من لوحة التحكم، اذهب إلى ",
+    "text19": "هل يمكنني تعطيل الرد الآلي مؤقتاً؟",
+    "text20": "نعم، يمكنك تفعيل أو تعطيل الرد الآلي في أي وقت من صفحة الإعدادات.",
+    "text21": "ماذا يحدث إذا لم يفهم ساري السؤال؟",
+    "text22": "سيطلب ساري من العميل إعادة صياغة السؤال، أو يمكنك الرد يدوياً من لوحة التحكم.",
+    "text23": "هل بياناتي آمنة؟",
+    "text24": "نعم، نستخدم أعلى معايير الأمان لحماية بياناتك ومحادثاتك.",
+    "text25": "الأحد - الخميس",
+    "text26": "الجمعة - السبت",
+    "text27": "ساعات العمل",
+    "text28": "الاسم",
+    "text29": "أدخل اسمك",
+    "text30": "البريد الإلكتروني",
+    "text31": "الموضوع",
+    "text32": "موضوع الرسالة",
+    "text33": "الرسالة",
+    "text34": "اكتب رسالتك هنا..."
   },
   "trySariPage": {
     "text0": "Hello, I want to buy a product",
@@ -6763,394 +6763,395 @@
     "errorDetails": "Error Details:"
   },
   "productChatbot": {
-    "hero": {
-      "badge": "Chatbot",
-      "title": "A Smart Chatbot Working Around the Clock",
-      "description": "Not just rigid automated replies—Sari understands your customers, speaks their dialect, and guides them towards a purchase step-by-step 24/7.",
-      "ctaPrimary": "Start Automating Conversations",
-      "ctaSecondary": "View Pricing"
+    "cta": {
+      "btnPrimary": "أنشئ روبوتك الآن",
+      "btnSecondary": "استكشف الميزات",
+      "description": "لا حاجة لمعرفة برمجية. أنشئ ردودك الآلية في دقائق وابدأ في خدمة عملائك آلياً.",
+      "title": "ابنِ روبوتك الخاص بسهولة"
     },
     "demo": {
-      "title": "AI that Understands Context and Intent",
-      "description": "Forget rigid menus (Press 1 for Sales). Sari understands natural language, typos, and order details with high accuracy.",
+      "chat": {
+        "m1": "السلام عليكم، كيف أقدر أتتبع طلبي؟",
+        "m2": "وعليكم السلام! يمكنك تتبع طلبك من خلال إدخال رقم الطلب أدناه:",
+        "m3": "12345",
+        "m4": "طلبك رقم 12345 في الطريق إليك! سيتم تسليمه اليوم قبل الساعة 6 مساءً.",
+        "subtitle": "مثال لمحادثة آلية"
+      },
+      "description": "أنشئ مسارات محادثة مخصصة لخدمة عملائك، وتوجيههم للإجابات التي يحتاجونها بسرعة.",
       "f1": {
-        "title": "Understands Local Dialects",
-        "desc": "Trained on Saudi and Gulf dialects as well as common slang."
+        "desc": "ردود فورية على الأسئلة المتكررة كالشحن والتوصيل.",
+        "title": "ردود فورية"
       },
       "f2": {
-        "title": "Smart Recommendations",
-        "desc": "Understands what the customer wants and suggests suitable products from your store."
+        "desc": "صمم قوائم تفاعلية لسهولة تصفح العملاء.",
+        "title": "قوائم تفاعلية"
       },
       "f3": {
-        "title": "Order Completion",
-        "desc": "Takes customer details, address, and confirms the order directly via WhatsApp."
+        "desc": "التحويل السلس لموظف بشري عند الحاجة.",
+        "title": "التحويل لموظف"
       },
-      "chat": {
-        "m1": "Hello, do you have navy winter abayas in size 54? And how much is delivery to Riyadh?",
-        "m2": "Hello! 🌟 Yes, we have a collection of navy winter abayas in size 54.\n\nDelivery to Riyadh is 25 SAR and takes 1-2 business days.\n\nHere's our latest winter collection in your size:\n1. Plain Navy Wool Abaya (299 SAR)\n2. Navy Velvet Abaya with light embroidery (349 SAR)\n\nWould you like me to send pictures? 📸",
-        "m3": "Yes, send the velvet pictures",
-        "m4": "Sure, here are pictures of the Navy Velvet Abaya ✨<br/><br/>[Abaya Image]<br/><br/>The material is very luxurious and warm for winter. If you'd like to order now, I can process it for you. I just need your name and location 📍"
-      }
+      "title": "تجربة محادثة سلسلة"
     },
     "features": {
-      "title": "More Than Just a Chatbot",
-      "subtitle": "Features that make Sari the #1 choice for stores",
       "items": {
         "f1": {
-          "title": "Instant Reply 24/7",
-          "desc": "Your customers don't sleep, and neither does your store. Sari replies in seconds even during peak hours."
+          "desc": "واجهة سحب وإفلات مرئية لبناء مسارات المحادثة بكل سهولة.",
+          "title": "بانٍ مرئي سهل"
         },
         "f2": {
-          "title": "Seamless Human Handoff",
-          "desc": "If a customer needs complex help, Sari smoothly transfers the chat to your team."
+          "desc": "كلمات مفتاحية تطلق ردوداً محددة تلقائياً.",
+          "title": "مشغلات الكلمات"
         },
         "f3": {
-          "title": "Privacy Protection",
-          "desc": "End-to-end encryption for conversations and complete protection of customer data following the latest standards."
+          "desc": "ربط الروبوت بأنظمة الـ CRM ومتاجرك الإلكترونية.",
+          "title": "تكامل مرن"
         },
         "f4": {
-          "title": "Reports & Analytics",
-          "desc": "Know the most common questions, peak times, and customer satisfaction rates."
+          "desc": "جمع بيانات العملاء (الاسم، الهاتف، الاهتمامات) تلقائياً.",
+          "title": "جمع البيانات"
         },
         "f5": {
-          "title": "Continuous Learning",
-          "desc": "Every conversation makes Sari smarter. It learns from interactions to constantly improve its replies."
+          "desc": "إرسال صور، فيديو، ملفات، وروابط داخل المحادثة.",
+          "title": "وسائط متعددة"
         },
         "f6": {
-          "title": "Full Customization",
-          "desc": "Set the bot's tone—formal, friendly, or even playful to match your brand identity."
+          "desc": "يدعم العربية والإنجليزية ولغات أخرى بطلاقة.",
+          "title": "متعدد اللغات"
         }
-      }
+      },
+      "subtitle": "الردود الآلية المبنية لراحتك",
+      "title": "ميزات روبوت الدردشة"
     },
-    "cta": {
-      "title": "Hire Your Best Salesperson",
-      "description": "Don't leave customers waiting. Automate your chats and boost sales today with Sari's smart bot.",
-      "btnPrimary": "Start Your Free Trial",
-      "btnSecondary": "Talk to Sales"
+    "hero": {
+      "badge": "روبوتات الدردشة الآلية",
+      "ctaPrimary": "جرب الروبوت",
+      "ctaSecondary": "التسعير",
+      "description": "أتمت عمليات خدمة العملاء والمبيعات الروتينية باستخدام روبوتات دردشة قوية، سهلة البناء، ولا تتطلب أي خبرة برمجية.",
+      "title": "خدمة عملاء تعمل 24/7 بلا كلل"
     }
   },
   "productWhatsApp": {
-    "hero": {
-      "badge": "WhatsApp Integration",
-      "title": "Connect WhatsApp to Your Store in Minutes",
-      "description": "Seamless, official integration with WhatsApp Business. Control all conversations, connect your store, and start selling instantly without technical complexity.",
-      "ctaPrimary": "Connect Your Store Now",
-      "ctaSecondary": "Contact Us"
-    },
-    "steps": {
-      "title": "3 Simple Steps to Launch",
-      "subtitle": "No developer or technical experience needed. Connecting is easier than you think.",
-      "s1": {
-        "title": "1. Activate Your Number",
-        "desc": "Link your WhatsApp Business number to Sari in seconds."
-      },
-      "s2": {
-        "title": "2. Connect Your Store",
-        "desc": "Login to your Salla or Zid account to pull your products automatically."
-      },
-      "s3": {
-        "title": "3. Launch",
-        "desc": "You're ready! Start receiving orders and automated replies."
-      }
-    },
-    "platforms": {
-      "title": "Direct Integration with Your Favorite Platform",
-      "description": "Sari is fully connected with leading platforms. Catalog, inventory, and prices sync automatically with zero manual effort.",
-      "sync": "Real-time sync for products, orders, and customers"
+    "cta": {
+      "btnPrimary": "اربط رقمك الآن",
+      "description": "ربط واتساب أعمالك بساري يتم في ثوانٍ. امسح الكود وانطلق.",
+      "title": "ابدأ الآن وبدون تعقيد"
     },
     "features": {
-      "f1": "Official API Access (WhatsApp Cloud API)",
-      "f2": "Account Verification (Green Tick)",
-      "f3": "End-to-End Data Encryption",
-      "f4": "99.9% Uptime & Stability"
+      "f1": "تكامل مع أرقام واتساب العادية و الأعمال.",
+      "f2": "عدم الحاجة لموافقات رسمية أو تعقيدات API الرسمية.",
+      "f3": "يعمل كوكيل إضافي (مزامنة مع جهازك المفتوح).",
+      "f4": "تشفير تام وحماية للبيانات."
     },
-    "cta": {
-      "title": "Ready to Connect Your Store?",
-      "description": "Link Salla or Zid to WhatsApp now and start receiving orders directly",
-      "btnPrimary": "Start Your Free Trial"
+    "hero": {
+      "badge": "التكامل مع WhatsApp",
+      "ctaPrimary": "كيف يتم الربط؟",
+      "ctaSecondary": "دليل الاستخدام",
+      "description": "نقدم أسهل طريقة لربط واتساب بمنصة ساري. لا رسوم خفية لكل رسالة، ولا تعقيدات في الإعداد. مسح QR Code واحد يكفي.",
+      "title": "ربط الواتساب في 10 ثوانٍ"
+    },
+    "platforms": {
+      "description": "يمكنك ربط تطبيق واتساب العادي أو واتساب للأعمال (WhatsApp Business) بكل سهولة باستخدام نظام ربط الويب QR Code الخاص بساري.",
+      "sync": "مزامنة الرسائل لحظياً",
+      "title": "المنصات المدعومة"
+    },
+    "steps": {
+      "s1": {
+        "desc": "اذهب للوحة التحكم في ساري واطلب ربط رقم جديد ليظهر لك رمز الـ QR.",
+        "title": "1. إنشاء QR Code"
+      },
+      "s2": {
+        "desc": "افتح واتساب في هاتفك، اذهب للأجهزة المرتبطة، وامسح الرمز.",
+        "title": "2. امسح الرمز بهاتفك"
+      },
+      "s3": {
+        "desc": "سيبدأ ساري فوراً في استقبال الرسائل والرد عليها حسب إعداداتك.",
+        "title": "3. الربط اكتمل!"
+      },
+      "subtitle": "خطوات بسيطة ولا تحتاج لدعم فني",
+      "title": "كيف يتم ربط الواتساب؟"
     }
   },
   "productBroadcasts": {
+    "cta": {
+      "btnPrimary": "ابدأ الآن",
+      "btnSecondary": "تحدث معنا",
+      "description": "أرسل رسائل ترويجية وتنبيهات لعملائك بنقرة واحدة، واستفد من معدلات فتح رسائل تتجاوز 90%.",
+      "title": "مستعد للوصول لعملائك بفعالية؟"
+    },
+    "features": {
+      "items": {
+        "f1": {
+          "desc": "رسائل باسم العميل، والمنتج الذي اهتم به لزيادة معدل التحويل.",
+          "title": "تخصيص الرسائل"
+        },
+        "f2": {
+          "desc": "جدول رسائلك لتصل في أوقات الذروة المحددة مسبقاً.",
+          "title": "الجدولة الذكية"
+        },
+        "f3": {
+          "desc": "تأكد من عدم حظر رقمك بفضل إرسالنا المتدرج للرسائل.",
+          "title": "الحماية من الحظر"
+        },
+        "f4": {
+          "desc": "تقسيم عملائك إلى شرائح لاستهدافهم بالعروض المناسبة.",
+          "title": "تقسيم العملاء"
+        },
+        "f5": {
+          "desc": "أضف أزرار الرد السريع وروابط تفاعلية لتسهيل الشراء.",
+          "title": "رسائل تفاعلية"
+        },
+        "f6": {
+          "desc": "تحليلات مفصلة لمعرفة من استلم، قرأ، وتفاعل مع حملتك.",
+          "title": "تقارير الحملات"
+        }
+      },
+      "subtitle": "كل ما تحتاجه لإدارة حملات واتساب ناجحة",
+      "title": "ميزات البث الجماعي"
+    },
     "hero": {
-      "badge": "Broadcasts",
-      "title": "Send Campaigns to Thousands in Seconds",
-      "description": "Broadcast personalized WhatsApp messages to customer lists—offers, updates, reminders—with smart personalization and instant reports.",
-      "ctaPrimary": "Start Your First Campaign",
-      "ctaSecondary": "View Pricing"
+      "badge": "البث الجماعي عبر واتساب",
+      "ctaPrimary": "ابدأ حملتك الأولى",
+      "ctaSecondary": "تعرف على الأسعار",
+      "description": "تواصل مع آلاف العملاء في ثوانٍ. أرسل العروض، الإشعارات، والأخبار مباشرة إلى واتساب عملائك وبأعلى معدلات الوصول.",
+      "title": "الوصول المباشر لعملائك حيث يتواجدون"
     },
     "stats": {
       "s1": {
-        "label": "Open Rate",
-        "desc": "5x higher than Email"
+        "desc": "معدل قراءة رسائل الواتساب",
+        "label": "98%"
       },
       "s2": {
-        "label": "Reply Rate",
-        "desc": "Real engagement with customers"
+        "desc": "نسبة النقر على الروابط في الواتساب مقارنة بالإيميل",
+        "label": "5x"
       },
       "s3": {
-        "label": "Sales Increase",
-        "desc": "Compared to traditional channels"
+        "desc": "زيادة في المبيعات عند استخدام رسائل العروض المخصصة",
+        "label": "40%"
       },
       "s4": {
-        "label": "Delivery Time",
-        "desc": "Instant messages for everyone"
-      }
-    },
-    "features": {
-      "title": "Smart Campaigns—Not Just Random Messages",
-      "subtitle": "Professional tools for effective WhatsApp marketing",
-      "items": {
-        "f1": {
-          "title": "Precise Targeting",
-          "desc": "Segment your customers by city, purchases, last interaction, or custom criteria. Send the right message to the right person."
-        },
-        "f2": {
-          "title": "Smart Personalization",
-          "desc": "Customize each message with the customer's name, last purchased item, or a special offer. Messages that feel personal."
-        },
-        "f3": {
-          "title": "Rich Media",
-          "desc": "Send images, videos, PDFs, and interactive buttons. Make your campaigns engaging and content-rich."
-        },
-        "f4": {
-          "title": "Advance Scheduling",
-          "desc": "Schedule campaigns in advance—pick the perfect day and time. Holiday campaigns ready on autopilot."
-        },
-        "f5": {
-          "title": "Detailed Reports",
-          "desc": "Track campaign performance in real-time—delivery, open, reply, and conversion rates. Know what works and what doesn't."
-        },
-        "f6": {
-          "title": "Smart Lists",
-          "desc": "Create dynamic customer lists that update automatically. New customers, inactive customers, or top buyers."
-        }
+        "desc": "من العملاء يفضلون التواصل مع الأنشطة التجارية عبر واتساب",
+        "label": "75%"
       }
     },
     "useCases": {
-      "title": "Campaign Ideas to Boost Sales",
       "c1": {
-        "title": "Offers & Discounts",
-        "desc": "Send exclusive offers with customized discount codes."
+        "desc": "إرسال عروض ترويجية وخصومات حصرية.",
+        "title": "العروض الترويجية"
       },
       "c2": {
-        "title": "Abandoned Cart Recovery",
-        "desc": "Remind customers of items left in their cart with an incentive to complete the purchase."
+        "desc": "تذكير العملاء بالسلال المهجورة لإتمام الشراء.",
+        "title": "السلال المهجورة"
       },
       "c3": {
-        "title": "Shipping Updates",
-        "desc": "Send automated order and shipping updates—tracking numbers and status."
+        "desc": "إرسال إشعارات بتحديثات الطلبات وحالة الشحن.",
+        "title": "إشعارات الطلبات"
       },
       "c4": {
-        "title": "Holiday Campaigns",
-        "desc": "Ramadan, Eid, National Day—ready campaigns with a click of a button."
+        "desc": "الترحيب بالعملاء الجدد وتعريفهم بمنتجاتك.",
+        "title": "رسائل الترحيب"
       },
       "c5": {
-        "title": "Review Requests",
-        "desc": "Send a direct link asking for a review after delivery."
+        "desc": "جمع تقييمات العملاء بعد الشراء.",
+        "title": "جمع التقييمات"
       },
       "c6": {
-        "title": "Loyalty Program",
-        "desc": "Send reward points and exclusive offers to loyalty members."
-      }
-    },
-    "cta": {
-      "title": "Start Your First Broadcast",
-      "description": "Deliver your message to all customers in seconds with the highest open rate in the market",
-      "btnPrimary": "Start Your Free Trial",
-      "btnSecondary": "Talk to Our Team"
+        "desc": "تذكير العملاء بتجديد اشتراكاتهم.",
+        "title": "تذكيرات التجديد"
+      },
+      "title": "حالات الاستخدام للبث الجماعي"
     }
   },
   "productAI": {
-    "auto_0": "الذكاء الاصطناعي (EN)",
-    "auto_1": "تعرّف على ساري: وكيلك الذكي للمبيعات (EN)",
-    "auto_2": "وكيل ذكاء اصطناعي متقدم يتحدث باللهجة السعودية والإنجليزية، يفهم عملاءك، يبحث في منتجاتك، ويحول المحادثات إلى مبيعات. (EN)",
-    "auto_3": "جرب ساري مجاناً (EN)",
-    "auto_4": "عرض الأسعار (EN)",
-    "auto_5": "ساري ليست مجرد روبوت دردشة عادي. إنها وكيلة مبيعات ذكية بشخصية ودودة ومحترفة، مدربة خصيصاً على ثقافة السوق السعودي والخليجي. (EN)",
-    "auto_6": "س (EN)",
-    "auto_7": "مثال على محادثة مع ساري (EN)",
-    "auto_8": "تفهم ساري اللهجات العربية المختلفة والعامية السعودية. تتعامل مع الأخطاء الإملائية والاختصارات بذكاء. (EN)",
-    "auto_9": "تبحث ساري في كتالوج منتجاتك وتقترح الخيارات الأنسب بناءً على احتياجات العميل وميزانيته. (EN)",
-    "auto_10": "ساري متاحة دائماً للرد على عملائك في أي وقت، حتى خارج ساعات العمل. لا تفوت أي فرصة مبيعات. (EN)",
-    "auto_11": "ساري تساعد عملاءك في إيجاد المنتجات المناسبة، تجيب على أسئلتهم حول المقاسات والألوان، وتوجههم لإتمام الشراء. (EN)",
-    "auto_12": "اقتراح منتجات بناءً على التفضيلات (EN)",
-    "auto_13": "الإجابة على أسئلة المنتجات (EN)",
-    "auto_14": "تتبع الطلبات والشحنات (EN)",
-    "auto_15": "ساري تؤهل العملاء المحتملين، تحدد احتياجاتهم، وتحجز المواعيد تلقائياً مع الفريق المناسب. (EN)",
-    "auto_16": "تأهيل العملاء المحتملين (EN)",
-    "auto_17": "حجز المواعيد تلقائياً (EN)",
-    "auto_18": "الإجابة على الأسئلة الشائعة (EN)",
-    "auto_19": "ساري تساعد المرضى في حجز المواعيد، تذكيرهم بالمواعيد، والإجابة على الأسئلة العامة عن الخدمات. (EN)",
-    "auto_20": "حجز وإدارة المواعيد (EN)",
-    "auto_21": "إرسال تذكيرات تلقائية (EN)",
-    "auto_22": "معلومات عن الخدمات والأسعار (EN)",
-    "auto_23": "ساري تساعد الطلاب في التسجيل، تجيب على أسئلتهم حول الدورات، وترسل التحديثات والإشعارات المهمة. (EN)",
-    "auto_24": "معلومات عن الدورات والبرامج (EN)",
-    "auto_25": "مساعدة في التسجيل (EN)",
-    "auto_26": "إرسال التحديثات والإشعارات (EN)",
-    "auto_27": "اجعل ساري جزءاً من فريقك اليوم وابدأ في تحويل المحادثات إلى مبيعات (EN)",
-    "auto_28": "ابدأ تجربتك المجانية (EN)",
-    "auto_29": "تحدث مع فريقنا (EN)"
+    "auto_0": "الذكاء الاصطناعي",
+    "auto_1": "وكيل مبيعات يفهم عملائك كما تفهمهم",
+    "auto_2": "ساري ليس مجرد روبوت عادي؛ هو نموذج ذكاء اصطناعي مدرب خصيصاً للتجارة الإلكترونية، يفهم اللهجات المحلية، يقترح المنتجات بذكاء، ويغلق الصفقات نيابة عنك.",
+    "auto_3": "ابدأ مجاناً الآن",
+    "auto_4": "شاهد الأسعار",
+    "auto_5": "يتميز ساري بقدرته على فهم النوايا، تحليل الطلبات المعقدة، والرد بطريقة طبيعية ومريحة للعميل.",
+    "auto_6": "ساري",
+    "auto_7": "محادثة حية تم إنشاؤها بالذكاء الاصطناعي",
+    "auto_8": "يفهم ساري الدارجة السعودية والعامية بشكل ممتاز، ويرد على عملائك بلغة تشبه لغتهم تماماً.",
+    "auto_9": "يقوم الذكاء الاصطناعي بتحليل رسائل العميل لفهم نواياه الشرائية وتقديم المنتجات الأنسب لاحتياجه.",
+    "auto_10": "يتعلم ساري من كل محادثة، ليصبح أكثر ذكاءً وقدرة على تلبية تطلعات عملائك بمرور الوقت.",
+    "auto_11": "تحويل الاستفسارات البسيطة إلى مبيعات محققة دون تدخل بشري.",
+    "auto_12": "الرد السريع 24/7",
+    "auto_13": "اقتراح منتجات بديلة",
+    "auto_14": "متابعة الطلبات تلقائياً",
+    "auto_15": "أتمتة خدمة العملاء للشركات والمؤسسات لتقليل التكاليف وزيادة الرضا.",
+    "auto_16": "توجيه المحادثات للمختصين",
+    "auto_17": "إجابة أسئلة الدعم الفني",
+    "auto_18": "جمع ملاحظات العملاء",
+    "auto_19": "حجز المواعيد والرد على استفسارات المراجعين للعيادات والمراكز الصحية.",
+    "auto_20": "تأكيد وإلغاء الحجوزات",
+    "auto_21": "إرسال تذكيرات المواعيد",
+    "auto_22": "الإجابة على الاستفسارات العامة",
+    "auto_23": "الرد على استفسارات المتدربين والطلاب وتسهيل عمليات التسجيل في الدورات.",
+    "auto_24": "إرسال تفاصيل الدورات",
+    "auto_25": "استقبال طلبات التسجيل",
+    "auto_26": "تقديم الدعم الأكاديمي",
+    "auto_27": "استفد من قوة الذكاء الاصطناعي وارتقِ بمستوى مبيعاتك وخدمة عملائك اليوم.",
+    "auto_28": "ابدأ الآن",
+    "auto_29": "تحدث معنا"
   },
   "solutionsSales": {
-    "auto_0": "حلول المبيعات (EN)",
-    "auto_1": "سرّع خط مبيعاتك وزد تحويلاتك (EN)",
-    "auto_2": "حوّل كل محادثة على واتساب إلى فرصة مبيعات. أدر العملاء المحتملين، اختصر دورة المبيعات، وزد إيراداتك بنسبة تصل إلى 20%. (EN)",
-    "auto_3": "ابدأ الآن مجاناً (EN)",
-    "auto_4": "عرض الأسعار (EN)",
-    "auto_5": "مساحة عمل واحدة لجميع مندوبي المبيعات للتعاون والتواصل وتحويل العملاء المحتملين. تتبع كل محادثة وتفاعل في مكان واحد. (EN)",
-    "auto_6": "تأكد من عدم ضياع أي عميل محتمل جاهز للشراء. تأهيل فوري في الوقت الفعلي على قناة المراسلة المفضلة لديك. (EN)",
-    "auto_7": "أدر حجم كبير من العملاء المحتملين بسهولة على واتساب. استخدم الذكاء الاصطناعي لتأهيل العملاء وتسليم الأفضل لمندوبيك تلقائياً. (EN)",
-    "auto_8": "راقب محادثات العملاء بسهولة وتأكد من تجربة عملاء عالية الجودة لتجنب مخاطر السمعة. تقارير مفصلة عن أداء الفريق. (EN)",
-    "auto_9": "العميل يتواصل معك عبر واتساب من أي مصدر (إعلان، موقع، رابط) (EN)",
-    "auto_10": "ساري يؤهل العميل تلقائياً ويجمع المعلومات المهمة (EN)",
-    "auto_11": "يتم توزيع العميل المؤهل على المندوب المناسب تلقائياً (EN)",
-    "auto_12": "المندوب يتابع ويغلق الصفقة بسرعة أكبر (EN)",
-    "auto_13": "انضم إلى مئات التجار الذين ضاعفوا مبيعاتهم باستخدام ساري (EN)",
-    "auto_14": "ابدأ تجربتك المجانية (EN)",
-    "auto_15": "تحدث مع خبير مبيعات (EN)"
+    "auto_0": "للمبيعات",
+    "auto_1": "مبيعات لا تتوقف، على مدار الساعة",
+    "auto_2": "حوّل محادثات الواتساب إلى طلبات فعلية. ساري يقوم بالرد السريع، إرسال روابط المنتجات، ومتابعة العملاء لضمان إغلاق صفقاتك بنجاح.",
+    "auto_3": "ابدأ الآن",
+    "auto_4": "الأسعار",
+    "auto_5": "بيع أكثر بأقل جهد مع وكيل المبيعات الذكي.",
+    "auto_6": "ردود فورية",
+    "auto_7": "لا تضيع أي فرصة بيع بسبب التأخير في الرد.",
+    "auto_8": "الردود التفاعلية",
+    "auto_9": "إرسال كتالوج المنتجات وروابط الدفع مباشرة في المحادثة.",
+    "auto_10": "متابعة الطلبات",
+    "auto_11": "الرد التلقائي على استفسارات (وين طلبي؟) بربط مباشر مع شركة الشحن.",
+    "auto_12": "ربط مع المتاجر",
+    "auto_13": "تكامل سلس مع سلة وزد لإنشاء الطلبات تلقائياً.",
+    "auto_14": "جاهز لمضاعفة مبيعاتك؟",
+    "auto_15": "احصل على وكيل المبيعات الذكي الذي لا ينام، وابدأ في تحقيق أرباح من محادثاتك."
   },
   "solutionsMarketing": {
-    "auto_0": "حلول التسويق (EN)",
-    "auto_1": "اكتسب وأشرك وأهّل العملاء بحملات مخصصة (EN)",
-    "auto_2": "حوّل كل نقطة تواصل إلى محادثة هادفة. حسّن الإسناد، أعد الاستهداف بسهولة، وزد العائد على الاستثمار بنسبة تصل إلى 3 أضعاف. (EN)",
-    "auto_3": "ابدأ الآن مجاناً (EN)",
-    "auto_4": "عرض الأسعار (EN)",
-    "auto_5": "حوّل كل نقطة تواصل - من الروابط إلى التفاعلات الميدانية والإعلانات - إلى محادثات هادفة فوراً. لا تفقد أي فرصة. (EN)",
-    "auto_6": "حسّن الإسناد، أعد الاستهداف بسهولة، وزد العائد على الاستثمار مع إعلانات Meta وGoogle التي تنقر إلى واتساب مباشرة. (EN)",
-    "auto_7": "أشرك مستخدميك تلقائياً وقدم سير عمل رائعة بعد التحويل بمحادثات مدعومة بالذكاء الاصطناعي، لكنها تبدو بشرية. (EN)",
-    "auto_8": "ابق على اطلاع برؤى قوية لتحسين رسائلك وحملاتك وأداء إعلاناتك. قرارات مبنية على البيانات. (EN)",
-    "auto_9": "اربط إعلاناتك على Meta وGoogle مباشرة بواتساب. تتبع الأداء وحسّن العائد على الاستثمار. (EN)",
-    "auto_10": "أرسل رسائل مخصصة لشرائح محددة من عملائك. زد معدل التفاعل والتحويل. (EN)",
-    "auto_11": "أعد التواصل مع العملاء الذين أبدوا اهتماماً. حوّل الزوار إلى عملاء فعليين. (EN)",
-    "auto_12": "العميل يشاهد إعلانك على Meta أو Google (EN)",
-    "auto_13": "ينقر ويبدأ محادثة مباشرة على واتساب (EN)",
-    "auto_14": "ساري يشرك العميل بمحادثة ذكية ومخصصة (EN)",
-    "auto_15": "يتحول العميل من زائر إلى مشتري (EN)",
-    "auto_16": "انضم إلى مئات المسوقين الذين حققوا نتائج استثنائية مع ساري (EN)",
-    "auto_17": "ابدأ تجربتك المجانية (EN)",
-    "auto_18": "تحدث مع خبير تسويق (EN)"
+    "auto_0": "للتسويق",
+    "auto_1": "حملات تسويقية ذكية تضمن الوصول",
+    "auto_2": "الوصول المباشر للعميل على الواتساب هو أسرع طريقة لزيادة مبيعاتك. استخدم ساري لإرسال العروض وتنبيهات السلال المهجورة وتفعيل حملات إعادة الاستهداف بنسب قراءة تصل إلى 98%.",
+    "auto_3": "جرب مجاناً",
+    "auto_4": "عرض الميزات",
+    "auto_5": "استهداف ذكي للعملاء لزيادة العائد على الاستثمار",
+    "auto_6": "تقسيم العملاء",
+    "auto_7": "تخصيص الحملات بحسب تفاعل وسلوك الشراء لكل عميل.",
+    "auto_8": "السلال المهجورة",
+    "auto_9": "تذكير تلقائي عبر واتساب للعملاء الذين لم يكملوا الدفع.",
+    "auto_10": "تحديثات وإشعارات",
+    "auto_11": "إرسال إشعارات بتوفر منتجات أو تغيير حالة الطلب لزيادة الولاء.",
+    "auto_12": "التقارير",
+    "auto_13": "قياس نجاح الحملات",
+    "auto_14": "تعرف بالضبط على من استلم رسالتك، قرأها، وتفاعل معها.",
+    "auto_15": "ارفع مبيعاتك مع تسويق الواتساب",
+    "auto_16": "انضم للتجار الذين ضاعفوا مبيعاتهم من خلال الوصول لعملائهم عبر واتساب.",
+    "auto_17": "أنشئ حسابك الآن",
+    "auto_18": "تواصل معنا"
   },
   "solutionsSupport": {
-    "auto_0": "حلول الدعم الفني (EN)",
-    "auto_1": "أسعد عملاءك وأجب على الاستفسارات بسرعة (EN)",
-    "auto_2": "قدم إجابات فورية ودقيقة على مدار الساعة. حل معظم الاستفسارات دون تدخل بشري وقلل عبء العمل بنسبة تصل إلى 40%. (EN)",
-    "auto_3": "ابدأ الآن مجاناً (EN)",
-    "auto_4": "عرض الأسعار (EN)",
-    "auto_5": "قدم إجابات فورية ودقيقة مستندة إلى قاعدة معرفتك على مدار الساعة. حل معظم الاستفسارات دون تدخل بشري. (EN)",
-    "auto_6": "وجّه المحادثات المعقدة إلى الوكيل البشري المناسب تلقائياً من خلال قواعد توجيه متقدمة. لا تضيع أي استفسار. (EN)",
-    "auto_7": "تعاون بشكل أفضل مع صندوق وارد موحد لجميع منصات المراسلة، مع علامات وسمات جهات الاتصال والتاريخ والمزيد. (EN)",
-    "auto_8": "عزز عمليات الدعم برؤى مبنية على البيانات حول وقت الاستجابة والحلول والأداء حسب الوكيل. (EN)",
-    "auto_9": "يدعم العربية والإنجليزية ولغات متعددة. يفهم اللهجات المحلية ويرد بنفس الأسلوب. (EN)",
-    "auto_10": "يفهم سياق المحادثة ويتذكر التفاعلات السابقة. ردود دقيقة وشخصية. (EN)",
-    "auto_11": "يتعامل مع العملاء بتعاطف واحترافية. يعرف متى يحول إلى وكيل بشري. (EN)",
-    "auto_12": "العميل يرسل استفساره عبر واتساب (EN)",
-    "auto_13": "ساري يرد فوراً بإجابة دقيقة من قاعدة المعرفة (EN)",
-    "auto_14": "إذا لزم الأمر، يحول إلى وكيل بشري مع السياق الكامل (EN)",
-    "auto_15": "يتم حل المشكلة بسرعة ورضا العميل (EN)",
-    "auto_16": "انضم إلى مئات الشركات التي حسّنت رضا عملائها مع ساري (EN)",
-    "auto_17": "ابدأ تجربتك المجانية (EN)",
-    "auto_18": "تحدث مع خبير دعم (EN)"
+    "auto_0": "للدعم الفني",
+    "auto_1": "دعم فني سريع وموثوق عبر الواتساب",
+    "auto_2": "لا تدع عملائك ينتظرون. استخدم ساري للإجابة على الأسئلة الشائعة، تتبع الطلبات، وتوفير الدعم المستمر بطريقة آلية ومحترفة.",
+    "auto_3": "تواصل مع المبيعات",
+    "auto_4": "تعرف على التفاصيل",
+    "auto_5": "أتمتة الإجابات",
+    "auto_6": "وفر وقت فريقك عن طريق الإجابة الآلية للأسئلة الشائعة كالسياسات والأوقات.",
+    "auto_7": "تتبع الطلبات",
+    "auto_8": "تكامل مع شركات الشحن لتزويد العملاء بحالة طلباتهم تلقائياً.",
+    "auto_9": "التحويل للمختص",
+    "auto_10": "في حال كان الاستفسار معقداً، يتم تحويل العميل للموظف المناسب بسهولة.",
+    "auto_11": "تقليل التكاليف",
+    "auto_12": "خفض تكاليف التشغيل والدعم البشري عن طريق الذكاء الاصطناعي.",
+    "auto_13": "ارتقِ بمستوى خدمة عملائك",
+    "auto_14": "دعم سريع، موثوق، ومتوفر 24/7 لراحة عملائك.",
+    "auto_15": "جرب الآن",
+    "auto_16": "استكشف الباقات",
+    "auto_17": "رضا العملاء",
+    "auto_18": "نسبة حل المشاكل آلياً"
   },
   "companyAbout": {
-    "auto_0": "نحن ساري (EN)",
-    "auto_1": "منصة سعودية رائدة في مجال الذكاء الاصطناعي للمبيعات عبر واتساب. نساعد التجار والشركات على تحويل محادثاتهم إلى مبيعات ونمو مستدام. (EN)",
-    "auto_2": "تمكين التجار والشركات السعودية من الاستفادة من قوة الذكاء الاصطناعي لتحسين تجربة العملاء وزيادة المبيعات عبر واتساب، القناة المفضلة للتواصل في المنطقة. (EN)",
-    "auto_3": "أن نكون المنصة الأولى في المملكة والخليج العربي لحلول الذكاء الاصطناعي التجارية عبر واتساب، ونساهم في التحول الرقمي للشركات الصغيرة والمتوسطة. (EN)",
-    "auto_4": "بدأت ساري من فكرة بسيطة: كيف يمكننا مساعدة التجار السعوديين على خدمة عملائهم بشكل أفضل عبر واتساب؟ لاحظنا أن معظم العملاء في المملكة يفضلون التواصل عبر واتساب، لكن التجار يواجهون صعوبة في إدارة المحادثات والرد السريع على الاستفسارات. (EN)",
-    "auto_5": "قررنا بناء حل ذكي يجمع بين قوة الذكاء الاصطناعي وفهم عميق للثقافة واللهجة السعودية. ساري ليست مجرد روبوت دردشة، بل وكيلة مبيعات ذكية تفهم عملاءك وتساعدهم في إيجاد ما يبحثون عنه. (EN)",
-    "auto_6": "اليوم، نخدم مئات التجار في المملكة، ونساعدهم على زيادة مبيعاتهم وتحسين تجربة عملائهم. ونواصل العمل على تطوير منصتنا لتقديم أفضل الحلول الذكية للسوق السعودي. (EN)",
-    "auto_7": "نضع احتياجات عملائنا في المقام الأول ونعمل باستمرار على تحسين تجربتهم (EN)",
-    "auto_8": "نبتكر حلولاً جديدة ونتبنى أحدث التقنيات لخدمة عملائنا بشكل أفضل (EN)",
-    "auto_9": "نلتزم بأعلى معايير الجودة في كل ما نقدمه من منتجات وخدمات (EN)",
-    "auto_10": "كن جزءاً من التحول الرقمي في المملكة وابدأ رحلتك معنا اليوم (EN)",
-    "auto_11": "ابدأ الآن مجاناً (EN)",
-    "auto_12": "تواصل معنا (EN)"
+    "auto_0": "من نحن",
+    "auto_1": "نحن ساري، شركاؤك في رحلة تحويل المحادثات إلى مبيعات، وتوفير أذكى وكيل مبيعات على الواتساب.",
+    "auto_2": "رؤيتنا",
+    "auto_3": "تمكين المتاجر المحلية والعالمية من تقديم تجربة عملاء استثنائية، وتحقيق مبيعات على مدار الساعة بفضل الذكاء الاصطناعي.",
+    "auto_4": "مهمتنا",
+    "auto_5": "أتمتة المبيعات وتسهيل التجارة الحوارية بطريقة تبدو طبيعية ومألوفة للعميل.",
+    "auto_6": "قيمنا الأساسية",
+    "auto_7": "الابتكار",
+    "auto_8": "تقديم أحدث تقنيات الذكاء الاصطناعي بطريقة سهلة الاستخدام للمتاجر.",
+    "auto_9": "التركيز على العميل",
+    "auto_10": "نجاحنا يقاس بنجاح عملائنا وزيادة مبيعاتهم.",
+    "auto_11": "البساطة",
+    "auto_12": "تحويل التكنولوجيا المعقدة إلى واجهات بسيطة وفعالة."
   },
   "contact": {
-    "auto_0": "تواصل (EN)",
-    "auto_1": "معنا (EN)",
-    "auto_2": "نحن هنا لمساعدتك. تواصل معنا وسنرد عليك في أقرب وقت ممكن (EN)",
-    "auto_3": "أرسل لنا رسالة (EN)",
-    "auto_4": "املأ النموذج أدناه وسنتواصل معك في أقرب وقت (EN)",
-    "auto_5": "الاسم الكامل * (EN)",
-    "auto_6": "البريد الإلكتروني * (EN)",
-    "auto_7": "رقم الهاتف (EN)",
-    "auto_8": "الموضوع * (EN)",
-    "auto_9": "الرسالة * (EN)",
-    "auto_10": "إرسال الرسالة (EN)",
-    "auto_11": "الدعم الفني (EN)",
-    "auto_12": "هل تواجه مشكلة تقنية؟ فريق الدعم الفني لدينا جاهز لمساعدتك على مدار الساعة. (EN)",
-    "auto_13": "افتح تذكرة دعم (EN)",
-    "auto_14": "المبيعات والاستفسارات (EN)",
-    "auto_15": "هل لديك استفسار عن الباقات أو الأسعار؟ تواصل مع فريق المبيعات لدينا. (EN)",
-    "auto_16": "الأسئلة الشائعة (EN)",
-    "auto_17": "ربما تجد إجابة سؤالك في مركز المساعدة الخاص بنا. (EN)",
-    "auto_18": "تصفح مركز المساعدة (EN)",
-    "auto_19": "موقعنا (EN)",
-    "auto_20": "الرياض، المملكة العربية السعودية (EN)",
-    "auto_21": "مركز الأعمال الرئيسي (EN)",
-    "auto_22": "أدخل اسمك الكامل (EN)",
-    "auto_23": "ما هو موضوع رسالتك؟ (EN)",
-    "auto_24": "اكتب رسالتك هنا... (EN)"
+    "auto_0": "اتصل بنا",
+    "auto_1": "نحن هنا لمساعدتك. تواصل معنا لأي استفسار أو طلب مساعدة.",
+    "auto_2": "أرسل لنا رسالة",
+    "auto_3": "الاسم الكامل",
+    "auto_4": "أدخل اسمك الكريم",
+    "auto_5": "البريد الإلكتروني",
+    "auto_6": "أدخل بريدك الإلكتروني",
+    "auto_7": "رقم الهاتف",
+    "auto_8": "أدخل رقم هاتفك",
+    "auto_9": "الموضوع",
+    "auto_10": "اختر الموضوع",
+    "auto_11": "المبيعات",
+    "auto_12": "الدعم الفني",
+    "auto_13": "الشراكات",
+    "auto_14": "أخرى",
+    "auto_15": "الرسالة",
+    "auto_16": "كيف يمكننا مساعدتك؟",
+    "auto_17": "إرسال الرسالة",
+    "auto_18": "معلومات التواصل",
+    "auto_19": "البريد الإلكتروني",
+    "auto_20": "support@sary.live",
+    "auto_21": "الهاتف",
+    "auto_22": "العنوان",
+    "auto_23": "الرياض، المملكة العربية السعودية",
+    "auto_24": "ساعات العمل: من الأحد للخميس (9 صباحاً - 5 مساءً)"
   },
   "terms": {
-    "auto_0": "الشروط (EN)",
-    "auto_1": "والأحكام (EN)",
-    "auto_2": "آخر تحديث: 8 ديسمبر 2024 (EN)",
-    "auto_3": "مقدمة (EN)",
-    "auto_4": "مرحباً بك في ساري! هذه الشروط والأحكام تحكم استخدامك لمنصة ساري وجميع الخدمات المرتبطة بها.\r\n                    يرجى قراءة هذه الشروط بعناية قبل استخدام خدماتنا. (EN)",
-    "auto_5": "باستخدامك لمنصة ساري، فإنك توافق على الالتزام بهذه الشروط والأحكام وجميع القوانين واللوائح المعمول بها.\r\n                    إذا كنت لا توافق على أي من هذه الشروط، يجب عليك عدم استخدام خدماتنا. (EN)",
-    "auto_6": "نحتفظ بالحق في تحديث هذه الشروط والأحكام في أي وقت. سيتم إخطارك بأي تغييرات جوهرية.\r\n                    استمرارك في استخدام الخدمة بعد التغييرات يعني موافقتك على الشروط المحدثة. (EN)"
+    "auto_0": "الشروط والأحكام",
+    "auto_1": "تمثل هذه الشروط والأحكام اتفاقية ملزمة بين ساري وبين مستخدمي المنصة.",
+    "auto_2": "الاستخدام المقبول",
+    "auto_3": "يلتزم المستخدم باستخدام المنصة لأغراض قانونية وتجارية مشروعة، ويمتنع عن إرسال محتوى مسيء أو سبام للعملاء.",
+    "auto_4": "الاشتراكات والدفع",
+    "auto_5": "تُجدد الاشتراكات تلقائياً ما لم يتم الإلغاء، والرسوم المدفوعة غير قابلة للاسترداد إلا في حالات محددة ينص عليها القانون.",
+    "auto_6": "إخلاء المسؤولية"
   },
   "privacy": {
-    "auto_0": "سياسة (EN)",
-    "auto_1": "الخصوصية (EN)",
-    "auto_2": "آخر تحديث: 8 ديسمبر 2024 (EN)",
-    "auto_3": "التزامنا بخصوصيتك (EN)",
-    "auto_4": "في ساري، نأخذ خصوصيتك على محمل الجد. هذه السياسة توضح كيف نجمع ونستخدم ونحمي معلوماتك الشخصية\r\n                    عند استخدامك لمنصتنا. (EN)",
-    "auto_5": "نحن ملتزمون بحماية بياناتك وضمان الشفافية الكاملة في كيفية التعامل معها. باستخدامك لساري،\r\n                    فإنك توافق على الممارسات الموضحة في هذه السياسة. (EN)",
-    "auto_6": "حقوقك محفوظة ومحمية (EN)",
-    "auto_7": "نحن ملتزمون بحماية خصوصيتك وأمن بياناتك. إذا كان لديك أي أسئلة أو مخاوف،\r\n                      لا تتردد في التواصل معنا على privacy@sary.live (EN)"
+    "auto_0": "سياسة الخصوصية",
+    "auto_1": "نولي في ساري اهتماماً بالغاً بخصوصية بياناتك وحمايتها.",
+    "auto_2": "جمع البيانات",
+    "auto_3": "نقوم بجمع البيانات الأساسية لتوفير خدمة الرد الآلي والمبيعات، وتشمل أرقام الهواتف والمحادثات التي تدور مع عملائك بهدف تحسين دقة الردود.",
+    "auto_4": "استخدام البيانات",
+    "auto_5": "نستخدم البيانات بشكل صارم لتحسين أداء الوكيل الذكي، ولا نقوم أبداً ببيع بياناتك أو بيانات عملائك لأي طرف ثالث.",
+    "auto_6": "أمان البيانات",
+    "auto_7": "نطبق أعلى معايير التشفير والأمان لضمان بقاء معلومات متجرك وعملائك آمنة من أي اختراقات."
   },
   "blog": {
-    "auto_0": "مدونة (EN)",
-    "auto_1": "ساري (EN)",
-    "auto_2": "نصائح واستراتيجيات لتحسين مبيعاتك على واتساب (EN)",
-    "auto_3": "اقرأ المزيد (EN)",
-    "auto_4": "تحميل المزيد من المقالات (EN)",
-    "auto_5": "اشترك في نشرتنا الإخبارية (EN)",
-    "auto_6": "احصل على أحدث النصائح والاستراتيجيات مباشرة في بريدك الإلكتروني (EN)",
-    "auto_7": "اشترك الآن (EN)",
-    "auto_8": "ابحث في المقالات... (EN)",
-    "auto_9": "بريدك الإلكتروني (EN)"
+    "auto_0": "المدونة",
+    "auto_1": "أحدث المقالات والنصائح في عالم التجارة الإلكترونية والمبيعات",
+    "auto_2": "جميع المقالات",
+    "auto_3": "التسويق",
+    "auto_4": "المبيعات",
+    "auto_5": "التجارة الإلكترونية",
+    "auto_6": "تحديثات المنصة",
+    "auto_7": "قراءة المزيد",
+    "auto_8": "لا توجد مقالات حالياً",
+    "auto_9": "ابحث في المدونة..."
   },
   "helpCenter": {
-    "auto_0": "مركز (EN)",
-    "auto_1": "المساعدة (EN)",
-    "auto_2": "كل ما تحتاج معرفته لتحقيق أقصى استفادة من ساري (EN)",
-    "auto_3": "تصفح حسب الموضوع (EN)",
-    "auto_4": "الأسئلة الشائعة (EN)",
-    "auto_5": "لم نجد أي نتائج لبحثك. جرب كلمات مختلفة أو تواصل معنا مباشرة. (EN)",
-    "auto_6": "لم تجد ما تبحث عنه؟ (EN)",
-    "auto_7": "فريق الدعم الفني لدينا جاهز لمساعدتك على مدار الساعة (EN)",
-    "auto_8": "تواصل معنا (EN)",
-    "auto_9": "شاهد الدروس التعليمية (EN)",
-    "auto_10": "ابحث عن إجابة... (EN)"
+    "auto_0": "مركز المساعدة",
+    "auto_1": "كيف يمكننا مساعدتك اليوم؟",
+    "auto_2": "ابحث عن سؤالك هنا...",
+    "auto_3": "الأسئلة الشائعة",
+    "auto_4": "أدلة الاستخدام",
+    "auto_5": "دروس الفيديو",
+    "auto_6": "تحديثات ساري",
+    "auto_7": "الدعم الفني",
+    "auto_8": "هل لم تجد ما تبحث عنه؟",
+    "auto_9": "تحدث مع فريق الدعم المخصص لمساعدتك",
+    "auto_10": "تواصل مع الدعم"
   },
   "successStories": {
-    "auto_0": "قصص (EN)",
-    "auto_1": "النجاح (EN)",
-    "auto_2": "اكتشف كيف ساعدت ساري مئات التجار في مضاعفة مبيعاتهم (EN)",
-    "auto_3": "تاجر ناجح (EN)",
-    "auto_4": "متوسط زيادة المبيعات (EN)",
-    "auto_5": "محادثة يومياً (EN)",
-    "auto_6": "تقييم العملاء (EN)",
-    "auto_7": "النتائج المحققة: (EN)",
-    "auto_8": "هل أنت مستعد لتكون قصة النجاح القادمة؟ (EN)",
-    "auto_9": "انضم إلى مئات التجار الذين ضاعفوا مبيعاتهم مع ساري (EN)",
-    "auto_10": "ابدأ الآن مجاناً (EN)",
-    "auto_11": "تواصل مع المبيعات (EN)"
+    "auto_0": "قصص النجاح",
+    "auto_1": "كيف ساعدنا عملاءنا على تحقيق أهدافهم وزيادة مبيعاتهم من خلال الذكاء الاصطناعي.",
+    "auto_2": "أبرز القصص",
+    "auto_3": "زيادة المبيعات",
+    "auto_4": "تحسين الدعم",
+    "auto_5": "التسويق الناجح",
+    "auto_6": "كل القصص",
+    "auto_7": "اقرأ المزيد",
+    "auto_8": "هل ترغب في أن تكون قصة نجاحنا التالية؟",
+    "auto_9": "انضم الآن",
+    "auto_10": "لا توجد قصص نجاح حالياً",
+    "auto_11": "شاركنا قصتك"
   },
   "adminRecommendations": {
     "auto_0": "إدارة التوصيات",
@@ -8131,18 +8132,18 @@
     "auto_32": "ساري"
   },
   "support": {
-    "auto_0": "كيف يمكننا مساعدتك؟",
-    "auto_1": "فريق الدعم الفني جاهز لمساعدتك في أي وقت",
-    "auto_2": "تواصل معنا",
-    "auto_3": "اختر الطريقة المناسبة للتواصل معنا",
-    "auto_4": "أرسل لنا رسالة",
-    "auto_5": "املأ النموذج وسنرد عليك في أقرب وقت",
-    "auto_6": "إرسال الرسالة",
-    "auto_7": "مصادر المساعدة",
-    "auto_8": "ابحث عن الإجابات بنفسك في مصادرنا التعليمية",
-    "auto_9": "استكشف",
-    "auto_10": "الأسئلة الشائعة",
-    "auto_11": "إجابات سريعة على أكثر الأسئلة شيوعاً"
+    "auto_0": "تواصل مع الدعم الفني",
+    "auto_1": "نحن هنا لمساعدتك في أي وقت، عبر قنوات متعددة.",
+    "auto_2": "الواتساب",
+    "auto_3": "متاح 24/7",
+    "auto_4": "البريد الإلكتروني",
+    "auto_5": "support@sary.live",
+    "auto_6": "مركز المساعدة",
+    "auto_7": "أدلة وشروحات",
+    "auto_8": "افتح تذكرة دعم",
+    "auto_9": "أرسل تفاصيل المشكلة",
+    "auto_10": "المشكلة / الاستفسار",
+    "auto_11": "إرسال التذكرة"
   },
   "trySari": {
     "auto_0": "تحدث مع ساري AI",
