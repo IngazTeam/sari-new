@@ -14,9 +14,29 @@ const OPENAI_API_URL = 'https://api.openai.com/v1';
 // Types
 // ═══════════════════════════════════════════════════════════════
 
+export interface TextContent {
+  type: 'text';
+  text: string;
+}
+
+export interface ImageContent {
+  type: 'image_url';
+  image_url: {
+    url: string;
+    detail?: 'low' | 'high' | 'auto';
+  };
+}
+
+export interface FileContent {
+  type: 'file';
+  file: {
+    url: string;
+  };
+}
+
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | (TextContent | ImageContent | FileContent)[];
 }
 
 export interface ChatCompletionResponse {

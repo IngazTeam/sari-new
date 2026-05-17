@@ -3,7 +3,7 @@
  * A friendly, professional Saudi sales assistant with improved context awareness
  */
 
-import { callGPT4, ChatMessage } from './openai';
+import { callGPT4, ChatMessage, TextContent, ImageContent } from './openai';
 import * as db from '../db';
 import { buildRAGContext, findCachedResponse, cacheSuccessfulResponse } from './rag-engine';
 import { getBotSections } from '../db/knowledge';
@@ -609,6 +609,7 @@ export async function chatWithSari(params: {
   customerPhone: string;
   customerName?: string;
   message: string;
+  imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
   conversationId?: number;
 }): Promise<string> {
   try {
@@ -718,12 +719,13 @@ ${itemsList}
         // البحث عن آخر طلب مؤقت في المحادثة
         if (previousMessages.length > 0) {
           const lastBotMessage = previousMessages.filter(m => m.role === 'assistant').pop();
-          if (lastBotMessage?.content.includes('هل تبغى أكمل الطلب')) {
+          if (lastBotMessage && typeof lastBotMessage.content === 'string' && lastBotMessage.content.includes('هل تبغى أكمل الطلب')) {
             // استخراج المنتجات من الرسالة السابقة وإنشاء الطلب
             // للتبسيط، نعيد تحليل آخر رسالة من العميل
             const lastUserMessage = previousMessages.filter(m => m.role === 'user').slice(-2)[0];
             if (lastUserMessage) {
-              const parsedOrder = await parseZidOrderMessage(lastUserMessage.content, params.merchantId);
+              const lastMsgContent = typeof lastUserMessage.content === 'string' ? lastUserMessage.content : '';
+              const parsedOrder = await parseZidOrderMessage(lastMsgContent, params.merchantId);
               if (parsedOrder && parsedOrder.products.length > 0) {
                 // إنشاء الطلب في Zid
                 const result = await createZidOrderFromChat(
@@ -764,7 +766,7 @@ ${result.orderUrl}
       if (isOrderRejection(params.message)) {
         if (previousMessages.length > 0) {
           const lastBotMessage = previousMessages.filter(m => m.role === 'assistant').pop();
-          if (lastBotMessage?.content.includes('هل تبغى أكمل الطلب')) {
+          if (lastBotMessage && typeof lastBotMessage.content === 'string' && lastBotMessage.content.includes('هل تبغى أكمل الطلب')) {
             return `تمام، لا مشكلة! 😊
 إذا احتجت أي شي ثاني، أنا موجود 👋`;
           }
@@ -891,11 +893,19 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         systemPrompt += buildProfileContext(customerProfile);
       }
 
+      // Build user message — multimodal if image is present
+      const userContent: string | (TextContent | ImageContent)[] = params.imageUrl
+        ? [
+            { type: 'text' as const, text: sanitizeForPrompt(params.message.substring(0, 500)) },
+            { type: 'image_url' as const, image_url: { url: params.imageUrl, detail: 'low' as const } },
+          ]
+        : sanitizeForPrompt(params.message.substring(0, 500));
+
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
         ...FEW_SHOT_EXAMPLES,
         ...previousMessages,
-        { role: 'user', content: sanitizeForPrompt(params.message.substring(0, 500)) },
+        { role: 'user', content: userContent },
       ];
 
       const maxTokens = Math.min(personalitySettings.maxResponseLength * 2, 600);
@@ -1203,12 +1213,20 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       systemPrompt += resumePrompt;
     }
 
+    // Build user message — multimodal if image is present
+    const userContentFull: string | (TextContent | ImageContent)[] = params.imageUrl
+      ? [
+          { type: 'text' as const, text: sanitizeForPrompt(params.message.substring(0, 500)) },
+          { type: 'image_url' as const, image_url: { url: params.imageUrl, detail: 'low' as const } },
+        ]
+      : sanitizeForPrompt(params.message.substring(0, 500));
+
     // Prepare messages with few-shot examples for better quality
     const messages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       ...FEW_SHOT_EXAMPLES, // Add examples for better understanding
       ...previousMessages,
-      { role: 'user', content: sanitizeForPrompt(params.message.substring(0, 500)) },
+      { role: 'user', content: userContentFull },
     ];
 
     // Call GPT-4 with optimized parameters

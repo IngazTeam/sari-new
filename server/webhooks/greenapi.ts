@@ -258,9 +258,10 @@ async function processTextMessage(params: {
   customerPhone: string;
   customerName?: string;
   messageText: string;
+  imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
 }): Promise<string> {
   try {
-    console.log('[Webhook] Processing text message:', params.messageText);
+    console.log('[Webhook] Processing text message:', params.messageText, params.imageUrl ? `[with image: ${params.imageUrl.substring(0, 60)}...]` : '');
     
     // Check message limit
     const reachedLimit = await hasReachedMessageLimit(params.merchantId);
@@ -272,9 +273,9 @@ async function processTextMessage(params: {
     await db.createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
-      messageType: 'text',
+      messageType: params.imageUrl ? 'image' : 'text',
       content: params.messageText,
-      voiceUrl: null,
+      voiceUrl: params.imageUrl || null,  // Reuse voiceUrl field for image URL
       isProcessed: 0,
       aiwResponse: null,
     });
@@ -282,9 +283,11 @@ async function processTextMessage(params: {
     // إرسال إشعار بالرسالة الجديدة
     try {
       const { notifyNewMessage } = await import('../_core/notificationService');
-      const messagePreview = params.messageText.length > 50 
-        ? params.messageText.substring(0, 50) + '...' 
-        : params.messageText;
+      const messagePreview = params.imageUrl 
+        ? `🖼️ ${params.messageText.substring(0, 40) || 'صورة'}` 
+        : (params.messageText.length > 50 
+          ? params.messageText.substring(0, 50) + '...' 
+          : params.messageText);
       await notifyNewMessage(params.merchantId, params.customerName || 'عميل', messagePreview);
     } catch (error) {
       console.error('[Notification] Failed to send new message notification:', error);
@@ -309,6 +312,7 @@ async function processTextMessage(params: {
         customerPhone: params.customerPhone,
         customerName: params.customerName,
         message: params.messageText,
+        imageUrl: params.imageUrl,
         conversationId: params.conversationId,
       });
     }
@@ -1017,8 +1021,48 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         customerName,
         audioUrl: audioDownloadUrl,
       });
+    } else if (payload.messageData.typeMessage === 'imageMessage' || payload.messageData.typeMessage === 'videoMessage') {
+      // ── Image/Video Message → GPT-4o Vision ──
+      const imageDownloadUrl = payload.messageData.downloadUrl
+        || payload.messageData.fileMessageData?.downloadUrl
+        || (payload.messageData as any).fileMessage?.downloadUrl;
+      
+      const caption = payload.messageData.fileMessageData?.caption
+        || payload.messageData.caption
+        || '';
+      
+      if (!imageDownloadUrl) {
+        console.warn('[Webhook] No download URL for image/video. Keys:', Object.keys(payload.messageData));
+        // Fall through to text if there's a caption
+        if (caption) {
+          response = await processTextMessage({
+            merchantId: instance.merchantId,
+            conversationId,
+            customerPhone,
+            customerName,
+            messageText: caption,
+          });
+        } else {
+          logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: 'other', status: 'dropped', failureReason: 'image_no_url', failureDetails: `typeMessage: ${payload.messageData.typeMessage}`, source: 'webhook' });
+          return { success: true, message: 'No download URL for image' };
+        }
+      } else {
+        const mediaType = payload.messageData.typeMessage === 'imageMessage' ? 'صورة' : 'فيديو';
+        const messageText = caption || `[${mediaType} من العميل — صفها وتفاعل معها]`;
+        
+        console.log(`[Webhook] 🖼️ Image/video message with URL: ${imageDownloadUrl.substring(0, 80)}...${caption ? ` caption: ${caption.substring(0, 50)}` : ''}`);
+        
+        response = await processTextMessage({
+          merchantId: instance.merchantId,
+          conversationId,
+          customerPhone,
+          customerName,
+          messageText,
+          imageUrl: imageDownloadUrl,
+        });
+      }
     } else {
-      // Text message
+      // Text message (and other types)
       const messageText = extractMessageText(payload);
       
       if (!messageText) {
@@ -1051,7 +1095,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     console.log('[Webhook] Message processed successfully');
     
-    const msgType = (payload.messageData.typeMessage === 'voiceMessage' || payload.messageData.typeMessage === 'audioMessage') ? 'voice' : 'text';
+    const msgType = (payload.messageData.typeMessage === 'voiceMessage' || payload.messageData.typeMessage === 'audioMessage') ? 'voice' : (payload.messageData.typeMessage === 'imageMessage' || payload.messageData.typeMessage === 'videoMessage') ? 'image' : 'text';
     logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: msgType as any, status: 'delivered', responseTimeMs: Date.now() - _deliveryStart, source: 'webhook' });
     
     return {
