@@ -209,7 +209,7 @@ export function buildProfileContext(profile: CustomerProfile): string {
   const name = profile.nickname || profile.displayName;
   if (name) parts.push(`اسم العميل: ${name}`);
   
-  // Tier
+  // Tier — with ACTIVE behavioral directives
   const tierLabels: Record<CustomerTier, string> = {
     new: 'عميل جديد (أول محادثة)',
     returning: 'عميل عائد',
@@ -219,9 +219,24 @@ export function buildProfileContext(profile: CustomerProfile): string {
   };
   parts.push(`التصنيف: ${tierLabels[profile.customerTier]}`);
   
-  // Spending
-  if (profile.totalSpent > 0) {
-    parts.push(`إجمالي المشتريات: ${profile.totalSpent} ريال`);
+  // === ACTIVE MEMORY DIRECTIVES ===
+  // These tell GPT HOW to use the data, not just WHAT the data is
+  
+  // VIP/Loyal → premium treatment
+  if (profile.customerTier === 'vip') {
+    parts.push(`📌 توجيه: عامله كعميل مميز — "عميلنا المميز!" — واعرض خدمة premium`);
+  } else if (profile.customerTier === 'loyal') {
+    parts.push(`📌 توجيه: اذكر إنه عميل مهم عندنا — وأبدِ اهتمام شخصي`);
+  }
+  
+  // At-risk → warm welcome
+  if (profile.customerTier === 'at_risk') {
+    parts.push(`📌 توجيه: رحب بحرارة زيادة — "وحشتنا!" — واعرض شي جديد`);
+  }
+  
+  // Spending (hide raw number for non-VIP — not creepy)
+  if (profile.totalSpent > 0 && (profile.customerTier === 'vip' || profile.customerTier === 'loyal')) {
+    parts.push(`إجمالي المشتريات: عميل دائم ومميز`);
   }
   
   // Preferences
@@ -238,24 +253,38 @@ export function buildProfileContext(profile: CustomerProfile): string {
     parts.push(`نقاط ألم سابقة: ${profile.painPoints.slice(-3).join('، ')}`);
   }
   
-  // Last objection
+  // Last objection — with DIRECTIVE
   if (profile.lastObjection) {
-    const objLabels: Record<string, string> = {
-      price: 'اعترض على السعر سابقاً',
-      delivery: 'اشتكى من التوصيل',
-      quality: 'سأل عن الجودة/الضمان',
+    const objDirectives: Record<string, string> = {
+      price: '📌 توجيه: ابدأ بالقيمة والمميزات قبل ما تذكر أي سعر — العميل سبق اعترض على السعر',
+      delivery: '📌 توجيه: أكد سرعة التوصيل وسهولة التتبع — العميل اشتكى من التوصيل سابقاً',
+      quality: '📌 توجيه: ركز على الضمان والاعتماد — العميل سأل عن الجودة سابقاً',
     };
-    parts.push(`⚠️ ${objLabels[profile.lastObjection] || profile.lastObjection}`);
+    parts.push(objDirectives[profile.lastObjection] || `⚠️ ${profile.lastObjection}`);
   }
   
-  // Purchase history
+  // Purchase history — with cross-sell directive
   if (profile.purchaseHistory && profile.purchaseHistory.length > 0) {
-    parts.push(`مشتريات سابقة: ${profile.purchaseHistory.slice(-3).join('، ')}`);
+    const lastPurchase = profile.purchaseHistory[profile.purchaseHistory.length - 1];
+    const daysSinceLastSeen = profile.lastSeenAt
+      ? Math.floor((Date.now() - new Date(profile.lastSeenAt).getTime()) / (1000 * 60 * 60 * 24))
+      : 999;
+    
+    // Only mention if recent (< 90 days) and has sales value
+    if (daysSinceLastSeen < 90) {
+      parts.push(`آخر شراء: ${lastPurchase}`);
+      if (profile.totalConversations > 1) {
+        parts.push(`📌 توجيه: اذكر "${lastPurchase}" طبيعياً واسأل كيف تجربته — ثم اقترح منتج مكمل`);
+      }
+    } else {
+      parts.push(`مشتريات سابقة: ${profile.purchaseHistory.slice(-3).join('، ')}`);
+    }
   }
   
   if (parts.length === 0) return '';
   return `\n## ملف العميل (ذاكرة تراكمية):\n${parts.join('\n')}\n`;
 }
+
 
 // ═══════════════════════════════════════════════════════════════
 // Helpers

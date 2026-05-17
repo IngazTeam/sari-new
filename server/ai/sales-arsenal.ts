@@ -261,6 +261,28 @@ export function selectPersuasion(
     };
   }
 
+  // 5b. Hesitating → social proof + reassurance (most important sales moment!)
+  if (intent === 'hesitating' && !safeTactics.includes('social_proof')) {
+    return {
+      strategy: 'social_proof',
+      prompt: buildSocialProofPrompt() + `\n\n## تعليمات التردد:\n- العميل متردد — لا تضغط بعدوانية\n- استخدم دليل اجتماعي طبيعي: "أغلب عملائنا" أو "الأكثر طلباً"\n- اقترح خطوة بدون التزام: "تحب أحجز لك مقعد مبدئي؟"\n- لا تنهي بسؤال مباشر — استخدم طمأنة`,
+    };
+  }
+
+  // 5c. Returning → cross-sell or welcome back
+  if (intent === 'returning') {
+    if (safeArsenal.crossSellSuggestions.length > 0 && !safeTactics.includes('cross_sell')) {
+      return {
+        strategy: 'cross_sell',
+        prompt: buildCrossSellPrompt(safeArsenal.crossSellSuggestions) + `\n\n## عميل عائد:\n- رحب بحرارة واذكر آخر تجربة إن أمكن\n- اقترح منتج مكمل بطريقة طبيعية`,
+      };
+    }
+    return {
+      strategy: 'social_proof',
+      prompt: buildSocialProofPrompt() + `\n\n## عميل عائد:\n- رحب بحرارة: "حياك مرة ثانية!"\n- اسأل عن تجربته السابقة إن أمكن`,
+    };
+  }
+
   // 6. Ready to buy → smart upsell
   if (intent === 'ready_to_buy' && safeArsenal.bestSellers.length > 1 && !safeTactics.includes('smart_upsell')) {
     return {

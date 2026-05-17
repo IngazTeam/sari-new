@@ -11,7 +11,8 @@ import { recordMetric } from '../db/quality-metrics';
 import { formatCurrency, type Currency } from '../../shared/currency';
 import { analyzeSentiment, adjustResponseForSentiment } from './sentiment-analysis';
 import type { SariPersonalitySetting } from '../../drizzle/schema';
-import { getSession, createSession, updateSession, detectIntent, detectTopicChange } from './session-context';
+import { getSession, createSession, updateSession, detectIntent, detectTopicChange, type CustomerIntent } from './session-context';
+import { buildMissionBlock, missionToPrompt, hasCriticalSignal, type SalesPersona, type MissionBlock } from './strategist';
 import { getOrCreateProfile, updateProfile, buildProfileContext, type CustomerProfile } from '../db/customer-intelligence';
 import { loadArsenal, selectPersuasion, recordStrategyUse, markStrategySuccess, buildCrossSellSuggestions } from './sales-arsenal';
 import { detectDialect, extractChildName, buildCulturalPrompt, buildInitialCulturalProfile, type CulturalProfile } from './cultural-engine';
@@ -164,6 +165,8 @@ ${settings.customGreeting}
 6. **إذا ما عندك المعلومة الدقيقة** — قل "خلني أتأكد من المعلومة وأرد عليك" ولا تختلق معلومات أبداً. فريق العمل سيتلقى السؤال فوراً ويرد عليك بالجواب
 7. **تابع خيط المحادثة**: إذا كان العميل يناقش عدة مواضيع، تتبع كل موضوع وأجب عليه بترتيب
 8. **هدفك الأساسي هو البيع**: لا تتخلص من العميل بردود عامة. كل رد يجب أن يقرّب العميل خطوة من الشراء أو الاشتراك
+9. **قاعدة الزخم**: كل رد يجب أن يحتوي على عنصر يدفع المحادثة — سؤال ذكي، أو إثارة فضول، أو طمأنة، أو خطوة تالية. ممنوع الردود الميتة
+10. **التنويع**: لا تستخدم نفس نوع CTA مرتين متتاليتين — نوّع بين سؤال وفضول وطمأنة
 
 ## ⛔ حدود صارمة - لا تتجاوزها أبداً:
 1. **أنت مساعد مبيعات فقط** لهذا المتجر/الشركة - لا تجيب على أي سؤال خارج نطاق المنتجات والخدمات المتوفرة
@@ -782,11 +785,21 @@ ${result.orderUrl}
 
     if (existingSession && !needsTopicRebuild) {
       // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
-      const intent = detectIntent(params.message);
+      const intent = detectIntent(params.message, customerProfile?.totalConversations);
       updateSession(params.merchantId, convId, {
         intent,
         sentiment: 'auto', // Lightweight — no GPT call for sentiment on cached path
       });
+
+      // ── Mission Block: Tactical brain for this message ──
+      const mission = buildMissionBlock({
+        message: params.message,
+        intent,
+        lastSentiment: existingSession.sentimentTrajectory?.slice(-1)[0] || 'neutral',
+        customerProfile,
+        salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
+      });
+      const missionPrompt = missionToPrompt(mission);
 
       // Select persuasion strategy
       const trajectory = existingSession.sentimentTrajectory || [];
@@ -820,8 +833,8 @@ ${result.orderUrl}
         markStrategySuccess(params.merchantId, convId).catch(() => {});
       }
 
-      // Build system prompt from cached context
-      let systemPrompt = buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
+      // Build system prompt: Mission Block FIRST, then cached context
+      let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
 
       // ── Virtual Agent override for FAST PATH ──
       // Without this, message #2+ would lose agent personality and revert to Sari
@@ -973,6 +986,18 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
     // --- Sales Arsenal ---
     let arsenalPrompt = '';
+    const intent = detectIntent(params.message, customerProfile?.totalConversations);
+
+    // ── Mission Block for FULL PATH (outside try block for scope) ──
+    const mission = buildMissionBlock({
+      message: params.message,
+      intent,
+      lastSentiment: sentiment?.sentiment || 'neutral',
+      customerProfile,
+      salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
+    });
+    const missionPrompt = missionToPrompt(mission);
+
     try {
       const arsenal = await loadArsenal(params.merchantId, params.customerPhone);
 
@@ -985,7 +1010,6 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         );
       }
 
-      const intent = detectIntent(params.message);
       const persuasion = selectPersuasion(
         customerProfile || { customerTier: 'new' } as any,
         arsenal,
@@ -1027,8 +1051,8 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       dnaPrompt = await buildDNAPrompt(params.merchantId);
     } catch { /* silent — DNA is supplementary */ }
 
-    // Build system prompt with personality settings + all engines
-    let systemPrompt = buildSystemPrompt(personalitySettings) + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + dnaPrompt;
+    // Build system prompt: Mission Block FIRST, then personality + all engines
+    let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + dnaPrompt;
     let resumePrompt = ''; // Extracted so it survives agent personality rebuild
     if (customerProfile) {
       systemPrompt += buildProfileContext(customerProfile);

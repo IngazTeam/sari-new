@@ -35,10 +35,61 @@ export type CustomerIntent =
   | 'browsing'       // Just looking around
   | 'inquiring'      // Asking about specific product/service
   | 'comparing'      // Comparing options/prices
+  | 'hesitating'     // Undecided — "بفكر", "بشوف", "مو متأكد"
   | 'objecting'      // Price/quality/timing objection
   | 'ready_to_buy'   // Wants to order
+  | 'returning'      // Returning customer starting new conversation
   | 'post_purchase'  // After buying — support/feedback
   | 'unknown';
+
+// ═══════════════════════════════════════════════════════════════
+// Hesitation Confidence Score — "بفكر" ≠ always objection
+// ═══════════════════════════════════════════════════════════════
+
+export type HesitationIntensity = 'low' | 'medium' | 'high';
+export type HesitationType = 'price' | 'trust' | 'need' | 'timing' | 'busy';
+
+export interface HesitationAnalysis {
+  type: HesitationType;
+  intensity: HesitationIntensity;
+  recommendedAction: 'push_now' | 'soft_reminder' | 'wait_and_followup';
+}
+
+/**
+ * Analyze hesitation depth — not all "بفكر" signals are equal.
+ */
+export function analyzeHesitation(message: string): HesitationAnalysis {
+  const msg = message.toLowerCase();
+
+  // High intensity — real objection disguised as hesitation
+  const highSignals = ['غالي', 'كثير عليه', 'مو معقول', 'ما يستاهل'];
+  if (highSignals.some(s => msg.includes(s))) {
+    return { type: 'price', intensity: 'high', recommendedAction: 'push_now' };
+  }
+
+  // Medium — genuine indecision, needs social proof
+  const mediumSignals = ['بفكر', 'أفكر', 'بشوف', 'أشوف', 'مو متأكد', 'ما أدري',
+    'محتار', 'أقارن', 'let me think', 'not sure'];
+  if (mediumSignals.some(s => msg.includes(s))) {
+    return { type: 'need', intensity: 'medium', recommendedAction: 'push_now' };
+  }
+
+  // Trust hesitation
+  const trustSignals = ['ما أعرفكم', 'مضمون', 'موثوق', 'أول مرة أسمع', 'مو نصب'];
+  if (trustSignals.some(s => msg.includes(s))) {
+    return { type: 'trust', intensity: 'medium', recommendedAction: 'push_now' };
+  }
+
+  // Low — likely just busy, don't push
+  const lowSignals = ['أرجع لك', 'بعدين', 'مو الحين', 'الحين مشغول', 'later',
+    'بكلمك', 'أرد عليك', 'بتواصل معك'];
+  if (lowSignals.some(s => msg.includes(s))) {
+    return { type: 'busy', intensity: 'low', recommendedAction: 'wait_and_followup' };
+  }
+
+  // Default medium
+  return { type: 'timing', intensity: 'medium', recommendedAction: 'soft_reminder' };
+}
 
 // ═══════════════════════════════════════════════════════════════
 // In-Memory Cache (Map)
@@ -212,16 +263,23 @@ export function detectTopicChange(
 /**
  * Detect customer intent from message text (no API call — pure keywords).
  */
-export function detectIntent(message: string): CustomerIntent {
+export function detectIntent(message: string, customerTotalConversations?: number): CustomerIntent {
   const msg = message.toLowerCase();
   
-  // Ready to buy
+  // Ready to buy — highest priority
   const buySignals = ['ابغى اطلب', 'أبي أطلب', 'أبي أشتري', 'أبغى أشتري', 'عايز اشتري', 'بدي اشتري',
     'أريد الشراء', 'كيف اطلب', 'طريقة الطلب', 'أبي آخذ', 'i want to buy',
-    'اطلب', 'أحجز', 'ابغى احجز', 'تمام أطلب', 'أكمل الطلب'];
+    'اطلب', 'أحجز', 'ابغى احجز', 'تمام أطلب', 'أكمل الطلب', 'سجلني', 'كيف أدفع'];
   if (buySignals.some(s => msg.includes(s))) return 'ready_to_buy';
   
-  // Objecting
+  // Hesitating — BEFORE objecting! "بفكر" is hesitation, not objection
+  const hesitationSignals = ['بفكر', 'أفكر', 'بشوف', 'أشوف', 'مو متأكد', 'ما أدري',
+    'محتار', 'أرجع لك', 'بعدين', 'مو الحين', 'الحين مشغول', 'let me think',
+    'not sure', 'بكلمك', 'أرد عليك', 'بتواصل', 'ما أعرفكم', 'مضمون',
+    'موثوق', 'أول مرة أسمع'];
+  if (hesitationSignals.some(s => msg.includes(s))) return 'hesitating';
+
+  // Objecting — price/quality/timing complaints
   const objectionSignals = ['غالي', 'كثير', 'مرتفع', 'سعر عالي', 'أرخص', 'خصم',
     'تخفيض', 'expensive', 'cheaper', 'discount', 'مو معقول', 'كثير عليه',
     'ليش غالي', 'ما عندكم عرض', 'بعيد', 'يأخذ وقت', 'متأخر'];
@@ -230,7 +288,7 @@ export function detectIntent(message: string): CustomerIntent {
   // Comparing
   const compareSignals = ['أيهم أفضل', 'الفرق بين', 'مقارنة', 'وش الأحسن',
     'أيش الفرق', 'which is better', 'compare', 'difference',
-    'هذا ولا هذا', 'هذا أو هذا', 'بين هذا وهذا'];
+    'هذا ولا هذا', 'هذا أو هذا', 'بين هذا وهذا', 'عند غيركم', 'لقيته أرخص'];
   if (compareSignals.some(s => msg.includes(s))) return 'comparing';
   
   // Post-purchase
@@ -244,7 +302,16 @@ export function detectIntent(message: string): CustomerIntent {
     'أبغى أعرف', 'ابغى استفسر'];
   if (inquirySignals.some(s => msg.includes(s))) return 'inquiring';
   
-  // Browsing (generic)
+  // Returning customer — detected by conversation count, not keywords
+  // (first message of a new conversation from a known customer)
+  if (customerTotalConversations && customerTotalConversations > 1) {
+    // Check if this looks like a greeting (start of new convo)
+    const greetSignals = ['السلام', 'مرحبا', 'أهلاً', 'هلا', 'مساء', 'صباح',
+      'hello', 'hi', 'hey'];
+    if (greetSignals.some(s => msg.includes(s))) return 'returning';
+  }
+
+  // Browsing (generic — new customer greeting)
   const browseSignals = ['السلام', 'مرحبا', 'أهلاً', 'هلا', 'مساء', 'صباح',
     'hello', 'hi', 'hey', 'وش عندكم', 'ابغى اشوف'];
   if (browseSignals.some(s => msg.includes(s))) return 'browsing';
