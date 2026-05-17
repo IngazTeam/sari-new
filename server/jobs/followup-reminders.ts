@@ -6,7 +6,7 @@
  * When the follow-up time arrives, sends a gentle reminder to the customer
  * and clears the follow-up flag.
  * 
- * Follow-ups are stored in conversations.agent_history JSON:
+ * Follow-ups are stored in conversations.agent_history as JSON string:
  * { "followup_at": "2026-05-18T10:00:00Z", "followup_reason": "العميل متردد" }
  */
 
@@ -25,26 +25,41 @@ async function processFollowUps(): Promise<void> {
     const pool = await db.getPool();
     if (!pool) return;
 
-    // Find conversations with follow-ups that are due
+    // Find conversations with follow-ups stored in agent_history (TEXT column with JSON)
+    // We use LIKE for TEXT columns since JSON_EXTRACT requires JSON type
     const [rows] = await pool.execute(
-      `SELECT c.id, c.merchant_id, c.customer_phone, c.agent_history
+      `SELECT c.id, c.merchantId, c.customerPhone, c.agent_history
        FROM conversations c
        WHERE c.agent_history IS NOT NULL
-       AND JSON_EXTRACT(c.agent_history, '$.followup_at') IS NOT NULL
-       AND JSON_EXTRACT(c.agent_history, '$.followup_at') <= NOW()
+       AND c.agent_history LIKE '%followup_at%'
        AND c.status = 'active'
-       LIMIT 10`
+       LIMIT 20`
     );
 
     const conversations = rows as any[];
     if (conversations.length === 0) return;
 
+    const now = new Date();
     let processed = 0;
 
     for (const conv of conversations) {
       try {
-        const merchantId = conv.merchant_id;
-        const customerPhone = conv.customer_phone;
+        // Parse the agent_history JSON string
+        let history: any;
+        try {
+          history = JSON.parse(conv.agent_history);
+        } catch {
+          continue; // Skip if not valid JSON
+        }
+
+        if (!history.followup_at) continue;
+
+        // Check if follow-up time has arrived
+        const followUpTime = new Date(history.followup_at);
+        if (followUpTime > now) continue; // Not due yet
+
+        const merchantId = conv.merchantId;
+        const customerPhone = conv.customerPhone;
 
         // Get WhatsApp instance for this merchant
         const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
@@ -62,12 +77,10 @@ async function processFollowUps(): Promise<void> {
           FOLLOWUP_MESSAGES[msgIdx]
         );
 
-        // Clear the follow-up flag
+        // Clear the follow-up flag by setting agent_history to null
         await pool.execute(
-          `UPDATE conversations SET 
-            agent_history = JSON_REMOVE(agent_history, '$.followup_at', '$.followup_reason')
-           WHERE id = ? AND merchant_id = ?`,
-          [conv.id, merchantId]
+          `UPDATE conversations SET agent_history = NULL WHERE id = ?`,
+          [conv.id]
         );
 
         processed++;

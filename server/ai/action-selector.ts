@@ -299,10 +299,10 @@ export async function executeAction(params: {
           if (pool) {
             const [rows] = await pool.execute(
               `SELECT code, type, value FROM discount_codes 
-               WHERE merchant_id = ? AND is_active = 1 
-               AND (expires_at IS NULL OR expires_at > NOW())
-               AND (max_uses IS NULL OR used_count < max_uses)
-               ORDER BY created_at DESC LIMIT 1`,
+               WHERE merchantId = ? AND isActive = 1 
+               AND (expiresAt IS NULL OR expiresAt > NOW())
+               AND (maxUses IS NULL OR usedCount < maxUses)
+               ORDER BY createdAt DESC LIMIT 1`,
               [merchantId]
             );
             const discounts = rows as any[];
@@ -347,15 +347,14 @@ export async function executeAction(params: {
           const pool = await getPool();
           if (pool) {
             const followUpAt = new Date(Date.now() + action.delayHours * 3600 * 1000);
+            const followUpData = JSON.stringify({
+              followup_at: followUpAt.toISOString(),
+              followup_reason: action.reason,
+            });
             await pool.execute(
-              `UPDATE conversations SET 
-                agent_history = JSON_SET(
-                  COALESCE(agent_history, '{}'),
-                  '$.followup_at', ?,
-                  '$.followup_reason', ?
-                )
-               WHERE id = ? AND merchant_id = ?`,
-              [followUpAt.toISOString(), action.reason, conversationId, merchantId]
+              `UPDATE conversations SET agent_history = ?
+               WHERE id = ? AND merchantId = ?`,
+              [followUpData, conversationId, merchantId]
             );
             console.log(`[ActionSelector] ✅ Follow-up scheduled in ${action.delayHours}h for conv #${conversationId}`);
           }
