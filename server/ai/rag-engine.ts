@@ -352,11 +352,17 @@ export async function buildRAGContext(
     productContext = await buildProductContext(merchantId, question);
   } catch { /* product search is supplementary */ }
 
+  // Document-aware context: search merchant's uploaded knowledge docs
+  let docContext = '';
+  try {
+    docContext = await buildDocumentContext(merchantId, question);
+  } catch { /* doc search is supplementary */ }
+
   return {
     facts: facts.join('\n\n'),
     behaviors: behaviors.join('\n'),
     sectionsUsed: results.filter(r => r.similarity >= 0.3).length,
-    productContext,
+    productContext: productContext + docContext,
   };
 }
 
@@ -419,6 +425,71 @@ async function buildProductContext(merchantId: number, question: string): Promis
     });
 
     return `\n## 🛍️ منتجات مطابقة من الكتالوج:\n${lines.join('\n')}\n📌 توجيه: اذكر المنتجات أعلاه إذا كانت ذات صلة بسؤال العميل. لا تخترع منتجات غير موجودة.\n`;
+  } catch {
+    return '';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 7. Document-Aware Context — Search merchant's uploaded files
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Search merchant's uploaded knowledge documents (PDF/DOCX/XLSX)
+ * for relevant text snippets based on the customer's question.
+ */
+async function buildDocumentContext(merchantId: number, question: string): Promise<string> {
+  const { getPool } = await import('../db');
+  const pool = await getPool();
+  if (!pool) return '';
+
+  // Extract meaningful keywords (skip short/common words)
+  const keywords = question
+    .replace(/[؟?!.,،]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 3)
+    .slice(0, 3);
+
+  if (keywords.length === 0) return '';
+
+  const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&');
+  const likeClauses = keywords.map(() => `d.extracted_text LIKE ?`).join(' OR ');
+  const likeParams = keywords.map(k => `%${escapeLike(k)}%`);
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT d.file_name, d.extracted_text
+       FROM merchant_knowledge_docs d
+       WHERE d.merchant_id = ? AND d.extraction_status = 'completed'
+       AND d.extracted_text IS NOT NULL
+       AND (${likeClauses})
+       ORDER BY d.uploaded_at DESC
+       LIMIT 2`,
+      [merchantId, ...likeParams]
+    );
+
+    const docs = rows as any[];
+    if (docs.length === 0) return '';
+
+    const snippets = docs.map(doc => {
+      // Find the most relevant snippet around the first keyword match
+      const text = doc.extracted_text || '';
+      let bestSnippet = text.substring(0, 500);
+
+      for (const kw of keywords) {
+        const idx = text.toLowerCase().indexOf(kw.toLowerCase());
+        if (idx >= 0) {
+          const start = Math.max(0, idx - 100);
+          const end = Math.min(text.length, idx + 400);
+          bestSnippet = text.substring(start, end);
+          break;
+        }
+      }
+
+      return `📄 *${doc.file_name}*:\n${bestSnippet.trim()}`;
+    });
+
+    return `\n## 📁 معلومات من ملفات التاجر:\n${snippets.join('\n\n').substring(0, 1500)}\n📌 توجيه: استخدم هذه المعلومات إذا كانت ذات صلة. لا تذكر أسماء الملفات للعميل.\n`;
   } catch {
     return '';
   }

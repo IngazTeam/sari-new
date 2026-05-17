@@ -29,6 +29,7 @@ import { startSubscriptionJobs } from "../cron/subscription-jobs";
 import { startEscalationCascadeJob } from "../jobs/escalation-cascade";
 import { startCoachingTriggerJob } from "../jobs/coaching-trigger";
 import { startTakeoverExpiryJob } from "../jobs/takeover-expiry";
+import { startFollowUpJob } from "../jobs/followup-reminders";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { validateEnv } from "./validateEnv";
@@ -546,6 +547,9 @@ async function startServer() {
 
       // Initialize Takeover Expiry job (runs every 60s — auto-clears expired takeovers & responds to pending messages)
       startTakeoverExpiryJob();
+
+      // Initialize Follow-Up Reminders job (runs every 5min — sends proactive follow-ups to hesitant customers)
+      startFollowUpJob();
 
       // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
       cron.schedule('0 9 * * *', async () => {

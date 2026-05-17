@@ -253,7 +253,7 @@ export async function executeAction(params: {
   conversationId: number;
   sendMessage: (phone: string, message: string) => Promise<void>;
 }): Promise<void> {
-  const { action, merchantId, customerPhone, sendMessage } = params;
+  const { action, merchantId, customerPhone, conversationId, sendMessage } = params;
 
   if (action.type === 'text_only') return;
 
@@ -276,21 +276,126 @@ export async function executeAction(params: {
         break;
       }
 
+      case 'send_catalog': {
+        // Send top 5 products from merchant's catalog
+        const products = await db.getTopProducts(merchantId, 5);
+        if (products.length > 0) {
+          const lines = products.map((p: any, i: number) => {
+            const price = p.price ? ` — ${p.price} ر.س` : '';
+            return `${i + 1}. *${p.name}*${price}`;
+          });
+          const msg = `🛍️ *منتجاتنا الأكثر طلباً:*\n\n${lines.join('\n')}\n\nأي منتج يعجبك؟ أقدر أعطيك تفاصيل أكثر! 😊`;
+          await sendMessage(customerPhone, msg);
+          console.log(`[ActionSelector] ✅ Sent catalog (${products.length} products)`);
+        }
+        break;
+      }
+
+      case 'offer_discount': {
+        // Find active discount codes for this merchant
+        try {
+          const { getPool } = await import('../db');
+          const pool = await getPool();
+          if (pool) {
+            const [rows] = await pool.execute(
+              `SELECT code, type, value FROM discount_codes 
+               WHERE merchant_id = ? AND is_active = 1 
+               AND (expires_at IS NULL OR expires_at > NOW())
+               AND (max_uses IS NULL OR used_count < max_uses)
+               ORDER BY created_at DESC LIMIT 1`,
+              [merchantId]
+            );
+            const discounts = rows as any[];
+            if (discounts.length > 0) {
+              const d = discounts[0];
+              const valueStr = d.type === 'percentage' ? `${d.value}%` : `${d.value} ر.س`;
+              await sendMessage(customerPhone,
+                `🎁 عندنا عرض خاص لك!\n\nاستخدم كود الخصم: *${d.code}*\nقيمة الخصم: *${valueStr}*\n\nالعرض لفترة محدودة! ⏰`
+              );
+              console.log(`[ActionSelector] ✅ Sent discount code: ${d.code}`);
+            } else {
+              console.log(`[ActionSelector] ℹ️ No active discounts for merchant ${merchantId}`);
+            }
+          }
+        } catch (discErr: any) {
+          console.warn(`[ActionSelector] Discount lookup failed: ${discErr.message}`);
+        }
+        break;
+      }
+
+      case 'escalate_to_merchant': {
+        // Trigger the real smart-escalation system
+        try {
+          const { handleSmartEscalation } = await import('./smart-escalation');
+          await handleSmartEscalation({
+            merchantId,
+            conversationId,
+            customerPhone,
+            customerQuestion: `[تصعيد تلقائي] ${action.reason}`,
+          });
+          console.log(`[ActionSelector] ✅ Escalated to merchant: ${action.reason} (urgency: ${action.urgency})`);
+        } catch (escErr: any) {
+          console.warn(`[ActionSelector] Escalation failed: ${escErr.message}`);
+        }
+        break;
+      }
+
       case 'schedule_followup': {
-        // Store follow-up reminder in DB for cron to pick up
-        console.log(`[ActionSelector] 📅 Follow-up scheduled in ${action.delayHours}h: ${action.reason}`);
-        // TODO: Implement follow-up cron job integration
+        // Save follow-up as a conversation tag for cron processing
+        try {
+          const { getPool } = await import('../db');
+          const pool = await getPool();
+          if (pool) {
+            const followUpAt = new Date(Date.now() + action.delayHours * 3600 * 1000);
+            await pool.execute(
+              `UPDATE conversations SET 
+                agent_history = JSON_SET(
+                  COALESCE(agent_history, '{}'),
+                  '$.followup_at', ?,
+                  '$.followup_reason', ?
+                )
+               WHERE id = ? AND merchant_id = ?`,
+              [followUpAt.toISOString(), action.reason, conversationId, merchantId]
+            );
+            console.log(`[ActionSelector] ✅ Follow-up scheduled in ${action.delayHours}h for conv #${conversationId}`);
+          }
+        } catch (fuErr: any) {
+          console.warn(`[ActionSelector] Follow-up scheduling failed: ${fuErr.message}`);
+        }
         break;
       }
 
       case 'request_merchant_info': {
-        // This is handled by smart-escalation system
-        console.log(`[ActionSelector] ❓ Merchant info requested: ${action.question}`);
+        // Use smart-escalation to ask the merchant
+        try {
+          const { handleSmartEscalation } = await import('./smart-escalation');
+          await handleSmartEscalation({
+            merchantId,
+            conversationId,
+            customerPhone,
+            customerQuestion: action.question,
+          });
+          console.log(`[ActionSelector] ✅ Merchant info requested: ${action.question}`);
+        } catch (escErr: any) {
+          console.warn(`[ActionSelector] Merchant info request failed: ${escErr.message}`);
+        }
+        break;
+      }
+
+      case 'confirm_order': {
+        // Send order confirmation prompt
+        if (action.items.length > 0) {
+          const itemsList = action.items.map((item, i) => `${i + 1}. ${item}`).join('\n');
+          await sendMessage(customerPhone,
+            `📋 *تأكيد الطلب*\n\nالمنتجات:\n${itemsList}\n\nهل تبغى تأكد الطلب؟ أرسل "نعم" أو أضف/عدّل المنتجات 🛒`
+          );
+          console.log(`[ActionSelector] ✅ Order confirmation sent (${action.items.length} items)`);
+        }
         break;
       }
 
       default:
-        console.log(`[ActionSelector] Action ${action.type} logged (no auto-execution)`);
+        console.log(`[ActionSelector] Action ${(action as any).type} — no handler`);
     }
   } catch (err: any) {
     console.warn(`[ActionSelector] Action execution failed: ${err.message}`);
