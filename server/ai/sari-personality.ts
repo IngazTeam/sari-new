@@ -803,6 +803,18 @@ ${result.orderUrl}
       console.warn('[chatWithSari] Customer profile load failed:', err);
     }
 
+    // --- Track acquisition source for NEW customers ---
+    if (customerProfile && customerProfile.totalConversations <= 1 && !customerProfile.preferences?.acquisitionSource) {
+      const source = detectAcquisitionSource(params.message);
+      if (source) {
+        updateProfile(params.merchantId, params.customerPhone, {
+          preferences: { ...customerProfile.preferences, acquisitionSource: source },
+        }).catch(() => {});
+        customerProfile.preferences = { ...customerProfile.preferences, acquisitionSource: source };
+        console.log(`[chatWithSari] 📊 New customer source: ${source}`);
+      }
+    }
+
     // --- Extract child name from message (for أبو فلان) ---
     const mentionedChildName = extractChildName(params.message);
     if (mentionedChildName && customerProfile) {
@@ -1600,4 +1612,42 @@ export async function recommendProducts(params: {
     console.error('Error recommending products:', error);
     return [];
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Acquisition Source Detection
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Detect customer acquisition source from first message.
+ * WhatsApp click-to-chat links include ?text= parameter:
+ * https://wa.me/966XXXXXXX?text=أبغى%20العرض%20IG2024
+ * 
+ * The merchant embeds a campaign code in the link text.
+ */
+function detectAcquisitionSource(message: string): string | null {
+  if (!message) return null;
+  const lower = message.toLowerCase();
+
+  // Campaign codes: IG2024, SNAP_OFFER, TW_PROMO, etc.
+  const campaignMatch = message.match(/\b(IG\d{2,4}|SNAP[_\-]?\w+|TW[_\-]?\w+|TIKTOK[_\-]?\w+|FB[_\-]?\w+|YT[_\-]?\w+|CAMP[_\-]\w+|PROMO[_\-]\w+|AD[_\-]\d+)\b/i);
+  if (campaignMatch) return campaignMatch[1].toUpperCase();
+
+  // Platform keywords in message
+  const platforms: [RegExp, string][] = [
+    [/انستقرام|انستا|instagram|insta/i, 'instagram'],
+    [/سناب|snapchat|snap/i, 'snapchat'],
+    [/تويتر|twitter|تويت|𝕏/i, 'twitter'],
+    [/تيك\s?توك|tiktok/i, 'tiktok'],
+    [/فيسبوك|facebook|فيس/i, 'facebook'],
+    [/يوتيوب|youtube/i, 'youtube'],
+    [/قوقل|google|جوجل/i, 'google_ads'],
+    [/إعلان|اعلان|عرض خاص/i, 'ad_general'],
+  ];
+
+  for (const [regex, source] of platforms) {
+    if (regex.test(lower)) return source;
+  }
+
+  return null; // organic/direct
 }
