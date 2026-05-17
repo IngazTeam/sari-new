@@ -78,19 +78,57 @@ function extractPhoneNumber(chatId: string): string {
 }
 
 /**
+ * Sanitize text before injecting into AI prompts — prevents prompt injection.
+ * Mirrors sari-personality.ts sanitizeForPrompt but accessible locally.
+ */
+function sanitizeForPrompt(text: string): string {
+  if (!text) return '';
+  const normalized = text.normalize('NFKC');
+  return normalized
+    .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+    .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+    .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+    .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+    .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+    .replace(/do\s+not\s+follow/gi, '[filtered]')
+    .replace(/override\s+(system|all|your)/gi, '[filtered]')
+    .replace(/act\s+as\s+(a|an)?/gi, '[filtered]')
+    .replace(/pretend\s+(to\s+be|you\s+are)/gi, '[filtered]')
+    .replace(/تصرف\s*(كـ|ك)/gi, '[filtered]')
+    .replace(/تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi, '[filtered]')
+    .replace(/انس[َى]?\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد|اعداداتهم)/gi, '[filtered]');
+}
+
+/**
  * Extract message text from different message types
+ * Includes quoted/replied message context when available
  */
 function extractMessageText(payload: GreenAPIWebhookPayload): string | null {
   const { messageData } = payload;
   
+  // Extended text message (with link preview, quoted reply, etc.) — check first
+  if (messageData.extendedTextMessageData?.text) {
+    let text = messageData.extendedTextMessageData.text;
+    
+    // Include quoted/replied message as context
+    const quoted = (messageData.extendedTextMessageData as any).quotedMessage;
+    if (quoted) {
+      const quotedText = quoted.textMessage 
+        || quoted.extendedTextMessage?.text 
+        || quoted.conversation
+        || '';
+      if (quotedText) {
+        // PEN-Q-01 FIX: Sanitize quoted content to prevent prompt injection via crafted replies
+        const safeQuoted = sanitizeForPrompt(quotedText.substring(0, 300));
+        text = `[رد على رسالة: "${safeQuoted}"]\n${text}`;
+      }
+    }
+    return text;
+  }
+  
   // Text message
   if (messageData.textMessageData?.textMessage) {
     return messageData.textMessageData.textMessage;
-  }
-  
-  // Extended text message (with link preview, etc.)
-  if (messageData.extendedTextMessageData?.text) {
-    return messageData.extendedTextMessageData.text;
   }
   
   // Image/Video with caption
@@ -456,6 +494,149 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         return { success: true, message: 'System message ignored' };
       }
 
+      // ── Merchant Reply to Sari Alert → Forward to Customer + AI Feedback ──
+      // When the merchant replies (quotes) a "تنبيه من ساري — سؤال عميل" message:
+      // 1. Forward the answer to the customer
+      // 2. Confirm delivery to the merchant
+      // 3. AI-analyze the reply quality and suggest improvements or praise
+      if (outText) {
+        const quotedMsg = (payload as any).messageData?.extendedTextMessageData?.quotedMessage;
+        const quotedText = quotedMsg?.textMessage 
+          || quotedMsg?.extendedTextMessage?.text 
+          || quotedMsg?.conversation 
+          || '';
+        
+        const isReplyToSariAlert = quotedText.includes('تنبيه من ساري') 
+          || quotedText.includes('سؤال عميل')
+          || quotedText.includes('العميل ينتظر')
+          || quotedText.includes('سيوصله للعميل');
+        
+        if (isReplyToSariAlert) {
+          console.log(`[MerchantReply] 📩 Merchant replied to Sari alert — forwarding to customer`);
+          
+          // Extract the original customer question from the quoted alert
+          const customerQuestionMatch = quotedText.match(/❓\s*\*?السؤال:?\*?\s*([\s\S]+?)(?:\n|💡|⏰|⚠️|$)/);
+          const originalQuestion = customerQuestionMatch?.[1]?.trim() || '';
+          
+          let targetCustomerPhone = '';
+          let deliverySuccess = false;
+          
+          // Try to resolve via escalation system first (most reliable)
+          try {
+            const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
+            const escResult = await handleMerchantEscalationReply({
+              merchantId: instance.merchantId,
+              merchantPhone: customerPhone,
+              replyText: outText,
+            });
+            
+            if (escResult.handled) {
+              deliverySuccess = true;
+              targetCustomerPhone = escResult.escalation?.customerPhone || '';
+              console.log(`[MerchantReply] ✅ Escalation reply handled — answer delivered to customer`);
+            }
+          } catch (escErr) {
+            console.warn('[MerchantReply] Escalation relay failed, trying direct:', escErr);
+          }
+          
+          // Fallback: direct delivery via escalation DB
+          if (!deliverySuccess) {
+            try {
+              const { getActiveEscalationForMerchant } = await import('../db/learning');
+              const activeEsc = await getActiveEscalationForMerchant(instance.merchantId);
+              if (activeEsc) {
+                targetCustomerPhone = (activeEsc as any).customer_phone || (activeEsc as any).customerPhone || '';
+              }
+            } catch { /* silent */ }
+            
+            if (targetCustomerPhone) {
+              const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${outText.substring(0, 2000)}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
+              
+              try {
+                await sendMessageWithCredentials(
+                  (instance as any).instanceId,
+                  (instance as any).token,
+                  (instance as any).apiUrl || 'https://api.green-api.com',
+                  targetCustomerPhone,
+                  customerReply
+                );
+                deliverySuccess = true;
+                console.log(`[MerchantReply] ✅ Reply forwarded to customer ***${targetCustomerPhone.slice(-4)}`);
+              } catch (sendErr) {
+                console.error('[MerchantReply] Failed to forward reply:', sendErr);
+              }
+            }
+          }
+          
+          // ── AI Feedback to Merchant ──
+          // Analyze the merchant's reply and provide constructive feedback
+          if (deliverySuccess) {
+            try {
+              const { callGPT4 } = await import('../ai/openai');
+              const feedbackPrompt = [
+                {
+                  role: 'system' as const,
+                  content: `أنت ساري، مستشار خدمة العملاء الذكي. مهمتك تقييم رد التاجر على سؤال العميل وتقديم ملاحظات مختصرة.
+
+قواعد التقييم:
+1. إذا كان الرد احترافي وواضح → أثنِ عليه بحماس وأكّد أنه ممتاز
+2. إذا كان الرد جيد لكن يمكن تحسينه → أثنِ أولاً ثم اقترح تحسين واحد محدد
+3. إذا كان الرد ضعيف أو ناقص → اقترح رد بديل أفضل بلطف
+
+الرد يجب أن يكون:
+- باللهجة السعودية
+- مختصر (3-5 أسطر كحد أقصى)
+- يبدأ بتأكيد التوصيل ✅
+- يحتوي تقييم صادق لكن لطيف
+- إذا اقترحت تحسين، اكتب الرد المقترح كاملاً ليقدر التاجر ينسخه`
+                },
+                {
+                  role: 'user' as const,
+                  // PEN-MR-02 FIX: Sanitize both inputs to prevent prompt manipulation
+                  content: `سؤال العميل: "${sanitizeForPrompt(originalQuestion.substring(0, 300)) || 'غير متوفر'}"\n\nرد التاجر: "${sanitizeForPrompt(outText.substring(0, 500))}"\n\nقيّم رد التاجر وأعطه ملاحظاتك:`
+                }
+              ];
+              
+              const aiFeedback = await callGPT4(feedbackPrompt, {
+                model: 'gpt-4o-mini',
+                temperature: 0.7,
+                maxTokens: 300,
+                noRetry: true,
+              });
+              
+              // Send AI feedback to merchant
+              const feedbackMessage = `✅ *تم توصيل ردك للعميل بنجاح!*\n\n${aiFeedback.trim()}`;
+              
+              await sendMessageWithCredentials(
+                (instance as any).instanceId,
+                (instance as any).token,
+                (instance as any).apiUrl || 'https://api.green-api.com',
+                customerPhone,
+                feedbackMessage
+              );
+              
+              console.log(`[MerchantReply] 🧠 AI feedback sent to merchant`);
+            } catch (feedbackErr) {
+              // Fallback: simple confirmation without AI analysis
+              console.warn('[MerchantReply] AI feedback failed, sending simple confirmation:', feedbackErr);
+              try {
+                await sendMessageWithCredentials(
+                  (instance as any).instanceId,
+                  (instance as any).token,
+                  (instance as any).apiUrl || 'https://api.green-api.com',
+                  customerPhone,
+                  `✅ *تم توصيل ردك للعميل بنجاح!*\n\nشكراً لسرعة استجابتك 👏 ساري تعلّم من ردك وسيستخدمه مستقبلاً 🧠`
+                );
+              } catch { /* confirmation is non-blocking */ }
+            }
+            
+            return { success: true, message: 'Merchant reply forwarded + AI feedback sent' };
+          }
+          
+          console.warn('[MerchantReply] Could not determine target customer — falling through to takeover');
+        }
+      }
+
       const convs = await db.getConversationsByMerchantId(instance.merchantId);
       const conv = convs.find(c => c.customerPhone === customerPhone);
       if (conv) {
@@ -622,12 +803,23 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             }
           }
 
-          // Priority 3: Escalation reply
-          const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
-          const { getActiveEscalationForMerchant } = await import('../db/learning');
-          const hasActiveEscalation = await getActiveEscalationForMerchant(instance.merchantId);
+          // Priority 3: Escalation reply — ONLY if message quotes a Sari alert
+          // FIX: Previously ANY message from a chain member was treated as escalation reply,
+          // which prevented the merchant from being served as a normal customer
+          const quotedMsg = (payload as any).messageData?.extendedTextMessageData?.quotedMessage;
+          const quotedText = quotedMsg?.textMessage 
+            || quotedMsg?.extendedTextMessage?.text 
+            || quotedMsg?.conversation 
+            || '';
+          
+          const isReplyToAlert = quotedText.includes('تنبيه من ساري')
+            || quotedText.includes('سؤال عميل')
+            || quotedText.includes('العميل ينتظر')
+            || quotedText.includes('سيوصله للعميل');
+          
+          if (isReplyToAlert) {
+            const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
 
-          if (hasActiveEscalation) {
             const result = await handleMerchantEscalationReply({
               merchantId: instance.merchantId,
               merchantPhone: customerPhone,
@@ -639,7 +831,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
               return { success: true, message: 'Escalation reply handled' };
             }
           }
-          // No active coaching/escalation — continue normal customer flow
+          // No explicit escalation reply — continue normal customer flow
+          // (merchant is treated as a regular customer)
         }
       }
     } catch (escErr) {
