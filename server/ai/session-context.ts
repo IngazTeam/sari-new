@@ -279,17 +279,17 @@ export function detectIntent(message: string, customerTotalConversations?: numbe
     'موثوق', 'أول مرة أسمع'];
   if (hesitationSignals.some(s => msg.includes(s))) return 'hesitating';
 
+  // Comparing — BEFORE objecting! "لقيته أرخص عند غيركم" is comparing, not just objecting
+  const compareSignals = ['أيهم أفضل', 'الفرق بين', 'مقارنة', 'وش الأحسن',
+    'أيش الفرق', 'which is better', 'compare', 'difference',
+    'هذا ولا هذا', 'هذا أو هذا', 'بين هذا وهذا', 'عند غيركم', 'لقيته أرخص'];
+  if (compareSignals.some(s => msg.includes(s))) return 'comparing';
+
   // Objecting — price/quality/timing complaints
   const objectionSignals = ['غالي', 'كثير', 'مرتفع', 'سعر عالي', 'أرخص', 'خصم',
     'تخفيض', 'expensive', 'cheaper', 'discount', 'مو معقول', 'كثير عليه',
     'ليش غالي', 'ما عندكم عرض', 'بعيد', 'يأخذ وقت', 'متأخر'];
   if (objectionSignals.some(s => msg.includes(s))) return 'objecting';
-  
-  // Comparing
-  const compareSignals = ['أيهم أفضل', 'الفرق بين', 'مقارنة', 'وش الأحسن',
-    'أيش الفرق', 'which is better', 'compare', 'difference',
-    'هذا ولا هذا', 'هذا أو هذا', 'بين هذا وهذا', 'عند غيركم', 'لقيته أرخص'];
-  if (compareSignals.some(s => msg.includes(s))) return 'comparing';
   
   // Post-purchase
   const postSignals = ['طلبي', 'وين وصل', 'الشحن', 'التوصيل', 'ما وصل',
@@ -299,7 +299,7 @@ export function detectIntent(message: string, customerTotalConversations?: numbe
   // Inquiring (specific question)
   const inquirySignals = ['كم سعر', 'كم السعر', 'عندكم', 'يوجد', 'متوفر',
     'how much', 'price', 'available', 'do you have', 'وش عندكم من',
-    'أبغى أعرف', 'ابغى استفسر'];
+    'أبغى أعرف', 'ابغى اعرف', 'ابغى استفسر'];
   if (inquirySignals.some(s => msg.includes(s))) return 'inquiring';
   
   // Returning customer — detected by conversation count, not keywords
