@@ -214,13 +214,21 @@ export function buildProfileContext(profile: CustomerProfile): string {
     parts.push(`إجمالي المشتريات: عميل دائم ومميز`);
   }
   
-  // Preferences
+  // Preferences (basic + AI-enriched)
   if (profile.preferences && Object.keys(profile.preferences).length > 0) {
     const prefs: string[] = [];
     if (profile.preferences.priceConscious) prefs.push('يهتم بالسعر');
     if (profile.preferences.qualityFocused) prefs.push('يهتم بالجودة');
     if (profile.preferences.fastDelivery) prefs.push('يريد توصيل سريع');
+    if (profile.preferences.urgentBuyer) prefs.push('مشتري عاجل');
+    if (profile.preferences.brandConscious) prefs.push('يهتم بالبراند');
     if (prefs.length > 0) parts.push(`تفضيلات: ${prefs.join('، ')}`);
+
+    // Interest tags (AI-enriched)
+    const tags = profile.preferences.interestTags;
+    if (Array.isArray(tags) && tags.length > 0) {
+      parts.push(`اهتمامات: ${tags.slice(0, 3).map((t: string) => sanitizeProfileData(t)).join('، ')}`);
+    }
   }
   
   // Pain points
@@ -234,6 +242,7 @@ export function buildProfileContext(profile: CustomerProfile): string {
       price: '📌 توجيه: ابدأ بالقيمة والمميزات قبل ما تذكر أي سعر — العميل سبق اعترض على السعر',
       delivery: '📌 توجيه: أكد سرعة التوصيل وسهولة التتبع — العميل اشتكى من التوصيل سابقاً',
       quality: '📌 توجيه: ركز على الضمان والاعتماد — العميل سأل عن الجودة سابقاً',
+      trust: '📌 توجيه: استخدم دليل اجتماعي وشهادات العملاء — العميل شكك في الموثوقية سابقاً',
     };
     parts.push(objDirectives[profile.lastObjection] || `⚠️ ${sanitizeProfileData(profile.lastObjection)}`);
   }

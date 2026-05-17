@@ -20,6 +20,8 @@ import { buildDirectivesPrompt } from '../db/ai-directives';
 import { buildDNAPrompt, captureConversationSignals } from './learning-engine';
 import { handleSmartEscalation } from './smart-escalation';
 import { virtualAgents } from '../../drizzle/schema';
+import { enrichCustomerProfile } from './profile-enrichment';
+import { buildCustomerStateSummary } from './customer-state';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { 
   isZidOrderRequest, 
@@ -901,6 +903,16 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         systemPrompt += buildProfileContext(customerProfile);
       }
 
+      // Inject customer state summary (pending questions, momentum, etc.)
+      const customerStateSummary = buildCustomerStateSummary({
+        previousMessages,
+        customerProfile,
+        conversationId: convId,
+      });
+      if (customerStateSummary) {
+        systemPrompt += customerStateSummary;
+      }
+
       // Build user message — multimodal if image is present
       const userContent: string | (TextContent | ImageContent)[] = params.imageUrl
         ? [
@@ -1095,6 +1107,16 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       systemPrompt += buildProfileContext(customerProfile);
     }
 
+    // Inject customer state summary (pending questions, momentum, buying stage)
+    const customerStateSummaryFull = buildCustomerStateSummary({
+      previousMessages,
+      customerProfile,
+      conversationId: convId,
+    });
+    if (customerStateSummaryFull) {
+      systemPrompt += customerStateSummaryFull;
+    }
+
     // ── Resume Context Injection (after Human Takeover) ──
     try {
       if (params.conversationId) {
@@ -1278,6 +1300,17 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       customerMessage: params.message,
       botResponse: response,
     }).catch(() => {});
+
+    // === Profile Enrichment: AI-powered profile update every 5 messages ===
+    const currentSession = convId ? getSession(params.merchantId, convId) : null;
+    if (currentSession && currentSession.messageCount % 5 === 0) {
+      enrichCustomerProfile({
+        merchantId: params.merchantId,
+        customerPhone: params.customerPhone,
+        conversationId: convId,
+        currentProfile: customerProfile,
+      }).catch(() => {});
+    }
 
     // === Quality Metrics: Record response quality (fire-and-forget) ===
     recordMetric({
