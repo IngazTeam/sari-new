@@ -195,6 +195,60 @@ export const analyticsRouter = router({
         });
       }
     }),
+
+  // Get customer acquisition sources
+  getAcquisitionSources: protectedProcedure
+    .input(z.object({
+      merchantId: z.number(),
+    }))
+    .query(async ({ input, ctx }) => {
+      const merchant = await db.getMerchantById(input.merchantId);
+      if (!merchant || merchant.userId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      const pool = await db.getPool();
+      if (!pool) return { sources: [], totalCustomers: 0 };
+
+      const [rows] = await pool.execute(
+        `SELECT preferences FROM customer_profiles WHERE merchant_id = ?`,
+        [input.merchantId]
+      );
+
+      const sourceCounts: Record<string, number> = {};
+      let totalWithSource = 0;
+      let totalCustomers = 0;
+
+      for (const row of rows as any[]) {
+        totalCustomers++;
+        try {
+          const prefs = typeof row.preferences === 'string'
+            ? JSON.parse(row.preferences)
+            : row.preferences;
+          const source = prefs?.acquisitionSource;
+          if (source) {
+            sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+            totalWithSource++;
+          } else {
+            sourceCounts['direct'] = (sourceCounts['direct'] || 0) + 1;
+          }
+        } catch {
+          sourceCounts['direct'] = (sourceCounts['direct'] || 0) + 1;
+        }
+      }
+
+      const sources = Object.entries(sourceCounts)
+        .map(([source, count]) => ({
+          source,
+          count,
+          percentage: totalCustomers > 0
+            ? Number(((count / totalCustomers) * 100).toFixed(1))
+            : 0,
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      return { sources, totalCustomers };
+    }),
 });
 
 export type AnalyticsRouter = typeof analyticsRouter;
