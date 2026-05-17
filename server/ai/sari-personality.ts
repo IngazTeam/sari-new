@@ -443,6 +443,11 @@ async function buildEnhancedContextPrompt(context: {
           contextPrompt += sanitizeForPrompt(ragContext.behaviors) + '\n';
         }
 
+        // Product-aware context: matching products from merchant's catalog
+        if (ragContext.productContext) {
+          contextPrompt += ragContext.productContext;
+        }
+
         console.log(`[chatWithSari] RAG: ${ragContext.sectionsUsed} sections injected for merchant ${context.merchantId}`);
       }
     } catch (error) {

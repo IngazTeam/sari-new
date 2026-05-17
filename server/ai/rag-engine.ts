@@ -319,11 +319,12 @@ export async function cacheSuccessfulResponse(
  * Returns structured context separated by inject_as:
  * - facts: Hard facts about the business (products, policies, contact)
  * - behaviors: How the bot should behave (selling tips, USPs to emphasize)
+ * - productContext: Relevant product details matched from the merchant's catalog
  */
 export async function buildRAGContext(
   merchantId: number,
   question: string
-): Promise<{ facts: string; behaviors: string; sectionsUsed: number }> {
+): Promise<{ facts: string; behaviors: string; sectionsUsed: number; productContext: string }> {
   const results = await searchRelevantSections(merchantId, question, 7);
 
   const facts: string[] = [];
@@ -345,11 +346,79 @@ export async function buildRAGContext(
     // inject_as === 'none' → skip (merchant-only data)
   }
 
+  // Product-aware context: search merchant's products when relevant
+  let productContext = '';
+  try {
+    productContext = await buildProductContext(merchantId, question);
+  } catch { /* product search is supplementary */ }
+
   return {
     facts: facts.join('\n\n'),
     behaviors: behaviors.join('\n'),
     sectionsUsed: results.filter(r => r.similarity >= 0.3).length,
+    productContext,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 6. Product-Aware Context — Match products from catalog
+// ═══════════════════════════════════════════════════════════════
+
+/** Patterns that indicate the customer is asking about products */
+const PRODUCT_INQUIRY_PATTERNS = [
+  /كم سعر/i, /كم السعر/i, /عندكم/i, /متوفر/i, /أبغى/i, /أبي/i,
+  /هل يوجد/i, /فيه/i, /أسعار/i, /how much/i, /price/i, /available/i,
+  /منتج/i, /product/i,
+];
+
+/**
+ * Search merchant's product catalog and build context when the
+ * customer is asking about specific products.
+ */
+async function buildProductContext(merchantId: number, question: string): Promise<string> {
+  // Only search products if the question has product-inquiry signals
+  if (!PRODUCT_INQUIRY_PATTERNS.some(p => p.test(question))) return '';
+
+  const { getPool } = await import('../db');
+  const pool = await getPool();
+  if (!pool) return '';
+
+  // Search products by name/description keyword match
+  const keywords = question
+    .replace(/[؟?!.,،]/g, '')
+    .split(/\s+/)
+    .filter(w => w.length > 2)
+    .slice(0, 5); // Max 5 keywords
+
+  if (keywords.length === 0) return '';
+
+  const likeClauses = keywords.map(() => `(p.name LIKE ? OR p.description LIKE ?)`).join(' OR ');
+  const likeParams = keywords.flatMap(k => [`%${k}%`, `%${k}%`]);
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT p.name, p.price, p.description, p.category
+       FROM products p
+       WHERE p.merchant_id = ? AND p.is_active = 1
+       AND (${likeClauses})
+       ORDER BY p.total_views DESC
+       LIMIT 5`,
+      [merchantId, ...likeParams]
+    );
+
+    const products = rows as any[];
+    if (products.length === 0) return '';
+
+    const lines = products.map(p => {
+      const price = p.price ? ` — ${p.price} ر.س` : '';
+      const desc = p.description ? ` (${p.description.substring(0, 80)})` : '';
+      return `• ${p.name}${price}${desc}`;
+    });
+
+    return `\n## 🛍️ منتجات مطابقة من الكتالوج:\n${lines.join('\n')}\n📌 توجيه: اذكر المنتجات أعلاه إذا كانت ذات صلة بسؤال العميل. لا تخترع منتجات غير موجودة.\n`;
+  } catch {
+    return '';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
