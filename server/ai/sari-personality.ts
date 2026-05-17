@@ -820,7 +820,7 @@ ${result.orderUrl}
 
     if (existingSession && !needsTopicRebuild) {
       // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
-      const intent = detectIntent(params.message, customerProfile?.totalConversations);
+      const intent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
       updateSession(params.merchantId, convId, {
         intent,
         sentiment: 'auto', // Lightweight — no GPT call for sentiment on cached path
@@ -1040,7 +1040,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
     // --- Sales Arsenal ---
     let arsenalPrompt = '';
-    const intent = detectIntent(params.message, customerProfile?.totalConversations);
+    const intent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
 
     // ── Mission Block for FULL PATH (outside try block for scope) ──
     const mission = buildMissionBlock({

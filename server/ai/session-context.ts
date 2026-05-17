@@ -261,9 +261,15 @@ export function detectTopicChange(
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Detect customer intent from message text (no API call — pure keywords).
+ * Detect customer intent from message text.
+ * Primary: keyword-based (zero cost, zero latency).
+ * Secondary: profile buyingStage fallback when keywords are ambiguous.
  */
-export function detectIntent(message: string, customerTotalConversations?: number): CustomerIntent {
+export function detectIntent(
+  message: string,
+  customerTotalConversations?: number,
+  profileBuyingStage?: string | null,
+): CustomerIntent {
   const msg = message.toLowerCase();
   
   // Ready to buy — highest priority
@@ -316,6 +322,21 @@ export function detectIntent(message: string, customerTotalConversations?: numbe
     'hello', 'hi', 'hey', 'وش عندكم', 'ابغى اشوف'];
   if (browseSignals.some(s => msg.includes(s))) return 'browsing';
   
+  // ── Profile-Informed Fallback ──
+  // When keywords are ambiguous, use GPT-enriched buyingStage from profile
+  if (profileBuyingStage) {
+    const stageToIntent: Record<string, CustomerIntent> = {
+      'ready': 'ready_to_buy',
+      'purchased': 'post_purchase',
+      'comparing': 'comparing',
+      'returning': 'returning',
+      'exploring': 'browsing',
+    };
+    if (stageToIntent[profileBuyingStage]) {
+      return stageToIntent[profileBuyingStage];
+    }
+  }
+
   return 'unknown';
 }
 
