@@ -474,7 +474,7 @@ export async function executeAction(params: {
           try {
             const paySettings = await db.getMerchantPaymentSettings(merchantId);
             if ((paySettings as any)?.taxEnabled && (paySettings as any)?.taxRate) {
-              taxRate = Number((paySettings as any).taxRate);
+              taxRate = Math.max(0, Math.min(Number((paySettings as any).taxRate), 100)); // PEN-CC-05: clamp [0, 100]
               taxAmount = Math.round(subtotal * taxRate / 100);
               totalAmount = subtotal + taxAmount;
             }
