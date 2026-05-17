@@ -4,6 +4,7 @@
  */
 
 import * as db from '../db';
+import type { CustomerProfile } from '../db/customer-intelligence';
 import { sendTextMessage, sendMessageWithCredentials } from '../whatsapp';
 import { chatWithSari } from '../ai/sari-personality';
 import { processVoiceMessage, hasReachedVoiceLimit, incrementVoiceMessageUsage } from '../ai/voice-handler';
@@ -1130,17 +1131,50 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     // === Action Selector: Decide supplementary actions (fire-and-forget) ===
     try {
       const { selectAction, executeAction } = await import('../ai/action-selector');
+      const { detectIntent } = await import('../ai/session-context');
       const messageText = extractMessageText(payload) || '';
+      
+      // Load profile read-only (profile already created by chatWithSari earlier)
+      let actionProfile: any = null;
+      try {
+        const pool = await db.getPool();
+        if (pool) {
+          const [rows] = await pool.execute(
+            `SELECT customer_tier, total_conversations, purchase_count, preferences 
+             FROM customer_profiles WHERE merchant_id = ? AND customer_phone = ? LIMIT 1`,
+            [instance.merchantId, customerPhone]
+          );
+          const row = (rows as any[])[0];
+          if (row) {
+            actionProfile = {
+              customerTier: row.customer_tier || 'new',
+              totalConversations: row.total_conversations || 0,
+              purchaseCount: row.purchase_count || 0,
+              preferences: row.preferences ? (typeof row.preferences === 'string' ? JSON.parse(row.preferences) : row.preferences) : {},
+            };
+          }
+        }
+      } catch { /* profile is supplementary */ }
+      
+      const realIntent = detectIntent(
+        messageText,
+        actionProfile?.totalConversations,
+        actionProfile?.preferences?.buyingStage,
+      );
       
       selectAction({
         merchantId: instance.merchantId,
         customerMessage: messageText,
         botResponse: response,
-        intent: 'unknown', // Lightweight — intent was already computed inside chatWithSari
-        profile: null,     // Profile already used inside chatWithSari
+        intent: realIntent,
+        profile: actionProfile ? {
+          customerTier: actionProfile.customerTier || 'new',
+          totalConversations: actionProfile.totalConversations || 0,
+          purchaseCount: actionProfile.purchaseCount || 0,
+        } as Partial<CustomerProfile> : null,
       }).then(async (action) => {
         if (action.type !== 'text_only') {
-          console.log(`[ActionSelector] 🎯 Action selected: ${action.type}`);
+          console.log(`[ActionSelector] 🎯 Action selected: ${action.type} (intent: ${realIntent})`);
           await executeAction({
             action,
             merchantId: instance.merchantId,

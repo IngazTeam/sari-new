@@ -134,11 +134,23 @@ function analyzeConversationState(
   const escalationHistory = detectEscalationHistory(messages);
   const buyingStage = (profile?.preferences as any)?.buyingStage || null;
 
+  // Compute time since last activity from profile
+  let timeSinceLastMessage = '';
+  if (profile?.lastSeenAt) {
+    const diffMs = Date.now() - new Date(profile.lastSeenAt).getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours >= 48) {
+      timeSinceLastMessage = `رجع بعد ${Math.floor(diffHours / 24)} يوم`;
+    } else if (diffHours >= 2) {
+      timeSinceLastMessage = `رجع بعد ${diffHours} ساعة`;
+    }
+  }
+
   return {
     pendingQuestions,
     lastTopic,
     conversationMomentum: momentum,
-    timeSinceLastMessage: '', // Calculated from message timestamps if available
+    timeSinceLastMessage,
     unresolved: pendingQuestions.length > 0,
     escalationHistory,
     buyingStage,
@@ -316,6 +328,11 @@ function formatStateSummary(
   };
   if (momentumLabels[state.conversationMomentum]) {
     parts.push(momentumLabels[state.conversationMomentum]);
+  }
+
+  // Time gap — customer returned after a break
+  if (state.timeSinceLastMessage) {
+    parts.push(`⏰ ${state.timeSinceLastMessage} — رحب به بحرارة`);
   }
 
   // Profile highlights — concise

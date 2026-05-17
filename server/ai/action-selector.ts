@@ -72,7 +72,7 @@ export async function selectAction(params: {
   customerMessage: string;
   botResponse: string;
   intent: CustomerIntent;
-  profile: CustomerProfile | null;
+  profile: Partial<CustomerProfile> | null;
   availableProducts?: { name: string; id: number; price?: number }[];
   hasActiveDiscounts?: boolean;
 }): Promise<SariAction> {
