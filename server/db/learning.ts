@@ -356,7 +356,7 @@ export async function getTotalConversations(merchantId: number): Promise<number>
 
   try {
     const [rows] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM conversations WHERE merchant_id = ?`,
+      `SELECT COUNT(*) as cnt FROM conversations WHERE merchantId = ?`,
       [merchantId]
     );
     return (rows as any[])[0]?.cnt || 0;
