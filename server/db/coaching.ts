@@ -325,30 +325,30 @@ export async function getReviewCandidates(
       `SELECT 
         m_in.content AS customer_question,
         m_out.content AS bot_response,
-        m_out.conversation_id
+        m_out.conversationId AS conversation_id
        FROM messages m_out
-       INNER JOIN messages m_in ON m_in.conversation_id = m_out.conversation_id
+       INNER JOIN messages m_in ON m_in.conversationId = m_out.conversationId
          AND m_in.direction = 'incoming'
          AND m_in.id = (
            SELECT MAX(m2.id) FROM messages m2
-           WHERE m2.conversation_id = m_out.conversation_id
+           WHERE m2.conversationId = m_out.conversationId
            AND m2.direction = 'incoming'
            AND m2.id < m_out.id
          )
-       INNER JOIN conversations c ON c.id = m_out.conversation_id
-       WHERE c.merchant_id = ?
+       INNER JOIN conversations c ON c.id = m_out.conversationId
+       WHERE c.merchantId = ?
          AND m_out.direction = 'outgoing'
-         AND m_out.created_at > DATE_SUB(NOW(), INTERVAL 72 HOUR)
+         AND m_out.createdAt > DATE_SUB(NOW(), INTERVAL 72 HOUR)
          AND m_out.content IS NOT NULL
          AND LENGTH(m_out.content) > 20
          AND m_in.content IS NOT NULL
          AND LENGTH(m_in.content) > 5
-         AND m_out.conversation_id NOT IN (
+         AND m_out.conversationId NOT IN (
            SELECT DISTINCT cq.conversation_id
            FROM sari_coaching_questions cq
            WHERE cq.merchant_id = ? AND cq.conversation_id IS NOT NULL
          )
-       ORDER BY m_out.created_at DESC
+       ORDER BY m_out.createdAt DESC
        LIMIT ?`,
       [merchantId, merchantId, safeLimit]
     );
