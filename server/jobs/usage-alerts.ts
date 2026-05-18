@@ -4,7 +4,12 @@
  */
 
 import cron from 'node-cron';
-import * as db from '../db';
+import {
+  getAllMerchants,
+  getPlanById,
+  getSubscriptionById,
+  getUserById,
+} from '../db';
 import { sendUsageWarningEmail } from '../notifications/email-notifications';
 
 /**
@@ -15,7 +20,7 @@ async function checkUsageAndSendAlerts() {
     console.log('[Usage Alerts] Starting usage check...');
 
     // الحصول على جميع التجار النشطين
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     const activeMerchants = merchants.filter(m => m.status === 'active');
 
     console.log(`[Usage Alerts] Found ${activeMerchants.length} active merchants`);
@@ -24,10 +29,10 @@ async function checkUsageAndSendAlerts() {
       try {
         // الحصول على الباقة الحالية
         if (!merchant.subscriptionId) continue;
-        const subscription = await db.getSubscriptionById(merchant.subscriptionId);
+        const subscription = await getSubscriptionById(merchant.subscriptionId);
         if (!subscription || subscription.status !== 'active') continue;
 
-        const plan = await db.getPlanById(subscription.planId);
+        const plan = await getPlanById(subscription.planId);
         if (!plan) continue;
 
         // التحقق من استخدام المحادثات
@@ -43,7 +48,7 @@ async function checkUsageAndSendAlerts() {
             );
 
             if (shouldSend) {
-              const user = await db.getUserById(merchant.userId);
+              const user = await getUserById(merchant.userId);
               if (user?.email) {
                 console.log(`[Usage Alerts] Sending conversations alert to ${merchant.businessName} (${percentage.toFixed(0)}%)`);
                 
@@ -75,7 +80,7 @@ async function checkUsageAndSendAlerts() {
             );
 
             if (shouldSend) {
-              const user = await db.getUserById(merchant.userId);
+              const user = await getUserById(merchant.userId);
               if (user?.email) {
                 console.log(`[Usage Alerts] Sending voice messages alert to ${merchant.businessName} (${percentage.toFixed(0)}%)`);
                 

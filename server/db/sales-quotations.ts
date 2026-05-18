@@ -8,7 +8,7 @@
  *   - quotation_templates
  */
 
-import * as db from '../db';
+import { getPool } from '../db';
 import { ensureKnowledgeTables } from './knowledge';
 
 // ═══════════════════════════════════════════════════════════════
@@ -91,7 +91,7 @@ export async function createQuotation(data: {
   conversationId?: number | null;
 }): Promise<SalesQuotation> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
 
   // SEC-V4-01 FIX: Re-calculate totals server-side — NEVER trust client values
@@ -162,7 +162,7 @@ export async function createQuotation(data: {
 /** Get quotations for a merchant */
 export async function getQuotations(merchantId: number, limit: number = 50): Promise<SalesQuotation[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
@@ -180,7 +180,7 @@ export async function getQuotations(merchantId: number, limit: number = 50): Pro
 /** Get quotation by ID (with ownership check) */
 export async function getQuotationById(id: number, merchantId: number): Promise<SalesQuotation | null> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const [rows] = await pool.execute(
@@ -200,7 +200,7 @@ export async function updateQuotationStatus(
   id: number, merchantId: number, status: SalesQuotation['status'], achievedAmount?: number
 ): Promise<void> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(
@@ -229,7 +229,7 @@ export async function getQuotationStats(merchantId: number): Promise<{
   conversionRate: number;
 }> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return { total: 0, sent: 0, accepted: 0, rejected: 0, totalRevenue: 0, conversionRate: 0 };
 
   const [rows] = await pool.execute(
@@ -264,7 +264,7 @@ export async function getQuotationStats(merchantId: number): Promise<{
 /** Get or create current monthly target */
 export async function getCurrentTarget(merchantId: number): Promise<SalesTarget | null> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const now = new Date();
@@ -281,7 +281,7 @@ export async function getCurrentTarget(merchantId: number): Promise<SalesTarget 
 /** Set monthly sales target */
 export async function setMonthlyTarget(merchantId: number, targetAmount: number): Promise<SalesTarget> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
 
   const now = new Date();
@@ -301,7 +301,7 @@ export async function setMonthlyTarget(merchantId: number, targetAmount: number)
 
 /** Increment quotations_sent for current month */
 async function incrementTargetQuotationsSent(merchantId: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const now = new Date();
@@ -316,7 +316,7 @@ async function incrementTargetQuotationsSent(merchantId: number): Promise<void> 
 
 /** Increment achieved_amount + quotations_won for current month */
 async function incrementTargetAchieved(merchantId: number, amount: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const now = new Date();
@@ -333,7 +333,7 @@ async function incrementTargetAchieved(merchantId: number, amount: number): Prom
 /** Get target history */
 export async function getTargetHistory(merchantId: number, limit: number = 12): Promise<SalesTarget[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 24);
@@ -351,7 +351,7 @@ export async function getTargetHistory(merchantId: number, limit: number = 12): 
 /** Get templates for a merchant */
 export async function getTemplates(merchantId: number): Promise<QuotationTemplate[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -371,7 +371,7 @@ export async function createTemplate(data: {
   isDefault?: boolean;
 }): Promise<number> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
 
   if (data.isDefault) {
@@ -399,7 +399,7 @@ export async function createTemplate(data: {
 
 /** Delete a template */
 export async function deleteTemplate(id: number, merchantId: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(

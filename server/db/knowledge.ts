@@ -7,7 +7,7 @@
  * Pattern: Lazy table creation (same as integrations/byaan.ts)
  */
 
-import * as db from '../db';
+import { getPool } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -95,7 +95,7 @@ let _tablesCreated = false;
 export async function ensureKnowledgeTables(): Promise<void> {
   if (_tablesCreated) return;
   
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   try {
@@ -242,7 +242,7 @@ export async function ensureKnowledgeTables(): Promise<void> {
 /** Get all sections for a merchant (with children nested) */
 export async function getSectionsByMerchantId(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -256,7 +256,7 @@ export async function getSectionsByMerchantId(merchantId: number): Promise<Knowl
 /** Get sections for bot injection (approved + use_in_bot) — NO embedding */
 export async function getBotSections(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -272,7 +272,7 @@ export async function getBotSections(merchantId: number): Promise<KnowledgeSecti
 /** Get sections WITH embedding for RAG semantic search — NOT for tRPC serialization! */
 export async function getBotSectionsWithEmbedding(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -288,7 +288,7 @@ export async function getBotSectionsWithEmbedding(merchantId: number): Promise<K
 /** Get pending review sections (conflicts) */
 export async function getPendingReviewSections(merchantId: number): Promise<KnowledgeSection[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -302,7 +302,7 @@ export async function getPendingReviewSections(merchantId: number): Promise<Know
 /** Get a single section by ID (with ownership check) */
 export async function getSectionById(sectionId: number, merchantId: number): Promise<KnowledgeSection | null> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const [rows] = await pool.execute(
@@ -317,7 +317,7 @@ export async function getSectionById(sectionId: number, merchantId: number): Pro
 /** Create a new section */
 export async function createSection(data: InsertKnowledgeSection): Promise<number> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
 
   const [result] = await pool.execute(
@@ -353,7 +353,7 @@ export async function updateSection(
   data: Partial<InsertKnowledgeSection>
 ): Promise<void> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const updates: string[] = [];
@@ -401,7 +401,7 @@ export async function updateSection(
 /** Delete a section (cascades to children) */
 export async function deleteSection(sectionId: number, merchantId: number): Promise<void> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(
@@ -413,7 +413,7 @@ export async function deleteSection(sectionId: number, merchantId: number): Prom
 /** Delete all sections for a merchant */
 export async function deleteAllSections(merchantId: number): Promise<void> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   // Delete children first (no FK cascade issues)
@@ -435,7 +435,7 @@ export async function deleteAllSections(merchantId: number): Promise<void> {
 /** Delete sections by source type (website, document, etc.) */
 export async function deleteSectionsBySource(merchantId: number, source: SectionSource): Promise<number> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   // Delete children of matching sections first
@@ -470,7 +470,7 @@ export async function logChange(data: {
   source?: string;
 }): Promise<number> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   const [result] = await pool.execute(
@@ -492,7 +492,7 @@ export async function logChange(data: {
 /** Get changelog for a merchant */
 export async function getChangelog(merchantId: number, limit: number = 50): Promise<KnowledgeChangelogEntry[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
@@ -506,7 +506,7 @@ export async function getChangelog(merchantId: number, limit: number = 50): Prom
 /** Get unresolved conflicts */
 export async function getUnresolvedConflicts(merchantId: number): Promise<KnowledgeChangelogEntry[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -521,7 +521,7 @@ export async function getUnresolvedConflicts(merchantId: number): Promise<Knowle
 /** Resolve a conflict */
 export async function resolveConflict(changelogId: number, merchantId: number): Promise<void> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(
@@ -542,7 +542,7 @@ export async function cacheResponse(
   questionEmbedding?: Buffer
 ): Promise<number> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   const [result] = await pool.execute(
@@ -556,7 +556,7 @@ export async function cacheResponse(
 /** Get valid cached responses for a merchant (capped for memory safety) */
 export async function getValidCachedResponses(merchantId: number): Promise<CachedResponse[]> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   // SEC-V4-04 FIX: LIMIT 200 — prevent unbounded memory load for embedding comparison
@@ -569,7 +569,7 @@ export async function getValidCachedResponses(merchantId: number): Promise<Cache
 
 /** Record a cache hit */
 export async function recordCacheHit(cacheId: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(
@@ -581,7 +581,7 @@ export async function recordCacheHit(cacheId: number): Promise<void> {
 /** Invalidate all cache for a merchant */
 export async function invalidateCache(merchantId: number): Promise<void> {
   await ensureKnowledgeTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(
@@ -604,7 +604,7 @@ export async function calculateHealthScore(merchantId: number): Promise<Knowledg
   const sections = await getSectionsByMerchantId(merchantId);
   const types = new Set(sections.map(s => (s as any).section_type || (s as any).sectionType));
 
-  const pool = await db.getPool();
+  const pool = await getPool();
   let hasProducts = false;
   let hasFaqs = false;
   let hasWebsiteAnalysis = false;

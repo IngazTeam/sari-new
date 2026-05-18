@@ -8,7 +8,14 @@
  */
 
 import * as crypto from 'node:crypto';
-import * as db from '../db';
+import {
+  getBookingById,
+  getMerchantById,
+  getOrderById,
+  getServiceById,
+  updateBookingStatus,
+  updateOrderStatus,
+} from '../db';
 import * as dbPayments from '../db_payments';
 import { sendTextMessage } from '../whatsapp';
 
@@ -195,7 +202,7 @@ async function handleOrderPayment(
   customerPhone: string
 ): Promise<void> {
   try {
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       console.warn(`[TapWebhook] Order ${orderId} not found`);
       return;
@@ -203,7 +210,7 @@ async function handleOrderPayment(
 
     if (status === 'CAPTURED') {
       // دفع ناجح
-      await db.updateOrderStatus(orderId, 'paid');
+      await updateOrderStatus(orderId, 'paid');
 
       // إرسال إشعار للعميل
       const successMessage = `✅ *تم استلام الدفع بنجاح!*
@@ -218,7 +225,7 @@ async function handleOrderPayment(
 
       // Send payment success WhatsApp notification
       try {
-        const merchant = await db.getMerchantById(merchantId);
+        const merchant = await getMerchantById(merchantId);
         if (merchant?.instanceId && merchant?.apiToken) {
           await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, successMessage);
           console.log(`[TapWebhook] ✅ Payment success message sent for order ${orderId}`);
@@ -229,7 +236,7 @@ async function handleOrderPayment(
 
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
-      await db.updateOrderStatus(orderId, 'cancelled');
+      await updateOrderStatus(orderId, 'cancelled');
 
       const failureMessage = `❌ *فشلت عملية الدفع*
 
@@ -241,7 +248,7 @@ async function handleOrderPayment(
 
       // Send payment failure WhatsApp notification
       try {
-        const merchant = await db.getMerchantById(merchantId);
+        const merchant = await getMerchantById(merchantId);
         if (merchant?.instanceId && merchant?.apiToken) {
           await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, failureMessage);
           console.log(`[TapWebhook] ⚠️ Payment failure message sent for order ${orderId}`);
@@ -265,18 +272,18 @@ async function handleBookingPayment(
   customerPhone: string
 ): Promise<void> {
   try {
-    const booking = await db.getBookingById(bookingId);
+    const booking = await getBookingById(bookingId);
     if (!booking) {
       console.warn(`[TapWebhook] Booking ${bookingId} not found`);
       return;
     }
 
-    const service = await db.getServiceById(booking.serviceId);
+    const service = await getServiceById(booking.serviceId);
     const serviceName = service?.name || 'الخدمة';
 
     if (status === 'CAPTURED') {
       // دفع ناجح
-      await db.updateBookingStatus(bookingId, 'confirmed');
+      await updateBookingStatus(bookingId, 'confirmed');
 
       const successMessage = `✅ *تم تأكيد حجزك!*
 
@@ -292,7 +299,7 @@ async function handleBookingPayment(
 
       // Send booking confirmation WhatsApp notification
       try {
-        const merchant = await db.getMerchantById(merchantId);
+        const merchant = await getMerchantById(merchantId);
         if (merchant?.instanceId && merchant?.apiToken) {
           await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, successMessage);
           console.log(`[TapWebhook] ✅ Booking confirmation sent for booking ${bookingId}`);
@@ -303,7 +310,7 @@ async function handleBookingPayment(
 
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
-      await db.updateBookingStatus(bookingId, 'cancelled');
+      await updateBookingStatus(bookingId, 'cancelled');
 
       const failureMessage = `❌ *فشلت عملية الدفع*
 
@@ -316,7 +323,7 @@ async function handleBookingPayment(
 
       // Send booking failure WhatsApp notification
       try {
-        const merchant = await db.getMerchantById(merchantId);
+        const merchant = await getMerchantById(merchantId);
         if (merchant?.instanceId && merchant?.apiToken) {
           await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, failureMessage);
           console.log(`[TapWebhook] ⚠️ Booking payment failure sent for booking ${bookingId}`);

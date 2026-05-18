@@ -5,7 +5,17 @@
  * including proration calculations, expiry checks, and auto-renewal.
  */
 
-import * as db from "../db";
+import {
+  createPaymentTransaction,
+  getExpiredSubscriptions,
+  getExpiringSubscriptions,
+  getMerchantById,
+  getMerchantSubscriptionById,
+  getSubscriptionPlanById,
+  getWhatsappConnectionByMerchantId,
+  updateMerchantSubscription,
+  updateMerchantSubscriptionStatus,
+} from '../db';
 import { createCharge } from "./tap";
 
 // ============================================
@@ -40,19 +50,19 @@ export async function calculateProration(
 	newBillingCycle: 'monthly' | 'yearly'
 ): Promise<ProrationResult> {
 	// Get current subscription
-	const subscription = await db.getMerchantSubscriptionById(subscriptionId);
+	const subscription = await getMerchantSubscriptionById(subscriptionId);
 	if (!subscription) {
 		throw new Error('Subscription not found');
 	}
 
 	// Get current plan
-	const currentPlan = await db.getSubscriptionPlanById(subscription.planId!);
+	const currentPlan = await getSubscriptionPlanById(subscription.planId!);
 	if (!currentPlan) {
 		throw new Error('Current plan not found');
 	}
 
 	// Get new plan
-	const newPlan = await db.getSubscriptionPlanById(newPlanId);
+	const newPlan = await getSubscriptionPlanById(newPlanId);
 	if (!newPlan) {
 		throw new Error('New plan not found');
 	}
@@ -109,7 +119,7 @@ export async function checkExpiredSubscriptions(): Promise<number> {
 	try {
 		console.log('[Subscription Manager] Checking expired subscriptions...');
 
-		const expiredSubscriptions = await db.getExpiredSubscriptions();
+		const expiredSubscriptions = await getExpiredSubscriptions();
 
 		if (expiredSubscriptions.length === 0) {
 			console.log('[Subscription Manager] No expired subscriptions found');
@@ -121,12 +131,12 @@ export async function checkExpiredSubscriptions(): Promise<number> {
 		for (const subscription of expiredSubscriptions) {
 			try {
 				// Update subscription status to expired
-				await db.updateMerchantSubscription(subscription.id, {
+				await updateMerchantSubscription(subscription.id, {
 					status: 'expired',
 				});
 
 				// Update merchant subscription status
-				await db.updateMerchantSubscriptionStatus(subscription.merchantId, 'expired');
+				await updateMerchantSubscriptionStatus(subscription.merchantId, 'expired');
 
 				// Send notification to merchant
 				await sendExpiryNotification(subscription.merchantId, 'expired');
@@ -161,7 +171,7 @@ export async function sendExpiryReminders(daysBefore: number): Promise<number> {
 	try {
 		console.log(`[Subscription Manager] Sending ${daysBefore}-day expiry reminders...`);
 
-		const expiringSubscriptions = await db.getExpiringSubscriptions(daysBefore);
+		const expiringSubscriptions = await getExpiringSubscriptions(daysBefore);
 
 		if (expiringSubscriptions.length === 0) {
 			console.log(`[Subscription Manager] No subscriptions expiring in ${daysBefore} days`);
@@ -199,14 +209,14 @@ async function sendExpiryNotification(
 ): Promise<void> {
 	try {
 		// Get merchant details
-		const merchant = await db.getMerchantById(merchantId);
+		const merchant = await getMerchantById(merchantId);
 		if (!merchant || !merchant.phone) {
 			console.warn(`[Subscription Manager] Merchant ${merchantId} has no phone number`);
 			return;
 		}
 
 		// Get WhatsApp connection
-		const whatsappConnection = await db.getWhatsappConnectionByMerchantId(merchantId);
+		const whatsappConnection = await getWhatsappConnectionByMerchantId(merchantId);
 		if (!whatsappConnection) {
 			console.warn(`[Subscription Manager] Merchant ${merchantId} has no WhatsApp connection`);
 			return;
@@ -246,7 +256,7 @@ export async function autoRenewSubscriptions(): Promise<{ success: number; faile
 		console.log('[Subscription Manager] Processing auto-renewals...');
 
 		// Get subscriptions expiring in the next 24 hours with auto-renewal enabled
-		const expiringSubscriptions = await db.getExpiringSubscriptions(1);
+		const expiringSubscriptions = await getExpiringSubscriptions(1);
 		const autoRenewSubscriptions = expiringSubscriptions.filter(s => s.autoRenew);
 
 		if (autoRenewSubscriptions.length === 0) {
@@ -260,13 +270,13 @@ export async function autoRenewSubscriptions(): Promise<{ success: number; faile
 		for (const subscription of autoRenewSubscriptions) {
 			try {
 				// Get plan details
-				const plan = await db.getSubscriptionPlanById(subscription.planId!);
+				const plan = await getSubscriptionPlanById(subscription.planId!);
 				if (!plan) {
 					throw new Error('Plan not found');
 				}
 
 				// Get merchant details
-				const merchant = await db.getMerchantById(subscription.merchantId);
+				const merchant = await getMerchantById(subscription.merchantId);
 				if (!merchant) {
 					throw new Error('Merchant not found');
 				}
@@ -280,7 +290,7 @@ export async function autoRenewSubscriptions(): Promise<{ success: number; faile
 				// Note: In production, you would need to store customer payment method ID
 				// For now, we'll create a transaction record and send a payment link
 
-				const transaction = await db.createPaymentTransaction({
+				const transaction = await createPaymentTransaction({
 					merchantId: subscription.merchantId,
 					subscriptionId: subscription.id,
 					type: 'renewal',
@@ -327,13 +337,13 @@ export async function autoRenewSubscriptions(): Promise<{ success: number; faile
 async function sendAutoRenewalFailureNotification(merchantId: number): Promise<void> {
 	try {
 		// Get merchant details
-		const merchant = await db.getMerchantById(merchantId);
+		const merchant = await getMerchantById(merchantId);
 		if (!merchant || !merchant.phone) {
 			return;
 		}
 
 		// Get WhatsApp connection
-		const whatsappConnection = await db.getWhatsappConnectionByMerchantId(merchantId);
+		const whatsappConnection = await getWhatsappConnectionByMerchantId(merchantId);
 		if (!whatsappConnection) {
 			return;
 		}

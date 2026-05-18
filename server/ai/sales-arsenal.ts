@@ -7,7 +7,13 @@
  * Loaded ONCE per conversation session, not per message.
  */
 
-import * as db from '../db';
+import {
+  getAbandonedCartsByMerchantId,
+  getBookingsByCustomer,
+  getDiscountCodesByMerchantId,
+  getProductsByMerchantId,
+  getServicesByMerchant,
+} from '../db';
 import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
 import type { CustomerIntent, ConversationSession } from './session-context';
 
@@ -97,7 +103,7 @@ export async function loadArsenal(
 
   try {
     // 1. Active discount codes
-    const discounts = await db.getDiscountCodesByMerchantId(merchantId);
+    const discounts = await getDiscountCodesByMerchantId(merchantId);
     arsenal.activeDiscounts = discounts
       .filter((d: any) => d.isActive && (!d.maxUses || d.usedCount < d.maxUses))
       .slice(0, 5)
@@ -111,7 +117,7 @@ export async function loadArsenal(
 
   try {
     // 2. Products (for upsell + best sellers context)
-    const products = await db.getProductsByMerchantId(merchantId);
+    const products = await getProductsByMerchantId(merchantId);
     arsenal.totalProducts = products.length;
     arsenal.bestSellers = products
       .slice(0, 5)
@@ -120,7 +126,7 @@ export async function loadArsenal(
 
   try {
     // 3. Abandoned cart for this customer
-    const carts = await db.getAbandonedCartsByMerchantId(merchantId);
+    const carts = await getAbandonedCartsByMerchantId(merchantId);
     const customerCart = carts.find((c: any) => 
       c.customerPhone === customerPhone && !c.recovered && !c.reminderSent
     );
@@ -161,7 +167,7 @@ export async function loadArsenal(
 
   try {
     // 5. Customer bookings (upcoming)
-    const bookings = await db.getBookingsByCustomer(merchantId, customerPhone);
+    const bookings = await getBookingsByCustomer(merchantId, customerPhone);
     arsenal.upcomingBookings = (bookings as any[])
       .filter((b: any) => b.status === 'confirmed' || b.status === 'pending')
       .slice(0, 3)
@@ -173,7 +179,7 @@ export async function loadArsenal(
 
   try {
     // 6. Available services
-    const services = await db.getServicesByMerchant(merchantId);
+    const services = await getServicesByMerchant(merchantId);
     arsenal.availableServices = (services as any[])
       .filter((s: any) => s.isActive || s.is_active)
       .slice(0, 5)

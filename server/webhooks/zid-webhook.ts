@@ -3,7 +3,15 @@
  * معالج Webhooks من منصة زد
  */
 
-import * as db from '../db';
+import {
+  getMerchantById,
+  getWhatsAppConnection,
+  getZidProductByZidId,
+  saveZidOrder,
+  saveZidProduct,
+  saveZidWebhook,
+  updateZidWebhookStatus,
+} from '../db';
 import * as dbZid from '../db_zid';
 import { verifyZidWebhookSignature } from '../_core/zidApi';
 
@@ -40,7 +48,7 @@ export async function processZidWebhook(
     }
 
     // Save webhook event to database
-    const webhookRecord = await db.saveZidWebhook(merchantId, {
+    const webhookRecord = await saveZidWebhook(merchantId, {
       webhookId: payload.webhook_id,
       eventType: payload.event,
       payload: JSON.stringify(payload),
@@ -80,17 +88,17 @@ export async function processZidWebhook(
 
         default:
           console.log('[Zid Webhook] Unknown event type:', payload.event);
-          await db.updateZidWebhookStatus(webhookRecord!.id, 'processed', 'Unknown event type');
+          await updateZidWebhookStatus(webhookRecord!.id, 'processed', 'Unknown event type');
           return { success: true, message: 'Unknown event type' };
       }
 
       // Mark webhook as processed
-      await db.updateZidWebhookStatus(webhookRecord!.id, 'processed');
+      await updateZidWebhookStatus(webhookRecord!.id, 'processed');
 
       return { success: true, message: 'Webhook processed successfully' };
     } catch (error: any) {
       console.error('[Zid Webhook] Processing error:', error);
-      await db.updateZidWebhookStatus(webhookRecord!.id, 'failed', error.message);
+      await updateZidWebhookStatus(webhookRecord!.id, 'failed', error.message);
       throw error;
     }
   } catch (error: any) {
@@ -110,7 +118,7 @@ async function handleOrderCreated(
   console.log('[Zid Webhook] Handling order.created:', orderData.id);
 
   // Save order to zid_orders table
-  await db.saveZidOrder(merchantId, {
+  await saveZidOrder(merchantId, {
     zidOrderId: String(orderData.id),
     zidOrderNumber: orderData.order_number || orderData.reference_id,
     customerName: orderData.customer?.name || orderData.billing_address?.name,
@@ -145,7 +153,7 @@ async function handleOrderUpdated(
   console.log('[Zid Webhook] Handling order.updated:', orderData.id);
 
   // Update order in database
-  await db.saveZidOrder(merchantId, {
+  await saveZidOrder(merchantId, {
     zidOrderId: String(orderData.id),
     zidOrderNumber: orderData.order_number || orderData.reference_id,
     customerName: orderData.customer?.name || orderData.billing_address?.name,
@@ -180,7 +188,7 @@ async function handleOrderCancelled(
   console.log('[Zid Webhook] Handling order.cancelled:', orderData.id);
 
   // Update order status
-  await db.saveZidOrder(merchantId, {
+  await saveZidOrder(merchantId, {
     zidOrderId: String(orderData.id),
     status: 'cancelled',
     zidData: JSON.stringify(orderData),
@@ -203,7 +211,7 @@ async function handleProductCreated(
   console.log('[Zid Webhook] Handling product.created:', productData.id);
 
   // Save product to zid_products table
-  await db.saveZidProduct(merchantId, {
+  await saveZidProduct(merchantId, {
     zidProductId: String(productData.id),
     zidSku: productData.sku,
     nameAr: productData.name?.ar || productData.name,
@@ -238,7 +246,7 @@ async function handleProductUpdated(
   console.log('[Zid Webhook] Handling product.updated:', productData.id);
 
   // Update product in database
-  await db.saveZidProduct(merchantId, {
+  await saveZidProduct(merchantId, {
     zidProductId: String(productData.id),
     zidSku: productData.sku,
     nameAr: productData.name?.ar || productData.name,
@@ -273,9 +281,9 @@ async function handleProductDeleted(
   console.log('[Zid Webhook] Handling product.deleted:', productData.id);
 
   // Mark product as inactive
-  const product = await db.getZidProductByZidId(merchantId, String(productData.id));
+  const product = await getZidProductByZidId(merchantId, String(productData.id));
   if (product) {
-    await db.saveZidProduct(merchantId, {
+    await saveZidProduct(merchantId, {
       zidProductId: String(productData.id),
       isActive: 0,
       isPublished: 0,
@@ -296,9 +304,9 @@ async function handleInventoryUpdated(
   console.log('[Zid Webhook] Handling inventory.updated:', inventoryData.product_id);
 
   // Update product quantity
-  const product = await db.getZidProductByZidId(merchantId, String(inventoryData.product_id));
+  const product = await getZidProductByZidId(merchantId, String(inventoryData.product_id));
   if (product) {
-    await db.saveZidProduct(merchantId, {
+    await saveZidProduct(merchantId, {
       zidProductId: String(inventoryData.product_id),
       quantity: inventoryData.quantity || 0,
       isInStock: (inventoryData.quantity || 0) > 0 ? 1 : 0,
@@ -345,8 +353,8 @@ function mapZidPaymentStatus(status: string): 'pending' | 'paid' | 'failed' | 'r
 async function sendOrderNotificationToMerchant(merchantId: number, orderData: any) {
   try {
     const { sendWhatsAppMessage } = await import('../whatsapp');
-    const merchant = await db.getMerchantById(merchantId);
-    const whatsappConnection = await db.getWhatsAppConnection(merchantId);
+    const merchant = await getMerchantById(merchantId);
+    const whatsappConnection = await getWhatsAppConnection(merchantId);
 
     if (!merchant || !whatsappConnection) {
       console.log('[Zid Webhook] No WhatsApp connection found for merchant');
@@ -378,7 +386,7 @@ async function sendOrderNotificationToMerchant(merchantId: number, orderData: an
 async function sendOrderUpdateToCustomer(merchantId: number, orderData: any) {
   try {
     const { sendWhatsAppMessage } = await import('../whatsapp');
-    const whatsappConnection = await db.getWhatsAppConnection(merchantId);
+    const whatsappConnection = await getWhatsAppConnection(merchantId);
 
     if (!whatsappConnection) {
       console.log('[Zid Webhook] No WhatsApp connection found');
@@ -414,7 +422,7 @@ async function sendOrderUpdateToCustomer(merchantId: number, orderData: any) {
 async function sendOrderCancellationToCustomer(merchantId: number, orderData: any) {
   try {
     const { sendWhatsAppMessage } = await import('../whatsapp');
-    const whatsappConnection = await db.getWhatsAppConnection(merchantId);
+    const whatsappConnection = await getWhatsAppConnection(merchantId);
 
     if (!whatsappConnection) {
       console.log('[Zid Webhook] No WhatsApp connection found');

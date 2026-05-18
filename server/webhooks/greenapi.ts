@@ -3,7 +3,19 @@
  * Receives incoming WhatsApp messages and processes them with Sari AI
  */
 
-import * as db from '../db';
+import {
+  createConversation,
+  createMessage,
+  getActiveSubscriptionByMerchantId,
+  getBotSettings,
+  getConversationsByMerchantId,
+  getMessagesByConversationId,
+  getPool,
+  getWhatsAppInstanceByInstanceId,
+  getWhatsAppInstancesByMerchantId,
+  shouldBotRespond,
+  updateConversation,
+} from '../db';
 import type { CustomerProfile } from '../db/customer-intelligence';
 import { sendTextMessage, sendMessageWithCredentials } from '../whatsapp';
 import { chatWithSari } from '../ai/sari-personality';
@@ -213,12 +225,12 @@ async function getOrCreateConversation(params: {
   customerName?: string;
 }): Promise<number> {
   // Try to find existing conversation
-  const conversations = await db.getConversationsByMerchantId(params.merchantId);
+  const conversations = await getConversationsByMerchantId(params.merchantId);
   const existing = conversations.find(c => c.customerPhone === params.customerPhone);
   
   if (existing) {
     // Update last message time
-    await db.updateConversation(existing.id, {
+    await updateConversation(existing.id, {
       lastMessageAt: new Date(),
       status: 'active',
     });
@@ -232,7 +244,7 @@ async function getOrCreateConversation(params: {
   }
   
   // Create new conversation
-  const conversation = await db.createConversation({
+  const conversation = await createConversation({
     merchantId: params.merchantId,
     customerPhone: params.customerPhone,
     customerName: params.customerName || null,
@@ -271,7 +283,7 @@ async function processTextMessage(params: {
     }
     
     // Save incoming message
-    await db.createMessage({
+    await createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
       messageType: params.imageUrl ? 'image' : 'text',
@@ -343,7 +355,7 @@ async function processTextMessage(params: {
     }
     
     // Save outgoing message
-    await db.createMessage({
+    await createMessage({
       conversationId: params.conversationId,
       direction: 'outgoing',
       messageType: 'text',
@@ -468,7 +480,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     // ── Handle outgoing messages (Human Takeover detection) ──
     if (payload.typeWebhook === 'outgoingMessageReceived' || payload.typeWebhook === 'outgoingAPIMessageWebhook') {
       const instanceId = payload.instanceData.idInstance.toString();
-      const instance = await db.getWhatsAppInstanceByInstanceId(instanceId);
+      const instance = await getWhatsAppInstanceByInstanceId(instanceId);
       if (!instance) return { success: true, message: 'Instance not found' };
 
       const chatId = (payload as any).chatId || (payload as any).senderData?.chatId;
@@ -477,7 +489,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
       // Check for takeover commands (natural phrases + legacy hashtag fallback)
       const outText = extractMessageText(payload);
-      const botSettings = await db.getBotSettings(instance.merchantId);
+      const botSettings = await getBotSettings(instance.merchantId);
 
       if (outText && botSettings.takeoverCommandsEnabled) {
         const cmd = outText.trim();
@@ -489,10 +501,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const isStartCmd = cmd.includes('يسعدنا خدمتكم') || cmdLower.includes('glad to help') || cmdLower === '#start';
 
         if (isStopCmd) {
-          const convs = await db.getConversationsByMerchantId(instance.merchantId);
+          const convs = await getConversationsByMerchantId(instance.merchantId);
           const conv = convs.find(c => c.customerPhone === customerPhone);
           if (conv) {
-            await db.updateConversation(conv.id, {
+            await updateConversation(conv.id, {
               humanTakeover: 1,
               humanTakeoverAt: new Date(),
               humanExpiresAt: null, // no expiry until resume command
@@ -502,10 +514,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           return { success: true, message: 'Human takeover activated (permanent)' };
         }
         if (isStartCmd) {
-          const convs = await db.getConversationsByMerchantId(instance.merchantId);
+          const convs = await getConversationsByMerchantId(instance.merchantId);
           const conv = convs.find(c => c.customerPhone === customerPhone);
           if (conv) {
-            await db.updateConversation(conv.id, {
+            await updateConversation(conv.id, {
               humanTakeover: 0,
               humanExpiresAt: null,
             } as any);
@@ -513,7 +525,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
             // Context-aware resume: fetch last messages so Sari can understand the conversation
             try {
-              const messages = await db.getMessagesByConversationId(conv.id);
+              const messages = await getMessagesByConversationId(conv.id);
               const recentMsgs = messages.slice(-6); // Last 6 messages for context
               // VULN-1 FIX: Sanitize + truncate each message to prevent prompt injection
               const contextSummary = recentMsgs.map(m => {
@@ -530,7 +542,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
               // VULN-4 FIX: Cap total context to 2000 chars
               const cappedContext = contextSummary.substring(0, 2000);
 
-              await db.updateConversation(conv.id, {
+              await updateConversation(conv.id, {
                 agentHistory: JSON.stringify({
                   resumeContext: cappedContext,
                   resumedAt: new Date().toISOString(),
@@ -695,11 +707,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         }
       }
 
-      const convs = await db.getConversationsByMerchantId(instance.merchantId);
+      const convs = await getConversationsByMerchantId(instance.merchantId);
       const conv = convs.find(c => c.customerPhone === customerPhone);
       if (conv) {
         const timeoutMin = botSettings.takeoverTimeoutMinutes || 15;
-        await db.updateConversation(conv.id, {
+        await updateConversation(conv.id, {
           humanTakeover: 1,
           humanTakeoverAt: new Date(),
           humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
@@ -710,7 +722,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         // When the merchant sends a message, it means the bot's response was inadequate
         if (outText) {
           try {
-            const messages = await db.getMessagesByConversationId(conv.id);
+            const messages = await getMessagesByConversationId(conv.id);
             const lastBotMsg = messages.filter((m: any) => m.direction === 'outgoing').pop();
             if (lastBotMsg) {
               captureMerchantCorrection({
@@ -739,10 +751,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     if (isGroupMessage(payload.senderData.chatId)) {
       // Need instance to get settings
       const gInstanceId = payload.instanceData.idInstance.toString();
-      const gInstance = await db.getWhatsAppInstanceByInstanceId(gInstanceId);
+      const gInstance = await getWhatsAppInstanceByInstanceId(gInstanceId);
       if (!gInstance) return { success: true, message: 'Group: instance not found' };
 
-      const gSettings = await db.getBotSettings(gInstance.merchantId);
+      const gSettings = await getBotSettings(gInstance.merchantId);
       const groupMode = gSettings.groupMode || 'disabled';
 
       switch (groupMode) {
@@ -796,7 +808,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     // Find merchant by instance ID
     const instanceId = payload.instanceData.idInstance.toString();
-    const instance = await db.getWhatsAppInstanceByInstanceId(instanceId);
+    const instance = await getWhatsAppInstanceByInstanceId(instanceId);
     
     if (!instance) {
       console.error('[Webhook] No merchant found for instance:', instanceId);
@@ -836,7 +848,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             const { handleTeachCommand } = await import('../ai/coaching-engine');
             const teachResult = await handleTeachCommand(instance.merchantId, incomingText);
             if (teachResult.handled && teachResult.response) {
-              const instances = await db.getWhatsAppInstancesByMerchantId(instance.merchantId);
+              const instances = await getWhatsAppInstancesByMerchantId(instance.merchantId);
               const inst = instances.find((i: any) => i.status === 'active');
               if (inst) {
                 const { sendMessageWithCredentials } = await import('../whatsapp');
@@ -894,7 +906,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
 
     // SEC-FIX: Verify merchant has active subscription before processing
-    const subscription = await db.getActiveSubscriptionByMerchantId(instance.merchantId);
+    const subscription = await getActiveSubscriptionByMerchantId(instance.merchantId);
     if (!subscription) {
       console.warn(`[Webhook] No active subscription for merchant ${instance.merchantId} — dropping message`);
       logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, status: 'failed', failureReason: 'subscription_expired', source: 'webhook' });
@@ -905,14 +917,14 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
     
     // Check if bot should respond based on settings
-    const { shouldRespond, reason } = await db.shouldBotRespond(instance.merchantId);
+    const { shouldRespond, reason } = await shouldBotRespond(instance.merchantId);
     
     if (!shouldRespond) {
       console.log('[Webhook] Bot should not respond:', reason);
       
       // Send out-of-hours message if configured
       if (reason === 'Outside working hours' || reason === 'Outside working days') {
-        const settings = await db.getBotSettings(instance.merchantId);
+        const settings = await getBotSettings(instance.merchantId);
         if (settings.outOfHoursMessage) {
           await sendResponseWithDelay({
             customerPhone: extractPhoneNumber(payload.senderData.chatId),
@@ -933,7 +945,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
     
     // Get bot settings for response customization
-    const botSettings = await db.getBotSettings(instance.merchantId);
+    const botSettings = await getBotSettings(instance.merchantId);
     
     // Get or create conversation
     const conversationId = await getOrCreateConversation({
@@ -945,7 +957,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     console.log('[Webhook] Conversation ID:', conversationId);
 
     // ── Human Takeover Check ──
-    const allConvs = await db.getConversationsByMerchantId(instance.merchantId);
+    const allConvs = await getConversationsByMerchantId(instance.merchantId);
     const currentConv = allConvs.find(c => c.customerPhone === customerPhone);
     if (currentConv && (currentConv as any).humanTakeover) {
       const expiresAt = (currentConv as any).humanExpiresAt;
@@ -957,7 +969,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
       if (takeoverAge > MAX_TAKEOVER_MS) {
         // Takeover stuck for 24+ hours — auto-expire
-        await db.updateConversation(currentConv.id, {
+        await updateConversation(currentConv.id, {
           humanTakeover: 0,
           humanExpiresAt: null,
         } as any);
@@ -965,7 +977,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       } else if (!expiresAt || new Date(expiresAt) > new Date()) {
         // Human is still active — Sari stays silent, just save incoming message
         console.log(`[Takeover] Sari silent — human active until ${expiresAt || 'manual #start'} (age: ${Math.round(takeoverAge / 60000)}min)`);
-        await db.createMessage({
+        await createMessage({
           conversationId,
           direction: 'incoming',
           messageType: 'text',
@@ -977,7 +989,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         return { success: true, message: 'Human takeover active — Sari silent' };
       } else {
         // Takeover expired — resume Sari
-        await db.updateConversation(currentConv.id, {
+        await updateConversation(currentConv.id, {
           humanTakeover: 0,
           humanExpiresAt: null,
         } as any);
@@ -1137,7 +1149,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       // Load profile read-only (profile already created by chatWithSari earlier)
       let actionProfile: any = null;
       try {
-        const pool = await db.getPool();
+        const pool = await getPool();
         if (pool) {
           const [rows] = await pool.execute(
             `SELECT customer_tier, total_conversations, purchase_count, preferences 
@@ -1207,7 +1219,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     let instance: any = null;
     if (instanceId) {
       try {
-        instance = await db.getWhatsAppInstanceByInstanceId(instanceId);
+        instance = await getWhatsAppInstanceByInstanceId(instanceId);
       } catch (_) { /* ignore lookup errors in error handler */ }
     }
     

@@ -1,7 +1,21 @@
 import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
-import * as db from '../db';
+import {
+  createIntegration,
+  createSyncLog,
+  deleteIntegrationByType,
+  getCustomerCountByMerchant,
+  getIntegrationByType,
+  getOrderCountByMerchant,
+  getProductCountByMerchant,
+  getSyncLogsByMerchant,
+  updateIntegrationLastSync,
+  updateIntegrationSettings,
+  updateProductInventoryFromZid,
+  upsertOrderFromZid,
+  upsertProductFromZid,
+} from '../db';
 
 // Zid API Base URL
 const ZID_API_BASE = 'https://api.zid.sa/v1';
@@ -35,7 +49,7 @@ export const zidRouter = router({
   getConnection: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .query(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'zid');
+      const integration = await getIntegrationByType(input.merchantId, 'zid');
 
       if (!integration) {
         return { connected: false };
@@ -75,7 +89,7 @@ export const zidRouter = router({
           || 'متجر زد';
 
         // Save integration — store both tokens
-        await db.createIntegration({
+        await createIntegration({
           merchantId: input.merchantId,
           type: 'zid',
           storeName,
@@ -104,7 +118,7 @@ export const zidRouter = router({
   disconnect: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .mutation(async ({ input }) => {
-      await db.deleteIntegrationByType(input.merchantId, 'zid');
+      await deleteIntegrationByType(input.merchantId, 'zid');
       return { success: true, message: 'تم فصل متجر زد' };
     }),
 
@@ -112,7 +126,7 @@ export const zidRouter = router({
   syncNow: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .mutation(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'zid');
+      const integration = await getIntegrationByType(input.merchantId, 'zid');
 
       if (!integration || !integration.accessToken) {
         throw new TRPCError({
@@ -130,16 +144,16 @@ export const zidRouter = router({
 
         if (products.data) {
           for (const product of products.data) {
-            await db.upsertProductFromZid(input.merchantId, product);
+            await upsertProductFromZid(input.merchantId, product);
             syncedProducts++;
           }
         }
 
         // Update last sync time
-        await db.updateIntegrationLastSync(integration.id);
+        await updateIntegrationLastSync(integration.id);
 
         // Log sync
-        await db.createSyncLog({
+        await createSyncLog({
           merchantId: input.merchantId,
           type: 'zid_sync',
           status: 'success',
@@ -151,7 +165,7 @@ export const zidRouter = router({
           message: `تمت مزامنة ${syncedProducts} منتج بنجاح`
         };
       } catch (error: any) {
-        await db.createSyncLog({
+        await createSyncLog({
           merchantId: input.merchantId,
           type: 'zid_sync',
           status: 'error',
@@ -175,7 +189,7 @@ export const zidRouter = router({
       syncCustomers: z.boolean(),
     }))
     .mutation(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'zid');
+      const integration = await getIntegrationByType(input.merchantId, 'zid');
 
       if (!integration) {
         throw new TRPCError({
@@ -184,7 +198,7 @@ export const zidRouter = router({
         });
       }
 
-      await db.updateIntegrationSettings(integration.id, {
+      await updateIntegrationSettings(integration.id, {
         autoSync: input.autoSync,
         syncProducts: input.syncProducts,
         syncOrders: input.syncOrders,
@@ -201,22 +215,22 @@ export const zidRouter = router({
       limit: z.number().optional().default(10),
     }))
     .query(async ({ input }) => {
-      return await db.getSyncLogsByMerchant(input.merchantId, 'zid', input.limit);
+      return await getSyncLogsByMerchant(input.merchantId, 'zid', input.limit);
     }),
 
   // Get sync stats
   getSyncStats: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .query(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'zid');
+      const integration = await getIntegrationByType(input.merchantId, 'zid');
 
       if (!integration) {
         return null;
       }
 
-      const products = await db.getProductCountByMerchant(input.merchantId);
-      const orders = await db.getOrderCountByMerchant(input.merchantId);
-      const customers = await db.getCustomerCountByMerchant(input.merchantId);
+      const products = await getProductCountByMerchant(input.merchantId);
+      const orders = await getOrderCountByMerchant(input.merchantId);
+      const customers = await getCustomerCountByMerchant(input.merchantId);
 
       return {
         products,
@@ -258,7 +272,7 @@ export const zidRouter = router({
 export async function handleZidWebhook(merchantId: number, event: string, payload: any) {
   console.log(`[Zid Webhook] Merchant ${merchantId} - Event: ${event}`);
 
-  const integration = await db.getIntegrationByType(merchantId, 'zid');
+  const integration = await getIntegrationByType(merchantId, 'zid');
   if (!integration || !integration.isActive) {
     console.log('[Zid Webhook] Integration not found or inactive');
     return;
@@ -270,8 +284,8 @@ export async function handleZidWebhook(merchantId: number, event: string, payloa
     case 'order.created':
     case 'order.updated':
       if (settings.syncOrders) {
-        await db.upsertOrderFromZid(merchantId, payload);
-        await db.createSyncLog({
+        await upsertOrderFromZid(merchantId, payload);
+        await createSyncLog({
           merchantId,
           type: 'zid_webhook',
           status: 'success',
@@ -283,8 +297,8 @@ export async function handleZidWebhook(merchantId: number, event: string, payloa
     case 'product.created':
     case 'product.updated':
       if (settings.syncProducts) {
-        await db.upsertProductFromZid(merchantId, payload);
-        await db.createSyncLog({
+        await upsertProductFromZid(merchantId, payload);
+        await createSyncLog({
           merchantId,
           type: 'zid_webhook',
           status: 'success',
@@ -295,8 +309,8 @@ export async function handleZidWebhook(merchantId: number, event: string, payloa
 
     case 'inventory.updated':
       if (settings.syncProducts) {
-        await db.updateProductInventoryFromZid(merchantId, payload);
-        await db.createSyncLog({
+        await updateProductInventoryFromZid(merchantId, payload);
+        await createSyncLog({
           merchantId,
           type: 'zid_webhook',
           status: 'success',

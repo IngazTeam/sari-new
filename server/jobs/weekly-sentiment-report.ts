@@ -3,7 +3,7 @@
  * يتم تشغيله كل يوم أحد الساعة 9 صباحاً
  */
 
-import * as db from '../db';
+import { getAllMerchants } from '../db';
 import { generateWeeklySentimentReport } from '../ai/weekly-sentiment';
 import { notifyOwner } from '../_core/notification';
 
@@ -15,7 +15,7 @@ export async function checkAndSendWeeklyReports() {
   
   try {
     // الحصول على جميع التجار النشطين
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     const activeMerchants = merchants.filter(m => m.status === 'active');
     
     console.log(`[Weekly Reports] Found ${activeMerchants.length} active merchants`);

@@ -5,7 +5,7 @@
  * Enables: "أهلاً أبو عبدالله! كيف الجهاز معاك؟"
  */
 
-import * as db from '../db';
+import { getPool } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -45,7 +45,7 @@ export async function getOrCreateProfile(
   customerPhone: string,
   customerName?: string
 ): Promise<CustomerProfile> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return buildDefaultProfile(merchantId, customerPhone, customerName);
 
   const [rows] = await pool.execute(
@@ -88,7 +88,7 @@ export async function updateProfile(
     'sentimentAvg' | 'lastObjection' | 'customerTier'
   >>
 ): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const setClauses: string[] = [];
@@ -121,7 +121,7 @@ export async function recordPurchase(
   productName: string,
   amount: number
 ): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   // Get current history

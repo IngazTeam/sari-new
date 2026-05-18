@@ -5,7 +5,13 @@
 
 import { transcribeAudio } from './openai';
 import { chatWithSari } from './sari-personality';
-import * as db from '../db';
+import {
+  createMessage,
+  getActiveSubscriptionByMerchantId,
+  getMerchantById,
+  getPlanById,
+  updateSubscription,
+} from '../db';
 
 /**
  * Process voice message from customer
@@ -35,7 +41,7 @@ export async function processVoiceMessage(params: {
     console.log('[Voice Handler] Transcription:', transcription);
 
     // Save transcription to database
-    await db.createMessage({
+    await createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
       messageType: 'voice',
@@ -58,7 +64,7 @@ export async function processVoiceMessage(params: {
     console.log('[Voice Handler] AI Response:', response);
 
     // Save AI response to database
-    await db.createMessage({
+    await createMessage({
       conversationId: params.conversationId,
       direction: 'outgoing',
       messageType: 'text',
@@ -103,18 +109,18 @@ async function downloadAudio(url: string): Promise<Buffer> {
 export async function isVoiceProcessingEnabled(merchantId: number): Promise<boolean> {
   try {
     // Get merchant subscription
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant) {
       return false;
     }
 
-    const subscription = await db.getActiveSubscriptionByMerchantId(merchantId);
+    const subscription = await getActiveSubscriptionByMerchantId(merchantId);
     if (!subscription || subscription.status !== 'active') {
       return false;
     }
 
     // Check plan limits
-    const plan = await db.getPlanById(subscription.planId);
+    const plan = await getPlanById(subscription.planId);
     if (!plan) {
       return false;
     }
@@ -138,7 +144,7 @@ export async function isVoiceProcessingEnabled(merchantId: number): Promise<bool
  */
 export async function incrementVoiceMessageUsage(merchantId: number): Promise<void> {
   try {
-    const subscription = await db.getActiveSubscriptionByMerchantId(merchantId);
+    const subscription = await getActiveSubscriptionByMerchantId(merchantId);
     if (!subscription) {
       return;
     }
@@ -147,7 +153,7 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
     const currentUsage = subscription.voiceMessagesUsed || 0;
     
     // Update usage
-    await db.updateSubscription(subscription.id, {
+    await updateSubscription(subscription.id, {
       voiceMessagesUsed: currentUsage + 1,
     });
 
@@ -162,12 +168,12 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
  */
 export async function hasReachedVoiceLimit(merchantId: number): Promise<boolean> {
   try {
-    const subscription = await db.getActiveSubscriptionByMerchantId(merchantId);
+    const subscription = await getActiveSubscriptionByMerchantId(merchantId);
     if (!subscription || subscription.status !== 'active') {
       return true; // No active subscription = limit reached
     }
 
-    const plan = await db.getPlanById(subscription.planId);
+    const plan = await getPlanById(subscription.planId);
     if (!plan) {
       return true;
     }

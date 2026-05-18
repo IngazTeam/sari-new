@@ -4,7 +4,12 @@
  */
 
 import cron from 'node-cron';
-import * as db from '../db';
+import {
+  getAllMerchants,
+  getPlanById,
+  getSubscriptionById,
+  getUserById,
+} from '../db';
 import { sendSubscriptionExpiryEmail } from '../notifications/email-notifications';
 
 /**
@@ -15,7 +20,7 @@ async function checkExpiringSubscriptions() {
     console.log('[Subscription Expiry] Starting expiry check...');
 
     // الحصول على جميع التجار النشطين
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     const activeMerchants = merchants.filter(m => m.status === 'active' && m.subscriptionId);
 
     console.log(`[Subscription Expiry] Found ${activeMerchants.length} active merchants with subscriptions`);
@@ -27,10 +32,10 @@ async function checkExpiringSubscriptions() {
       try {
         if (!merchant.subscriptionId) continue;
 
-        const subscription = await db.getSubscriptionById(merchant.subscriptionId);
+        const subscription = await getSubscriptionById(merchant.subscriptionId);
         if (!subscription || subscription.status !== 'active') continue;
 
-        const plan = await db.getPlanById(subscription.planId);
+        const plan = await getPlanById(subscription.planId);
         if (!plan) continue;
 
         const endDate = new Date(subscription.endDate);
@@ -41,7 +46,7 @@ async function checkExpiringSubscriptions() {
           const shouldSend = await shouldSendExpiryAlert(merchant.id, daysUntilExpiry);
 
           if (shouldSend) {
-            const user = await db.getUserById(merchant.userId);
+            const user = await getUserById(merchant.userId);
             if (user?.email) {
               console.log(`[Subscription Expiry] Sending alert to ${merchant.businessName} (${daysUntilExpiry} days left)`);
 

@@ -2,7 +2,13 @@
  * نظام التقارير الأسبوعية للمشاعر
  */
 
-import * as db from '../db';
+import {
+  createWeeklySentimentReport,
+  getConversationsByMerchantId,
+  getMerchantById,
+  getMessagesByConversationId,
+  getUserById,
+} from '../db';
 import { analyzeSentiment } from './sentiment-analysis';
 import { sendEmail } from '../reports/email-sender';
 
@@ -39,7 +45,7 @@ export async function generateWeeklySentimentReport(
     weekStart.setHours(0, 0, 0, 0);
 
     // الحصول على المحادثات في هذا الأسبوع
-    const conversations = await db.getConversationsByMerchantId(merchantId);
+    const conversations = await getConversationsByMerchantId(merchantId);
     const weekConversations = conversations.filter(c => {
       const createdAt = new Date(c.createdAt);
       return createdAt >= weekStart && createdAt <= weekEnd;
@@ -58,7 +64,7 @@ export async function generateWeeklySentimentReport(
 
     for (const conversation of weekConversations) {
       // الحصول على رسائل المحادثة
-      const messages = await db.getMessagesByConversationId(conversation.id);
+      const messages = await getMessagesByConversationId(conversation.id);
       const customerMessages = messages.filter(m => m.direction === 'incoming');
       
       if (customerMessages.length === 0) continue;
@@ -119,7 +125,7 @@ export async function generateWeeklySentimentReport(
     };
 
     // حفظ التقرير في قاعدة البيانات
-    await db.createWeeklySentimentReport({
+    await createWeeklySentimentReport({
       merchantId,
       weekStartDate: weekStart,
       weekEndDate: weekEnd,
@@ -133,9 +139,9 @@ export async function generateWeeklySentimentReport(
     });
 
     // إرسال التقرير عبر البريد الإلكتروني
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (merchant) {
-      const user = await db.getUserById(merchant.userId);
+      const user = await getUserById(merchant.userId);
       if (user?.email) {
         await sendWeeklyReportEmail(user.email, merchant.businessName, report);
         

@@ -1,7 +1,30 @@
 import { router, protectedProcedure } from "../_core/trpc";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import * as db from "../db";
+import {
+  createDiscoveredPage,
+  createExtractedFaq,
+  createProduct,
+  deleteAllDiscoveredPages,
+  deleteAllExtractedFaqs,
+  deleteAllProductsByMerchantId,
+  deleteDiscoveredPage,
+  deleteExtractedFaq,
+  getActiveFaqsForBot,
+  getAnalysisStats,
+  getDiscoveredPagesByMerchantId,
+  getDiscoveredPagesByType,
+  getExtractedFaqsByCategory,
+  getExtractedFaqsByMerchantId,
+  getMerchantByUserId,
+  getMerchantWebsiteInfo,
+  getProductsByMerchantId,
+  searchFaqsByQuestion,
+  updateDiscoveredPage,
+  updateExtractedFaq,
+  updateMerchant,
+  updateMerchantWebsiteInfo,
+} from '../db';
 import {
   scrapeWebsite,
   detectPlatform,
@@ -23,7 +46,7 @@ import { checkRateLimit } from "../_core/rateLimiter";
  * All DB functions expect merchant.id, so we must look it up first.
  */
 async function getMerchantOrThrow(userId: number) {
-  const merchant = await db.getMerchantByUserId(userId);
+  const merchant = await getMerchantByUserId(userId);
   if (!merchant) {
     throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
   }
@@ -57,7 +80,7 @@ export const analysisRouter = router({
         }
 
         // Update status to analyzing
-        await db.updateMerchantWebsiteInfo({
+        await updateMerchantWebsiteInfo({
           merchantId: merchant.id,
           analysisStatus: "analyzing",
         });
@@ -121,7 +144,7 @@ export const analysisRouter = router({
 
         // ═══ Phase 5: Save scraped content for bot knowledge ═══
         try {
-          await db.updateMerchantWebsiteInfo({
+          await updateMerchantWebsiteInfo({
             merchantId: merchant.id,
             analysisStatus: "pending",
             websiteUrl: input.websiteUrl,
@@ -167,9 +190,9 @@ export const analysisRouter = router({
         };
       } catch (error: any) {
         // Reset status on failure
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (merchant) {
-          await db.updateMerchantWebsiteInfo({
+          await updateMerchantWebsiteInfo({
             merchantId: merchant.id,
             analysisStatus: "failed",
           });
@@ -234,13 +257,13 @@ export const analysisRouter = router({
         // ── Products ──
         if (input.productsAction !== 'skip' && input.products.length > 0) {
           if (input.productsAction === 'replace') {
-            await db.deleteAllProductsByMerchantId(merchantId);
+            await deleteAllProductsByMerchantId(merchantId);
           }
 
           // For merge: get existing product names to skip duplicates
           let existingNames: Set<string> = new Set();
           if (input.productsAction === 'merge') {
-            const existing = await db.getProductsByMerchantId(merchantId);
+            const existing = await getProductsByMerchantId(merchantId);
             existingNames = new Set((existing || []).map((p: any) => p.name?.toLowerCase().trim()));
           }
 
@@ -249,7 +272,7 @@ export const analysisRouter = router({
             if (input.productsAction === 'merge' && existingNames.has(product.name.toLowerCase().trim())) {
               continue;
             }
-            await db.createProduct({
+            await createProduct({
               merchantId,
               name: product.name,
               description: product.description,
@@ -266,13 +289,13 @@ export const analysisRouter = router({
         // ── FAQs ──
         if (input.faqsAction !== 'skip' && input.faqs.length > 0) {
           if (input.faqsAction === 'replace') {
-            await db.deleteAllExtractedFaqs(merchantId);
+            await deleteAllExtractedFaqs(merchantId);
           }
 
           // For merge: get existing questions to skip duplicates
           let existingQuestions: Set<string> = new Set();
           if (input.faqsAction === 'merge') {
-            const existing = await db.getExtractedFaqsByMerchantId(merchantId);
+            const existing = await getExtractedFaqsByMerchantId(merchantId);
             existingQuestions = new Set((existing || []).map((f: any) => f.question?.toLowerCase().trim()));
           }
 
@@ -280,7 +303,7 @@ export const analysisRouter = router({
             if (input.faqsAction === 'merge' && existingQuestions.has(faq.question.toLowerCase().trim())) {
               continue;
             }
-            await db.createExtractedFaq({
+            await createExtractedFaq({
               merchantId,
               question: faq.question,
               answer: faq.answer,
@@ -293,13 +316,13 @@ export const analysisRouter = router({
         // ── Pages ──
         if (input.pagesAction !== 'skip' && input.pages.length > 0) {
           if (input.pagesAction === 'replace') {
-            await db.deleteAllDiscoveredPages(merchantId);
+            await deleteAllDiscoveredPages(merchantId);
           }
 
           // For merge: get existing page URLs to skip duplicates
           let existingUrls: Set<string> = new Set();
           if (input.pagesAction === 'merge') {
-            const existing = await db.getDiscoveredPagesByMerchantId(merchantId);
+            const existing = await getDiscoveredPagesByMerchantId(merchantId);
             existingUrls = new Set((existing || []).map((p: any) => p.url?.toLowerCase().trim()));
           }
 
@@ -307,7 +330,7 @@ export const analysisRouter = router({
             if (input.pagesAction === 'merge' && existingUrls.has(page.url.toLowerCase().trim())) {
               continue;
             }
-            await db.createDiscoveredPage({
+            await createDiscoveredPage({
               merchantId,
               pageType: page.pageType as any,
               title: page.title,
@@ -323,12 +346,12 @@ export const analysisRouter = router({
           if (input.contactInfo.phones.length > 0) updateData.phone = input.contactInfo.phones[0];
           if (input.contactInfo.address) updateData.address = input.contactInfo.address;
           if (Object.keys(updateData).length > 0) {
-            await db.updateMerchant(merchantId, updateData).catch(() => {});
+            await updateMerchant(merchantId, updateData).catch(() => {});
           }
         }
 
         // ── Update merchant website info ──
-        await db.updateMerchantWebsiteInfo({
+        await updateMerchantWebsiteInfo({
           merchantId,
           websiteUrl: input.websiteUrl,
           platformType: input.platform,
@@ -357,9 +380,9 @@ export const analysisRouter = router({
     const merchant = await getMerchantOrThrow(ctx.user.id);
     const merchantId = merchant.id;
 
-    const products = await db.getProductsByMerchantId(merchantId);
-    const pages = await db.getDiscoveredPagesByMerchantId(merchantId);
-    const faqs = await db.getExtractedFaqsByMerchantId(merchantId);
+    const products = await getProductsByMerchantId(merchantId);
+    const pages = await getDiscoveredPagesByMerchantId(merchantId);
+    const faqs = await getExtractedFaqsByMerchantId(merchantId);
 
     return {
       products: (products || []).map((p: any) => ({
@@ -415,7 +438,7 @@ export const analysisRouter = router({
         }
 
         // Update status to analyzing
-        await db.updateMerchantWebsiteInfo({
+        await updateMerchantWebsiteInfo({
           merchantId,
           websiteUrl: input.websiteUrl,
           analysisStatus: "analyzing",
@@ -436,7 +459,7 @@ export const analysisRouter = router({
 
         // Save products to database
         for (const product of products) {
-          await db.createProduct({
+          await createProduct({
             merchantId,
             name: product.name,
             description: product.description,
@@ -450,12 +473,12 @@ export const analysisRouter = router({
         const pages = discoverPages(dom, input.websiteUrl);
 
         // Delete old pages
-        await db.deleteAllDiscoveredPages(merchantId);
+        await deleteAllDiscoveredPages(merchantId);
 
         // Save discovered pages (initially without content — content added during crawl)
         const savedPageIds: Map<string, number> = new Map();
         for (const page of pages) {
-          const pageId = await db.createDiscoveredPage({
+          const pageId = await createDiscoveredPage({
             merchantId,
             pageType: page.pageType,
             title: page.title,
@@ -477,7 +500,7 @@ export const analysisRouter = router({
             // Save page content for bot context (truncated to 2000 chars)
             const pageId = savedPageIds.get(page.url);
             if (pageId && pageText.length > 20) {
-              await db.updateDiscoveredPage(pageId, {
+              await updateDiscoveredPage(pageId, {
                 content: pageText.substring(0, 2000),
               });
             }
@@ -517,7 +540,7 @@ export const analysisRouter = router({
             // Save page content for bot context
             const pageId = savedPageIds.get(page.url);
             if (pageId && pageScrape.text.length > 20) {
-              await db.updateDiscoveredPage(pageId, {
+              await updateDiscoveredPage(pageId, {
                 content: pageScrape.text.substring(0, 2000),
               });
             }
@@ -527,7 +550,7 @@ export const analysisRouter = router({
             if (contactInfoData.phones.length > 0) updateData.phone = contactInfoData.phones[0];
             if (contactInfoData.whatsappNumber) updateData.whatsappNumber = contactInfoData.whatsappNumber;
             if (Object.keys(updateData).length > 0) {
-              await db.updateMerchant(merchantId, updateData).catch(() => {});
+              await updateMerchant(merchantId, updateData).catch(() => {});
             }
           } catch (error) {
             console.error(`Error extracting contact from ${page.url}:`, error);
@@ -535,11 +558,11 @@ export const analysisRouter = router({
         }
 
         // Delete old FAQs
-        await db.deleteAllExtractedFaqs(merchantId);
+        await deleteAllExtractedFaqs(merchantId);
 
         // Save extracted FAQs — auto-enable for bot usage
         for (const faq of allFaqs) {
-          await db.createExtractedFaq({
+          await createExtractedFaq({
             merchantId,
             question: faq.question,
             answer: faq.answer,
@@ -548,7 +571,7 @@ export const analysisRouter = router({
         }
 
         // Update merchant info
-        await db.updateMerchantWebsiteInfo({
+        await updateMerchantWebsiteInfo({
           merchantId,
           platformType: platform,
           analysisStatus: "completed",
@@ -564,9 +587,9 @@ export const analysisRouter = router({
         };
       } catch (error: any) {
         // Update status to failed
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (merchant) {
-          await db.updateMerchantWebsiteInfo({
+          await updateMerchantWebsiteInfo({
             merchantId: merchant.id,
             analysisStatus: "failed",
           });
@@ -583,7 +606,7 @@ export const analysisRouter = router({
    * Get Analysis Status
    */
   getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       return {
         hasWebsite: false,
@@ -591,7 +614,7 @@ export const analysisRouter = router({
       };
     }
 
-    const info = await db.getMerchantWebsiteInfo(merchant.id);
+    const info = await getMerchantWebsiteInfo(merchant.id);
     if (!info) {
       return {
         hasWebsite: false,
@@ -599,7 +622,7 @@ export const analysisRouter = router({
       };
     }
 
-    const stats = await db.getAnalysisStats(merchant.id);
+    const stats = await getAnalysisStats(merchant.id);
 
     return {
       hasWebsite: !!info.websiteUrl,
@@ -616,7 +639,7 @@ export const analysisRouter = router({
    */
   getDiscoveredPages: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantOrThrow(ctx.user.id);
-    return await db.getDiscoveredPagesByMerchantId(merchant.id);
+    return await getDiscoveredPagesByMerchantId(merchant.id);
   }),
 
   /**
@@ -639,7 +662,7 @@ export const analysisRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantOrThrow(ctx.user.id);
-      return await db.getDiscoveredPagesByType(merchant.id, input.pageType);
+      return await getDiscoveredPagesByType(merchant.id, input.pageType);
     }),
 
   /**
@@ -658,7 +681,7 @@ export const analysisRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { pageId, ...data } = input;
-      await db.updateDiscoveredPage(pageId, data);
+      await updateDiscoveredPage(pageId, data);
       return { success: true };
     }),
 
@@ -668,7 +691,7 @@ export const analysisRouter = router({
   deletePage: protectedProcedure
     .input(z.object({ pageId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await db.deleteDiscoveredPage(input.pageId);
+      await deleteDiscoveredPage(input.pageId);
       return { success: true };
     }),
 
@@ -677,7 +700,7 @@ export const analysisRouter = router({
    */
   getExtractedFaqs: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantOrThrow(ctx.user.id);
-    return await db.getExtractedFaqsByMerchantId(merchant.id);
+    return await getExtractedFaqsByMerchantId(merchant.id);
   }),
 
   /**
@@ -687,7 +710,7 @@ export const analysisRouter = router({
     .input(z.object({ category: z.string() }))
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantOrThrow(ctx.user.id);
-      return await db.getExtractedFaqsByCategory(merchant.id, input.category);
+      return await getExtractedFaqsByCategory(merchant.id, input.category);
     }),
 
   /**
@@ -695,7 +718,7 @@ export const analysisRouter = router({
    */
   getActiveFaqsForBot: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantOrThrow(ctx.user.id);
-    return await db.getActiveFaqsForBot(merchant.id);
+    return await getActiveFaqsForBot(merchant.id);
   }),
 
   /**
@@ -715,7 +738,7 @@ export const analysisRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { faqId, ...data } = input;
-      await db.updateExtractedFaq(faqId, data);
+      await updateExtractedFaq(faqId, data);
       return { success: true };
     }),
 
@@ -725,7 +748,7 @@ export const analysisRouter = router({
   deleteFaq: protectedProcedure
     .input(z.object({ faqId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await db.deleteExtractedFaq(input.faqId);
+      await deleteExtractedFaq(input.faqId);
       return { success: true };
     }),
 
@@ -736,7 +759,7 @@ export const analysisRouter = router({
     .input(z.object({ query: z.string() }))
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantOrThrow(ctx.user.id);
-      return await db.searchFaqsByQuestion(merchant.id, input.query);
+      return await searchFaqsByQuestion(merchant.id, input.query);
     }),
 
   /**
@@ -744,6 +767,6 @@ export const analysisRouter = router({
    */
   getStats: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantOrThrow(ctx.user.id);
-    return await db.getAnalysisStats(merchant.id);
+    return await getAnalysisStats(merchant.id);
   }),
 });

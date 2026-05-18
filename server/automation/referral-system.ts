@@ -1,4 +1,15 @@
-import * as db from '../db';
+import {
+  createReferral,
+  createReferralCode,
+  getReferralByPhone,
+  getReferralCodeByCode,
+  getReferralCodeById,
+  getReferralCodeByPhone,
+  getReferralsByReferredPhone,
+  incrementReferralCount,
+  markReferralRewardGiven,
+  updateReferralStatus,
+} from '../db';
 import { sendTextMessage } from '../whatsapp';
 import { createDiscountCode, generateDiscountMessage } from './discount-system';
 import { randomInt } from 'node:crypto';
@@ -29,7 +40,7 @@ export async function createReferralCodeForCustomer(
 ): Promise<{ success: boolean; code?: string; error?: string }> {
   try {
     // التحقق من عدم وجود كود إحالة مسبقاً
-    const existing = await db.getReferralCodeByPhone(merchantId, customerPhone);
+    const existing = await getReferralCodeByPhone(merchantId, customerPhone);
     if (existing) {
       return { success: true, code: existing.code };
     }
@@ -40,7 +51,7 @@ export async function createReferralCodeForCustomer(
 
     // التأكد من أن الكود فريد
     while (attempts < 5) {
-      const existingCode = await db.getReferralCodeByCode(code);
+      const existingCode = await getReferralCodeByCode(code);
       if (!existingCode) break;
 
       code = generateReferralCode(customerPhone);
@@ -52,7 +63,7 @@ export async function createReferralCodeForCustomer(
     }
 
     // إنشاء كود الإحالة
-    const referralCode = await db.createReferralCode({
+    const referralCode = await createReferralCode({
       merchantId,
       code,
       referrerPhone: customerPhone,
@@ -84,7 +95,7 @@ export async function trackReferral(
 ): Promise<{ success: boolean; milestone?: boolean; error?: string }> {
   try {
     // الحصول على كود الإحالة
-    const code = await db.getReferralCodeByCode(referralCode);
+    const code = await getReferralCodeByCode(referralCode);
 
     if (!code) {
       return { success: false, error: 'كود الإحالة غير صحيح' };
@@ -100,13 +111,13 @@ export async function trackReferral(
     }
 
     // التحقق من عدم استخدام نفس الشخص للكود مسبقاً
-    const existingReferral = await db.getReferralByPhone(code.id, referredPhone);
+    const existingReferral = await getReferralByPhone(code.id, referredPhone);
     if (existingReferral) {
       return { success: false, error: 'تم استخدام كود الإحالة مسبقاً' };
     }
 
     // تسجيل الإحالة
-    await db.createReferral({
+    await createReferral({
       referralCodeId: code.id,
       referredPhone,
       referredName,
@@ -131,20 +142,20 @@ export async function completeReferral(
 ): Promise<{ success: boolean; milestone?: boolean; referrer?: any }> {
   try {
     // البحث عن الإحالة
-    const referrals = await db.getReferralsByReferredPhone(referredPhone);
+    const referrals = await getReferralsByReferredPhone(referredPhone);
 
     for (const referral of referrals) {
       if (referral.orderCompleted) continue;
 
       // الحصول على كود الإحالة
-      const code = await db.getReferralCodeById(referral.referralCodeId);
+      const code = await getReferralCodeById(referral.referralCodeId);
       if (!code || code.merchantId !== merchantId) continue;
 
       // تحديث الإحالة
-      await db.updateReferralStatus(referral.id, true);
+      await updateReferralStatus(referral.id, true);
 
       // زيادة عدد الإحالات الناجحة
-      const newCount = await db.incrementReferralCount(code.id);
+      const newCount = await incrementReferralCount(code.id);
 
       console.log(`[Referral System] Completed referral for ${referredPhone}, referrer now has ${newCount} referrals`);
 
@@ -198,7 +209,7 @@ export async function rewardReferrer(
     }
 
     // تحديث حالة المكافأة
-    await db.markReferralRewardGiven(referralCodeId);
+    await markReferralRewardGiven(referralCodeId);
 
     // إرسال رسالة واتساب
     const message = generateReferralRewardMessage(

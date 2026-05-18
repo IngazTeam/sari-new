@@ -1,5 +1,11 @@
 import { ENV } from "../_core/env";
-import * as db from "../db";
+import {
+  createConversation,
+  createMessage,
+  getConversationByMerchantAndPhone,
+  getMessageByExternalId,
+  updateConversation,
+} from '../db';
 import * as schema from "../../drizzle/schema";
 
 interface GreenAPIMessage {
@@ -122,11 +128,11 @@ export async function syncGreenAPIData(
           const phoneNumber = chat.id.replace("@c.us", "").replace("@g.us", "");
 
           // البحث عن محادثة موجودة أو إنشاء جديدة
-          let conversation = await db.getConversationByMerchantAndPhone(parseInt(merchantId), phoneNumber);
+          let conversation = await getConversationByMerchantAndPhone(parseInt(merchantId), phoneNumber);
 
           if (!conversation) {
             // إنشاء محادثة جديدة
-            conversation = await db.createConversation({
+            conversation = await createConversation({
               merchantId: parseInt(merchantId),
               customerPhone: phoneNumber,
               customerName: chat.name || phoneNumber,
@@ -136,7 +142,7 @@ export async function syncGreenAPIData(
             });
           } else {
             // تحديث آخر رسالة
-            await db.updateConversation(conversation.id, {
+            await updateConversation(conversation.id, {
               lastMessageAt: new Date(chat.lastMessageTime || Date.now()),
             });
           }
@@ -155,7 +161,7 @@ export async function syncGreenAPIData(
 
               for (const msg of messages) {
                 // البحث عن رسالة موجودة
-                const existingMsg = await db.getMessageByExternalId(msg.idMessage);
+                const existingMsg = await getMessageByExternalId(msg.idMessage);
 
                 if (!existingMsg) {
                   // تحديد نوع الرسالة
@@ -171,7 +177,7 @@ export async function syncGreenAPIData(
                   const isFromCustomer = !msg.senderName?.includes("Me");
 
                   // إدراج الرسالة
-                  await db.createMessage({
+                  await createMessage({
                     conversationId: conversation.id,
                     content,
                     messageType: messageType as any,

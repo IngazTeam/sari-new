@@ -4,7 +4,12 @@
  * Runs daily to check for expiring WhatsApp instances and notify merchants
  */
 
-import * as db from '../db';
+import {
+  createNotification,
+  getExpiringWhatsAppInstances,
+  getMerchantById,
+  markWhatsAppInstanceExpired,
+} from '../db';
 import { notifyOwner } from '../_core/notification';
 
 /**
@@ -14,16 +19,16 @@ export async function checkInstanceExpiry() {
   console.log('[Instance Expiry Check] Starting...');
 
   try {
-    const { expiring7Days, expiring3Days, expiring1Day, expired } = await db.getExpiringWhatsAppInstances();
+    const { expiring7Days, expiring3Days, expiring1Day, expired } = await getExpiringWhatsAppInstances();
 
     let totalNotified = 0;
     let totalExpired = 0;
 
     // Handle expired instances
     for (const instance of expired) {
-      await db.markWhatsAppInstanceExpired(instance.id);
+      await markWhatsAppInstanceExpired(instance.id);
       
-      const merchant = await db.getMerchantById(instance.merchantId);
+      const merchant = await getMerchantById(instance.merchantId);
       if (merchant) {
         await notifyMerchantAboutExpiry(merchant, instance, 'expired');
         totalExpired++;
@@ -32,7 +37,7 @@ export async function checkInstanceExpiry() {
 
     // Handle instances expiring in 1 day
     for (const instance of expiring1Day) {
-      const merchant = await db.getMerchantById(instance.merchantId);
+      const merchant = await getMerchantById(instance.merchantId);
       if (merchant) {
         await notifyMerchantAboutExpiry(merchant, instance, '1day');
         totalNotified++;
@@ -41,7 +46,7 @@ export async function checkInstanceExpiry() {
 
     // Handle instances expiring in 3 days
     for (const instance of expiring3Days) {
-      const merchant = await db.getMerchantById(instance.merchantId);
+      const merchant = await getMerchantById(instance.merchantId);
       if (merchant) {
         await notifyMerchantAboutExpiry(merchant, instance, '3days');
         totalNotified++;
@@ -50,7 +55,7 @@ export async function checkInstanceExpiry() {
 
     // Handle instances expiring in 7 days
     for (const instance of expiring7Days) {
-      const merchant = await db.getMerchantById(instance.merchantId);
+      const merchant = await getMerchantById(instance.merchantId);
       if (merchant) {
         await notifyMerchantAboutExpiry(merchant, instance, '7days');
         totalNotified++;
@@ -115,7 +120,7 @@ async function notifyMerchantAboutExpiry(
   const { title, message } = urgencyMessages[urgency];
 
   // Create notification in database
-  await db.createNotification({
+  await createNotification({
     userId: merchant.userId,
     type: urgency === 'expired' || urgency === '1day' ? 'error' : 'warning',
     title,

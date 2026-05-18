@@ -6,7 +6,7 @@ import { handleGreenAPIWebhook } from './greenapi';
 import { handleSallaWebhook } from './salla';
 import { handleZidWebhook } from '../integrations/zid';
 import { handleCalendlyWebhook } from '../integrations/calendly';
-import * as db from '../db';
+import { getIntegrationByType } from '../db';
 import { getPaymentGatewayByName } from '../db';
 import { ENV } from '../_core/env';
 
@@ -275,7 +275,7 @@ router.get('/status/:platform/:merchantId', async (req: Request, res: Response) 
     }
 
     // Get integration status
-    const integration = await db.getIntegrationByType(
+    const integration = await getIntegrationByType(
       parsedMerchantId,
       platform as 'zid' | 'calendly' | 'shopify' | 'woocommerce'
     );

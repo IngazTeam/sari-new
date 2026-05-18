@@ -1,5 +1,15 @@
 import axios from 'axios';
-import * as db from '../db';
+import {
+  createOrder,
+  createProduct,
+  createSyncLog,
+  getProductBySallaId,
+  getProductsWithSallaId,
+  updateProduct,
+  updateProductStock,
+  updateSallaConnection,
+  updateSyncLog,
+} from '../db';
 
 const SALLA_API_BASE = 'https://api.salla.dev/admin/v2';
 
@@ -49,7 +59,7 @@ export class SallaIntegration {
     
     try {
       // إنشاء سجل مزامنة
-      const logId = await db.createSyncLog(this.merchantId, 'full_sync', 'in_progress');
+      const logId = await createSyncLog(this.merchantId, 'full_sync', 'in_progress');
       
       let page = 1;
       let totalSynced = 0;
@@ -103,10 +113,10 @@ export class SallaIntegration {
       console.log(`[Salla] Full sync completed: ${totalSynced} products in ${duration}ms`);
       
       // تحديث سجل المزامنة
-      await db.updateSyncLog(logId, 'success', totalSynced);
+      await updateSyncLog(logId, 'success', totalSynced);
       
       // تحديث حالة الاتصال
-      await db.updateSallaConnection(this.merchantId, {
+      await updateSallaConnection(this.merchantId, {
         syncStatus: 'active',
         lastSyncAt: new Date()
       });
@@ -116,7 +126,7 @@ export class SallaIntegration {
     } catch (error: any) {
       console.error('[Salla] Full sync failed:', error.message);
       
-      await db.updateSallaConnection(this.merchantId, {
+      await updateSallaConnection(this.merchantId, {
         syncStatus: 'error',
         syncErrors: JSON.stringify({ message: error.message, timestamp: new Date() })
       });
@@ -132,10 +142,10 @@ export class SallaIntegration {
     console.log(`[Salla] Starting stock sync for merchant ${this.merchantId}`);
     
     try {
-      const logId = await db.createSyncLog(this.merchantId, 'stock_sync', 'in_progress');
+      const logId = await createSyncLog(this.merchantId, 'stock_sync', 'in_progress');
       
       // جلب جميع منتجات التاجر التي لها salla_product_id
-      const localProducts = await db.getProductsWithSallaId(this.merchantId);
+      const localProducts = await getProductsWithSallaId(this.merchantId);
       
       let updated = 0;
 
@@ -155,7 +165,7 @@ export class SallaIntegration {
           const newQuantity = sallaProduct.quantity || 0;
           
           // تحديث الكمية في قاعدة بياناتنا
-          await db.updateProductStock(product.id, newQuantity);
+          await updateProductStock(product.id, newQuantity);
           updated++;
           
           // Rate limiting
@@ -167,7 +177,7 @@ export class SallaIntegration {
         }
       }
 
-      await db.updateSyncLog(logId, 'success', updated);
+      await updateSyncLog(logId, 'success', updated);
       
       console.log(`[Salla] Stock sync completed: ${updated} products updated`);
       return { success: true, updated };
@@ -184,7 +194,7 @@ export class SallaIntegration {
   private async saveProductLocally(sallaProduct: SallaProduct): Promise<void> {
     try {
       // التحقق إذا المنتج موجود
-      const existing = await db.getProductBySallaId(this.merchantId, sallaProduct.id);
+      const existing = await getProductBySallaId(this.merchantId, sallaProduct.id);
 
       // تحويل السعر من string إلى integer (بالهللات)
       const price = Math.round(parseFloat(sallaProduct.price) * 100);
@@ -207,10 +217,10 @@ export class SallaIntegration {
 
       if (existing) {
         // تحديث المنتج الموجود
-        await db.updateProduct(existing.id, productData);
+        await updateProduct(existing.id, productData);
       } else {
         // إضافة منتج جديد
-        await db.createProduct(productData);
+        await createProduct(productData);
       }
     } catch (error) {
       console.error(`[Salla] Failed to save product ${sallaProduct.id}:`, error);
@@ -267,7 +277,7 @@ export class SallaIntegration {
       const sallaOrder = response.data.data;
 
       // حفظ الطلب في قاعدة بياناتنا
-      await db.createOrder({
+      await createOrder({
         merchantId: this.merchantId,
         sallaOrderId: sallaOrder.id,
         orderNumber: sallaOrder.reference_id,
@@ -304,7 +314,7 @@ export class SallaIntegration {
    */
   async syncSingleProduct(sallaProductId: string): Promise<{ success: boolean }> {
     try {
-      const logId = await db.createSyncLog(this.merchantId, 'single_product', 'in_progress');
+      const logId = await createSyncLog(this.merchantId, 'single_product', 'in_progress');
       
       const response = await axios.get(
         `${SALLA_API_BASE}/products/${sallaProductId}`,
@@ -317,7 +327,7 @@ export class SallaIntegration {
       );
 
       await this.saveProductLocally(response.data.data);
-      await db.updateSyncLog(logId, 'success', 1);
+      await updateSyncLog(logId, 'success', 1);
       
       return { success: true };
     } catch (error: any) {

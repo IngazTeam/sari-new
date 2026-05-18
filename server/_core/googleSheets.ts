@@ -5,7 +5,12 @@
 
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
-import * as db from '../db';
+import {
+  createGoogleIntegration,
+  getGoogleIntegration,
+  getGoogleOAuthSettings,
+  updateGoogleIntegration,
+} from '../db';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
@@ -14,7 +19,7 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
  */
 async function createOAuth2Client(): Promise<OAuth2Client> {
   // قراءة Credentials من قاعدة البيانات
-  const settings = await db.getGoogleOAuthSettings();
+  const settings = await getGoogleOAuthSettings();
   
   if (!settings || !settings.clientId || !settings.clientSecret) {
     throw new Error('Google OAuth credentials not configured in admin settings');
@@ -62,17 +67,17 @@ export async function handleOAuthCallback(
     const credentialsJson = JSON.stringify(tokens);
     
     // التحقق من وجود integration سابق
-    const existing = await db.getGoogleIntegration(merchantId, 'sheets');
+    const existing = await getGoogleIntegration(merchantId, 'sheets');
     
     if (existing) {
       // تحديث credentials
-      await db.updateGoogleIntegration(existing.id, {
+      await updateGoogleIntegration(existing.id, {
         credentials: credentialsJson,
         isActive: 1,
       });
     } else {
       // إنشاء integration جديد
-      await db.createGoogleIntegration({
+      await createGoogleIntegration({
         merchantId,
         integrationType: 'sheets',
         credentials: credentialsJson,
@@ -100,7 +105,7 @@ export async function handleOAuthCallback(
  */
 async function getAuthenticatedClient(merchantId: number): Promise<OAuth2Client | null> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
     
     if (!integration || !integration.credentials) {
       return null;
@@ -117,7 +122,7 @@ async function getAuthenticatedClient(merchantId: number): Promise<OAuth2Client 
       oauth2Client.setCredentials(newCredentials);
       
       // حفظ الـ credentials الجديدة
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         credentials: JSON.stringify(newCredentials),
       });
     }
@@ -159,9 +164,9 @@ export async function createSpreadsheet(
     }
 
     // حفظ spreadsheet ID
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
     if (integration) {
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         sheetId: spreadsheetId,
       });
     }
@@ -396,13 +401,13 @@ export async function deleteRows(
  */
 export async function disconnect(merchantId: number): Promise<{ success: boolean; message: string }> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
     
     if (!integration) {
       return { success: false, message: 'لا يوجد اتصال بـ Google Sheets' };
     }
 
-    await db.updateGoogleIntegration(integration.id, {
+    await updateGoogleIntegration(integration.id, {
       isActive: 0,
       credentials: null,
     });
@@ -431,7 +436,7 @@ export async function getConnectionStatus(merchantId: number): Promise<{
   lastSync?: Date;
 }> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
     
     if (!integration || !integration.isActive) {
       return { isConnected: false };

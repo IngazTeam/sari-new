@@ -16,7 +16,26 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
-import * as db from '../db';
+import {
+  createExtractedFaq,
+  createProduct,
+  deactivateInstancesByPhoneNumber,
+  deleteAllExtractedFaqs,
+  deleteAllProductsByMerchantId,
+  deleteKnowledgeDocsByMerchantId,
+  getActiveInstanceByPhoneNumber,
+  getConversationCountByMerchantId,
+  getConversationsByMerchantId,
+  getExtractedFaqsByMerchantId,
+  getKnowledgeDocByMerchantId,
+  getMerchantById,
+  getPool,
+  getProductsByMerchantId,
+  getWhatsAppInstanceById,
+  getWhatsAppInstancesByMerchantId,
+  setWhatsAppInstanceAsPrimary,
+  updateWhatsAppInstance,
+} from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -41,7 +60,7 @@ let _apiKeysTableCreated = false;
 async function ensureApiKeysTable() {
   if (_apiKeysTableCreated) return;
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) return;
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS sari_api_keys (
@@ -68,7 +87,7 @@ async function ensureApiKeysTable() {
 /** Generate a new API key for a merchant */
 export async function generateApiKey(merchantId: number, label: string = 'Default Key'): Promise<{ key: string; prefix: string }> {
   await ensureApiKeysTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) throw new Error('Database connection failed');
 
   // Generate: sari_sk_ + 32 random hex chars
@@ -87,7 +106,7 @@ export async function generateApiKey(merchantId: number, label: string = 'Defaul
 /** Validate an API key and return the merchant */
 async function validateApiKey(key: string): Promise<{ merchant: any; keyId: number } | null> {
   await ensureApiKeysTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const keyHash = crypto.createHash('sha256').update(key).digest('hex');
@@ -107,7 +126,7 @@ async function validateApiKey(key: string): Promise<{ merchant: any; keyId: numb
   if (apiKeyRow.expires_at && new Date(apiKeyRow.expires_at) < new Date()) return null;
 
   // Get merchant
-  const merchant = await db.getMerchantById(apiKeyRow.merchant_id);
+  const merchant = await getMerchantById(apiKeyRow.merchant_id);
   if (!merchant) return null;
 
   // Update last_used_at (fire-and-forget)
@@ -216,7 +235,7 @@ let _platformKeysTableCreated = false;
 async function ensurePlatformKeysTable() {
   if (_platformKeysTableCreated) return;
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) return;
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS sari_platform_keys (
@@ -239,7 +258,7 @@ async function ensurePlatformKeysTable() {
 
 async function loadPlatformKeysFromDb() {
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) return;
     const [rows] = await pool.execute(
       `SELECT platform, key_value FROM sari_platform_keys WHERE is_active = 1`
@@ -256,7 +275,7 @@ setTimeout(() => loadPlatformKeysFromDb(), 3000);
 /** Admin: Set/update a platform key */
 export async function setPlatformKey(platform: string, keyValue: string, label: string = ''): Promise<void> {
   await ensurePlatformKeysTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
 
   try {
@@ -277,7 +296,7 @@ export async function setPlatformKey(platform: string, keyValue: string, label: 
 /** Admin: Get all platform keys */
 export async function getPlatformKeys(): Promise<Array<{ platform: string; keyPrefix: string; label: string; createdAt: string }>> {
   await ensurePlatformKeysTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -294,7 +313,7 @@ export async function getPlatformKeys(): Promise<Array<{ platform: string; keyPr
 /** Admin: Delete a platform key */
 export async function deletePlatformKey(platform: string): Promise<void> {
   await ensurePlatformKeysTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(
@@ -421,15 +440,15 @@ sariApiRouter.get('/brain/sources', async (req: AuthenticatedRequest, res: Respo
     const sources: any[] = [];
 
     // Document
-    const doc = await db.getKnowledgeDocByMerchantId(merchantId);
+    const doc = await getKnowledgeDocByMerchantId(merchantId);
     if (doc) sources.push({ type: 'document', name: doc.fileName, status: doc.extractionStatus, textLength: doc.extractedText?.length || 0 });
 
     // Products
-    const products = await db.getProductsByMerchantId(merchantId);
+    const products = await getProductsByMerchantId(merchantId);
     if (products.length > 0) sources.push({ type: 'products', count: products.length });
 
     // FAQs
-    const faqs = await db.getExtractedFaqsByMerchantId(merchantId);
+    const faqs = await getExtractedFaqsByMerchantId(merchantId);
     if (faqs.length > 0) sources.push({ type: 'faqs', count: faqs.length, activeCount: faqs.filter((f: any) => f.isActive).length });
 
     res.json({ sources });
@@ -462,7 +481,7 @@ sariApiRouter.post('/brain/test', async (req: AuthenticatedRequest, res: Respons
 // ── GET /api/v1/products — List products ────────────────────
 sariApiRouter.get('/products', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const products = await db.getProductsByMerchantId(req.merchant.id);
+    const products = await getProductsByMerchantId(req.merchant.id);
     const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
     const offset = parseInt(req.query.offset as string) || 0;
 
@@ -505,13 +524,13 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
 
     // If mode is 'replace', delete existing products first
     if (mode === 'replace') {
-      await db.deleteAllProductsByMerchantId(merchantId);
+      await deleteAllProductsByMerchantId(merchantId);
     }
 
     let created = 0;
     for (const p of products) {
       if (!p.name) continue;
-      await db.createProduct({
+      await createProduct({
         merchantId,
         name: String(p.name).substring(0, 255),
         description: p.description ? String(p.description).substring(0, 2000) : undefined,
@@ -537,7 +556,7 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
 // ── GET /api/v1/faqs — List FAQs ────────────────────────────
 sariApiRouter.get('/faqs', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const faqs = await db.getExtractedFaqsByMerchantId(req.merchant.id);
+    const faqs = await getExtractedFaqsByMerchantId(req.merchant.id);
     res.json({
       total: faqs.length,
       data: faqs.map((f: any) => ({
@@ -568,13 +587,13 @@ sariApiRouter.post('/sync/faqs', async (req: AuthenticatedRequest, res: Response
     const merchantId = req.merchant.id;
 
     if (mode === 'replace') {
-      await db.deleteAllExtractedFaqs(merchantId);
+      await deleteAllExtractedFaqs(merchantId);
     }
 
     let created = 0;
     for (const f of faqs) {
       if (!f.question || !f.answer) continue;
-      await db.createExtractedFaq({
+      await createExtractedFaq({
         merchantId,
         question: String(f.question).substring(0, 500),
         answer: String(f.answer).substring(0, 2000),
@@ -606,13 +625,13 @@ sariApiRouter.post('/brain/reset', async (req: AuthenticatedRequest, res: Respon
     const typesToReset = types && Array.isArray(types) ? types : ['products', 'faqs', 'document'];
 
     if (typesToReset.includes('document')) {
-      try { await db.deleteKnowledgeDocsByMerchantId(merchantId); deleted.push('document'); } catch (e) { /* skip */ }
+      try { await deleteKnowledgeDocsByMerchantId(merchantId); deleted.push('document'); } catch (e) { /* skip */ }
     }
     if (typesToReset.includes('products')) {
-      try { await db.deleteAllProductsByMerchantId(merchantId); deleted.push('products'); } catch (e) { /* skip */ }
+      try { await deleteAllProductsByMerchantId(merchantId); deleted.push('products'); } catch (e) { /* skip */ }
     }
     if (typesToReset.includes('faqs')) {
-      try { await db.deleteAllExtractedFaqs(merchantId); deleted.push('faqs'); } catch (e) { /* skip */ }
+      try { await deleteAllExtractedFaqs(merchantId); deleted.push('faqs'); } catch (e) { /* skip */ }
     }
 
     const { logBrainActivity } = await import('../routers-sari-brain');
@@ -628,7 +647,7 @@ sariApiRouter.post('/brain/reset', async (req: AuthenticatedRequest, res: Respon
 // ── GET /api/v1/conversations — Conversation summaries ──────
 sariApiRouter.get('/conversations', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const conversations = await db.getConversationsByMerchantId(req.merchant.id);
+    const conversations = await getConversationsByMerchantId(req.merchant.id);
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
 
     res.json({
@@ -654,10 +673,10 @@ sariApiRouter.get('/stats', async (req: AuthenticatedRequest, res: Response) => 
   try {
     const merchantId = req.merchant.id;
 
-    const products = await db.getProductsByMerchantId(merchantId);
-    const conversations = await db.getConversationsByMerchantId(merchantId);
-    const faqs = await db.getExtractedFaqsByMerchantId(merchantId);
-    const doc = await db.getKnowledgeDocByMerchantId(merchantId);
+    const products = await getProductsByMerchantId(merchantId);
+    const conversations = await getConversationsByMerchantId(merchantId);
+    const faqs = await getExtractedFaqsByMerchantId(merchantId);
+    const doc = await getKnowledgeDocByMerchantId(merchantId);
 
     res.json({
       products: products.length,
@@ -709,7 +728,7 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
   }
 
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) throw new Error('DB unavailable');
 
     // Check if email already exists
@@ -802,7 +821,7 @@ sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) =
   }
 
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) throw new Error('DB unavailable');
 
     let merchant = null;
@@ -854,7 +873,7 @@ async function resolveMerchantByDomain(tenantDomain: string | undefined): Promis
   if (!isValidDomain(cleanDomain)) return null;
 
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) return null;
 
     const [rows] = await pool.execute(
@@ -909,14 +928,14 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
     const merchantId = merchant.id;
 
     if (mode === 'replace') {
-      await db.deleteAllProductsByMerchantId(merchantId);
+      await deleteAllProductsByMerchantId(merchantId);
     }
 
     let created = 0;
     for (const p of products) {
       if (!p.name) continue;
       // SEC-3: Sanitize all text fields to prevent stored XSS
-      await db.createProduct({
+      await createProduct({
         merchantId,
         name: stripHtml(String(p.name)).substring(0, 255),
         description: p.description ? stripHtml(String(p.description)).substring(0, 2000) : undefined,
@@ -1031,14 +1050,14 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
     const merchantId = merchant.id;
 
     if (mode === 'replace') {
-      await db.deleteAllExtractedFaqs(merchantId);
+      await deleteAllExtractedFaqs(merchantId);
     }
 
     let created = 0;
     for (const f of faqs) {
       if (!f.question || !f.answer) continue;
       // SEC-5: Sanitize all text fields to prevent stored XSS
-      await db.createExtractedFaq({
+      await createExtractedFaq({
         merchantId,
         question: stripHtml(String(f.question)).substring(0, 500),
         answer: stripHtml(String(f.answer)).substring(0, 2000),
@@ -1083,8 +1102,8 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
     const connection = await getByaanConnection(merchant.id);
 
     // Get product + customer counts
-    const products = await db.getProductsByMerchantId(merchant.id);
-    const pool = await db.getPool();
+    const products = await getProductsByMerchantId(merchant.id);
+    const pool = await getPool();
     let customerCount = 0;
     if (pool) {
       try {
@@ -1255,9 +1274,9 @@ sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Resp
     const merchantId = merchant.id;
 
     const [conversations, products, faqs] = await Promise.all([
-      db.getConversationsByMerchantId(merchantId),
-      db.getProductsByMerchantId(merchantId),
-      db.getExtractedFaqsByMerchantId(merchantId),
+      getConversationsByMerchantId(merchantId),
+      getProductsByMerchantId(merchantId),
+      getExtractedFaqsByMerchantId(merchantId),
     ]);
 
     // Calculate enrollments from sari_conversions
@@ -1309,10 +1328,10 @@ sariPlatformRouter.get('/merchant/conversations', async (req: PlatformRequest, r
     const offset = (page - 1) * limit;
 
     // Get total count for pagination
-    const totalCount = await db.getConversationCountByMerchantId(merchant.id);
+    const totalCount = await getConversationCountByMerchantId(merchant.id);
 
     // Get paginated conversations
-    const conversations = await db.getConversationsByMerchantId(merchant.id, { limit: limit + 1, offset });
+    const conversations = await getConversationsByMerchantId(merchant.id, { limit: limit + 1, offset });
 
     // Check if there's a next page
     const hasNext = conversations.length > limit;
@@ -1357,7 +1376,7 @@ sariPlatformRouter.get('/merchant/instances', async (req: PlatformRequest, res: 
   if (!merchant) return merchantNotFound(res);
 
   try {
-    const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
+    const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
 
     res.json({
       total: instances.length,
@@ -1453,7 +1472,7 @@ sariPlatformRouter.get('/merchant/status', async (req: PlatformRequest, res: Res
     const connection = await getByaanConnection(merchant.id);
 
     // Get WhatsApp instances count
-    const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
+    const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
     const activeInstances = instances.filter((i: any) => i.status === 'active');
 
     res.json({
@@ -1492,7 +1511,7 @@ sariPlatformRouter.put('/merchant/instances/:id', async (req: PlatformRequest, r
     }
 
     // Verify ownership — instance must belong to this merchant
-    const instance = await db.getWhatsAppInstanceById(instanceId);
+    const instance = await getWhatsAppInstanceById(instanceId);
     if (!instance || (instance as any).merchantId !== merchant.id) {
       return res.status(404).json({ error: 'Instance not found', errorAr: 'الرقم غير موجود' });
     }
@@ -1500,7 +1519,7 @@ sariPlatformRouter.put('/merchant/instances/:id', async (req: PlatformRequest, r
     const { isActive, isPrimary } = req.body;
 
     if (isPrimary === true) {
-      await db.setWhatsAppInstanceAsPrimary(instanceId, merchant.id);
+      await setWhatsAppInstanceAsPrimary(instanceId, merchant.id);
     }
 
     if (typeof isActive === 'boolean') {
@@ -1508,17 +1527,17 @@ sariPlatformRouter.put('/merchant/instances/:id', async (req: PlatformRequest, r
 
       // Check phone conflict when activating
       if (newStatus === 'active' && (instance as any).phoneNumber) {
-        const conflicting = await db.getActiveInstanceByPhoneNumber(
+        const conflicting = await getActiveInstanceByPhoneNumber(
           (instance as any).phoneNumber, merchant.id
         );
         if (conflicting) {
-          await db.deactivateInstancesByPhoneNumber(
+          await deactivateInstancesByPhoneNumber(
             (instance as any).phoneNumber, merchant.id
           );
         }
       }
 
-      await db.updateWhatsAppInstance(instanceId, { status: newStatus });
+      await updateWhatsAppInstance(instanceId, { status: newStatus });
     }
 
     res.json({ success: true });
@@ -1719,7 +1738,7 @@ sariApiRouter.get('/integration', async (req: AuthenticatedRequest, res: Respons
 // ── GET /api/v1/instances — WhatsApp instances ──────────────
 sariApiRouter.get('/instances', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const instances = await db.getWhatsAppInstancesByMerchantId(req.merchant.id);
+    const instances = await getWhatsAppInstancesByMerchantId(req.merchant.id);
     res.json({
       total: instances.length,
       data: instances.map((i: any) => ({
@@ -1747,7 +1766,7 @@ sariApiRouter.put('/instances/:id', async (req: AuthenticatedRequest, res: Respo
     }
 
     // Verify ownership
-    const instance = await db.getWhatsAppInstanceById(instanceId);
+    const instance = await getWhatsAppInstanceById(instanceId);
     if (!instance || (instance as any).merchantId !== req.merchant.id) {
       return res.status(404).json({ error: 'Instance not found', errorAr: 'الرقم غير موجود' });
     }
@@ -1755,7 +1774,7 @@ sariApiRouter.put('/instances/:id', async (req: AuthenticatedRequest, res: Respo
     const { isActive, isPrimary } = req.body;
 
     if (isPrimary === true) {
-      await db.setWhatsAppInstanceAsPrimary(instanceId, req.merchant.id);
+      await setWhatsAppInstanceAsPrimary(instanceId, req.merchant.id);
     }
 
     if (typeof isActive === 'boolean') {
@@ -1763,17 +1782,17 @@ sariApiRouter.put('/instances/:id', async (req: AuthenticatedRequest, res: Respo
 
       // VULN-3 FIX: Check phone conflict when activating
       if (newStatus === 'active' && (instance as any).phoneNumber) {
-        const conflicting = await db.getActiveInstanceByPhoneNumber(
+        const conflicting = await getActiveInstanceByPhoneNumber(
           (instance as any).phoneNumber, req.merchant.id
         );
         if (conflicting) {
-          await db.deactivateInstancesByPhoneNumber(
+          await deactivateInstancesByPhoneNumber(
             (instance as any).phoneNumber, req.merchant.id
           );
         }
       }
 
-      await db.updateWhatsAppInstance(instanceId, { status: newStatus });
+      await updateWhatsAppInstance(instanceId, { status: newStatus });
     }
 
     res.json({ success: true });

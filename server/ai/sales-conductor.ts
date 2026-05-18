@@ -15,7 +15,7 @@
  * The Conductor does NOT talk to GPT — it's pure analytics.
  */
 
-import * as db from '../db';
+import { getAllMerchants, getPool } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types — MerchantPlaybook
@@ -104,7 +104,7 @@ function createEmptyPlaybook(merchantId: number): MerchantPlaybook {
  * Called by a background cron job.
  */
 export async function runDailyAnalysis(merchantId: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const playbook = getPlaybook(merchantId);
@@ -171,7 +171,7 @@ export async function runDailyAnalysis(merchantId: number): Promise<void> {
  * Analyzes objection patterns and strategy-intent combinations.
  */
 export async function runWeeklyAnalysis(merchantId: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const playbook = getPlaybook(merchantId);
@@ -258,7 +258,7 @@ export function getWinningPhrases(merchantId: number): WinningPhrase[] {
  */
 export async function runDailyForAllMerchants(): Promise<void> {
   try {
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     for (const merchant of merchants) {
       try {
         await runDailyAnalysis(merchant.id);
@@ -276,7 +276,7 @@ export async function runDailyForAllMerchants(): Promise<void> {
  */
 export async function runWeeklyForAllMerchants(): Promise<void> {
   try {
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     for (const merchant of merchants) {
       try {
         await runWeeklyAnalysis(merchant.id);

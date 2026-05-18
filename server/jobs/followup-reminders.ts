@@ -10,7 +10,7 @@
  * { "followup_at": "2026-05-18T10:00:00Z", "followup_reason": "العميل متردد" }
  */
 
-import * as db from '../db';
+import { getPool, getWhatsAppInstancesByMerchantId } from '../db';
 import { sendMessageWithCredentials } from '../whatsapp';
 
 const FOLLOWUP_MESSAGES = [
@@ -22,7 +22,7 @@ const FOLLOWUP_MESSAGES = [
 /** Process due follow-up reminders */
 async function processFollowUps(): Promise<void> {
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) return;
 
     // Find conversations with follow-ups stored in agent_history (TEXT column with JSON)
@@ -62,7 +62,7 @@ async function processFollowUps(): Promise<void> {
         const customerPhone = conv.customerPhone;
 
         // Get WhatsApp instance for this merchant
-        const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+        const instances = await getWhatsAppInstancesByMerchantId(merchantId);
         const activeInstance = instances.find((i: any) => i.status === 'active');
 
         if (!activeInstance) continue;

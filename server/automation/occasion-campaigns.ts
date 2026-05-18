@@ -5,7 +5,17 @@
  * and sends promotional campaigns with discount codes to customers.
  */
 
-import * as db from '../db';
+import {
+  createDiscountCode,
+  createOccasionCampaign,
+  getAllMerchants,
+  getConversationsByMerchantId,
+  getMerchantById,
+  getOccasionCampaignByTypeAndYear,
+  getWhatsappConnectionByMerchantId,
+  markOccasionCampaignSent,
+  updateOccasionCampaign,
+} from '../db';
 import { sendTextMessage } from '../whatsapp';
 
 // Occasion types
@@ -81,7 +91,7 @@ export async function generateOccasionDiscount(
   const code = `${prefix}${year}${random}`;
 
   // Create discount code in database
-  await db.createDiscountCode({
+  await createDiscountCode({
     merchantId,
     code,
     type: 'percentage',
@@ -159,21 +169,21 @@ export async function sendOccasionCampaign(
   discountPercent: number
 ): Promise<number> {
   // Get merchant info
-  const merchant = await db.getMerchantById(merchantId);
+  const merchant = await getMerchantById(merchantId);
   if (!merchant) {
     console.error(`Merchant ${merchantId} not found`);
     return 0;
   }
 
   // Get WhatsApp connection
-  const connection = await db.getWhatsappConnectionByMerchantId(merchantId);
+  const connection = await getWhatsappConnectionByMerchantId(merchantId);
   if (!connection || connection.status !== 'connected') {
     console.error(`WhatsApp not connected for merchant ${merchantId}`);
     return 0;
   }
 
   // Get all unique customer phones from conversations
-  const conversations = await db.getConversationsByMerchantId(merchantId);
+  const conversations = await getConversationsByMerchantId(merchantId);
   const phoneSet = new Set<string>();
   conversations.forEach(c => phoneSet.add(c.customerPhone));
   const uniquePhones = Array.from(phoneSet);
@@ -231,7 +241,7 @@ export async function checkAndSendOccasionCampaigns(): Promise<void> {
   console.log(`[Occasion Campaigns] Detected: ${occasion.name} (${occasion.type})`);
 
   // Get all active merchants
-  const merchants = await db.getAllMerchants();
+  const merchants = await getAllMerchants();
   const activeMerchants = merchants.filter(m => m.status === 'active');
 
   console.log(`[Occasion Campaigns] Processing ${activeMerchants.length} active merchants`);
@@ -241,7 +251,7 @@ export async function checkAndSendOccasionCampaigns(): Promise<void> {
   for (const merchant of activeMerchants) {
     try {
       // Check if campaign already sent this year
-      const existingCampaign = await db.getOccasionCampaignByTypeAndYear(
+      const existingCampaign = await getOccasionCampaignByTypeAndYear(
         merchant.id,
         occasion.type,
         year
@@ -262,7 +272,7 @@ export async function checkAndSendOccasionCampaigns(): Promise<void> {
       // Create campaign record if doesn't exist
       let campaignId: number;
       if (!existingCampaign) {
-        const newCampaign = await db.createOccasionCampaign({
+        const newCampaign = await createOccasionCampaign({
           merchantId: merchant.id,
           occasionType: occasion.type,
           year,
@@ -289,7 +299,7 @@ export async function checkAndSendOccasionCampaigns(): Promise<void> {
       );
 
       // Update campaign with discount code
-      await db.updateOccasionCampaign(campaignId, {
+      await updateOccasionCampaign(campaignId, {
         discountCode,
       });
 
@@ -304,21 +314,21 @@ export async function checkAndSendOccasionCampaigns(): Promise<void> {
       );
 
       // Mark as sent
-      await db.markOccasionCampaignSent(campaignId, recipientCount);
+      await markOccasionCampaignSent(campaignId, recipientCount);
 
       console.log(`[Occasion Campaigns] Campaign sent to ${recipientCount} customers for merchant ${merchant.id}`);
     } catch (error) {
       console.error(`[Occasion Campaigns] Error processing merchant ${merchant.id}:`, error);
 
       // Mark campaign as failed
-      const existingCampaign = await db.getOccasionCampaignByTypeAndYear(
+      const existingCampaign = await getOccasionCampaignByTypeAndYear(
         merchant.id,
         occasion.type,
         year
       );
 
       if (existingCampaign) {
-        await db.updateOccasionCampaign(existingCampaign.id, {
+        await updateOccasionCampaign(existingCampaign.id, {
           status: 'failed',
         });
       }

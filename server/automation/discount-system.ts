@@ -1,4 +1,10 @@
-import * as db from '../db';
+import {
+  createDiscountCode,
+  getDiscountCodeByCode,
+  getOrderById,
+  getOrdersByMerchantId,
+  incrementDiscountCodeUsage,
+} from '../db';
 import { randomInt } from 'node:crypto';
 
 /**
@@ -34,13 +40,13 @@ export async function createDiscountCode(data: {
     const code = data.code || generateDiscountCode();
 
     // التحقق من عدم وجود الكود مسبقاً
-    const existing = await db.getDiscountCodeByCode(code);
+    const existing = await getDiscountCodeByCode(code);
     if (existing) {
       return { success: false, error: 'الكود موجود مسبقاً' };
     }
 
     // إنشاء الكود
-    const discountCode = await db.createDiscountCode({
+    const discountCode = await createDiscountCode({
       merchantId: data.merchantId,
       code,
       type: data.type,
@@ -75,7 +81,7 @@ export async function validateDiscountCode(
 }> {
   try {
     // الحصول على الكود
-    const discountCode = await db.getDiscountCodeByCode(code);
+    const discountCode = await getDiscountCodeByCode(code);
 
     // التحقق من أن الكود يخص هذا التاجر
     if (discountCode && discountCode.merchantId !== merchantId) {
@@ -142,7 +148,7 @@ export async function applyDiscountCode(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // الحصول على الطلب
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       return { success: false, error: 'الطلب غير موجود' };
     }
@@ -157,7 +163,7 @@ export async function applyDiscountCode(
     // TODO: تحديث الطلب بالخصم (سيتم تطبيقه عند إنشاء الطلب)
 
     // زيادة عدد مرات استخدام الكود
-    await db.incrementDiscountCodeUsage(code);
+    await incrementDiscountCodeUsage(code);
 
     console.log(`[Discount System] Applied discount ${code} to order ${orderId}: ${validation.discount} SAR`);
 
@@ -178,7 +184,7 @@ export async function createPostPurchaseDiscount(
 ): Promise<{ success: boolean; code?: string; error?: string }> {
   try {
     // التحقق من أن هذا أول طلب للعميل
-    const orders = await db.getOrdersByMerchantId(merchantId);
+    const orders = await getOrdersByMerchantId(merchantId);
     const customerOrders = orders.filter(
       o => o.customerPhone === customerPhone && o.status === 'delivered'
     );

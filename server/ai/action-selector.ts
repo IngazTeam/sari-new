@@ -16,7 +16,15 @@
 import { callGPT4, type ChatMessage } from './openai';
 import type { CustomerProfile } from '../db/customer-intelligence';
 import type { CustomerIntent } from './session-context';
-import * as db from '../db';
+import {
+  createOrder,
+  getMerchantById,
+  getMerchantPaymentSettings,
+  getOrdersByCustomerPhone,
+  getProductsByMerchantId,
+  getTopProducts,
+  incrementDiscountCodeUsage,
+} from '../db';
 
 // Rate-limit map: prevent sending discount codes too frequently to the same customer
 const _discountRateLimit = new Map<string, number>();
@@ -275,7 +283,7 @@ export async function executeAction(params: {
     switch (action.type) {
       case 'send_product_link': {
         // Find matching product and send details
-        const products = await db.getTopProducts(merchantId, 50);
+        const products = await getTopProducts(merchantId, 50);
         const match = products.find((p: any) =>
           (p.name || '').includes(action.productName) ||
           action.productName.includes(p.name || '')
@@ -292,7 +300,7 @@ export async function executeAction(params: {
 
       case 'send_catalog': {
         // Send top 5 products from merchant's catalog
-        const products = await db.getTopProducts(merchantId, 5);
+        const products = await getTopProducts(merchantId, 5);
         if (products.length > 0) {
           const lines = products.map((p: any, i: number) => {
             const price = p.price ? ` — ${p.price} ر.س` : '';
@@ -334,7 +342,7 @@ export async function executeAction(params: {
                 `🎁 عندنا عرض خاص لك!\n\nاستخدم كود الخصم: *${d.code}*\nقيمة الخصم: *${valueStr}*\n\nالعرض لفترة محدودة! ⏰`
               );
               // Track discount usage + rate-limit
-              await db.incrementDiscountCodeUsage(d.code);
+              await incrementDiscountCodeUsage(d.code);
               _discountRateLimit.set(discountKey, Date.now());
               console.log(`[ActionSelector] ✅ Sent discount code: ${d.code} (usage tracked, rate-limited 1h)`);
             } else {
@@ -413,7 +421,7 @@ export async function executeAction(params: {
 
         try {
           // 1. Match requested items to real products (with variant support)
-          const allProducts = await db.getProductsByMerchantId(merchantId);
+          const allProducts = await getProductsByMerchantId(merchantId);
           const { getVariantsByProductId } = await import('../db/products');
           const matchedItems: Array<{ productId: number; variantId?: number; name: string; price: number; quantity: number }> = [];
           let subtotal = 0;
@@ -472,7 +480,7 @@ export async function executeAction(params: {
           let totalAmount = subtotal;
           let taxRate = 0;
           try {
-            const paySettings = await db.getMerchantPaymentSettings(merchantId);
+            const paySettings = await getMerchantPaymentSettings(merchantId);
             if ((paySettings as any)?.taxEnabled && (paySettings as any)?.taxRate) {
               taxRate = Math.max(0, Math.min(Number((paySettings as any).taxRate), 100)); // PEN-CC-05: clamp [0, 100]
               taxAmount = Math.round(subtotal * taxRate / 100);
@@ -488,7 +496,7 @@ export async function executeAction(params: {
             if (profile?.displayName) customerName = profile.displayName;
           } catch { /* use phone as fallback */ }
 
-          const order = await db.createOrder({
+          const order = await createOrder({
             merchantId,
             customerPhone,
             customerName,
@@ -510,9 +518,9 @@ export async function executeAction(params: {
           // 3. Try to create Tap payment link
           let paymentUrl: string | null = null;
           try {
-            const paymentSettings = await db.getMerchantPaymentSettings(merchantId);
+            const paymentSettings = await getMerchantPaymentSettings(merchantId);
             if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey) {
-              const merchant = await db.getMerchantById(merchantId);
+              const merchant = await getMerchantById(merchantId);
               const chargeData = {
                 amount: totalAmount / 100, // هللات → ريال
                 currency: paymentSettings.defaultCurrency || 'SAR',
@@ -620,7 +628,7 @@ export async function executeAction(params: {
         // ORDER STATUS LOOKUP — find customer's recent orders
         // ══════════════════════════════════════════════════════════
         try {
-          const recentOrders = await db.getOrdersByCustomerPhone(merchantId, customerPhone, 3);
+          const recentOrders = await getOrdersByCustomerPhone(merchantId, customerPhone, 3);
           if (recentOrders.length === 0) {
             await sendMessage(customerPhone,
               `📦 ما لقيت طلبات مسجلة على رقمك\n\nإذا طلبت من قبل، تواصل معنا وسنساعدك 🙏`

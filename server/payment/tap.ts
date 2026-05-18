@@ -3,7 +3,7 @@
  * https://developers.tap.company
  */
 
-import * as db from '../db';
+import { createPayment, getPaymentByTransactionId, updatePaymentStatus } from '../db';
 import { ENV } from '../_core/env';
 
 interface TapChargeRequest {
@@ -112,7 +112,7 @@ export async function createTapCharge(params: {
     const chargeResponse: TapChargeResponse = await response.json();
 
     // Create payment record in database
-    await db.createPayment({
+    await createPayment({
       merchantId: params.merchantId,
       subscriptionId: params.subscriptionId,
       amount: params.amount,
@@ -167,11 +167,11 @@ export async function verifyTapPayment(chargeId: string): Promise<{ success: boo
     const charge: TapChargeResponse = await response.json();
 
     // Update payment status in database
-    const payment = await db.getPaymentByTransactionId(chargeId);
+    const payment = await getPaymentByTransactionId(chargeId);
     if (payment) {
       const newStatus = charge.status === 'CAPTURED' ? 'completed' : 
                        charge.status === 'FAILED' ? 'failed' : 'pending';
-      await db.updatePaymentStatus(payment.id, newStatus as any, chargeId);
+      await updatePaymentStatus(payment.id, newStatus as any, chargeId);
     }
 
     return {

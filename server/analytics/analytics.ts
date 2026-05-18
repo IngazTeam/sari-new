@@ -4,7 +4,7 @@
  * Provides comprehensive analytics for campaigns, products, customers, and trends
  */
 
-import * as db from '../db';
+import { getDb, getDiscountCodesByMerchantId, getProductById } from '../db';
 import { eq, and, gte, lte, sql, desc } from 'drizzle-orm';
 import { orders, products, campaigns, conversations, messages, discountCodes } from '../../drizzle/schema';
 
@@ -33,7 +33,7 @@ export interface DashboardKPIs {
 }
 
 export async function getDashboardKPIs(merchantId: number, dateRange: DateRange): Promise<DashboardKPIs> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) {
     return {
       totalRevenue: 0,
@@ -136,7 +136,7 @@ export async function getRevenueTrends(
   dateRange: DateRange,
   groupBy: 'day' | 'week' | 'month' = 'day'
 ): Promise<TrendDataPoint[]> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) return [];
 
   const ordersList = await database
@@ -200,7 +200,7 @@ export async function getTopProducts(
   dateRange: DateRange,
   limit: number = 10
 ): Promise<ProductAnalytics[]> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) return [];
 
   const ordersList = await database
@@ -249,7 +249,7 @@ export async function getTopProducts(
   const productAnalytics: ProductAnalytics[] = [];
 
   for (const [productId, stats] of Array.from(productStats.entries())) {
-    const product = await db.getProductById(productId);
+    const product = await getProductById(productId);
     
     productAnalytics.push({
       productId,
@@ -285,7 +285,7 @@ export async function getCampaignAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<CampaignAnalytics[]> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) return [];
 
   const campaignsList = await database
@@ -360,7 +360,7 @@ export async function getCustomerSegments(
   merchantId: number,
   dateRange: DateRange
 ): Promise<CustomerSegment[]> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) return [];
 
   const ordersList = await database
@@ -459,7 +459,7 @@ export async function getHourlyAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<HourlyAnalytics[]> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) return [];
 
   const ordersList = await database
@@ -504,7 +504,7 @@ export async function getWeekdayAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<WeekdayAnalytics[]> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) return [];
 
   const ordersList = await database
@@ -560,10 +560,10 @@ export async function getDiscountCodeAnalytics(
   merchantId: number,
   dateRange: DateRange
 ): Promise<DiscountAnalytics[]> {
-  const database = await db.getDb();
+  const database = await getDb();
   if (!database) return [];
 
-  const codes = await db.getDiscountCodesByMerchantId(merchantId);
+  const codes = await getDiscountCodesByMerchantId(merchantId);
   const analytics: DiscountAnalytics[] = [];
 
   for (const code of codes) {

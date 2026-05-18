@@ -1,5 +1,10 @@
 import cron from 'node-cron';
-import * as db from '../db';
+import {
+  createNotification,
+  getAllSallaConnections,
+  getMerchantById,
+  updateSallaConnection,
+} from '../db';
 import { SallaIntegration } from '../integrations/salla';
 import { notifyOwner } from '../_core/notification';
 
@@ -19,7 +24,7 @@ export function startDailyFullSync() {
     console.log('[Cron] Starting daily full sync for all Salla stores');
     
     try {
-      const connections = await db.getAllSallaConnections();
+      const connections = await getAllSallaConnections();
       
       if (connections.length === 0) {
         console.log('[Cron] No active Salla connections found');
@@ -41,9 +46,9 @@ export function startDailyFullSync() {
           console.log(`[Cron] ✅ Merchant ${connection.merchantId}: ${result.synced} products synced`);
           
           // Notify merchant
-          const merchant = await db.getMerchantById(connection.merchantId);
+          const merchant = await getMerchantById(connection.merchantId);
           if (merchant) {
-            await db.createNotification({
+            await createNotification({
               userId: merchant.userId,
               type: 'success',
               title: 'تم تحديث منتجاتك من Salla',
@@ -58,7 +63,7 @@ export function startDailyFullSync() {
           console.error(`[Cron] ❌ Full sync failed for merchant ${connection.merchantId}:`, error.message);
           
           // Update connection status
-          await db.updateSallaConnection(connection.merchantId, {
+          await updateSallaConnection(connection.merchantId, {
             syncStatus: 'error',
             syncErrors: JSON.stringify({
               message: error.message,
@@ -93,7 +98,7 @@ export function startHourlyStockSync() {
     console.log('[Cron] Starting hourly stock sync for all Salla stores');
     
     try {
-      const connections = await db.getAllSallaConnections();
+      const connections = await getAllSallaConnections();
       
       if (connections.length === 0) {
         return;

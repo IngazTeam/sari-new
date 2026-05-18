@@ -1,5 +1,13 @@
 import { TRPCError } from '@trpc/server';
-import * as db from '../db';
+import {
+  createNotificationRecord,
+  getMerchantById,
+  getMerchantCurrentSubscription,
+  getNotificationByKey,
+  getPrimaryWhatsAppInstance,
+  getSubscriptionPlanById,
+  getUserById,
+} from '../db';
 import { notifyOwner } from '../_core/notification';
 
 /**
@@ -17,14 +25,14 @@ export async function notifyMerchantAboutLimit(
 ): Promise<void> {
   try {
     // Get merchant details
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant) {
       return;
     }
 
     // Check if notification already sent (to avoid spam)
     const notificationKey = `limit_warning_${merchantId}_${max}`;
-    const existingNotification = await db.getNotificationByKey(notificationKey);
+    const existingNotification = await getNotificationByKey(notificationKey);
     
     if (existingNotification) {
       // Already notified for this limit
@@ -32,12 +40,12 @@ export async function notifyMerchantAboutLimit(
     }
 
     // Get subscription plan
-    const subscription = await db.getMerchantCurrentSubscription(merchantId);
+    const subscription = await getMerchantCurrentSubscription(merchantId);
     if (!subscription) {
       return;
     }
 
-    const plan = await db.getSubscriptionPlanById(subscription.planId);
+    const plan = await getSubscriptionPlanById(subscription.planId);
     if (!plan) {
       return;
     }
@@ -62,11 +70,11 @@ export async function notifyMerchantAboutLimit(
     `.trim();
 
     // Send notification via WhatsApp (if primary instance exists)
-    const whatsappInstance = await db.getPrimaryWhatsAppInstance(merchantId);
+    const whatsappInstance = await getPrimaryWhatsAppInstance(merchantId);
     if (whatsappInstance && whatsappInstance.status === 'active') {
       try {
         // Get merchant's phone number from user
-        const user = await db.getUserById(merchant.userId);
+        const user = await getUserById(merchant.userId);
         if (user && user.phone) {
           // Send WhatsApp message using Green API
           const apiUrl = whatsappInstance.apiUrl || 'https://api.green-api.com';
@@ -93,7 +101,7 @@ export async function notifyMerchantAboutLimit(
     });
 
     // Save notification record to prevent duplicate notifications
-    await db.createNotificationRecord({
+    await createNotificationRecord({
       merchantId,
       notificationKey,
       type: 'customer_limit_warning',

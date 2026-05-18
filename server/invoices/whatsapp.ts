@@ -7,7 +7,13 @@
 import { Invoice } from '../../drizzle/schema';
 import { generateInvoicePDF } from './generator';
 import { sendImageMessage, sendTextMessage } from '../whatsapp';
-import * as db from '../db';
+import {
+  createInvoice,
+  getInvoiceById,
+  getMerchantById,
+  getOrderById,
+  updateInvoice,
+} from '../db';
 
 /**
  * Send invoice via WhatsApp
@@ -20,7 +26,7 @@ export async function sendInvoiceViaWhatsApp(
     console.log(`[Invoice WhatsApp] Sending invoice ${invoiceId} to ${customerPhone}...`);
     
     // Get invoice from database
-    const invoice = await db.getInvoiceById(invoiceId);
+    const invoice = await getInvoiceById(invoiceId);
     
     if (!invoice) {
       return {
@@ -46,14 +52,14 @@ export async function sendInvoiceViaWhatsApp(
       pdfUrl = pdfResult.pdfUrl;
       
       // Update invoice with PDF URL
-      await db.updateInvoice(invoiceId, {
+      await updateInvoice(invoiceId, {
         pdfPath: pdfResult.pdfPath,
         pdfUrl: pdfResult.pdfUrl,
       });
     }
     
     // Get merchant info
-    const merchant = await db.getMerchantById(invoice.merchantId);
+    const merchant = await getMerchantById(invoice.merchantId);
     
     if (!merchant) {
       return {
@@ -84,7 +90,7 @@ export async function sendInvoiceViaWhatsApp(
     
     // Update invoice status to 'sent' if it was 'draft'
     if (invoice.status === 'draft') {
-      await db.updateInvoice(invoiceId, {
+      await updateInvoice(invoiceId, {
         status: 'sent',
       });
     }
@@ -150,7 +156,7 @@ export async function sendOrderInvoice(
     console.log(`[Invoice WhatsApp] Sending invoice for order ${orderId}...`);
     
     // Get order
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     
     if (!order) {
       return {
@@ -165,7 +171,7 @@ export async function sendOrderInvoice(
     
     // Create new invoice for the order
     // Note: paymentId is required, using orderId as placeholder
-    const invoice = await db.createInvoice({
+    const invoice = await createInvoice({
       merchantId: order.merchantId,
       paymentId: orderId, // Using orderId as placeholder
       invoiceNumber: `INV-${Date.now()}-${orderId}`,

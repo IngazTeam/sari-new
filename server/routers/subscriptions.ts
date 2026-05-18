@@ -8,7 +8,47 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import * as db from "../db";
+import {
+  cancelMerchantAddon,
+  cancelMerchantSubscription,
+  checkMerchantSubscriptionStatus,
+  createMerchantAddon,
+  createMerchantSubscription,
+  createPaymentTransaction,
+  createSubscriptionAddon,
+  createSubscriptionPlan,
+  createTapSettings,
+  deleteSubscriptionAddon,
+  deleteSubscriptionPlan,
+  extendMerchantSubscription,
+  getActiveSubscriptionAddons,
+  getActiveSubscriptionPlans,
+  getAllPaymentTransactions,
+  getAllSubscriptionPlans,
+  getMerchantActiveAddons,
+  getMerchantAddonById,
+  getMerchantByUserId,
+  getMerchantCurrentSubscription,
+  getMerchantDaysRemaining,
+  getMerchantPaymentTransactions,
+  getMerchantSubscriptionStats,
+  getPaymentStats,
+  getPaymentTransactionById,
+  getPaymentTransactionByTapChargeId,
+  getSubscriptionAddonById,
+  getSubscriptionPlanById,
+  getTapSettings,
+  getUserById,
+  reorderSubscriptionPlans,
+  updateMerchantCurrentSubscriptionId,
+  updateMerchantCustomerLimit,
+  updateMerchantSubscription,
+  updateMerchantSubscriptionStatus,
+  updatePaymentTransaction,
+  updateSubscriptionAddon,
+  updateSubscriptionPlan,
+  updateTapSettings,
+} from '../db';
 import { createCharge, retrieveCharge, refundCharge, testConnection } from "../_core/tap";
 import { calculateProration } from "../_core/subscriptionManager";
 
@@ -19,7 +59,7 @@ import { calculateProration } from "../_core/subscriptionManager";
 export const subscriptionPlansRouter = router({
   // List all plans (public - for display)
   listPlans: publicProcedure.query(async () => {
-    return await db.getActiveSubscriptionPlans();
+    return await getActiveSubscriptionPlans();
   }),
 
   // List all plans (admin - with all details)
@@ -31,7 +71,7 @@ export const subscriptionPlansRouter = router({
       return next({ ctx });
     })
     .query(async () => {
-      return await db.getAllSubscriptionPlans();
+      return await getAllSubscriptionPlans();
     }),
 
   // Create plan
@@ -57,7 +97,7 @@ export const subscriptionPlansRouter = router({
       sortOrder: z.number().default(0),
     }))
     .mutation(async ({ input }) => {
-      const planId = await db.createSubscriptionPlan(input);
+      const planId = await createSubscriptionPlan(input);
       return { success: true, planId };
     }),
 
@@ -86,7 +126,7 @@ export const subscriptionPlansRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await db.updateSubscriptionPlan(id, data);
+      await updateSubscriptionPlan(id, data);
       return { success: true };
     }),
 
@@ -100,7 +140,7 @@ export const subscriptionPlansRouter = router({
     })
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      await db.deleteSubscriptionPlan(input.id);
+      await deleteSubscriptionPlan(input.id);
       return { success: true };
     }),
 
@@ -117,7 +157,7 @@ export const subscriptionPlansRouter = router({
       isActive: z.number(),
     }))
     .mutation(async ({ input }) => {
-      await db.updateSubscriptionPlan(input.id, { isActive: input.isActive });
+      await updateSubscriptionPlan(input.id, { isActive: input.isActive });
       return { success: true };
     }),
 
@@ -133,7 +173,7 @@ export const subscriptionPlansRouter = router({
       planIds: z.array(z.number()),
     }))
     .mutation(async ({ input }) => {
-      await db.reorderSubscriptionPlans(input.planIds);
+      await reorderSubscriptionPlans(input.planIds);
       return { success: true };
     }),
 });
@@ -145,7 +185,7 @@ export const subscriptionPlansRouter = router({
 export const subscriptionAddonsRouter = router({
   // List all addons
   listAddons: publicProcedure.query(async () => {
-    return await db.getActiveSubscriptionAddons();
+    return await getActiveSubscriptionAddons();
   }),
 
   // Create addon
@@ -169,7 +209,7 @@ export const subscriptionAddonsRouter = router({
       isActive: z.number().default(1),
     }))
     .mutation(async ({ input }) => {
-      const addonId = await db.createSubscriptionAddon(input);
+      const addonId = await createSubscriptionAddon(input);
       return { success: true, addonId };
     }),
 
@@ -196,7 +236,7 @@ export const subscriptionAddonsRouter = router({
     }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
-      await db.updateSubscriptionAddon(id, data);
+      await updateSubscriptionAddon(id, data);
       return { success: true };
     }),
 
@@ -210,7 +250,7 @@ export const subscriptionAddonsRouter = router({
     })
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      await db.deleteSubscriptionAddon(input.id);
+      await deleteSubscriptionAddon(input.id);
       return { success: true };
     }),
 
@@ -227,7 +267,7 @@ export const subscriptionAddonsRouter = router({
       isActive: z.number(),
     }))
     .mutation(async ({ input }) => {
-      await db.updateSubscriptionAddon(input.id, { isActive: input.isActive });
+      await updateSubscriptionAddon(input.id, { isActive: input.isActive });
       return { success: true };
     }),
 
@@ -235,7 +275,7 @@ export const subscriptionAddonsRouter = router({
   getAddonById: publicProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
-      return await db.getSubscriptionAddonById(input.id);
+      return await getSubscriptionAddonById(input.id);
     }),
 });
 
@@ -246,21 +286,21 @@ export const subscriptionAddonsRouter = router({
 export const merchantSubscriptionRouter = router({
   // Get current subscription
   getCurrentSubscription: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    const subscription = await db.getMerchantCurrentSubscription(merchant.id);
+    const subscription = await getMerchantCurrentSubscription(merchant.id);
     if (!subscription) {
       return null;
     }
 
     // Get plan details
-    const plan = subscription.planId ? await db.getSubscriptionPlanById(subscription.planId) : null;
+    const plan = subscription.planId ? await getSubscriptionPlanById(subscription.planId) : null;
 
     // Calculate days remaining
-    const daysRemaining = await db.getMerchantDaysRemaining(merchant.id);
+    const daysRemaining = await getMerchantDaysRemaining(merchant.id);
 
     return {
       ...subscription,
@@ -271,13 +311,13 @@ export const merchantSubscriptionRouter = router({
 
   // Start trial
   startTrial: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
     // Check if already has a subscription
-    const existingSubscription = await db.getMerchantCurrentSubscription(merchant.id);
+    const existingSubscription = await getMerchantCurrentSubscription(merchant.id);
     if (existingSubscription) {
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'You already have an active subscription' });
     }
@@ -286,7 +326,7 @@ export const merchantSubscriptionRouter = router({
     const now = new Date();
     const trialEndDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    const subscriptionId = await db.createMerchantSubscription({
+    const subscriptionId = await createMerchantSubscription({
       merchantId: merchant.id,
       status: 'trial',
       billingCycle: 'monthly',
@@ -297,10 +337,10 @@ export const merchantSubscriptionRouter = router({
     });
 
     // Update merchant status
-    await db.updateMerchantSubscriptionStatus(merchant.id, 'trial');
-    await db.updateMerchantCustomerLimit(merchant.id, 100); // Trial limit
+    await updateMerchantSubscriptionStatus(merchant.id, 'trial');
+    await updateMerchantCustomerLimit(merchant.id, 100); // Trial limit
     // PEN-13 FIX: Keep currentSubscriptionId in sync
-    await db.updateMerchantCurrentSubscriptionId(merchant.id, subscriptionId);
+    await updateMerchantCurrentSubscriptionId(merchant.id, subscriptionId);
 
     return { success: true, subscriptionId, trialEndsAt: trialEndDate };
   }),
@@ -312,13 +352,13 @@ export const merchantSubscriptionRouter = router({
       billingCycle: z.enum(['monthly', 'yearly']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
       // Get plan details
-      const plan = await db.getSubscriptionPlanById(input.planId);
+      const plan = await getSubscriptionPlanById(input.planId);
       if (!plan) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
       }
@@ -329,7 +369,7 @@ export const merchantSubscriptionRouter = router({
         : parseFloat(plan.yearlyPrice);
 
       // Create payment transaction
-      const transactionId = await db.createPaymentTransaction({
+      const transactionId = await createPaymentTransaction({
         merchantId: merchant.id,
         subscriptionId: null,
         type: 'subscription',
@@ -373,7 +413,7 @@ export const merchantSubscriptionRouter = router({
         });
 
         // Update transaction with Tap charge ID
-        await db.updatePaymentTransaction(transactionId, {
+        await updatePaymentTransaction(transactionId, {
           tapChargeId: charge.id,
           tapResponse: JSON.stringify(charge),
         });
@@ -386,7 +426,7 @@ export const merchantSubscriptionRouter = router({
         };
       } catch (error) {
         // Update transaction status to failed
-        await db.updatePaymentTransaction(transactionId, {
+        await updatePaymentTransaction(transactionId, {
           status: 'failed',
         });
 
@@ -404,13 +444,13 @@ export const merchantSubscriptionRouter = router({
       newBillingCycle: z.enum(['monthly', 'yearly']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
       // Get current subscription
-      const currentSubscription = await db.getMerchantCurrentSubscription(merchant.id);
+      const currentSubscription = await getMerchantCurrentSubscription(merchant.id);
       if (!currentSubscription) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active subscription found' });
       }
@@ -423,7 +463,7 @@ export const merchantSubscriptionRouter = router({
       );
 
       // Create payment transaction for upgrade
-      const transactionId = await db.createPaymentTransaction({
+      const transactionId = await createPaymentTransaction({
         merchantId: merchant.id,
         subscriptionId: currentSubscription.id,
         type: 'upgrade',
@@ -446,7 +486,7 @@ export const merchantSubscriptionRouter = router({
           now.getTime() + (input.newBillingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
         );
 
-        await db.updateMerchantSubscription(currentSubscription.id, {
+        await updateMerchantSubscription(currentSubscription.id, {
           planId: input.newPlanId,
           billingCycle: input.newBillingCycle,
           startDate: now.toISOString(),
@@ -454,13 +494,13 @@ export const merchantSubscriptionRouter = router({
         });
 
         // Update merchant customer limit
-        const newPlan = await db.getSubscriptionPlanById(input.newPlanId);
+        const newPlan = await getSubscriptionPlanById(input.newPlanId);
         if (newPlan) {
-          await db.updateMerchantCustomerLimit(merchant.id, newPlan.maxCustomers);
+          await updateMerchantCustomerLimit(merchant.id, newPlan.maxCustomers);
         }
 
         // Mark transaction as completed
-        await db.updatePaymentTransaction(transactionId, {
+        await updatePaymentTransaction(transactionId, {
           status: 'completed',
           paidAt: now.toISOString(),
         });
@@ -469,7 +509,7 @@ export const merchantSubscriptionRouter = router({
       }
 
       // Create Tap charge for the difference
-      const newPlan = await db.getSubscriptionPlanById(input.newPlanId);
+      const newPlan = await getSubscriptionPlanById(input.newPlanId);
       if (!newPlan) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
       }
@@ -501,7 +541,7 @@ export const merchantSubscriptionRouter = router({
         });
 
         // Update transaction with Tap charge ID
-        await db.updatePaymentTransaction(transactionId, {
+        await updatePaymentTransaction(transactionId, {
           tapChargeId: charge.id,
           tapResponse: JSON.stringify(charge),
         });
@@ -514,7 +554,7 @@ export const merchantSubscriptionRouter = router({
           proratedAmount: proration.chargeAmount,
         };
       } catch (error) {
-        await db.updatePaymentTransaction(transactionId, { status: 'failed' });
+        await updatePaymentTransaction(transactionId, { status: 'failed' });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to create payment charge',
@@ -528,41 +568,41 @@ export const merchantSubscriptionRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
-      const subscription = await db.getMerchantCurrentSubscription(merchant.id);
+      const subscription = await getMerchantCurrentSubscription(merchant.id);
       if (!subscription) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active subscription found' });
       }
 
-      await db.cancelMerchantSubscription(subscription.id, input.reason);
+      await cancelMerchantSubscription(subscription.id, input.reason);
 
       return { success: true };
     }),
 
   // Get days remaining
   getDaysRemaining: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    const daysRemaining = await db.getMerchantDaysRemaining(merchant.id);
+    const daysRemaining = await getMerchantDaysRemaining(merchant.id);
     return { daysRemaining };
   }),
 
   // Check subscription status (including trial)
   checkStatus: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
     // Check if user has active trial
-    const user = await db.getUserById(ctx.user.id);
+    const user = await getUserById(ctx.user.id);
     if (user && user.isTrialActive === 1 && user.trialEndDate) {
       const now = new Date();
       const trialEnd = new Date(user.trialEndDate);
@@ -576,7 +616,7 @@ export const merchantSubscriptionRouter = router({
     }
 
     // Check regular subscription
-    const isActive = await db.checkMerchantSubscriptionStatus(merchant.id);
+    const isActive = await checkMerchantSubscriptionStatus(merchant.id);
     return {
       isActive,
       reason: isActive ? 'اشتراك نشط' : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
@@ -592,17 +632,17 @@ export const merchantSubscriptionRouter = router({
 export const merchantAddonsRouter = router({
   // List my addons
   listMyAddons: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    const addons = await db.getMerchantActiveAddons(merchant.id);
+    const addons = await getMerchantActiveAddons(merchant.id);
 
     // Get addon details for each
     const addonsWithDetails = await Promise.all(
       addons.map(async (addon) => {
-        const addonDetails = await db.getSubscriptionAddonById(addon.addonId);
+        const addonDetails = await getSubscriptionAddonById(addon.addonId);
         return {
           ...addon,
           addonDetails,
@@ -621,13 +661,13 @@ export const merchantAddonsRouter = router({
       billingCycle: z.enum(['monthly', 'yearly']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
       // Get addon details
-      const addon = await db.getSubscriptionAddonById(input.addonId);
+      const addon = await getSubscriptionAddonById(input.addonId);
       if (!addon) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Addon not found' });
       }
@@ -639,10 +679,10 @@ export const merchantAddonsRouter = router({
       const totalAmount = unitPrice * input.quantity;
 
       // Get current subscription
-      const subscription = await db.getMerchantCurrentSubscription(merchant.id);
+      const subscription = await getMerchantCurrentSubscription(merchant.id);
 
       // Create payment transaction
-      const transactionId = await db.createPaymentTransaction({
+      const transactionId = await createPaymentTransaction({
         merchantId: merchant.id,
         subscriptionId: subscription?.id || null,
         type: 'addon',
@@ -686,7 +726,7 @@ export const merchantAddonsRouter = router({
         });
 
         // Update transaction with Tap charge ID
-        await db.updatePaymentTransaction(transactionId, {
+        await updatePaymentTransaction(transactionId, {
           tapChargeId: charge.id,
           tapResponse: JSON.stringify(charge),
         });
@@ -698,7 +738,7 @@ export const merchantAddonsRouter = router({
           chargeId: charge.id,
         };
       } catch (error) {
-        await db.updatePaymentTransaction(transactionId, { status: 'failed' });
+        await updatePaymentTransaction(transactionId, { status: 'failed' });
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
           message: 'Failed to create payment charge',
@@ -710,18 +750,18 @@ export const merchantAddonsRouter = router({
   cancelAddon: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
       // Verify addon belongs to merchant
-      const addon = await db.getMerchantAddonById(input.id);
+      const addon = await getMerchantAddonById(input.id);
       if (!addon || addon.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Addon not found or access denied' });
       }
 
-      await db.cancelMerchantAddon(input.id);
+      await cancelMerchantAddon(input.id);
       return { success: true };
     }),
 });
@@ -742,7 +782,7 @@ export const paymentRouter = router({
         const charge = await retrieveCharge(input.tap_id);
 
         // Get transaction by Tap charge ID
-        const transaction = await db.getPaymentTransactionByTapChargeId(input.tap_id);
+        const transaction = await getPaymentTransactionByTapChargeId(input.tap_id);
         if (!transaction) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Transaction not found' });
         }
@@ -761,7 +801,7 @@ export const paymentRouter = router({
         // Update transaction status
         if (charge.status === 'CAPTURED') {
           // PEN-14 FIX: Atomic update — prevents race condition with concurrent webhooks
-          await db.updatePaymentTransaction(transaction.id, {
+          await updatePaymentTransaction(transaction.id, {
             status: 'completed',
             paidAt: nowMySQL,
             tapResponse: JSON.stringify(charge),
@@ -782,7 +822,7 @@ export const paymentRouter = router({
               now.getTime() + (metadata.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
             );
 
-            const subscriptionId = await db.createMerchantSubscription({
+            const subscriptionId = await createMerchantSubscription({
               merchantId: transaction.merchantId,
               planId: metadata.planId,
               status: 'active',
@@ -793,18 +833,18 @@ export const paymentRouter = router({
             });
 
             // Update merchant status
-            await db.updateMerchantSubscriptionStatus(transaction.merchantId, 'active');
+            await updateMerchantSubscriptionStatus(transaction.merchantId, 'active');
             // PEN-13 FIX: Keep currentSubscriptionId in sync
-            await db.updateMerchantCurrentSubscriptionId(transaction.merchantId, subscriptionId);
+            await updateMerchantCurrentSubscriptionId(transaction.merchantId, subscriptionId);
 
             // Update merchant customer limit
-            const plan = await db.getSubscriptionPlanById(metadata.planId);
+            const plan = await getSubscriptionPlanById(metadata.planId);
             if (plan) {
-              await db.updateMerchantCustomerLimit(transaction.merchantId, plan.maxCustomers);
+              await updateMerchantCustomerLimit(transaction.merchantId, plan.maxCustomers);
             }
 
             // Update transaction with subscription ID
-            await db.updatePaymentTransaction(transaction.id, {
+            await updatePaymentTransaction(transaction.id, {
               subscriptionId,
             });
           } else if (transaction.type === 'addon') {
@@ -819,7 +859,7 @@ export const paymentRouter = router({
               now.getTime() + (metadata.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
             );
 
-            await db.createMerchantAddon({
+            await createMerchantAddon({
               merchantId: transaction.merchantId,
               addonId: metadata.addonId,
               subscriptionId: transaction.subscriptionId || null,
@@ -835,7 +875,7 @@ export const paymentRouter = router({
             );
 
             if (transaction.subscriptionId) {
-              await db.updateMerchantSubscription(transaction.subscriptionId, {
+              await updateMerchantSubscription(transaction.subscriptionId, {
                 planId: metadata.newPlanId,
                 billingCycle: metadata.newBillingCycle,
                 startDate: now.toISOString(),
@@ -843,16 +883,16 @@ export const paymentRouter = router({
               });
 
               // Update merchant customer limit
-              const newPlan = await db.getSubscriptionPlanById(metadata.newPlanId);
+              const newPlan = await getSubscriptionPlanById(metadata.newPlanId);
               if (newPlan) {
-                await db.updateMerchantCustomerLimit(transaction.merchantId, newPlan.maxCustomers);
+                await updateMerchantCustomerLimit(transaction.merchantId, newPlan.maxCustomers);
               }
             }
           }
 
           return { success: true, status: 'completed' };
         } else if (charge.status === 'FAILED' || charge.status === 'CANCELLED') {
-          await db.updatePaymentTransaction(transaction.id, {
+          await updatePaymentTransaction(transaction.id, {
             status: 'failed',
             tapResponse: JSON.stringify(charge),
           });
@@ -872,24 +912,24 @@ export const paymentRouter = router({
 
   // List transactions (merchant)
   listTransactions: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    return await db.getMerchantPaymentTransactions(merchant.id);
+    return await getMerchantPaymentTransactions(merchant.id);
   }),
 
   // Get transaction details
   getTransactionDetails: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
-      const transaction = await db.getPaymentTransactionById(input.id);
+      const transaction = await getPaymentTransactionById(input.id);
       if (!transaction || transaction.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Transaction not found or access denied' });
       }
@@ -912,7 +952,7 @@ export const tapSettingsRouter = router({
       return next({ ctx });
     })
     .query(async () => {
-      return await db.getTapSettings();
+      return await getTapSettings();
     }),
 
   // Update settings
@@ -932,12 +972,12 @@ export const tapSettingsRouter = router({
       isActive: z.number(),
     }))
     .mutation(async ({ input }) => {
-      const existingSettings = await db.getTapSettings();
+      const existingSettings = await getTapSettings();
 
       if (existingSettings) {
-        await db.updateTapSettings(existingSettings.id, input);
+        await updateTapSettings(existingSettings.id, input);
       } else {
-        await db.createTapSettings(input);
+        await createTapSettings(input);
       }
 
       return { success: true };
@@ -955,9 +995,9 @@ export const tapSettingsRouter = router({
       const result = await testConnection();
 
       // Update settings with test result
-      const settings = await db.getTapSettings();
+      const settings = await getTapSettings();
       if (settings) {
-        await db.updateTapSettings(settings.id, {
+        await updateTapSettings(settings.id, {
           lastTestAt: new Date().toISOString(),
           lastTestStatus: result.success ? 'success' : 'failed',
           lastTestMessage: result.message,
@@ -996,7 +1036,7 @@ export const adminSubscriptionsRouter = router({
       return next({ ctx });
     })
     .query(async () => {
-      return await db.getMerchantSubscriptionStats();
+      return await getMerchantSubscriptionStats();
     }),
 
   // Extend subscription
@@ -1012,7 +1052,7 @@ export const adminSubscriptionsRouter = router({
       days: z.number(),
     }))
     .mutation(async ({ input }) => {
-      await db.extendMerchantSubscription(input.subscriptionId, input.days);
+      await extendMerchantSubscription(input.subscriptionId, input.days);
       return { success: true };
     }),
 
@@ -1029,7 +1069,7 @@ export const adminSubscriptionsRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      await db.cancelMerchantSubscription(input.subscriptionId, input.reason);
+      await cancelMerchantSubscription(input.subscriptionId, input.reason);
       return { success: true };
     }),
 
@@ -1042,7 +1082,7 @@ export const adminSubscriptionsRouter = router({
       return next({ ctx });
     })
     .query(async () => {
-      return await db.getPaymentStats();
+      return await getPaymentStats();
     }),
 
   // List all transactions
@@ -1054,6 +1094,6 @@ export const adminSubscriptionsRouter = router({
       return next({ ctx });
     })
     .query(async () => {
-      return await db.getAllPaymentTransactions();
+      return await getAllPaymentTransactions();
     }),
 });

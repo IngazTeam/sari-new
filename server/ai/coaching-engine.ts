@@ -8,7 +8,7 @@
  * - #علم_ساري command for natural merchant training
  */
 
-import * as db from '../db';
+import { getMerchantById, getWhatsAppInstancesByMerchantId } from '../db';
 import { sendMessageWithCredentials } from '../whatsapp';
 import {
   createCoachingSession,
@@ -154,7 +154,7 @@ export async function shouldTriggerCoaching(merchantId: number): Promise<boolean
     if (candidates.length < MIN_CANDIDATES_TO_TRIGGER) return false;
 
     // Gate 5: Merchant has WhatsApp escalation phones configured
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant) return false;
     const hasPhone = (merchant as any).escalationPhones || (merchant as any).emergencyPhone || merchant.phone;
     if (!hasPhone) return false;
@@ -207,7 +207,7 @@ async function sendCoachingQuestion(
   const targetPhone = await getMerchantCoachingPhone(merchantId);
   if (!targetPhone) return;
 
-  const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+  const instances = await getWhatsAppInstancesByMerchantId(merchantId);
   const activeInstance = instances.find((i: any) => i.status === 'active');
   if (!activeInstance) return;
 
@@ -337,7 +337,7 @@ export async function handleCoachingReply(
       // Send summary via WhatsApp
       const targetPhone = await getMerchantCoachingPhone(merchantId);
       if (targetPhone) {
-        const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+        const instances = await getWhatsAppInstancesByMerchantId(merchantId);
         const inst = instances.find((i: any) => i.status === 'active');
         if (inst) {
           sendMessageWithCredentials(
@@ -374,7 +374,7 @@ async function sendNextQuestion(
   const targetPhone = await getMerchantCoachingPhone(merchantId);
   if (!targetPhone) return;
 
-  const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+  const instances = await getWhatsAppInstancesByMerchantId(merchantId);
   const inst = instances.find((i: any) => i.status === 'active');
   if (!inst) return;
 
@@ -400,7 +400,7 @@ async function sendNextQuestion(
 // ═══════════════════════════════════════════════════════════════
 
 async function getMerchantCoachingPhone(merchantId: number): Promise<string | null> {
-  const merchant = await db.getMerchantById(merchantId);
+  const merchant = await getMerchantById(merchantId);
   if (!merchant) return null;
 
   // Use first escalation phone, or legacy emergency phone, or main phone

@@ -7,7 +7,7 @@
  * Documentation: https://developers.tap.company/reference
  */
 
-import { db } from "../db";
+import { getTapSettings as _getTapSettingsFromDb } from "../db";
 
 // ============================================
 // Types
@@ -128,7 +128,7 @@ export interface TapRefundResponse {
 // ============================================
 
 async function getTapSettings() {
-	const settings = await db.getTapSettings();
+	const settings = await _getTapSettingsFromDb();
 
 	if (!settings) {
 		throw new Error('Tap settings not configured. Please configure Tap settings in admin panel.');

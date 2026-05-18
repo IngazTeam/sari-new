@@ -1,4 +1,9 @@
-import * as db from '../db';
+import {
+  createNotificationTemplate,
+  createOrderNotification,
+  getNotificationTemplateByStatus,
+  updateOrderNotification,
+} from '../db';
 import { sendTextMessage } from '../whatsapp';
 
 // Default notification templates in Arabic
@@ -79,7 +84,7 @@ export function fillTemplate(template: string, data: {
 
 // Get notification template for a specific status
 export async function getNotificationTemplate(merchantId: number, status: string): Promise<string | null> {
-  const template = await db.getNotificationTemplateByStatus(merchantId, status);
+  const template = await getNotificationTemplateByStatus(merchantId, status);
   
   if (template && template.enabled) {
     return template.template;
@@ -116,7 +121,7 @@ export async function sendOrderNotification(
     const message = fillTemplate(template, orderData);
     
     // Create notification record
-    const notification = await db.createOrderNotification({
+    const notification = await createOrderNotification({
       orderId,
       merchantId,
       customerPhone,
@@ -135,7 +140,7 @@ export async function sendOrderNotification(
     const sent = result.success;
     
     // Update notification status
-    await db.updateOrderNotification(notification.id, {
+    await updateOrderNotification(notification.id, {
       sent,
       sentAt: sent ? new Date() : undefined,
       error: sent ? undefined : result.error || 'Failed to send WhatsApp message',
@@ -155,10 +160,10 @@ export async function initializeDefaultTemplates(merchantId: number): Promise<vo
   const statuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'];
   
   for (const status of statuses) {
-    const existing = await db.getNotificationTemplateByStatus(merchantId, status);
+    const existing = await getNotificationTemplateByStatus(merchantId, status);
     
     if (!existing) {
-      await db.createNotificationTemplate({
+      await createNotificationTemplate({
         merchantId,
         status,
         template: defaultTemplates[status as keyof typeof defaultTemplates],

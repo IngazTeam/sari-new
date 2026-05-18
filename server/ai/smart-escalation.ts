@@ -16,7 +16,7 @@
  * - Never send customers to external channels
  */
 
-import * as db from '../db';
+import { getMerchantById, getWhatsAppInstancesByMerchantId } from '../db';
 import { sendMessageWithCredentials } from '../whatsapp';
 import {
   createEscalation,
@@ -129,7 +129,7 @@ const escalationChainSchema = z.array(z.object({
 })).max(5);
 
 async function getEscalationChain(merchantId: number): Promise<EscalationContact[]> {
-  const merchant = await db.getMerchantById(merchantId);
+  const merchant = await getMerchantById(merchantId);
   if (!merchant) return [];
 
   // Try JSON escalation chain first — with schema validation
@@ -262,7 +262,7 @@ async function notifyEscalationContact(params: {
   }
 
   // Get bot's WhatsApp instance
-  const instances = await db.getWhatsAppInstancesByMerchantId(params.merchantId);
+  const instances = await getWhatsAppInstancesByMerchantId(params.merchantId);
   const activeInstance = instances.find((i: any) => i.status === 'active');
 
   if (!activeInstance) {
@@ -341,7 +341,7 @@ export async function processCascadingEscalations(): Promise<number> {
         console.log(`[Escalation] ⛔ All ${chain.length} contacts exhausted for escalation #${esc.id} — sending apology to customer`);
 
         // Send apology to customer
-        const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+        const instances = await getWhatsAppInstancesByMerchantId(merchantId);
         const activeInstance = instances.find((i: any) => i.status === 'active');
         const customerPhone = esc.customer_phone || esc.customerPhone;
 
@@ -415,7 +415,7 @@ export async function handleMerchantEscalationReply(params: {
     if (!resolved) return { handled: false };
 
     // Get WhatsApp instance to send reply to customer
-    const instances = await db.getWhatsAppInstancesByMerchantId(params.merchantId);
+    const instances = await getWhatsAppInstancesByMerchantId(params.merchantId);
     const activeInstance = instances.find((i: any) => i.status === 'active');
 
     if (activeInstance && resolved.customerPhone) {

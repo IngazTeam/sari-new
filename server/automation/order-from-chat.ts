@@ -11,7 +11,18 @@
 
 import { invokeLLM } from '../_core/llm';
 import { SallaIntegration } from '../integrations/salla';
-import * as db from '../db';
+import {
+  createOrder,
+  getMerchantById,
+  getMerchantPaymentSettings,
+  getProductById,
+  getProductsByMerchantId,
+  getReferralCodeByCode,
+  getSallaConnectionByMerchantId,
+  getUserById,
+  incrementDiscountCodeUsage,
+  updateOrder,
+} from '../db';
 import * as dbPayments from '../db_payments';
 // import { createPaymentLink } from '../_core/tapPayments';
 // import { sendWhatsAppMessage } from '../greenapi-wrapper';
@@ -55,7 +66,7 @@ interface DiscountInfo {
 export async function parseOrderMessage(message: string, merchantId: number): Promise<ParsedOrder | null> {
   try {
     // Get merchant's products for context
-    const products = await db.getProductsByMerchantId(merchantId);
+    const products = await getProductsByMerchantId(merchantId);
     const productList = products.map(p => `- ${p.name} (${p.price} ريال)`).join('\n');
 
     const response = await invokeLLM({
@@ -148,7 +159,7 @@ export async function createOrderFromChat(
 ): Promise<{ orderId: number; paymentUrl: string | null; orderNumber: string | null; discountInfo?: DiscountInfo } | null> {
   try {
     // Get Salla connection
-    const sallaConnection = await db.getSallaConnectionByMerchantId(merchantId);
+    const sallaConnection = await getSallaConnectionByMerchantId(merchantId);
     if (!sallaConnection) {
       throw new Error('Salla not connected');
     }
@@ -162,7 +173,7 @@ export async function createOrderFromChat(
     for (const product of parsedOrder.products) {
       if (!product.productId) continue;
 
-      const dbProduct = await db.getProductById(product.productId);
+      const dbProduct = await getProductById(product.productId);
       if (!dbProduct) continue;
 
       items.push({
@@ -202,7 +213,7 @@ export async function createOrderFromChat(
             finalAmount
           };
           // Increment usage count
-          await db.incrementDiscountCodeUsage(discountCode);
+          await incrementDiscountCodeUsage(discountCode);
         }
       }
 
@@ -210,7 +221,7 @@ export async function createOrderFromChat(
       if (!discountInfo) {
         const referralCode = extractReferralCodeFromMessage(message);
         if (referralCode) {
-          const referralCodeData = await db.getReferralCodeByCode(referralCode);
+          const referralCodeData = await getReferralCodeByCode(referralCode);
           if (referralCodeData && referralCodeData.merchantId === merchantId) {
             // Track referral (will be completed when order is paid)
             await trackReferral(merchantId, referralCode, customerPhone, customerName);
@@ -242,7 +253,7 @@ export async function createOrderFromChat(
     }
 
     // Save order in our database
-    const order = await db.createOrder({
+    const order = await createOrder({
       merchantId,
       sallaOrderId: sallaOrder.orderId,
       orderNumber: sallaOrder.orderNumber,
@@ -268,11 +279,11 @@ export async function createOrderFromChat(
     let tapPaymentUrl: string | null = null;
     try {
       // جلب إعدادات الدفع للتاجر
-      const paymentSettings = await db.getMerchantPaymentSettings(merchantId);
+      const paymentSettings = await getMerchantPaymentSettings(merchantId);
       
       if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey) {
         const baseUrl = 'https://api.tap.company/v2';
-        const merchant = await db.getMerchantById(merchantId);
+        const merchant = await getMerchantById(merchantId);
         
         const chargeData = {
           amount: finalAmount / 100, // تحويل من الهللات إلى ريال
@@ -327,7 +338,7 @@ export async function createOrderFromChat(
           });
 
           // تحديث رابط الدفع في الطلب
-          await db.updateOrder(order.id, { paymentUrl: tapPaymentUrl });
+          await updateOrder(order.id, { paymentUrl: tapPaymentUrl });
 
           console.log('[OrderFromChat] Tap payment link created:', tapPaymentUrl);
         } else {
@@ -342,8 +353,8 @@ export async function createOrderFromChat(
     // Notify admin about new order
     try {
       const { notifyNewOrder } = await import('../_core/emailNotifications');
-      const merchant = await db.getMerchantById(merchantId);
-      const user = merchant ? await db.getUserById(merchant.userId) : null;
+      const merchant = await getMerchantById(merchantId);
+      const user = merchant ? await getUserById(merchant.userId) : null;
       await notifyNewOrder({
         merchantName: user?.name || merchant?.businessName || 'Unknown',
         businessName: merchant?.businessName || 'Unknown',

@@ -4,7 +4,7 @@ import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import jwt from "jsonwebtoken";
 import type { User } from "../../drizzle/schema";
-import * as db from "../db";
+import { getUserById, updateUser } from '../db';
 import { ENV } from "./env";
 
 // JWT Secret - uses JWT_SECRET from environment
@@ -115,7 +115,7 @@ export async function authenticateRequest(req: Request): Promise<User> {
   }
 
   // Get user from database (convert userId to number)
-  const user = await db.getUserById(Number(session.userId));
+  const user = await getUserById(Number(session.userId));
 
   if (!user) {
     throw ForbiddenError("User not found");
@@ -123,7 +123,7 @@ export async function authenticateRequest(req: Request): Promise<User> {
 
   // Update last signed in (use updateUser instead of upsertUser)
   try {
-    await db.updateUser(user.id, {
+    await updateUser(user.id, {
       lastSignedIn: new Date(),
     });
   } catch (updateError) {

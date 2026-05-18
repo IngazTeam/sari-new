@@ -6,7 +6,17 @@
  * ويرسل رسائل تذكير مع كود خصم 10% بعد 24 ساعة
  */
 
-import * as db from '../db';
+import {
+  createAbandonedCart,
+  createDiscountCode,
+  getAbandonedCartById,
+  getAbandonedCartsByMerchantId,
+  getActiveSubscriptionByMerchantId,
+  getMerchantById,
+  getPendingAbandonedCarts,
+  getSallaConnectionByMerchantId,
+  markAbandonedCartReminderSent,
+} from '../db';
 import { sendTextMessage } from '../whatsapp';
 import { extractDiscountCodeFromMessage } from './discount-system';
 import { createDiscountCode } from './discount-system';
@@ -22,7 +32,7 @@ export async function trackAbandonedCart(
   totalAmount: number
 ): Promise<number> {
   // التحقق من وجود سلة مهجورة سابقة لنفس العميل
-  const existingCarts = await db.getAbandonedCartsByMerchantId(merchantId);
+  const existingCarts = await getAbandonedCartsByMerchantId(merchantId);
   const existingCart = existingCarts.find(
     cart => cart.customerPhone === customerPhone && !cart.recovered && !cart.reminderSent
   );
@@ -33,7 +43,7 @@ export async function trackAbandonedCart(
   }
 
   // إنشاء سلة مهجورة جديدة
-  const cart = await db.createAbandonedCart({
+  const cart = await createAbandonedCart({
     merchantId,
     customerPhone,
     customerName,
@@ -58,7 +68,7 @@ export async function generateRecoveryDiscount(
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  await db.createDiscountCode({
+  await createDiscountCode({
     merchantId,
     code,
     type: 'percentage',
@@ -114,27 +124,27 @@ ${itemsList}
  */
 export async function sendCartReminder(cartId: number): Promise<boolean> {
   try {
-    const cart = await db.getAbandonedCartById(cartId);
+    const cart = await getAbandonedCartById(cartId);
     if (!cart || cart.reminderSent || cart.recovered) {
       return false;
     }
 
     // الحصول على معلومات التاجر
-    const merchant = await db.getMerchantById(cart.merchantId);
+    const merchant = await getMerchantById(cart.merchantId);
     if (!merchant) {
       console.error(`[Abandoned Cart] Merchant not found: ${cart.merchantId}`);
       return false;
     }
 
     // SEC-FIX: Verify active subscription before sending reminder
-    const subscription = await db.getActiveSubscriptionByMerchantId(cart.merchantId);
+    const subscription = await getActiveSubscriptionByMerchantId(cart.merchantId);
     if (!subscription) {
       console.warn(`[Abandoned Cart] Merchant ${cart.merchantId} has no active subscription — skipping cart ${cartId}`);
       return false;
     }
 
     // الحصول على اتصال الواتساب
-    const connection = await db.getSallaConnectionByMerchantId(merchant.id);
+    const connection = await getSallaConnectionByMerchantId(merchant.id);
     if (!connection) {
       console.error(`[Abandoned Cart] No WhatsApp connection for merchant: ${merchant.id}`);
       return false;
@@ -157,7 +167,7 @@ export async function sendCartReminder(cartId: number): Promise<boolean> {
     
     if (result.success) {
       // تحديث حالة السلة
-      await db.markAbandonedCartReminderSent(cartId);
+      await markAbandonedCartReminderSent(cartId);
       console.log(`[Abandoned Cart] Reminder sent successfully for cart ${cartId}`);
       return true;
     } else {
@@ -183,7 +193,7 @@ export async function checkAbandonedCarts(): Promise<{
 
   try {
     // الحصول على السلال المهجورة (أقدم من 24 ساعة ولم يتم إرسال تذكير)
-    const carts = await db.getPendingAbandonedCarts();
+    const carts = await getPendingAbandonedCarts();
     console.log(`[Abandoned Cart] Found ${carts.length} abandoned carts to process`);
 
     let reminded = 0;
@@ -229,7 +239,7 @@ export async function getCartRecoveryStats(merchantId: number): Promise<{
   recoveryRate: number;
   totalRecoveredValue: number;
 }> {
-  const carts = await db.getAbandonedCartsByMerchantId(merchantId);
+  const carts = await getAbandonedCartsByMerchantId(merchantId);
   
   const totalAbandoned = carts.length;
   const remindersSent = carts.filter(c => c.reminderSent).length;

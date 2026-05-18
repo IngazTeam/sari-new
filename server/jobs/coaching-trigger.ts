@@ -6,7 +6,7 @@
  */
 
 import cron from 'node-cron';
-import * as db from '../db';
+import { getPool } from '../db';
 import {
   shouldTriggerCoaching,
   startCoachingSession,
@@ -28,7 +28,7 @@ export function startCoachingTriggerJob(): void {
       await processCoachingMaintenance();
 
       // Get active merchants with subscriptions
-      const pool = await db.getPool();
+      const pool = await getPool();
       if (!pool) return;
 
       const [rows] = await pool.execute(

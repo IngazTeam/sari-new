@@ -7,7 +7,7 @@
  * Loaded ONCE at server start + cached globally. Refreshed when modified.
  */
 
-import * as db from '../db';
+import { getPool } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -34,7 +34,7 @@ let _tableCreated = false;
 
 async function ensureTable(): Promise<void> {
   if (_tableCreated) return;
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(`
@@ -71,7 +71,7 @@ export async function getActiveDirectives(): Promise<AIDirective[]> {
   }
 
   await ensureTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -99,7 +99,7 @@ function invalidateCache(): void {
 export async function createDirective(data: Omit<AIDirective, 'id' | 'createdAt' | 'updatedAt'>): Promise<number> {
   await ensureTable();
   // SEC-06 FIX: Cap at 50 directives to prevent DB flood
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   const [countRows] = await pool.execute(`SELECT COUNT(*) as cnt FROM sari_ai_directives`);
@@ -117,7 +117,7 @@ export async function createDirective(data: Omit<AIDirective, 'id' | 'createdAt'
 
 export async function updateDirective(id: number, data: Partial<AIDirective>): Promise<void> {
   await ensureTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const setClauses: string[] = [];
@@ -138,7 +138,7 @@ export async function updateDirective(id: number, data: Partial<AIDirective>): P
 
 export async function deleteDirective(id: number): Promise<void> {
   await ensureTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(`DELETE FROM sari_ai_directives WHERE id = ?`, [id]);
@@ -147,7 +147,7 @@ export async function deleteDirective(id: number): Promise<void> {
 
 export async function getAllDirectives(): Promise<AIDirective[]> {
   await ensureTable();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(

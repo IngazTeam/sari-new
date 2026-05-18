@@ -4,7 +4,7 @@ import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import { SignJWT, jwtVerify } from "jose";
 import type { User } from "../../drizzle/schema";
-import * as db from "../db";
+import { getUserById, upsertUser } from '../db';
 import { ENV } from "./env";
 
 // Utility function
@@ -127,13 +127,13 @@ class SDKServer {
 
     const sessionUserId = session.userId;
     const signedInAt = new Date();
-    let user = await db.getUserById(sessionUserId);
+    let user = await getUserById(sessionUserId);
 
     if (!user) {
       throw ForbiddenError("User not found");
     }
 
-    await db.upsertUser({
+    await upsertUser({
       id: user.id,
       lastSignedIn: signedInAt,
     });

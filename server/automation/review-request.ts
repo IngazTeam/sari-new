@@ -5,7 +5,13 @@
  * to build trust and improve merchant reputation.
  */
 
-import * as db from '../db';
+import {
+  createCustomerReview,
+  getCustomerReviewsByMerchantId,
+  getCustomerReviewsByOrderId,
+  getMerchantById,
+  getOrderById,
+} from '../db';
 import { sendTextMessage } from '../whatsapp';
 
 /**
@@ -13,7 +19,7 @@ import { sendTextMessage } from '../whatsapp';
  */
 export async function shouldRequestReview(orderId: number): Promise<boolean> {
   try {
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     
     if (!order) {
       return false;
@@ -25,7 +31,7 @@ export async function shouldRequestReview(orderId: number): Promise<boolean> {
     }
     
     // Check if review was already created
-    const existingReviews = await db.getCustomerReviewsByOrderId(orderId);
+    const existingReviews = await getCustomerReviewsByOrderId(orderId);
     if (existingReviews.length > 0) {
       return false;
     }
@@ -77,7 +83,7 @@ export async function sendReviewRequest(
     console.log(`[Review Request] Sending review request for order ${orderId}...`);
     
     // Get order details
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     
     if (!order) {
       return { success: false, error: 'Order not found' };
@@ -90,7 +96,7 @@ export async function sendReviewRequest(
     }
     
     // Get merchant details
-    const merchant = await db.getMerchantById(order.merchantId);
+    const merchant = await getMerchantById(order.merchantId);
     if (!merchant) {
       return { success: false, error: 'Merchant not found' };
     }
@@ -141,13 +147,13 @@ export async function processReviewResponse(
     }
     
     // Get order details
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       return { success: false, error: 'Order not found' };
     }
     
     // Create review
-    const review = await db.createCustomerReview({
+    const review = await createCustomerReview({
       orderId,
       merchantId: order.merchantId,
       customerPhone: order.customerPhone,
@@ -188,7 +194,7 @@ export async function getMerchantReviewStats(
   ratingDistribution: { [key: number]: number };
 }> {
   try {
-    const reviews = await db.getCustomerReviewsByMerchantId(merchantId);
+    const reviews = await getCustomerReviewsByMerchantId(merchantId);
     
     if (reviews.length === 0) {
       return {

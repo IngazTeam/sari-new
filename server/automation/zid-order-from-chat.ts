@@ -9,7 +9,7 @@
  */
 
 import { ZidClient, ZidCreateOrderResponse } from '../integrations/zid/zidClient';
-import * as db from '../db';
+import { getZidProducts, saveZidOrder } from '../db';
 import dbZid from '../db_zid';
 import { invokeLLM } from '../_core/llm';
 
@@ -51,7 +51,7 @@ export async function parseZidOrderMessage(
 ): Promise<ParsedZidOrder | null> {
   try {
     // جلب منتجات Zid للتاجر
-    const zidProducts = await db.getZidProducts(merchantId);
+    const zidProducts = await getZidProducts(merchantId);
     const productList = zidProducts.map(p => 
       `- ${p.nameAr || p.nameEn || 'منتج'} (SKU: ${p.zidSku || p.zidProductId}, السعر: ${p.price} ريال)`
     ).join('\n');
@@ -239,7 +239,7 @@ export async function createZidOrderFromChat(
     }
 
     // حساب المبلغ الإجمالي
-    const zidProducts = await db.getZidProducts(merchantId);
+    const zidProducts = await getZidProducts(merchantId);
     let totalAmount = 0;
     const orderProducts: Array<{ sku: string; quantity: number }> = [];
 
@@ -278,7 +278,7 @@ export async function createZidOrderFromChat(
     });
 
     // حفظ الطلب في قاعدة البيانات المحلية
-    const savedOrder = await db.saveZidOrder(merchantId, {
+    const savedOrder = await saveZidOrder(merchantId, {
       zidOrderId: String(zidOrderResponse.order.id),
       zidOrderNumber: zidOrderResponse.order.code,
       customerName,

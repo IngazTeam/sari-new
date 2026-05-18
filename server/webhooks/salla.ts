@@ -1,5 +1,12 @@
 import { Request, Response } from 'express';
-import * as db from '../db';
+import {
+  deleteProduct,
+  getAllSallaConnections,
+  getOrderBySallaId,
+  getProductBySallaId,
+  getSallaConnectionByMerchantId,
+  updateProductStock,
+} from '../db';
 import { SallaIntegration } from '../integrations/salla';
 import { processOrderStatusUpdate } from '../automation/order-tracking';
 
@@ -38,7 +45,7 @@ export async function handleSallaWebhook(req: Request, res: Response) {
     }
 
     // Get connection
-    const connection = await db.getSallaConnectionByMerchantId(merchantId);
+    const connection = await getSallaConnectionByMerchantId(merchantId);
     if (!connection) {
       console.log(`[Salla Webhook] No connection found for merchant ${merchantId}`);
       return res.status(404).json({ error: 'Connection not found' });
@@ -97,9 +104,9 @@ async function handleProductDeleted(merchantId: number, data: any) {
   try {
     console.log(`[Salla Webhook] Deleting product ${data.id} for merchant ${merchantId}`);
     
-    const product = await db.getProductBySallaId(merchantId, data.id);
+    const product = await getProductBySallaId(merchantId, data.id);
     if (product) {
-      await db.deleteProduct(product.id);
+      await deleteProduct(product.id);
       console.log(`[Salla Webhook] ✅ Product ${data.id} deleted successfully`);
     }
   } catch (error: any) {
@@ -111,9 +118,9 @@ async function handleProductQuantityUpdated(merchantId: number, data: any) {
   try {
     console.log(`[Salla Webhook] Updating stock for product ${data.id} for merchant ${merchantId}`);
     
-    const product = await db.getProductBySallaId(merchantId, data.id);
+    const product = await getProductBySallaId(merchantId, data.id);
     if (product) {
-      await db.updateProductStock(product.id, data.quantity || 0);
+      await updateProductStock(product.id, data.quantity || 0);
       console.log(`[Salla Webhook] ✅ Stock updated for product ${data.id}: ${data.quantity}`);
     }
   } catch (error: any) {
@@ -126,7 +133,7 @@ async function handleOrderUpdated(merchantId: number, data: any) {
     console.log(`[Salla Webhook] Updating order ${data.id} for merchant ${merchantId}`);
     
     // الحصول على الطلب من قاعدة البيانات
-    const order = await db.getOrderBySallaId(merchantId, data.id);
+    const order = await getOrderBySallaId(merchantId, data.id);
     
     if (!order) {
       console.log(`[Salla Webhook] Order ${data.id} not found in database`);
@@ -161,10 +168,10 @@ async function getMerchantIdByStoreUrl(domain: string): Promise<number | null> {
   try {
     // Try exact match first
     let storeUrl = `https://${domain}`;
-    let connection = await db.getSallaConnectionByMerchantId(0); // This won't work, need a different query
+    let connection = await getSallaConnectionByMerchantId(0); // This won't work, need a different query
     
     // Since we don't have a query by storeUrl, we'll get all connections and find the match
-    const allConnections = await db.getAllSallaConnections();
+    const allConnections = await getAllSallaConnections();
     const match = allConnections.find(c => 
       c.storeUrl.includes(domain) || domain.includes(c.storeUrl.replace('https://', '').replace('http://', ''))
     );

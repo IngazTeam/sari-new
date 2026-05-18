@@ -3,7 +3,13 @@
  * Runs daily to check for expiring trials and send notifications
  */
 
-import * as db from '../db';
+import {
+  deactivateUserTrial,
+  getMerchantByUserId,
+  getUsersWithExpiredTrial,
+  getUsersWithExpiringTrial,
+  updateMerchant,
+} from '../db';
 import { sendTrialExpiryEmail } from '../_core/email';
 
 /**
@@ -13,7 +19,7 @@ export async function checkTrialsExpiring3Days() {
   console.log('[Cron] Checking for trials expiring in 3 days...');
 
   try {
-    const users = await db.getUsersWithExpiringTrial(3);
+    const users = await getUsersWithExpiringTrial(3);
 
     console.log(`[Cron] Found ${users.length} users with trials expiring in 3 days`);
 
@@ -44,7 +50,7 @@ export async function checkTrialsExpiring1Day() {
   console.log('[Cron] Checking for trials expiring in 1 day...');
 
   try {
-    const users = await db.getUsersWithExpiringTrial(1);
+    const users = await getUsersWithExpiringTrial(1);
 
     console.log(`[Cron] Found ${users.length} users with trials expiring in 1 day`);
 
@@ -75,19 +81,19 @@ export async function checkExpiredTrials() {
   console.log('[Cron] Checking for expired trials...');
 
   try {
-    const users = await db.getUsersWithExpiredTrial();
+    const users = await getUsersWithExpiredTrial();
 
     console.log(`[Cron] Found ${users.length} users with expired trials`);
 
     for (const user of users) {
       try {
         // Deactivate trial on user record
-        await db.deactivateUserTrial(user.id);
+        await deactivateUserTrial(user.id);
 
         // Update merchant subscription status to expired
-        const merchant = await db.getMerchantByUserId(user.id);
+        const merchant = await getMerchantByUserId(user.id);
         if (merchant) {
-          await db.updateMerchant(merchant.id, { subscriptionStatus: 'expired' });
+          await updateMerchant(merchant.id, { subscriptionStatus: 'expired' });
         }
 
         // Send expiry notification email

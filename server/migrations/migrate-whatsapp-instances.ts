@@ -7,14 +7,19 @@
  * Run: node --loader tsx server/migrations/migrate-whatsapp-instances.ts
  */
 
-import * as db from '../db';
+import {
+  createWhatsAppInstance,
+  getAllMerchants,
+  getWhatsAppInstanceByInstanceId,
+  getWhatsappConnectionByMerchantId,
+} from '../db';
 
 async function migrateWhatsAppInstances() {
   console.log('[Migration] Starting WhatsApp instances migration...');
 
   try {
     // Get all merchants
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     console.log(`[Migration] Found ${merchants.length} merchants`);
 
     let migratedCount = 0;
@@ -25,7 +30,7 @@ async function migrateWhatsAppInstances() {
       try {
         // Check if merchant has WhatsApp connection data in old format
         // (This assumes merchants table had whatsappInstanceId and whatsappToken fields)
-        const connection = await db.getWhatsappConnectionByMerchantId(merchant.id);
+        const connection = await getWhatsappConnectionByMerchantId(merchant.id);
         
         if (!connection || !connection.instanceId || !connection.apiToken) {
           console.log(`[Migration] Skipping merchant ${merchant.id} - No WhatsApp connection`);
@@ -34,7 +39,7 @@ async function migrateWhatsAppInstances() {
         }
 
         // Check if already migrated
-        const existing = await db.getWhatsAppInstanceByInstanceId(connection.instanceId);
+        const existing = await getWhatsAppInstanceByInstanceId(connection.instanceId);
         if (existing) {
           console.log(`[Migration] Skipping merchant ${merchant.id} - Already migrated`);
           skippedCount++;
@@ -42,7 +47,7 @@ async function migrateWhatsAppInstances() {
         }
 
         // Create new instance
-        const instance = await db.createWhatsAppInstance({
+        const instance = await createWhatsAppInstance({
           merchantId: merchant.id,
           instanceId: connection.instanceId,
           token: connection.apiToken,

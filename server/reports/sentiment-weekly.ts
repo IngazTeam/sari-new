@@ -3,7 +3,17 @@
  * يولد تقرير أسبوعي عن رضا العملاء مع توصيات ذكية
  */
 
-import * as db from '../db';
+import {
+  createWeeklySentimentReport,
+  getAllMerchants,
+  getConversationsByMerchantId,
+  getKeywordStats,
+  getMerchantById,
+  getMerchantSentimentStats,
+  getUserById,
+  getWeeklySentimentReportById,
+  markReportEmailSent,
+} from '../db';
 import { invokeLLM } from '../_core/llm';
 import { sendEmail } from './email-sender';
 
@@ -26,17 +36,17 @@ export async function generateWeeklyReport(merchantId: number): Promise<number> 
   weekEndDate.setHours(23, 59, 59, 999);
 
   // الحصول على محادثات الأسبوع
-  const conversations = await db.getConversationsByMerchantId(merchantId);
+  const conversations = await getConversationsByMerchantId(merchantId);
   const weekConversations = conversations.filter((c: any) => {
     const createdAt = new Date(c.createdAt);
     return createdAt >= weekStartDate && createdAt <= weekEndDate;
   });
 
   // الحصول على تحليل المشاعر
-  const stats = await db.getMerchantSentimentStats(merchantId, 7);
+  const stats = await getMerchantSentimentStats(merchantId, 7);
 
   // استخراج الكلمات المفتاحية الأكثر تكراراً
-  const keywords = await db.getKeywordStats(merchantId, {
+  const keywords = await getKeywordStats(merchantId, {
     minFrequency: 2,
     limit: 10,
   });
@@ -67,7 +77,7 @@ export async function generateWeeklyReport(merchantId: number): Promise<number> 
   });
 
   // إنشاء التقرير في قاعدة البيانات
-  const reportId = await db.createWeeklySentimentReport({
+  const reportId = await createWeeklySentimentReport({
     merchantId,
     weekStartDate,
     weekEndDate,
@@ -188,18 +198,18 @@ async function generateRecommendations(data: {
  * إرسال التقرير بالبريد الإلكتروني
  */
 export async function sendReportEmail(reportId: number): Promise<boolean> {
-  const report = await db.getWeeklySentimentReportById(reportId);
+  const report = await getWeeklySentimentReportById(reportId);
   if (!report) {
     throw new Error('Report not found');
   }
 
   // الحصول على معلومات التاجر
-  const merchant = await db.getMerchantById(report.merchantId);
+  const merchant = await getMerchantById(report.merchantId);
   if (!merchant) {
     throw new Error('Merchant not found');
   }
 
-  const user = await db.getUserById(merchant.userId);
+  const user = await getUserById(merchant.userId);
   if (!user || !user.email) {
     throw new Error('User email not found');
   }
@@ -405,7 +415,7 @@ export async function sendReportEmail(reportId: number): Promise<boolean> {
   });
 
   if (success) {
-    await db.markReportEmailSent(reportId);
+    await markReportEmailSent(reportId);
   }
 
   return success;
@@ -416,7 +426,7 @@ export async function sendReportEmail(reportId: number): Promise<boolean> {
  */
 export async function scheduleWeeklyReports() {
   // الحصول على جميع التجار النشطين
-  const merchants = await db.getAllMerchants();
+  const merchants = await getAllMerchants();
   const activeMerchants = merchants.filter(m => m.status === 'active');
 
   console.log(`[Weekly Reports] Generating reports for ${activeMerchants.length} merchants...`);

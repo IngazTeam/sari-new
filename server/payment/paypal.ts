@@ -3,7 +3,12 @@
  * https://developer.paypal.com
  */
 
-import * as db from '../db';
+import {
+  createPayment,
+  getPaymentByTransactionId,
+  getPaymentGatewayByName,
+  updatePaymentStatus,
+} from '../db';
 
 interface PayPalOrderRequest {
   intent: 'CAPTURE';
@@ -70,7 +75,7 @@ export async function createPayPalOrder(params: {
 }): Promise<{ success: boolean; paymentUrl?: string; orderId?: string; error?: string }> {
   try {
     // Get PayPal gateway configuration
-    const paypalGateway = await db.getPaymentGatewayByName('paypal');
+    const paypalGateway = await getPaymentGatewayByName('paypal');
     
     if (!paypalGateway || !paypalGateway.isEnabled) {
       return { success: false, error: 'PayPal is not enabled' };
@@ -137,7 +142,7 @@ export async function createPayPalOrder(params: {
     }
 
     // Create payment record in database
-    await db.createPayment({
+    await createPayment({
       merchantId: params.merchantId,
       subscriptionId: params.subscriptionId,
       amount: params.amount,
@@ -160,7 +165,7 @@ export async function createPayPalOrder(params: {
 
 export async function capturePayPalOrder(orderId: string): Promise<{ success: boolean; status: string; error?: string }> {
   try {
-    const paypalGateway = await db.getPaymentGatewayByName('paypal');
+    const paypalGateway = await getPaymentGatewayByName('paypal');
     
     if (!paypalGateway || !paypalGateway.publicKey || !paypalGateway.secretKey) {
       return { success: false, status: 'failed', error: 'PayPal configuration not found' };
@@ -196,10 +201,10 @@ export async function capturePayPalOrder(orderId: string): Promise<{ success: bo
     const captureResponse = await response.json();
 
     // Update payment status in database
-    const payment = await db.getPaymentByTransactionId(orderId);
+    const payment = await getPaymentByTransactionId(orderId);
     if (payment) {
       const newStatus = captureResponse.status === 'COMPLETED' ? 'completed' : 'failed';
-      await db.updatePaymentStatus(payment.id, newStatus as any, orderId);
+      await updatePaymentStatus(payment.id, newStatus as any, orderId);
     }
 
     return {
@@ -214,7 +219,7 @@ export async function capturePayPalOrder(orderId: string): Promise<{ success: bo
 
 export async function verifyPayPalPayment(orderId: string): Promise<{ success: boolean; status: string; error?: string }> {
   try {
-    const paypalGateway = await db.getPaymentGatewayByName('paypal');
+    const paypalGateway = await getPaymentGatewayByName('paypal');
     
     if (!paypalGateway || !paypalGateway.publicKey || !paypalGateway.secretKey) {
       return { success: false, status: 'failed', error: 'PayPal configuration not found' };

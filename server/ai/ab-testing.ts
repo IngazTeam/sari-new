@@ -3,7 +3,14 @@
  * يختبر نسختين من نفس الرد ويحدد أيهما أكثر فعالية
  */
 
-import * as db from '../db';
+import {
+  createQuickResponse,
+  getABTestById,
+  getActiveABTestForKeyword,
+  getQuickResponses,
+  trackABTestUsage,
+  updateQuickResponse,
+} from '../db';
 
 /**
  * اختيار نسخة من الاختبار (A أو B) بشكل عشوائي
@@ -17,7 +24,7 @@ export async function selectABTestVariant(
   testId: number;
 } | null> {
   // البحث عن اختبار نشط لهذه الكلمة المفتاحية
-  const test = await db.getActiveABTestForKeyword(merchantId, keyword);
+  const test = await getActiveABTestForKeyword(merchantId, keyword);
   
   if (!test) {
     return null;
@@ -42,7 +49,7 @@ export async function recordABTestResult(
   variant: 'A' | 'B',
   wasSuccessful: boolean
 ) {
-  await db.trackABTestUsage(testId, variant, wasSuccessful);
+  await trackABTestUsage(testId, variant, wasSuccessful);
 }
 
 /**
@@ -64,7 +71,7 @@ export async function analyzeABTest(testId: number): Promise<{
     };
   };
 }> {
-  const test = await db.getABTestById(testId);
+  const test = await getABTestById(testId);
   if (!test) {
     throw new Error('Test not found');
   }
@@ -129,7 +136,7 @@ export async function analyzeABTest(testId: number): Promise<{
  * تطبيق الرد الفائز تلقائياً
  */
 export async function applyWinningVariant(testId: number): Promise<number | null> {
-  const test = await db.getABTestById(testId);
+  const test = await getABTestById(testId);
   if (!test || test.status !== 'completed' || !test.winner) {
     return null;
   }
@@ -138,7 +145,7 @@ export async function applyWinningVariant(testId: number): Promise<number | null
   const winningText = test.winner === 'variant_a' ? test.variantAText : test.variantBText;
 
   // إنشاء رد سريع جديد
-  const responseId = await db.createQuickResponse({
+  const responseId = await createQuickResponse({
     merchantId: test.merchantId,
     trigger: test.keyword,
     keywords: test.keyword,
@@ -149,10 +156,10 @@ export async function applyWinningVariant(testId: number): Promise<number | null
 
   // تعطيل الردود القديمة لنفس الكلمة المفتاحية
   if (test.variantAId) {
-    await db.updateQuickResponse(test.variantAId, { isActive: false });
+    await updateQuickResponse(test.variantAId, { isActive: false });
   }
   if (test.variantBId) {
-    await db.updateQuickResponse(test.variantBId, { isActive: false });
+    await updateQuickResponse(test.variantBId, { isActive: false });
   }
 
   return responseId ? Number(responseId) : null;
@@ -199,7 +206,7 @@ export async function suggestABTests(merchantId: number): Promise<Array<{
   reason: string;
 }>> {
   // الحصول على الردود السريعة الأكثر استخداماً
-  const responses = await db.getQuickResponses(merchantId);
+  const responses = await getQuickResponses(merchantId);
   
   // ترتيب حسب الاستخدام
   const mostUsed = responses

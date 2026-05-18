@@ -7,7 +7,7 @@
  *   - sari_weekly_reports: generated weekly summary
  */
 
-import * as db from '../db';
+import { getPool } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -66,7 +66,7 @@ let _tablesCreated = false;
 export async function ensureQualityTables(): Promise<void> {
   if (_tablesCreated) return;
   
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   try {
@@ -134,7 +134,7 @@ export async function recordMetric(data: {
   wasEscalated?: boolean;
 }): Promise<void> {
   await ensureQualityTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   // SEC-V7-05 FIX: Daily cap — max 2000 records per merchant per day
@@ -182,7 +182,7 @@ export async function recordFeedback(
   rating: number
 ): Promise<void> {
   await ensureQualityTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const safeRating = Math.min(5, Math.max(1, Math.round(rating)));
@@ -202,7 +202,7 @@ export async function getQualityDashboard(
   days: number = 30
 ): Promise<QualityDashboard> {
   await ensureQualityTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) {
     return {
       totalResponses: 0, avgResponseTimeMs: 0, cacheHitRate: 0,
@@ -303,7 +303,7 @@ export async function getQualityDashboard(
 /** Generate weekly report for a merchant */
 export async function generateWeeklyReport(merchantId: number): Promise<WeeklyReport | null> {
   await ensureQualityTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const now = new Date();
@@ -397,7 +397,7 @@ export async function generateWeeklyReport(merchantId: number): Promise<WeeklyRe
 /** Get weekly reports history */
 export async function getWeeklyReports(merchantId: number, limit: number = 12): Promise<WeeklyReport[]> {
   await ensureQualityTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 52);

@@ -1,7 +1,18 @@
 import { z } from 'zod';
 import { protectedProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
-import * as db from '../db';
+import {
+  cancelAppointmentFromCalendly,
+  createIntegration,
+  createScheduledMessage,
+  createSyncLog,
+  deleteIntegrationByType,
+  getAppointmentStatsByMerchant,
+  getIntegrationByType,
+  updateIntegrationLastSync,
+  updateIntegrationSettings,
+  upsertAppointmentFromCalendly,
+} from '../db';
 
 // Calendly API Base URL
 const CALENDLY_API_BASE = 'https://api.calendly.com';
@@ -31,7 +42,7 @@ export const calendlyRouter = router({
   getConnection: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .query(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'calendly');
+      const integration = await getIntegrationByType(input.merchantId, 'calendly');
       
       if (!integration) {
         return { connected: false };
@@ -58,7 +69,7 @@ export const calendlyRouter = router({
         const userInfo = await calendlyApiRequest('/users/me', input.apiKey);
 
         // Save integration
-        await db.createIntegration({
+        await createIntegration({
           merchantId: input.merchantId,
           type: 'calendly',
           storeName: userInfo.resource.name || 'Calendly User',
@@ -85,7 +96,7 @@ export const calendlyRouter = router({
   disconnect: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .mutation(async ({ input }) => {
-      await db.deleteIntegrationByType(input.merchantId, 'calendly');
+      await deleteIntegrationByType(input.merchantId, 'calendly');
       return { success: true, message: 'تم فصل حساب Calendly' };
     }),
 
@@ -93,7 +104,7 @@ export const calendlyRouter = router({
   syncNow: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .mutation(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'calendly');
+      const integration = await getIntegrationByType(input.merchantId, 'calendly');
       
       if (!integration || !integration.accessToken) {
         throw new TRPCError({
@@ -116,16 +127,16 @@ export const calendlyRouter = router({
         
         if (events.collection) {
           for (const event of events.collection) {
-            await db.upsertAppointmentFromCalendly(input.merchantId, event);
+            await upsertAppointmentFromCalendly(input.merchantId, event);
             syncedEvents++;
           }
         }
 
         // Update last sync time
-        await db.updateIntegrationLastSync(integration.id);
+        await updateIntegrationLastSync(integration.id);
 
         // Log sync
-        await db.createSyncLog({
+        await createSyncLog({
           merchantId: input.merchantId,
           type: 'calendly_sync',
           status: 'success',
@@ -137,7 +148,7 @@ export const calendlyRouter = router({
           message: `تمت مزامنة ${syncedEvents} موعد بنجاح` 
         };
       } catch (error: any) {
-        await db.createSyncLog({
+        await createSyncLog({
           merchantId: input.merchantId,
           type: 'calendly_sync',
           status: 'error',
@@ -160,7 +171,7 @@ export const calendlyRouter = router({
       syncToWhatsApp: z.boolean(),
     }))
     .mutation(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'calendly');
+      const integration = await getIntegrationByType(input.merchantId, 'calendly');
       
       if (!integration) {
         throw new TRPCError({
@@ -169,7 +180,7 @@ export const calendlyRouter = router({
         });
       }
 
-      await db.updateIntegrationSettings(integration.id, {
+      await updateIntegrationSettings(integration.id, {
         autoConfirm: input.autoConfirm,
         sendReminders: input.sendReminders,
         syncToWhatsApp: input.syncToWhatsApp,
@@ -185,7 +196,7 @@ export const calendlyRouter = router({
       limit: z.number().optional().default(5),
     }))
     .query(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'calendly');
+      const integration = await getIntegrationByType(input.merchantId, 'calendly');
       
       if (!integration || !integration.accessToken) {
         return [];
@@ -218,7 +229,7 @@ export const calendlyRouter = router({
   getEventTypes: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .query(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'calendly');
+      const integration = await getIntegrationByType(input.merchantId, 'calendly');
       
       if (!integration || !integration.accessToken) {
         return [];
@@ -249,14 +260,14 @@ export const calendlyRouter = router({
   getStats: protectedProcedure
     .input(z.object({ merchantId: z.number() }))
     .query(async ({ input }) => {
-      const integration = await db.getIntegrationByType(input.merchantId, 'calendly');
+      const integration = await getIntegrationByType(input.merchantId, 'calendly');
       
       if (!integration) {
         return null;
       }
 
       // Get appointment stats from database
-      const stats = await db.getAppointmentStatsByMerchant(input.merchantId);
+      const stats = await getAppointmentStatsByMerchant(input.merchantId);
       
       return {
         totalEvents: stats.total || 0,
@@ -271,7 +282,7 @@ export const calendlyRouter = router({
 export async function handleCalendlyWebhook(merchantId: number, event: string, payload: any) {
   console.log(`[Calendly Webhook] Merchant ${merchantId} - Event: ${event}`);
 
-  const integration = await db.getIntegrationByType(merchantId, 'calendly');
+  const integration = await getIntegrationByType(merchantId, 'calendly');
   if (!integration || !integration.isActive) {
     console.log('[Calendly Webhook] Integration not found or inactive');
     return;
@@ -282,13 +293,13 @@ export async function handleCalendlyWebhook(merchantId: number, event: string, p
   switch (event) {
     case 'invitee.created':
       // New appointment booked
-      await db.upsertAppointmentFromCalendly(merchantId, payload);
+      await upsertAppointmentFromCalendly(merchantId, payload);
       
       // Send WhatsApp notification if enabled
       if (settings.syncToWhatsApp) {
         const invitee = payload.payload?.invitee;
         if (invitee?.phone_number) {
-          await db.createScheduledMessage({
+          await createScheduledMessage({
             merchantId,
             customerPhone: invitee.phone_number,
             message: `مرحباً ${invitee.name}! تم تأكيد موعدك بنجاح.\n\n📅 التاريخ: ${new Date(payload.payload?.event?.start_time).toLocaleDateString('ar-SA')}\n⏰ الوقت: ${new Date(payload.payload?.event?.start_time).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}\n\nنتطلع لرؤيتك!`,
@@ -298,7 +309,7 @@ export async function handleCalendlyWebhook(merchantId: number, event: string, p
         }
       }
 
-      await db.createSyncLog({
+      await createSyncLog({
         merchantId,
         type: 'calendly_webhook',
         status: 'success',
@@ -308,9 +319,9 @@ export async function handleCalendlyWebhook(merchantId: number, event: string, p
 
     case 'invitee.canceled':
       // Appointment canceled
-      await db.cancelAppointmentFromCalendly(merchantId, payload);
+      await cancelAppointmentFromCalendly(merchantId, payload);
       
-      await db.createSyncLog({
+      await createSyncLog({
         merchantId,
         type: 'calendly_webhook',
         status: 'success',
@@ -320,7 +331,7 @@ export async function handleCalendlyWebhook(merchantId: number, event: string, p
 
     case 'routing_form_submission.created':
       // Form submitted - could be used for lead capture
-      await db.createSyncLog({
+      await createSyncLog({
         merchantId,
         type: 'calendly_webhook',
         status: 'success',

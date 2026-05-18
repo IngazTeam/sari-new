@@ -16,7 +16,7 @@
 
 import { callGPT4, type ChatMessage } from './openai';
 import { updateProfile, type CustomerProfile, type CustomerTier } from '../db/customer-intelligence';
-import * as db from '../db';
+import { getMessagesByConversationId } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -90,7 +90,7 @@ export async function enrichCustomerProfile(params: {
     const { merchantId, customerPhone, conversationId, currentProfile } = params;
 
     // Load recent messages
-    const messages = await db.getMessagesByConversationId(conversationId);
+    const messages = await getMessagesByConversationId(conversationId);
     if (messages.length < 3) return; // Not enough data to analyze
 
     // Take last 15 messages for analysis

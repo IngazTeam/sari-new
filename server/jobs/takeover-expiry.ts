@@ -24,7 +24,14 @@
  * - VULN-3 FIX: Mark message as processed even on AI failure
  */
 
-import * as db from '../db';
+import {
+  createMessage,
+  getBotSettings,
+  getMerchantById,
+  getPool,
+  getWhatsAppInstancesByMerchantId,
+  updateConversation,
+} from '../db';
 
 let _isRunning = false;
 
@@ -40,7 +47,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
   _isRunning = true;
 
   try {
-    const pool = await db.getPool();
+    const pool = await getPool();
     if (!pool) {
       _isRunning = false;
       return;
@@ -134,7 +141,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
 async function resumeConversation(pool: any, conv: any, reason: string): Promise<void> {
   try {
     // 1. Clear the takeover
-    await db.updateConversation(conv.id, {
+    await updateConversation(conv.id, {
       humanTakeover: 0,
       humanExpiresAt: null,
     } as any);
@@ -168,7 +175,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
     );
 
     // 3. Get merchant's WhatsApp instance
-    const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchantId);
+    const instances = await getWhatsAppInstancesByMerchantId(conv.merchantId);
     const activeInstance = instances.find((i: any) => i.status === 'active');
 
     if (!activeInstance) {
@@ -177,7 +184,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
     }
 
     // 4. Get bot settings
-    const botSettings = await db.getBotSettings(conv.merchantId);
+    const botSettings = await getBotSettings(conv.merchantId);
     const resumeMsg = botSettings.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
 
     // 5. Generate AI response for the pending message
@@ -202,7 +209,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
       );
 
       // 7. Save outgoing message
-      await db.createMessage({
+      await createMessage({
         conversationId: conv.id,
         direction: 'outgoing',
         messageType: 'text',
@@ -264,7 +271,7 @@ async function sendMerchantReminder(pool: any, conv: any): Promise<void> {
     const pendingCount = (pendingResult as any[])?.[0]?.count || 1;
 
     // Get merchant info to find their phone
-    const merchant = await db.getMerchantById(conv.merchantId);
+    const merchant = await getMerchantById(conv.merchantId);
     if (!merchant) return;
 
     const customerName = conv.customerName || conv.customerPhone;
@@ -298,7 +305,7 @@ async function sendMerchantReminder(pool: any, conv: any): Promise<void> {
     }
 
     // Get the WhatsApp instance to send the reminder
-    const instances = await db.getWhatsAppInstancesByMerchantId(conv.merchantId);
+    const instances = await getWhatsAppInstancesByMerchantId(conv.merchantId);
     const activeInstance = instances.find((i: any) => i.status === 'active');
     if (!activeInstance) return;
 

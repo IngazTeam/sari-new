@@ -6,7 +6,20 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
-import * as db from "../db";
+import {
+  activateUserTrial,
+  createMerchant,
+  createMerchantSubscription,
+  createPaymentTransaction,
+  createUser,
+  getMerchantByUserId,
+  getSubscriptionPlanById,
+  getTapSettings,
+  getUserByEmail,
+  getUserById,
+  updateMerchantCustomerLimit,
+  updatePaymentTransaction,
+} from '../db';
 import { createCharge } from "../_core/tap";
 import bcrypt from 'bcryptjs';
 
@@ -33,7 +46,7 @@ export const subscriptionSignupRouter = router({
         }
 
         // Get user details
-        const user = await db.getUserById(userId);
+        const user = await getUserById(userId);
         if (!user) {
           throw new TRPCError({
             code: 'NOT_FOUND',
@@ -42,7 +55,7 @@ export const subscriptionSignupRouter = router({
         }
 
         // Get merchant
-        const merchant = await db.getMerchantByUserId(userId);
+        const merchant = await getMerchantByUserId(userId);
         if (!merchant) {
           throw new TRPCError({
             code: 'NOT_FOUND',
@@ -51,7 +64,7 @@ export const subscriptionSignupRouter = router({
         }
 
         // Get plan details
-        const plan = await db.getSubscriptionPlanById(input.planId);
+        const plan = await getSubscriptionPlanById(input.planId);
         if (!plan) {
           throw new TRPCError({
             code: 'NOT_FOUND',
@@ -65,7 +78,7 @@ export const subscriptionSignupRouter = router({
           : parseFloat(plan.yearlyPrice);
 
         // Create payment transaction
-        const transactionId = await db.createPaymentTransaction({
+        const transactionId = await createPaymentTransaction({
           merchantId: merchant.id,
           subscriptionId: null,
           type: 'subscription',
@@ -80,7 +93,7 @@ export const subscriptionSignupRouter = router({
         });
 
         // Get Tap settings
-        const tapSettings = await db.getTapSettings();
+        const tapSettings = await getTapSettings();
         if (!tapSettings || !tapSettings.isActive) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -115,7 +128,7 @@ export const subscriptionSignupRouter = router({
         });
 
         // Update transaction with Tap charge ID
-        await db.updatePaymentTransaction(transactionId, {
+        await updatePaymentTransaction(transactionId, {
           tapChargeId: charge.id,
           tapResponse: JSON.stringify(charge),
         });
@@ -153,7 +166,7 @@ export const subscriptionSignupRouter = router({
     .mutation(async ({ input }) => {
       try {
         // Check if user exists
-        const existingUser = await db.getUserByEmail(input.email);
+        const existingUser = await getUserByEmail(input.email);
         if (existingUser) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -165,14 +178,14 @@ export const subscriptionSignupRouter = router({
         const passwordHash = await bcrypt.hash(input.password, 10);
 
         // Create user
-        const userId = await db.createUser({
+        const userId = await createUser({
           email: input.email,
           passwordHash,
           role: 'merchant',
         });
 
         // Create merchant
-        const merchantId = await db.createMerchant({
+        const merchantId = await createMerchant({
           userId,
           businessName: input.businessName,
           phone: input.phone,
@@ -183,7 +196,7 @@ export const subscriptionSignupRouter = router({
         const now = new Date();
         const trialEndDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        await db.createMerchantSubscription({
+        await createMerchantSubscription({
           merchantId,
           status: 'trial',
           billingCycle: 'monthly',
@@ -194,10 +207,10 @@ export const subscriptionSignupRouter = router({
         });
 
         // Activate trial on user record
-        await db.activateUserTrial(userId);
+        await activateUserTrial(userId);
 
         // Set trial customer limit
-        await db.updateMerchantCustomerLimit(merchantId, 100);
+        await updateMerchantCustomerLimit(merchantId, 100);
 
         return {
           success: true,

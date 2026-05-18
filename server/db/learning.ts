@@ -6,7 +6,7 @@
  *   - sari_behavioral_dna: Evolved behavioral insights per merchant
  */
 
-import * as db from '../db';
+import { getPool } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -71,7 +71,7 @@ let _tablesCreated = false;
 export async function ensureLearningTables(): Promise<void> {
   if (_tablesCreated) return;
 
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   try {
@@ -167,7 +167,7 @@ export async function captureSignal(data: {
   contextSummary?: string;
 }): Promise<void> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   // Daily cap: max 500 signals per merchant per day
@@ -208,7 +208,7 @@ export async function getUnanalyzedSignals(
   limit: number = 100
 ): Promise<LearningSignal[]> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
@@ -227,7 +227,7 @@ export async function markSignalsAnalyzed(
   signalIds: number[]
 ): Promise<void> {
   if (signalIds.length === 0) return;
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   const placeholders = signalIds.map(() => '?').join(',');
@@ -241,7 +241,7 @@ export async function markSignalsAnalyzed(
 /** Count unanalyzed signals */
 export async function countUnanalyzedSignals(merchantId: number): Promise<number> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   const [rows] = await pool.execute(
@@ -258,7 +258,7 @@ export async function getSignalDistribution(
   days: number = 30
 ): Promise<{ signalType: string; count: number; avgWeight: number }[]> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const safeDays = Math.min(Math.max(days, 1), 90);
@@ -283,7 +283,7 @@ export async function getSignalDistribution(
 /** Get all active DNA for a merchant */
 export async function getActiveDNA(merchantId: number): Promise<BehavioralDNA[]> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -298,7 +298,7 @@ export async function getActiveDNA(merchantId: number): Promise<BehavioralDNA[]>
 /** Get the current DNA generation number */
 export async function getDNAGeneration(merchantId: number): Promise<number> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   const [rows] = await pool.execute(
@@ -319,7 +319,7 @@ export async function upsertDNA(data: {
   autoApplied?: boolean;
 }): Promise<void> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   try {
@@ -351,7 +351,7 @@ export async function upsertDNA(data: {
 
 /** Get total conversations for a merchant (for maturity calculation) */
 export async function getTotalConversations(merchantId: number): Promise<number> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   try {
@@ -366,7 +366,7 @@ export async function getTotalConversations(merchantId: number): Promise<number>
 /** Get total signals for a merchant */
 export async function getTotalSignals(merchantId: number): Promise<number> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   try {
@@ -417,7 +417,7 @@ export async function createEscalation(data: {
   priority?: EscalationPriority;
 }): Promise<number | null> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   // Daily cap: max 50 escalations per merchant per day
@@ -468,7 +468,7 @@ export async function createEscalation(data: {
 
 /** Mark escalation as notified (merchant was alerted) at given level */
 export async function markEscalationNotified(escalationId: number, merchantId: number, level: number = 0): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
   await pool.execute(
     `UPDATE sari_escalation_queue 
@@ -481,7 +481,7 @@ export async function markEscalationNotified(escalationId: number, merchantId: n
 
 /** Update escalation level (cascade to next phone) — PEN-ESC-03 FIX: merchant_id guard */
 export async function updateEscalationLevel(escalationId: number, level: number, merchantId?: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
   if (merchantId) {
     await pool.execute(
@@ -503,7 +503,7 @@ export async function updateEscalationLevel(escalationId: number, level: number,
 /** Get escalations that need cascading to next phone (notified > 5 min ago, not answered) */
 export async function getEscalationsNeedingCascade(): Promise<EscalationItem[]> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   // PEN-ESC-02 FIX: LIMIT 20 per cycle to prevent unbounded processing
@@ -519,7 +519,7 @@ export async function getEscalationsNeedingCascade(): Promise<EscalationItem[]> 
 
 /** Mark escalation as exhausted (all phones tried, no answer) — PEN-ESC-03 FIX */
 export async function markEscalationExhausted(escalationId: number, merchantId?: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
   if (merchantId) {
     await pool.execute(
@@ -541,7 +541,7 @@ export async function resolveEscalation(data: {
   merchantAnswer: string;
 }): Promise<EscalationItem | null> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   let rows: any[];
@@ -585,7 +585,7 @@ export async function getActiveEscalation(
   customerPhone: string
 ): Promise<EscalationItem | null> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const [rows] = await pool.execute(
@@ -608,7 +608,7 @@ export async function getActiveEscalationForMerchant(
   merchantId: number
 ): Promise<EscalationItem | null> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const [rows] = await pool.execute(
@@ -624,7 +624,7 @@ export async function getActiveEscalationForMerchant(
 /** Get escalations needing follow-up (>15 min, not followed up yet) */
 export async function getEscalationsNeedingFollowUp(merchantId: number): Promise<EscalationItem[]> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(
@@ -640,7 +640,7 @@ export async function getEscalationsNeedingFollowUp(merchantId: number): Promise
 /** Expire stale escalations (>24 hours unanswered) — PEN-INFO-03 FIX: batch limit */
 export async function expireStaleEscalations(): Promise<number> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   // PEN-INFO-03: Limit to 500 per cycle to prevent table locks
@@ -656,7 +656,7 @@ export async function expireStaleEscalations(): Promise<number> {
 /** Get today's unanswered questions for gap digest */
 export async function getDailyKnowledgeGaps(merchantId: number): Promise<{ question: string; count: number }[]> {
   await ensureLearningTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const [rows] = await pool.execute(

@@ -4,7 +4,22 @@
  */
 
 import { callGPT4, ChatMessage, TextContent, ImageContent } from './openai';
-import * as db from '../db';
+import {
+  createMessage,
+  findMatchingQuickResponse,
+  getActiveFaqsForBot,
+  getConversationsByMerchantId,
+  getDb,
+  getDiscoveredPagesByMerchantId,
+  getKnowledgeDocByMerchantId,
+  getMerchantById,
+  getMessagesByConversationId,
+  getOrCreatePersonalitySettings,
+  getProductsByMerchantId,
+  getWebsiteAnalysesByMerchant,
+  getZidProducts,
+  updateConversation,
+} from '../db';
 import { buildRAGContext, findCachedResponse, cacheSuccessfulResponse } from './rag-engine';
 import { getBotSections } from '../db/knowledge';
 import { recordMetric } from '../db/quality-metrics';
@@ -458,7 +473,7 @@ async function buildEnhancedContextPrompt(context: {
   // === Legacy fallback: Inject website analysis (only if RAG not active) ===
   if (!usingRAG && context.merchantId) {
     try {
-      const analyses = await db.getWebsiteAnalysesByMerchant(context.merchantId);
+      const analyses = await getWebsiteAnalysesByMerchant(context.merchantId);
       const latestAnalysis = analyses.length > 0 ? analyses[0] : null;
       if (latestAnalysis && latestAnalysis.status === 'completed') {
         contextPrompt += `\n## معلومات عن النشاط التجاري (من تحليل الموقع):\n`;
@@ -479,7 +494,7 @@ async function buildEnhancedContextPrompt(context: {
       
       // SPA Fallback: If scrapedContent is empty, inject discovered_pages as context
       if (!latestAnalysis?.scrapedContent || latestAnalysis.scrapedContent.trim().length < 50) {
-        const pages = await db.getDiscoveredPagesByMerchantId(context.merchantId);
+        const pages = await getDiscoveredPagesByMerchantId(context.merchantId);
         const contentPages = pages.filter((p: any) => p.content && p.content.trim().length > 30 && p.useInBot !== false);
         if (contentPages.length > 0) {
           contextPrompt += `\n## محتوى صفحات الموقع (مسحوبة من الصفحات الفرعية):\n`;
@@ -504,7 +519,7 @@ async function buildEnhancedContextPrompt(context: {
   // === Legacy fallback: Inject knowledge document (only if RAG not active) ===
   if (!usingRAG && context.merchantId) {
     try {
-      const knowledgeDoc = await db.getKnowledgeDocByMerchantId(context.merchantId);
+      const knowledgeDoc = await getKnowledgeDocByMerchantId(context.merchantId);
       if (knowledgeDoc && knowledgeDoc.extractedText && knowledgeDoc.extractionStatus === 'completed') {
         contextPrompt += `\n## ملف التعريف بالنشاط التجاري (مرفوع من التاجر):\n`;
         contextPrompt += `النوع: ${knowledgeDoc.fileType || 'مستند'}\n`;
@@ -526,7 +541,7 @@ async function buildEnhancedContextPrompt(context: {
   let cachedMerchant: any = null;
   if (context.merchantId) {
     try {
-      cachedMerchant = await db.getMerchantById(context.merchantId);
+      cachedMerchant = await getMerchantById(context.merchantId);
       if (cachedMerchant) {
         const profileParts: string[] = [];
         if (cachedMerchant.phone) profileParts.push(`الهاتف: ${cachedMerchant.phone}`);
@@ -571,7 +586,7 @@ async function buildEnhancedContextPrompt(context: {
   // === Inject FAQs from website analysis ===
   if (context.merchantId) {
     try {
-      const faqs = await db.getActiveFaqsForBot(context.merchantId);
+      const faqs = await getActiveFaqsForBot(context.merchantId);
       if (faqs.length > 0) {
         contextPrompt += `\n## الأسئلة الشائعة عن المتجر:\n`;
         contextPrompt += `استخدم هذه المعلومات للرد على أسئلة العملاء عن الشحن والاسترجاع وغيرها:\n\n`;
@@ -589,7 +604,7 @@ async function buildEnhancedContextPrompt(context: {
   // === Inject store policies from discovered pages ===
   if (context.merchantId) {
     try {
-      const pages = await db.getDiscoveredPagesByMerchantId(context.merchantId);
+      const pages = await getDiscoveredPagesByMerchantId(context.merchantId);
       const policyPages = pages.filter((p: any) =>
         ['shipping', 'returns', 'faq', 'about'].includes(p.pageType) && p.content
       );
@@ -629,7 +644,7 @@ export async function chatWithSari(params: {
 }): Promise<string> {
   try {
     // Get merchant info
-    const merchant = await db.getMerchantById(params.merchantId);
+    const merchant = await getMerchantById(params.merchantId);
     if (!merchant) {
       throw new Error('Merchant not found');
     }
@@ -639,7 +654,7 @@ export async function chatWithSari(params: {
     let isFirstMessage = true;
     
     if (params.conversationId) {
-      const messages = await db.getMessagesByConversationId(params.conversationId);
+      const messages = await getMessagesByConversationId(params.conversationId);
       if (messages.length > 0) {
         isFirstMessage = false;
         previousMessages = messages
@@ -652,7 +667,7 @@ export async function chatWithSari(params: {
     }
 
     // Get personality settings
-    const personalitySettings = await db.getOrCreatePersonalitySettings(params.merchantId);
+    const personalitySettings = await getOrCreatePersonalitySettings(params.merchantId);
 
     // Check for loyalty commands first
     const messageLower = params.message.toLowerCase().trim();
@@ -669,7 +684,7 @@ export async function chatWithSari(params: {
     }
     
     // Check for quick response match
-    const quickResponse = await db.findMatchingQuickResponse(params.merchantId, params.message);
+    const quickResponse = await findMatchingQuickResponse(params.merchantId, params.message);
     if (quickResponse) {
       return quickResponse.response;
     }
@@ -685,7 +700,7 @@ export async function chatWithSari(params: {
         if (parsedOrder && parsedOrder.products.length > 0) {
           // حفظ الطلب المؤقت في السياق (يمكن استخدام Redis أو قاعدة بيانات)
           // للتبسيط، سنقوم بإنشاء الطلب مباشرة وإرسال رسالة تأكيد
-          const zidProducts = await db.getZidProducts(params.merchantId);
+          const zidProducts = await getZidProducts(params.merchantId);
           
           // تجميع تفاصيل المنتجات
           const orderItems: Array<{ name: string; quantity: number; price: number; sku: string }> = [];
@@ -710,7 +725,7 @@ export async function chatWithSari(params: {
           
           if (orderItems.length > 0) {
             // إنشاء رسالة تأكيد الطلب
-            const merchant = await db.getMerchantById(params.merchantId);
+            const merchant = await getMerchantById(params.merchantId);
             const currency = (merchant?.currency as Currency) || 'SAR';
             
             const itemsList = orderItems.map(item => 
@@ -751,7 +766,7 @@ ${itemsList}
                 );
                 
                 if (result.success && result.orderUrl) {
-                  const merchant = await db.getMerchantById(params.merchantId);
+                  const merchant = await getMerchantById(params.merchantId);
                   const currency = (merchant?.currency as Currency) || 'SAR';
                   
                   return `✅ *تم إنشاء طلبك بنجاح!*
@@ -888,8 +903,8 @@ ${result.orderUrl}
       try {
         if (params.conversationId) {
           const { eq } = await import('drizzle-orm');
-          const pool = await db.getDb();
-          const convs = await db.getConversationsByMerchantId(params.merchantId);
+          const pool = await getDb();
+          const convs = await getConversationsByMerchantId(params.merchantId);
           const thisConv = convs.find((c: any) => c.id === params.conversationId);
           const agentId = (thisConv as any)?.currentAgentId;
           if (agentId) {
@@ -988,7 +1003,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     const sentiment = await analyzeSentiment(params.message);
 
     // Get all products
-    const allProducts = await db.getProductsByMerchantId(params.merchantId);
+    const allProducts = await getProductsByMerchantId(params.merchantId);
     
     // Smart product search based on customer message
     const relevantProducts = await searchRelevantProducts(
@@ -1069,7 +1084,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
       // v6: Build cross-sell suggestions from purchase history
       if (customerProfile?.purchaseHistory) {
-        const allProducts = await db.getProductsByMerchantId(params.merchantId);
+        const allProducts = await getProductsByMerchantId(params.merchantId);
         arsenal.crossSellSuggestions = buildCrossSellSuggestions(
           customerProfile.purchaseHistory,
           allProducts
@@ -1137,7 +1152,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     // ── Resume Context Injection (after Human Takeover) ──
     try {
       if (params.conversationId) {
-        const convs = await db.getConversationsByMerchantId(params.merchantId);
+        const convs = await getConversationsByMerchantId(params.merchantId);
         const thisConv = convs.find((c: any) => c.id === params.conversationId);
         const agentHistoryStr = (thisConv as any)?.agentHistory;
         if (agentHistoryStr) {
@@ -1146,7 +1161,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
             resumePrompt = `\n\n## سياق مهم — استئناف بعد تدخل بشري:\nالتاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة. الآن عدت أنت للرد. هذا ملخص آخر المحادثة بينهم:\n---\n${sanitizeForPrompt(agentHistory.resumeContext)}\n---\n⚠️ تعليمات: لا تكرر ما قاله التاجر. أكمل المحادثة بسلاسة كأنك تتابع من حيث توقفوا. لا تقل "عدت" أو "أنا هنا مجدداً". فقط أكمل الخدمة بشكل طبيعي.\n`;
 
             // Clear the resume context after first use
-            await db.updateConversation(params.conversationId, {
+            await updateConversation(params.conversationId, {
               agentHistory: null,
             } as any);
             console.log('[AI] Injected resume context and cleared agentHistory');
@@ -1159,7 +1174,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     let activeAgentName: string | null = null;
     try {
       const { eq } = await import('drizzle-orm');
-      const pool = await db.getDb();
+      const pool = await getDb();
       const agents = await pool.select().from(virtualAgents)
         .where(eq(virtualAgents.merchantId, params.merchantId));
 
@@ -1203,11 +1218,11 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           let previousAgentName: string | null = null;
           if (params.conversationId) {
             try {
-              const convs = await db.getConversationsByMerchantId(params.merchantId);
+              const convs = await getConversationsByMerchantId(params.merchantId);
               const thisConv = convs.find((c: any) => c.id === params.conversationId);
               const prevAgentId = (thisConv as any)?.currentAgentId;
               if (prevAgentId && prevAgentId !== selectedAgent.id) {
-                const prevAgents = await (await db.getDb()).select().from(virtualAgents)
+                const prevAgents = await (await getDb()).select().from(virtualAgents)
                   .where(eq(virtualAgents.id, prevAgentId));
                 if (prevAgents.length > 0) {
                   previousAgentName = prevAgents[0].name;
@@ -1242,7 +1257,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
           // Update conversation's current agent
           if (params.conversationId) {
             try {
-              await db.updateConversation(params.conversationId, {
+              await updateConversation(params.conversationId, {
                 currentAgentId: selectedAgent.id,
               } as any);
             } catch { /* silent */ }
@@ -1361,7 +1376,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
 
     try {
       console.log('[chatWithSari] callGPT4 exhausted (3 internal attempts failed). Trying stripped-context fallback...');
-      const merchant = await db.getMerchantById(params.merchantId);
+      const merchant = await getMerchantById(params.merchantId);
       const businessName = merchant?.businessName || 'نشاطنا التجاري';
 
       // Minimal prompt — no RAG, no context, no personality layers
@@ -1386,7 +1401,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         // Save the retry response as outgoing message
         if (params.conversationId) {
           try {
-            await db.createMessage({
+            await createMessage({
               conversationId: params.conversationId,
               direction: 'outgoing',
               messageType: 'text',
@@ -1427,7 +1442,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
 
     // Context-aware fallback: use merchant info + auto-escalate to merchant
     try {
-      const merchant = await db.getMerchantById(params.merchantId);
+      const merchant = await getMerchantById(params.merchantId);
       if (merchant) {
         const name = merchant.businessName || '';
         
@@ -1457,13 +1472,13 @@ export async function generateWelcomeMessage(params: {
   customerName?: string;
 }): Promise<string> {
   try {
-    const merchant = await db.getMerchantById(params.merchantId);
+    const merchant = await getMerchantById(params.merchantId);
     if (!merchant) {
       throw new Error('Merchant not found');
     }
 
     // Get top 3 products to mention
-    const products = await db.getProductsByMerchantId(params.merchantId);
+    const products = await getProductsByMerchantId(params.merchantId);
     const topProducts = products.slice(0, 3);
 
     let contextPrompt = `\n## معلومات المتجر:\nأنت تعمل لدى متجر "${merchant.businessName}".\n\n`;
@@ -1575,7 +1590,7 @@ export async function recommendProducts(params: {
   limit?: number;
 }): Promise<Array<{ product: any; reason: string; score: number }>> {
   try {
-    const allProducts = await db.getProductsByMerchantId(params.merchantId);
+    const allProducts = await getProductsByMerchantId(params.merchantId);
     
     if (allProducts.length === 0) return [];
     

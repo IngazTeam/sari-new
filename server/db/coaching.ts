@@ -9,7 +9,7 @@
  * to validate or correct its recent responses to customers.
  */
 
-import * as db from '../db';
+import { getPool } from '../db';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -55,7 +55,7 @@ let _tablesCreated = false;
 export async function ensureCoachingTables(): Promise<void> {
   if (_tablesCreated) return;
 
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   try {
@@ -112,7 +112,7 @@ export async function createCoachingSession(
   questions: { customerQuestion: string; botResponse: string; conversationId?: number }[]
 ): Promise<number | null> {
   await ensureCoachingTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool || questions.length === 0) return null;
 
   try {
@@ -159,7 +159,7 @@ export async function createCoachingSession(
 /** Get active coaching session for a merchant */
 export async function getActiveSession(merchantId: number): Promise<CoachingSession | null> {
   await ensureCoachingTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const [rows] = await pool.execute(
@@ -174,7 +174,7 @@ export async function getActiveSession(merchantId: number): Promise<CoachingSess
 
 /** Get the current question for an active session — PEN-COACH-02 FIX: merchant_id guard */
 export async function getCurrentQuestion(sessionId: number, currentIndex: number, merchantId?: number): Promise<CoachingQuestion | null> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const query = merchantId
@@ -195,7 +195,7 @@ export async function recordVerdict(
   verdict: QuestionVerdict,
   correction?: string
 ): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   await pool.execute(
@@ -215,7 +215,7 @@ const VERDICT_COLUMN_MAP: Record<string, string> = {
 
 /** Advance session to next question, returns new index */
 export async function advanceSession(sessionId: number, verdict: QuestionVerdict, merchantId?: number): Promise<number> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return -1;
 
   // PEN-COACH-01 FIX: Whitelist column name — never interpolate user-derived values
@@ -250,7 +250,7 @@ export async function advanceSession(sessionId: number, verdict: QuestionVerdict
 
 /** Complete a coaching session — PEN-COACH-02 FIX: merchant_id guard */
 export async function completeSession(sessionId: number, merchantId?: number): Promise<void> {
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return;
 
   if (merchantId) {
@@ -273,7 +273,7 @@ export async function completeSession(sessionId: number, merchantId?: number): P
 /** Expire stale sessions (> 2 hours without response) */
 export async function expireStaleSessions(): Promise<number> {
   await ensureCoachingTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return 0;
 
   const [result] = await pool.execute(
@@ -289,7 +289,7 @@ export async function expireStaleSessions(): Promise<number> {
 /** Get the date of the last coaching session for a merchant */
 export async function getLastSessionDate(merchantId: number): Promise<Date | null> {
   await ensureCoachingTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return null;
 
   const [rows] = await pool.execute(
@@ -313,7 +313,7 @@ export async function getReviewCandidates(
   limit: number = 5
 ): Promise<{ customerQuestion: string; botResponse: string; conversationId: number }[]> {
   await ensureCoachingTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 10);
@@ -371,7 +371,7 @@ export async function getCoachingStats(merchantId: number): Promise<{
   correctRate: number;
 }> {
   await ensureCoachingTables();
-  const pool = await db.getPool();
+  const pool = await getPool();
   if (!pool) return { totalSessions: 0, totalReviewed: 0, correctRate: 0 };
 
   try {

@@ -1,5 +1,11 @@
 import { TRPCError } from '@trpc/server';
-import * as db from '../db';
+import {
+  getConversationByMerchantAndPhone,
+  getCustomerCountByMerchant,
+  getMerchantCurrentSubscription,
+  getSubscriptionPlanById,
+  getWhatsAppInstancesByMerchantId,
+} from '../db';
 
 /**
  * Check if merchant can add new customers based on subscription limits
@@ -9,7 +15,7 @@ import * as db from '../db';
  */
 export async function checkCustomerLimit(merchantId: number, customerPhone?: string): Promise<boolean> {
   // Get current subscription
-  const subscription = await db.getMerchantCurrentSubscription(merchantId);
+  const subscription = await getMerchantCurrentSubscription(merchantId);
   
   if (!subscription) {
     throw new TRPCError({
@@ -19,7 +25,7 @@ export async function checkCustomerLimit(merchantId: number, customerPhone?: str
   }
 
   // Get subscription plan details
-  const plan = await db.getSubscriptionPlanById(subscription.planId);
+  const plan = await getSubscriptionPlanById(subscription.planId);
   
   if (!plan) {
     throw new TRPCError({
@@ -30,14 +36,14 @@ export async function checkCustomerLimit(merchantId: number, customerPhone?: str
 
   // If checking for existing customer, allow
   if (customerPhone) {
-    const existingConversation = await db.getConversationByMerchantAndPhone(merchantId, customerPhone);
+    const existingConversation = await getConversationByMerchantAndPhone(merchantId, customerPhone);
     if (existingConversation) {
       return true; // Existing customer, no limit check needed
     }
   }
 
   // Get current customer count
-  const currentCustomerCount = await db.getCustomerCountByMerchant(merchantId);
+  const currentCustomerCount = await getCustomerCountByMerchant(merchantId);
 
   // Check if limit reached
   if (currentCustomerCount >= plan.maxCustomers) {
@@ -57,7 +63,7 @@ export async function checkCustomerLimit(merchantId: number, customerPhone?: str
  */
 export async function checkWhatsAppNumberLimit(merchantId: number): Promise<boolean> {
   // Get current subscription
-  const subscription = await db.getMerchantCurrentSubscription(merchantId);
+  const subscription = await getMerchantCurrentSubscription(merchantId);
   
   if (!subscription) {
     throw new TRPCError({
@@ -67,7 +73,7 @@ export async function checkWhatsAppNumberLimit(merchantId: number): Promise<bool
   }
 
   // Get subscription plan details
-  const plan = await db.getSubscriptionPlanById(subscription.planId);
+  const plan = await getSubscriptionPlanById(subscription.planId);
   
   if (!plan) {
     throw new TRPCError({
@@ -77,7 +83,7 @@ export async function checkWhatsAppNumberLimit(merchantId: number): Promise<bool
   }
 
   // Get current WhatsApp numbers count
-  const whatsappNumbers = await db.getWhatsAppInstancesByMerchantId(merchantId);
+  const whatsappNumbers = await getWhatsAppInstancesByMerchantId(merchantId);
   const currentCount = whatsappNumbers.length;
 
   // Check if limit reached
@@ -102,19 +108,19 @@ export async function getRemainingCustomerSlots(merchantId: number): Promise<{
   remaining: number;
   percentage: number;
 }> {
-  const subscription = await db.getMerchantCurrentSubscription(merchantId);
+  const subscription = await getMerchantCurrentSubscription(merchantId);
   
   if (!subscription) {
     return { current: 0, max: 0, remaining: 0, percentage: 0 };
   }
 
-  const plan = await db.getSubscriptionPlanById(subscription.planId);
+  const plan = await getSubscriptionPlanById(subscription.planId);
   
   if (!plan) {
     return { current: 0, max: 0, remaining: 0, percentage: 0 };
   }
 
-  const currentCount = await db.getCustomerCountByMerchant(merchantId);
+  const currentCount = await getCustomerCountByMerchant(merchantId);
   const remaining = Math.max(0, plan.maxCustomers - currentCount);
   const percentage = (currentCount / plan.maxCustomers) * 100;
 

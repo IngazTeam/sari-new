@@ -2,7 +2,7 @@
  * نظام استخراج الكلمات المفتاحية من رسائل العملاء
  */
 
-import * as db from '../db';
+import { getKeywordStats, upsertKeywordAnalysis } from '../db';
 import { callGPT4 } from './openai';
 
 interface KeywordExtractionResult {
@@ -68,12 +68,12 @@ export async function extractKeywordsFromMessage(
     for (const kw of result.keywords) {
       try {
         // البحث عن كلمة مفتاحية موجودة
-        const existingKeywords = await db.getKeywordStats(merchantId, {
+        const existingKeywords = await getKeywordStats(merchantId, {
           category: kw.category
         });
         
         // استخدام upsert للتحديث أو الإنشاء
-        await db.upsertKeywordAnalysis({
+        await upsertKeywordAnalysis({
           merchantId,
           keyword: kw.keyword,
           category: kw.category,
@@ -100,7 +100,7 @@ export async function getTopKeywords(
   limit: number = 10
 ): Promise<Array<{ keyword: string; count: number; category: string }>> {
   try {
-    const keywords = await db.getKeywordStats(merchantId, { limit });
+    const keywords = await getKeywordStats(merchantId, { limit });
     return keywords.map(k => ({
       keyword: k.keyword,
       count: k.frequency,

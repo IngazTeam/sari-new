@@ -1,4 +1,12 @@
-import * as db from '../db';
+import {
+  createOrderTrackingLog,
+  getAllSallaConnections,
+  getOrderById,
+  getOrderTrackingLogs,
+  getOrdersByMerchantId,
+  getSallaConnectionByMerchantId,
+  updateOrderStatus,
+} from '../db';
 import { sendTextMessage } from '../whatsapp';
 import { SallaIntegration } from '../integrations/salla';
 
@@ -78,7 +86,7 @@ export async function sendOrderStatusUpdate(
 ): Promise<boolean> {
   try {
     // الحصول على تفاصيل الطلب
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       console.error(`[Order Tracking] Order ${orderId} not found`);
       return false;
@@ -105,10 +113,10 @@ export async function sendOrderStatusUpdate(
       console.log(`[Order Tracking] Status update sent to ${order.customerPhone} for order ${orderId}`);
       
       // تحديث حالة الطلب في قاعدة البيانات
-      await db.updateOrderStatus(orderId, newStatus as any, trackingNumber);
+      await updateOrderStatus(orderId, newStatus as any, trackingNumber);
       
       // تسجيل الإشعار
-      await db.createOrderTrackingLog({
+      await createOrderTrackingLog({
         orderId,
         oldStatus: order.status,
         newStatus,
@@ -122,7 +130,7 @@ export async function sendOrderStatusUpdate(
       console.error(`[Order Tracking] Failed to send notification: ${result.error}`);
       
       // تسجيل الفشل
-      await db.createOrderTrackingLog({
+      await createOrderTrackingLog({
         orderId,
         oldStatus: order.status,
         newStatus,
@@ -147,7 +155,7 @@ export async function checkOrderStatus(
   sallaOrderId: string
 ): Promise<{ status: string; trackingNumber?: string } | null> {
   try {
-    const sallaConnection = await db.getSallaConnectionByMerchantId(merchantId);
+    const sallaConnection = await getSallaConnectionByMerchantId(merchantId);
     if (!sallaConnection || sallaConnection.syncStatus !== 'active') {
       console.error(`[Order Tracking] No active Salla connection for merchant ${merchantId}`);
       return null;
@@ -196,7 +204,7 @@ export async function processOrderStatusUpdate(
   trackingNumber?: string
 ): Promise<boolean> {
   try {
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       console.error(`[Order Tracking] Order ${orderId} not found`);
       return false;
@@ -207,10 +215,10 @@ export async function processOrderStatusUpdate(
       return await sendOrderStatusUpdate(orderId, newStatus, trackingNumber);
     } else {
       // تحديث الحالة فقط بدون إشعار
-      await db.updateOrderStatus(orderId, newStatus as any, trackingNumber);
+      await updateOrderStatus(orderId, newStatus as any, trackingNumber);
       
       // تسجيل التحديث
-      await db.createOrderTrackingLog({
+      await createOrderTrackingLog({
         orderId,
         oldStatus: order.status,
         newStatus,
@@ -245,13 +253,13 @@ export async function checkAllActiveOrders(): Promise<{
 
   try {
     // الحصول على جميع الاتصالات النشطة بـ Salla
-    const connections = await db.getAllSallaConnections();
+    const connections = await getAllSallaConnections();
     
     for (const connection of connections) {
       if (connection.syncStatus !== 'active') continue;
 
       // الحصول على الطلبات النشطة لهذا التاجر
-      const orders = await db.getOrdersByMerchantId(connection.merchantId);
+      const orders = await getOrdersByMerchantId(connection.merchantId);
       const activeOrders = orders.filter(
         order => !['delivered', 'cancelled'].includes(order.status) && order.sallaOrderId
       );
@@ -301,5 +309,5 @@ export async function checkAllActiveOrders(): Promise<{
  * الحصول على سجل التتبع لطلب معين
  */
 export async function getOrderTrackingHistory(orderId: number) {
-  return await db.getOrderTrackingLogs(orderId);
+  return await getOrderTrackingLogs(orderId);
 }
