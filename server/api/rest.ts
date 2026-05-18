@@ -950,6 +950,10 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
     const { logBrainActivity } = await import('../routers-sari-brain');
     await logBrainActivity(merchantId, 'products_imported', `Platform Sync: ${created} منتج (${mode || 'append'})`, { count: created, mode, source: 'platform' });
 
+    // Update last_sync_at timestamp
+    const { updateByaanSyncStatus } = await import('../integrations/byaan');
+    await updateByaanSyncStatus(merchantId, 'active');
+
     res.json({ success: true, created, mode: mode || 'append' });
   } catch (e) {
     console.error('[SariAPI] Platform product sync failed:', e);
@@ -985,6 +989,10 @@ sariPlatformRouter.post('/sync/trainees', async (req: PlatformRequest, res: Resp
       { ...result, source: 'platform' }
     );
 
+    // Update last_sync_at timestamp
+    const { updateByaanSyncStatus } = await import('../integrations/byaan');
+    await updateByaanSyncStatus(merchant.id, 'active');
+
     res.json({ success: true, ...result, mode: mode || 'upsert' });
   } catch (e) {
     console.error('[SariAPI] Platform trainee sync failed:', e);
@@ -1018,6 +1026,10 @@ sariPlatformRouter.post('/sync/settings', async (req: PlatformRequest, res: Resp
         { updated: result.updated, source: 'platform' }
       );
     }
+
+    // Update last_sync_at timestamp
+    const { updateByaanSyncStatus } = await import('../integrations/byaan');
+    await updateByaanSyncStatus(merchant.id, 'active');
 
     res.json({ success: true, ...result });
   } catch (e) {
@@ -1070,6 +1082,10 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
 
     const { logBrainActivity } = await import('../routers-sari-brain');
     await logBrainActivity(merchantId, 'faq_created', `Platform Sync: ${created} سؤال شائع (${mode || 'append'})`, { count: created, source: 'platform' });
+
+    // Update last_sync_at timestamp
+    const { updateByaanSyncStatus } = await import('../integrations/byaan');
+    await updateByaanSyncStatus(merchantId, 'active');
 
     res.json({ success: true, created, mode: mode || 'append' });
   } catch (e) {
