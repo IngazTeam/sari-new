@@ -156,6 +156,64 @@ async function ensureByaanTables() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Byaan Webhook — Notify Byaan of subscription changes
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Send a signed webhook to Byaan to activate/deactivate sari feature
+ * This eliminates the need for Byaan SuperAdmin to manually enable the feature
+ * 
+ * Events:
+ * - subscription.activated → Byaan adds sari_starter to tenant_services
+ * - subscription.deactivated → Byaan removes sari_* from tenant_services
+ */
+async function notifyByaanPlatform(
+  tenantDomain: string,
+  event: 'subscription.activated' | 'subscription.deactivated',
+  merchantId: number,
+  plan: string = 'sari_starter'
+): Promise<void> {
+  try {
+    // Build webhook URL from tenant domain
+    const webhookUrl = `https://${tenantDomain}/api/sari/webhook`;
+    
+    const body = JSON.stringify({
+      event,
+      merchant_id: String(merchantId),
+      data: {
+        tenant_domain: tenantDomain,
+        plan,
+        activated_at: new Date().toISOString(),
+      },
+    });
+
+    // Sign with platform key (same key Byaan verifies against)
+    const platformKey = process.env.BYAAN_PLATFORM_KEY || '';
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
+
+    if (platformKey) {
+      const signature = crypto.createHmac('sha256', platformKey).update(body).digest('hex');
+      headers['X-Sari-Signature'] = signature;
+    }
+
+    const axios = (await import('axios')).default;
+    const response = await axios.post(webhookUrl, body, {
+      headers,
+      timeout: 10000,
+      validateStatus: () => true, // Don't throw on non-2xx
+    });
+
+    console.log(`[Byaan Webhook] ${event} → ${tenantDomain} (${response.status})`);
+  } catch (e: any) {
+    // Non-blocking — connection still works even if webhook fails
+    console.warn(`[Byaan Webhook] ${event} failed for ${tenantDomain}:`, e?.message || e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Connection CRUD
 // ═══════════════════════════════════════════════════════════════
 
@@ -200,6 +258,9 @@ export async function createByaanConnection(
     [merchantId]
   );
 
+  // Notify Byaan to activate sari feature for this tenant (non-blocking)
+  notifyByaanPlatform(tenantDomain, 'subscription.activated', merchantId);
+
   return getByaanConnection(merchantId);
 }
 
@@ -207,6 +268,10 @@ export async function deleteByaanConnection(merchantId: number) {
   await ensureByaanTables();
   const dbConn = await db.getDb();
   if (!dbConn) return;
+
+  // Get tenant domain before deleting (for webhook notification)
+  const connection = await getByaanConnection(merchantId);
+  const tenantDomain = connection?.tenant_domain;
 
   await (dbConn as any).execute(
     `DELETE FROM byaan_connections WHERE merchant_id = ?`,
@@ -218,6 +283,11 @@ export async function deleteByaanConnection(merchantId: number) {
     `UPDATE merchants SET integration_source = 'none' WHERE id = ?`,
     [merchantId]
   );
+
+  // Notify Byaan to deactivate sari feature (non-blocking)
+  if (tenantDomain) {
+    notifyByaanPlatform(tenantDomain, 'subscription.deactivated', merchantId);
+  }
 }
 
 export async function updateByaanSyncStatus(merchantId: number, status: string, errors?: string) {
