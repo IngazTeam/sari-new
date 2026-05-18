@@ -221,7 +221,7 @@ async function handleOrderPayment(
 
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
-      await db.updateOrderStatus(orderId, 'payment_failed');
+      await db.updateOrderStatus(orderId, 'cancelled');
 
       const failureMessage = `❌ *فشلت عملية الدفع*
 
@@ -275,7 +275,7 @@ async function handleBookingPayment(
 نتطلع لخدمتك! 💚`;
 
       // TODO: إرسال رسالة نجاح الدفع
-      console.log('[TapWebhook] Payment success for order:', orderId);
+      console.log('[TapWebhook] Payment success for booking:', bookingId);
 
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
@@ -291,7 +291,7 @@ async function handleBookingPayment(
 نعتذر عن الإزعاج 🙏`;
 
       // TODO: إرسال رسالة فشل الدفع
-      console.log('[TapWebhook] Payment failed for order:', orderId);
+      console.log('[TapWebhook] Payment failed for booking:', bookingId);
     }
   } catch (error) {
     console.error('[TapWebhook] Error handling booking payment:', error);

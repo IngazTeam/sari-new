@@ -531,7 +531,7 @@ export async function executeAction(params: {
                 metadata: {
                   merchantId: merchantId.toString(),
                   orderId: order.id.toString(),
-                  type: 'whatsapp_order',
+                  type: 'order',  // Must match tap-webhook.ts handler check
                 },
               };
 
