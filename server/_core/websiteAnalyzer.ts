@@ -916,10 +916,90 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
     return (aIdx === -1 ? 50 : aIdx) - (bIdx === -1 ? 50 : bIdx);
   });
 
+  // Track content hashes to detect SPA duplicate content
+  const contentHashes = new Set<string>();
+  let spaDetected = false;
+
   for (const page of sorted.slice(0, 50)) {
     try {
       console.log(`[WebsiteAnalyzer] Crawling sub-page: ${page.pageType} — ${page.url}`);
-      const { dom, text, html } = await scrapeWebsite(page.url);
+
+      let text = '';
+      let dom: any;
+      let html = '';
+
+      // If SPA detected (duplicate content), force Puppeteer for unique content
+      if (spaDetected) {
+        try {
+          const puppeteerCore = await import('puppeteer-core').catch(() => null);
+          let chromiumPath: string | null = null;
+          try {
+            const chromium = await import('chromium');
+            chromiumPath = (chromium as any).default?.path || (chromium as any).path || null;
+          } catch {}
+          if (!chromiumPath) {
+            const { existsSync } = await import('fs');
+            for (const p of ['/usr/bin/chromium-browser', '/usr/bin/chromium', '/snap/bin/chromium', '/usr/bin/google-chrome-stable', '/usr/bin/google-chrome']) {
+              if (existsSync(p)) { chromiumPath = p; break; }
+            }
+          }
+          if (puppeteerCore && chromiumPath) {
+            const browser = await puppeteerCore.launch({
+              headless: true, executablePath: chromiumPath,
+              args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+              timeout: 15000,
+            });
+            try {
+              const browserPage = await browser.newPage();
+              await browserPage.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36');
+              await browserPage.goto(page.url, { waitUntil: 'networkidle2', timeout: 15000 });
+              await new Promise(r => setTimeout(r, 2000));
+              html = await browserPage.content();
+              text = await browserPage.evaluate(() => {
+                document.querySelectorAll('script, style, [hidden], .hidden, nav, header, footer, [aria-hidden="true"]').forEach(el => el.remove());
+                return document.body?.innerText || '';
+              });
+              text = text.replace(/\s+/g, ' ').trim();
+              dom = new JSDOM(html);
+              console.log(`[WebsiteAnalyzer] 🚀 Puppeteer (SPA mode) extracted ${text.length} chars from ${page.url}`);
+            } finally {
+              try { await browser.close(); } catch {}
+            }
+          }
+        } catch (puppErr: any) {
+          console.warn(`[WebsiteAnalyzer] Puppeteer SPA fallback failed:`, puppErr.message);
+        }
+      }
+
+      // Default scrape if Puppeteer didn't run or failed
+      if (!text || text.length < 50) {
+        const scraped = await scrapeWebsite(page.url);
+        dom = scraped.dom;
+        text = scraped.text;
+        html = scraped.html;
+      }
+
+      // Duplicate detection: hash first 500 chars of content (ignores minor layout diffs)
+      const contentHash = text.substring(0, 500).replace(/\s+/g, '');
+      if (contentHashes.size > 0 && contentHashes.has(contentHash)) {
+        console.warn(`[WebsiteAnalyzer] ⚠️ DUPLICATE content detected for ${page.url} — SPA shell repeat`);
+        if (!spaDetected) {
+          spaDetected = true;
+          console.log(`[WebsiteAnalyzer] 🔄 SPA detected! Switching to Puppeteer-only mode for remaining pages`);
+        }
+        // Skip this duplicate — don't add same content twice
+        crawledPages.push({
+          url: page.url,
+          title: page.title || page.pageType,
+          pageType: page.pageType as any,
+          content: '(محتوى مكرر — نفس الصفحة الرئيسية)',
+          wordCount: 0,
+          crawledAt: new Date().toISOString(),
+          success: false,
+        });
+        continue;
+      }
+      contentHashes.add(contentHash);
 
       // Track per-page data for Knowledge Dashboard
       const pageWordCount = text.trim().split(/\s+/).filter(Boolean).length;
