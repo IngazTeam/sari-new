@@ -22,12 +22,13 @@ export interface ExistingPlatform {
 export async function checkExistingIntegrations(merchantId: number): Promise<ExistingPlatform[]> {
   const existingPlatforms: ExistingPlatform[] = [];
 
-  // فحص سلة (Salla) — استخدام raw SQL عبر pool لتجنب مشكلة db module-level variable
+  // فحص سلة (Salla) — raw SQL via pool
+  // Note: salla_connections uses camelCase columns (no explicit column name in schema)
   try {
     const pool = await getPool();
     if (pool) {
       const [rows] = await pool.execute(
-        `SELECT * FROM salla_connections WHERE merchant_id = ? AND sync_status = 'active' LIMIT 1`,
+        `SELECT * FROM salla_connections WHERE merchantId = ? AND syncStatus = 'active' LIMIT 1`,
         [merchantId]
       );
       const sallaConnection = (rows as any[])?.[0];
@@ -35,8 +36,8 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
         existingPlatforms.push({
           platform: 'salla',
           name: 'سلة',
-          storeUrl: sallaConnection.store_url,
-          connectedAt: sallaConnection.created_at,
+          storeUrl: sallaConnection.storeUrl,
+          connectedAt: sallaConnection.createdAt,
         });
       }
     }
@@ -44,7 +45,7 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
     console.error('[Platform Checker] Error checking Salla:', error);
   }
 
-  // فحص زد (Zid)
+  // فحص زد (Zid) — zid_settings uses snake_case columns
   try {
     const pool = await getPool();
     if (pool) {
@@ -66,7 +67,7 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
     console.error('[Platform Checker] Error checking Zid:', error);
   }
 
-  // فحص ووكومرس (WooCommerce) — raw SQL لتجنب db module-level variable
+  // فحص ووكومرس (WooCommerce) — woocommerce_settings uses snake_case columns
   try {
     const pool = await getPool();
     if (pool) {
