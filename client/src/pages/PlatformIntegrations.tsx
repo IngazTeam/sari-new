@@ -3,7 +3,7 @@
  * تعرض المنصة المربوطة حالياً وتسمح بالفصل أو التبديل
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,77 +15,54 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
 
 // ═══════════════════════════════════════════════════════════════
-// Byaan Sync Status Panel — Shows connection stats + resync button
+// Byaan Sync Status Panel — Shows connection stats + test button
 // ═══════════════════════════════════════════════════════════════
 
 function ByaanSyncStatusPanel() {
-  const [status, setStatus] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
+  const { data: status, isLoading } = trpc.integrations.getByaanStatus.useQuery();
+  const testMutation = trpc.integrations.testByaanConnection.useMutation({
+    onSuccess: (result) => {
+      if (result.success) toast.success(result.message);
+      else toast.error(result.message);
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const apiKey = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
-
-  const fetchStatus = async () => {
-    if (!apiKey) { setLoading(false); return; }
-    try {
-      const res = await fetch('/api/v1/integration', { headers: { Authorization: `Bearer ${apiKey}` } });
-      if (res.ok) setStatus(await res.json());
-    } catch (e) { /* skip */ }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { fetchStatus(); }, []);
-
-  const handleResync = async () => {
-    setSyncing(true);
-    try {
-      const res = await fetch('/api/v1/integration', { headers: { Authorization: `Bearer ${apiKey}` } });
-      const data = res.ok ? await res.json() : null;
-      
-      if (data?.byaan) {
-        toast.info('🔄 المزامنة تتم عبر لوحة بيان — اضغط "مزامنة البيانات" من لوحة بيان');
-      } else {
-        toast.warning('الربط غير مكتمل — تأكد من اشتراكك بخدمة ساري في بيان');
-      }
-    } catch {
-      toast.error('فشل الاتصال');
-    } finally {
-      setSyncing(false);
-      fetchStatus();
-    }
-  };
-
-  if (loading) return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> جاري فحص حالة الربط...</div>;
-  if (!status || status.source !== 'byaan') return null;
+  if (isLoading) return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> جاري فحص حالة الربط...</div>;
+  if (!status?.isConnected) return null;
 
   return (
     <div className="space-y-3">
       {/* Connection info */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {status.byaan?.tenantDomain && (
-          <div className="col-span-2 sm:col-span-4 flex items-center gap-2 text-sm bg-white/50 dark:bg-white/5 rounded-lg px-3 py-2 border">
-            <GraduationCap className="h-4 w-4 text-indigo-500" />
-            <span className="text-muted-foreground">النطاق:</span>
-            <code className="text-xs bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded" dir="ltr">{status.byaan.tenantDomain}</code>
-            {status.byaan.lastSyncAt && (
-              <span className="text-xs text-muted-foreground mr-auto">
-                آخر مزامنة: {new Date(status.byaan.lastSyncAt).toLocaleString('ar-SA')}
-              </span>
-            )}
-          </div>
-        )}
+      {status.byaan?.tenantDomain && (
+        <div className="flex items-center gap-2 text-sm bg-white/50 dark:bg-white/5 rounded-lg px-3 py-2 border">
+          <GraduationCap className="h-4 w-4 text-indigo-500" />
+          <span className="text-muted-foreground">النطاق:</span>
+          <code className="text-xs bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded" dir="ltr">{status.byaan.tenantDomain}</code>
+          {status.byaan.lastSyncAt && (
+            <span className="text-xs text-muted-foreground mr-auto">
+              آخر مزامنة: {new Date(status.byaan.lastSyncAt).toLocaleString('ar-SA')}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <span>📦 {status.stats.products} {status.terminology?.products || 'منتج'}</span>
+        <span>👥 {status.stats.customers} {status.terminology?.customers || 'عميل'}</span>
       </div>
 
-      {/* Resync button */}
+      {/* Test connection button */}
       <Button
         variant="outline"
         size="sm"
-        onClick={handleResync}
-        disabled={syncing}
+        onClick={() => testMutation.mutate()}
+        disabled={testMutation.isPending}
         className="gap-1.5"
       >
-        {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-        {syncing ? 'جاري الفحص...' : 'فحص حالة المزامنة'}
+        {testMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+        {testMutation.isPending ? 'جاري الفحص...' : 'اختبار الاتصال'}
       </Button>
     </div>
   );

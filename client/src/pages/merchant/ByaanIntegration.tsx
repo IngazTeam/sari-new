@@ -1,106 +1,72 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import {
   Loader2, CheckCircle2, XCircle, RefreshCw, ExternalLink, GraduationCap,
   Users, BookOpen, CreditCard, Shield, Lock, Unlink, Activity,
-  TrendingUp, Clock, AlertCircle, ChevronLeft
+  TrendingUp, Clock, AlertCircle, ChevronLeft, Plug, Wifi
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'wouter';
-
-// ═══════════════════════════════════════════════════════════════
-// Integration Status Hook — fetches from REST API
-// ═══════════════════════════════════════════════════════════════
-
-function useByaanIntegration() {
-  const [data, setData] = useState<any>(null);
-  const [conversions, setConversions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // PEN-R2-01: Use sessionStorage instead of localStorage to limit XSS exposure
-  const apiKey = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
-
-  const fetchData = async () => {
-    if (!apiKey) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const [intRes, convRes] = await Promise.all([
-        fetch('/api/v1/integration', { headers: { Authorization: `Bearer ${apiKey}` } }),
-        fetch('/api/v1/conversions?limit=50', { headers: { Authorization: `Bearer ${apiKey}` } }),
-      ]);
-      if (intRes.ok) setData(await intRes.json());
-      if (convRes.ok) {
-        const convData = await convRes.json();
-        setConversions(convData.data || []);
-      }
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchData(); }, []);
-
-  return { data, conversions, loading, error, refetch: fetchData };
-}
+import { trpc } from '@/lib/trpc';
 
 // ═══════════════════════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════════════════════
 
 export default function ByaanIntegration() {
-  const { data, conversions, loading, error, refetch } = useByaanIntegration();
+  const utils = trpc.useUtils();
+  const { data, isLoading: loading } = trpc.integrations.getByaanStatus.useQuery();
   const [activeTab, setActiveTab] = useState('overview');
   const [disconnecting, setDisconnecting] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<'idle' | 'success' | 'error'>('idle');
+  const [tenantDomain, setTenantDomain] = useState('');
 
-  // PEN-R2-01: Use sessionStorage
-  const apiKeyForResync = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
+  // tRPC mutations
+  const connectMutation = trpc.integrations.connectByaan.useMutation({
+    onSuccess: () => {
+      toast.success('✅ تم الربط مع بيان بنجاح!');
+      utils.integrations.getByaanStatus.invalidate();
+      utils.integrations.getCurrentPlatform.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const handleResync = async () => {
-    setSyncing(true);
-    setSyncResult('idle');
-    try {
-      // Refresh integration data to show updated stats
-      const intRes = await fetch('/api/v1/integration', { headers: { Authorization: `Bearer ${apiKeyForResync}` } });
-      const intData = intRes.ok ? await intRes.json() : null;
-
-      if (intData?.byaan) {
-        setSyncResult('success');
-        toast.success('✅ الربط نشط — بيان هو المسؤول عن دفع البيانات. اضغط "مزامنة البيانات" من لوحة بيان.');
+  const testMutation = trpc.integrations.testByaanConnection.useMutation({
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success(result.message);
       } else {
-        setSyncResult('error');
-        toast.warning('الربط غير مكتمل — تأكد من اشتراكك بخدمة ساري في بيان');
+        toast.error(result.message);
       }
-      refetch();
-    } catch {
-      setSyncResult('error');
-      toast.error('فشل الاتصال بالسيرفر');
-    } finally {
-      setSyncing(false);
-      // Reset result after 5 seconds
-      setTimeout(() => setSyncResult('idle'), 5000);
+      utils.integrations.getByaanStatus.invalidate();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const isConnected = data?.isConnected;
+  const terminology = data?.terminology || { products: 'منتجات', customers: 'عملاء', orders: 'طلبات' };
+
+  const handleConnect = () => {
+    if (!tenantDomain.trim()) {
+      toast.warning('أدخل نطاق بيان أولاً');
+      return;
     }
+    connectMutation.mutate({ tenantDomain: tenantDomain.trim() });
   };
 
-  const isConnected = data?.source === 'byaan';
-  const terminology = data?.terminology || { products: 'منتجات', customers: 'عملاء', orders: 'طلبات' };
+  const handleTestConnection = () => {
+    testMutation.mutate();
+  };
 
   const handleDisconnect = async () => {
     if (!confirm('هل أنت متأكد من فصل ربط بيان؟ سيتم فتح التعديل اليدوي على المحتوى.')) return;
     setDisconnecting(true);
     try {
-      // PEN-R2-01: Use sessionStorage instead of localStorage to limit XSS exposure
       const apiKey = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
       const res = await fetch('/api/v1/connect/byaan', {
         method: 'DELETE',
@@ -108,7 +74,8 @@ export default function ByaanIntegration() {
       });
       if (res.ok) {
         toast.success('تم فصل ربط بيان بنجاح');
-        refetch();
+        utils.integrations.getByaanStatus.invalidate();
+        utils.integrations.getCurrentPlatform.invalidate();
       } else {
         toast.error('فشل فصل الربط');
       }
@@ -204,25 +171,23 @@ export default function ByaanIntegration() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleResync}
-                  disabled={syncing}
+                  onClick={handleTestConnection}
+                  disabled={testMutation.isPending}
                   className={`gap-1.5 ${
-                    syncResult === 'success' ? 'border-green-300 text-green-700 bg-green-50' :
-                    syncResult === 'error' ? 'border-red-300 text-red-700 bg-red-50' : ''
+                    testMutation.data?.success ? 'border-green-300 text-green-700 bg-green-50' :
+                    testMutation.data?.success === false ? 'border-red-300 text-red-700 bg-red-50' : ''
                   }`}
                 >
-                  {syncing ? (
+                  {testMutation.isPending ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : syncResult === 'success' ? (
+                  ) : testMutation.data?.success ? (
                     <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : testMutation.data?.success === false ? (
+                    <XCircle className="h-3.5 w-3.5" />
                   ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
+                    <Wifi className="h-3.5 w-3.5" />
                   )}
-                  {syncing ? 'جاري الفحص...' : syncResult === 'success' ? 'الربط نشط ✓' : 'فحص حالة المزامنة'}
-                </Button>
-                <Button variant="outline" size="sm" onClick={refetch} className="gap-1.5">
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  تحديث
+                  {testMutation.isPending ? 'جاري الفحص...' : testMutation.data?.success ? 'الاتصال نشط ✓' : testMutation.data?.success === false ? 'فشل — أعد المحاولة' : 'اختبار الاتصال'}
                 </Button>
                 <Button
                   variant="destructive"
@@ -239,12 +204,39 @@ export default function ByaanIntegration() {
           </CardContent>
         </Card>
       ) : (
-        <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <AlertCircle className="h-5 w-5 text-amber-600" />
-          <AlertDescription className="text-amber-800 dark:text-amber-200">
-            <strong>غير مربوط</strong> — يتم الربط تلقائياً عند اشتراكك بخدمة ساري من لوحة بيان.
-          </AlertDescription>
-        </Alert>
+        <Card className="border-amber-200 dark:border-amber-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Plug className="h-5 w-5 text-amber-600" />
+              ربط حسابك مع بيان
+            </CardTitle>
+            <CardDescription>
+              أدخل نطاق مركزك التدريبي في بيان لتفعيل المزامنة التلقائية للدورات والمتدربين
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex gap-3">
+              <Input
+                placeholder="مثال: academy.byaan.app"
+                value={tenantDomain}
+                onChange={(e) => setTenantDomain(e.target.value)}
+                dir="ltr"
+                className="max-w-sm"
+              />
+              <Button
+                onClick={handleConnect}
+                disabled={connectMutation.isPending || !tenantDomain.trim()}
+                className="gap-1.5"
+              >
+                {connectMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
+                {connectMutation.isPending ? 'جاري الربط...' : 'ربط الآن'}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              النطاق هو عنوان مركزك في بيان. يمكنك إيجاده من إعدادات حسابك في بيان.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Content Lock Status */}
