@@ -5,7 +5,7 @@
  * لتجنب تضارب البيانات وتكرار الطلبات
  */
 
-import * as db from '../db';
+import { getSallaConnectionByMerchantId, getWooCommerceSettings } from '../db';
 
 export interface ExistingPlatform {
   platform: 'salla' | 'zid' | 'woocommerce' | 'shopify' | 'byaan';
@@ -23,7 +23,7 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
   const existingPlatforms: ExistingPlatform[] = [];
 
   // فحص سلة (Salla)
-  const sallaConnection = await db.getSallaConnectionByMerchantId(merchantId);
+  const sallaConnection = await getSallaConnectionByMerchantId(merchantId);
   if (sallaConnection && sallaConnection.syncStatus === 'active') {
     existingPlatforms.push({
       platform: 'salla',
@@ -50,7 +50,7 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
   }
 
   // فحص ووكومرس (WooCommerce)
-  const wooSettings = await db.getWooCommerceSettings(merchantId);
+  const wooSettings = await getWooCommerceSettings(merchantId);
   if (wooSettings && wooSettings.isActive === 1) {
     existingPlatforms.push({
       platform: 'woocommerce',
