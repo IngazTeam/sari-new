@@ -8,13 +8,13 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
-import * as db from "./db";
+import { getMerchantByUserId, getProductsByMerchantId, getPool } from "./db";
 
 export const integrationsRouter = router({
     // Get current connected platform
     getCurrentPlatform: protectedProcedure.query(async ({ ctx }) => {
         const { getCurrentPlatform } = await import('./integrations/platform-checker');
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         return await getCurrentPlatform(merchant.id);
     }),
@@ -22,7 +22,7 @@ export const integrationsRouter = router({
     // Get all connected platforms (for debugging)
     getAllConnectedPlatforms: protectedProcedure.query(async ({ ctx }) => {
         const { getAllConnectedPlatforms } = await import('./integrations/platform-checker');
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         return await getAllConnectedPlatforms(merchant.id);
     }),
@@ -33,7 +33,7 @@ export const integrationsRouter = router({
 
     /** Get Byaan connection status + sync stats for the current merchant */
     getByaanStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const { getByaanConnection, getIntegrationSource, getTerminology } = await import('./integrations/byaan');
@@ -42,10 +42,10 @@ export const integrationsRouter = router({
         const terminology = getTerminology(source);
 
         // Get product + customer counts
-        const products = await db.getProductsByMerchantId(merchant.id);
+        const products = await getProductsByMerchantId(merchant.id);
         let customerCount = 0;
         try {
-            const pool = await db.getPool();
+            const pool = await getPool();
             if (pool) {
                 const [rows] = await pool.execute(
                     `SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`,
@@ -78,7 +78,7 @@ export const integrationsRouter = router({
             tenantDomain: z.string().min(3).max(255).regex(/^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'نطاق غير صالح'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             // Check no other platform is connected
@@ -103,7 +103,7 @@ export const integrationsRouter = router({
 
     /** Test Byaan connection — verify the tenant domain is reachable */
     testByaanConnection: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const { getByaanConnection } = await import('./integrations/byaan');
