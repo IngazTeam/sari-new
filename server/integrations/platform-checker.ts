@@ -5,7 +5,7 @@
  * لتجنب تضارب البيانات وتكرار الطلبات
  */
 
-import { getSallaConnectionByMerchantId, getWooCommerceSettings } from '../db';
+import { getPool } from '../db';
 
 export interface ExistingPlatform {
   platform: 'salla' | 'zid' | 'woocommerce' | 'shopify' | 'byaan';
@@ -22,48 +22,71 @@ export interface ExistingPlatform {
 export async function checkExistingIntegrations(merchantId: number): Promise<ExistingPlatform[]> {
   const existingPlatforms: ExistingPlatform[] = [];
 
-  // فحص سلة (Salla)
-  const sallaConnection = await getSallaConnectionByMerchantId(merchantId);
-  if (sallaConnection && sallaConnection.syncStatus === 'active') {
-    existingPlatforms.push({
-      platform: 'salla',
-      name: 'سلة',
-      storeUrl: sallaConnection.storeUrl,
-      connectedAt: sallaConnection.createdAt,
-    });
+  // فحص سلة (Salla) — استخدام raw SQL عبر pool لتجنب مشكلة db module-level variable
+  try {
+    const pool = await getPool();
+    if (pool) {
+      const [rows] = await pool.execute(
+        `SELECT * FROM salla_connections WHERE merchant_id = ? AND sync_status = 'active' LIMIT 1`,
+        [merchantId]
+      );
+      const sallaConnection = (rows as any[])?.[0];
+      if (sallaConnection) {
+        existingPlatforms.push({
+          platform: 'salla',
+          name: 'سلة',
+          storeUrl: sallaConnection.store_url,
+          connectedAt: sallaConnection.created_at,
+        });
+      }
+    }
+  } catch (error) {
+    console.error('[Platform Checker] Error checking Salla:', error);
   }
 
   // فحص زد (Zid)
   try {
-    const dbZid = await import('../db_zid');
-    const zidSettings = await dbZid.getZidSettings(merchantId);
-    if (zidSettings && zidSettings.isActive === 1) {
-      existingPlatforms.push({
-        platform: 'zid',
-        name: 'زد',
-        storeUrl: zidSettings.storeUrl || undefined,
-        connectedAt: zidSettings.createdAt,
-      });
+    const pool = await getPool();
+    if (pool) {
+      const [rows] = await pool.execute(
+        `SELECT * FROM zid_settings WHERE merchant_id = ? AND is_active = 1 LIMIT 1`,
+        [merchantId]
+      );
+      const zidSettings = (rows as any[])?.[0];
+      if (zidSettings) {
+        existingPlatforms.push({
+          platform: 'zid',
+          name: 'زد',
+          storeUrl: zidSettings.store_url || undefined,
+          connectedAt: zidSettings.created_at,
+        });
+      }
     }
   } catch (error) {
     console.error('[Platform Checker] Error checking Zid:', error);
   }
 
-  // فحص ووكومرس (WooCommerce)
-  const wooSettings = await getWooCommerceSettings(merchantId);
-  if (wooSettings && wooSettings.isActive === 1) {
-    existingPlatforms.push({
-      platform: 'woocommerce',
-      name: 'ووكومرس',
-      storeUrl: wooSettings.storeUrl,
-      connectedAt: wooSettings.createdAt,
-    });
+  // فحص ووكومرس (WooCommerce) — raw SQL لتجنب db module-level variable
+  try {
+    const pool = await getPool();
+    if (pool) {
+      const [rows] = await pool.execute(
+        `SELECT * FROM woocommerce_settings WHERE merchant_id = ? AND is_active = 1 LIMIT 1`,
+        [merchantId]
+      );
+      const wooSettings = (rows as any[])?.[0];
+      if (wooSettings) {
+        existingPlatforms.push({
+          platform: 'woocommerce',
+          name: 'ووكومرس',
+          storeUrl: wooSettings.store_url,
+          connectedAt: wooSettings.created_at,
+        });
+      }
+    }
+  } catch (error) {
+    console.error('[Platform Checker] Error checking WooCommerce:', error);
   }
-
-  // فحص شوبيفاي (Shopify) - من جدول platform_integrations
-  // TODO: إضافة فحص Shopify عند توفر الدوال المناسبة
-  // const shopifyIntegration = await db.getPlatformIntegration(merchantId, 'shopify');
-  // if (shopifyIntegration) { ... }
 
   // فحص بيان (Byaan)
   try {
