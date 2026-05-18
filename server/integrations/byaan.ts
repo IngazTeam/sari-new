@@ -176,6 +176,16 @@ async function notifyByaanPlatform(
   try {
     // Build webhook URL from tenant domain
     const webhookUrl = `https://${tenantDomain}/api/sari/webhook`;
+
+    // PEN-SYNC-01: Validate hostname is not internal
+    if (
+      tenantDomain === 'localhost' || tenantDomain.startsWith('127.') ||
+      tenantDomain.startsWith('10.') || tenantDomain.startsWith('192.168.') ||
+      tenantDomain.startsWith('169.254.') || tenantDomain.endsWith('.local')
+    ) {
+      console.warn(`[Byaan Webhook] SSRF blocked: ${tenantDomain}`);
+      return;
+    }
     
     const body = JSON.stringify({
       event,
@@ -511,6 +521,27 @@ async function callByaanApi(
   }
 
   const url = `${connection.api_base_url}${endpoint}`;
+
+  // PEN-SYNC-01: SSRF Protection — block internal/dangerous URLs
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol !== 'https:') {
+      return { success: false, error: 'api_base_url must use HTTPS' };
+    }
+    const hostname = parsedUrl.hostname;
+    if (
+      hostname === 'localhost' || hostname === '127.0.0.1' ||
+      hostname.startsWith('10.') || hostname.startsWith('192.168.') ||
+      hostname.startsWith('172.') || hostname.startsWith('169.254.') ||
+      hostname === '0.0.0.0' || hostname.endsWith('.internal') || hostname.endsWith('.local')
+    ) {
+      console.warn(`[Byaan Live] PEN-SYNC-01 SSRF blocked: ${hostname}`);
+      return { success: false, error: 'Internal URLs are not allowed' };
+    }
+  } catch {
+    return { success: false, error: 'Invalid api_base_url format' };
+  }
+
   const bodyStr = data ? JSON.stringify(data) : '';
   const timestamp = Math.floor(Date.now() / 1000);
   const deliveryId = crypto.randomUUID();

@@ -1061,6 +1061,12 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
 
 // ── GET /api/v1/platform/status — Check connection status + sync stats ──
 sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) => {
+  // PEN-SYNC-03: Dedicated rate limit for status reads (DB-heavy)
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkApiRateLimit(`platform_status_${keyPrefix}`, 15, 60_000)) {
+    return res.status(429).json({ error: 'Status rate limit exceeded (15/min)', errorAr: 'تجاوزت حد فحص الحالة' });
+  }
+
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) {
     return res.json({
@@ -1098,7 +1104,8 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
       tenantDomain: connection?.tenant_domain || req.tenantDomain,
       syncStatus: connection?.sync_status || 'unknown',
       lastSyncAt: connection?.last_sync_at || null,
-      syncErrors: connection?.sync_errors || null,
+      // PEN-SYNC-02: Don't expose raw error messages — only boolean flag
+      hasSyncErrors: !!connection?.sync_errors,
       stats: {
         products: products.length,
         customers: customerCount,
@@ -1112,9 +1119,10 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
 
 // ── POST /api/v1/platform/request-resync — Request Byaan to push data again ──
 sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Response) => {
+  // PEN-SYNC-05: Tight rate limit for resync (outbound HTTP trigger)
   const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkSyncLimit(`platform_resync_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Resync rate limit exceeded (5/min)', errorAr: 'تجاوزت حد إعادة المزامنة' });
+  if (!checkSpecialLimit(syncLimitMap, `platform_resync_${keyPrefix}`, 3, 60_000)) {
+    return res.status(429).json({ error: 'Resync rate limit exceeded (3/min)', errorAr: 'تجاوزت حد إعادة المزامنة (3/دقيقة)' });
   }
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
@@ -1154,7 +1162,33 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
         headers['X-Sari-Signature'] = `sha256=${signature}`;
       }
 
+      // PEN-SYNC-01: SSRF Protection — validate URL is safe before making outbound request
       const resyncUrl = `${connection.api_base_url}/request-resync`;
+      try {
+        const parsedUrl = new URL(resyncUrl);
+        // Block non-HTTPS, internal IPs, and metadata endpoints
+        if (parsedUrl.protocol !== 'https:') {
+          return res.status(400).json({ error: 'api_base_url must use HTTPS', errorAr: 'يجب أن يستخدم رابط API بروتوكول HTTPS' });
+        }
+        const hostname = parsedUrl.hostname;
+        if (
+          hostname === 'localhost' ||
+          hostname === '127.0.0.1' ||
+          hostname.startsWith('10.') ||
+          hostname.startsWith('192.168.') ||
+          hostname.startsWith('172.') ||
+          hostname.startsWith('169.254.') ||
+          hostname === '0.0.0.0' ||
+          hostname.endsWith('.internal') ||
+          hostname.endsWith('.local')
+        ) {
+          console.warn(`[SariAPI] PEN-SYNC-01 SSRF blocked: ${hostname}`);
+          return res.status(400).json({ error: 'Internal URLs are not allowed', errorAr: 'روابط الشبكة الداخلية غير مسموحة' });
+        }
+      } catch (urlErr) {
+        return res.status(400).json({ error: 'Invalid api_base_url format', errorAr: 'تنسيق رابط API غير صالح' });
+      }
+
       const response = await axios.post(resyncUrl, JSON.parse(body), {
         headers,
         timeout: 15000,
