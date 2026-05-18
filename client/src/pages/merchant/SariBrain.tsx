@@ -332,6 +332,17 @@ export default function SariBrain() {
     },
     onError: (e) => toast.error('فشل التحديث: ' + e.message),
   });
+  const deletePageMutation = trpc.sariBrain.deleteDiscoveredPage.useMutation({
+    onSuccess: (data) => {
+      toast.success(`تم حذف "${data.deletedTitle}" من ذاكرة ساري`);
+      utils.sariBrain.getWebsiteKnowledge.invalidate();
+      utils.sariBrain.getSources.invalidate();
+      utils.sariBrain.getActivityLog.invalidate();
+      utils.sariBrain.getKnowledgeSections.invalidate();
+      utils.sariBrain.getHealthScore.invalidate();
+    },
+    onError: (e) => toast.error('فشل الحذف: ' + e.message),
+  });
 
   return (
     <div className="space-y-6">
@@ -1093,6 +1104,7 @@ export default function SariBrain() {
                   const typeIcons: Record<string, string> = {
                     about: '🏢', contact: '📞', faq: '❓', shipping: '🚚',
                     returns: '🔄', privacy: '🔒', terms: '📋', content: '📄', other: '📑',
+                    services: '⚙️', products: '🛍️', courses: '🎓', portfolio: '💼',
                   };
                   return (
                     <div key={page.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${page.useInBot ? 'bg-card' : 'bg-muted/50 opacity-60'}`}>
@@ -1107,13 +1119,41 @@ export default function SariBrain() {
                           </a>
                         </p>
                       </div>
-                      <Button
-                        variant="ghost" size="sm" className="shrink-0 h-7 w-7 p-0"
-                        onClick={() => togglePageMutation.mutate({ pageId: page.id, useInBot: !page.useInBot })}
-                        title={page.useInBot ? 'إيقاف استخدام هذه الصفحة في الردود' : 'تفعيل استخدام هذه الصفحة في الردود'}
-                      >
-                        {page.useInBot ? <Eye className="h-3.5 w-3.5 text-green-600" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
-                      </Button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost" size="sm" className="h-7 w-7 p-0"
+                          onClick={() => togglePageMutation.mutate({ pageId: page.id, useInBot: !page.useInBot })}
+                          title={page.useInBot ? 'إيقاف استخدام هذه الصفحة في الردود' : 'تفعيل استخدام هذه الصفحة في الردود'}
+                        >
+                          {page.useInBot ? <Eye className="h-3.5 w-3.5 text-green-600" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50" title="حذف الصفحة من ذاكرة ساري">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="text-right">🗑️ حذف "{page.title}"</AlertDialogTitle>
+                              <AlertDialogDescription className="text-right">
+                                سيتم حذف هذه الصفحة من ذاكرة ساري بالكامل، بما في ذلك المحتوى والأسئلة الشائعة المرتبطة بها.
+                                <br />
+                                <strong className="text-destructive">لا يمكن التراجع عن هذا الإجراء.</strong>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="flex-row-reverse gap-2">
+                              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deletePageMutation.mutate({ pageId: page.id })}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {deletePageMutation.isPending ? 'جاري الحذف...' : 'حذف نهائي'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   );
                 })}

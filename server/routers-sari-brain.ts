@@ -1382,6 +1382,64 @@ ${sanitizedContent}`
       return { success: true };
     }),
 
+  /** حذف صفحة مسحوبة من ذاكرة ساري بالكامل */
+  deleteDiscoveredPage: protectedProcedure
+    .input(z.object({
+      pageId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const dbConn = await getRawPool();
+      if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
+
+      // Verify ownership & get page info
+      const [rows] = await (dbConn as any).execute(
+        `SELECT id, title, url FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
+        [input.pageId, merchant.id]
+      );
+      if (!rows || (rows as any[]).length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
+      }
+      const page = (rows as any[])[0];
+
+      // 1. Delete from discovered_pages
+      await (dbConn as any).execute(
+        `DELETE FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
+        [input.pageId, merchant.id]
+      );
+
+      // 2. Also delete related FAQs linked to this page
+      try {
+        await (dbConn as any).execute(
+          `DELETE FROM extracted_faqs WHERE page_id = ? AND merchant_id = ?`,
+          [input.pageId, merchant.id]
+        );
+      } catch { /* table may not have merchant_id column */ }
+
+      // 3. Also remove knowledge_sections sourced from this URL
+      try {
+        const knowledgeDb = await import('./db/knowledge');
+        const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+        for (const section of sections) {
+          const sourceUrl = (section as any).source_url || (section as any).sourceUrl || '';
+          if (sourceUrl && page.url && sourceUrl === page.url) {
+            await knowledgeDb.deleteSection((section as any).id);
+          }
+        }
+      } catch (knErr: any) {
+        console.warn('[SariBrain] Failed to cleanup knowledge sections:', knErr.message);
+      }
+
+      await logBrainActivity(merchant.id, 'document_deleted',
+        `تم حذف الصفحة "${page.title}" (${page.url}) من ذاكرة ساري`
+      );
+
+      console.log(`[SariBrain] Deleted discovered page ${input.pageId} (${page.url}) for merchant ${merchant.id}`);
+      return { success: true, deletedTitle: page.title };
+    }),
+
   // ═══════════════════════════════════════════════════════════════
   // Knowledge Engine v4 — Sections, Health, Changelog, Evolve
   // ═══════════════════════════════════════════════════════════════
