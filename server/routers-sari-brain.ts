@@ -477,7 +477,7 @@ export const sariBrainRouter = router({
           const dbConn = await getRawPool();
           if (dbConn) {
             await (dbConn as any).execute(`DELETE FROM discovered_pages WHERE merchant_id = ?`, [merchant.id]);
-            const validTypes = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other'];
+            const validTypes = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'services', 'products', 'courses', 'portfolio', 'content', 'other'];
             for (const page of (result as any)._crawledPages) {
               if (!page.success) continue;
               const safeType = validTypes.includes(page.pageType) ? page.pageType : 'other';
@@ -1172,6 +1172,10 @@ ${sanitizedContent}`
         returns: { label: 'الإرجاع والاستبدال', icon: '🔄' },
         privacy: { label: 'سياسة الخصوصية', icon: '🔒' },
         terms: { label: 'الشروط والأحكام', icon: '📋' },
+        services: { label: 'الخدمات', icon: '⚙️' },
+        products: { label: 'المنتجات', icon: '🛍️' },
+        courses: { label: 'الدورات', icon: '🎓' },
+        portfolio: { label: 'الأعمال', icon: '💼' },
         content: { label: 'محتوى عام', icon: '📄' },
         other: { label: 'صفحات أخرى', icon: '📑' },
       };
