@@ -10,7 +10,7 @@
 import * as crypto from 'node:crypto';
 import * as db from '../db';
 import * as dbPayments from '../db_payments';
-// import { sendWhatsAppMessage } from '../greenapi-wrapper';
+import { sendTextMessage } from '../whatsapp';
 
 interface TapWebhookPayload {
   id: string;
@@ -216,8 +216,16 @@ async function handleOrderPayment(
 
 شكراً لثقتك بنا! 🌟`;
 
-      // TODO: إرسال رسالة نجاح الدفع
-      console.log('[TapWebhook] Payment success for order:', orderId);
+      // Send payment success WhatsApp notification
+      try {
+        const merchant = await db.getMerchantById(merchantId);
+        if (merchant?.instanceId && merchant?.apiToken) {
+          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, successMessage);
+          console.log(`[TapWebhook] ✅ Payment success message sent for order ${orderId}`);
+        }
+      } catch (msgErr) {
+        console.warn(`[TapWebhook] Failed to send success message: ${msgErr}`);
+      }
 
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
@@ -231,8 +239,16 @@ async function handleOrderPayment(
 
 نعتذر عن الإزعاج 🙏`;
 
-      // TODO: إرسال رسالة فشل الدفع
-      console.log('[TapWebhook] Payment failed for order:', orderId);
+      // Send payment failure WhatsApp notification
+      try {
+        const merchant = await db.getMerchantById(merchantId);
+        if (merchant?.instanceId && merchant?.apiToken) {
+          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, failureMessage);
+          console.log(`[TapWebhook] ⚠️ Payment failure message sent for order ${orderId}`);
+        }
+      } catch (msgErr) {
+        console.warn(`[TapWebhook] Failed to send failure message: ${msgErr}`);
+      }
     }
   } catch (error) {
     console.error('[TapWebhook] Error handling order payment:', error);
@@ -274,8 +290,16 @@ async function handleBookingPayment(
 
 نتطلع لخدمتك! 💚`;
 
-      // TODO: إرسال رسالة نجاح الدفع
-      console.log('[TapWebhook] Payment success for booking:', bookingId);
+      // Send booking confirmation WhatsApp notification
+      try {
+        const merchant = await db.getMerchantById(merchantId);
+        if (merchant?.instanceId && merchant?.apiToken) {
+          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, successMessage);
+          console.log(`[TapWebhook] ✅ Booking confirmation sent for booking ${bookingId}`);
+        }
+      } catch (msgErr) {
+        console.warn(`[TapWebhook] Failed to send booking confirmation: ${msgErr}`);
+      }
 
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
@@ -290,8 +314,16 @@ async function handleBookingPayment(
 
 نعتذر عن الإزعاج 🙏`;
 
-      // TODO: إرسال رسالة فشل الدفع
-      console.log('[TapWebhook] Payment failed for booking:', bookingId);
+      // Send booking failure WhatsApp notification
+      try {
+        const merchant = await db.getMerchantById(merchantId);
+        if (merchant?.instanceId && merchant?.apiToken) {
+          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, failureMessage);
+          console.log(`[TapWebhook] ⚠️ Booking payment failure sent for booking ${bookingId}`);
+        }
+      } catch (msgErr) {
+        console.warn(`[TapWebhook] Failed to send booking failure message: ${msgErr}`);
+      }
     }
   } catch (error) {
     console.error('[TapWebhook] Error handling booking payment:', error);
