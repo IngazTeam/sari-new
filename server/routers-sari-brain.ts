@@ -1391,6 +1391,9 @@ ${sanitizedContent}`
       const merchant = await db.getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+      // PEN-DELETE-01: Rate limit — 2s cooldown to prevent mass-deletion abuse
+      checkRateLimit(destructiveRateLimit, merchant.id, 2000);
+
       const dbConn = await getRawPool();
       if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
 
@@ -1425,7 +1428,7 @@ ${sanitizedContent}`
         for (const section of sections) {
           const sourceUrl = (section as any).source_url || (section as any).sourceUrl || '';
           if (sourceUrl && page.url && sourceUrl === page.url) {
-            await knowledgeDb.deleteSection((section as any).id);
+            await knowledgeDb.deleteSection((section as any).id, merchant.id);
           }
         }
       } catch (knErr: any) {
