@@ -456,6 +456,19 @@ export async function scrapeWebsite(url: string): Promise<{
       const chromium = await import('chromium');
       chromiumPath = (chromium as any).default?.path || (chromium as any).path || null;
     } catch { /* chromium package not available */ }
+
+    // Fallback: check system-installed Chromium (apt/snap)
+    if (!chromiumPath) {
+      const { existsSync } = await import('fs');
+      const systemPaths = ['/usr/bin/chromium-browser', '/usr/bin/chromium', '/snap/bin/chromium', '/usr/bin/google-chrome-stable', '/usr/bin/google-chrome'];
+      for (const p of systemPaths) {
+        if (existsSync(p)) {
+          chromiumPath = p;
+          console.log(`[WebsiteAnalyzer] Found system Chromium at: ${p}`);
+          break;
+        }
+      }
+    }
     
     if (puppeteerCore && chromiumPath) {
       console.log(`[WebsiteAnalyzer] 🚀 Launching headless browser for SPA: ${url} (chromium: ${chromiumPath})`);
