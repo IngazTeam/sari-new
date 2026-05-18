@@ -427,10 +427,50 @@ export default function SariBrain() {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" size="sm" onClick={startAnalysis} disabled={reanalyzeMutation.isPending}>
-          <Globe className="h-4 w-4 ml-2" />
-          🔄 إعادة تحليل الموقع
-        </Button>
+        {websiteKnowledge && websiteKnowledge.totalPages > 0 ? (
+          /* ── Re-analysis: show warning dialog ── */
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" disabled={reanalyzeMutation.isPending}>
+                <RotateCcw className="h-4 w-4 ml-2" />
+                🔄 إعادة تحليل الموقع
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-right">🔄 إعادة تحليل الموقع</AlertDialogTitle>
+                <AlertDialogDescription className="text-right space-y-3" asChild>
+                  <div>
+                    <p>سيتم استبدال جميع البيانات المسحوبة الحالية ({websiteKnowledge.totalPages} صفحة) ببيانات جديدة من الموقع.</p>
+                    <div className="p-3 rounded-lg bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-700 space-y-2 text-right">
+                      <p className="font-semibold text-yellow-800 dark:text-yellow-200 flex items-center gap-2 justify-end">
+                        <AlertTriangle className="h-4 w-4" />
+                        تنبيهات مهمة
+                      </p>
+                      <ul className="text-xs text-yellow-700 dark:text-yellow-300 space-y-1.5 list-none">
+                        <li>⚠️ البيانات الحالية ستُستبدل بالكامل</li>
+                        <li>⏳ قد تتأثر ردود ساري على العملاء لمدة قصيرة أثناء التحديث</li>
+                        <li>❓ هل يوجد بيانات جديدة بالموقع تستدعي إعادة التحليل؟</li>
+                      </ul>
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="flex-row-reverse gap-2">
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={startAnalysis} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  نعم، أعد التحليل
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        ) : (
+          /* ── First-time analysis: direct button ── */
+          <Button variant="default" size="sm" onClick={startAnalysis} disabled={reanalyzeMutation.isPending}>
+            <Globe className="h-4 w-4 ml-2" />
+            🌐 تحليل موقعك
+          </Button>
+        )}
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/products')}>
           <Package className="h-4 w-4 ml-2" />
           إدارة {term('products')}
