@@ -3,16 +3,93 @@
  * تعرض المنصة المربوطة حالياً وتسمح بالفصل أو التبديل
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Store, CheckCircle2, XCircle, ExternalLink, AlertTriangle, FileSpreadsheet, Calendar, GraduationCap } from 'lucide-react';
+import { Loader2, Store, CheckCircle2, XCircle, ExternalLink, AlertTriangle, FileSpreadsheet, Calendar, GraduationCap, RefreshCw, Users, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
+
+// ═══════════════════════════════════════════════════════════════
+// Byaan Sync Status Panel — Shows connection stats + resync button
+// ═══════════════════════════════════════════════════════════════
+
+function ByaanSyncStatusPanel() {
+  const [status, setStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+
+  const apiKey = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
+
+  const fetchStatus = async () => {
+    if (!apiKey) { setLoading(false); return; }
+    try {
+      const res = await fetch('/api/v1/integration', { headers: { Authorization: `Bearer ${apiKey}` } });
+      if (res.ok) setStatus(await res.json());
+    } catch (e) { /* skip */ }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchStatus(); }, []);
+
+  const handleResync = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/v1/integration', { headers: { Authorization: `Bearer ${apiKey}` } });
+      const data = res.ok ? await res.json() : null;
+      
+      if (data?.byaan) {
+        toast.info('🔄 المزامنة تتم عبر لوحة بيان — اضغط "مزامنة البيانات" من لوحة بيان');
+      } else {
+        toast.warning('الربط غير مكتمل — تأكد من اشتراكك بخدمة ساري في بيان');
+      }
+    } catch {
+      toast.error('فشل الاتصال');
+    } finally {
+      setSyncing(false);
+      fetchStatus();
+    }
+  };
+
+  if (loading) return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> جاري فحص حالة الربط...</div>;
+  if (!status || status.source !== 'byaan') return null;
+
+  return (
+    <div className="space-y-3">
+      {/* Connection info */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {status.byaan?.tenantDomain && (
+          <div className="col-span-2 sm:col-span-4 flex items-center gap-2 text-sm bg-white/50 dark:bg-white/5 rounded-lg px-3 py-2 border">
+            <GraduationCap className="h-4 w-4 text-indigo-500" />
+            <span className="text-muted-foreground">النطاق:</span>
+            <code className="text-xs bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded" dir="ltr">{status.byaan.tenantDomain}</code>
+            {status.byaan.lastSyncAt && (
+              <span className="text-xs text-muted-foreground mr-auto">
+                آخر مزامنة: {new Date(status.byaan.lastSyncAt).toLocaleString('ar-SA')}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Resync button */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleResync}
+        disabled={syncing}
+        className="gap-1.5"
+      >
+        {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+        {syncing ? 'جاري الفحص...' : 'فحص حالة المزامنة'}
+      </Button>
+    </div>
+  );
+}
 
 interface PlatformInfo {
   platform: 'salla' | 'zid' | 'woocommerce' | 'shopify' | 'byaan';
@@ -211,6 +288,9 @@ export default function PlatformIntegrations() {
                 </a>
               </div>
             )}
+
+            {/* Byaan-specific: sync stats and resync */}
+            {connectedPlatform.id === 'byaan' && <ByaanSyncStatusPanel />}
 
             <div className="flex gap-3">
               <Button

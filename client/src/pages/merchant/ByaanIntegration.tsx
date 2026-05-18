@@ -61,6 +61,37 @@ export default function ByaanIntegration() {
   const { data, conversions, loading, error, refetch } = useByaanIntegration();
   const [activeTab, setActiveTab] = useState('overview');
   const [disconnecting, setDisconnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // PEN-R2-01: Use sessionStorage
+  const apiKeyForResync = sessionStorage.getItem('sari_api_key') || localStorage.getItem('sari_api_key') || '';
+
+  const handleResync = async () => {
+    setSyncing(true);
+    setSyncResult('idle');
+    try {
+      // Refresh integration data to show updated stats
+      const intRes = await fetch('/api/v1/integration', { headers: { Authorization: `Bearer ${apiKeyForResync}` } });
+      const intData = intRes.ok ? await intRes.json() : null;
+
+      if (intData?.byaan) {
+        setSyncResult('success');
+        toast.success('✅ الربط نشط — بيان هو المسؤول عن دفع البيانات. اضغط "مزامنة البيانات" من لوحة بيان.');
+      } else {
+        setSyncResult('error');
+        toast.warning('الربط غير مكتمل — تأكد من اشتراكك بخدمة ساري في بيان');
+      }
+      refetch();
+    } catch {
+      setSyncResult('error');
+      toast.error('فشل الاتصال بالسيرفر');
+    } finally {
+      setSyncing(false);
+      // Reset result after 5 seconds
+      setTimeout(() => setSyncResult('idle'), 5000);
+    }
+  };
 
   const isConnected = data?.source === 'byaan';
   const terminology = data?.terminology || { products: 'منتجات', customers: 'عملاء', orders: 'طلبات' };
@@ -141,12 +172,24 @@ export default function ByaanIntegration() {
                 </div>
                 <div>
                   <h3 className="text-lg font-semibold text-indigo-900 dark:text-indigo-100">
-                    🔗 مربوط ببيان — المحتوى يُدار تلقائياً
+                    ✅ تم الربط بنجاح مع بيان — المحتوى يُدار تلقائياً
                   </h3>
                   <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
                     {data?.byaan?.tenantDomain && (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 flex-wrap">
                         النطاق: <code className="bg-indigo-100 dark:bg-indigo-900/50 px-2 py-0.5 rounded text-xs" dir="ltr">{data.byaan.tenantDomain}</code>
+                        {data.byaan.syncStatus && (
+                          <Badge variant="outline" className={`text-xs ${
+                            data.byaan.syncStatus === 'active' ? 'border-green-300 text-green-700 bg-green-50' :
+                            data.byaan.syncStatus === 'syncing' ? 'border-blue-300 text-blue-700 bg-blue-50 animate-pulse' :
+                            data.byaan.syncStatus === 'error' ? 'border-red-300 text-red-700 bg-red-50' :
+                            'border-gray-300 text-gray-700'
+                          }`}>
+                            {data.byaan.syncStatus === 'active' ? '● نشط' :
+                             data.byaan.syncStatus === 'syncing' ? '◉ جاري المزامنة...' :
+                             data.byaan.syncStatus === 'error' ? '✖ خطأ' : data.byaan.syncStatus}
+                          </Badge>
+                        )}
                         {data.byaan.lastSyncAt && (
                           <span className="mr-3 text-xs">
                             آخر مزامنة: {new Date(data.byaan.lastSyncAt).toLocaleString('ar-SA')}
@@ -157,7 +200,26 @@ export default function ByaanIntegration() {
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleResync}
+                  disabled={syncing}
+                  className={`gap-1.5 ${
+                    syncResult === 'success' ? 'border-green-300 text-green-700 bg-green-50' :
+                    syncResult === 'error' ? 'border-red-300 text-red-700 bg-red-50' : ''
+                  }`}
+                >
+                  {syncing ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : syncResult === 'success' ? (
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                  ) : (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  )}
+                  {syncing ? 'جاري الفحص...' : syncResult === 'success' ? 'الربط نشط ✓' : 'فحص حالة المزامنة'}
+                </Button>
                 <Button variant="outline" size="sm" onClick={refetch} className="gap-1.5">
                   <RefreshCw className="h-3.5 w-3.5" />
                   تحديث

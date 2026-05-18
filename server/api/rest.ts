@@ -1059,6 +1059,148 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
   }
 });
 
+// ── GET /api/v1/platform/status — Check connection status + sync stats ──
+sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) => {
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) {
+    return res.json({
+      connected: false,
+      platform: req.platform || 'unknown',
+      tenantDomain: req.tenantDomain || null,
+      message: 'No merchant linked to this domain',
+      messageAr: 'لا يوجد تاجر مربوط بهذا الدومين',
+    });
+  }
+
+  try {
+    const { getByaanConnection } = await import('../integrations/byaan');
+    const connection = await getByaanConnection(merchant.id);
+
+    // Get product + customer counts
+    const products = await db.getProductsByMerchantId(merchant.id);
+    const pool = await db.getPool();
+    let customerCount = 0;
+    if (pool) {
+      try {
+        const [rows] = await pool.execute(
+          `SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`,
+          [merchant.id]
+        );
+        customerCount = (rows as any[])?.[0]?.cnt || 0;
+      } catch (e) { /* skip */ }
+    }
+
+    res.json({
+      connected: true,
+      platform: req.platform || 'byaan',
+      merchantId: merchant.id,
+      businessName: merchant.business_name || merchant.businessName,
+      tenantDomain: connection?.tenant_domain || req.tenantDomain,
+      syncStatus: connection?.sync_status || 'unknown',
+      lastSyncAt: connection?.last_sync_at || null,
+      syncErrors: connection?.sync_errors || null,
+      stats: {
+        products: products.length,
+        customers: customerCount,
+      },
+    });
+  } catch (e) {
+    console.error('[SariAPI] Platform status failed:', e);
+    res.status(500).json({ error: 'Status check failed', errorAr: 'فشل فحص الحالة' });
+  }
+});
+
+// ── POST /api/v1/platform/request-resync — Request Byaan to push data again ──
+sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Response) => {
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkSyncLimit(`platform_resync_${keyPrefix}`)) {
+    return res.status(429).json({ error: 'Resync rate limit exceeded (5/min)', errorAr: 'تجاوزت حد إعادة المزامنة' });
+  }
+
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  try {
+    const { getByaanConnection, updateByaanSyncStatus } = await import('../integrations/byaan');
+    const connection = await getByaanConnection(merchant.id);
+
+    if (!connection || !connection.api_base_url) {
+      return res.status(400).json({
+        error: 'No Byaan connection configured for this merchant',
+        errorAr: 'لا يوجد ربط مع بيان لهذا التاجر',
+      });
+    }
+
+    // Mark sync status as 'syncing'
+    await updateByaanSyncStatus(merchant.id, 'syncing');
+
+    // Try to call Byaan's resync endpoint
+    try {
+      const axios = (await import('axios')).default;
+      const timestamp = Math.floor(Date.now() / 1000);
+      const body = JSON.stringify({ merchant_id: merchant.id, timestamp });
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Sari-Timestamp': String(timestamp),
+      };
+
+      // Sign with webhook_secret if available
+      if (connection.webhook_secret) {
+        const signature = crypto.createHmac('sha256', connection.webhook_secret)
+          .update(`${timestamp}.${body}`)
+          .digest('hex');
+        headers['X-Sari-Signature'] = `sha256=${signature}`;
+      }
+
+      const resyncUrl = `${connection.api_base_url}/request-resync`;
+      const response = await axios.post(resyncUrl, JSON.parse(body), {
+        headers,
+        timeout: 15000,
+        validateStatus: () => true,
+      });
+
+      if (response.status >= 200 && response.status < 300) {
+        await updateByaanSyncStatus(merchant.id, 'active');
+
+        const { logBrainActivity } = await import('../routers-sari-brain');
+        await logBrainActivity(merchant.id, 'settings_changed',
+          'طلب إعادة مزامنة من بيان — تم بنجاح',
+          { source: 'platform', status: response.status }
+        );
+
+        return res.json({
+          success: true,
+          message: 'Resync request sent to Byaan successfully',
+          messageAr: 'تم إرسال طلب إعادة المزامنة لبيان بنجاح',
+          byaanStatus: response.status,
+        });
+      } else {
+        await updateByaanSyncStatus(merchant.id, 'error', `Byaan returned ${response.status}`);
+        return res.json({
+          success: false,
+          message: `Byaan responded with status ${response.status}`,
+          messageAr: `بيان أرجع حالة ${response.status} — تأكد من إعداد endpoint إعادة المزامنة في بيان`,
+          byaanStatus: response.status,
+        });
+      }
+    } catch (callErr: any) {
+      await updateByaanSyncStatus(merchant.id, 'error', callErr?.message || 'Connection failed');
+      console.error('[SariAPI] Resync call to Byaan failed:', callErr?.message);
+      return res.json({
+        success: false,
+        message: 'Failed to reach Byaan API',
+        messageAr: 'فشل الاتصال بـ API بيان — تأكد من صحة api_base_url',
+        error: callErr?.message,
+      });
+    }
+  } catch (e) {
+    console.error('[SariAPI] Request resync failed:', e);
+    res.status(500).json({ error: 'Resync request failed', errorAr: 'فشل طلب إعادة المزامنة' });
+  }
+});
+
 // ════════════════════════════════════════════════════════════════
 // Platform Dashboard Endpoints — /api/v1/platform/merchant/*
 // (Byaan dashboard reads Sari data for a specific tenant)
