@@ -2,10 +2,8 @@
  * AcquisitionReport — Customer Acquisition Sources Dashboard
  * Shows where customers come from (Instagram, Snapchat, etc.)
  */
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { trpc } from '@/_core/trpc';
-import { useMerchantId } from '@/hooks/useMerchantId';
+import { trpc } from '@/lib/trpc';
 
 const SOURCE_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
   instagram: { label: 'إنستجرام', emoji: '📸', color: '#E1306C' },
@@ -20,7 +18,8 @@ const SOURCE_LABELS: Record<string, { label: string; emoji: string; color: strin
 };
 
 export default function AcquisitionReport() {
-  const merchantId = useMerchantId();
+  const { data: merchant } = trpc.merchants.getCurrent.useQuery();
+  const merchantId = merchant?.id;
   const { data, isLoading } = trpc.analytics.getAcquisitionSources.useQuery(
     { merchantId: merchantId! },
     { enabled: !!merchantId }
