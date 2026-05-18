@@ -3,9 +3,14 @@
  * 
  * يمنع ربط أكثر من منصة تجارة إلكترونية في نفس الوقت
  * لتجنب تضارب البيانات وتكرار الطلبات
+ * 
+ * ⚠️  Uses Drizzle ORM where schema exists to prevent column name mismatches.
+ *     Only zid_settings uses raw SQL (no Drizzle schema defined).
  */
 
-import { getPool } from '../db';
+import { getDb, getPool, getWooCommerceSettings } from '../db';
+import { sallaConnections } from '../../drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 
 export interface ExistingPlatform {
   platform: 'salla' | 'zid' | 'woocommerce' | 'shopify' | 'byaan';
@@ -22,30 +27,38 @@ export interface ExistingPlatform {
 export async function checkExistingIntegrations(merchantId: number): Promise<ExistingPlatform[]> {
   const existingPlatforms: ExistingPlatform[] = [];
 
-  // فحص سلة (Salla) — raw SQL via pool
-  // Note: salla_connections uses camelCase columns (no explicit column name in schema)
+  // ═══════════════════════════════════════════
+  // سلة (Salla) — Drizzle ORM (type-safe)
+  // ═══════════════════════════════════════════
   try {
-    const pool = await getPool();
-    if (pool) {
-      const [rows] = await pool.execute(
-        `SELECT * FROM salla_connections WHERE merchantId = ? AND syncStatus = 'active' LIMIT 1`,
-        [merchantId]
-      );
-      const sallaConnection = (rows as any[])?.[0];
-      if (sallaConnection) {
-        existingPlatforms.push({
-          platform: 'salla',
-          name: 'سلة',
-          storeUrl: sallaConnection.storeUrl,
-          connectedAt: sallaConnection.createdAt,
-        });
-      }
+    const db = await getDb();
+    const [sallaConnection] = await db
+      .select()
+      .from(sallaConnections)
+      .where(
+        and(
+          eq(sallaConnections.merchantId, merchantId),
+          eq(sallaConnections.syncStatus, 'active')
+        )
+      )
+      .limit(1);
+
+    if (sallaConnection) {
+      existingPlatforms.push({
+        platform: 'salla',
+        name: 'سلة',
+        storeUrl: sallaConnection.storeUrl,
+        connectedAt: sallaConnection.createdAt ? new Date(sallaConnection.createdAt) : null,
+      });
     }
   } catch (error) {
     console.error('[Platform Checker] Error checking Salla:', error);
   }
 
-  // فحص زد (Zid) — zid_settings uses snake_case columns
+  // ═══════════════════════════════════════════
+  // زد (Zid) — Raw SQL (no Drizzle schema)
+  // TODO: Add Drizzle schema for zid_settings
+  // ═══════════════════════════════════════════
   try {
     const pool = await getPool();
     if (pool) {
@@ -67,29 +80,26 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
     console.error('[Platform Checker] Error checking Zid:', error);
   }
 
-  // فحص ووكومرس (WooCommerce) — woocommerce_settings uses snake_case columns
+  // ═══════════════════════════════════════════
+  // ووكومرس (WooCommerce) — Drizzle via db function
+  // ═══════════════════════════════════════════
   try {
-    const pool = await getPool();
-    if (pool) {
-      const [rows] = await pool.execute(
-        `SELECT * FROM woocommerce_settings WHERE merchant_id = ? AND is_active = 1 LIMIT 1`,
-        [merchantId]
-      );
-      const wooSettings = (rows as any[])?.[0];
-      if (wooSettings) {
-        existingPlatforms.push({
-          platform: 'woocommerce',
-          name: 'ووكومرس',
-          storeUrl: wooSettings.store_url,
-          connectedAt: wooSettings.created_at,
-        });
-      }
+    const wooSettings = await getWooCommerceSettings(merchantId);
+    if (wooSettings && wooSettings.isActive === 1) {
+      existingPlatforms.push({
+        platform: 'woocommerce',
+        name: 'ووكومرس',
+        storeUrl: wooSettings.storeUrl || undefined,
+        connectedAt: wooSettings.createdAt ? new Date(wooSettings.createdAt) : null,
+      });
     }
   } catch (error) {
     console.error('[Platform Checker] Error checking WooCommerce:', error);
   }
 
-  // فحص بيان (Byaan)
+  // ═══════════════════════════════════════════
+  // بيان (Byaan) — via integration module
+  // ═══════════════════════════════════════════
   try {
     const { getByaanConnection } = await import('./byaan');
     const byaanConnection = await getByaanConnection(merchantId);

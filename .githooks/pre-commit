@@ -1,0 +1,31 @@
+#!/bin/sh
+# ══════════════════════════════════════════════════════════════
+# Pre-commit Hook: Block namespace DB imports
+# Prevents "import * as db" which breaks in esbuild ESM bundles
+# See: ReferenceError: db is not defined (May 2026 incident)
+# ══════════════════════════════════════════════════════════════
+
+# Check staged .ts files (exclude db.ts itself and test files)
+FORBIDDEN=$(git diff --cached --name-only --diff-filter=ACM \
+  | grep '\.ts$' \
+  | grep -v 'db\.ts$' \
+  | grep -v '\.test\.ts$' \
+  | xargs grep -l 'import \* as db from' 2>/dev/null)
+
+if [ -n "$FORBIDDEN" ]; then
+    echo ""
+    echo "╔══════════════════════════════════════════════════════════╗"
+    echo "║  ❌  BLOCKED: Namespace DB import detected!             ║"
+    echo "║                                                         ║"
+    echo "║  'import * as db' breaks in esbuild ESM bundles.        ║"
+    echo "║  Use destructured imports instead:                      ║"
+    echo "║                                                         ║"
+    echo "║  ✅  import { getDb, getPool } from './db';             ║"
+    echo "║  ❌  import * as db from './db';                        ║"
+    echo "╚══════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "Files with forbidden imports:"
+    echo "$FORBIDDEN" | while read f; do echo "  → $f"; done
+    echo ""
+    exit 1
+fi
