@@ -1019,15 +1019,47 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       const baseOrigin = new URL(url).origin;
       const sitemapUrls = [`${baseOrigin}/sitemap.xml`, `${baseOrigin}/sitemap_index.xml`];
       const seenUrls = new Set(discoveredPages.map(p => p.url));
-      
+
+      // Helper: extract <loc> URLs from a sitemap body
+      const extractLocs = (body: string): string[] => {
+        const locs: string[] = [];
+        const locRegex = /<loc>([^<]+)<\/loc>/g;
+        let m;
+        while ((m = locRegex.exec(body)) !== null) locs.push(m[1].trim());
+        return locs;
+      };
+
       for (const sitemapUrl of sitemapUrls) {
         try {
           const smResult = await curlFetch(sitemapUrl, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' });
           if (smResult.ok && smResult.body.includes('<loc>')) {
-            const locRegex = /<loc>([^<]+)<\/loc>/g;
-            let locMatch;
-            while ((locMatch = locRegex.exec(smResult.body)) !== null) {
-              const pageUrl = locMatch[1].trim();
+            let allPageUrls: string[] = [];
+
+            // Check if this is a sitemap INDEX (contains <sitemapindex> or child .xml links)
+            const isSitemapIndex = smResult.body.includes('<sitemapindex') || smResult.body.includes('</sitemapindex>');
+            const childLocs = extractLocs(smResult.body);
+
+            if (isSitemapIndex) {
+              // Fetch each child sitemap to get the actual page URLs
+              console.log(`[WebsiteAnalyzer] Sitemap INDEX found at ${sitemapUrl} with ${childLocs.length} child sitemaps`);
+              for (const childUrl of childLocs.slice(0, 10)) { // Max 10 child sitemaps
+                if (!childUrl.endsWith('.xml') || !childUrl.startsWith(baseOrigin)) continue;
+                try {
+                  const childResult = await curlFetch(childUrl, { 'User-Agent': 'Googlebot/2.1 (+http://www.google.com/bot.html)' });
+                  if (childResult.ok && childResult.body.includes('<loc>')) {
+                    const pages = extractLocs(childResult.body).filter(u => !u.endsWith('.xml'));
+                    allPageUrls.push(...pages);
+                    console.log(`[WebsiteAnalyzer] Child sitemap ${childUrl} → ${pages.length} pages`);
+                  }
+                } catch { /* child sitemap fetch failed */ }
+              }
+            } else {
+              // Regular sitemap — filter out .xml references
+              allPageUrls = childLocs.filter(u => !u.endsWith('.xml'));
+            }
+
+            // Add discovered pages
+            for (const pageUrl of allPageUrls) {
               // SEC-SITEMAP-01: Validate sitemap URLs (defense-in-depth: scrapeWebsite also checks)
               if (!seenUrls.has(pageUrl) && pageUrl.startsWith(baseOrigin) && isUrlSafe(pageUrl)) {
                 seenUrls.add(pageUrl);
@@ -1044,7 +1076,7 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
                 });
               }
             }
-            console.log(`[WebsiteAnalyzer] Sitemap found: ${sitemapUrl} — total pages now: ${discoveredPages.length}`);
+            console.log(`[WebsiteAnalyzer] Sitemap processing done: ${sitemapUrl} — total pages now: ${discoveredPages.length}`);
             break; // Found sitemap, no need to try alternatives
           }
         } catch { /* sitemap not found — ok */ }
