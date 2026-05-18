@@ -263,6 +263,10 @@ import mysql from "mysql2/promise";
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: mysql.Pool | null = null;
 
+// Module-level alias — used by 237+ functions below that call db.select/insert/update/delete
+// Gets set when getDb() initializes the connection pool
+let db: ReturnType<typeof drizzle> | null = null;
+
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
@@ -293,11 +297,13 @@ export async function getDb() {
       });
 
       _db = drizzle({ client: _pool, schema, mode: 'default' });
+      db = _db; // Sync module-level alias for direct-access functions
       console.log('[Database] ✅ Connection pool initialized (25 connections, queue limit: 100)');
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
       _pool = null;
+      db = null;
     }
   }
   return _db;
@@ -321,6 +327,7 @@ export async function closeDb(): Promise<void> {
     await _pool.end();
     _pool = null;
     _db = null;
+    db = null;
     console.log('[Database] Connection pool closed');
   }
 }
@@ -9229,8 +9236,8 @@ export async function getPendingWooCommerceWebhooks(merchantId: number, limit: n
     .limit(limit);
 }
 
-// Export db instance for direct access
-export { _db as db };
+// Export db instance for direct access (live binding to module-level variable)
+export { db };
 
 // ============================================
 // Template Translations Functions
