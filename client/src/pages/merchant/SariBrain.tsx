@@ -344,6 +344,18 @@ export default function SariBrain() {
     onError: (e) => toast.error('فشل الحذف: ' + e.message),
   });
 
+  // ── Content preview state ──
+  const [viewingPageId, setViewingPageId] = useState<number | null>(null);
+  const { data: pageContentData, isLoading: pageContentLoading } = trpc.sariBrain.getPageContent.useQuery(
+    { pageId: viewingPageId! },
+    { enabled: viewingPageId !== null }
+  );
+  const [urlPreview, setUrlPreview] = useState<{ url: string; title: string; content: string; wordCount: number } | null>(null);
+  const previewUrlMutation = trpc.sariBrain.previewUrl.useMutation({
+    onSuccess: (data) => setUrlPreview(data),
+    onError: (e) => toast.error('فشل سحب الصفحة: ' + e.message),
+  });
+
   return (
     <div className="space-y-6">
       {/* Integration Lock Banner */}
@@ -1158,6 +1170,13 @@ export default function SariBrain() {
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
                           variant="ghost" size="sm" className="h-7 w-7 p-0"
+                          onClick={() => setViewingPageId(page.id)}
+                          title="عرض المحتوى المسحوب"
+                        >
+                          <Search className="h-3.5 w-3.5 text-primary" />
+                        </Button>
+                        <Button
+                          variant="ghost" size="sm" className="h-7 w-7 p-0"
                           onClick={() => togglePageMutation.mutate({ pageId: page.id, useInBot: !page.useInBot })}
                           title={page.useInBot ? 'إيقاف استخدام هذه الصفحة في الردود' : 'تفعيل استخدام هذه الصفحة في الردود'}
                         >
@@ -1231,12 +1250,12 @@ export default function SariBrain() {
               )}
             </div>
 
-            {/* Add Custom URL */}
+            {/* Add Custom URL — Preview first, then confirm */}
             <div className="p-4 rounded-lg border border-dashed border-primary/30 space-y-3">
               <p className="text-sm font-medium flex items-center gap-1">
                 <Link className="h-4 w-4" /> إضافة صفحة مخصصة
               </p>
-              <p className="text-xs text-muted-foreground">أضف رابط صفحة محددة من موقعك ليسحب ساري محتواها ويستخدمه في الردود</p>
+              <p className="text-xs text-muted-foreground">أضف رابط صفحة محددة من موقعك — سيتم عرض المحتوى للمراجعة قبل الإضافة</p>
               <div className="flex gap-2">
                 <Input
                   value={customUrl}
@@ -1244,17 +1263,99 @@ export default function SariBrain() {
                   placeholder="https://example.com/services"
                   dir="ltr"
                   className="font-mono text-sm"
+                  onKeyDown={(e) => { if (e.key === 'Enter' && customUrl.trim()) previewUrlMutation.mutate({ url: customUrl }); }}
                 />
                 <Button
                   size="sm" className="shrink-0"
-                  onClick={() => addUrlMutation.mutate({ url: customUrl })}
-                  disabled={!customUrl.trim() || addUrlMutation.isPending}
+                  onClick={() => previewUrlMutation.mutate({ url: customUrl })}
+                  disabled={!customUrl.trim() || previewUrlMutation.isPending}
                 >
-                  <Plus className="h-4 w-4 ml-1" />
-                  {addUrlMutation.isPending ? 'جاري السحب...' : 'سحب'}
+                  <Search className="h-4 w-4 ml-1" />
+                  {previewUrlMutation.isPending ? 'جاري السحب...' : 'معاينة'}
                 </Button>
               </div>
             </div>
+
+            {/* ── URL Preview Dialog ── */}
+            <Dialog open={!!urlPreview} onOpenChange={(open) => { if (!open) setUrlPreview(null); }}>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-right">📄 معاينة المحتوى المسحوب</DialogTitle>
+                  <DialogDescription className="text-right">
+                    راجع المحتوى قبل إضافته لذاكرة ساري
+                  </DialogDescription>
+                </DialogHeader>
+                {urlPreview && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <p className="font-semibold">{urlPreview.title}</p>
+                        <a href={urlPreview.url} target="_blank" rel="noopener" className="text-xs text-primary hover:underline flex items-center gap-1" dir="ltr">
+                          {urlPreview.url} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                      <Badge variant="secondary">{urlPreview.wordCount.toLocaleString()} كلمة</Badge>
+                    </div>
+                    <div className="p-4 rounded-lg bg-muted/50 border max-h-[50vh] overflow-y-auto">
+                      <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed" dir="auto">{urlPreview.content.substring(0, 5000)}{urlPreview.content.length > 5000 ? '\n\n... (تم اختصار المحتوى للمعاينة)' : ''}</pre>
+                    </div>
+                  </div>
+                )}
+                <DialogFooter className="flex-row-reverse gap-2">
+                  <Button variant="outline" onClick={() => setUrlPreview(null)}>إلغاء</Button>
+                  <Button
+                    onClick={() => {
+                      if (urlPreview) {
+                        addUrlMutation.mutate({ url: urlPreview.url, title: urlPreview.title });
+                        setUrlPreview(null);
+                      }
+                    }}
+                    disabled={addUrlMutation.isPending}
+                  >
+                    <CheckCircle2 className="h-4 w-4 ml-1" />
+                    {addUrlMutation.isPending ? 'جاري الإضافة...' : 'موافق — أضف للمعرفة'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* ── Page Content Viewer Dialog ── */}
+            <Dialog open={viewingPageId !== null} onOpenChange={(open) => { if (!open) setViewingPageId(null); }}>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-right">📖 محتوى الصفحة</DialogTitle>
+                </DialogHeader>
+                {pageContentLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="mr-2 text-sm text-muted-foreground">جاري تحميل المحتوى...</span>
+                  </div>
+                ) : pageContentData ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div>
+                        <p className="font-semibold">{pageContentData.title}</p>
+                        <a href={pageContentData.url} target="_blank" rel="noopener" className="text-xs text-primary hover:underline flex items-center gap-1" dir="ltr">
+                          {pageContentData.url} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">{pageContentData.wordCount.toLocaleString()} كلمة</Badge>
+                        <Badge variant={pageContentData.useInBot ? 'default' : 'outline'}>
+                          {pageContentData.useInBot ? '✅ مفعّل' : '⏸️ متوقف'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="p-4 rounded-lg bg-muted/50 border max-h-[50vh] overflow-y-auto">
+                      <pre className="text-sm whitespace-pre-wrap font-sans leading-relaxed" dir="auto">{pageContentData.content.substring(0, 8000)}{pageContentData.content.length > 8000 ? '\n\n... (تم اختصار المحتوى)' : ''}</pre>
+                    </div>
+                  </div>
+                ) : null}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setViewingPageId(null)}>إغلاق</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Stats Summary */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

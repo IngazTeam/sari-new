@@ -1262,6 +1262,74 @@ ${sanitizedContent}`
     }
   }),
 
+  /** جلب محتوى صفحة مخزنة (للعرض في popup) */
+  getPageContent: protectedProcedure
+    .input(z.object({ pageId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const dbConn = await getRawPool();
+      if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
+
+      const [rows] = await (dbConn as any).execute(
+        `SELECT id, title, url, content, page_type, use_in_bot, discovered_at FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
+        [input.pageId, merchant.id]
+      );
+      if (!rows || (rows as any[]).length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
+      }
+      const page = (rows as any[])[0];
+      const content = (page.content || '').toString();
+      return {
+        id: page.id,
+        title: page.title,
+        url: page.url,
+        content,
+        wordCount: content.trim().split(/\s+/).filter(Boolean).length,
+        pageType: page.page_type,
+        useInBot: !!page.use_in_bot,
+        discoveredAt: page.discovered_at,
+      };
+    }),
+
+  /** معاينة رابط قبل إضافته — يسحب المحتوى بدون حفظ */
+  previewUrl: protectedProcedure
+    .input(z.object({ url: z.string().url() }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      checkTestRateLimit(merchant.id, 10_000); // 10s cooldown
+
+      const { isUrlSafe, scrapeWebsite } = await import('./_core/websiteAnalyzer');
+      if (!isUrlSafe(input.url)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به' });
+      }
+
+      try {
+        const { text } = await scrapeWebsite(input.url);
+        const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+
+        if (wordCount < 10) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'الصفحة فارغة أو لا تحتوي على محتوى كافي' });
+        }
+
+        // Auto-detect title from URL
+        const title = new URL(input.url).pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'صفحة مخصصة';
+
+        return {
+          url: input.url,
+          title,
+          content: text.substring(0, 65000),
+          wordCount,
+        };
+      } catch (error: any) {
+        if (error?.code === 'BAD_REQUEST' || error?.code === 'TOO_MANY_REQUESTS') throw error;
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل سحب الصفحة: ' + (error?.message || 'خطأ').substring(0, 100) });
+      }
+    }),
+
   /**
    * Add a custom URL to the knowledge base
    * Crawls the URL and saves its content as a discovered page
