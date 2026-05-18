@@ -77,6 +77,17 @@ const destructiveRateLimit: Record<number, number> = {};
 // PEN-BRAIN-08 FIX: Separate rate limiter for test endpoint
 const testRateLimit: Record<number, number> = {};
 
+// ─── Async Analysis Status Tracker ─────────────────────────────────────
+// Tracks in-progress website analyses to avoid 504 Nginx timeouts.
+// The mutation returns immediately; frontend polls getAnalysisStatus.
+interface AnalysisStatus {
+  status: 'running' | 'completed' | 'error';
+  startedAt: number;
+  result?: any;
+  error?: string;
+}
+const analysisStatusMap: Record<number, AnalysisStatus> = {};
+
 function checkRateLimit(map: Record<number, number>, merchantId: number, cooldownMs: number): void {
   const now = Date.now();
   const lastAction = map[merchantId];
@@ -149,6 +160,139 @@ function sanitizeForTRPC(data: any): any {
     return clean;
   }
   return data;
+}
+
+/**
+ * Background analysis runner — fire-and-forget.
+ * Stores result in analysisStatusMap for frontend polling via getAnalysisStatus.
+ */
+async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
+  try {
+    const { analyzeWebsite } = await import('./_core/websiteAnalyzer');
+    const result = await analyzeWebsite(websiteUrl);
+
+    // Delete old analyses, create new
+    try {
+      const existingAnalyses = await getWebsiteAnalysesByMerchant(merchant.id);
+      for (const old of existingAnalyses) { await deleteWebsiteAnalysis(old.id); }
+    } catch { /* first run */ }
+
+    const analysisId = await createWebsiteAnalysis({
+      merchantId: merchant.id, url: websiteUrl,
+      title: result.title || '', description: result.description || '',
+      industry: result.industry || '', language: result.language || 'ar',
+      seoScore: result.seoScore || 0, seoIssues: result.seoIssues || [],
+      metaTags: result.metaTags || {}, performanceScore: result.performanceScore || 0,
+      loadTime: result.loadTime, pageSize: result.pageSize,
+      uxScore: result.uxScore || 0, mobileOptimized: result.mobileOptimized,
+      hasContactInfo: result.hasContactInfo, hasWhatsapp: result.hasWhatsapp,
+      contentQuality: result.contentQuality || 0, wordCount: result.wordCount || 0,
+      imageCount: result.imageCount || 0, videoCount: result.videoCount || 0,
+      overallScore: result.overallScore || 0, status: 'completed',
+    });
+
+    await updateWebsiteAnalysis(analysisId, {
+      scrapedContent: (result._scrapedText || '') + '\n\n' + (result._enrichedText || ''),
+    });
+
+    // Save crawled pages
+    if ((result as any)._crawledPages?.length > 0) {
+      try {
+        const dbConn = await getRawPool();
+        if (dbConn) {
+          await (dbConn as any).execute(`DELETE FROM discovered_pages WHERE merchant_id = ?`, [merchant.id]);
+          const enumSet = new Set(['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other']);
+          for (const page of (result as any)._crawledPages) {
+            if (!page.success) continue;
+            const safeType = enumSet.has(page.pageType) ? page.pageType : 'other';
+            try {
+              await (dbConn as any).execute(
+                `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
+                [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), (page.content || '').substring(0, 65000)]
+              );
+            } catch { /* skip */ }
+          }
+        }
+      } catch (e: any) { console.warn('[SariBrain] Pages save failed:', e.message); }
+    }
+
+    await logBrainActivity(merchant.id, 'website_analyzed', `تم تحليل الموقع: ${websiteUrl}`, {
+      url: websiteUrl, title: result.title, score: result.overallScore,
+    });
+
+    // Knowledge Engine v4
+    let evolveResult = null;
+    let knowledgeError: string | null = null;
+    try {
+      let scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
+      const profileParts: string[] = [];
+      if (merchant.businessName) profileParts.push(`اسم النشاط: ${merchant.businessName}`);
+      if ((merchant as any).description) profileParts.push(`الوصف: ${(merchant as any).description}`);
+      if ((merchant as any).phone) profileParts.push(`هاتف: ${(merchant as any).phone}`);
+      if ((merchant as any).websiteUrl) profileParts.push(`الموقع: ${(merchant as any).websiteUrl}`);
+      const profileContext = profileParts.length > 0 ? `\n--- بيانات التاجر ---\n${profileParts.join('\n')}\n` : '';
+
+      // SPA Fallback
+      if (scrapedText.trim().length < 200) {
+        const fb: string[] = [];
+        if (result.title) fb.push(`اسم النشاط: ${result.title}`);
+        if (result.description) fb.push(`وصف: ${result.description}`);
+        if ((result as any)._crawledPages?.length > 0) {
+          for (const page of (result as any)._crawledPages) {
+            if (page.success && page.content?.trim().length > 50) {
+              fb.push(`\n[${page.title}]\n${page.content.substring(0, 5000)}`);
+            }
+          }
+        }
+        const fallbackText = fb.join('\n');
+        if (fallbackText.trim().length > scrapedText.trim().length) scrapedText = fallbackText;
+      }
+
+      scrapedText = profileContext + scrapedText;
+
+      if (scrapedText.trim().length > 30) {
+        const { ingestContent } = await import('./ai/knowledge-engine');
+        const ingestionResult = await ingestContent(
+          merchant.id, scrapedText, 'website',
+          { businessName: merchant.businessName, industry: result.industry }, websiteUrl
+        );
+        evolveResult = ingestionResult.evolveResult;
+
+        try { const { embedAllSections } = await import('./ai/rag-engine'); await embedAllSections(merchant.id); } catch { /* non-blocking */ }
+        try { const knowledgeDb = await import('./db/knowledge'); await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
+      } else {
+        knowledgeError = 'الموقع لا يحتوي على محتوى نصي كافٍ';
+      }
+    } catch (keErr: any) {
+      knowledgeError = keErr.message?.substring(0, 200);
+    }
+
+    // Build sales intel summary
+    let salesIntelSummary = null;
+    try {
+      const knowledgeDb = await import('./db/knowledge');
+      const allSections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+      salesIntelSummary = {
+        totalSections: allSections.filter((s: any) => !['sales_intel', 'opportunities'].includes(s.section_type || s.sectionType || '')).length,
+        hasIntel: !!allSections.find((s: any) => (s.section_type || s.sectionType) === 'sales_intel'),
+        hasOpportunities: !!allSections.find((s: any) => (s.section_type || s.sectionType) === 'opportunities'),
+      };
+    } catch { /* non-blocking */ }
+
+    analysisStatusMap[merchant.id] = {
+      status: 'completed', startedAt: Date.now(),
+      result: { success: true, title: result.title, industry: result.industry, score: result.overallScore, knowledgeEvolution: evolveResult, salesIntelSummary, knowledgeError, crawlStats: (result as any)._crawlStats || null },
+    };
+    console.log(`[SariBrain] ✅ Background analysis completed for merchant ${merchant.id}`);
+  } catch (error: any) {
+    console.error('[SariBrain] ❌ Background analysis failed:', error.message);
+    let reason = error?.message?.substring(0, 150) || 'خطأ غير معروف';
+    const msg = error?.message?.toLowerCase() || '';
+    if (msg.includes('timeout')) reason = 'الموقع لم يستجب (timeout)';
+    else if (msg.includes('enotfound')) reason = 'الموقع غير موجود';
+    else if (msg.includes('cloudflare') || msg.includes('403')) reason = 'الموقع محمي بجدار حماية';
+    analysisStatusMap[merchant.id] = { status: 'error', startedAt: Date.now(), error: `فشل تحليل الموقع: ${reason}` };
+  }
 }
 
 export const sariBrainRouter = router({
@@ -447,314 +591,48 @@ export const sariBrainRouter = router({
       throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد رابط موقع في إعدادات المتجر. أضف رابط الموقع أولاً من صفحة الإعدادات.' });
     }
 
-    try {
-      const { analyzeWebsite } = await import('./_core/websiteAnalyzer');
-      const result = await analyzeWebsite(websiteUrl);
-
-      // Delete old analyses, then create new one using the proper Drizzle ORM functions
-      // (same path as routers-website-analysis.ts — single source of truth)
-      try {
-        const existingAnalyses = await getWebsiteAnalysesByMerchant(merchant.id);
-        for (const old of existingAnalyses) {
-          await deleteWebsiteAnalysis(old.id);
-        }
-      } catch { /* table may not exist yet — first run */ }
-
-      const analysisId = await createWebsiteAnalysis({
-        merchantId: merchant.id,
-        url: websiteUrl,
-        title: result.title || '',
-        description: result.description || '',
-        industry: result.industry || '',
-        language: result.language || 'ar',
-        seoScore: result.seoScore || 0,
-        seoIssues: result.seoIssues || [],
-        metaTags: result.metaTags || {},
-        performanceScore: result.performanceScore || 0,
-        loadTime: result.loadTime,
-        pageSize: result.pageSize,
-        uxScore: result.uxScore || 0,
-        mobileOptimized: result.mobileOptimized,
-        hasContactInfo: result.hasContactInfo,
-        hasWhatsapp: result.hasWhatsapp,
-        contentQuality: result.contentQuality || 0,
-        wordCount: result.wordCount || 0,
-        imageCount: result.imageCount || 0,
-        videoCount: result.videoCount || 0,
-        overallScore: result.overallScore || 0,
-        status: 'completed',
-      });
-
-      // Save scraped content separately (createWebsiteAnalysis doesn't accept this field)
-      await updateWebsiteAnalysis(analysisId, {
-        scrapedContent: (result._scrapedText || '') + '\n\n' + (result._enrichedText || ''),
-      });
-
-      // Save crawled pages to discovered_pages (Knowledge Dashboard)
-      if ((result as any)._crawledPages?.length > 0) {
-        try {
-          const dbConn = await getRawPool();
-          if (dbConn) {
-            await (dbConn as any).execute(`DELETE FROM discovered_pages WHERE merchant_id = ?`, [merchant.id]);
-            // DB ENUM constraint: page_type only allows these values
-            const DB_ENUM_TYPES = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other'] as const;
-            const enumSet = new Set<string>(DB_ENUM_TYPES);
-            let savedCount = 0;
-            let failedCount = 0;
-            for (const page of (result as any)._crawledPages) {
-              if (!page.success) continue;
-              // Map any non-ENUM type to 'other' (e.g. services, products, courses, portfolio, content)
-              const safeType = enumSet.has(page.pageType) ? page.pageType : 'other';
-              try {
-                await (dbConn as any).execute(
-                  `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
-                  [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), (page.content || '').substring(0, 65000)]
-                );
-                savedCount++;
-              } catch (insertErr: any) {
-                failedCount++;
-                console.warn(`[SariBrain] Failed to save page ${page.url}:`, insertErr.message);
-              }
-            }
-            console.log(`[SariBrain] Discovered pages: ${savedCount} saved, ${failedCount} failed`);
-          }
-        } catch (pageErr: any) {
-          console.warn('[SariBrain] Failed to save discovered pages:', pageErr.message);
-        }
-      }
-
-      await logBrainActivity(merchant.id, 'website_analyzed', `تم إعادة تحليل الموقع: ${websiteUrl}`, {
-        url: websiteUrl,
-        title: result.title,
-        industry: result.industry,
-        score: result.overallScore,
-      });
-
-      // === Knowledge Engine v4: Classify scraped content into structured sections ===
-      let evolveResult = null;
-      let knowledgeError: string | null = null;
-      try {
-        let scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
-        console.log(`[SariBrain] Knowledge Engine input: scrapedText=${result._scrapedText?.length || 0} chars, enrichedText=${result._enrichedText?.length || 0} chars, combined=${scrapedText.trim().length} chars`);
-        
-        // === ALWAYS inject merchant profile data as baseline context ===
-        const profileParts: string[] = [];
-        if (merchant.businessName) profileParts.push(`اسم النشاط التجاري: ${merchant.businessName}`);
-        if ((merchant as any).industry) profileParts.push(`المجال: ${(merchant as any).industry}`);
-        if ((merchant as any).description) profileParts.push(`الوصف: ${(merchant as any).description}`);
-        if ((merchant as any).phone) profileParts.push(`هاتف: ${(merchant as any).phone}`);
-        if ((merchant as any).email) profileParts.push(`بريد: ${(merchant as any).email}`);
-        if ((merchant as any).city) profileParts.push(`المدينة: ${(merchant as any).city}`);
-        if ((merchant as any).address) profileParts.push(`العنوان: ${(merchant as any).address}`);
-        if ((merchant as any).websiteUrl || (merchant as any).website) profileParts.push(`الموقع: ${(merchant as any).websiteUrl || (merchant as any).website}`);
-        const profileContext = profileParts.length > 0 ? `\n--- بيانات التاجر ---\n${profileParts.join('\n')}\n` : '';
-        
-        // === SPA Fallback: If scraped text is empty (SPA/Vue/Zid/React sites), build context from available data ===
-        if (scrapedText.trim().length < 200) {
-          console.log(`[SariBrain] Primary scrape returned low text (${scrapedText.trim().length} chars) — SPA likely. Building fallback context...`);
-          const fallbackParts: string[] = [];
-          
-          // 1. Basic business info (always available from meta tags)
-          if (result.title) fallbackParts.push(`اسم النشاط: ${result.title}`);
-          if (result.description) fallbackParts.push(`وصف النشاط: ${result.description}`);
-          if (result.industry && result.industry !== 'غير محدد') fallbackParts.push(`المجال: ${result.industry}`);
-          
-          // 2. Meta tags (og:title, keywords, etc.)
-          const meta = result.metaTags;
-          if (meta?.ogTitle && meta.ogTitle !== result.title) fallbackParts.push(`عنوان بديل: ${meta.ogTitle}`);
-          if (meta?.ogDescription && meta.ogDescription !== result.description) fallbackParts.push(`وصف بديل: ${meta.ogDescription}`);
-          if (meta?.keywords) fallbackParts.push(`كلمات مفتاحية: ${meta.keywords}`);
-          
-          // 3. Contact info (from UX analysis)
-          if (result.contactInfo) {
-            const ci = result.contactInfo;
-            if (ci.phones?.length > 0) fallbackParts.push(`هواتف التواصل: ${ci.phones.join(', ')}`);
-            if (ci.emails?.length > 0) fallbackParts.push(`بريد إلكتروني: ${ci.emails.join(', ')}`);
-            if (ci.whatsappNumber) fallbackParts.push(`واتساب: ${ci.whatsappNumber}`);
-            if (ci.address) fallbackParts.push(`العنوان: ${ci.address}`);
-          }
-          
-          // 4. FAQs (from multi-page crawling)
-          if (result.faqs && result.faqs.length > 0) {
-            fallbackParts.push('\nأسئلة شائعة:');
-            for (const faq of result.faqs.slice(0, 20)) {
-              fallbackParts.push(`س: ${faq.question}\nج: ${faq.answer}`);
-            }
-          }
-          
-          // 5. Extract text from raw HTML (headings, paragraphs, alt text, JSON-LD)
-          if ((result as any)._scrapedHtml) {
-            const html = (result as any)._scrapedHtml as string;
-            const htmlTexts: string[] = [];
-            
-            // Extract heading texts (h1-h6)
-            const headingRegex = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi;
-            let hMatch;
-            while ((hMatch = headingRegex.exec(html)) !== null) {
-              const t = hMatch[1].replace(/<[^>]*>/g, '').trim();
-              if (t.length > 3) htmlTexts.push(t);
-            }
-            
-            // Extract paragraph texts
-            const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
-            let pMatch;
-            while ((pMatch = pRegex.exec(html)) !== null) {
-              const t = pMatch[1].replace(/<[^>]*>/g, '').trim();
-              if (t.length > 10) htmlTexts.push(t);
-            }
-            
-            // Extract image alt text
-            const altRegex = /alt=["']([^"']{5,})["']/gi;
-            let altMatch;
-            while ((altMatch = altRegex.exec(html)) !== null) {
-              htmlTexts.push(altMatch[1].trim());
-            }
-            
-            // Extract JSON-LD structured data
-            const jsonLdRegex = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-            let ldMatch;
-            while ((ldMatch = jsonLdRegex.exec(html)) !== null) {
-              try {
-                const ldData = JSON.parse(ldMatch[1]);
-                const ldText = JSON.stringify(ldData, null, 0)
-                  .replace(/[{}\[\]"]/g, ' ')
-                  .replace(/@\w+/g, '')
-                  .replace(/https?:\/\/[^\s]+/g, '')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-                if (ldText.length > 20) htmlTexts.push('بيانات منظمة: ' + ldText.substring(0, 2000));
-              } catch { /* malformed JSON-LD */ }
-            }
-
-            // Extract Vue.js / Nuxt SSR state (__NUXT__, __INITIAL_STATE__)
-            const vueStateRegex = /window\.__(?:NUXT|INITIAL_STATE)__\s*=\s*(\{[\s\S]*?\});?\s*(?:<\/script>|$)/gi;
-            let vueMatch;
-            while ((vueMatch = vueStateRegex.exec(html)) !== null) {
-              try {
-                const stateText = vueMatch[1]
-                  .replace(/[{}\[\]"]/g, ' ')
-                  .replace(/https?:\/\/[^\s]+/g, '')
-                  .replace(/\s+/g, ' ')
-                  .trim();
-                if (stateText.length > 50) {
-                  htmlTexts.push('بيانات Vue SSR: ' + stateText.substring(0, 5000));
-                  console.log(`[SariBrain] Vue SSR state extracted: ${stateText.length} chars`);
-                }
-              } catch { /* malformed Vue state */ }
-            }
-            
-            if (htmlTexts.length > 0) {
-              fallbackParts.push('\nمحتوى مستخرج من HTML:');
-              fallbackParts.push(htmlTexts.join('\n'));
-            }
-          }
-          
-          // 6. Content from crawled sub-pages (biggest source of real content)
-          if ((result as any)._crawledPages?.length > 0) {
-            for (const page of (result as any)._crawledPages) {
-              if (page.success && page.content && page.content.trim().length > 50) {
-                fallbackParts.push(`\n[صفحة: ${page.title}]\n${page.content.substring(0, 5000)}`);
-              }
-            }
-          }
-          
-          const fallbackText = fallbackParts.join('\n');
-          console.log(`[SariBrain] SPA fallback built: ${fallbackText.length} chars from ${fallbackParts.length} sources`);
-          
-          if (fallbackText.trim().length > scrapedText.trim().length) {
-            scrapedText = fallbackText;
-          }
-        }
-        
-        // Always prepend merchant profile as baseline context
-        scrapedText = profileContext + scrapedText;
-        
-        // Lower threshold — run Knowledge Engine if we have ANY meaningful context (30+ chars)
-        if (scrapedText.trim().length > 30) {
-          console.log(`[SariBrain] Starting Knowledge Engine pipeline for merchant ${merchant.id} with ${scrapedText.trim().length} chars...`);
-          const { ingestContent } = await import('./ai/knowledge-engine');
-          
-          const ingestionResult = await ingestContent(
-            merchant.id,
-            scrapedText,
-            'website',
-            { businessName: merchant.businessName, industry: result.industry },
-            websiteUrl
-          );
-          evolveResult = ingestionResult.evolveResult;
-          
-          console.log(`[SariBrain] Knowledge Engine SUCCESS: +${evolveResult.added} sections, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
-          
-          // Generate embeddings for all new sections (non-blocking — don't let it kill the pipeline)
-          try {
-            const { embedAllSections } = await import('./ai/rag-engine');
-            await embedAllSections(merchant.id);
-          } catch (embedErr: any) {
-            console.warn('[SariBrain] Embedding generation failed (non-blocking):', embedErr.message);
-          }
-          
-          // Invalidate response cache (knowledge changed)
-          try {
-            const knowledgeDb = await import('./db/knowledge');
-            await knowledgeDb.invalidateCache(merchant.id);
-          } catch { /* non-blocking */ }
-        } else {
-          console.warn(`[SariBrain] Knowledge Engine SKIPPED — no content available even after all fallbacks (${scrapedText.trim().length} chars)`);
-          knowledgeError = `الموقع لا يحتوي على محتوى نصي كافٍ (SPA) — جرب رفع ملف تعريفي من الإعدادات`;
-        }
-      } catch (keErr: any) {
-        console.error('[SariBrain] ❌ Knowledge Engine pipeline FAILED:', keErr.message, keErr.stack);
-        knowledgeError = `فشل محرك المعرفة: ${keErr.message?.substring(0, 200)}`;
-      }
-
-      // Build rich response for frontend toast
-      let salesIntelSummary = null;
-      try {
-        const knowledgeDb = await import('./db/knowledge');
-        const allSections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
-        const intelSection = allSections.find((s: any) => (s.section_type || s.sectionType) === 'sales_intel');
-        const oppsSection = allSections.find((s: any) => (s.section_type || s.sectionType) === 'opportunities');
-        salesIntelSummary = {
-          totalSections: allSections.filter((s: any) => !['sales_intel', 'opportunities'].includes(s.section_type || s.sectionType || '')).length,
-          hasIntel: !!intelSection,
-          hasOpportunities: !!oppsSection,
-          // PEN-V8-01 FIX: Don't expose content previews in response — frontend reads from getKnowledgeSections
-        };
-      } catch { /* non-blocking */ }
-
-      return { 
-        success: true, 
-        title: result.title, 
-        industry: result.industry, 
-        score: result.overallScore,
-        knowledgeEvolution: evolveResult,
-        salesIntelSummary,
-        knowledgeError,
-        crawlStats: (result as any)._crawlStats || null,
-      };
-    } catch (error: any) {
-      if (error?.code === 'TOO_MANY_REQUESTS') throw error;
-      console.error('[SariBrain] Website re-analysis failed:', error);
-
-      // Surface a meaningful reason to the merchant
-      let reason = 'خطأ غير معروف';
-      const msg = error?.message?.toLowerCase() || '';
-      if (msg.includes('timeout') || msg.includes('abort')) {
-        reason = 'الموقع لم يستجب في الوقت المحدد (timeout)';
-      } else if (msg.includes('enotfound') || msg.includes('dns')) {
-        reason = `الرابط غير صحيح أو الموقع غير موجود: ${websiteUrl}`;
-      } else if (msg.includes('403') || msg.includes('cloudflare') || msg.includes('blocked')) {
-        reason = 'الموقع محمي بجدار حماية (Cloudflare) ويمنع السحب';
-      } else if (msg.includes('certificate') || msg.includes('ssl') || msg.includes('tls')) {
-        reason = 'مشكلة في شهادة SSL للموقع';
-      } else if (msg.includes('econnrefused') || msg.includes('econnreset')) {
-        reason = 'السيرفر رفض الاتصال — تأكد من أن الموقع يعمل';
-      } else if (error?.message) {
-        reason = error.message.substring(0, 150);
-      }
-
-      throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `فشل تحليل الموقع: ${reason}` });
+    // Check if already running
+    const existing = analysisStatusMap[merchant.id];
+    if (existing && existing.status === 'running' && Date.now() - existing.startedAt < 300_000) {
+      return { started: true, alreadyRunning: true };
     }
+
+    // Mark as running and return immediately — heavy work runs in background
+    analysisStatusMap[merchant.id] = { status: 'running', startedAt: Date.now() };
+
+    // Fire-and-forget background task
+    runAnalysisInBackground(merchant, websiteUrl);
+
+    return { started: true, alreadyRunning: false };
+  }),
+
+  // Poll for async website analysis status
+  getAnalysisStatus: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const status = analysisStatusMap[merchant.id];
+    if (!status) return { status: 'idle' as const };
+
+    // Cleanup stale entries (>5 min old and not running)
+    if (Date.now() - status.startedAt > 300_000 && status.status !== 'running') {
+      delete analysisStatusMap[merchant.id];
+      return { status: 'idle' as const };
+    }
+
+    if (status.status === 'completed') {
+      const result = status.result;
+      delete analysisStatusMap[merchant.id]; // Consume once
+      return { status: 'completed' as const, ...result };
+    }
+
+    if (status.status === 'error') {
+      const error = status.error;
+      delete analysisStatusMap[merchant.id]; // Consume once
+      return { status: 'error' as const, error };
+    }
+
+    return { status: 'running' as const, elapsedMs: Date.now() - status.startedAt };
   }),
 
   // Get brain summary — used by AI prompt builder

@@ -144,32 +144,52 @@ export default function SariBrain() {
   });
 
   const reanalyzeMutation = trpc.sariBrain.reanalyzeWebsite.useMutation({
-    onSuccess: (data: any) => {
-      setAnalysisStep(ANALYSIS_STEPS.length); // All steps done
-      setFakeProgress(100); // Snap to 100%
-      setAnalysisResults(data);
-      utils.sariBrain.getSources.invalidate();
-      utils.sariBrain.getActivityLog.invalidate();
-      utils.sariBrain.getWebsiteKnowledge.invalidate();
-      utils.sariBrain.getKnowledgeSections.invalidate();
-      utils.sariBrain.getHealthScore.invalidate();
+    onSuccess: () => {
+      // Mutation returns immediately — start polling for results
+      setPolling(true);
     },
     onError: (error) => {
       setAnalysisError(error.message);
     },
   });
 
-  // Effect must be AFTER reanalyzeMutation is declared (const is not hoisted)
+  // Polling for async analysis status
+  const [polling, setPolling] = useState(false);
+  const statusQuery = trpc.sariBrain.getAnalysisStatus.useQuery(undefined, {
+    enabled: polling,
+    refetchInterval: polling ? 3000 : false, // Poll every 3s
+  });
+
+  // React to status changes
   useEffect(() => {
-    if (!reanalyzeMutation.isPending) {
+    if (!polling || !statusQuery.data) return;
+    const data = statusQuery.data as any;
+
+    if (data.status === 'completed') {
+      setPolling(false);
+      setAnalysisStep(ANALYSIS_STEPS.length);
+      setFakeProgress(100);
+      setAnalysisResults(data);
+      utils.sariBrain.getSources.invalidate();
+      utils.sariBrain.getActivityLog.invalidate();
+      utils.sariBrain.getWebsiteKnowledge.invalidate();
+      utils.sariBrain.getKnowledgeSections.invalidate();
+      utils.sariBrain.getHealthScore.invalidate();
+    } else if (data.status === 'error') {
+      setPolling(false);
+      setAnalysisError(data.error || 'فشل التحليل');
+    }
+  }, [statusQuery.data, polling]);
+
+  // Step progression animation (while polling)
+  useEffect(() => {
+    if (!polling) {
       if (!analysisResults && !analysisError) { setAnalysisStep(0); setFakeProgress(0); }
       return;
     }
-    // Step progression timer
     const stepTimer = setInterval(() => {
       setAnalysisStep(prev => prev < ANALYSIS_STEPS.length - 1 ? prev + 1 : prev);
     }, 5000);
-    // Smooth fake progress interpolation
     const progressTimer = setInterval(() => {
       setFakeProgress(prev => {
         const target = STEP_PROGRESS[Math.min(analysisStep, STEP_PROGRESS.length - 1)];
@@ -177,12 +197,11 @@ export default function SariBrain() {
         return Math.min(prev + Math.random() * 3 + 1, target);
       });
     }, 400);
-    // Reassurance message cycling
     const reassTimer = setInterval(() => {
       setReassuranceIdx(prev => (prev + 1) % REASSURANCE.length);
     }, 4000);
     return () => { clearInterval(stepTimer); clearInterval(progressTimer); clearInterval(reassTimer); };
-  }, [reanalyzeMutation.isPending, analysisStep]);
+  }, [polling, analysisStep]);
 
   const startAnalysis = () => {
     setAnalysisResults(null);
@@ -443,7 +462,7 @@ export default function SariBrain() {
           /* ── Re-analysis: show warning dialog ── */
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" disabled={reanalyzeMutation.isPending}>
+              <Button variant="outline" size="sm" disabled={polling || reanalyzeMutation.isPending}>
                 <RotateCcw className="h-4 w-4 ml-2" />
                 🔄 إعادة تحليل الموقع
               </Button>
@@ -478,7 +497,7 @@ export default function SariBrain() {
           </AlertDialog>
         ) : (
           /* ── First-time analysis: direct button ── */
-          <Button variant="default" size="sm" onClick={startAnalysis} disabled={reanalyzeMutation.isPending}>
+          <Button variant="default" size="sm" onClick={startAnalysis} disabled={polling || reanalyzeMutation.isPending}>
             <Globe className="h-4 w-4 ml-2" />
             🌐 تحليل موقعك
           </Button>
