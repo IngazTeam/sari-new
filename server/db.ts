@@ -780,7 +780,7 @@ export async function createSubscription(subscription: InsertSubscription): Prom
   const now = toMySQL(new Date().toISOString());
 
   const [result] = await _pool.execute(
-    `INSERT INTO subscriptions (merchant_id, plan_id, status, start_date, end_date, auto_renew, created_at, updated_at, last_reset_at)
+    `INSERT INTO subscriptions (merchantId, planId, status, startDate, endDate, autoRenew, createdAt, updatedAt, lastResetAt)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       subscription.merchantId, subscription.planId,
@@ -10449,7 +10449,7 @@ export async function getSubscriptionConversionRate() {
         eq(schema.subscriptions.status, 'active'),
         sql`EXISTS (
           SELECT 1 FROM ${schema.subscriptions} s2 
-          WHERE s2.merchant_id = ${schema.subscriptions.merchantId} 
+          WHERE s2.merchantId = ${schema.subscriptions.merchantId} 
           AND s2.status = 'trial'
         )`
       )
@@ -10670,9 +10670,9 @@ export async function getRepeatCustomersCount(
           gte(orders.createdAt, formatDateForDB(startDate)),
           lte(orders.createdAt, formatDateForDB(endDate)),
           sql`${orders.customerPhone} IN (
-            SELECT customer_phone FROM orders
-            WHERE merchant_id = ${merchantId}
-            GROUP BY customer_phone
+            SELECT customerPhone FROM orders
+            WHERE merchantId = ${merchantId}
+            GROUP BY customerPhone
             HAVING COUNT(*) > 1
           )`
         )

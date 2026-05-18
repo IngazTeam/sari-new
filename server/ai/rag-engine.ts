@@ -408,9 +408,9 @@ async function buildProductContext(merchantId: number, question: string): Promis
     const [rows] = await pool.execute(
       `SELECT p.name, p.price, p.description, p.category
        FROM products p
-       WHERE p.merchant_id = ? AND p.is_active = 1
+       WHERE p.merchantId = ? AND p.isActive = 1
        AND (${likeClauses})
-       ORDER BY p.total_views DESC
+       ORDER BY p.createdAt DESC
        LIMIT 5`,
       [merchantId, ...likeParams]
     );
