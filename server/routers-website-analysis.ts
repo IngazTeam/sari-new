@@ -155,17 +155,25 @@ export const websiteAnalysisRouter = router({
                     `DELETE FROM discovered_pages WHERE merchant_id = ?`,
                     [merchant.id]
                   );
-                  // Save each crawled page
-                  const validTypes = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other'];
+                  // DB ENUM constraint: page_type only allows these values
+                  const DB_ENUM_TYPES = new Set(['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other']);
+                  let savedCount = 0;
+                  let failedCount = 0;
                   for (const page of result._crawledPages) {
-                    if (!page.success) continue; // Skip failed pages
-                    const safeType = validTypes.includes(page.pageType) ? page.pageType : 'other';
-                    await pool.execute(
-                      `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
-                      [merchant.id, safeType, page.title.substring(0, 500), page.url.substring(0, 1000), page.content.substring(0, 65000)]
-                    );
+                    if (!page.success) continue;
+                    const safeType = DB_ENUM_TYPES.has(page.pageType) ? page.pageType : 'other';
+                    try {
+                      await pool.execute(
+                        `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
+                        [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), (page.content || '').substring(0, 65000)]
+                      );
+                      savedCount++;
+                    } catch (insertErr: any) {
+                      failedCount++;
+                      console.warn(`[WebsiteAnalysis] Failed to save page ${page.url}:`, insertErr.message);
+                    }
                   }
-                  console.log(`[WebsiteAnalysis] Saved ${result._crawledPages.filter(p => p.success).length} discovered pages for merchant ${merchant.id}`);
+                  console.log(`[WebsiteAnalysis] Discovered pages: ${savedCount} saved, ${failedCount} failed for merchant ${merchant.id}`);
                 }
               } catch (pageErr: any) {
                 console.warn('[WebsiteAnalysis] Failed to save discovered pages:', pageErr.message);

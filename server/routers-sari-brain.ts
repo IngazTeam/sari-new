@@ -477,16 +477,27 @@ export const sariBrainRouter = router({
           const dbConn = await getRawPool();
           if (dbConn) {
             await (dbConn as any).execute(`DELETE FROM discovered_pages WHERE merchant_id = ?`, [merchant.id]);
-            const validTypes = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'services', 'products', 'courses', 'portfolio', 'content', 'other'];
+            // DB ENUM constraint: page_type only allows these values
+            const DB_ENUM_TYPES = ['about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other'] as const;
+            const enumSet = new Set<string>(DB_ENUM_TYPES);
+            let savedCount = 0;
+            let failedCount = 0;
             for (const page of (result as any)._crawledPages) {
               if (!page.success) continue;
-              const safeType = validTypes.includes(page.pageType) ? page.pageType : 'other';
-              await (dbConn as any).execute(
-                `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
-                [merchant.id, safeType, page.title.substring(0, 500), page.url.substring(0, 1000), page.content.substring(0, 65000)]
-              );
+              // Map any non-ENUM type to 'other' (e.g. services, products, courses, portfolio, content)
+              const safeType = enumSet.has(page.pageType) ? page.pageType : 'other';
+              try {
+                await (dbConn as any).execute(
+                  `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
+                  [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), (page.content || '').substring(0, 65000)]
+                );
+                savedCount++;
+              } catch (insertErr: any) {
+                failedCount++;
+                console.warn(`[SariBrain] Failed to save page ${page.url}:`, insertErr.message);
+              }
             }
-            console.log(`[SariBrain] Saved ${(result as any)._crawledPages.filter((p: any) => p.success).length} discovered pages`);
+            console.log(`[SariBrain] Discovered pages: ${savedCount} saved, ${failedCount} failed`);
           }
         } catch (pageErr: any) {
           console.warn('[SariBrain] Failed to save discovered pages:', pageErr.message);
