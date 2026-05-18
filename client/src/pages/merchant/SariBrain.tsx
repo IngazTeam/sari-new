@@ -435,10 +435,6 @@ export default function SariBrain() {
           <Package className="h-4 w-4 ml-2" />
           إدارة {term('products')}
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/website-analysis')}>
-          <Globe className="h-4 w-4 ml-2" />
-          تحليل الموقع المتقدم
-        </Button>
         <Button variant="outline" size="sm" onClick={() => setLocation('/merchant/settings')}>
           <Settings className="h-4 w-4 ml-2" />
           الإعدادات
