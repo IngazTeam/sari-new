@@ -10,7 +10,7 @@
  * Live API: ساري يطلب عمليات حية (تسجيل، دفع، نتائج)
  */
 
-import { getDb, getPool, getMerchantByUserId, getProductsByMerchantId } from '../db';
+import { getPool, getMerchantByUserId, getProductsByMerchantId } from '../db';
 import crypto from 'crypto';
 
 // ═══════════════════════════════════════════════════════════════
@@ -85,7 +85,7 @@ let _byaanTableCreated = false;
 async function ensureByaanTables() {
   if (_byaanTableCreated) return;
   try {
-    const dbConn = await getDb();
+    const dbConn = await getPool();
     if (!dbConn) return;
 
     // Byaan connections table (mirrors salla_connections pattern)
@@ -229,7 +229,7 @@ async function notifyByaanPlatform(
 
 export async function getByaanConnection(merchantId: number) {
   await ensureByaanTables();
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return null;
 
   const [rows] = await (dbConn as any).execute(
@@ -247,7 +247,7 @@ export async function createByaanConnection(
   webhookSecret?: string
 ) {
   await ensureByaanTables();
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return null;
 
   // Derive api_base_url from tenant domain if not provided
@@ -276,7 +276,7 @@ export async function createByaanConnection(
 
 export async function deleteByaanConnection(merchantId: number) {
   await ensureByaanTables();
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return;
 
   // Get tenant domain before deleting (for webhook notification)
@@ -301,7 +301,7 @@ export async function deleteByaanConnection(merchantId: number) {
 }
 
 export async function updateByaanSyncStatus(merchantId: number, status: string, errors?: string) {
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return;
 
   await (dbConn as any).execute(
@@ -316,7 +316,7 @@ export async function updateByaanSyncStatus(merchantId: number, status: string, 
 
 export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[]): Promise<{ created: number; updated: number; linked: number }> {
   await ensureByaanTables();
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return { created: 0, updated: 0, linked: 0 };
 
   let created = 0, updated = 0, linked = 0;
@@ -378,7 +378,7 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
 // ═══════════════════════════════════════════════════════════════
 
 export async function syncSettings(merchantId: number, settings: ByaanSettings): Promise<{ updated: string[] }> {
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return { updated: [] };
 
   const updatedFields: string[] = [];
@@ -419,7 +419,7 @@ export async function syncSettings(merchantId: number, settings: ByaanSettings):
 
 export async function recordConversion(merchantId: number, data: ByaanConversion): Promise<number> {
   await ensureByaanTables();
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return 0;
 
   const [result] = await (dbConn as any).execute(
@@ -442,7 +442,7 @@ export async function recordConversion(merchantId: number, data: ByaanConversion
 
 export async function getConversions(merchantId: number, limit: number = 20, actionType?: string) {
   await ensureByaanTables();
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return [];
 
   const safeLimit = Math.min(Math.max(limit, 1), 200);
@@ -472,7 +472,7 @@ export async function getConversions(merchantId: number, limit: number = 20, act
 
 export async function getIntegrationSource(merchantId: number): Promise<string> {
   await ensureByaanTables();
-  const dbConn = await getDb();
+  const dbConn = await getPool();
   if (!dbConn) return 'none';
 
   try {
