@@ -5,7 +5,28 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from './_core/trpc';
-import * as db from './db';
+import {
+  approveWhatsAppConnectionRequest,
+  createNotification,
+  createWhatsAppConnectionRequest,
+  createWhatsAppInstance,
+  deactivateInstancesByPhoneNumber,
+  deleteWhatsAppConnectionRequest,
+  deleteWhatsAppInstance,
+  getActiveInstanceByPhoneNumber,
+  getActiveSubscriptionByMerchantId,
+  getAllWhatsAppConnectionRequests,
+  getMerchantByUserId,
+  getPrimaryWhatsAppInstance,
+  getWhatsAppConnectionRequestById,
+  getWhatsAppConnectionRequestByMerchantId,
+  getWhatsAppInstanceById,
+  getWhatsAppInstanceByInstanceId,
+  getWhatsAppInstancesByMerchantId,
+  rejectWhatsAppConnectionRequest,
+  updateWhatsAppConnectionRequest,
+  updateWhatsAppInstance,
+} from './db';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -49,13 +70,13 @@ export const whatsappRouter = router({
             phoneNumber: z.string(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
             // Check if merchant has an active subscription
-            const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
             if (!subscription) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
@@ -64,14 +85,14 @@ export const whatsappRouter = router({
             }
 
             // Check if there's already a pending request
-            const existingRequest = await db.getWhatsAppConnectionRequestByMerchantId(merchant.id);
+            const existingRequest = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
             if (existingRequest && existingRequest.status === 'pending') {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'You already have a pending request' });
             }
 
             // Create new request
             const fullNumber = `${input.countryCode}${input.phoneNumber}`;
-            const request = await db.createWhatsAppConnectionRequest({
+            const request = await createWhatsAppConnectionRequest({
                 merchantId: merchant.id,
                 countryCode: input.countryCode,
                 phoneNumber: input.phoneNumber,
@@ -95,22 +116,22 @@ export const whatsappRouter = router({
 
     // Get current connection request status
     getRequestStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getWhatsAppConnectionRequestByMerchantId(merchant.id);
+        return await getWhatsAppConnectionRequestByMerchantId(merchant.id);
     }),
 
     // Disconnect WhatsApp (Reset)
     disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const existingRequest = await db.getWhatsAppConnectionRequestByMerchantId(merchant.id);
+        const existingRequest = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
         if (!existingRequest) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'No WhatsApp connection found' });
         }
@@ -131,11 +152,11 @@ export const whatsappRouter = router({
             }
         }
 
-        await db.deleteWhatsAppConnectionRequest(existingRequest.id);
+        await deleteWhatsAppConnectionRequest(existingRequest.id);
 
-        const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
+        const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
         for (const instance of instances) {
-            await db.deleteWhatsAppInstance(instance.id);
+            await deleteWhatsAppInstance(instance.id);
         }
 
         // Notify admin (non-blocking)
@@ -163,7 +184,7 @@ export const whatsappRouter = router({
     listRequests: adminProcedure
         .input(z.object({ status: z.enum(['pending', 'approved', 'rejected']).optional() }))
         .query(async ({ input }) => {
-            return await db.getAllWhatsAppConnectionRequests(input.status);
+            return await getAllWhatsAppConnectionRequests(input.status);
         }),
 
     // Approve connection request (Admin only)
@@ -175,7 +196,7 @@ export const whatsappRouter = router({
             apiUrl: z.string().url().optional().default('https://api.green-api.com'),
         }))
         .mutation(async ({ input, ctx }) => {
-            const request = await db.getWhatsAppConnectionRequestById(input.requestId);
+            const request = await getWhatsAppConnectionRequestById(input.requestId);
             if (!request) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
             }
@@ -185,7 +206,7 @@ export const whatsappRouter = router({
             }
 
             const userId = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
-            await db.approveWhatsAppConnectionRequest(
+            await approveWhatsAppConnectionRequest(
                 input.requestId,
                 userId,
                 input.instanceId,
@@ -197,16 +218,16 @@ export const whatsappRouter = router({
             try {
                 // VULN-2 FIX: Deactivate any existing instances with this phone number for OTHER merchants
                 if (request.phoneNumber) {
-                    const conflicting = await db.getActiveInstanceByPhoneNumber(request.phoneNumber, request.merchantId);
+                    const conflicting = await getActiveInstanceByPhoneNumber(request.phoneNumber, request.merchantId);
                     if (conflicting) {
                         console.log(`[WhatsApp] Phone ${request.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${request.merchantId}`);
-                        await db.deactivateInstancesByPhoneNumber(request.phoneNumber, request.merchantId);
+                        await deactivateInstancesByPhoneNumber(request.phoneNumber, request.merchantId);
                     }
                 }
 
-                const existingInstance = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
+                const existingInstance = await getWhatsAppInstanceByInstanceId(input.instanceId);
                 if (!existingInstance) {
-                    await db.createWhatsAppInstance({
+                    await createWhatsAppInstance({
                         merchantId: request.merchantId,
                         instanceId: input.instanceId,
                         token: input.apiToken,
@@ -220,8 +241,8 @@ export const whatsappRouter = router({
                 } else if (existingInstance.merchantId !== request.merchantId) {
                     // Instance belongs to another merchant — deactivate it and create new
                     console.log(`[WhatsApp] Instance ${input.instanceId} belonged to merchant ${existingInstance.merchantId}, deactivating`);
-                    await db.updateWhatsAppInstance(existingInstance.id, { status: 'inactive', isPrimary: false });
-                    await db.createWhatsAppInstance({
+                    await updateWhatsAppInstance(existingInstance.id, { status: 'inactive', isPrimary: false });
+                    await createWhatsAppInstance({
                         merchantId: request.merchantId,
                         instanceId: input.instanceId,
                         token: input.apiToken,
@@ -232,7 +253,7 @@ export const whatsappRouter = router({
                         connectedAt: new Date(),
                     });
                 } else {
-                    await db.updateWhatsAppInstance(existingInstance.id, {
+                    await updateWhatsAppInstance(existingInstance.id, {
                         token: input.apiToken,
                         status: 'active',
                         connectedAt: new Date(),
@@ -267,7 +288,7 @@ export const whatsappRouter = router({
 
             // Send notification to merchant
             try {
-                await db.createNotification({
+                await createNotification({
                     userId: request.merchantId,
                     title: 'تمت الموافقة على طلب ربط الواتساب',
                     message: `تمت الموافقة على طلب ربط رقم الواتساب ${request.phoneNumber}. يمكنك الآن ربط الرقم عبر مسح QR Code من لوحة التحكم.`,
@@ -285,7 +306,7 @@ export const whatsappRouter = router({
     rejectRequest: adminProcedure
         .input(z.object({ requestId: z.number(), reason: z.string() }))
         .mutation(async ({ input, ctx }) => {
-            const request = await db.getWhatsAppConnectionRequestById(input.requestId);
+            const request = await getWhatsAppConnectionRequestById(input.requestId);
             if (!request) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
             }
@@ -295,19 +316,19 @@ export const whatsappRouter = router({
             }
 
             const userId = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
-            await db.rejectWhatsAppConnectionRequest(input.requestId, userId, input.reason);
+            await rejectWhatsAppConnectionRequest(input.requestId, userId, input.reason);
 
             return { success: true };
         }),
 
     // Get QR Code for connection
     getQRCode: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const request = await db.getWhatsAppConnectionRequestByMerchantId(merchant.id);
+        const request = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
         if (!request) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'No WhatsApp request found' });
         }
@@ -317,7 +338,7 @@ export const whatsappRouter = router({
         }
 
         // SEC-FIX: Verify active subscription before allowing QR scan
-        const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+        const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
         if (!subscription) {
             throw new TRPCError({
                 code: 'FORBIDDEN',
@@ -363,12 +384,12 @@ export const whatsappRouter = router({
 
     // Get connection status
     getStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const request = await db.getWhatsAppConnectionRequestByMerchantId(merchant.id);
+        const request = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
         if (!request || !request.instanceId || !request.apiToken) {
             return { connected: false, status: 'no_credentials' };
         }
@@ -387,7 +408,7 @@ export const whatsappRouter = router({
 
             if (response.data && response.data.stateInstance === 'authorized') {
                 if (request.status !== 'connected') {
-                    await db.updateWhatsAppConnectionRequest(request.id, {
+                    await updateWhatsAppConnectionRequest(request.id, {
                         status: 'connected',
                         connectedAt: new Date(),
                     });
@@ -420,7 +441,7 @@ export const whatsappRouter = router({
             message: z.string(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -437,7 +458,7 @@ export const whatsappRouter = router({
             caption: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -524,7 +545,7 @@ export const whatsappRouter = router({
             message: z.string(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -575,13 +596,13 @@ export const whatsappRouter = router({
             expiresAt: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
             // SEC-FIX: Verify active subscription before allowing instance save
-            const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
             if (!subscription) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
@@ -589,7 +610,7 @@ export const whatsappRouter = router({
                 });
             }
 
-            const existing = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
+            const existing = await getWhatsAppInstanceByInstanceId(input.instanceId);
 
             if (!existing) {
                 const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
@@ -598,20 +619,20 @@ export const whatsappRouter = router({
             if (existing && existing.merchantId !== merchant.id) {
                 // VULN-1 FIX: Instead of blocking, deactivate old and allow transfer
                 console.log(`[WhatsApp] Instance ${input.instanceId} was used by merchant ${existing.merchantId}, deactivating for transfer to merchant ${merchant.id}`);
-                await db.updateWhatsAppInstance(existing.id, { status: 'inactive', isPrimary: false });
+                await updateWhatsAppInstance(existing.id, { status: 'inactive', isPrimary: false });
             }
 
             // VULN-1 FIX: Check phone number conflict and auto-deactivate
             if (input.phoneNumber) {
-                const conflicting = await db.getActiveInstanceByPhoneNumber(input.phoneNumber, merchant.id);
+                const conflicting = await getActiveInstanceByPhoneNumber(input.phoneNumber, merchant.id);
                 if (conflicting) {
                     console.log(`[WhatsApp] Phone ${input.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${merchant.id}`);
-                    await db.deactivateInstancesByPhoneNumber(input.phoneNumber, merchant.id);
+                    await deactivateInstancesByPhoneNumber(input.phoneNumber, merchant.id);
                 }
             }
 
             if (existing && existing.merchantId === merchant.id) {
-                await db.updateWhatsAppInstance(existing.id, {
+                await updateWhatsAppInstance(existing.id, {
                     token: input.token,
                     phoneNumber: input.phoneNumber,
                     status: 'active',
@@ -620,7 +641,7 @@ export const whatsappRouter = router({
                 });
                 return { success: true, instanceId: existing.id };
             } else {
-                const instance = await db.createWhatsAppInstance({
+                const instance = await createWhatsAppInstance({
                     merchantId: merchant.id,
                     instanceId: input.instanceId,
                     token: input.token,
@@ -636,22 +657,22 @@ export const whatsappRouter = router({
 
     // Get primary WhatsApp instance
     getPrimaryInstance: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getPrimaryWhatsAppInstance(merchant.id);
+        return await getPrimaryWhatsAppInstance(merchant.id);
     }),
 
     // Get all WhatsApp instances (VULN-6 FIX: strip sensitive fields)
     listInstances: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const instances = await db.getWhatsAppInstancesByMerchantId(merchant.id);
+        const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
         return instances.map((i: any) => ({
             id: i.id,
             merchantId: i.merchantId,
@@ -669,17 +690,17 @@ export const whatsappRouter = router({
     deleteInstance: protectedProcedure
         .input(z.object({ instanceId: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const instance = await db.getWhatsAppInstanceById(input.instanceId);
+            const instance = await getWhatsAppInstanceById(input.instanceId);
             if (!instance || instance.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
             }
 
-            await db.deleteWhatsAppInstance(input.instanceId);
+            await deleteWhatsAppInstance(input.instanceId);
             return { success: true };
         }),
 });

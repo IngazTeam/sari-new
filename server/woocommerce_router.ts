@@ -7,13 +7,43 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
-import * as db from "./db";
+import {
+  createWooCommerceOrder,
+  createWooCommerceProduct,
+  createWooCommerceSettings,
+  createWooCommerceSyncLog,
+  deleteWooCommerceOrdersByMerchant,
+  deleteWooCommerceProductsByMerchant,
+  deleteWooCommerceSettings,
+  getConversationsByMerchant,
+  getLatestWooCommerceSyncLog,
+  getMerchantByUserId,
+  getWhatsAppConnectionByMerchantId,
+  getWooCommerceOrderById,
+  getWooCommerceOrderByWooId,
+  getWooCommerceOrders,
+  getWooCommerceOrdersByMerchant,
+  getWooCommerceOrdersByStatus,
+  getWooCommerceOrdersStats,
+  getWooCommerceProductByWooId,
+  getWooCommerceProducts,
+  getWooCommerceProductsStats,
+  getWooCommerceSettings,
+  getWooCommerceSyncLogById,
+  getWooCommerceSyncLogs,
+  searchWooCommerceProducts,
+  updateWooCommerceConnectionStatus,
+  updateWooCommerceOrder,
+  updateWooCommerceProduct,
+  updateWooCommerceSettings,
+  updateWooCommerceSyncLog,
+} from './db';
 import { createWooCommerceClient, validateStoreUrl } from "./woocommerce";
 import type { WooCommerceSettings } from "../drizzle/schema";
 
 /** Resolve merchantId from userId — ctx.user has no merchantId field */
 async function getMerchantId(userId: number): Promise<number> {
-  const merchant = await db.getMerchantByUserId(userId);
+  const merchant = await getMerchantByUserId(userId);
   if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
   return merchant.id;
 }
@@ -22,7 +52,7 @@ export const woocommerceRouter = router({
   // ==================== Settings ====================
 
   getSettings: protectedProcedure.query(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
+    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
     
     // Don't expose sensitive keys to frontend
     if (settings) {
@@ -56,7 +86,7 @@ export const woocommerceRouter = router({
       }
 
       // Check if settings exist
-      const existingSettings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
+      const existingSettings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
       
       // Only check for other platforms if creating new connection
       if (!existingSettings) {
@@ -73,7 +103,7 @@ export const woocommerceRouter = router({
 
       if (existingSettings) {
         // Update existing settings
-        await db.updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
+        await updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
           storeUrl: input.storeUrl,
           consumerKey: input.consumerKey,
           consumerSecret: input.consumerSecret,
@@ -85,7 +115,7 @@ export const woocommerceRouter = router({
         });
       } else {
         // Create new settings
-        await db.createWooCommerceSettings({
+        await createWooCommerceSettings({
           merchantId: (await getMerchantId(ctx.user.id)),
           storeUrl: input.storeUrl,
           consumerKey: input.consumerKey,
@@ -102,7 +132,7 @@ export const woocommerceRouter = router({
     }),
 
   testConnection: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
+    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
 
     if (!settings) {
       throw new TRPCError({
@@ -116,18 +146,18 @@ export const woocommerceRouter = router({
 
     if (result.success) {
       // Update connection status
-      await db.updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'connected', result.storeInfo);
+      await updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'connected', result.storeInfo);
     } else {
-      await db.updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'error');
+      await updateWooCommerceConnectionStatus((await getMerchantId(ctx.user.id)), 'error');
     }
 
     return result;
   }),
 
   disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-    await db.deleteWooCommerceSettings((await getMerchantId(ctx.user.id)));
-    await db.deleteWooCommerceProductsByMerchant((await getMerchantId(ctx.user.id)));
-    await db.deleteWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
+    await deleteWooCommerceSettings((await getMerchantId(ctx.user.id)));
+    await deleteWooCommerceProductsByMerchant((await getMerchantId(ctx.user.id)));
+    await deleteWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
 
     return { success: true, message: 'طھظ… ظپطµظ„ ط§ظ„ط§طھطµط§ظ„ ط¨ظ†ط¬ط§ط­' };
   }),
@@ -144,8 +174,8 @@ export const woocommerceRouter = router({
       const limit = input.limit || 50;
       const offset = (page - 1) * limit;
 
-      const products = await db.getWooCommerceProducts((await getMerchantId(ctx.user.id)), limit, offset);
-      const stats = await db.getWooCommerceProductsStats((await getMerchantId(ctx.user.id)));
+      const products = await getWooCommerceProducts((await getMerchantId(ctx.user.id)), limit, offset);
+      const stats = await getWooCommerceProductsStats((await getMerchantId(ctx.user.id)));
 
       return {
         products,
@@ -164,12 +194,12 @@ export const woocommerceRouter = router({
       limit: z.number().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const products = await db.searchWooCommerceProducts((await getMerchantId(ctx.user.id)), input.search, input.limit || 20);
+      const products = await searchWooCommerceProducts((await getMerchantId(ctx.user.id)), input.search, input.limit || 20);
       return products;
     }),
 
   syncProducts: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
+    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
 
     if (!settings || settings.connectionStatus !== 'connected') {
       throw new TRPCError({
@@ -181,7 +211,7 @@ export const woocommerceRouter = router({
     const client = createWooCommerceClient(settings);
 
     // Create sync log
-    const logId = await db.createWooCommerceSyncLog({
+    const logId = await createWooCommerceSyncLog({
       merchantId: (await getMerchantId(ctx.user.id)),
       syncType: 'products',
       direction: 'import',
@@ -212,7 +242,7 @@ export const woocommerceRouter = router({
 
           try {
             // Check if product already exists
-            const existingProduct = await db.getWooCommerceProductByWooId((await getMerchantId(ctx.user.id)), wooProduct.id);
+            const existingProduct = await getWooCommerceProductByWooId((await getMerchantId(ctx.user.id)), wooProduct.id);
 
             const productData = {
               merchantId: (await getMerchantId(ctx.user.id)),
@@ -235,9 +265,9 @@ export const woocommerceRouter = router({
             };
 
             if (existingProduct) {
-              await db.updateWooCommerceProduct(existingProduct.id, productData);
+              await updateWooCommerceProduct(existingProduct.id, productData);
             } else {
-              await db.createWooCommerceProduct(productData);
+              await createWooCommerceProduct(productData);
             }
 
             itemsSuccess++;
@@ -251,18 +281,18 @@ export const woocommerceRouter = router({
       }
 
       // Update sync log
-      await db.updateWooCommerceSyncLog(logId, {
+      await updateWooCommerceSyncLog(logId, {
         status: itemsFailed > 0 ? 'partial' : 'success',
         itemsProcessed,
         itemsSuccess,
         itemsFailed,
         completedAt: new Date().toISOString(),
-        duration: Math.floor((Date.now() - new Date(await db.getWooCommerceSyncLogById(logId).then(l => l!.startedAt)).getTime()) / 1000),
+        duration: Math.floor((Date.now() - new Date(await getWooCommerceSyncLogById(logId).then(l => l!.startedAt)).getTime()) / 1000),
         errorMessage: errors.length > 0 ? errors.join('\n') : null,
       });
 
       // Update last sync time
-      await db.updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
+      await updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
         lastSyncAt: new Date().toISOString(),
       });
 
@@ -276,7 +306,7 @@ export const woocommerceRouter = router({
         },
       };
     } catch (error: any) {
-      await db.updateWooCommerceSyncLog(logId, {
+      await updateWooCommerceSyncLog(logId, {
         status: 'failed',
         itemsProcessed,
         itemsSuccess,
@@ -307,12 +337,12 @@ export const woocommerceRouter = router({
 
       let orders;
       if (input.status) {
-        orders = await db.getWooCommerceOrdersByStatus((await getMerchantId(ctx.user.id)), input.status, limit);
+        orders = await getWooCommerceOrdersByStatus((await getMerchantId(ctx.user.id)), input.status, limit);
       } else {
-        orders = await db.getWooCommerceOrders((await getMerchantId(ctx.user.id)), limit, offset);
+        orders = await getWooCommerceOrders((await getMerchantId(ctx.user.id)), limit, offset);
       }
 
-      const stats = await db.getWooCommerceOrdersStats((await getMerchantId(ctx.user.id)));
+      const stats = await getWooCommerceOrdersStats((await getMerchantId(ctx.user.id)));
 
       return {
         orders,
@@ -330,7 +360,7 @@ export const woocommerceRouter = router({
       id: z.number(),
     }))
     .query(async ({ ctx, input }) => {
-      const order = await db.getWooCommerceOrderById(input.id);
+      const order = await getWooCommerceOrderById(input.id);
 
       if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
         throw new TRPCError({
@@ -343,7 +373,7 @@ export const woocommerceRouter = router({
     }),
 
   syncOrders: protectedProcedure.mutation(async ({ ctx }) => {
-    const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
+    const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
 
     if (!settings || settings.connectionStatus !== 'connected') {
       throw new TRPCError({
@@ -355,7 +385,7 @@ export const woocommerceRouter = router({
     const client = createWooCommerceClient(settings);
 
     // Create sync log
-    const logId = await db.createWooCommerceSyncLog({
+    const logId = await createWooCommerceSyncLog({
       merchantId: (await getMerchantId(ctx.user.id)),
       syncType: 'orders',
       direction: 'import',
@@ -386,7 +416,7 @@ export const woocommerceRouter = router({
 
           try {
             // Check if order already exists
-            const existingOrder = await db.getWooCommerceOrderByWooId((await getMerchantId(ctx.user.id)), wooOrder.id);
+            const existingOrder = await getWooCommerceOrderByWooId((await getMerchantId(ctx.user.id)), wooOrder.id);
 
             const orderData = {
               merchantId: (await getMerchantId(ctx.user.id)),
@@ -417,9 +447,9 @@ export const woocommerceRouter = router({
             };
 
             if (existingOrder) {
-              await db.updateWooCommerceOrder(existingOrder.id, orderData);
+              await updateWooCommerceOrder(existingOrder.id, orderData);
             } else {
-              await db.createWooCommerceOrder(orderData);
+              await createWooCommerceOrder(orderData);
             }
 
             itemsSuccess++;
@@ -433,18 +463,18 @@ export const woocommerceRouter = router({
       }
 
       // Update sync log
-      await db.updateWooCommerceSyncLog(logId, {
+      await updateWooCommerceSyncLog(logId, {
         status: itemsFailed > 0 ? 'partial' : 'success',
         itemsProcessed,
         itemsSuccess,
         itemsFailed,
         completedAt: new Date().toISOString(),
-        duration: Math.floor((Date.now() - new Date(await db.getWooCommerceSyncLogById(logId).then(l => l!.startedAt)).getTime()) / 1000),
+        duration: Math.floor((Date.now() - new Date(await getWooCommerceSyncLogById(logId).then(l => l!.startedAt)).getTime()) / 1000),
         errorMessage: errors.length > 0 ? errors.join('\n') : null,
       });
 
       // Update last sync time
-      await db.updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
+      await updateWooCommerceSettings((await getMerchantId(ctx.user.id)), {
         lastSyncAt: new Date().toISOString(),
       });
 
@@ -458,7 +488,7 @@ export const woocommerceRouter = router({
         },
       };
     } catch (error: any) {
-      await db.updateWooCommerceSyncLog(logId, {
+      await updateWooCommerceSyncLog(logId, {
         status: 'failed',
         itemsProcessed,
         itemsSuccess,
@@ -481,7 +511,7 @@ export const woocommerceRouter = router({
       limit: z.number().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const logs = await db.getWooCommerceSyncLogs((await getMerchantId(ctx.user.id)), input.limit || 50);
+      const logs = await getWooCommerceSyncLogs((await getMerchantId(ctx.user.id)), input.limit || 50);
       return logs;
     }),
 
@@ -490,7 +520,7 @@ export const woocommerceRouter = router({
       syncType: z.enum(['products', 'orders', 'customers', 'manual']),
     }))
     .query(async ({ ctx, input }) => {
-      const log = await db.getLatestWooCommerceSyncLog((await getMerchantId(ctx.user.id)), input.syncType);
+      const log = await getLatestWooCommerceSyncLog((await getMerchantId(ctx.user.id)), input.syncType);
       return log;
     }),
 
@@ -505,7 +535,7 @@ export const woocommerceRouter = router({
     .mutation(async ({ ctx, input }) => {
       try {
         // Get order from local database
-        const order = await db.getWooCommerceOrderById(input.orderId);
+        const order = await getWooCommerceOrderById(input.orderId);
         
         if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
           throw new TRPCError({
@@ -515,7 +545,7 @@ export const woocommerceRouter = router({
         }
 
         // Get WooCommerce settings
-        const settings = await db.getWooCommerceSettings((await getMerchantId(ctx.user.id)));
+        const settings = await getWooCommerceSettings((await getMerchantId(ctx.user.id)));
         
         if (!settings) {
           throw new TRPCError({
@@ -534,7 +564,7 @@ export const woocommerceRouter = router({
         });
 
         // Update local database
-        await db.updateWooCommerceOrder(input.orderId, {
+        await updateWooCommerceOrder(input.orderId, {
           status: input.status,
           ...(input.note && {
             orderNotes: input.note,
@@ -565,7 +595,7 @@ export const woocommerceRouter = router({
     .mutation(async ({ ctx, input }) => {
       try {
         // Get order from local database
-        const order = await db.getWooCommerceOrderById(input.orderId);
+        const order = await getWooCommerceOrderById(input.orderId);
         
         if (!order || order.merchantId !== (await getMerchantId(ctx.user.id))) {
           throw new TRPCError({
@@ -582,7 +612,7 @@ export const woocommerceRouter = router({
         }
 
         // Get merchant's WhatsApp connection
-        const whatsappConnection = await db.getWhatsAppConnectionByMerchantId((await getMerchantId(ctx.user.id)));
+        const whatsappConnection = await getWhatsAppConnectionByMerchantId((await getMerchantId(ctx.user.id)));
         
         if (!whatsappConnection || !whatsappConnection.isActive) {
           throw new TRPCError({
@@ -621,7 +651,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
         );
 
         // Update notification status
-        await db.updateWooCommerceOrder(input.orderId, {
+        await updateWooCommerceOrder(input.orderId, {
           notificationSent: 1,
           notificationSentAt: new Date().toISOString(),
         });
@@ -647,7 +677,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
       endDate: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
+      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -716,7 +746,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
       endDate: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
+      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -760,7 +790,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
     }))
     .query(async ({ ctx, input }) => {
       // Get WooCommerce orders
-      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
+      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -772,7 +802,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
       }
 
       // Get WhatsApp conversations for the same period
-      const conversations = await db.getConversationsByMerchant((await getMerchantId(ctx.user.id)));
+      const conversations = await getConversationsByMerchant((await getMerchantId(ctx.user.id)));
       let filteredConversations = conversations;
       if (input.startDate && input.endDate) {
         filteredConversations = conversations.filter(conv => {
@@ -813,7 +843,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
       endDate: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
+      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range if provided
       let filteredOrders = orders;
@@ -853,7 +883,7 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
       endDate: z.string(),
     }))
     .query(async ({ ctx, input }) => {
-      const orders = await db.getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
+      const orders = await getWooCommerceOrdersByMerchant((await getMerchantId(ctx.user.id)));
       
       // Filter by date range
       const filteredOrders = orders.filter(order => {

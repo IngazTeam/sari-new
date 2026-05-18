@@ -8,17 +8,24 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createScheduledMessage,
+  deleteScheduledMessage,
+  getMerchantByUserId,
+  getScheduledMessages,
+  toggleScheduledMessage,
+  updateScheduledMessage,
+} from './db';
 
 export const scheduledMessagesRouter = router({
     // List all scheduled messages
     list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getScheduledMessages(merchant.id);
+        return await getScheduledMessages(merchant.id);
     }),
 
     // Create new scheduled message
@@ -31,12 +38,12 @@ export const scheduledMessagesRouter = router({
             isActive: z.boolean().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.createScheduledMessage({
+            return await createScheduledMessage({
                 ...input,
                 merchantId: merchant.id,
             });
@@ -53,25 +60,25 @@ export const scheduledMessagesRouter = router({
             isActive: z.boolean().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
             const { id, ...data } = input;
-            return await db.updateScheduledMessage(id, merchant.id, data);
+            return await updateScheduledMessage(id, merchant.id, data);
         }),
 
     // Delete scheduled message
     delete: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            await db.deleteScheduledMessage(input.id, merchant.id);
+            await deleteScheduledMessage(input.id, merchant.id);
             return { success: true };
         }),
 
@@ -79,12 +86,12 @@ export const scheduledMessagesRouter = router({
     toggle: protectedProcedure
         .input(z.object({ id: z.number(), isActive: z.boolean() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.toggleScheduledMessage(input.id, merchant.id, input.isActive);
+            return await toggleScheduledMessage(input.id, merchant.id, input.isActive);
         }),
 });
 

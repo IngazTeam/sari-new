@@ -8,7 +8,14 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createTemplateTranslation,
+  deleteTemplateTranslation,
+  getAllBusinessTemplates,
+  getTemplateTranslation,
+  getTemplateTranslationsByTemplateId,
+  updateTemplateTranslation,
+} from './db';
 
 export const templateTranslationsRouter = router({
     // Create translation
@@ -22,12 +29,12 @@ export const templateTranslationsRouter = router({
             botPersonality: z.string().optional(),
         }))
         .mutation(async ({ input }) => {
-            const existing = await db.getTemplateTranslation(input.templateId, input.language);
+            const existing = await getTemplateTranslation(input.templateId, input.language);
             if (existing) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Translation already exists for this language' });
             }
 
-            const id = await db.createTemplateTranslation({
+            const id = await createTemplateTranslation({
                 templateId: input.templateId,
                 language: input.language,
                 templateName: input.templateName,
@@ -50,7 +57,7 @@ export const templateTranslationsRouter = router({
         }))
         .mutation(async ({ input }) => {
             const { id, ...data } = input;
-            await db.updateTemplateTranslation(id, data);
+            await updateTemplateTranslation(id, data);
             return { success: true };
         }),
 
@@ -58,7 +65,7 @@ export const templateTranslationsRouter = router({
     delete: adminProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
-            await db.deleteTemplateTranslation(input.id);
+            await deleteTemplateTranslation(input.id);
             return { success: true };
         }),
 
@@ -66,17 +73,17 @@ export const templateTranslationsRouter = router({
     getByTemplate: adminProcedure
         .input(z.object({ templateId: z.number() }))
         .query(async ({ input }) => {
-            return await db.getTemplateTranslationsByTemplateId(input.templateId);
+            return await getTemplateTranslationsByTemplateId(input.templateId);
         }),
 
     // Get all templates with translation status
     getAllWithStatus: adminProcedure
         .query(async () => {
-            const templates = await db.getAllBusinessTemplates();
+            const templates = await getAllBusinessTemplates();
 
             const templatesWithStatus = await Promise.all(
                 templates.map(async (template) => {
-                    const translations = await db.getTemplateTranslationsByTemplateId(template.id);
+                    const translations = await getTemplateTranslationsByTemplateId(template.id);
                     return {
                         ...template,
                         hasArabic: translations.some(t => t.language === 'ar'),

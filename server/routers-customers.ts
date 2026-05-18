@@ -11,7 +11,13 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getCustomerByPhone,
+  getCustomerStats,
+  getCustomersByMerchant,
+  getMerchantByUserId,
+  searchCustomers,
+} from './db';
 
 export const customersRouter = router({
     // Get all customers with stats
@@ -22,16 +28,16 @@ export const customersRouter = router({
         }))
         .query(async ({ ctx, input }) => {
             // FIX #4: Use merchantId, not userId
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            let customers = await db.getCustomersByMerchant(merchant.id);
+            let customers = await getCustomersByMerchant(merchant.id);
 
             // Apply search filter
             if (input.search) {
-                customers = await db.searchCustomers(merchant.id, input.search);
+                customers = await searchCustomers(merchant.id, input.search);
             }
 
             // Apply status filter
@@ -46,12 +52,12 @@ export const customersRouter = router({
     getByPhone: protectedProcedure
         .input(z.object({ customerPhone: z.string() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const customer = await db.getCustomerByPhone(merchant.id, input.customerPhone);
+            const customer = await getCustomerByPhone(merchant.id, input.customerPhone);
             if (!customer) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'العميل غير موجود' });
             }
@@ -60,21 +66,21 @@ export const customersRouter = router({
 
     // Get customer statistics
     getStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        return await db.getCustomerStats(merchant.id);
+        return await getCustomerStats(merchant.id);
     }),
 
     // Export customers data
     export: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const customers = await db.getCustomersByMerchant(merchant.id);
+        const customers = await getCustomersByMerchant(merchant.id);
         return customers.map(c => ({
             الاسم: c.customerName || 'غير معروف',
             'رقم الجوال': c.customerPhone,

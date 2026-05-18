@@ -8,7 +8,18 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createService,
+  deleteService,
+  getBookingStats,
+  getBookingsByService,
+  getMerchantByUserId,
+  getServiceById,
+  getServiceRatingStats,
+  getServicesByCategory,
+  getServicesByMerchant,
+  updateService,
+} from './db';
 
 export const servicesRouter = router({
     // Create service
@@ -31,10 +42,10 @@ export const servicesRouter = router({
             displayOrder: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const serviceId = await db.createService({
+            const serviceId = await createService({
                 merchantId: merchant.id,
                 name: input.name,
                 description: input.description,
@@ -59,10 +70,10 @@ export const servicesRouter = router({
 
     // List services
     list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        const services = await db.getServicesByMerchant(merchant.id);
+        const services = await getServicesByMerchant(merchant.id);
         return { services };
     }),
 
@@ -70,17 +81,17 @@ export const servicesRouter = router({
     getById: protectedProcedure
         .input(z.object({ serviceId: z.number() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const service = await db.getServiceById(input.serviceId);
+            const service = await getServiceById(input.serviceId);
             if (!service || service.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
             }
 
-            const bookingStats = await db.getBookingStats(merchant.id, { serviceId: input.serviceId });
-            const recentBookings = await db.getBookingsByService(input.serviceId, { limit: 10 });
-            const ratingStats = await db.getServiceRatingStats(input.serviceId);
+            const bookingStats = await getBookingStats(merchant.id, { serviceId: input.serviceId });
+            const recentBookings = await getBookingsByService(input.serviceId, { limit: 10 });
+            const ratingStats = await getServiceRatingStats(input.serviceId);
 
             return {
                 service,
@@ -112,10 +123,10 @@ export const servicesRouter = router({
             isActive: z.boolean().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const service = await db.getServiceById(input.serviceId);
+            const service = await getServiceById(input.serviceId);
             if (!service || service.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
             }
@@ -138,7 +149,7 @@ export const servicesRouter = router({
             if (input.displayOrder !== undefined) updateData.displayOrder = input.displayOrder;
             if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
 
-            await db.updateService(input.serviceId, updateData);
+            await updateService(input.serviceId, updateData);
 
             return { success: true };
         }),
@@ -147,15 +158,15 @@ export const servicesRouter = router({
     delete: protectedProcedure
         .input(z.object({ serviceId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const service = await db.getServiceById(input.serviceId);
+            const service = await getServiceById(input.serviceId);
             if (!service || service.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
             }
 
-            await db.deleteService(input.serviceId);
+            await deleteService(input.serviceId);
 
             return { success: true };
         }),
@@ -164,10 +175,10 @@ export const servicesRouter = router({
     getByCategory: protectedProcedure
         .input(z.object({ categoryId: z.number() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const allServices = await db.getServicesByCategory(input.categoryId);
+            const allServices = await getServicesByCategory(input.categoryId);
             // Filter to only return services belonging to this merchant
             const services = allServices.filter((s: any) => s.merchantId === merchant.id);
             return { services };

@@ -8,7 +8,14 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createServicePackage,
+  deleteServicePackage,
+  getMerchantByUserId,
+  getServicePackageById,
+  getServicePackagesByMerchant,
+  updateServicePackage,
+} from './db';
 
 export const servicePackagesRouter = router({
     // Create package
@@ -22,10 +29,10 @@ export const servicePackagesRouter = router({
             discountPercentage: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const packageId = await db.createServicePackage({
+            const packageId = await createServicePackage({
                 merchantId: merchant.id,
                 name: input.name,
                 description: input.description,
@@ -41,10 +48,10 @@ export const servicePackagesRouter = router({
 
     // List packages
     list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        const packages = await db.getServicePackagesByMerchant(merchant.id);
+        const packages = await getServicePackagesByMerchant(merchant.id);
         return { packages };
     }),
 
@@ -52,10 +59,10 @@ export const servicePackagesRouter = router({
     getById: protectedProcedure
         .input(z.object({ packageId: z.number() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const pkg = await db.getServicePackageById(input.packageId);
+            const pkg = await getServicePackageById(input.packageId);
             if (!pkg || pkg.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
             }
@@ -76,10 +83,10 @@ export const servicePackagesRouter = router({
             isActive: z.boolean().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const pkg = await db.getServicePackageById(input.packageId);
+            const pkg = await getServicePackageById(input.packageId);
             if (!pkg || pkg.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
             }
@@ -93,7 +100,7 @@ export const servicePackagesRouter = router({
             if (input.discountPercentage !== undefined) updateData.discountPercentage = input.discountPercentage;
             if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
 
-            await db.updateServicePackage(input.packageId, updateData);
+            await updateServicePackage(input.packageId, updateData);
 
             return { success: true };
         }),
@@ -102,15 +109,15 @@ export const servicePackagesRouter = router({
     delete: protectedProcedure
         .input(z.object({ packageId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const pkg = await db.getServicePackageById(input.packageId);
+            const pkg = await getServicePackageById(input.packageId);
             if (!pkg || pkg.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Package not found' });
             }
 
-            await db.deleteServicePackage(input.packageId);
+            await deleteServicePackage(input.packageId);
 
             return { success: true };
         }),

@@ -3,7 +3,15 @@
  * يتعامل مع طلبات حجز المواعيد من العملاء تلقائياً
  */
 
-import * as db from "./db";
+import {
+  createAppointment,
+  getActiveStaff,
+  getAvailableTimeSlots,
+  getGoogleIntegrationStatus,
+  getServiceById,
+  getServicesForBooking,
+  getStaffById,
+} from './db';
 import { invokeLLM } from "./_core/llm";
 
 /**
@@ -47,8 +55,8 @@ export async function extractAppointmentDetails(
   staffName?: string;
 } | null> {
   try {
-    const services = await db.getServicesForBooking(merchantId);
-    const staff = await db.getActiveStaff(merchantId);
+    const services = await getServicesForBooking(merchantId);
+    const staff = await getActiveStaff(merchantId);
 
     const systemPrompt = `أنت مساعد ذكي لاستخراج تفاصيل حجز المواعيد من رسائل العملاء.
 
@@ -124,7 +132,7 @@ export async function getAvailableSlots(
   staffId?: number
 ): Promise<string[]> {
   try {
-    const slots = await db.getAvailableTimeSlots(
+    const slots = await getAvailableTimeSlots(
       merchantId,
       serviceId,
       date,
@@ -169,7 +177,7 @@ export async function handleAppointmentRequest(
 ): Promise<string> {
   try {
     // التحقق من اتصال Google Calendar
-    const calendarStatus = await db.getGoogleIntegrationStatus(merchantId);
+    const calendarStatus = await getGoogleIntegrationStatus(merchantId);
     if (!calendarStatus?.isActive) {
       return "عذراً، نظام حجز المواعيد غير متاح حالياً. يرجى التواصل معنا مباشرة.";
     }
@@ -178,7 +186,7 @@ export async function handleAppointmentRequest(
     const details = await extractAppointmentDetails(message, merchantId);
 
     // الحصول على الخدمات المتاحة
-    const services = await db.getServicesForBooking(merchantId);
+    const services = await getServicesForBooking(merchantId);
 
     if (services.length === 0) {
       return "عذراً، لا توجد خدمات متاحة للحجز حالياً.";
@@ -271,7 +279,7 @@ export async function confirmAppointment(
 ): Promise<{ success: boolean; message: string; appointmentId?: number }> {
   try {
     // حجز الموعد
-    const appointment = await db.createAppointment({
+    const appointment = await createAppointment({
       merchantId,
       customerId: null, // سيتم إنشاء عميل جديد إذا لزم الأمر
       customerName,
@@ -291,8 +299,8 @@ export async function confirmAppointment(
       };
     }
 
-    const service = await db.getServiceById(serviceId);
-    const staff = staffId ? await db.getStaffById(staffId) : null;
+    const service = await getServiceById(serviceId);
+    const staff = staffId ? await getStaffById(staffId) : null;
 
     const appointmentDate = new Date(`${date}T${time}`);
     const dateStr = formatDateArabic(appointmentDate);

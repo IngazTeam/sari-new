@@ -9,7 +9,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import * as dbInsights from "./db-insights";
-import * as db from "./db";
+import { getMerchantByUserId } from './db';
 
 export const insightsRouter = router({
   /**
@@ -20,7 +20,7 @@ export const insightsRouter = router({
       period: z.enum(['7d', '30d', '90d']).default('30d')
     }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -35,7 +35,7 @@ export const insightsRouter = router({
       limit: z.number().default(4)
     }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -47,7 +47,7 @@ export const insightsRouter = router({
    */
   getActiveABTests: protectedProcedure
     .query(async ({ ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }

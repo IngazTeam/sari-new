@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getConversationById, getMerchantByUserId } from './db';
 
 export const aiRouter = router({
   // Chat with Sari AI — SEC-PT-4: Rate limited (20/min per merchant) to prevent LLM quota abuse
@@ -24,7 +24,7 @@ export const aiRouter = router({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -54,7 +54,7 @@ export const aiRouter = router({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -83,7 +83,7 @@ export const aiRouter = router({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -112,7 +112,7 @@ export const aiRouter = router({
         throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -127,7 +127,7 @@ export const aiRouter = router({
         });
       }
 
-      const conversation = await db.getConversationById(input.conversationId);
+      const conversation = await getConversationById(input.conversationId);
       if (!conversation || conversation.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
@@ -158,7 +158,7 @@ export const aiRouter = router({
       customerName: z.string().optional(),
     }))
     .query(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }

@@ -8,12 +8,26 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  cancelAppointment,
+  checkAppointmentConflict,
+  createAppointment,
+  createGoogleIntegration,
+  deleteGoogleIntegration,
+  getAppointmentById,
+  getAppointmentStats,
+  getAppointmentsByMerchant,
+  getGoogleIntegration,
+  getMerchantByUserId,
+  getServiceById,
+  getStaffMemberById,
+  updateGoogleIntegration,
+} from './db';
 
 export const calendarRouter = router({
     // Get authorization URL
     getAuthUrl: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const { getAuthUrl } = await import('./_core/googleCalendar');
@@ -29,22 +43,22 @@ export const calendarRouter = router({
             calendarId: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const { getTokensFromCode } = await import('./_core/googleCalendar');
             const tokens = await getTokensFromCode(input.code);
 
-            const existing = await db.getGoogleIntegration(merchant.id, 'calendar');
+            const existing = await getGoogleIntegration(merchant.id, 'calendar');
 
             if (existing) {
-                await db.updateGoogleIntegration(existing.id, {
+                await updateGoogleIntegration(existing.id, {
                     credentials: JSON.stringify(tokens),
                     calendarId: input.calendarId || existing.calendarId,
                     isActive: 1,
                 });
             } else {
-                await db.createGoogleIntegration({
+                await createGoogleIntegration({
                     merchantId: merchant.id,
                     integrationType: 'calendar',
                     credentials: JSON.stringify(tokens),
@@ -64,13 +78,13 @@ export const calendarRouter = router({
             staffId: z.number().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const service = await db.getServiceById(input.serviceId);
+            const service = await getServiceById(input.serviceId);
             if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
 
-            const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+            const integration = await getGoogleIntegration(merchant.id, 'calendar');
             if (!integration || !integration.isActive) {
                 throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'Google Calendar not connected' });
             }
@@ -81,7 +95,7 @@ export const calendarRouter = router({
             const validCredentials = await validateAndRefreshCredentials(credentials);
 
             if (JSON.stringify(validCredentials) !== JSON.stringify(credentials)) {
-                await db.updateGoogleIntegration(integration.id, {
+                await updateGoogleIntegration(integration.id, {
                     credentials: JSON.stringify(validCredentials),
                 });
             }
@@ -89,7 +103,7 @@ export const calendarRouter = router({
             let workingHours = { start: '09:00', end: '17:00' };
 
             if (input.staffId) {
-                const staff = await db.getStaffMemberById(input.staffId);
+                const staff = await getStaffMemberById(input.staffId);
                 if (staff && staff.workingHours) {
                     const staffHours = JSON.parse(staff.workingHours);
                     const dayName = new Date(input.date).toLocaleDateString('en-US', { weekday: 'lowercase' });
@@ -129,10 +143,10 @@ export const calendarRouter = router({
             notes: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const service = await db.getServiceById(input.serviceId);
+            const service = await getServiceById(input.serviceId);
             if (!service) throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
 
             const [startHour, startMinute] = input.startTime.split(':').map(Number);
@@ -140,7 +154,7 @@ export const calendarRouter = router({
             endDate.setHours(startHour, startMinute + service.durationMinutes, 0, 0);
             const endTime = endDate.toTimeString().substring(0, 5);
 
-            const hasConflict = await db.checkAppointmentConflict(
+            const hasConflict = await checkAppointmentConflict(
                 merchant.id,
                 input.appointmentDate,
                 input.startTime,
@@ -152,7 +166,7 @@ export const calendarRouter = router({
                 throw new TRPCError({ code: 'CONFLICT', message: 'This time slot is already booked' });
             }
 
-            const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+            const integration = await getGoogleIntegration(merchant.id, 'calendar');
             let googleEventId: string | undefined;
 
             if (integration && integration.isActive) {
@@ -182,7 +196,7 @@ export const calendarRouter = router({
                 }
             }
 
-            const appointmentId = await db.createAppointment({
+            const appointmentId = await createAppointment({
                 merchantId: merchant.id,
                 customerPhone: input.customerPhone,
                 customerName: input.customerName,
@@ -206,10 +220,10 @@ export const calendarRouter = router({
             reason: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const appointment = await db.getAppointmentById(input.appointmentId);
+            const appointment = await getAppointmentById(input.appointmentId);
             if (!appointment) throw new TRPCError({ code: 'NOT_FOUND', message: 'Appointment not found' });
 
             if (appointment.merchantId !== merchant.id) {
@@ -217,7 +231,7 @@ export const calendarRouter = router({
             }
 
             if (appointment.googleEventId) {
-                const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+                const integration = await getGoogleIntegration(merchant.id, 'calendar');
                 if (integration && integration.isActive) {
                     const credentials = JSON.parse(integration.credentials || '{}');
                     const { deleteCalendarEvent, validateAndRefreshCredentials } = await import('./_core/googleCalendar');
@@ -235,7 +249,7 @@ export const calendarRouter = router({
                 }
             }
 
-            await db.cancelAppointment(input.appointmentId, input.reason);
+            await cancelAppointment(input.appointmentId, input.reason);
 
             return { success: true };
         }),
@@ -248,10 +262,10 @@ export const calendarRouter = router({
             endDate: z.string().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const appointments = await db.getAppointmentsByMerchant(merchant.id, input.status);
+            const appointments = await getAppointmentsByMerchant(merchant.id, input.status);
 
             let filtered = appointments;
             if (input.startDate) {
@@ -271,20 +285,20 @@ export const calendarRouter = router({
             endDate: z.string().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            return await db.getAppointmentStats(merchant.id, input.startDate, input.endDate);
+            return await getAppointmentStats(merchant.id, input.startDate, input.endDate);
         }),
 
     // Disconnect Google Calendar
     disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+        const integration = await getGoogleIntegration(merchant.id, 'calendar');
         if (integration) {
-            await db.deleteGoogleIntegration(integration.id);
+            await deleteGoogleIntegration(integration.id);
         }
 
         return { success: true };
@@ -292,10 +306,10 @@ export const calendarRouter = router({
 
     // Get integration status
     getStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        const integration = await db.getGoogleIntegration(merchant.id, 'calendar');
+        const integration = await getGoogleIntegration(merchant.id, 'calendar');
 
         return {
             connected: !!integration && integration.isActive === 1,

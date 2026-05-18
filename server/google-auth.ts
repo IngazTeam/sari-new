@@ -1,6 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { ENV } from "./_core/env";
-import * as db from "./db";
+import { createUser, getUserByEmail } from './db';
 
 /**
  * التحقق من صحة Google ID Token
@@ -45,14 +45,14 @@ export async function findOrCreateGoogleUser(googleData: {
 }) {
   try {
     // البحث عن مستخدم بنفس البريد الإلكتروني
-    const existingUser = await db.getUserByEmail(googleData.email);
+    const existingUser = await getUserByEmail(googleData.email);
 
     if (existingUser) {
       return existingUser;
     }
 
     // إنشاء مستخدم جديد
-    const newUser = await db.createUser({
+    const newUser = await createUser({
       email: googleData.email,
       name: googleData.name,
       password: "", // لا نحتاج لكلمة مرور عند استخدام Google OAuth

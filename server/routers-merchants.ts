@@ -9,7 +9,34 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  cancelMerchantSubscription,
+  completeOnboarding,
+  createMerchant,
+  createMerchantSubscription,
+  createUser,
+  getActiveSubscriptionByMerchantId,
+  getActiveSubscriptionPlans,
+  getAllMerchants,
+  getCampaignsByMerchantId,
+  getMerchantById,
+  getMerchantByUserId,
+  getMerchantCurrentSubscription,
+  getMerchantSubscriptionById,
+  getOnboardingStatus,
+  getPlanById,
+  getPool,
+  getSubscriptionPlanById,
+  getUserByEmail,
+  rawUpdateSubscriptionEndDate,
+  updateMerchant,
+  updateMerchantCurrentSubscriptionId,
+  updateMerchantCustomerLimit,
+  updateMerchantSubscriptionStatus,
+  updateOnboardingStep,
+  updateUser,
+  updateUserPassword,
+} from './db';
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
 
 // PEN-ESC-05 FIX: Rate limiter for escalation phone chain updates
@@ -26,7 +53,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 export const merchantsRouter = router({
     // Get current merchant for logged-in user
     getCurrent: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         return merchant;
     }),
 
@@ -37,12 +64,12 @@ export const merchantsRouter = router({
             phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/).optional(), // SEC-R3-03
         }))
         .mutation(async ({ input, ctx }) => {
-            const existing = await db.getMerchantByUserId(ctx.user.id);
+            const existing = await getMerchantByUserId(ctx.user.id);
             if (existing) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Merchant profile already exists' });
             }
 
-            const merchant = await db.createMerchant({
+            const merchant = await createMerchant({
                 userId: ctx.user.id,
                 businessName: input.businessName,
                 phone: input.phone || null,
@@ -61,18 +88,18 @@ export const merchantsRouter = router({
             currency: z.enum(['SAR', 'USD']).optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            await db.updateMerchant(merchant.id, input);
+            await updateMerchant(merchant.id, input);
             return { success: true };
         }),
 
     // Get all merchants (Admin only)
     list: adminProcedure.query(async () => {
-        return await db.getAllMerchants();
+        return await getAllMerchants();
     }),
 
     // Update merchant status (Admin only)
@@ -83,11 +110,11 @@ export const merchantsRouter = router({
         }))
         .mutation(async ({ input }) => {
             // SEC-R3-02: Verify merchant exists before updating
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
-            await db.updateMerchant(input.merchantId, { status: input.status });
+            await updateMerchant(input.merchantId, { status: input.status });
             return { success: true };
         }),
 
@@ -101,7 +128,7 @@ export const merchantsRouter = router({
             name: z.string().min(2).max(255).optional(),
         }))
         .mutation(async ({ input }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -112,7 +139,7 @@ export const merchantsRouter = router({
             if (input.phone !== undefined) merchantUpdate.phone = input.phone || null;
 
             if (Object.keys(merchantUpdate).length > 0) {
-                await db.updateMerchant(input.merchantId, merchantUpdate);
+                await updateMerchant(input.merchantId, merchantUpdate);
             }
 
             // Update user fields (email, name)
@@ -120,7 +147,7 @@ export const merchantsRouter = router({
                 const userUpdate: Record<string, any> = {};
                 if (input.email) {
                     // Check email uniqueness
-                    const existingUser = await db.getUserByEmail(input.email);
+                    const existingUser = await getUserByEmail(input.email);
                     if (existingUser && existingUser.id !== merchant.userId) {
                         throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الإيميل مسجل بالفعل لحساب آخر' });
                     }
@@ -129,7 +156,7 @@ export const merchantsRouter = router({
                 if (input.name) userUpdate.name = input.name;
 
                 if (Object.keys(userUpdate).length > 0) {
-                    await db.updateUser(merchant.userId, userUpdate);
+                    await updateUser(merchant.userId, userUpdate);
                 }
             }
 
@@ -144,7 +171,7 @@ export const merchantsRouter = router({
             newPassword: z.string().min(6).max(128),
         }))
         .mutation(async ({ input }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -154,7 +181,7 @@ export const merchantsRouter = router({
 
             const bcrypt = await import('bcryptjs');
             const hashedPassword = await bcrypt.hash(input.newPassword, 10);
-            await db.updateUserPassword(merchant.userId, hashedPassword);
+            await updateUserPassword(merchant.userId, hashedPassword);
 
             console.log(`[Admin] Password RESET for merchant: id=${input.merchantId}`);
             return { success: true };
@@ -172,7 +199,7 @@ export const merchantsRouter = router({
         }))
         .mutation(async ({ input }) => {
             // Check email uniqueness
-            const existingUser = await db.getUserByEmail(input.email);
+            const existingUser = await getUserByEmail(input.email);
             if (existingUser) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الإيميل مسجل بالفعل' });
             }
@@ -183,7 +210,7 @@ export const merchantsRouter = router({
             const openId = `admin_${crypto.randomBytes(16).toString('hex')}`;
 
             // Create user
-            const user = await db.createUser({
+            const user = await createUser({
                 openId,
                 name: input.name,
                 email: input.email,
@@ -197,7 +224,7 @@ export const merchantsRouter = router({
             }
 
             // Create merchant
-            const merchant = await db.createMerchant({
+            const merchant = await createMerchant({
                 userId: user.id,
                 businessName: input.businessName,
                 phone: input.phone || null,
@@ -212,12 +239,12 @@ export const merchantsRouter = router({
     delete: adminProcedure
         .input(z.object({ merchantId: z.number() }))
         .mutation(async ({ input }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const pool = await db.getPool();
+            const pool = await getPool();
             if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
 
             // Cascade delete all related data (order matters for FK constraints)
@@ -287,7 +314,7 @@ export const merchantsRouter = router({
     getById: adminProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input }) => {
-            return await db.getMerchantById(input.merchantId);
+            return await getMerchantById(input.merchantId);
         }),
 
     // Get merchant subscriptions (Admin only)
@@ -295,13 +322,13 @@ export const merchantsRouter = router({
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input }) => {
             // Use merchant_subscriptions table (not legacy subscriptions table)
-            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            const subscription = await getMerchantCurrentSubscription(input.merchantId);
             if (subscription) {
                 // SEC-R3-05: Removed auto-sync side-effect from query.
                 // Status sync should be handled by a dedicated mutation or scheduled job.
 
                 // Enrich with plan name
-                const plan = subscription.planId ? await db.getSubscriptionPlanById(subscription.planId) : null;
+                const plan = subscription.planId ? await getSubscriptionPlanById(subscription.planId) : null;
                 return [{ ...subscription, planName: plan?.name || 'غير معروف' }];
             }
             return [];
@@ -320,12 +347,12 @@ export const merchantsRouter = router({
             billingCycle: z.enum(['monthly', 'yearly']).default('monthly'),
         }))
         .mutation(async ({ input }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const plan = await db.getSubscriptionPlanById(input.planId);
+            const plan = await getSubscriptionPlanById(input.planId);
             if (!plan) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
             }
@@ -336,16 +363,16 @@ export const merchantsRouter = router({
             }
 
             // Cancel any existing active subscription
-            const existing = await db.getMerchantCurrentSubscription(input.merchantId);
+            const existing = await getMerchantCurrentSubscription(input.merchantId);
             if (existing) {
-                await db.cancelMerchantSubscription(existing.id, 'تم استبداله بتفعيل يدوي من الأدمن');
+                await cancelMerchantSubscription(existing.id, 'تم استبداله بتفعيل يدوي من الأدمن');
             }
 
             // Create new subscription
             const now = new Date();
             const endDate = new Date(now.getTime() + input.durationDays * 24 * 60 * 60 * 1000);
 
-            const subscriptionId = await db.createMerchantSubscription({
+            const subscriptionId = await createMerchantSubscription({
                 merchantId: input.merchantId,
                 planId: input.planId,
                 status: 'active',
@@ -356,11 +383,11 @@ export const merchantsRouter = router({
             });
 
             // Update merchant status and limits
-            await db.updateMerchantSubscriptionStatus(input.merchantId, 'active');
-            await db.updateMerchantCustomerLimit(input.merchantId, plan.maxCustomers);
-            await db.updateMerchant(input.merchantId, { status: 'active' });
+            await updateMerchantSubscriptionStatus(input.merchantId, 'active');
+            await updateMerchantCustomerLimit(input.merchantId, plan.maxCustomers);
+            await updateMerchant(input.merchantId, { status: 'active' });
             // PEN-13 FIX: Keep currentSubscriptionId in sync
-            await db.updateMerchantCurrentSubscriptionId(input.merchantId, subscriptionId);
+            await updateMerchantCurrentSubscriptionId(input.merchantId, subscriptionId);
 
             console.log(`[Admin] Subscription assigned: merchant=${input.merchantId}, plan=${plan.name}, duration=${input.durationDays}d`);
 
@@ -380,7 +407,7 @@ export const merchantsRouter = router({
             extraDays: z.number().min(1).max(365),
         }))
         .mutation(async ({ input }) => {
-            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            const subscription = await getMerchantCurrentSubscription(input.merchantId);
             if (!subscription) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found for this merchant' });
             }
@@ -391,10 +418,10 @@ export const merchantsRouter = router({
             const newEndMySQL = toMySQL(newEnd.toISOString());
 
             // Direct raw SQL to guarantee update (bypass Drizzle typing issues)
-            await db.rawUpdateSubscriptionEndDate(subscription.id, newEndMySQL);
+            await rawUpdateSubscriptionEndDate(subscription.id, newEndMySQL);
 
             // Verify the update was saved
-            const updated = await db.getMerchantSubscriptionById(subscription.id);
+            const updated = await getMerchantSubscriptionById(subscription.id);
             const actualEndDate = updated?.endDate || newEndMySQL;
             console.log(`[Admin] Subscription extended: merchant=${input.merchantId}, sub=${subscription.id}, +${input.extraDays}d, DB end=${actualEndDate}`);
 
@@ -412,14 +439,14 @@ export const merchantsRouter = router({
             reason: z.string().max(500).optional(), // PEN-05 FIX: limit length
         }))
         .mutation(async ({ input }) => {
-            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            const subscription = await getMerchantCurrentSubscription(input.merchantId);
             if (!subscription) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
             }
 
-            await db.cancelMerchantSubscription(subscription.id, input.reason || 'تم الإلغاء بواسطة الأدمن');
+            await cancelMerchantSubscription(subscription.id, input.reason || 'تم الإلغاء بواسطة الأدمن');
             // SEC-07 FIX: DB enum is ['none','trial','active','expired'] — 'cancelled' doesn't exist
-            await db.updateMerchantSubscriptionStatus(input.merchantId, 'expired');
+            await updateMerchantSubscriptionStatus(input.merchantId, 'expired');
 
             console.log(`[Admin] Subscription cancelled: merchant=${input.merchantId}, reason=${input.reason || 'admin action'}`);
 
@@ -428,7 +455,7 @@ export const merchantsRouter = router({
 
     // Get all plans (Admin helper - for the assign dropdown)
     getAvailablePlans: adminProcedure.query(async () => {
-        return await db.getActiveSubscriptionPlans();
+        return await getActiveSubscriptionPlans();
     }),
 
     // ============================================
@@ -478,7 +505,7 @@ export const merchantsRouter = router({
     getCampaigns: adminProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input }) => {
-            return await db.getCampaignsByMerchantId(input.merchantId);
+            return await getCampaignsByMerchantId(input.merchantId);
         }),
 
     // Sync Green API data (Admin only)
@@ -516,17 +543,17 @@ export const merchantsRouter = router({
 
     // Get current plan for merchant
     getCurrentPlan: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+        const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
         if (!subscription) {
             return null;
         }
 
-        const plan = await db.getPlanById(subscription.planId);
+        const plan = await getPlanById(subscription.planId);
         return {
             subscription,
             plan,
@@ -537,7 +564,7 @@ export const merchantsRouter = router({
     requestUpgrade: protectedProcedure
         .input(z.object({ planId: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -546,12 +573,12 @@ export const merchantsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Merchant account is not active' });
             }
 
-            const plan = await db.getPlanById(input.planId);
+            const plan = await getPlanById(input.planId);
             if (!plan || !plan.isActive) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found or inactive' });
             }
 
-            const currentSubscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            const currentSubscription = await getActiveSubscriptionByMerchantId(merchant.id);
 
             // PEN-01 FIX: If no subscription, redirect to payment flow instead of free activation
             if (!currentSubscription) {
@@ -574,32 +601,32 @@ export const merchantsRouter = router({
 
     // Get onboarding status
     getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        return await db.getOnboardingStatus(merchant.id);
+        return await getOnboardingStatus(merchant.id);
     }),
 
     // Update onboarding step
     updateOnboardingStep: protectedProcedure
         .input(z.object({ step: z.number().min(0).max(4) }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
-            await db.updateOnboardingStep(merchant.id, input.step);
+            await updateOnboardingStep(merchant.id, input.step);
             return { success: true };
         }),
 
     // Complete onboarding
     completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        await db.completeOnboarding(merchant.id);
+        await completeOnboarding(merchant.id);
         return { success: true };
     }),
 
@@ -609,7 +636,7 @@ export const merchantsRouter = router({
 
     /** Get merchant's escalation phone chain */
     getEscalationPhones: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -643,7 +670,7 @@ export const merchantsRouter = router({
             })).max(5),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -660,7 +687,7 @@ export const merchantsRouter = router({
             _escalationPhoneRateLimit[merchant.id] = now;
 
             // Ensure columns exist (auto-migration)
-            const pool = await db.getPool();
+            const pool = await getPool();
             if (pool) {
                 try {
                     await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS escalation_phones TEXT DEFAULT NULL`);
@@ -675,7 +702,7 @@ export const merchantsRouter = router({
                 .sort((a, b) => a.order - b.order);
 
             // Save JSON to escalation_phones + first phone to legacy emergency_phone
-            await db.updateMerchant(merchant.id, {
+            await updateMerchant(merchant.id, {
                 escalationPhones: cleaned.length > 0 ? JSON.stringify(cleaned) : null,
                 emergencyPhone: cleaned.length > 0 ? cleaned[0].phone : null,
             } as any);
@@ -686,7 +713,7 @@ export const merchantsRouter = router({
 
     // Legacy endpoint — backward compat
     getEmergencyPhone: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -701,17 +728,17 @@ export const merchantsRouter = router({
             emergencyPhone: z.string().max(20).regex(/^[0-9+\-\s()]*$/, 'رقم غير صالح').nullable(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
-            const pool = await db.getPool();
+            const pool = await getPool();
             if (pool) {
                 try {
                     await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
                 } catch { /* column already exists */ }
             }
-            await db.updateMerchant(merchant.id, { emergencyPhone: input.emergencyPhone } as any);
+            await updateMerchant(merchant.id, { emergencyPhone: input.emergencyPhone } as any);
             return { success: true };
         }),
 });

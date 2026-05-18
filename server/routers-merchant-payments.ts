@@ -8,17 +8,22 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getMerchantByUserId,
+  getMerchantPaymentSettings,
+  setMerchantPaymentVerified,
+  upsertMerchantPaymentSettings,
+} from './db';
 
 export const merchantPaymentsRouter = router({
     // Get merchant's payment settings
     getSettings: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const settings = await db.getMerchantPaymentSettings(merchant.id);
+        const settings = await getMerchantPaymentSettings(merchant.id);
 
         // Return settings with masked secret key
         if (settings?.tapSecretKey) {
@@ -43,7 +48,7 @@ export const merchantPaymentsRouter = router({
             defaultCurrency: z.string().default('SAR'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -67,19 +72,19 @@ export const merchantPaymentsRouter = router({
                 updateData.paymentLinkMessage = input.paymentLinkMessage;
             }
 
-            await db.upsertMerchantPaymentSettings(merchant.id, updateData);
+            await upsertMerchantPaymentSettings(merchant.id, updateData);
 
             return { success: true, message: 'تم حفظ الإعدادات بنجاح' };
         }),
 
     // Test Tap connection with merchant's keys
     testConnection: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const settings = await db.getMerchantPaymentSettings(merchant.id);
+        const settings = await getMerchantPaymentSettings(merchant.id);
         if (!settings?.tapSecretKey) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم إدخال مفاتيح Tap' });
         }
@@ -95,7 +100,7 @@ export const merchantPaymentsRouter = router({
             });
 
             if (response.ok || response.status === 200) {
-                await db.setMerchantPaymentVerified(merchant.id, true);
+                await setMerchantPaymentVerified(merchant.id, true);
                 return { success: true, message: 'تم التحقق من الاتصال بنجاح' };
             } else {
                 const error = await response.json().catch(() => ({}));
@@ -125,12 +130,12 @@ export const merchantPaymentsRouter = router({
             bookingId: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const settings = await db.getMerchantPaymentSettings(merchant.id);
+            const settings = await getMerchantPaymentSettings(merchant.id);
             if (!settings?.tapEnabled || !settings?.tapSecretKey) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'الدفع الإلكتروني غير مفعل' });
             }

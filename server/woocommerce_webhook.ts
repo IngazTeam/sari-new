@@ -5,7 +5,20 @@
  */
 
 import { Request, Response } from 'express';
-import * as db from './db';
+import {
+  createWooCommerceOrder,
+  createWooCommerceProduct,
+  createWooCommerceWebhook,
+  deleteWooCommerceOrder,
+  deleteWooCommerceProduct,
+  getWhatsAppConnectionByMerchantId,
+  getWooCommerceOrderByWooId,
+  getWooCommerceProductByWooId,
+  getWooCommerceSettings,
+  updateWooCommerceOrder,
+  updateWooCommerceProduct,
+  updateWooCommerceWebhook,
+} from './db';
 import crypto from 'node:crypto';
 
 /**
@@ -59,7 +72,7 @@ export async function handleWooCommerceWebhook(req: Request, res: Response) {
     }
 
     // Get merchant's WooCommerce settings to verify signature
-    const settings = await db.getWooCommerceSettings(merchantId);
+    const settings = await getWooCommerceSettings(merchantId);
 
     if (!settings) {
       return res.status(404).json({ error: 'WooCommerce settings not found' });
@@ -80,7 +93,7 @@ export async function handleWooCommerceWebhook(req: Request, res: Response) {
     }
 
     // Log webhook event
-    const webhookLogId = await db.createWooCommerceWebhook({
+    const webhookLogId = await createWooCommerceWebhook({
       merchantId,
       topic,
       payload: payloadString,
@@ -121,7 +134,7 @@ export async function handleWooCommerceWebhook(req: Request, res: Response) {
       }
 
       // Update webhook log status
-      await db.updateWooCommerceWebhook(webhookLogId, {
+      await updateWooCommerceWebhook(webhookLogId, {
         status: 'processed',
         processedAt: new Date().toISOString(),
       });
@@ -132,7 +145,7 @@ export async function handleWooCommerceWebhook(req: Request, res: Response) {
       console.error('[WooCommerce Webhook] Processing error:', error);
 
       // Update webhook log with error
-      await db.updateWooCommerceWebhook(webhookLogId, {
+      await updateWooCommerceWebhook(webhookLogId, {
         status: 'failed',
         errorMessage: error.message,
         processedAt: new Date().toISOString(),
@@ -155,7 +168,7 @@ async function handleOrderCreated(merchantId: number, order: any) {
 
   try {
     // Check if order already exists
-    const existingOrder = await db.getWooCommerceOrderByWooId(merchantId, order.id);
+    const existingOrder = await getWooCommerceOrderByWooId(merchantId, order.id);
 
     if (existingOrder) {
       console.log(`[WooCommerce Webhook] Order ${order.id} already exists, updating instead`);
@@ -164,7 +177,7 @@ async function handleOrderCreated(merchantId: number, order: any) {
     }
 
     // Create new order
-    await db.createWooCommerceOrder({
+    await createWooCommerceOrder({
       merchantId,
       wooOrderId: order.id,
       orderNumber: order.number,
@@ -209,7 +222,7 @@ async function handleOrderUpdated(merchantId: number, order: any) {
   console.log(`[WooCommerce Webhook] Processing order.updated: ${order.id}`);
 
   try {
-    const existingOrder = await db.getWooCommerceOrderByWooId(merchantId, order.id);
+    const existingOrder = await getWooCommerceOrderByWooId(merchantId, order.id);
 
     if (!existingOrder) {
       console.log(`[WooCommerce Webhook] Order ${order.id} not found, creating instead`);
@@ -218,7 +231,7 @@ async function handleOrderUpdated(merchantId: number, order: any) {
     }
 
     // Update order
-    await db.updateWooCommerceOrder(existingOrder.id, {
+    await updateWooCommerceOrder(existingOrder.id, {
       status: order.status,
       total: order.total,
       subtotal: order.subtotal || '0',
@@ -252,10 +265,10 @@ async function handleOrderDeleted(merchantId: number, order: any) {
   console.log(`[WooCommerce Webhook] Processing order.deleted: ${order.id}`);
 
   try {
-    const existingOrder = await db.getWooCommerceOrderByWooId(merchantId, order.id);
+    const existingOrder = await getWooCommerceOrderByWooId(merchantId, order.id);
 
     if (existingOrder) {
-      await db.deleteWooCommerceOrder(existingOrder.id);
+      await deleteWooCommerceOrder(existingOrder.id);
       console.log(`[WooCommerce Webhook] Order ${order.id} deleted successfully`);
     }
 
@@ -272,7 +285,7 @@ async function handleProductCreated(merchantId: number, product: any) {
   console.log(`[WooCommerce Webhook] Processing product.created: ${product.id}`);
 
   try {
-    const existingProduct = await db.getWooCommerceProductByWooId(merchantId, product.id);
+    const existingProduct = await getWooCommerceProductByWooId(merchantId, product.id);
 
     if (existingProduct) {
       console.log(`[WooCommerce Webhook] Product ${product.id} already exists, updating instead`);
@@ -280,7 +293,7 @@ async function handleProductCreated(merchantId: number, product: any) {
       return;
     }
 
-    await db.createWooCommerceProduct({
+    await createWooCommerceProduct({
       merchantId,
       wooProductId: product.id,
       name: product.name,
@@ -320,7 +333,7 @@ async function handleProductUpdated(merchantId: number, product: any) {
   console.log(`[WooCommerce Webhook] Processing product.updated: ${product.id}`);
 
   try {
-    const existingProduct = await db.getWooCommerceProductByWooId(merchantId, product.id);
+    const existingProduct = await getWooCommerceProductByWooId(merchantId, product.id);
 
     if (!existingProduct) {
       console.log(`[WooCommerce Webhook] Product ${product.id} not found, creating instead`);
@@ -328,7 +341,7 @@ async function handleProductUpdated(merchantId: number, product: any) {
       return;
     }
 
-    await db.updateWooCommerceProduct(existingProduct.id, {
+    await updateWooCommerceProduct(existingProduct.id, {
       name: product.name,
       slug: product.slug,
       type: product.type,
@@ -365,10 +378,10 @@ async function handleProductDeleted(merchantId: number, product: any) {
   console.log(`[WooCommerce Webhook] Processing product.deleted: ${product.id}`);
 
   try {
-    const existingProduct = await db.getWooCommerceProductByWooId(merchantId, product.id);
+    const existingProduct = await getWooCommerceProductByWooId(merchantId, product.id);
 
     if (existingProduct) {
-      await db.deleteWooCommerceProduct(existingProduct.id);
+      await deleteWooCommerceProduct(existingProduct.id);
       console.log(`[WooCommerce Webhook] Product ${product.id} deleted successfully`);
     }
 
@@ -383,7 +396,7 @@ async function handleProductDeleted(merchantId: number, product: any) {
  */
 async function sendOrderNotificationToCustomer(merchantId: number, order: any) {
   try {
-    const whatsappConnection = await db.getWhatsAppConnectionByMerchantId(merchantId);
+    const whatsappConnection = await getWhatsAppConnectionByMerchantId(merchantId);
 
     if (!whatsappConnection || !whatsappConnection.isActive) {
       console.log('[WooCommerce Webhook] WhatsApp not connected, skipping notification');
@@ -433,7 +446,7 @@ async function sendOrderStatusUpdateNotification(
   newStatus: string
 ) {
   try {
-    const whatsappConnection = await db.getWhatsAppConnectionByMerchantId(merchantId);
+    const whatsappConnection = await getWhatsAppConnectionByMerchantId(merchantId);
 
     if (!whatsappConnection || !whatsappConnection.isActive) {
       console.log('[WooCommerce Webhook] WhatsApp not connected, skipping notification');

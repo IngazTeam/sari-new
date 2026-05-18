@@ -8,17 +8,17 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getMerchantByUserId, getOrCreatePersonalitySettings, updateSariPersonalitySettings } from './db';
 
 export const personalityRouter = router({
     // Get personality settings
     get: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getOrCreatePersonalitySettings(merchant.id);
+        return await getOrCreatePersonalitySettings(merchant.id);
     }),
 
     // Update personality settings
@@ -31,12 +31,12 @@ export const personalityRouter = router({
             brandVoice: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.updateSariPersonalitySettings(merchant.id, input);
+            return await updateSariPersonalitySettings(merchant.id, input);
         }),
 });
 

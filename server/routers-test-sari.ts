@@ -8,7 +8,13 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createTestConversation,
+  getMerchantByUserId,
+  getTestConversationById,
+  markTestConversationAsDeal,
+  saveTestMessage,
+} from './db';
 
 export const testSariRouter = router({
     // Send a test message and get AI response — PEN-NEW-2: Rate limited
@@ -27,7 +33,7 @@ export const testSariRouter = router({
                 throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'حاول بعد قليل.' });
             }
 
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -59,16 +65,16 @@ export const testSariRouter = router({
         }))
         .mutation(async ({ input, ctx }) => {
             // PEN-NEW-1 FIX: Verify conversation belongs to this merchant
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
-            const conversation = await db.getTestConversationById(input.conversationId);
+            const conversation = await getTestConversationById(input.conversationId);
             if (conversation && conversation.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.saveTestMessage(input);
+            await saveTestMessage(input);
             return { success: true };
         }),
 
@@ -81,12 +87,12 @@ export const testSariRouter = router({
             timeToConversion: z.number(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const dealId = await db.markTestConversationAsDeal({
+            const dealId = await markTestConversationAsDeal({
                 merchantId: merchant.id,
                 conversationId: input.conversationId,
                 dealValue: input.dealValue,
@@ -103,7 +109,7 @@ export const testSariRouter = router({
             period: z.enum(['day', 'week', 'month']).default('day'),
         }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -117,12 +123,12 @@ export const testSariRouter = router({
     // Create test conversation
     createConversation: protectedProcedure
         .mutation(async ({ ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const conversationId = await db.createTestConversation(merchant.id);
+            const conversationId = await createTestConversation(merchant.id);
             return { conversationId };
         }),
 });

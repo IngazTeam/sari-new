@@ -7,43 +7,51 @@
 
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getCancellationStats,
+  getMonthlyRevenueStats,
+  getRevenueStats,
+  getSubscriptionConversionRate,
+  getSubscriptionDistributionByPlan,
+  getSubscriptionOverview,
+  getUpgradeDowngradeStats,
+} from './db';
 
 export const subscriptionReportsRouter = router({
     getOverview: adminProcedure.query(async () => {
-        return await db.getSubscriptionOverview();
+        return await getSubscriptionOverview();
     }),
 
     getConversionRate: adminProcedure
         .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
         .query(async ({ input }) => {
-            return await db.getSubscriptionConversionRate(input?.period || 'month');
+            return await getSubscriptionConversionRate(input?.period || 'month');
         }),
 
     getUpgradeDowngrade: adminProcedure
         .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
         .query(async ({ input }) => {
-            return await db.getUpgradeDowngradeStats(input?.period || 'month');
+            return await getUpgradeDowngradeStats(input?.period || 'month');
         }),
 
     getCancellations: adminProcedure
         .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
         .query(async ({ input }) => {
-            return await db.getCancellationStats(input?.period || 'month');
+            return await getCancellationStats(input?.period || 'month');
         }),
 
     getRevenue: adminProcedure
         .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
         .query(async ({ input }) => {
-            return await db.getRevenueStats(input?.period || 'month');
+            return await getRevenueStats(input?.period || 'month');
         }),
 
     getMonthlyRevenue: adminProcedure.query(async () => {
-        return await db.getMonthlyRevenueStats();
+        return await getMonthlyRevenueStats();
     }),
 
     getDistributionByPlan: adminProcedure.query(async () => {
-        return await db.getSubscriptionDistributionByPlan();
+        return await getSubscriptionDistributionByPlan();
     }),
 });
 

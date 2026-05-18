@@ -8,17 +8,17 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getAllEmailTemplates, getEmailTemplateById, updateEmailTemplate } from './db';
 
 export const emailTemplatesRouter = router({
     list: adminProcedure.query(async () => {
-        return await db.getAllEmailTemplates();
+        return await getAllEmailTemplates();
     }),
 
     get: adminProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
-            const template = await db.getEmailTemplateById(input.id);
+            const template = await getEmailTemplateById(input.id);
             if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
             return template;
         }),
@@ -32,7 +32,7 @@ export const emailTemplatesRouter = router({
         }))
         .mutation(async ({ input }) => {
             const { id, ...data } = input;
-            await db.updateEmailTemplate(id, data);
+            await updateEmailTemplate(id, data);
             return { success: true };
         }),
 
@@ -42,7 +42,7 @@ export const emailTemplatesRouter = router({
             email: z.string().email(),
         }))
         .mutation(async ({ input }) => {
-            const template = await db.getEmailTemplateById(input.id);
+            const template = await getEmailTemplateById(input.id);
             if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
 
             const { sendTestEmail } = await import('./_core/email');

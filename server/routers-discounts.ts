@@ -8,7 +8,14 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createDiscountCode,
+  deleteDiscountCode,
+  getDiscountCodeById,
+  getDiscountCodesByMerchantId,
+  getMerchantById,
+  updateDiscountCode,
+} from './db';
 
 export const discountsRouter = router({
     // Create discount code
@@ -23,19 +30,19 @@ export const discountsRouter = router({
             expiresAt: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
             // FIX #10: Check for duplicate code
-            const existingCodes = await db.getDiscountCodesByMerchantId(input.merchantId);
+            const existingCodes = await getDiscountCodesByMerchantId(input.merchantId);
             const duplicate = existingCodes.find(c => c.code === input.code.toUpperCase());
             if (duplicate) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'كود الخصم موجود مسبقاً' });
             }
 
-            const discountCode = await db.createDiscountCode({
+            const discountCode = await createDiscountCode({
                 merchantId: input.merchantId,
                 code: input.code.toUpperCase(),
                 type: input.type,
@@ -54,24 +61,24 @@ export const discountsRouter = router({
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.getDiscountCodesByMerchantId(input.merchantId);
+            return await getDiscountCodesByMerchantId(input.merchantId);
         }),
 
     // Get discount code by ID
     getById: protectedProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
-            const discountCode = await db.getDiscountCodeById(input.id);
+            const discountCode = await getDiscountCodeById(input.id);
             if (!discountCode) {
                 throw new TRPCError({ code: 'NOT_FOUND' });
             }
 
-            const merchant = await db.getMerchantById(discountCode.merchantId);
+            const merchant = await getMerchantById(discountCode.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -88,17 +95,17 @@ export const discountsRouter = router({
             expiresAt: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const discountCode = await db.getDiscountCodeById(input.id);
+            const discountCode = await getDiscountCodeById(input.id);
             if (!discountCode) {
                 throw new TRPCError({ code: 'NOT_FOUND' });
             }
 
-            const merchant = await db.getMerchantById(discountCode.merchantId);
+            const merchant = await getMerchantById(discountCode.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.updateDiscountCode(input.id, {
+            await updateDiscountCode(input.id, {
                 isActive: input.isActive,
                 maxUses: input.maxUses,
                 expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
@@ -111,17 +118,17 @@ export const discountsRouter = router({
     delete: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const discountCode = await db.getDiscountCodeById(input.id);
+            const discountCode = await getDiscountCodeById(input.id);
             if (!discountCode) {
                 throw new TRPCError({ code: 'NOT_FOUND' });
             }
 
-            const merchant = await db.getMerchantById(discountCode.merchantId);
+            const merchant = await getMerchantById(discountCode.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.deleteDiscountCode(input.id);
+            await deleteDiscountCode(input.id);
             return { success: true, message: 'تم حذف كود الخصم' };
         }),
 
@@ -129,12 +136,12 @@ export const discountsRouter = router({
     getStats: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const codes = await db.getDiscountCodesByMerchantId(input.merchantId);
+            const codes = await getDiscountCodesByMerchantId(input.merchantId);
             const active = codes.filter(c => c.isActive).length;
             const used = codes.reduce((sum, c) => sum + c.usedCount, 0);
 

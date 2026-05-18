@@ -1,7 +1,13 @@
 import { router, protectedProcedure } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import * as db from './db';
+import {
+  createNotification,
+  getAllMerchants,
+  getMerchantActiveSubscription,
+  getMerchantCurrentUsage,
+  getPlanById,
+} from './db';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -14,13 +20,13 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 export const smartNotificationsRouter = router({
   // إرسال إشعارات نهاية الفترة التجريبية
   sendTrialEndingNotifications: adminProcedure.mutation(async () => {
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     const notifications = [];
     const now = Date.now();
     const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
 
     for (const merchant of merchants) {
-      const subscription = await db.getMerchantActiveSubscription(merchant.id);
+      const subscription = await getMerchantActiveSubscription(merchant.id);
       
       if (!subscription || subscription.status !== 'trial') continue;
 
@@ -31,7 +37,7 @@ export const smartNotificationsRouter = router({
       if (timeUntilEnd > 0 && timeUntilEnd <= threeDaysInMs) {
         const daysLeft = Math.ceil(timeUntilEnd / (24 * 60 * 60 * 1000));
         
-        const notification = await db.createNotification({
+        const notification = await createNotification({
           userId: merchant.userId,
           type: 'warning',
           title: 'انتهاء الفترة التجريبية قريباً',
@@ -52,17 +58,17 @@ export const smartNotificationsRouter = router({
 
   // إرسال إشعارات عند وصول 90% من الحدود
   sendUsageLimitNotifications: adminProcedure.mutation(async () => {
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     const notifications = [];
 
     for (const merchant of merchants) {
-      const subscription = await db.getMerchantActiveSubscription(merchant.id);
+      const subscription = await getMerchantActiveSubscription(merchant.id);
       if (!subscription) continue;
 
-      const plan = await db.getPlanById(subscription.planId);
+      const plan = await getPlanById(subscription.planId);
       if (!plan) continue;
 
-      const usage = await db.getMerchantCurrentUsage(merchant.id);
+      const usage = await getMerchantCurrentUsage(merchant.id);
       if (!usage) continue;
 
       const limits = [
@@ -100,7 +106,7 @@ export const smartNotificationsRouter = router({
 
         // إرسال إشعار عند الوصول إلى 90%
         if (percentage >= 90 && percentage < 100) {
-          const notification = await db.createNotification({
+          const notification = await createNotification({
             userId: merchant.userId,
             type: 'warning',
             title: `اقتراب من حد ${item.name}`,
@@ -113,7 +119,7 @@ export const smartNotificationsRouter = router({
         
         // إرسال إشعار عند الوصول إلى 100%
         if (percentage >= 100) {
-          const notification = await db.createNotification({
+          const notification = await createNotification({
             userId: merchant.userId,
             type: 'error',
             title: `وصلت إلى حد ${item.name}`,
@@ -155,13 +161,13 @@ export const smartNotificationsRouter = router({
 
   // الحصول على إحصائيات الإشعارات
   getNotificationStats: adminProcedure.query(async () => {
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     let trialEndingSoon = 0;
     let usageAbove90 = 0;
     let usageAt100 = 0;
 
     for (const merchant of merchants) {
-      const subscription = await db.getMerchantActiveSubscription(merchant.id);
+      const subscription = await getMerchantActiveSubscription(merchant.id);
       
       if (subscription && subscription.status === 'trial' && subscription.trialEndsAt) {
         const now = Date.now();
@@ -175,8 +181,8 @@ export const smartNotificationsRouter = router({
       }
 
       if (subscription) {
-        const plan = await db.getPlanById(subscription.planId);
-        const usage = await db.getMerchantCurrentUsage(merchant.id);
+        const plan = await getPlanById(subscription.planId);
+        const usage = await getMerchantCurrentUsage(merchant.id);
 
         if (plan && usage) {
           const limits = [

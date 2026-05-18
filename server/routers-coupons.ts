@@ -8,11 +8,19 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { adminProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createDiscountCoupon,
+  deactivateDiscountCoupon,
+  getAllDiscountCoupons,
+  getCouponUsageCountByMerchant,
+  getDiscountCouponByCode,
+  getMerchantByUserId,
+  updateDiscountCoupon,
+} from './db';
 
 export const couponsRouter = router({
     list: adminProcedure.query(async () => {
-        return await db.getAllDiscountCoupons();
+        return await getAllDiscountCoupons();
     }),
 
     create: adminProcedure
@@ -29,7 +37,7 @@ export const couponsRouter = router({
             maxUsagePerMerchant: z.number(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const id = await db.createDiscountCoupon({
+            const id = await createDiscountCoupon({
                 ...input,
                 createdBy: ctx.user.id,
             });
@@ -52,24 +60,24 @@ export const couponsRouter = router({
         }))
         .mutation(async ({ input }) => {
             const { id, ...data } = input;
-            await db.updateDiscountCoupon(id, data);
+            await updateDiscountCoupon(id, data);
             return { success: true };
         }),
 
     deactivate: adminProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input }) => {
-            await db.deactivateDiscountCoupon(input.id);
+            await deactivateDiscountCoupon(input.id);
             return { success: true };
         }),
 
     validate: protectedProcedure
         .input(z.object({ code: z.string(), planId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
 
-            const coupon = await db.getDiscountCouponByCode(input.code);
+            const coupon = await getDiscountCouponByCode(input.code);
             if (!coupon) throw new TRPCError({ code: 'NOT_FOUND', message: 'الكوبون غير موجود' });
 
             if (!coupon.isActive) throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون غير نشط' });
@@ -82,7 +90,7 @@ export const couponsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'الكوبون مستنفذ' });
             }
 
-            const merchantUsage = await db.getCouponUsageCountByMerchant(coupon.id, merchant.id);
+            const merchantUsage = await getCouponUsageCountByMerchant(coupon.id, merchant.id);
             if (merchantUsage >= coupon.maxUsagePerMerchant) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'لقد استخدمت هذا الكوبون من قبل' });
             }

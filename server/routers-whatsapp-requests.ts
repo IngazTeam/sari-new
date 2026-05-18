@@ -8,7 +8,20 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  approveWhatsAppRequest,
+  completeWhatsAppRequest,
+  createWhatsAppInstance,
+  createWhatsAppRequest,
+  getAllWhatsAppRequests,
+  getMerchantById,
+  getPendingWhatsAppRequests,
+  getUserById,
+  getWhatsAppRequestById,
+  getWhatsAppRequestsByMerchantId,
+  rejectWhatsAppRequest,
+  updateWhatsAppRequest,
+} from './db';
 
 export const whatsappRequestsRouter = router({
     // Create new request (merchant)
@@ -21,18 +34,18 @@ export const whatsappRequestsRouter = router({
             })
         )
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const existingRequests = await db.getWhatsAppRequestsByMerchantId(input.merchantId);
+            const existingRequests = await getWhatsAppRequestsByMerchantId(input.merchantId);
             const pendingRequest = existingRequests.find((r: any) => r.status === 'pending');
             if (pendingRequest) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'You already have a pending request' });
             }
 
-            const request = await db.createWhatsAppRequest({
+            const request = await createWhatsAppRequest({
                 merchantId: input.merchantId,
                 phoneNumber: input.phoneNumber,
                 businessName: input.businessName || merchant.businessName,
@@ -41,7 +54,7 @@ export const whatsappRequestsRouter = router({
 
             try {
                 const { notifyWhatsAppConnectionRequest } = await import('./_core/emailNotifications');
-                const user = await db.getUserById(merchant.userId);
+                const user = await getUserById(merchant.userId);
                 await notifyWhatsAppConnectionRequest({
                     merchantName: user?.name || merchant.businessName,
                     merchantEmail: user?.email || '',
@@ -63,7 +76,7 @@ export const whatsappRequestsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
             }
 
-            return db.getAllWhatsAppRequests();
+            return getAllWhatsAppRequests();
         }),
 
     // Get pending requests (admin only)
@@ -73,19 +86,19 @@ export const whatsappRequestsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
             }
 
-            return db.getPendingWhatsAppRequests();
+            return getPendingWhatsAppRequests();
         }),
 
     // Get merchant's requests
     listMine: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return db.getWhatsAppRequestsByMerchantId(input.merchantId);
+            return getWhatsAppRequestsByMerchantId(input.merchantId);
         }),
 
     // Approve request (admin only)
@@ -112,7 +125,7 @@ export const whatsappRequestsRouter = router({
               console.log(`[approve] Auto-derived api_url: ${resolvedApiUrl} from instanceId: ${input.instanceId}`);
             }
 
-            const request = await db.approveWhatsAppRequest(
+            const request = await approveWhatsAppRequest(
                 input.requestId,
                 input.instanceId,
                 input.token,
@@ -121,7 +134,7 @@ export const whatsappRequestsRouter = router({
             );
 
             if (input.adminNotes) {
-                await db.updateWhatsAppRequest(input.requestId, { adminNotes: input.adminNotes });
+                await updateWhatsAppRequest(input.requestId, { adminNotes: input.adminNotes });
             }
 
             return request;
@@ -140,7 +153,7 @@ export const whatsappRequestsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
             }
 
-            return db.rejectWhatsAppRequest(
+            return rejectWhatsAppRequest(
                 input.requestId,
                 input.rejectionReason,
                 ctx.user.id
@@ -151,12 +164,12 @@ export const whatsappRequestsRouter = router({
     getQRCode: protectedProcedure
         .input(z.object({ requestId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const request = await db.getWhatsAppRequestById(input.requestId);
+            const request = await getWhatsAppRequestById(input.requestId);
             if (!request) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
             }
 
-            const merchant = await db.getMerchantById(request.merchantId);
+            const merchant = await getMerchantById(request.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -186,7 +199,7 @@ export const whatsappRequestsRouter = router({
                 const data = await response.json();
 
                 if (response.ok && data.type === 'qrCode') {
-                    await db.updateWhatsAppRequest(request.id, {
+                    await updateWhatsAppRequest(request.id, {
                         qrCodeUrl: data.message,
                         qrCodeExpiresAt: new Date(Date.now() + 2 * 60 * 1000),
                     });
@@ -219,12 +232,12 @@ export const whatsappRequestsRouter = router({
     checkConnection: protectedProcedure
         .input(z.object({ requestId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const request = await db.getWhatsAppRequestById(input.requestId);
+            const request = await getWhatsAppRequestById(input.requestId);
             if (!request) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Request not found' });
             }
 
-            const merchant = await db.getMerchantById(request.merchantId);
+            const merchant = await getMerchantById(request.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -260,7 +273,7 @@ export const whatsappRequestsRouter = router({
                           instanceApiUrl = `https://${prefix}.api.greenapi.com`;
                         }
 
-                        await db.createWhatsAppInstance({
+                        await createWhatsAppInstance({
                             merchantId: request.merchantId,
                             instanceId: request.instanceId,
                             token: request.token,
@@ -270,7 +283,7 @@ export const whatsappRequestsRouter = router({
                             connectedAt: new Date(),
                         });
 
-                        await db.completeWhatsAppRequest(request.id, data.phoneNumber || '');
+                        await completeWhatsAppRequest(request.id, data.phoneNumber || '');
                     }
 
                     return {

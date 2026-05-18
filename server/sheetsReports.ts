@@ -3,7 +3,16 @@
  * يولد تقارير يومية/أسبوعية/شهرية تلقائياً
  */
 
-import * as db from './db';
+import {
+  getConversationsByMerchantId,
+  getGoogleIntegration,
+  getMerchantById,
+  getMessagesByConversationId,
+  getOrdersByMerchantId,
+  getPool,
+  getWhatsAppInstancesByMerchantId,
+  updateGoogleIntegration,
+} from './db';
 import * as sheets from './_core/googleSheets';
 
 interface ReportData {
@@ -120,7 +129,7 @@ async function collectReportData(
   startDate: Date,
   endDate: Date
 ): Promise<ReportData> {
-  const pool = await db.getPool();
+  const pool = await getPool();
 
   // RPT-03 FIX: Filter orders in SQL instead of loading all into memory
   let periodOrders: any[] = [];
@@ -133,7 +142,7 @@ async function collectReportData(
       periodOrders = rows as any[];
     } catch {
       // Fallback to in-memory filter if SQL fails
-      const orders = await db.getOrdersByMerchantId(merchantId);
+      const orders = await getOrdersByMerchantId(merchantId);
       periodOrders = orders.filter(order => {
         const orderDate = new Date(order.createdAt);
         return orderDate >= startDate && orderDate < endDate;
@@ -174,7 +183,7 @@ async function collectReportData(
     } catch (e: any) {
       console.warn('[Sheets Reports] Aggregate query fallback:', e.message);
       // Fallback to old logic
-      const conversations = await db.getConversationsByMerchantId(merchantId);
+      const conversations = await getConversationsByMerchantId(merchantId);
       const periodConversations = conversations.filter(conv => {
         const convDate = new Date(conv.createdAt);
         return convDate >= startDate && convDate < endDate;
@@ -182,7 +191,7 @@ async function collectReportData(
       totalConversations = periodConversations.length;
       newCustomers = periodConversations.length;
       for (const conv of periodConversations) {
-        const messages = await db.getMessagesByConversationId(conv.id);
+        const messages = await getMessagesByConversationId(conv.id);
         totalMessages += messages.length;
       }
     }
@@ -237,7 +246,7 @@ async function saveReportToSheets(
   reportType: string,
   data: ReportData
 ): Promise<void> {
-  const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+  const integration = await getGoogleIntegration(merchantId, 'sheets');
 
   if (!integration || !integration.isActive || !integration.sheetId) {
     throw new Error('Google Sheets غير مربوط');
@@ -306,7 +315,7 @@ async function saveReportToSheets(
   }
 
   // تحديث وقت آخر مزامنة
-  await db.updateGoogleIntegration(integration.id, {
+  await updateGoogleIntegration(integration.id, {
     lastSync: new Date().toISOString(),
   });
 
@@ -353,13 +362,13 @@ export async function sendReportViaWhatsApp(
   data: ReportData
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant || !merchant.phone) {
       return { success: false, message: 'رقم التاجر غير متوفر' };
     }
 
     // RPT-01 FIX: Use merchant's own WhatsApp instance (not global ENV credentials)
-    const instances = await db.getWhatsAppInstancesByMerchantId(merchantId);
+    const instances = await getWhatsAppInstancesByMerchantId(merchantId);
     const activeInstance = instances.find((i: any) => i.status === 'active');
     if (!activeInstance) {
       console.warn(`[Sheets Reports] No active WhatsApp instance for merchant ${merchantId} — skipping report send`);

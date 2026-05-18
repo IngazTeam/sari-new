@@ -8,17 +8,24 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createQuickResponse,
+  deleteQuickResponse,
+  getMerchantByUserId,
+  getQuickResponseById,
+  getQuickResponses,
+  updateQuickResponse,
+} from './db';
 
 export const quickResponsesRouter = router({
     // List all quick responses
     list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getQuickResponses(merchant.id);
+        return await getQuickResponses(merchant.id);
     }),
 
     // Create quick response
@@ -31,12 +38,12 @@ export const quickResponsesRouter = router({
             category: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.createQuickResponse({
+            return await createQuickResponse({
                 ...input,
                 merchantId: merchant.id,
             });
@@ -54,48 +61,48 @@ export const quickResponsesRouter = router({
             isActive: z.boolean().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
             // IDOR-2 FIX: Verify response belongs to this merchant
-            const response = await db.getQuickResponseById(input.id);
+            const response = await getQuickResponseById(input.id);
             if (!response || response.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
             const { id, ...data } = input;
-            return await db.updateQuickResponse(id, data);
+            return await updateQuickResponse(id, data);
         }),
 
     // Delete quick response
     delete: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
             // IDOR-2 FIX: Verify response belongs to this merchant
-            const response = await db.getQuickResponseById(input.id);
+            const response = await getQuickResponseById(input.id);
             if (!response || response.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.deleteQuickResponse(input.id);
+            await deleteQuickResponse(input.id);
             return { success: true };
         }),
 
     // Get statistics
     getStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const responses = await db.getQuickResponses(merchant.id);
+        const responses = await getQuickResponses(merchant.id);
         return {
             total: responses.length,
             active: responses.filter(r => r.isActive).length,

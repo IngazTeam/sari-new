@@ -8,17 +8,26 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getBotSettings,
+  getConversationsByMerchantId,
+  getMerchantByUserId,
+  getOrCreatePersonalitySettings,
+  getWhatsappConnectionByMerchantId,
+  shouldBotRespond,
+  updateBotSettings,
+  updateSariPersonalitySettings,
+} from './db';
 
 export const botSettingsRouter = router({
     // Get bot settings for current merchant
     get: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getBotSettings(merchant.id);
+        return await getBotSettings(merchant.id);
     }),
 
     // Update bot settings
@@ -45,18 +54,18 @@ export const botSettingsRouter = router({
             groupRedirectMessage: z.string().max(500).optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const result = await db.updateBotSettings(merchant.id, input);
+            const result = await updateBotSettings(merchant.id, input);
 
             // Sync tone to personality settings so AI engine uses it
             if (input.tone) {
                 try {
-                    await db.getOrCreatePersonalitySettings(merchant.id);
-                    await db.updateSariPersonalitySettings(merchant.id, { tone: input.tone as any });
+                    await getOrCreatePersonalitySettings(merchant.id);
+                    await updateSariPersonalitySettings(merchant.id, { tone: input.tone as any });
                 } catch (e) {
                     console.error('[BotSettings] Failed to sync tone to personality:', e);
                 }
@@ -67,22 +76,22 @@ export const botSettingsRouter = router({
 
     // Check if bot should respond
     shouldRespond: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.shouldBotRespond(merchant.id);
+        return await shouldBotRespond(merchant.id);
     }),
 
     // Send test message
     sendTestMessage: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const connection = await db.getWhatsappConnectionByMerchantId(merchant.id);
+        const connection = await getWhatsappConnectionByMerchantId(merchant.id);
         if (!connection || connection.status !== 'connected') {
             throw new TRPCError({
                 code: 'PRECONDITION_FAILED',
@@ -90,7 +99,7 @@ export const botSettingsRouter = router({
             });
         }
 
-        const settings = await db.getBotSettings(merchant.id);
+        const settings = await getBotSettings(merchant.id);
         if (!settings) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Bot settings not found' });
         }
@@ -121,12 +130,12 @@ export const botSettingsRouter = router({
 
     // Get conversations currently under human takeover
     getTakeoverConversations: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const allConversations = await db.getConversationsByMerchantId(merchant.id);
+        const allConversations = await getConversationsByMerchantId(merchant.id);
         return allConversations
             .filter((c: any) => c.humanTakeover === 1)
             .map((c: any) => ({

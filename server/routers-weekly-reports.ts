@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getMerchantByUserId, getWeeklySentimentReportById, getWeeklySentimentReports } from './db';
 
 export const weeklyReportsRouter = router({
     // Get merchant's weekly reports
@@ -17,12 +17,12 @@ export const weeklyReportsRouter = router({
             limit: z.number().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.getWeeklySentimentReports(merchant.id, input.limit || 10);
+            return await getWeeklySentimentReports(merchant.id, input.limit || 10);
         }),
 
     // Get specific report
@@ -31,9 +31,9 @@ export const weeklyReportsRouter = router({
             reportId: z.number(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            const report = await db.getWeeklySentimentReportById(input.reportId);
+            const report = await getWeeklySentimentReportById(input.reportId);
             if (!report || report.merchantId !== merchant.id) throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             return report;
         }),
@@ -41,7 +41,7 @@ export const weeklyReportsRouter = router({
     // Generate test report (for current week)
     generateTest: protectedProcedure
         .mutation(async ({ ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }

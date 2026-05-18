@@ -7,7 +7,31 @@
 import { router, protectedProcedure } from './_core/trpc';
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import * as db from './db';
+import {
+  createCompetitorAnalysis,
+  createCompetitorProduct,
+  createExtractedFaq,
+  createExtractedProduct,
+  createProduct,
+  createWebsiteAnalysis,
+  createWebsiteInsight,
+  deleteAllExtractedFaqs,
+  deleteAllProductsByMerchantId,
+  deleteCompetitorAnalysis,
+  deleteWebsiteAnalysis,
+  getCompetitorAnalysesByMerchant,
+  getCompetitorAnalysisById,
+  getCompetitorProductsByCompetitorId,
+  getExtractedProductsByAnalysisId,
+  getInsightsByAnalysisId,
+  getMerchantByUserId,
+  getPool,
+  getWebsiteAnalysesByMerchant,
+  getWebsiteAnalysisById,
+  updateCompetitorAnalysis,
+  updateMerchant,
+  updateWebsiteAnalysis,
+} from './db';
 import * as analyzer from './_core/websiteAnalyzer';
 
 export const websiteAnalysisRouter = router({
@@ -35,7 +59,7 @@ export const websiteAnalysisRouter = router({
         }
 
         // Get merchant ID
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -48,7 +72,7 @@ export const websiteAnalysisRouter = router({
 
         // Create analysis record — save hostname as title immediately so frontend never shows "بدون عنوان"
         const hostname = new URL(input.url).hostname;
-        const analysisId = await db.createWebsiteAnalysis({
+        const analysisId = await createWebsiteAnalysis({
           merchantId: merchant.id,
           url: input.url,
           title: hostname,
@@ -75,7 +99,7 @@ export const websiteAnalysisRouter = router({
             console.log(`[WebsiteAnalysis] Phase 1 COMPLETE: score=${result.overallScore}, title="${result.title}"`);
 
             // Update analysis with results
-            await db.updateWebsiteAnalysis(analysisId, {
+            await updateWebsiteAnalysis(analysisId, {
               title: result.title,
               description: result.description,
               industry: result.industry,
@@ -119,7 +143,7 @@ export const websiteAnalysisRouter = router({
               }
               if (Object.keys(updateData).length > 0) {
                 try {
-                  await db.updateMerchant(merchant.id, updateData);
+                  await updateMerchant(merchant.id, updateData);
                   console.log('[WebsiteAnalysis] Updated merchant contact info:', updateData);
                 } catch (contactErr: any) {
                   console.warn('[WebsiteAnalysis] Failed to update merchant contact:', contactErr.message);
@@ -130,9 +154,9 @@ export const websiteAnalysisRouter = router({
             // Save extracted FAQs
             if (result.faqs && result.faqs.length > 0) {
               try {
-                await db.deleteAllExtractedFaqs(merchant.id);
+                await deleteAllExtractedFaqs(merchant.id);
                 for (const faq of result.faqs) {
-                  await db.createExtractedFaq({
+                  await createExtractedFaq({
                     merchantId: merchant.id,
                     question: faq.question,
                     answer: faq.answer,
@@ -148,7 +172,7 @@ export const websiteAnalysisRouter = router({
             // Save crawled pages to discovered_pages table (Knowledge Dashboard)
             if (result._crawledPages && result._crawledPages.length > 0) {
               try {
-                const pool = await db.getPool();
+                const pool = await getPool();
                 if (pool) {
                   // Clear old discovered pages
                   await pool.execute(
@@ -184,7 +208,7 @@ export const websiteAnalysisRouter = router({
             console.error('[WebsiteAnalysis] Phase 1 FAILED:', analysisError instanceof Error ? analysisError.message : analysisError);
             // Save partial info — title was already saved at creation, just add description
             try {
-              await db.updateWebsiteAnalysis(analysisId, {
+              await updateWebsiteAnalysis(analysisId, {
                 description: 'تعذر تحليل الموقع بسبب حماية أو تجاوز المهلة — تم استخراج المنتجات عبر API',
                 overallScore: 0,
               });
@@ -245,7 +269,7 @@ export const websiteAnalysisRouter = router({
                   return undefined;
                 };
 
-                await db.createExtractedProduct({
+                await createExtractedProduct({
                   analysisId,
                   merchantId: merchant.id,
                   name: typeof product.name === 'string' ? product.name.substring(0, 500) : (String(product.name || 'Unknown')).substring(0, 500),
@@ -270,12 +294,12 @@ export const websiteAnalysisRouter = router({
             // ✅ ALSO save to main products table so the AI bot can use them immediately
             if (savedCount > 0) {
               try {
-                await db.deleteAllProductsByMerchantId(merchant.id);
+                await deleteAllProductsByMerchantId(merchant.id);
                 let mainSavedCount = 0;
                 for (const product of products) {
                   if (!product.name || (typeof product.name === 'string' && !product.name.trim())) continue;
                   try {
-                    await db.createProduct({
+                    await createProduct({
                       merchantId: merchant.id,
                       name: typeof product.name === 'string' ? product.name.substring(0, 500) : String(product.name),
                       description: typeof product.description === 'string' ? product.description.substring(0, 2000) : '',
@@ -302,7 +326,7 @@ export const websiteAnalysisRouter = router({
           // Phase 3: Generate insights (10s timeout — only if we have analysis data)
           console.log(`[WebsiteAnalysis] Phase 3 START: generate insights`);
           try {
-            const analysis = await db.getWebsiteAnalysisById(analysisId);
+            const analysis = await getWebsiteAnalysisById(analysisId);
             if (analysis && analysis.overallScore > 0) {
               const insightsData: analyzer.WebsiteAnalysisResult = {
                 title: analysis.title || '',
@@ -333,7 +357,7 @@ export const websiteAnalysisRouter = router({
               const insights = await Promise.race([insightsPromise, timeoutPromise]);
 
               for (const insight of insights) {
-                await db.createWebsiteInsight({
+                await createWebsiteInsight({
                   analysisId,
                   merchantId: merchant.id,
                   category: insight.category,
@@ -353,7 +377,7 @@ export const websiteAnalysisRouter = router({
 
           // Final: Mark analysis as completed after all phases finish
           try {
-            await db.updateWebsiteAnalysis(analysisId, { status: 'completed' });
+            await updateWebsiteAnalysis(analysisId, { status: 'completed' });
             console.log(`[WebsiteAnalysis] ✅ Pipeline COMPLETE: id=${analysisId}`);
           } catch (finalUpdateErr) {
             console.error('[WebsiteAnalysis] CRITICAL: Failed to mark as completed:', finalUpdateErr);
@@ -372,10 +396,10 @@ export const websiteAnalysisRouter = router({
           .finally(async () => {
             // GUARANTEE: status NEVER stays 'analyzing' forever
             try {
-              const existing = await db.getWebsiteAnalysisById(analysisId);
+              const existing = await getWebsiteAnalysisById(analysisId);
               if (existing && existing.status === 'analyzing') {
                 const finalStatus = existing.overallScore > 0 ? 'completed' : 'failed';
-                await db.updateWebsiteAnalysis(analysisId, {
+                await updateWebsiteAnalysis(analysisId, {
                   status: finalStatus,
                   ...(finalStatus === 'failed' ? { errorMessage: 'فشل إكمال التحليل. حاول مرة أخرى.' } : {})
                 });
@@ -404,21 +428,21 @@ export const websiteAnalysisRouter = router({
       id: z.number(),
     }))
     .query(async ({ ctx, input }) => {
-      const analysis = await db.getWebsiteAnalysisById(input.id);
+      const analysis = await getWebsiteAnalysisById(input.id);
 
       if (!analysis) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
       // Verify ownership
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       // BUG FIX: Always include products — they may be saved before insights phase completes
       let extractedProductsList: any[] = [];
-      extractedProductsList = await db.getExtractedProductsByAnalysisId(input.id);
+      extractedProductsList = await getExtractedProductsByAnalysisId(input.id);
 
       return { ...analysis, extractedProducts: extractedProductsList };
     }),
@@ -427,12 +451,12 @@ export const websiteAnalysisRouter = router({
    * قائمة التحليلات
    */
   listAnalyses: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    return await db.getWebsiteAnalysesByMerchant(merchant.id);
+    return await getWebsiteAnalysesByMerchant(merchant.id);
   }),
 
   /**
@@ -444,17 +468,17 @@ export const websiteAnalysisRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       // Verify ownership
-      const analysis = await db.getWebsiteAnalysisById(input.analysisId);
+      const analysis = await getWebsiteAnalysisById(input.analysisId);
       if (!analysis) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      return await db.getExtractedProductsByAnalysisId(input.analysisId);
+      return await getExtractedProductsByAnalysisId(input.analysisId);
     }),
 
   /**
@@ -466,17 +490,17 @@ export const websiteAnalysisRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       // Verify ownership
-      const analysis = await db.getWebsiteAnalysisById(input.analysisId);
+      const analysis = await getWebsiteAnalysisById(input.analysisId);
       if (!analysis) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      return await db.getInsightsByAnalysisId(input.analysisId);
+      return await getInsightsByAnalysisId(input.analysisId);
     }),
 
   /**
@@ -488,17 +512,17 @@ export const websiteAnalysisRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
-      const analysis = await db.getWebsiteAnalysisById(input.id);
+      const analysis = await getWebsiteAnalysisById(input.id);
       if (!analysis) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      await db.deleteWebsiteAnalysis(input.id);
+      await deleteWebsiteAnalysis(input.id);
       return { success: true };
     }),
 
@@ -512,13 +536,13 @@ export const websiteAnalysisRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       try {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
         // Create competitor record
-        const competitorId = await db.createCompetitorAnalysis({
+        const competitorId = await createCompetitorAnalysis({
           merchantId: merchant.id,
           name: input.name,
           url: input.url,
@@ -532,7 +556,7 @@ export const websiteAnalysisRouter = router({
             const result = await analyzer.analyzeWebsite(input.url);
 
             // Update competitor with results
-            await db.updateCompetitorAnalysis(competitorId, {
+            await updateCompetitorAnalysis(competitorId, {
               overallScore: result.overallScore,
               seoScore: result.seoScore,
               performanceScore: result.performanceScore,
@@ -558,7 +582,7 @@ export const websiteAnalysisRouter = router({
                 productCount++;
               }
 
-              await db.createCompetitorProduct({
+              await createCompetitorProduct({
                 competitorId,
                 merchantId: merchant.id,
                 name: product.name,
@@ -573,7 +597,7 @@ export const websiteAnalysisRouter = router({
 
             // Update pricing stats
             if (productCount > 0) {
-              await db.updateCompetitorAnalysis(competitorId, {
+              await updateCompetitorAnalysis(competitorId, {
                 avgPrice: totalPrice / productCount,
                 minPrice: minPrice === Infinity ? 0 : minPrice,
                 maxPrice,
@@ -584,7 +608,7 @@ export const websiteAnalysisRouter = router({
             console.log('[CompetitorAnalysis] Analysis completed:', competitorId);
           } catch (error) {
             console.error('[CompetitorAnalysis] Analysis failed:', error);
-            await db.updateCompetitorAnalysis(competitorId, {
+            await updateCompetitorAnalysis(competitorId, {
               status: 'failed',
               errorMessage: error instanceof Error ? error.message : 'Unknown error',
             });
@@ -605,12 +629,12 @@ export const websiteAnalysisRouter = router({
    * قائمة المنافسين
    */
   listCompetitors: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    return await db.getCompetitorAnalysesByMerchant(merchant.id);
+    return await getCompetitorAnalysesByMerchant(merchant.id);
   }),
 
   /**
@@ -621,14 +645,14 @@ export const websiteAnalysisRouter = router({
       id: z.number(),
     }))
     .query(async ({ ctx, input }) => {
-      const competitor = await db.getCompetitorAnalysisById(input.id);
+      const competitor = await getCompetitorAnalysisById(input.id);
 
       if (!competitor) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
       }
 
       // Verify ownership
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || competitor.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -645,17 +669,17 @@ export const websiteAnalysisRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       // Verify ownership
-      const competitor = await db.getCompetitorAnalysisById(input.competitorId);
+      const competitor = await getCompetitorAnalysisById(input.competitorId);
       if (!competitor) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || competitor.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      return await db.getCompetitorProductsByCompetitorId(input.competitorId);
+      return await getCompetitorProductsByCompetitorId(input.competitorId);
     }),
 
   /**
@@ -668,19 +692,19 @@ export const websiteAnalysisRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       // Verify ownership
-      const analysis = await db.getWebsiteAnalysisById(input.analysisId);
+      const analysis = await getWebsiteAnalysisById(input.analysisId);
       if (!analysis) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Analysis not found' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || analysis.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       // Get competitor analyses
       const competitors = await Promise.all(
-        input.competitorIds.map(id => db.getCompetitorAnalysisById(id))
+        input.competitorIds.map(id => getCompetitorAnalysisById(id))
       );
 
       // Filter out null values and verify ownership
@@ -755,17 +779,17 @@ export const websiteAnalysisRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       // Verify ownership
-      const competitor = await db.getCompetitorAnalysisById(input.id);
+      const competitor = await getCompetitorAnalysisById(input.id);
       if (!competitor) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Competitor not found' });
       }
 
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant || competitor.merchantId !== merchant.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      await db.deleteCompetitorAnalysis(input.id);
+      await deleteCompetitorAnalysis(input.id);
       return { success: true };
     }),
 });

@@ -5,7 +5,7 @@
  */
 
 import * as loyaltyDb from './db_loyalty';
-import * as db from './db';
+import { getMerchantById, getOrderById } from './db';
 import { sendTextMessage } from './whatsapp';
 
 /**
@@ -83,7 +83,7 @@ export async function sendPointsEarnedNotification(params: {
   orderId: number;
 }): Promise<void> {
   try {
-    const merchant = await db.getMerchantById(params.merchantId);
+    const merchant = await getMerchantById(params.merchantId);
     if (!merchant) return;
 
     const message = `🎉 مبروك ${params.customerName || 'عزيزي العميل'}!
@@ -116,7 +116,7 @@ export async function sendTierUpgradeNotification(params: {
   newTier: any;
 }): Promise<void> {
   try {
-    const merchant = await db.getMerchantById(params.merchantId);
+    const merchant = await getMerchantById(params.merchantId);
     if (!merchant) return;
 
     const benefits = [];
@@ -163,7 +163,7 @@ export async function sendRewardRedeemedNotification(params: {
   newBalance: number;
 }): Promise<void> {
   try {
-    const merchant = await db.getMerchantById(params.merchantId);
+    const merchant = await getMerchantById(params.merchantId);
     if (!merchant) return;
 
     const message = `✅ تم استبدال المكافأة بنجاح!
@@ -192,7 +192,7 @@ export async function sendRewardRedeemedNotification(params: {
  */
 export async function handleOrderCompleted(orderId: number): Promise<void> {
   try {
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       console.log('[Loyalty] Order not found:', orderId);
       return;

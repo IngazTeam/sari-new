@@ -7,12 +7,12 @@
 
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getGoogleOAuthSettings, toggleGoogleOAuthEnabled, upsertGoogleOAuthSettings } from './db';
 
 export const googleOAuthSettingsRouter = router({
     // Get Google OAuth settings
     get: adminProcedure.query(async () => {
-        const settings = await db.getGoogleOAuthSettings();
+        const settings = await getGoogleOAuthSettings();
         return { settings };
     }),
 
@@ -24,7 +24,7 @@ export const googleOAuthSettingsRouter = router({
             isEnabled: z.boolean().optional(),
         }))
         .mutation(async ({ input }) => {
-            const settings = await db.upsertGoogleOAuthSettings({
+            const settings = await upsertGoogleOAuthSettings({
                 clientId: input.clientId,
                 clientSecret: input.clientSecret,
                 isEnabled: input.isEnabled ? 1 : 0,
@@ -37,7 +37,7 @@ export const googleOAuthSettingsRouter = router({
     toggleEnabled: adminProcedure
         .input(z.object({ isEnabled: z.boolean() }))
         .mutation(async ({ input }) => {
-            const settings = await db.toggleGoogleOAuthEnabled(input.isEnabled);
+            const settings = await toggleGoogleOAuthEnabled(input.isEnabled);
             return { success: true, settings };
         }),
 });

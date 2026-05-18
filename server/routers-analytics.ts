@@ -1,6 +1,15 @@
 import { protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import * as db from "./db";
+import {
+  getCampaignById,
+  getCampaignLogsByCampaignId,
+  getCampaignsByMerchantId,
+  getConversationsByMerchantId,
+  getDailyMessageCount,
+  getMerchantById,
+  getMessageStats,
+  getPool,
+} from './db';
 import { TRPCError } from "@trpc/server";
 
 export const analyticsRouter = router({
@@ -12,7 +21,7 @@ export const analyticsRouter = router({
       endDate: z.string(),
     }))
     .query(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantById(input.merchantId);
+      const merchant = await getMerchantById(input.merchantId);
       if (!merchant || merchant.userId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -21,16 +30,16 @@ export const analyticsRouter = router({
       const endDate = new Date(input.endDate);
 
       // Get conversations count
-      const conversations = await db.getConversationsByMerchantId(input.merchantId);
+      const conversations = await getConversationsByMerchantId(input.merchantId);
       const conversationsInRange = conversations.filter(c => 
         c.createdAt >= startDate && c.createdAt <= endDate
       );
 
       // Get messages count
-      const messageStats = await db.getMessageStats(input.merchantId, startDate, endDate);
+      const messageStats = await getMessageStats(input.merchantId, startDate, endDate);
 
       // Get campaign stats
-      const campaigns = await db.getCampaignsByMerchantId(input.merchantId);
+      const campaigns = await getCampaignsByMerchantId(input.merchantId);
       const campaignsInRange = campaigns.filter(c => 
         c.createdAt >= startDate && c.createdAt <= endDate
       );
@@ -53,12 +62,12 @@ export const analyticsRouter = router({
       days: z.number().default(30),
     }))
     .query(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantById(input.merchantId);
+      const merchant = await getMerchantById(input.merchantId);
       if (!merchant || merchant.userId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      const dailyData = await db.getDailyMessageCount(input.merchantId, input.days);
+      const dailyData = await getDailyMessageCount(input.merchantId, input.days);
       return dailyData;
     }),
 
@@ -69,18 +78,18 @@ export const analyticsRouter = router({
       campaignId: z.number().optional(),
     }))
     .query(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantById(input.merchantId);
+      const merchant = await getMerchantById(input.merchantId);
       if (!merchant || merchant.userId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
       if (input.campaignId) {
-        const campaign = await db.getCampaignById(input.campaignId);
+        const campaign = await getCampaignById(input.campaignId);
         if (!campaign || campaign.merchantId !== input.merchantId) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
         }
 
-        const logs = await db.getCampaignLogsByCampaignId(input.campaignId);
+        const logs = await getCampaignLogsByCampaignId(input.campaignId);
         const successCount = logs.filter((l: any) => l.status === 'success').length;
         const failureCount = logs.filter((l: any) => l.status === 'failed').length;
 
@@ -96,10 +105,10 @@ export const analyticsRouter = router({
       }
 
       // Get all campaigns performance
-      const campaigns = await db.getCampaignsByMerchantId(input.merchantId);
+      const campaigns = await getCampaignsByMerchantId(input.merchantId);
       const campaignsPerformance = await Promise.all(
         campaigns.map(async (campaign) => {
-          const logs = await db.getCampaignLogsByCampaignId(campaign.id);
+          const logs = await getCampaignLogsByCampaignId(campaign.id);
           const successCount = logs.filter((l: any) => l.status === 'success').length;
           return {
             campaignId: campaign.id,
@@ -123,7 +132,7 @@ export const analyticsRouter = router({
       endDate: z.string(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantById(input.merchantId);
+      const merchant = await getMerchantById(input.merchantId);
       if (!merchant || merchant.userId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -134,14 +143,14 @@ export const analyticsRouter = router({
         const startDate = new Date(input.startDate);
         const endDate = new Date(input.endDate);
 
-        const conversations = await db.getConversationsByMerchantId(input.merchantId);
+        const conversations = await getConversationsByMerchantId(input.merchantId);
         const conversationsInRange = conversations.filter(c => 
           c.createdAt >= startDate && c.createdAt <= endDate
         );
 
-        const messageStats = await db.getMessageStats(input.merchantId, startDate, endDate);
+        const messageStats = await getMessageStats(input.merchantId, startDate, endDate);
 
-        const campaigns = await db.getCampaignsByMerchantId(input.merchantId);
+        const campaigns = await getCampaignsByMerchantId(input.merchantId);
         const campaignsInRange = campaigns.filter(c => 
           c.createdAt >= startDate && c.createdAt <= endDate
         );
@@ -149,7 +158,7 @@ export const analyticsRouter = router({
         // Get top campaigns
         const topCampaigns = await Promise.all(
           campaignsInRange.slice(0, 5).map(async (campaign) => {
-            const logs = await db.getCampaignLogsByCampaignId(campaign.id);
+            const logs = await getCampaignLogsByCampaignId(campaign.id);
             const successCount = logs.filter((l: any) => l.status === 'success').length;
             return {
               name: campaign.name,
@@ -202,12 +211,12 @@ export const analyticsRouter = router({
       merchantId: z.number(),
     }))
     .query(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantById(input.merchantId);
+      const merchant = await getMerchantById(input.merchantId);
       if (!merchant || merchant.userId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
 
-      const pool = await db.getPool();
+      const pool = await getPool();
       if (!pool) return { sources: [], totalCustomers: 0 };
 
       const [rows] = await pool.execute(

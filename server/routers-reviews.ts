@@ -8,26 +8,32 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getCustomerReviewById,
+  getCustomerReviewsByMerchantId,
+  getMerchantById,
+  getOrderById,
+  updateCustomerReview,
+} from './db';
 
 export const reviewsRouter = router({
     // List all reviews for merchant
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.getCustomerReviewsByMerchantId(input.merchantId);
+            return await getCustomerReviewsByMerchantId(input.merchantId);
         }),
 
     // Get review statistics
     getStats: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -40,17 +46,17 @@ export const reviewsRouter = router({
     getById: protectedProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
-            const review = await db.getCustomerReviewById(input.id);
+            const review = await getCustomerReviewById(input.id);
             if (!review) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Review not found' });
             }
 
-            const order = await db.getOrderById(review.orderId);
+            const order = await getOrderById(review.orderId);
             if (!order) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
             }
 
-            const merchant = await db.getMerchantById(order.merchantId);
+            const merchant = await getMerchantById(order.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -65,22 +71,22 @@ export const reviewsRouter = router({
             reply: z.string().min(1).max(1000), // PEN-NEW-4: Cap length to prevent WhatsApp abuse
         }))
         .mutation(async ({ input, ctx }) => {
-            const review = await db.getCustomerReviewById(input.reviewId);
+            const review = await getCustomerReviewById(input.reviewId);
             if (!review) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Review not found' });
             }
 
-            const order = await db.getOrderById(review.orderId);
+            const order = await getOrderById(review.orderId);
             if (!order) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Order not found' });
             }
 
-            const merchant = await db.getMerchantById(order.merchantId);
+            const merchant = await getMerchantById(order.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.updateCustomerReview(input.reviewId, {
+            await updateCustomerReview(input.reviewId, {
                 merchantReply: input.reply,
                 repliedAt: new Date(),
             });

@@ -8,31 +8,37 @@
 
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  deleteNotification,
+  getNotificationsByUserId,
+  getUnreadNotificationsCount,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+} from './db';
 
 export const userNotificationsRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
-        return await db.getNotificationsByUserId(ctx.user.id);
+        return await getNotificationsByUserId(ctx.user.id);
     }),
 
     unreadCount: protectedProcedure.query(async ({ ctx }) => {
-        return await db.getUnreadNotificationsCount(ctx.user.id);
+        return await getUnreadNotificationsCount(ctx.user.id);
     }),
 
     markAsRead: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            return await db.markNotificationAsRead(input.id, ctx.user.id);
+            return await markNotificationAsRead(input.id, ctx.user.id);
         }),
 
     markAllAsRead: protectedProcedure.mutation(async ({ ctx }) => {
-        return await db.markAllNotificationsAsRead(ctx.user.id);
+        return await markAllNotificationsAsRead(ctx.user.id);
     }),
 
     delete: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            return await db.deleteNotification(input.id, ctx.user.id);
+            return await deleteNotification(input.id, ctx.user.id);
         }),
 });
 

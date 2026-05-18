@@ -8,31 +8,48 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createWhatsAppInstance,
+  deactivateInstancesByPhoneNumber,
+  deleteWhatsAppInstance,
+  getActiveInstanceByPhoneNumber,
+  getActiveWhatsAppInstancesCount,
+  getExpiringWhatsAppInstances,
+  getMerchantById,
+  getMerchantByUserId,
+  getMerchantCurrentSubscription,
+  getPrimaryWhatsAppInstance,
+  getSubscriptionPlanById,
+  getWhatsAppInstanceById,
+  getWhatsAppInstanceByInstanceId,
+  getWhatsAppInstancesByMerchantId,
+  setWhatsAppInstanceAsPrimary,
+  updateWhatsAppInstance,
+} from './db';
 
 export const whatsappInstancesRouter = router({
     // List all instances for merchant (INTERNAL — used by system, returns full data including tokens)
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+            return await getWhatsAppInstancesByMerchantId(input.merchantId);
         }),
 
     // List instances for merchant dashboard (SAFE — no tokens, no API keys)
     listSafe: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const instances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+            const instances = await getWhatsAppInstancesByMerchantId(input.merchantId);
             // Strip sensitive fields
             return instances.map((i: any) => ({
                 id: i.id,
@@ -54,12 +71,12 @@ export const whatsappInstancesRouter = router({
             newStatus: z.enum(['active', 'inactive']),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const instance = await db.getWhatsAppInstanceById(input.id);
+            const instance = await getWhatsAppInstanceById(input.id);
             if (!instance || instance.merchantId !== input.merchantId) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
             }
@@ -81,24 +98,24 @@ export const whatsappInstancesRouter = router({
 
                 // Phone conflict: if this number is active for another merchant, deactivate it there
                 if (instance.phoneNumber) {
-                    const conflicting = await db.getActiveInstanceByPhoneNumber(instance.phoneNumber, input.merchantId);
+                    const conflicting = await getActiveInstanceByPhoneNumber(instance.phoneNumber, input.merchantId);
                     if (conflicting) {
                         console.log(`[WhatsApp] Phone ${instance.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
-                        await db.deactivateInstancesByPhoneNumber(instance.phoneNumber, input.merchantId);
+                        await deactivateInstancesByPhoneNumber(instance.phoneNumber, input.merchantId);
                     }
                 }
             }
 
             // If deactivating primary, ensure another active instance becomes primary
             if (input.newStatus === 'inactive' && instance.isPrimary) {
-                const allInstances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+                const allInstances = await getWhatsAppInstancesByMerchantId(input.merchantId);
                 const anotherActive = allInstances.find((i: any) => i.id !== input.id && i.status === 'active');
                 if (anotherActive) {
-                    await db.setWhatsAppInstanceAsPrimary(anotherActive.id, input.merchantId);
+                    await setWhatsAppInstanceAsPrimary(anotherActive.id, input.merchantId);
                 }
             }
 
-            await db.updateWhatsAppInstance(input.id, { status: input.newStatus });
+            await updateWhatsAppInstance(input.id, { status: input.newStatus });
             return { success: true };
         }),
 
@@ -106,22 +123,22 @@ export const whatsappInstancesRouter = router({
     getUsage: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const subscription = await db.getMerchantCurrentSubscription(input.merchantId);
+            const subscription = await getMerchantCurrentSubscription(input.merchantId);
             if (!subscription) {
                 return { current: 0, max: 1, remaining: 1, percentage: 0 };
             }
 
-            const plan = await db.getSubscriptionPlanById(subscription.planId);
+            const plan = await getSubscriptionPlanById(subscription.planId);
             if (!plan) {
                 return { current: 0, max: 1, remaining: 1, percentage: 0 };
             }
 
-            const instances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+            const instances = await getWhatsAppInstancesByMerchantId(input.merchantId);
             const activeCount = instances.filter((i: any) => i.status === 'active').length;
             const totalCount = instances.length;
 
@@ -140,12 +157,12 @@ export const whatsappInstancesRouter = router({
     getPrimary: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.getPrimaryWhatsAppInstance(input.merchantId);
+            return await getPrimaryWhatsAppInstance(input.merchantId);
         }),
 
     // Create new instance
@@ -163,18 +180,18 @@ export const whatsappInstancesRouter = router({
             })
         )
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
             // Check: instanceId must be unique
-            const existingById = await db.getWhatsAppInstanceByInstanceId(input.instanceId);
+            const existingById = await getWhatsAppInstanceByInstanceId(input.instanceId);
             if (existingById) {
                 // If same instanceId exists for ANOTHER merchant, deactivate it
                 if (existingById.merchantId !== input.merchantId) {
                     console.log(`[WhatsApp] Instance ${input.instanceId} was used by merchant ${existingById.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
-                    await db.updateWhatsAppInstance(existingById.id, { status: 'inactive', isPrimary: false });
+                    await updateWhatsAppInstance(existingById.id, { status: 'inactive', isPrimary: false });
                 } else {
                     throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الرقم مسجل بالفعل في حسابك' });
                 }
@@ -182,17 +199,17 @@ export const whatsappInstancesRouter = router({
 
             // Check: if phone number is already active elsewhere, deactivate it
             if (input.phoneNumber) {
-                const conflicting = await db.getActiveInstanceByPhoneNumber(input.phoneNumber, input.merchantId);
+                const conflicting = await getActiveInstanceByPhoneNumber(input.phoneNumber, input.merchantId);
                 if (conflicting) {
                     console.log(`[WhatsApp] Phone ${input.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
-                    await db.deactivateInstancesByPhoneNumber(input.phoneNumber, input.merchantId);
+                    await deactivateInstancesByPhoneNumber(input.phoneNumber, input.merchantId);
                 }
             }
 
             const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
             await checkWhatsAppNumberLimit(input.merchantId);
 
-            const instance = await db.createWhatsAppInstance({
+            const instance = await createWhatsAppInstance({
                 merchantId: input.merchantId,
                 instanceId: input.instanceId,
                 token: input.token,
@@ -206,7 +223,7 @@ export const whatsappInstancesRouter = router({
             });
 
             if (input.isPrimary && instance) {
-                await db.setWhatsAppInstanceAsPrimary(instance.id, input.merchantId);
+                await setWhatsAppInstanceAsPrimary(instance.id, input.merchantId);
             }
 
             return instance;
@@ -228,17 +245,17 @@ export const whatsappInstancesRouter = router({
             })
         )
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const instance = await db.getWhatsAppInstanceById(input.id);
+            const instance = await getWhatsAppInstanceById(input.id);
             if (!instance || instance.merchantId !== input.merchantId) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
             }
 
-            await db.updateWhatsAppInstance(input.id, {
+            await updateWhatsAppInstance(input.id, {
                 instanceId: input.instanceId,
                 token: input.token,
                 apiUrl: input.apiUrl,
@@ -248,7 +265,7 @@ export const whatsappInstancesRouter = router({
                 expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
             });
 
-            return await db.getWhatsAppInstanceById(input.id);
+            return await getWhatsAppInstanceById(input.id);
         }),
 
     // Set as primary
@@ -260,17 +277,17 @@ export const whatsappInstancesRouter = router({
             })
         )
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const instance = await db.getWhatsAppInstanceById(input.id);
+            const instance = await getWhatsAppInstanceById(input.id);
             if (!instance || instance.merchantId !== input.merchantId) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
             }
 
-            await db.setWhatsAppInstanceAsPrimary(input.id, input.merchantId);
+            await setWhatsAppInstanceAsPrimary(input.id, input.merchantId);
             return { success: true };
         }),
 
@@ -283,24 +300,24 @@ export const whatsappInstancesRouter = router({
             })
         )
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const instance = await db.getWhatsAppInstanceById(input.id);
+            const instance = await getWhatsAppInstanceById(input.id);
             if (!instance || instance.merchantId !== input.merchantId) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
             }
 
             if (instance.isPrimary) {
-                const count = await db.getActiveWhatsAppInstancesCount(input.merchantId);
+                const count = await getActiveWhatsAppInstancesCount(input.merchantId);
                 if (count <= 1) {
                     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Cannot delete the only active instance' });
                 }
             }
 
-            await db.deleteWhatsAppInstance(input.id);
+            await deleteWhatsAppInstance(input.id);
             return { success: true };
         }),
 
@@ -315,7 +332,7 @@ export const whatsappInstancesRouter = router({
         )
         .mutation(async ({ input, ctx }) => {
             // SEC-P3-001: Verify caller has a merchant account
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Merchant not found' });
             }
@@ -374,12 +391,12 @@ export const whatsappInstancesRouter = router({
     getStats: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const instances = await db.getWhatsAppInstancesByMerchantId(input.merchantId);
+            const instances = await getWhatsAppInstancesByMerchantId(input.merchantId);
             const activeCount = instances.filter(i => i.status === 'active').length;
             const inactiveCount = instances.filter(i => i.status === 'inactive').length;
             const expiredCount = instances.filter(i => i.status === 'expired').length;
@@ -398,12 +415,12 @@ export const whatsappInstancesRouter = router({
     getExpiring: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const { expiring7Days, expiring3Days, expiring1Day, expired } = await db.getExpiringWhatsAppInstances();
+            const { expiring7Days, expiring3Days, expiring1Day, expired } = await getExpiringWhatsAppInstances();
 
             return {
                 expiring7Days: expiring7Days.filter(i => i.merchantId === input.merchantId),

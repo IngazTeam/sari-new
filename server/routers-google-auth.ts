@@ -5,7 +5,7 @@ import { TRPCError } from "@trpc/server";
 import { createSessionToken } from "./_core/auth";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";
-import * as db from "./db";
+import { updateUserLastSignedIn } from './db';
 
 export const googleAuthRouter = router({
   /**
@@ -43,7 +43,7 @@ export const googleAuthRouter = router({
         }
 
         // SEC-02 FIX: Create proper session token (matching routers-auth.ts login)
-        await db.updateUserLastSignedIn(user.id);
+        await updateUserLastSignedIn(user.id);
 
         const sessionToken = await createSessionToken(String(user.id), {
           name: user.name || '',

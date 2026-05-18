@@ -8,11 +8,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getUserById } from './db';
 
 export const trialRouter = router({
     getStatus: protectedProcedure.query(async ({ ctx }) => {
-        const user = await db.getUserById(ctx.user.id);
+        const user = await getUserById(ctx.user.id);
         if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
 
         return {
@@ -24,7 +24,7 @@ export const trialRouter = router({
     }),
 
     checkExpiry: protectedProcedure.query(async ({ ctx }) => {
-        const user = await db.getUserById(ctx.user.id);
+        const user = await getUserById(ctx.user.id);
         if (!user) throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
 
         if (user.isTrialActive === 1 && user.trialEndDate) {

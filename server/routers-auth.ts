@@ -13,7 +13,21 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { createSessionToken } from "./_core/auth";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { COOKIE_NAME, THIRTY_DAYS_MS } from "@shared/const";
-import * as db from "./db";
+import {
+  activateUserTrial,
+  createMerchant,
+  createPasswordResetToken,
+  createUser,
+  deletePasswordResetTokensByUserId,
+  getPool,
+  getUserByEmail,
+  getUserById,
+  markPasswordResetTokenAsUsed,
+  trackResetAttempt,
+  updateUser,
+  updateUserLastSignedIn,
+  validatePasswordResetToken,
+} from './db';
 
 // FIX #11: In-memory rate limiting for login
 const loginAttempts = new Map<string, { count: number; firstAttempt: number }>();
@@ -64,7 +78,7 @@ export const authRouter = router({
             const clientIp = ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown';
             checkLoginRateLimit(clientIp);
 
-            const user = await db.getUserByEmail(input.email);
+            const user = await getUserByEmail(input.email);
 
             if (!user || !user.password) {
                 console.warn(`[Auth] ❌ Failed login: email=${input.email} ip=${ctx.req.ip} reason=user_not_found`);
@@ -79,7 +93,7 @@ export const authRouter = router({
             }
 
             // Update last signed in
-            await db.updateUserLastSignedIn(user.id);
+            await updateUserLastSignedIn(user.id);
 
             // Create session token
             const sessionToken = await createSessionToken(String(user.id), {
@@ -131,7 +145,7 @@ export const authRouter = router({
             }
 
             // Check if email already exists (generic message to prevent enumeration)
-            const existingUser = await db.getUserByEmail(input.email);
+            const existingUser = await getUserByEmail(input.email);
             if (existingUser) {
                 console.warn(`[Auth] Signup attempt with existing email: ${input.email} ip=${ctx.req.ip}`);
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unable to create account. Please try again or use a different email.' });
@@ -145,7 +159,7 @@ export const authRouter = router({
             const openId = `local_${crypto.randomBytes(16).toString('hex')}`;
 
             // Create user
-            const user = await db.createUser({
+            const user = await createUser({
                 openId,
                 name: input.name,
                 email: input.email,
@@ -159,9 +173,9 @@ export const authRouter = router({
             }
 
             // Activate trial period (7 days)
-            await db.activateUserTrial(user.id);
+            await activateUserTrial(user.id);
 
-            const merchant = await db.createMerchant({
+            const merchant = await createMerchant({
                 userId: user.id,
                 businessName: input.businessName,
                 phone: input.phone || null,
@@ -175,7 +189,7 @@ export const authRouter = router({
                     const cleanDomain = input.domain.replace(/<[^>]*>/g, '').trim().substring(0, 255);
                     if (/^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(cleanDomain)) {
                         // SEC-AUTH-1: Verify no other merchant already owns this domain
-                        const pool = await db.getPool();
+                        const pool = await getPool();
                         if (pool) {
                             const [existing] = await pool.execute(
                                 `SELECT merchant_id FROM byaan_connections WHERE tenant_domain = ? AND is_active = 1 LIMIT 1`,
@@ -256,23 +270,23 @@ export const authRouter = router({
             }
 
             // Log attempt
-            await db.trackResetAttempt({ email: input.email, ipAddress: clientIp });
+            await trackResetAttempt({ email: input.email, ipAddress: clientIp });
 
-            const user = await db.getUserByEmail(input.email);
+            const user = await getUserByEmail(input.email);
             if (!user) {
                 // Don't reveal if email exists — return same message
                 return { success: true, message: 'إذا كان البريد مسجلاً، ستصلك رسالة بالتعليمات.' };
             }
 
             // Delete old tokens for this user
-            await db.deletePasswordResetTokensByUserId(user.id);
+            await deletePasswordResetTokensByUserId(user.id);
 
             // Generate reset token
             const crypto = await import('node:crypto');
             const token = crypto.randomBytes(32).toString('hex');
             const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-            await db.createPasswordResetToken({
+            await createPasswordResetToken({
                 userId: user.id,
                 email: input.email,
                 token,
@@ -321,7 +335,7 @@ export const authRouter = router({
                 .regex(/[0-9]/, 'يجب أن تحتوي على رقم'),
         }))
         .mutation(async ({ input }) => {
-            const validation = await db.validatePasswordResetToken(input.token);
+            const validation = await validatePasswordResetToken(input.token);
             if (!validation.valid || !validation.token) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
@@ -333,13 +347,13 @@ export const authRouter = router({
             const hashedPassword = await bcrypt.hash(input.newPassword, 10);
 
             // Update password
-            await db.updateUser(validation.token.userId, { password: hashedPassword });
+            await updateUser(validation.token.userId, { password: hashedPassword });
 
             // Mark token as used
-            await db.markPasswordResetTokenAsUsed(validation.token.id);
+            await markPasswordResetTokenAsUsed(validation.token.id);
 
             // Delete all tokens for this user (invalidate any other reset links)
-            await db.deletePasswordResetTokensByUserId(validation.token.userId);
+            await deletePasswordResetTokensByUserId(validation.token.userId);
 
             return { success: true, message: 'تم تغيير كلمة المرور بنجاح. يمكنك تسجيل الدخول الآن.' };
         }),
@@ -353,7 +367,7 @@ export const authRouter = router({
                 .regex(/[0-9]/, 'يجب أن تحتوي على رقم'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const user = await db.getUserById(ctx.user.id);
+            const user = await getUserById(ctx.user.id);
             if (!user || !user.password) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكن تغيير كلمة المرور لهذا الحساب.' });
             }
@@ -364,7 +378,7 @@ export const authRouter = router({
             }
 
             const hashedPassword = await bcrypt.hash(input.newPassword, 10);
-            await db.updateUser(ctx.user.id, { password: hashedPassword });
+            await updateUser(ctx.user.id, { password: hashedPassword });
 
             // Clear cookie to force re-login with new password (session invalidation)
             ctx.res.clearCookie(COOKIE_NAME);

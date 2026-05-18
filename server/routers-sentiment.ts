@@ -8,7 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getMerchantByUserId, getMerchantSentimentStats } from './db';
 
 export const sentimentRouter = router({
     // Get sentiment statistics
@@ -17,12 +17,12 @@ export const sentimentRouter = router({
             days: z.number().min(1).max(365).optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.getMerchantSentimentStats(merchant.id, input.days || 30);
+            return await getMerchantSentimentStats(merchant.id, input.days || 30);
         }),
 
     // Get sentiment distribution
@@ -31,12 +31,12 @@ export const sentimentRouter = router({
             days: z.number().min(1).max(365).optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const stats = await db.getMerchantSentimentStats(merchant.id, input.days || 30);
+            const stats = await getMerchantSentimentStats(merchant.id, input.days || 30);
             return {
                 positive: stats.positive,
                 negative: stats.negative,

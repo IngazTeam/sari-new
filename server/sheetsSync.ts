@@ -3,7 +3,17 @@
  * يحفظ الطلبات، العملاء المحتملين، والمحادثات تلقائياً
  */
 
-import * as db from './db';
+import {
+  createProduct,
+  getConversationById,
+  getGoogleIntegration,
+  getMerchantById,
+  getMessagesByConversationId,
+  getOrderById,
+  getProductsByMerchantId,
+  updateGoogleIntegration,
+  updateProduct,
+} from './db';
 import * as sheets from './_core/googleSheets';
 
 /**
@@ -15,7 +25,7 @@ export async function setupMerchantSpreadsheet(merchantId: number): Promise<{
   message: string;
 }> {
   try {
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant) {
       return { success: false, message: 'التاجر غير موجود' };
     }
@@ -106,13 +116,13 @@ export async function syncOrderToSheets(orderId: number): Promise<{
   message: string;
 }> {
   try {
-    const order = await db.getOrderById(orderId);
+    const order = await getOrderById(orderId);
     if (!order) {
       return { success: false, message: 'الطلب غير موجود' };
     }
 
     const merchantId = order.merchantId;
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
 
     if (!integration || !integration.isActive || !integration.sheetId) {
       return { success: false, message: 'Google Sheets غير مربوط' };
@@ -164,7 +174,7 @@ export async function syncOrderToSheets(orderId: number): Promise<{
 
     if (result.success) {
       // تحديث وقت آخر مزامنة
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         lastSync: new Date().toISOString(),
       });
     }
@@ -195,7 +205,7 @@ export async function syncLeadToSheets(
   }
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
 
     if (!integration || !integration.isActive || !integration.sheetId) {
       return { success: false, message: 'Google Sheets غير مربوط' };
@@ -225,7 +235,7 @@ export async function syncLeadToSheets(
     );
 
     if (result.success) {
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         lastSync: new Date().toISOString(),
       });
     }
@@ -248,7 +258,7 @@ export async function exportConversationsToSheets(
   conversationIds: number[]
 ): Promise<{ success: boolean; message: string }> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
 
     if (!integration || !integration.isActive || !integration.sheetId) {
       return { success: false, message: 'Google Sheets غير مربوط' };
@@ -260,10 +270,10 @@ export async function exportConversationsToSheets(
     const rows: any[][] = [];
 
     for (const conversationId of conversationIds) {
-      const conversation = await db.getConversationById(conversationId);
+      const conversation = await getConversationById(conversationId);
       if (!conversation) continue;
 
-      const messages = await db.getMessagesByConversationId(conversationId);
+      const messages = await getMessagesByConversationId(conversationId);
 
       for (const message of messages) {
         const messageDate = new Date(message.createdAt);
@@ -296,7 +306,7 @@ export async function exportConversationsToSheets(
     );
 
     if (result.success) {
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         lastSync: new Date().toISOString(),
       });
     }
@@ -319,7 +329,7 @@ export async function syncInventoryToSheets(merchantId: number): Promise<{
   message: string;
 }> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
 
     if (!integration || !integration.isActive || !integration.sheetId) {
       return { success: false, message: 'Google Sheets غير مربوط' };
@@ -328,7 +338,7 @@ export async function syncInventoryToSheets(merchantId: number): Promise<{
     const spreadsheetId = integration.sheetId;
 
     // جلب المنتجات
-    const products = await db.getProductsByMerchantId(merchantId);
+    const products = await getProductsByMerchantId(merchantId);
 
     if (products.length === 0) {
       return { success: false, message: 'لا توجد منتجات للمزامنة' };
@@ -354,7 +364,7 @@ export async function syncInventoryToSheets(merchantId: number): Promise<{
     );
 
     if (result.success) {
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         lastSync: new Date().toISOString(),
       });
     }
@@ -378,7 +388,7 @@ export async function updateInventoryFromSheets(merchantId: number): Promise<{
   message: string;
 }> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
 
     if (!integration || !integration.isActive || !integration.sheetId) {
       return { success: false, updatedCount: 0, message: 'Google Sheets غير مربوط' };
@@ -411,7 +421,7 @@ export async function updateInventoryFromSheets(merchantId: number): Promise<{
       if (isNaN(productId) || isNaN(stock)) continue;
 
       try {
-        await db.updateProduct(productId, { stock });
+        await updateProduct(productId, { stock });
         updatedCount++;
       } catch (error) {
         console.error(`[Sheets Sync] Error updating product ${productId}:`, error);
@@ -419,7 +429,7 @@ export async function updateInventoryFromSheets(merchantId: number): Promise<{
     }
 
     if (updatedCount > 0) {
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         lastSync: new Date().toISOString(),
       });
     }
@@ -482,7 +492,7 @@ export async function syncProductsFromSheets(merchantId: number): Promise<{
   message: string;
 }> {
   try {
-    const integration = await db.getGoogleIntegration(merchantId, 'sheets');
+    const integration = await getGoogleIntegration(merchantId, 'sheets');
 
     if (!integration || !integration.isActive || !integration.sheetId) {
       return { success: false, created: 0, updated: 0, message: 'Google Sheets غير مربوط' };
@@ -511,7 +521,7 @@ export async function syncProductsFromSheets(merchantId: number): Promise<{
     }
 
     // Get existing products for duplicate detection
-    const existingProducts = await db.getProductsByMerchantId(merchantId);
+    const existingProducts = await getProductsByMerchantId(merchantId);
     const existing = new Map(existingProducts.map(p => [p.name.toLowerCase().trim(), p.id]));
 
     let created = 0;
@@ -542,10 +552,10 @@ export async function syncProductsFromSheets(merchantId: number): Promise<{
 
       try {
         if (existingId) {
-          await db.updateProduct(existingId, data);
+          await updateProduct(existingId, data);
           updated++;
         } else {
-          await db.createProduct({ merchantId, ...data });
+          await createProduct({ merchantId, ...data });
           created++;
         }
       } catch (error) {
@@ -555,7 +565,7 @@ export async function syncProductsFromSheets(merchantId: number): Promise<{
 
     // Update last sync time
     if (created > 0 || updated > 0) {
-      await db.updateGoogleIntegration(integration.id, {
+      await updateGoogleIntegration(integration.id, {
         lastSync: new Date().toISOString(),
       });
     }

@@ -8,7 +8,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getMerchantByUserId,
+  getMessageStats,
+  getPeakHours,
+  getTopProducts,
+} from './db';
 
 export const messageAnalyticsRouter = router({
     // Message statistics
@@ -18,7 +23,7 @@ export const messageAnalyticsRouter = router({
             endDate: z.string().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -26,7 +31,7 @@ export const messageAnalyticsRouter = router({
             const startDate = input.startDate ? new Date(input.startDate) : undefined;
             const endDate = input.endDate ? new Date(input.endDate) : undefined;
 
-            return db.getMessageStats(merchant.id, startDate, endDate);
+            return getMessageStats(merchant.id, startDate, endDate);
         }),
 
     // Peak hours
@@ -36,7 +41,7 @@ export const messageAnalyticsRouter = router({
             endDate: z.string().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
@@ -44,7 +49,7 @@ export const messageAnalyticsRouter = router({
             const startDate = input.startDate ? new Date(input.startDate) : undefined;
             const endDate = input.endDate ? new Date(input.endDate) : undefined;
 
-            return db.getPeakHours(merchant.id, startDate, endDate);
+            return getPeakHours(merchant.id, startDate, endDate);
         }),
 
     // Top products by inquiries
@@ -53,12 +58,12 @@ export const messageAnalyticsRouter = router({
             limit: z.number().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }
 
-            return db.getTopProducts(merchant.id, input.limit || 10);
+            return getTopProducts(merchant.id, input.limit || 10);
         }),
 });
 

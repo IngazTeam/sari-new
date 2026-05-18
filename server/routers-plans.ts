@@ -8,7 +8,15 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createPlan,
+  createPlanChangeLog,
+  getAllPlanChangeLogs,
+  getAllPlans,
+  getPlanById,
+  getPlanChangeLogs,
+  updatePlan,
+} from './db';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -21,14 +29,14 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 export const plansRouter = router({
     // Get all active plans
     list: publicProcedure.query(async () => {
-        return db.getAllPlans();
+        return getAllPlans();
     }),
 
     // Get plan by ID
     getById: publicProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ input }) => {
-            return await db.getPlanById(input.id);
+            return await getPlanById(input.id);
         }),
 
     // Create plan (Admin only)
@@ -42,7 +50,7 @@ export const plansRouter = router({
             features: z.string(),
         }))
         .mutation(async ({ input }) => {
-            return db.createPlan(input);
+            return createPlan(input);
         }),
 
     // Update plan (Admin only)
@@ -60,12 +68,12 @@ export const plansRouter = router({
         .mutation(async ({ input, ctx }) => {
             const { id, ...updateData } = input;
 
-            const oldPlan = await db.getPlanById(id);
+            const oldPlan = await getPlanById(id);
             if (!oldPlan) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
             }
 
-            await db.updatePlan(id, updateData);
+            await updatePlan(id, updateData);
 
             // Log changes
             const changedBy = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
@@ -91,7 +99,7 @@ export const plansRouter = router({
             }
 
             for (const change of changes) {
-                await db.createPlanChangeLog({
+                await createPlanChangeLog({
                     planId: id,
                     changedBy,
                     fieldName: change.field,
@@ -108,9 +116,9 @@ export const plansRouter = router({
         .input(z.object({ planId: z.number().optional() }))
         .query(async ({ input }) => {
             if (input.planId) {
-                return db.getPlanChangeLogs(input.planId);
+                return getPlanChangeLogs(input.planId);
             }
-            return db.getAllPlanChangeLogs();
+            return getAllPlanChangeLogs();
         }),
 });
 

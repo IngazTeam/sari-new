@@ -8,7 +8,15 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  cancelOrder,
+  getMerchantById,
+  getOrderById,
+  getOrderStats,
+  getOrdersByMerchantId,
+  getOrdersWithFilters,
+  updateOrderStatus,
+} from './db';
 
 export const ordersRouter = router({
     // Create order from chat
@@ -20,7 +28,7 @@ export const ordersRouter = router({
             message: z.string(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -49,7 +57,7 @@ export const ordersRouter = router({
                 });
             }
 
-            const order = await db.getOrderById(result.orderId);
+            const order = await getOrderById(result.orderId);
             if (!order) {
                 throw new TRPCError({ code: 'NOT_FOUND' });
             }
@@ -100,12 +108,12 @@ export const ordersRouter = router({
     getById: protectedProcedure
         .input(z.object({ orderId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const order = await db.getOrderById(input.orderId);
+            const order = await getOrderById(input.orderId);
             if (!order) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'الطلب غير موجود' });
             }
 
-            const merchant = await db.getMerchantById(order.merchantId);
+            const merchant = await getMerchantById(order.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -117,12 +125,12 @@ export const ordersRouter = router({
     listByMerchant: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.getOrdersByMerchantId(input.merchantId);
+            return await getOrdersByMerchantId(input.merchantId);
         }),
 
     // Get orders with filters
@@ -137,7 +145,7 @@ export const ordersRouter = router({
             page: z.number().min(1).optional().default(1),
         }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -150,19 +158,19 @@ export const ordersRouter = router({
             filters.limit = input.limit;
             filters.offset = (input.page - 1) * input.limit;
 
-            return await db.getOrdersWithFilters(input.merchantId, filters);
+            return await getOrdersWithFilters(input.merchantId, filters);
         }),
 
     // Get order statistics
     getStats: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.getOrderStats(input.merchantId);
+            return await getOrderStats(input.merchantId);
         }),
 
     // Cancel order
@@ -172,17 +180,17 @@ export const ordersRouter = router({
             reason: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const order = await db.getOrderById(input.orderId);
+            const order = await getOrderById(input.orderId);
             if (!order) {
                 throw new TRPCError({ code: 'NOT_FOUND' });
             }
 
-            const merchant = await db.getMerchantById(order.merchantId);
+            const merchant = await getMerchantById(order.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.cancelOrder(input.orderId, input.reason);
+            await cancelOrder(input.orderId, input.reason);
 
             return { success: true, message: 'تم إلغاء الطلب' };
         }),
@@ -195,17 +203,17 @@ export const ordersRouter = router({
             trackingNumber: z.string().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const order = await db.getOrderById(input.orderId);
+            const order = await getOrderById(input.orderId);
             if (!order) {
                 throw new TRPCError({ code: 'NOT_FOUND' });
             }
 
-            const merchant = await db.getMerchantById(order.merchantId);
+            const merchant = await getMerchantById(order.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.updateOrderStatus(input.orderId, input.status, input.trackingNumber);
+            await updateOrderStatus(input.orderId, input.status, input.trackingNumber);
 
             // FIX #9: Wrap notification in try/catch so notification error doesn't break order update
             try {

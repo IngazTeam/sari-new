@@ -8,7 +8,15 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, adminProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getMerchantById,
+  getTrySariAnalyticsBySessionId,
+  getTrySariStats,
+  incrementTrySariMessageCount,
+  markSignupPromptShown,
+  markTrySariConverted,
+  upsertTrySariAnalytics,
+} from './db';
 
 export const publicSariRouter = router({
     // Send a message and get AI response (public, no auth)
@@ -35,15 +43,15 @@ export const publicSariRouter = router({
                 throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'وصلت للحد الأقصى من الرسائل في هذه الجلسة. سجل حساب لتجربة كاملة!' });
             }
 
-            const demoMerchant = await db.getMerchantById(1);
+            const demoMerchant = await getMerchantById(1);
 
             if (!demoMerchant) {
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Demo merchant not configured' });
             }
 
-            const session = await db.getTrySariAnalyticsBySessionId(input.sessionId);
+            const session = await getTrySariAnalyticsBySessionId(input.sessionId);
             if (!session) {
-                await db.upsertTrySariAnalytics({
+                await upsertTrySariAnalytics({
                     sessionId: input.sessionId,
                     messageCount: 1,
                     exampleUsed: input.exampleUsed,
@@ -51,10 +59,10 @@ export const publicSariRouter = router({
                     userAgent: input.userAgent,
                 });
             } else {
-                await db.incrementTrySariMessageCount(input.sessionId);
+                await incrementTrySariMessageCount(input.sessionId);
 
                 if (input.exampleUsed && !session.exampleUsed) {
-                    await db.upsertTrySariAnalytics({
+                    await upsertTrySariAnalytics({
                         sessionId: input.sessionId,
                         exampleUsed: input.exampleUsed,
                     });
@@ -83,7 +91,7 @@ export const publicSariRouter = router({
             const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
             const check = checkRateLimit(`track_prompt:${clientIp}`, 30, 60000);
             if (!check.allowed) return { success: true }; // Silent drop
-            await db.markSignupPromptShown(input.sessionId);
+            await markSignupPromptShown(input.sessionId);
             return { success: true };
         }),
 
@@ -97,13 +105,13 @@ export const publicSariRouter = router({
             const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
             const check = checkRateLimit(`track_convert:${clientIp}`, 30, 60000);
             if (!check.allowed) return { success: true }; // Silent drop
-            await db.markTrySariConverted(input.sessionId);
+            await markTrySariConverted(input.sessionId);
             return { success: true };
         }),
 
     // Get demo stats — SEC-09 FIX: Use proper adminProcedure
     getDemoStats: adminProcedure.query(async () => {
-        return await db.getTrySariStats();
+        return await getTrySariStats();
     }),
 });
 

@@ -8,21 +8,27 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, adminProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createSubscription,
+  getActiveSubscriptionByMerchantId,
+  getMerchantByUserId,
+  getPlanById,
+  updateSubscription,
+} from './db';
 
 export const subscriptionsRouter = router({
     // Get current subscription
     getCurrent: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             return null;
         }
-        return db.getActiveSubscriptionByMerchantId(merchant.id);
+        return getActiveSubscriptionByMerchantId(merchant.id);
     }),
 
     // Get usage statistics
     getUsage: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
@@ -43,17 +49,17 @@ export const subscriptionsRouter = router({
             planId: z.number(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const plan = await db.getPlanById(input.planId);
+            const plan = await getPlanById(input.planId);
             if (!plan) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
             }
 
-            const existing = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            const existing = await getActiveSubscriptionByMerchantId(merchant.id);
             if (existing) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Active subscription already exists' });
             }
@@ -62,7 +68,7 @@ export const subscriptionsRouter = router({
             const endDate = new Date();
             endDate.setMonth(endDate.getMonth() + 1);
 
-            const subscription = await db.createSubscription({
+            const subscription = await createSubscription({
                 merchantId: merchant.id,
                 planId: input.planId,
                 status: 'active', // FIX #6: was 'pending' with no activation path
@@ -79,17 +85,17 @@ export const subscriptionsRouter = router({
     // FIX #15: Cancel subscription
     cancel: protectedProcedure
         .mutation(async ({ ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
             if (!subscription) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
             }
 
-            await db.updateSubscription(subscription.id, {
+            await updateSubscription(subscription.id, {
                 status: 'cancelled',
                 autoRenew: false,
             });
@@ -101,22 +107,22 @@ export const subscriptionsRouter = router({
     changePlan: adminProcedure
         .input(z.object({ planId: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const plan = await db.getPlanById(input.planId);
+            const plan = await getPlanById(input.planId);
             if (!plan) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
             }
 
-            const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+            const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
             if (!subscription) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'No active subscription found' });
             }
 
-            await db.updateSubscription(subscription.id, {
+            await updateSubscription(subscription.id, {
                 planId: input.planId,
             });
 

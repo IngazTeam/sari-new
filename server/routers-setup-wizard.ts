@@ -8,29 +8,43 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  completeSetupWizard,
+  createProduct,
+  createService,
+  createSetupWizardProgress,
+  deleteAllProductsByMerchantId,
+  getBusinessTemplateById,
+  getBusinessTemplatesWithTranslations,
+  getMerchantByUserId,
+  getSetupWizardProgress,
+  incrementTemplateUsage,
+  updateBotSettings,
+  updateMerchant,
+  updateSetupWizardProgress,
+} from './db';
 
 export const setupWizardRouter = router({
     // Get wizard progress
     getProgress: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        let progress = await db.getSetupWizardProgress(merchant.id);
+        let progress = await getSetupWizardProgress(merchant.id);
         if (!progress) {
             // Seed wizard data with info already provided during signup
             const initialData = JSON.stringify({
                 businessName: merchant.businessName || '',
                 phone: merchant.phone || '',
             });
-            const progressId = await db.createSetupWizardProgress({
+            const progressId = await createSetupWizardProgress({
                 merchantId: merchant.id,
                 currentStep: 1,
                 completedSteps: JSON.stringify([]),
                 wizardData: initialData,
                 isCompleted: 0,
             });
-            progress = await db.getSetupWizardProgress(merchant.id);
+            progress = await getSetupWizardProgress(merchant.id);
         }
         return progress;
     }),
@@ -43,7 +57,7 @@ export const setupWizardRouter = router({
             wizardData: z.record(z.string(), z.any()),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             // SEC-W3: Validate wizardData size to prevent JSON bomb / memory exhaustion
@@ -52,7 +66,7 @@ export const setupWizardRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'بيانات الويزرد كبيرة جداً.' });
             }
 
-            await db.updateSetupWizardProgress(merchant.id, {
+            await updateSetupWizardProgress(merchant.id, {
                 currentStep: input.currentStep,
                 completedSteps: JSON.stringify(input.completedSteps),
                 wizardData: serializedData,
@@ -76,13 +90,13 @@ export const setupWizardRouter = router({
         }))
         .mutation(async ({ ctx, input }) => {
             console.log(`[Wizard saveProducts] Called with ${input.products.length} products`);
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             console.log(`[Wizard saveProducts] Merchant ID: ${merchant.id}`);
 
             // Delete existing products (avoid duplicates if user re-runs wizard)
-            await db.deleteAllProductsByMerchantId(merchant.id);
+            await deleteAllProductsByMerchantId(merchant.id);
             console.log(`[Wizard saveProducts] Deleted old products for merchant ${merchant.id}`);
 
             // Save new products
@@ -90,7 +104,7 @@ export const setupWizardRouter = router({
             for (const product of input.products) {
                 if (!product.name.trim()) continue;
                 try {
-                    await db.createProduct({
+                    await createProduct({
                         merchantId: merchant.id,
                         name: product.name,
                         description: product.description || '',
@@ -139,10 +153,10 @@ export const setupWizardRouter = router({
             })).optional().default([]),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            await db.updateMerchant(merchant.id, {
+            await updateMerchant(merchant.id, {
                 businessType: input.businessType,
                 businessName: input.businessName,
                 phone: input.phone,
@@ -153,7 +167,7 @@ export const setupWizardRouter = router({
             });
 
             if (input.botTone || input.botLanguage || input.welcomeMessage) {
-                await db.updateBotSettings(merchant.id, {
+                await updateBotSettings(merchant.id, {
                     tone: input.botTone,
                     language: input.botLanguage,
                     welcomeMessage: input.welcomeMessage,
@@ -166,9 +180,9 @@ export const setupWizardRouter = router({
             if (input.products && input.products.length > 0) {
                 const validProducts = input.products.filter(p => p.name.trim());
                 if (validProducts.length > 0) {
-                    await db.deleteAllProductsByMerchantId(merchant.id);
+                    await deleteAllProductsByMerchantId(merchant.id);
                     for (const product of validProducts) {
-                        await db.createProduct({
+                        await createProduct({
                             merchantId: merchant.id,
                             name: product.name,
                             description: product.description || '',
@@ -189,7 +203,7 @@ export const setupWizardRouter = router({
             if (input.services && input.services.length > 0) {
                 for (const service of input.services) {
                     if (!service.name.trim()) continue;
-                    await db.createService({
+                    await createService({
                         merchantId: merchant.id,
                         name: service.name,
                         description: service.description || '',
@@ -200,7 +214,7 @@ export const setupWizardRouter = router({
                 }
             }
 
-            await db.completeSetupWizard(merchant.id);
+            await completeSetupWizard(merchant.id);
 
             return { success: true };
         }),
@@ -212,7 +226,7 @@ export const setupWizardRouter = router({
             language: z.enum(['ar', 'en']).optional(),
         }))
         .query(async ({ input }) => {
-            return await db.getBusinessTemplatesWithTranslations(input.language, input.businessType);
+            return await getBusinessTemplatesWithTranslations(input.language, input.businessType);
         }),
 
     // Apply template
@@ -221,10 +235,10 @@ export const setupWizardRouter = router({
             templateId: z.number(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const template = await db.getBusinessTemplateById(input.templateId);
+            const template = await getBusinessTemplateById(input.templateId);
             if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
 
             const services = template.services ? JSON.parse(template.services) : [];
@@ -233,38 +247,38 @@ export const setupWizardRouter = router({
             const botPersonality = template.bot_personality ? JSON.parse(template.bot_personality) : {};
 
             // Clear existing products/services before applying template
-            await db.deleteAllProductsByMerchantId(merchant.id);
+            await deleteAllProductsByMerchantId(merchant.id);
 
             for (const service of services) {
-                await db.createService({
+                await createService({
                     merchantId: merchant.id,
                     ...service,
                 });
             }
 
             for (const product of products) {
-                await db.createProduct({
+                await createProduct({
                     merchantId: merchant.id,
                     ...product,
                 });
             }
 
-            await db.updateMerchant(merchant.id, {
+            await updateMerchant(merchant.id, {
                 workingHours: JSON.stringify(workingHours),
             });
 
-            await db.updateBotSettings(merchant.id, botPersonality);
-            await db.incrementTemplateUsage(input.templateId);
+            await updateBotSettings(merchant.id, botPersonality);
+            await incrementTemplateUsage(input.templateId);
 
             return { success: true };
         }),
 
     // Reset wizard
     resetWizard: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        await db.updateSetupWizardProgress(merchant.id, {
+        await updateSetupWizardProgress(merchant.id, {
             currentStep: 1,
             completedSteps: JSON.stringify([]),
             wizardData: JSON.stringify({}),

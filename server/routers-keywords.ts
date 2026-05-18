@@ -8,7 +8,14 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  deleteKeywordAnalysis,
+  getKeywordAnalysisById,
+  getKeywordStats,
+  getMerchantByUserId,
+  getNewKeywords,
+  updateKeywordStatus,
+} from './db';
 
 export const keywordsRouter = router({
     // Get keyword statistics
@@ -20,12 +27,12 @@ export const keywordsRouter = router({
             limit: z.number().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.getKeywordStats(merchant.id, input);
+            return await getKeywordStats(merchant.id, input);
         }),
 
     // Get new keywords that need review
@@ -34,23 +41,23 @@ export const keywordsRouter = router({
             limit: z.number().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            return await db.getNewKeywords(merchant.id, input.limit || 20);
+            return await getNewKeywords(merchant.id, input.limit || 20);
         }),
 
     // Get suggested responses based on frequent questions
     getSuggested: protectedProcedure
         .query(async ({ ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const keywords = await db.getKeywordStats(merchant.id, {
+            const keywords = await getKeywordStats(merchant.id, {
                 status: 'new',
                 minFrequency: 3,
                 limit: 10,
@@ -82,18 +89,18 @@ export const keywordsRouter = router({
             status: z.enum(['new', 'reviewed', 'response_created', 'ignored']),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
             // SECURITY: Verify keyword belongs to this merchant
-            const keyword = await db.getKeywordAnalysisById(input.keywordId);
+            const keyword = await getKeywordAnalysisById(input.keywordId);
             if (!keyword || keyword.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.updateKeywordStatus(input.keywordId, input.status);
+            await updateKeywordStatus(input.keywordId, input.status);
             return { success: true };
         }),
 
@@ -103,18 +110,18 @@ export const keywordsRouter = router({
             keywordId: z.number(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
             // SECURITY: Verify keyword belongs to this merchant
-            const keyword = await db.getKeywordAnalysisById(input.keywordId);
+            const keyword = await getKeywordAnalysisById(input.keywordId);
             if (!keyword || keyword.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.deleteKeywordAnalysis(input.keywordId);
+            await deleteKeywordAnalysis(input.keywordId);
             return { success: true };
         }),
 });

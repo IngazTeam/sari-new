@@ -1,4 +1,4 @@
-import * as db from './db';
+// Sitemap Generator - static pages only, no DB dependency
 
 // ─── Dynamic Domain ─────────────────────────────
 // Uses VITE_APP_URL or falls back to sary.live

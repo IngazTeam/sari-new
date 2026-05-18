@@ -1,7 +1,18 @@
 import { z } from 'zod';
 import { publicProcedure, router, protectedProcedure } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
-import * as db from './db';
+import {
+  createLimitedTimeOffer,
+  createSignupPromptVariant,
+  getActiveLimitedTimeOffers,
+  getActiveSignupPromptVariants,
+  getRandomSignupPromptVariant,
+  getSignupPromptTestStats,
+  recordSignupPromptTestResult,
+  updateLimitedTimeOffer,
+  updateSignupPromptTestResult,
+  updateSignupPromptVariant,
+} from './db';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -16,7 +27,7 @@ export const offersRouter = router({
   offers: router({
     // Get active limited time offers
     getActive: publicProcedure.query(async () => {
-      return await db.getActiveLimitedTimeOffers();
+      return await getActiveLimitedTimeOffers();
     }),
     
     // Create new offer (admin only)
@@ -31,7 +42,7 @@ export const offersRouter = router({
         durationMinutes: z.number().min(1),
       }))
       .mutation(async ({ input }) => {
-        return await db.createLimitedTimeOffer(input);
+        return await createLimitedTimeOffer(input);
       }),
     
     // Update offer (admin only)
@@ -49,7 +60,7 @@ export const offersRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        return await db.updateLimitedTimeOffer(id, data);
+        return await updateLimitedTimeOffer(id, data);
       }),
   }),
   
@@ -57,12 +68,12 @@ export const offersRouter = router({
   signupPrompt: router({
     // Get active variants
     getVariants: publicProcedure.query(async () => {
-      return await db.getActiveSignupPromptVariants();
+      return await getActiveSignupPromptVariants();
     }),
     
     // Get random variant for AB test
     getRandomVariant: publicProcedure.query(async () => {
-      return await db.getRandomSignupPromptVariant();
+      return await getRandomSignupPromptVariant();
     }),
     
     // Record test result — SEC-03: Add rate limiting to prevent DB flooding
@@ -82,7 +93,7 @@ export const offersRouter = router({
         if (!check.allowed) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'Too many requests' });
         }
-        return await db.recordSignupPromptTestResult(input);
+        return await recordSignupPromptTestResult(input);
       }),
     
     // Update test result — SEC-03 FIX: Changed from publicProcedure to protectedProcedure
@@ -97,7 +108,7 @@ export const offersRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        return await db.updateSignupPromptTestResult(id, data);
+        return await updateSignupPromptTestResult(id, data);
       }),
     
     // Get test stats (admin only)
@@ -106,7 +117,7 @@ export const offersRouter = router({
         days: z.number().min(1).max(365).optional(),
       }))
       .query(async ({ input }) => {
-        return await db.getSignupPromptTestStats(input.days || 30);
+        return await getSignupPromptTestStats(input.days || 30);
       }),
     
     // Create variant (admin only)
@@ -121,7 +132,7 @@ export const offersRouter = router({
         messageThreshold: z.number().min(1),
       }))
       .mutation(async ({ input }) => {
-        return await db.createSignupPromptVariant(input);
+        return await createSignupPromptVariant(input);
       }),
     
     // Update variant (admin only)
@@ -138,7 +149,7 @@ export const offersRouter = router({
       }))
       .mutation(async ({ input }) => {
         const { id, ...data } = input;
-        return await db.updateSignupPromptVariant(id, data);
+        return await updateSignupPromptVariant(id, data);
       }),
   }),
 });

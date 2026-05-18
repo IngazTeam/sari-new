@@ -8,7 +8,15 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createStaffMember,
+  deleteStaffMember,
+  getActiveStaffByMerchant,
+  getMerchantByUserId,
+  getStaffMemberById,
+  getStaffMembersByMerchant,
+  updateStaffMember,
+} from './db';
 
 export const staffRouter = router({
     // Create staff member
@@ -25,10 +33,10 @@ export const staffRouter = router({
             googleCalendarId: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const staffId = await db.createStaffMember({
+            const staffId = await createStaffMember({
                 merchantId: merchant.id,
                 name: input.name,
                 phone: input.phone,
@@ -48,12 +56,12 @@ export const staffRouter = router({
             activeOnly: z.boolean().optional(),
         }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const staff = input.activeOnly
-                ? await db.getActiveStaffByMerchant(merchant.id)
-                : await db.getStaffMembersByMerchant(merchant.id);
+                ? await getActiveStaffByMerchant(merchant.id)
+                : await getStaffMembersByMerchant(merchant.id);
 
             return { staff };
         }),
@@ -62,10 +70,10 @@ export const staffRouter = router({
     getById: protectedProcedure
         .input(z.object({ staffId: z.number() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const staff = await db.getStaffMemberById(input.staffId);
+            const staff = await getStaffMemberById(input.staffId);
             if (!staff || staff.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
             }
@@ -89,10 +97,10 @@ export const staffRouter = router({
             isActive: z.boolean().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const staff = await db.getStaffMemberById(input.staffId);
+            const staff = await getStaffMemberById(input.staffId);
             if (!staff || staff.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
             }
@@ -106,7 +114,7 @@ export const staffRouter = router({
             if (input.googleCalendarId !== undefined) updateData.googleCalendarId = input.googleCalendarId;
             if (input.isActive !== undefined) updateData.isActive = input.isActive ? 1 : 0;
 
-            await db.updateStaffMember(input.staffId, updateData);
+            await updateStaffMember(input.staffId, updateData);
 
             return { success: true };
         }),
@@ -115,15 +123,15 @@ export const staffRouter = router({
     delete: protectedProcedure
         .input(z.object({ staffId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const staff = await db.getStaffMemberById(input.staffId);
+            const staff = await getStaffMemberById(input.staffId);
             if (!staff || staff.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Staff member not found' });
             }
 
-            await db.deleteStaffMember(input.staffId);
+            await deleteStaffMember(input.staffId);
 
             return { success: true };
         }),

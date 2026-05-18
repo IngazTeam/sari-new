@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { router, protectedProcedure } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
 import { invokeLLM } from './_core/llm';
-import * as db from './db';
+import { getMerchantByUserId } from './db';
 
 // نظام اقتراحات الذكاء الاصطناعي للردود
 export const aiSuggestionsRouter = router({
@@ -29,7 +29,7 @@ export const aiSuggestionsRouter = router({
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
@@ -162,7 +162,7 @@ ${conversationContext}
       })).max(5),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }

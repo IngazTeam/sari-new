@@ -3,7 +3,7 @@
  */
 
 import cron from 'node-cron';
-import * as db from './db';
+import { getAllMerchants, getGoogleIntegration } from './db';
 import {
   generateDailyReport,
   generateWeeklyReport,
@@ -21,10 +21,10 @@ export function startDailyReportsCron() {
 
     try {
       // جلب جميع التجار الذين لديهم Google Sheets مربوط
-      const merchants = await db.getAllMerchants();
+      const merchants = await getAllMerchants();
 
       for (const merchant of merchants) {
-        const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+        const integration = await getGoogleIntegration(merchant.id, 'sheets');
 
         if (!integration || !integration.isActive) {
           continue;
@@ -62,10 +62,10 @@ export function startWeeklyReportsCron() {
     console.log('[Sheets Cron] Running weekly reports...');
 
     try {
-      const merchants = await db.getAllMerchants();
+      const merchants = await getAllMerchants();
 
       for (const merchant of merchants) {
-        const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+        const integration = await getGoogleIntegration(merchant.id, 'sheets');
 
         if (!integration || !integration.isActive) {
           continue;
@@ -111,10 +111,10 @@ export function startMonthlyReportsCron() {
         return;
       }
 
-      const merchants = await db.getAllMerchants();
+      const merchants = await getAllMerchants();
 
       for (const merchant of merchants) {
-        const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+        const integration = await getGoogleIntegration(merchant.id, 'sheets');
 
         if (!integration || !integration.isActive) {
           continue;
@@ -162,10 +162,10 @@ export function startProductAutoSyncCron() {
     console.log('[Sheets Cron] Running product auto-sync...');
 
     try {
-      const merchants = await db.getAllMerchants();
+      const merchants = await getAllMerchants();
 
       for (const merchant of merchants) {
-        const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+        const integration = await getGoogleIntegration(merchant.id, 'sheets');
 
         if (!integration || !integration.isActive || !integration.sheetId) {
           continue;

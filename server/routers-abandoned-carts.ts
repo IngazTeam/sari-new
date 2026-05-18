@@ -8,26 +8,31 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  getAbandonedCartById,
+  getAbandonedCartsByMerchantId,
+  getMerchantById,
+  markAbandonedCartRecovered,
+} from './db';
 
 export const abandonedCartsRouter = router({
     // List abandoned carts for merchant
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.getAbandonedCartsByMerchantId(input.merchantId);
+            return await getAbandonedCartsByMerchantId(input.merchantId);
         }),
 
     // Get statistics
     getStats: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -40,29 +45,29 @@ export const abandonedCartsRouter = router({
     markRecovered: protectedProcedure
         .input(z.object({ cartId: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const cart = await db.getAbandonedCartById(input.cartId);
+            const cart = await getAbandonedCartById(input.cartId);
             if (!cart) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Cart not found' });
             }
 
-            const merchant = await db.getMerchantById(cart.merchantId);
+            const merchant = await getMerchantById(cart.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await db.markAbandonedCartRecovered(input.cartId);
+            return await markAbandonedCartRecovered(input.cartId);
         }),
 
     // Send reminder manually
     sendReminder: protectedProcedure
         .input(z.object({ cartId: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const cart = await db.getAbandonedCartById(input.cartId);
+            const cart = await getAbandonedCartById(input.cartId);
             if (!cart) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Cart not found' });
             }
 
-            const merchant = await db.getMerchantById(cart.merchantId);
+            const merchant = await getMerchantById(cart.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }

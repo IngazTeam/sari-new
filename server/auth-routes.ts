@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import * as db from './db';
+import {
+  getMerchantById,
+  getMerchantByUserId,
+  getPool,
+  getUserByEmail,
+  getUserById,
+  updateUserLastSignedIn,
+} from './db';
 import { createSessionToken, verifySession } from './_core/auth';
 import { THIRTY_DAYS_MS, COOKIE_NAME } from '@shared/const';
 import { getSessionCookieOptions } from './_core/cookies';
@@ -29,7 +36,7 @@ router.post('/login', async (req, res) => {
     // Check if database is available
     let user;
     try {
-      user = await db.getUserByEmail(email);
+      user = await getUserByEmail(email);
     } catch (dbError: any) {
       console.error('🔴 [AUTH] Database error:', dbError);
       return res.status(503).json({
@@ -69,7 +76,7 @@ router.post('/login', async (req, res) => {
 
     // Update last signed in
     try {
-      await db.updateUserLastSignedIn(user.id);
+      await updateUserLastSignedIn(user.id);
     } catch (updateError) {
       console.warn('🟡 [AUTH] Failed to update last signed in:', updateError);
       // Continue login even if this fails
@@ -102,7 +109,7 @@ router.post('/login', async (req, res) => {
     const { domain, platform } = req.body;
     if (platform === 'byaan' && domain && typeof domain === 'string') {
       try {
-        const merchant = await db.getMerchantByUserId(user.id);
+        const merchant = await getMerchantByUserId(user.id);
         if (merchant) {
           const { createByaanConnection, getByaanConnection } = await import('./integrations/byaan');
           const cleanDomain = domain.replace(/<[^>]*>/g, '').trim().substring(0, 255);
@@ -117,7 +124,7 @@ router.post('/login', async (req, res) => {
               console.warn(`[Auth] Byaan link blocked: merchant=${merchant.id} already linked to ${existingConnection.tenant_domain}, tried ${cleanDomain}`);
             } else {
               // SEC-AUTH-1: Verify no OTHER merchant owns this domain
-              const pool = await db.getPool();
+              const pool = await getPool();
               if (pool) {
                 const [existing] = await pool.execute(
                   `SELECT merchant_id FROM byaan_connections WHERE tenant_domain = ? AND is_active = 1 LIMIT 1`,
@@ -175,7 +182,7 @@ router.post('/verify', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const user = await db.getUserById(session.userId);
+    const user = await getUserById(session.userId);
 
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
@@ -218,7 +225,7 @@ router.get('/oauth/google/calendar/callback', async (req, res) => {
     if (!session) {
       return res.status(401).send('Authentication required');
     }
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant || merchant.userId !== Number(session.userId)) {
       return res.status(403).send('Access denied');
     }
@@ -261,7 +268,7 @@ router.get('/oauth/google/sheets/callback', async (req, res) => {
     if (!session) {
       return res.status(401).send('Authentication required');
     }
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant || merchant.userId !== Number(session.userId)) {
       return res.status(403).send('Access denied');
     }

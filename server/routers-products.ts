@@ -8,7 +8,20 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createKnowledgeDoc,
+  createProduct,
+  deleteProduct,
+  getGoogleIntegration,
+  getKnowledgeDocByMerchantId,
+  getMerchantByUserId,
+  getProductById,
+  getProductCountByMerchantId,
+  getProductsByMerchantId,
+  updateGoogleIntegration,
+  updateKnowledgeDoc,
+  updateProduct,
+} from './db';
 
 // SEC-01: Sanitize GPT output to prevent stored XSS and prompt injection chains
 function sanitizeGptOutput(text: string): string {
@@ -253,7 +266,7 @@ export const productsRouter = router({
             search: z.string().max(200).optional(),
         }).optional())
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const page = input?.page ?? 1;
@@ -262,8 +275,8 @@ export const productsRouter = router({
             const offset = (page - 1) * pageSize;
 
             const [items, total] = await Promise.all([
-                db.getProductsByMerchantId(merchant.id, { limit: pageSize, offset, search }),
-                db.getProductCountByMerchantId(merchant.id, { search }),
+                getProductsByMerchantId(merchant.id, { limit: pageSize, offset, search }),
+                getProductCountByMerchantId(merchant.id, { search }),
             ]);
 
             return {
@@ -318,13 +331,13 @@ export const productsRouter = router({
             })).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const { variants, options, ...productData } = input;
             const hasVariants = (variants && variants.length > 0) ? 1 : 0;
 
-            const productId = await db.createProduct({
+            const productId = await createProduct({
                 merchantId: merchant.id,
                 ...productData,
                 imageUrl: productData.imageUrl || undefined,
@@ -399,17 +412,17 @@ export const productsRouter = router({
             status: z.enum(['active', 'draft', 'archived']).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             // Verify product belongs to this merchant (prevent IDOR)
-            const product = await db.getProductById(input.productId);
+            const product = await getProductById(input.productId);
             if (!product || product.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not own this product' });
             }
 
             const { productId, ...updates } = input;
-            await db.updateProduct(productId, updates as any);
+            await updateProduct(productId, updates as any);
             return { success: true };
         }),
 
@@ -417,15 +430,15 @@ export const productsRouter = router({
     delete: protectedProcedure
         .input(z.object({ productId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const product = await db.getProductById(input.productId);
+            const product = await getProductById(input.productId);
             if (!product || product.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'You do not own this product' });
             }
 
-            await db.deleteProduct(input.productId);
+            await deleteProduct(input.productId);
             return { success: true };
         }),
 
@@ -435,14 +448,14 @@ export const productsRouter = router({
             productIds: z.array(z.number()).min(1).max(500),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             let deleted = 0;
             for (const productId of input.productIds) {
-                const product = await db.getProductById(productId);
+                const product = await getProductById(productId);
                 if (product && product.merchantId === merchant.id) {
-                    await db.deleteProduct(productId);
+                    await deleteProduct(productId);
                     deleted++;
                 }
             }
@@ -453,10 +466,10 @@ export const productsRouter = router({
     getById: protectedProcedure
         .input(z.object({ productId: z.number() }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const product = await db.getProductById(input.productId);
+            const product = await getProductById(input.productId);
             if (!product || product.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -487,10 +500,10 @@ export const productsRouter = router({
             options: z.string().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const product = await db.getProductById(input.productId);
+            const product = await getProductById(input.productId);
             if (!product || product.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -505,7 +518,7 @@ export const productsRouter = router({
 
             // Mark product as having variants
             if (!product.hasVariants) {
-                await db.updateProduct(input.productId, { hasVariants: 1 } as any);
+                await updateProduct(input.productId, { hasVariants: 1 } as any);
             }
 
             return variant;
@@ -528,10 +541,10 @@ export const productsRouter = router({
             isActive: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const product = await db.getProductById(input.productId);
+            const product = await getProductById(input.productId);
             if (!product || product.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -550,10 +563,10 @@ export const productsRouter = router({
     deleteVariant: protectedProcedure
         .input(z.object({ variantId: z.number(), productId: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const product = await db.getProductById(input.productId);
+            const product = await getProductById(input.productId);
             if (!product || product.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -569,7 +582,7 @@ export const productsRouter = router({
             // Check if product still has variants
             const remaining = await prodDb.getVariantsByProductId(input.productId);
             if (remaining.length === 0) {
-                await db.updateProduct(input.productId, { hasVariants: 0 } as any);
+                await updateProduct(input.productId, { hasVariants: 0 } as any);
             }
 
             return { success: true };
@@ -580,7 +593,7 @@ export const productsRouter = router({
     // ============================================
 
     listCategories: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const prodDb = await import('./db/products');
         return await prodDb.getCategoriesByMerchantId(merchant.id);
@@ -593,7 +606,7 @@ export const productsRouter = router({
             parentId: z.number().nullable().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const prodDb = await import('./db/products');
@@ -612,7 +625,7 @@ export const productsRouter = router({
             isActive: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             const prodDb = await import('./db/products');
             // SEC-IDOR: Verify category belongs to this merchant
@@ -628,7 +641,7 @@ export const productsRouter = router({
     deleteCategory: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             const prodDb = await import('./db/products');
             // SEC-IDOR: Verify category belongs to this merchant
@@ -645,7 +658,7 @@ export const productsRouter = router({
     // ============================================
 
     getLowStock: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const prodDb = await import('./db/products');
         const products = await prodDb.getLowStockProducts(merchant.id);
@@ -659,7 +672,7 @@ export const productsRouter = router({
             csvData: z.string().max(5_000_000, 'الحد الأقصى لحجم الملف 5 ميجابايت'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             // FIX #7: Proper CSV parsing that handles quoted values with commas
@@ -708,7 +721,7 @@ export const productsRouter = router({
                     });
 
                     if (product.name && product.price) {
-                        await db.createProduct({
+                        await createProduct({
                             merchantId: merchant.id,
                             name: product.name,
                             description: product.description || null,
@@ -746,7 +759,7 @@ export const productsRouter = router({
             fileName: z.string().max(255).transform(s => s.replace(/[<>:"/\\|?*]/g, '_')),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const ExcelJS = (await import('exceljs')).default;
@@ -814,7 +827,7 @@ export const productsRouter = router({
                     // Build rich description from extra columns
                     const richDescription = buildExtraDescription(row, rawHeaderNames, columnMap);
 
-                    await db.createProduct({
+                    await createProduct({
                         merchantId: merchant.id,
                         name: row.name,
                         description: richDescription || null,
@@ -916,17 +929,17 @@ export const productsRouter = router({
 
                 if (aiSummary && aiSummary.length > 50) {
                     // Store as knowledge document for the bot
-                    const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
+                    const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
                     if (existingDoc) {
                         // Append AI analysis to existing knowledge
                         const combined = (existingDoc.extractedText || '') + 
                             '\n\n=== تحليل ذكي لملف المنتجات ===\n' + aiSummary;
-                        await db.updateKnowledgeDoc(existingDoc.id, {
+                        await updateKnowledgeDoc(existingDoc.id, {
                             extractedText: combined.substring(0, 100000),
                         });
                     } else {
                         // Create new knowledge doc with AI analysis
-                        await db.createKnowledgeDoc({
+                        await createKnowledgeDoc({
                             merchantId: merchant.id,
                             fileName: input.fileName,
                             fileType: 'docx', // Closest match in enum
@@ -947,7 +960,7 @@ export const productsRouter = router({
             let spreadsheetUrl = '';
             let existingSheetWarning = '';
             try {
-                const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+                const integration = await getGoogleIntegration(merchant.id, 'sheets');
                 if (integration && integration.isActive) {
                     const sheets = await import('./_core/googleSheets');
 
@@ -1024,7 +1037,7 @@ export const productsRouter = router({
             importType: z.enum(['auto', 'products', 'services']).default('auto'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             // SEC-04: Rate limit — max 10 smart imports per hour per merchant
@@ -1186,7 +1199,7 @@ ${typeHint}
                     if (!isFinite(safePrice) || safePrice < 0) safePrice = 0;
                     safePrice = Math.round(Math.min(safePrice, 99999999)); // Max ~1M SAR
 
-                    await db.createProduct({
+                    await createProduct({
                         merchantId: merchant.id,
                         name: safeName,
                         description: fullDescription.substring(0, 5000) || null,
@@ -1231,14 +1244,14 @@ ${typeHint}
                     safeCrossSell,
                 ].join('\n');
 
-                const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
+                const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
                 if (existingDoc) {
                     const combined = (existingDoc.extractedText || '') + '\n\n' + knowledgeText;
-                    await db.updateKnowledgeDoc(existingDoc.id, {
+                    await updateKnowledgeDoc(existingDoc.id, {
                         extractedText: combined.substring(0, 100000),
                     });
                 } else {
-                    await db.createKnowledgeDoc({
+                    await createKnowledgeDoc({
                         merchantId: merchant.id,
                         fileName: input.fileName,
                         fileType: 'docx',
@@ -1256,7 +1269,7 @@ ${typeHint}
             let sheetCreated = false;
             let spreadsheetUrl = '';
             try {
-                const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+                const integration = await getGoogleIntegration(merchant.id, 'sheets');
                 if (integration && integration.isActive) {
                     const sheets = await import('./_core/googleSheets');
 
@@ -1322,10 +1335,10 @@ ${typeHint}
     // Sync products from linked Google Sheet
     syncFromGoogleSheets: protectedProcedure
         .mutation(async ({ ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+            const integration = await getGoogleIntegration(merchant.id, 'sheets');
             if (!integration || !integration.isActive || !integration.sheetId) {
                 throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط Google Sheets أولاً من صفحة التكاملات' });
             }
@@ -1358,7 +1371,7 @@ ${typeHint}
             }
 
             // Get existing products for duplicate detection
-            const existingProducts = await db.getProductsByMerchantId(merchant.id);
+            const existingProducts = await getProductsByMerchantId(merchant.id);
             const existing = new Map(existingProducts.map(p => [p.name.toLowerCase().trim(), p.id]));
 
             let created = 0;
@@ -1394,11 +1407,11 @@ ${typeHint}
                 try {
                     if (existingId) {
                         // Update existing product
-                        await db.updateProduct(existingId, data);
+                        await updateProduct(existingId, data);
                         updated++;
                     } else {
                         // Create new product
-                        await db.createProduct({
+                        await createProduct({
                             merchantId: merchant.id,
                             ...data,
                         });
@@ -1410,7 +1423,7 @@ ${typeHint}
             }
 
             // Update last sync time
-            await db.updateGoogleIntegration(integration.id, {
+            await updateGoogleIntegration(integration.id, {
                 lastSync: new Date().toISOString(),
             });
 
@@ -1426,10 +1439,10 @@ ${typeHint}
 
     // Get Google Sheet sync status
     getSheetSyncStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) return { connected: false };
 
-        const integration = await db.getGoogleIntegration(merchant.id, 'sheets');
+        const integration = await getGoogleIntegration(merchant.id, 'sheets');
         if (!integration || !integration.isActive) {
             return { connected: false };
         }

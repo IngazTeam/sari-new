@@ -17,7 +17,20 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createCampaign,
+  createCampaignLog,
+  deleteCampaign,
+  getAllCampaignsWithMerchants,
+  getCampaignById,
+  getCampaignLogsWithStats,
+  getCampaignsByMerchantId,
+  getConversationsByMerchantId,
+  getMerchantByUserId,
+  getPrimaryWhatsAppInstance,
+  getUserById,
+  updateCampaign,
+} from './db';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -32,7 +45,7 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Helper: apply targeting filters to conversations
 function applyTargetingFilters(
-    conversations: Awaited<ReturnType<typeof db.getConversationsByMerchantId>>,
+    conversations: Awaited<ReturnType<typeof getConversationsByMerchantId>>,
     targetAudience: string | null
 ) {
     if (!targetAudience) return conversations;
@@ -69,28 +82,28 @@ function applyTargetingFilters(
 export const campaignsRouter = router({
     // Get all campaigns for current merchant
     list: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        return db.getCampaignsByMerchantId(merchant.id);
+        return getCampaignsByMerchantId(merchant.id);
     }),
 
     // Get all campaigns with merchant info (Admin only)
     listAll: adminProcedure.query(async () => {
-        return await db.getAllCampaignsWithMerchants();
+        return await getAllCampaignsWithMerchants();
     }),
 
     // Get single campaign
     getById: protectedProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
-            const campaign = await db.getCampaignById(input.id);
+            const campaign = await getCampaignById(input.id);
             if (!campaign) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -108,7 +121,7 @@ export const campaignsRouter = router({
             scheduledAt: z.date().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
@@ -117,7 +130,7 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Merchant account is not active' });
             }
 
-            const campaign = await db.createCampaign({
+            const campaign = await createCampaign({
                 merchantId: merchant.id,
                 name: input.name,
                 message: input.message,
@@ -144,12 +157,12 @@ export const campaignsRouter = router({
             status: z.enum(['draft', 'scheduled', 'sending', 'completed', 'failed']).optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const campaign = await db.getCampaignById(input.id);
+            const campaign = await getCampaignById(input.id);
             if (!campaign) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -159,7 +172,7 @@ export const campaignsRouter = router({
             }
 
             const { id, ...updateData } = input;
-            await db.updateCampaign(id, updateData);
+            await updateCampaign(id, updateData);
 
             return { success: true };
         }),
@@ -168,12 +181,12 @@ export const campaignsRouter = router({
     delete: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const campaign = await db.getCampaignById(input.id);
+            const campaign = await getCampaignById(input.id);
             if (!campaign) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -184,7 +197,7 @@ export const campaignsRouter = router({
             }
 
             // Real delete — removes campaign and its logs
-            await db.deleteCampaign(input.id);
+            await deleteCampaign(input.id);
             return { success: true };
         }),
 
@@ -192,12 +205,12 @@ export const campaignsRouter = router({
     send: protectedProcedure
         .input(z.object({ id: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const campaign = await db.getCampaignById(input.id);
+            const campaign = await getCampaignById(input.id);
             if (!campaign) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant || campaign.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -206,13 +219,13 @@ export const campaignsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Campaign already sent or in progress' });
             }
 
-            const instance = await db.getPrimaryWhatsAppInstance(merchant.id);
+            const instance = await getPrimaryWhatsAppInstance(merchant.id);
             if (!instance || instance.status !== 'active') {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active WhatsApp instance found' });
             }
 
             // FIX #1: Apply targeting filters
-            const conversations = await db.getConversationsByMerchantId(merchant.id);
+            const conversations = await getConversationsByMerchantId(merchant.id);
             const targeted = applyTargetingFilters(conversations, campaign.targetAudience);
 
             // FIX #11: Deduplicate phone numbers
@@ -230,7 +243,7 @@ export const campaignsRouter = router({
             }
 
             // Update status to sending
-            await db.updateCampaign(input.id, {
+            await updateCampaign(input.id, {
                 status: 'sending',
                 totalRecipients: uniqueRecipients.length,
             });
@@ -268,7 +281,7 @@ export const campaignsRouter = router({
                                     });
                                 }
 
-                                await db.createCampaignLog({
+                                await createCampaignLog({
                                     campaignId: input.id,
                                     customerId: conv.id || null,
                                     customerPhone: conv.customerPhone,
@@ -280,7 +293,7 @@ export const campaignsRouter = router({
 
                                 return true;
                             } catch (error: any) {
-                                await db.createCampaignLog({
+                                await createCampaignLog({
                                     campaignId: input.id,
                                     customerId: conv.id || null,
                                     customerPhone: conv.customerPhone,
@@ -305,7 +318,7 @@ export const campaignsRouter = router({
                     }
 
                     // Update progress for live tracking (#9)
-                    await db.updateCampaign(input.id, {
+                    await updateCampaign(input.id, {
                         sentCount: successCount,
                     });
 
@@ -316,7 +329,7 @@ export const campaignsRouter = router({
                 }
 
                 // Mark campaign as completed
-                await db.updateCampaign(input.id, {
+                await updateCampaign(input.id, {
                     status: 'completed',
                     sentCount: successCount,
                 });
@@ -326,7 +339,7 @@ export const campaignsRouter = router({
                 // Notify admin about campaign completion
                 try {
                     const { notifyMarketingCampaign } = await import('./_core/emailNotifications');
-                    const user = await db.getUserById(merchant.userId);
+                    const user = await getUserById(merchant.userId);
                     await notifyMarketingCampaign({
                         merchantName: user?.name || merchant.businessName,
                         businessName: merchant.businessName,
@@ -341,7 +354,7 @@ export const campaignsRouter = router({
                 }
             })().catch(async (error) => {
                 console.error('Error sending campaign:', error);
-                await db.updateCampaign(input.id, { status: 'failed' });
+                await updateCampaign(input.id, { status: 'failed' });
             });
 
             return {
@@ -355,12 +368,12 @@ export const campaignsRouter = router({
     getSendProgress: protectedProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
-            const campaign = await db.getCampaignById(input.id);
+            const campaign = await getCampaignById(input.id);
             if (!campaign) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
@@ -377,12 +390,12 @@ export const campaignsRouter = router({
 
     // FIX #3, #12: Campaign statistics — real data from logs, no fake readRate
     getStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const campaigns = await db.getCampaignsByMerchantId(merchant.id);
+        const campaigns = await getCampaignsByMerchantId(merchant.id);
         const totalCampaigns = campaigns.length;
         const completedCampaigns = campaigns.filter(c => c.status === 'completed');
         const totalSent = completedCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
@@ -407,17 +420,17 @@ export const campaignsRouter = router({
     getReport: protectedProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ input, ctx }) => {
-            const campaign = await db.getCampaignById(input.id);
+            const campaign = await getCampaignById(input.id);
             if (!campaign) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
             }
 
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
                 throw new TRPCError({ code: 'FORBIDDEN' });
             }
 
-            const { logs, stats } = await db.getCampaignLogsWithStats(input.id);
+            const { logs, stats } = await getCampaignLogsWithStats(input.id);
 
             return {
                 campaign,
@@ -434,12 +447,12 @@ export const campaignsRouter = router({
             purchaseCountMax: z.number().optional(),
         }))
         .query(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const conversations = await db.getConversationsByMerchantId(merchant.id);
+            const conversations = await getConversationsByMerchantId(merchant.id);
             let filtered = conversations;
 
             if (input.lastActivityDays) {
@@ -466,7 +479,7 @@ export const campaignsRouter = router({
     // Main dashboard stats
     getStats2: protectedProcedure
         .query(async ({ ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على المتجر' });
             }

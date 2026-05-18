@@ -9,15 +9,15 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { deleteZidIntegration, getMerchantByUserId, getZidIntegration } from './db';
 
 export const zidIntegrationRouter = router({
     // Get Zid connection status
     getConnectionStatus: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        const integration = await db.getZidIntegration(merchant.id);
+        const integration = await getZidIntegration(merchant.id);
         return {
             isConnected: !!integration?.accessToken,
             storeId: integration?.storeId,
@@ -27,10 +27,10 @@ export const zidIntegrationRouter = router({
 
     // Disconnect Zid
     disconnect: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        await db.deleteZidIntegration(merchant.id);
+        await deleteZidIntegration(merchant.id);
         return { success: true };
     }),
 
@@ -38,7 +38,7 @@ export const zidIntegrationRouter = router({
     getSyncLogs: protectedProcedure
         .input(z.object({ limit: z.number().default(50) }))
         .query(async ({ ctx, input }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const { getZidSyncLogs } = await import('./db_zid');
@@ -47,7 +47,7 @@ export const zidIntegrationRouter = router({
 
     // Get sync stats
     getSyncStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
         const { getZidSyncStats } = await import('./db_zid');

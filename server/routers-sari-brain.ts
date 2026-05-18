@@ -8,18 +8,37 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  createExtractedFaq,
+  createWebsiteAnalysis,
+  deleteAllExtractedFaqs,
+  deleteAllProductsByMerchantId,
+  deleteExtractedFaq,
+  deleteKnowledgeDoc,
+  deleteKnowledgeDocsByMerchantId,
+  deleteWebsiteAnalysis,
+  getDb,
+  getExtractedFaqsByMerchantId,
+  getKnowledgeDocByMerchantId,
+  getMerchantByUserId,
+  getPool,
+  getProductCountByMerchantId,
+  getProductsByMerchantId,
+  getWebsiteAnalysesByMerchant,
+  updateExtractedFaq,
+  updateWebsiteAnalysis,
+} from './db';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 let _activityTableCreated = false;
 
 /**
  * Get the raw mysql2 pool for direct SQL execution.
- * CRITICAL: db.getDb() returns Drizzle ORM whose .execute() does NOT support
+ * CRITICAL: getDb() returns Drizzle ORM whose .execute() does NOT support
  * parameterized `?` placeholders. Use this for all raw SQL with parameters.
  */
 async function getRawPool() {
-  return await db.getPool();
+  return await getPool();
 }
 
 async function ensureActivityTable() {
@@ -135,13 +154,13 @@ function sanitizeForTRPC(data: any): any {
 export const sariBrainRouter = router({
   // Get all knowledge sources for the merchant
   getSources: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const sources: any[] = [];
 
     // 1. Knowledge Document (uploaded PDF/DOCX)
-    const knowledgeDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
+    const knowledgeDoc = await getKnowledgeDocByMerchantId(merchant.id);
     if (knowledgeDoc) {
       sources.push({
         id: `doc-${knowledgeDoc.id}`,
@@ -157,7 +176,7 @@ export const sariBrainRouter = router({
     }
 
     // 2. Products — PERF-02 FIX: use COUNT instead of fetching all rows
-    const productCount = await db.getProductCountByMerchantId(merchant.id);
+    const productCount = await getProductCountByMerchantId(merchant.id);
     if (productCount > 0) {
       sources.push({
         id: `products-${merchant.id}`,
@@ -202,7 +221,7 @@ export const sariBrainRouter = router({
 
     // 4. FAQs (custom Q&A)
     try {
-      const faqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      const faqs = await getExtractedFaqsByMerchantId(merchant.id);
       if (faqs.length > 0) {
         const activeFaqs = faqs.filter((f: any) => f.isActive);
         sources.push({
@@ -242,7 +261,7 @@ export const sariBrainRouter = router({
       sourceType: z.enum(['document', 'products', 'website', 'faqs']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // PEN-BRAIN-05: Rate limit destructive operations (10s cooldown)
@@ -251,11 +270,11 @@ export const sariBrainRouter = router({
       switch (input.sourceType) {
         case 'document': {
           // PEN-BRAIN-03 FIX: Validate sourceId matches actual doc
-          const doc = await db.getKnowledgeDocByMerchantId(merchant.id);
+          const doc = await getKnowledgeDocByMerchantId(merchant.id);
           if (!doc || `doc-${doc.id}` !== input.sourceId) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'المصدر غير موجود' });
           }
-          await db.deleteKnowledgeDoc(doc.id);
+          await deleteKnowledgeDoc(doc.id);
           // CASCADE: Delete knowledge sections from document source
           try {
             const knowledgeDb = await import('./db/knowledge');
@@ -266,11 +285,11 @@ export const sariBrainRouter = router({
         }
         case 'products': {
           // PERF-02 FIX: use COUNT instead of fetching all rows
-          const count = await db.getProductCountByMerchantId(merchant.id);
+          const count = await getProductCountByMerchantId(merchant.id);
           if (count === 0) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'لا توجد منتجات للحذف' });
           }
-          await db.deleteAllProductsByMerchantId(merchant.id);
+          await deleteAllProductsByMerchantId(merchant.id);
           await logBrainActivity(merchant.id, 'products_deleted', `تم حذف ${count} منتج`, { count });
           break;
         }
@@ -304,11 +323,11 @@ export const sariBrainRouter = router({
           break;
         }
         case 'faqs': {
-          const faqCount = (await db.getExtractedFaqsByMerchantId(merchant.id)).length;
+          const faqCount = (await getExtractedFaqsByMerchantId(merchant.id)).length;
           if (faqCount === 0) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'لا توجد أسئلة شائعة للحذف' });
           }
-          await db.deleteAllExtractedFaqs(merchant.id);
+          await deleteAllExtractedFaqs(merchant.id);
           await logBrainActivity(merchant.id, 'faqs_deleted', `تم حذف ${faqCount} سؤال شائع`, { count: faqCount });
           break;
         }
@@ -321,7 +340,7 @@ export const sariBrainRouter = router({
 
   // Full brain reset
   resetBrain: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     // PEN-BRAIN-05: Rate limit — 60s cooldown for full reset
@@ -331,13 +350,13 @@ export const sariBrainRouter = router({
 
     // Delete knowledge documents
     try {
-      await db.deleteKnowledgeDocsByMerchantId(merchant.id);
+      await deleteKnowledgeDocsByMerchantId(merchant.id);
       deletedSources.push('document');
     } catch (e) { /* skip */ }
 
     // Delete all products
     try {
-      await db.deleteAllProductsByMerchantId(merchant.id);
+      await deleteAllProductsByMerchantId(merchant.id);
       deletedSources.push('products');
     } catch (e) { /* skip */ }
 
@@ -359,7 +378,7 @@ export const sariBrainRouter = router({
 
     // Delete all FAQs
     try {
-      await db.deleteAllExtractedFaqs(merchant.id);
+      await deleteAllExtractedFaqs(merchant.id);
       deletedSources.push('faqs');
     } catch (e) { /* skip */ }
 
@@ -380,7 +399,7 @@ export const sariBrainRouter = router({
     // PEN-BRAIN-01 FIX: Clamp limit to 1-200
     .input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional())
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       try {
@@ -416,7 +435,7 @@ export const sariBrainRouter = router({
 
   // Re-analyze merchant's website
   reanalyzeWebsite: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     // Separate rate limiter — 20s cooldown (not shared with delete/reset)
@@ -435,13 +454,13 @@ export const sariBrainRouter = router({
       // Delete old analyses, then create new one using the proper Drizzle ORM functions
       // (same path as routers-website-analysis.ts — single source of truth)
       try {
-        const existingAnalyses = await db.getWebsiteAnalysesByMerchant(merchant.id);
+        const existingAnalyses = await getWebsiteAnalysesByMerchant(merchant.id);
         for (const old of existingAnalyses) {
-          await db.deleteWebsiteAnalysis(old.id);
+          await deleteWebsiteAnalysis(old.id);
         }
       } catch { /* table may not exist yet — first run */ }
 
-      const analysisId = await db.createWebsiteAnalysis({
+      const analysisId = await createWebsiteAnalysis({
         merchantId: merchant.id,
         url: websiteUrl,
         title: result.title || '',
@@ -467,7 +486,7 @@ export const sariBrainRouter = router({
       });
 
       // Save scraped content separately (createWebsiteAnalysis doesn't accept this field)
-      await db.updateWebsiteAnalysis(analysisId, {
+      await updateWebsiteAnalysis(analysisId, {
         scrapedContent: (result._scrapedText || '') + '\n\n' + (result._enrichedText || ''),
       });
 
@@ -740,7 +759,7 @@ export const sariBrainRouter = router({
 
   // Get brain summary — used by AI prompt builder
   getBrainSummary: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const sources = {
@@ -752,14 +771,14 @@ export const sariBrainRouter = router({
       websiteUrl: '',
     };
 
-    const doc = await db.getKnowledgeDocByMerchantId(merchant.id);
+    const doc = await getKnowledgeDocByMerchantId(merchant.id);
     if (doc && doc.extractionStatus === 'completed') {
       sources.hasDocument = true;
       sources.documentName = doc.fileName || '';
     }
 
     // PERF-02 FIX: use COUNT instead of fetching all rows
-    const prodCount = await db.getProductCountByMerchantId(merchant.id);
+    const prodCount = await getProductCountByMerchantId(merchant.id);
     if (prodCount > 0) {
       sources.hasProducts = true;
       sources.productCount = prodCount;
@@ -790,7 +809,7 @@ export const sariBrainRouter = router({
       question: z.string().min(1).max(500, 'السؤال طويل جداً'),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // PEN-BRAIN-08 FIX: Separate rate limiter for test endpoint (5s cooldown)
@@ -828,7 +847,7 @@ export const sariBrainRouter = router({
       fileName: z.string().max(255).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // Rate limit: max 3 analyses per minute per merchant
@@ -838,11 +857,11 @@ export const sariBrainRouter = router({
         const { invokeLLM } = await import('./_core/llm');
 
         // PERF-02+05 FIX: fetch only count + first 10 names instead of all products
-        const existingProductCount = await db.getProductCountByMerchantId(merchant.id);
+        const existingProductCount = await getProductCountByMerchantId(merchant.id);
         const existingProductSample = existingProductCount > 0
-          ? await db.getProductsByMerchantId(merchant.id, { limit: 10 })
+          ? await getProductsByMerchantId(merchant.id, { limit: 10 })
           : [];
-        const existingDoc = await db.getKnowledgeDocByMerchantId(merchant.id);
+        const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
 
         const existingContext = [
           existingProductCount > 0 ? `المنتجات الحالية (${existingProductCount}): ${existingProductSample.map(p => p.name).join('، ')}` : 'لا توجد منتجات حالية',
@@ -957,9 +976,9 @@ ${sanitizedContent}`
   // FAQ Management — CRUD for custom Q&A pairs
   // ════════════════════════════════════════════════════════════════
   getFaqs: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-    return sanitizeForTRPC(await db.getExtractedFaqsByMerchantId(merchant.id));
+    return sanitizeForTRPC(await getExtractedFaqsByMerchantId(merchant.id));
   }),
 
   createFaq: protectedProcedure
@@ -969,16 +988,16 @@ ${sanitizedContent}`
       category: z.string().max(100).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // PEN-BRAIN-09 FIX: Cap FAQs at 50 per merchant
-      const existingFaqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      const existingFaqs = await getExtractedFaqsByMerchantId(merchant.id);
       if (existingFaqs.length >= 50) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'الحد الأقصى 50 سؤال شائع. احذف بعض الأسئلة أولاً.' });
       }
 
-      const id = await db.createExtractedFaq({
+      const id = await createExtractedFaq({
         merchantId: merchant.id,
         question: input.question,
         answer: input.answer,
@@ -1005,17 +1024,17 @@ ${sanitizedContent}`
       useInBot: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // PEN-BRAIN-07 FIX: Verify FAQ ownership before update
-      const merchantFaqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      const merchantFaqs = await getExtractedFaqsByMerchantId(merchant.id);
       if (!merchantFaqs.some((f: any) => f.id === input.id)) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن تعديل سؤال لا يخصك' });
       }
 
       const { id, ...data } = input;
-      await db.updateExtractedFaq(id, data);
+      await updateExtractedFaq(id, data);
       await logBrainActivity(merchant.id, 'faq_updated', `تم تحديث سؤال رقم ${id}`);
 
       return { success: true };
@@ -1024,16 +1043,16 @@ ${sanitizedContent}`
   deleteFaq: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // PEN-BRAIN-07 FIX: Verify FAQ ownership before delete
-      const ownedFaqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+      const ownedFaqs = await getExtractedFaqsByMerchantId(merchant.id);
       if (!ownedFaqs.some((f: any) => f.id === input.id)) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'لا يمكن حذف سؤال لا يخصك' });
       }
 
-      await db.deleteExtractedFaq(input.id);
+      await deleteExtractedFaq(input.id);
       await logBrainActivity(merchant.id, 'faq_deleted', `تم حذف سؤال رقم ${input.id}`);
 
       return { success: true };
@@ -1045,7 +1064,7 @@ ${sanitizedContent}`
   generateApiKey: protectedProcedure
     .input(z.object({ label: z.string().max(100).optional() }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const { generateApiKey } = await import('./api/rest');
@@ -1057,7 +1076,7 @@ ${sanitizedContent}`
     }),
 
   listApiKeys: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     try {
@@ -1086,7 +1105,7 @@ ${sanitizedContent}`
   revokeApiKey: protectedProcedure
     .input(z.object({ keyId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       try {
@@ -1125,7 +1144,7 @@ ${sanitizedContent}`
    * Returns: analysis overview, crawled pages list, categories, coverage score
    */
   getWebsiteKnowledge: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     try {
@@ -1171,7 +1190,7 @@ ${sanitizedContent}`
       // 3. Get FAQs count
       let faqs: any[] = [];
       try {
-        faqs = await db.getExtractedFaqsByMerchantId(merchant.id);
+        faqs = await getExtractedFaqsByMerchantId(merchant.id);
       } catch { /* table may not exist */ }
 
       // 4. Calculate content categories
@@ -1266,7 +1285,7 @@ ${sanitizedContent}`
   getPageContent: protectedProcedure
     .input(z.object({ pageId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const dbConn = await getRawPool();
@@ -1297,7 +1316,7 @@ ${sanitizedContent}`
   previewUrl: protectedProcedure
     .input(z.object({ url: z.string().url() }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       checkTestRateLimit(merchant.id, 10_000); // 10s cooldown
@@ -1340,7 +1359,7 @@ ${sanitizedContent}`
       title: z.string().max(500).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       checkTestRateLimit(merchant.id, 10_000); // 10s cooldown
@@ -1421,7 +1440,7 @@ ${sanitizedContent}`
       useInBot: z.boolean(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const dbConn = await getRawPool();
@@ -1456,7 +1475,7 @@ ${sanitizedContent}`
       pageId: z.number(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // PEN-DELETE-01: Rate limit — 2s cooldown to prevent mass-deletion abuse
@@ -1517,7 +1536,7 @@ ${sanitizedContent}`
 
   /** Get all knowledge sections (hierarchical) */
   getKnowledgeSections: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     try {
@@ -1563,7 +1582,7 @@ ${sanitizedContent}`
 
   /** Get knowledge health score */
   getHealthScore: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const knowledgeDb = await import('./db/knowledge');
@@ -1572,7 +1591,7 @@ ${sanitizedContent}`
 
   /** Get pending review sections (conflicts) */
   getPendingReviews: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     try {
@@ -1608,7 +1627,7 @@ ${sanitizedContent}`
   getChangelog: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(200).optional() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       try {
@@ -1641,7 +1660,7 @@ ${sanitizedContent}`
       parentId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const knowledgeDb = await import('./db/knowledge');
@@ -1686,7 +1705,7 @@ ${sanitizedContent}`
       status: z.enum(['auto_approved', 'approved', 'pending_review']).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const knowledgeDb = await import('./db/knowledge');
@@ -1735,7 +1754,7 @@ ${sanitizedContent}`
   deleteSection: protectedProcedure
     .input(z.object({ sectionId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       checkDestructiveRateLimit(merchant.id);
@@ -1768,7 +1787,7 @@ ${sanitizedContent}`
       action: z.enum(['approve', 'reject']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const knowledgeDb = await import('./db/knowledge');
@@ -1806,7 +1825,7 @@ ${sanitizedContent}`
 
   /** Trigger re-embedding of all sections */
   reembedSections: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     checkDestructiveRateLimit(merchant.id, 60_000); // 1 min cooldown
@@ -1826,7 +1845,7 @@ ${sanitizedContent}`
   getQualityDashboard: protectedProcedure
     .input(z.object({ days: z.number().min(1).max(90).optional() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const qualityDb = await import('./db/quality-metrics');
@@ -1837,7 +1856,7 @@ ${sanitizedContent}`
   getWeeklyReports: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(52).optional() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const qualityDb = await import('./db/quality-metrics');
@@ -1846,7 +1865,7 @@ ${sanitizedContent}`
 
   /** Generate weekly report (manual trigger) */
   generateWeeklyReport: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     checkTestRateLimit(merchant.id, 30_000);
@@ -1881,7 +1900,7 @@ ${sanitizedContent}`
       conversationId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       // SEC-V4-03 FIX: Rate limit — max 1 quotation per 2 seconds
@@ -1904,7 +1923,7 @@ ${sanitizedContent}`
   getQuotations: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(200).optional() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
@@ -1913,7 +1932,7 @@ ${sanitizedContent}`
 
   /** Get quotation stats */
   getQuotationStats: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
@@ -1927,7 +1946,7 @@ ${sanitizedContent}`
       status: z.enum(['sent', 'viewed', 'accepted', 'rejected', 'expired']),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
@@ -1943,7 +1962,7 @@ ${sanitizedContent}`
   formatQuotationForWhatsApp: protectedProcedure
     .input(z.object({ quotationId: z.number() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
@@ -1962,7 +1981,7 @@ ${sanitizedContent}`
 
   /** Get current target */
   getCurrentTarget: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
@@ -1973,7 +1992,7 @@ ${sanitizedContent}`
   setMonthlyTarget: protectedProcedure
     .input(z.object({ targetAmount: z.number().min(0).max(999999999) }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
@@ -1989,7 +2008,7 @@ ${sanitizedContent}`
   getTargetHistory: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(24).optional() }))
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
@@ -2000,7 +2019,7 @@ ${sanitizedContent}`
 
   /** Get templates */
   getQuotationTemplates: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const quotationsDb = await import('./db/sales-quotations');
@@ -2016,7 +2035,7 @@ ${sanitizedContent}`
       isDefault: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
@@ -2031,7 +2050,7 @@ ${sanitizedContent}`
   deleteQuotationTemplate: protectedProcedure
     .input(z.object({ templateId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const quotationsDb = await import('./db/sales-quotations');
@@ -2045,7 +2064,7 @@ ${sanitizedContent}`
 
   /** Get learning maturity dashboard */
   getLearningDashboard: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const learningDb = await import('./db/learning');
@@ -2087,7 +2106,7 @@ ${sanitizedContent}`
 
   /** Manually trigger learning analysis */
   triggerLearningAnalysis: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const learningDb = await import('./db/learning');

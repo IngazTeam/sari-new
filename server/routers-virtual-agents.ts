@@ -6,17 +6,17 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getDb, getMerchantByUserId } from './db';
 import { eq, and } from "drizzle-orm";
 import { virtualAgents } from "../drizzle/schema";
 
 export const virtualAgentsRouter = router({
   // List all agents for the current merchant
   list: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    const pool = await db.getDb();
+    const pool = await getDb();
     const agents = await pool.select().from(virtualAgents)
       .where(eq(virtualAgents.merchantId, merchant.id))
       .orderBy(virtualAgents.sortOrder);
@@ -39,10 +39,10 @@ export const virtualAgentsRouter = router({
       shiftEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).optional(),   // HH:mm
     }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = await db.getDb();
+      const pool = await getDb();
 
       // If setting as default, unset existing default
       if (input.isDefault) {
@@ -97,10 +97,10 @@ export const virtualAgentsRouter = router({
       shiftEnd: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = await db.getDb();
+      const pool = await getDb();
       const { id, ...data } = input;
 
       // Verify ownership
@@ -140,10 +140,10 @@ export const virtualAgentsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = await db.getDb();
+      const pool = await getDb();
       await pool.delete(virtualAgents)
         .where(and(eq(virtualAgents.id, input.id), eq(virtualAgents.merchantId, merchant.id)));
 
@@ -154,10 +154,10 @@ export const virtualAgentsRouter = router({
   reorder: protectedProcedure
     .input(z.object({ orderedIds: z.array(z.number()).max(10) }))
     .mutation(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const pool = await db.getDb();
+      const pool = await getDb();
 
       // Validate all IDs belong to this merchant
       const existing = await pool.select().from(virtualAgents)
@@ -182,10 +182,10 @@ export const virtualAgentsRouter = router({
 
   // Seed template agents (convenience)
   seedTemplates: protectedProcedure.mutation(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-    const pool = await db.getDb();
+    const pool = await getDb();
 
     // Check if already has agents
     const existing = await pool.select().from(virtualAgents)

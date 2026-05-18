@@ -8,20 +8,35 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import {
+  claimReward,
+  createReferral,
+  createReward,
+  generateReferralCode,
+  getMerchantById,
+  getMerchantByUserId,
+  getReferralCodeByCode,
+  getReferralCodeByMerchantId,
+  getReferralStats,
+  getReferralsWithDetails,
+  getRewardById,
+  getRewardsByMerchantId,
+  getUserById,
+  incrementReferralCount,
+} from './db';
 
 export const referralsRouter = router({
     // Get my referral code (auto-generate if doesn't exist)
     getMyCode: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        let code = await db.getReferralCodeByMerchantId(merchant.id);
+        let code = await getReferralCodeByMerchantId(merchant.id);
 
         if (!code) {
-            code = await db.generateReferralCode(
+            code = await generateReferralCode(
                 merchant.id,
                 merchant.businessName,
                 merchant.phone || ''
@@ -33,32 +48,32 @@ export const referralsRouter = router({
 
     // Get my referrals list
     getMyReferrals: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getReferralsWithDetails(merchant.id);
+        return await getReferralsWithDetails(merchant.id);
     }),
 
     // Get my rewards
     getMyRewards: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getRewardsByMerchantId(merchant.id);
+        return await getRewardsByMerchantId(merchant.id);
     }),
 
     // Get referral statistics
     getStats: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await db.getReferralStats(merchant.id);
+        return await getReferralStats(merchant.id);
     }),
 
     // Apply referral code during signup — SEC-W4 FIX: Now protectedProcedure, derives merchantId from auth
@@ -76,12 +91,12 @@ export const referralsRouter = router({
             }
 
             // Derive merchant from authenticated user — not from client input
-            const referredMerchant = await db.getMerchantByUserId(ctx.user.id);
+            const referredMerchant = await getMerchantByUserId(ctx.user.id);
             if (!referredMerchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const referralCode = await db.getReferralCodeByCode(input.code);
+            const referralCode = await getReferralCodeByCode(input.code);
             if (!referralCode || !referralCode.isActive) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'كود الإحالة غير صحيح' });
             }
@@ -91,7 +106,7 @@ export const referralsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يمكنك إحالة نفسك' });
             }
 
-            const referral = await db.createReferral({
+            const referral = await createReferral({
                 referralCodeId: referralCode.id,
                 referredPhone: referredMerchant.phone || '',
                 referredName: referredMerchant.businessName,
@@ -102,12 +117,12 @@ export const referralsRouter = router({
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل تسجيل الإحالة' });
             }
 
-            await db.incrementReferralCount(referralCode.id);
+            await incrementReferralCount(referralCode.id);
 
             const expiresAt = new Date();
             expiresAt.setDate(expiresAt.getDate() + 90);
 
-            await db.createReward({
+            await createReward({
                 merchantId: referralCode.merchantId,
                 referralId: referral.id,
                 rewardType: 'discount_10',
@@ -120,14 +135,14 @@ export const referralsRouter = router({
             try {
                 const { notifyOwner } = await import('./_core/notification');
                 const { notifyNewReferral } = await import('./_core/emailNotifications');
-                const referrer = await db.getMerchantById(referralCode.merchantId);
+                const referrer = await getMerchantById(referralCode.merchantId);
                 if (referrer) {
                     await notifyOwner({
                         title: 'إحالة جديدة!',
                         content: `${referrer.businessName} حصل على إحالة جديدة من ${referredMerchant.businessName}`,
                     });
 
-                    const referredUser = await db.getUserById(referredMerchant.userId);
+                    const referredUser = await getUserById(referredMerchant.userId);
                     await notifyNewReferral({
                         referrerName: referrer.businessName,
                         referrerBusiness: referrer.businessName,
@@ -148,12 +163,12 @@ export const referralsRouter = router({
     claimReward: protectedProcedure
         .input(z.object({ rewardId: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
-            const reward = await db.getRewardById(input.rewardId);
+            const reward = await getRewardById(input.rewardId);
             if (!reward || reward.merchantId !== merchant.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
@@ -166,7 +181,7 @@ export const referralsRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'المكافأة منتهية الصلاحية' });
             }
 
-            await db.claimReward(input.rewardId);
+            await claimReward(input.rewardId);
 
             return { success: true, message: 'تم استخدام المكافأة بنجاح' };
         }),

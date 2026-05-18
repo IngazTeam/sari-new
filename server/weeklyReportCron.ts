@@ -4,7 +4,15 @@
  */
 
 import cron from 'node-cron';
-import * as db from './db';
+import {
+  getAllMerchants,
+  getAppointmentsByMerchantId,
+  getConversationsByMerchantId,
+  getDb,
+  getMerchantById,
+  getMessagesByConversationId,
+  getOrdersByMerchantId,
+} from './db';
 import { sendEmail } from './_core/emailService';
 import { sendNotification } from './_core/notificationService';
 import { notificationSettings } from '../drizzle/schema';
@@ -24,7 +32,7 @@ interface WeeklyStats {
  * جمع إحصائيات الأسبوع الماضي للتاجر
  */
 async function getWeeklyStats(merchantId: number): Promise<WeeklyStats> {
-  const merchant = await db.getMerchantById(merchantId);
+  const merchant = await getMerchantById(merchantId);
   
   // حساب تاريخ بداية ونهاية الأسبوع الماضي
   const now = new Date();
@@ -41,13 +49,13 @@ async function getWeeklyStats(merchantId: number): Promise<WeeklyStats> {
   weekStart.setHours(0, 0, 0, 0);
 
   // جمع الإحصائيات
-  const orders = await db.getOrdersByMerchantId(merchantId);
+  const orders = await getOrdersByMerchantId(merchantId);
   const weekOrders = orders.filter(o => {
     const orderDate = new Date(o.createdAt);
     return orderDate >= weekStart && orderDate <= lastSaturday;
   });
 
-  const conversations = await db.getConversationsByMerchantId(merchantId);
+  const conversations = await getConversationsByMerchantId(merchantId);
   const weekConversations = conversations.filter(c => {
     const convDate = new Date(c.createdAt);
     return convDate >= weekStart && convDate <= lastSaturday;
@@ -56,7 +64,7 @@ async function getWeeklyStats(merchantId: number): Promise<WeeklyStats> {
   // حساب إجمالي الرسائل
   let totalMessages = 0;
   for (const conv of weekConversations) {
-    const messages = await db.getMessagesByConversationId(conv.id);
+    const messages = await getMessagesByConversationId(conv.id);
     totalMessages += messages.length;
   }
 
@@ -67,7 +75,7 @@ async function getWeeklyStats(merchantId: number): Promise<WeeklyStats> {
   }).length;
 
   // حساب المواعيد المحجوزة
-  const appointments = await db.getAppointmentsByMerchantId(merchantId);
+  const appointments = await getAppointmentsByMerchantId(merchantId);
   const weekAppointments = appointments.filter(a => {
     const appDate = new Date(a.createdAt);
     return appDate >= weekStart && appDate <= lastSaturday;
@@ -256,7 +264,7 @@ function generateWeeklyReportHTML(stats: WeeklyStats): string {
  */
 async function sendWeeklyReportToMerchant(merchantId: number): Promise<boolean> {
   try {
-    const merchant = await db.getMerchantById(merchantId);
+    const merchant = await getMerchantById(merchantId);
     if (!merchant || !merchant.email) {
       console.log(`[Weekly Report] Merchant ${merchantId} has no email, skipping`);
       return false;
@@ -302,7 +310,7 @@ async function sendWeeklyReportsToAll(): Promise<void> {
   console.log('[Weekly Report Cron] Starting weekly reports job...');
   
   try {
-    const dbConn = await db.getDb();
+    const dbConn = await getDb();
     if (!dbConn) {
       console.error('[Weekly Report Cron] Database connection failed');
       return;
@@ -316,7 +324,7 @@ async function sendWeeklyReportsToAll(): Promise<void> {
     }
 
     // الحصول على جميع التجار
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     console.log(`[Weekly Report Cron] Found ${merchants.length} merchants`);
 
     let successCount = 0;

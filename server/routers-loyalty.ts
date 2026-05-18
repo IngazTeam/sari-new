@@ -2,13 +2,13 @@ import { router, protectedProcedure } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as loyaltyDb from "./db_loyalty";
-import * as db from "./db";
+import { getMerchantByUserId } from './db';
 
 export const loyaltyRouter = router({
   // ==================== Settings ====================
   
   getSettings: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
     }
@@ -37,7 +37,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -48,7 +48,7 @@ export const loyaltyRouter = router({
   // ==================== Tiers ====================
 
   getTiers: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
     }
@@ -72,7 +72,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -96,7 +96,7 @@ export const loyaltyRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -126,7 +126,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -151,7 +151,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -173,7 +173,7 @@ export const loyaltyRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -209,7 +209,7 @@ export const loyaltyRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -235,7 +235,7 @@ export const loyaltyRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -265,7 +265,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -300,7 +300,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -322,7 +322,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -348,7 +348,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -370,7 +370,7 @@ export const loyaltyRouter = router({
       })
     )
     .query(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -398,7 +398,7 @@ export const loyaltyRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
       }
@@ -416,7 +416,7 @@ export const loyaltyRouter = router({
   // ==================== Statistics ====================
 
   getStats: protectedProcedure.query(async ({ ctx }) => {
-    const merchant = await db.getMerchantByUserId(ctx.user.id);
+    const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Merchant not found" });
     }

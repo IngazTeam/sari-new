@@ -6,7 +6,15 @@
  */
 
 import * as whatsapp from './whatsapp';
-import * as db from './db';
+import {
+  createConversation,
+  createMessage,
+  getAllWhatsAppConnectionRequests,
+  getConversationByMerchantAndPhone,
+  getConversationsByMerchantId,
+  getWhatsAppConnectionRequestByMerchantId,
+  updateConversation,
+} from './db';
 import { processIncomingMessage } from './ai';
 import { processVoiceMessage } from './ai/voice-handler';
 
@@ -36,7 +44,7 @@ export async function startPolling(merchantId: number): Promise<{ success: boole
     }
 
     // Get merchant's WhatsApp connection from connection requests
-    const connection = await db.getWhatsAppConnectionRequestByMerchantId(merchantId);
+    const connection = await getWhatsAppConnectionRequestByMerchantId(merchantId);
     if (!connection || connection.status !== 'connected') {
       return { success: false, error: 'WhatsApp not connected' };
     }
@@ -245,17 +253,17 @@ async function handleIncomingMessage(
     }
 
     // Get or create conversation
-    let conversation = await db.getConversationByMerchantAndPhone(merchantId, customerPhone);
+    let conversation = await getConversationByMerchantAndPhone(merchantId, customerPhone);
     
     if (!conversation) {
       // Create new conversation
-      const conversationId = await db.createConversation({
+      const conversationId = await createConversation({
         merchantId,
         customerPhone,
         customerName,
         status: 'active',
       });
-      const conversations = await db.getConversationsByMerchantId(merchantId);
+      const conversations = await getConversationsByMerchantId(merchantId);
       conversation = conversations.find(c => c.customerPhone === customerPhone);
     }
 
@@ -265,7 +273,7 @@ async function handleIncomingMessage(
     }
 
     // Save incoming message
-    await db.createMessage({
+    await createMessage({
       conversationId: conversation.id,
       direction: 'incoming',
       content: messageText,
@@ -274,7 +282,7 @@ async function handleIncomingMessage(
     });
 
     // Update conversation
-    await db.updateConversation(conversation.id, {
+    await updateConversation(conversation.id, {
       lastMessageAt: new Date(),
     });
 
@@ -336,16 +344,16 @@ async function handleVoiceMessage(
     console.log(`[Polling] Processing voice message from ${customerPhone}`);
 
     // Get or create conversation
-    let conversation = await db.getConversationByMerchantAndPhone(merchantId, customerPhone);
+    let conversation = await getConversationByMerchantAndPhone(merchantId, customerPhone);
     
     if (!conversation) {
-      const conversationId = await db.createConversation({
+      const conversationId = await createConversation({
         merchantId,
         customerPhone,
         customerName,
         status: 'active',
       });
-      const conversations = await db.getConversationsByMerchantId(merchantId);
+      const conversations = await getConversationsByMerchantId(merchantId);
       conversation = conversations.find(c => c.customerPhone === customerPhone);
     }
 
@@ -407,7 +415,7 @@ export async function startAllPolling(): Promise<void> {
     console.log('[Polling] Starting polling for all connected merchants...');
     
     // Get all connected WhatsApp connections
-    const connections = await db.getAllWhatsAppConnectionRequests();
+    const connections = await getAllWhatsAppConnectionRequests();
     const connectedConnections = connections.filter(c => c.status === 'connected');
     
     for (const connection of connectedConnections) {
@@ -497,7 +505,7 @@ export async function forceClearAndRestartPolling(merchantId: number): Promise<{
     console.log(`[Polling] Force clearing webhook and restarting polling for merchant ${merchantId}...`);
     
     // Get merchant's WhatsApp connection
-    const connection = await db.getWhatsAppConnectionRequestByMerchantId(merchantId);
+    const connection = await getWhatsAppConnectionRequestByMerchantId(merchantId);
     if (!connection || connection.status !== 'connected') {
       return { success: false, error: 'WhatsApp not connected' };
     }

@@ -8,14 +8,14 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getMerchantById } from './db';
 
 export const weeklyReportRouter = router({
     // Send manual weekly report
     sendManual: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantById(input.merchantId);
+            const merchant = await getMerchantById(input.merchantId);
             if (!merchant || merchant.userId !== ctx.user.id) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }

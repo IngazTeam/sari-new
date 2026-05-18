@@ -8,14 +8,14 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getMerchantByUserId, getNotificationPreferences, updateNotificationPreferences } from './db';
 
 export const notificationPreferencesRouter = router({
     get: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        return await db.getNotificationPreferences(merchant.id);
+        return await getNotificationPreferences(merchant.id);
     }),
 
     update: protectedProcedure
@@ -36,12 +36,12 @@ export const notificationPreferencesRouter = router({
             batchInterval: z.number().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
-            const merchant = await db.getMerchantByUserId(ctx.user.id);
+            const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant || merchant.id !== input.merchantId) {
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            await db.updateNotificationPreferences(input.merchantId, input);
+            await updateNotificationPreferences(input.merchantId, input);
             return { success: true };
         }),
 });

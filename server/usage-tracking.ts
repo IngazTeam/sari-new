@@ -3,13 +3,18 @@
  * Tracks and enforces subscription limits for conversations, messages, and voice messages
  */
 
-import * as db from './db';
+import {
+  getActiveSubscriptionByMerchantId,
+  getAllMerchants,
+  getPlanById,
+  updateSubscription,
+} from './db';
 
 /**
  * Get active subscription for merchant
  */
 async function getActiveSubscription(merchantId: number) {
-  const subscription = await db.getActiveSubscriptionByMerchantId(merchantId);
+  const subscription = await getActiveSubscriptionByMerchantId(merchantId);
   
   if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
     return null;
@@ -22,7 +27,7 @@ async function getActiveSubscription(merchantId: number) {
  * Get plan limits
  */
 async function getPlanLimits(planId: number) {
-  const plan = await db.getPlanById(planId);
+  const plan = await getPlanById(planId);
   
   if (!plan) {
     throw new Error('Plan not found');
@@ -144,7 +149,7 @@ export async function incrementConversationUsage(merchantId: number): Promise<vo
     }
     
     const newCount = (subscription.conversationsUsed || 0) + 1;
-    await db.updateSubscription(subscription.id, {
+    await updateSubscription(subscription.id, {
       conversationsUsed: newCount,
     });
     
@@ -167,7 +172,7 @@ export async function incrementMessageUsage(merchantId: number): Promise<void> {
     }
     
     const newCount = (subscription.messagesUsed || 0) + 1;
-    await db.updateSubscription(subscription.id, {
+    await updateSubscription(subscription.id, {
       messagesUsed: newCount,
     });
     
@@ -190,7 +195,7 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
     }
     
     const newCount = (subscription.voiceMessagesUsed || 0) + 1;
-    await db.updateSubscription(subscription.id, {
+    await updateSubscription(subscription.id, {
       voiceMessagesUsed: newCount,
     });
     
@@ -259,11 +264,11 @@ export async function resetMonthlyUsage(): Promise<void> {
     console.log('[Usage] Starting monthly usage reset...');
     
     // Get all merchants and their subscriptions
-    const merchants = await db.getAllMerchants();
+    const merchants = await getAllMerchants();
     const activeSubscriptions = [];
     
     for (const merchant of merchants) {
-      const subscription = await db.getActiveSubscriptionByMerchantId(merchant.id);
+      const subscription = await getActiveSubscriptionByMerchantId(merchant.id);
       if (subscription && subscription.status === 'active') {
         activeSubscriptions.push(subscription);
       }
@@ -277,7 +282,7 @@ export async function resetMonthlyUsage(): Promise<void> {
       
       // Check if it's time to reset
       if (now >= nextReset) {
-        await db.updateSubscription(subscription.id, {
+        await updateSubscription(subscription.id, {
           conversationsUsed: 0,
           messagesUsed: 0,
           voiceMessagesUsed: 0,

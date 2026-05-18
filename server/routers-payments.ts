@@ -4,18 +4,18 @@
  * 
  * This is a standalone module following the "Parallel Coexistence" pattern.
  * 
- * FIX #1: All endpoints now use proper merchant lookup via db.getMerchantByUserId()
+ * FIX #1: All endpoints now use proper merchant lookup via getMerchantByUserId()
  * instead of the nonexistent ctx.merchant (which caused runtime crashes).
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
-import * as db from "./db";
+import { getMerchantByUserId } from './db';
 
 // Helper: get merchant or throw
 async function requireMerchant(userId: number) {
-    const merchant = await db.getMerchantByUserId(userId);
+    const merchant = await getMerchantByUserId(userId);
     if (!merchant) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }

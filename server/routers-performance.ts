@@ -1,6 +1,11 @@
 import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
-import * as db from './db';
+import {
+  getMerchantById,
+  getMessageStats,
+  getOrdersByMerchantId,
+  getRepeatCustomersCount,
+} from './db';
 import { z } from 'zod';
 
 export const performanceRouter = router({
@@ -11,7 +16,7 @@ export const performanceRouter = router({
       endDate: z.string(),
     }))
     .query(async ({ input, ctx }) => {
-      const merchant = await db.getMerchantById(input.merchantId);
+      const merchant = await getMerchantById(input.merchantId);
       if (!merchant || merchant.userId !== ctx.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
       }
@@ -20,8 +25,8 @@ export const performanceRouter = router({
       const endDate = new Date(input.endDate);
 
       // Get message statistics
-      const messageStats = await db.getMessageStats(merchant.id, startDate, endDate);
-      const prevMessageStats = await db.getMessageStats(
+      const messageStats = await getMessageStats(merchant.id, startDate, endDate);
+      const prevMessageStats = await getMessageStats(
         merchant.id,
         new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime())),
         startDate
@@ -37,10 +42,10 @@ export const performanceRouter = router({
       const responseTimeChange = prevResponseTime > 0 ? ((responseTime - prevResponseTime) / prevResponseTime) * 100 : 0;
 
       // Get orders
-      const orders = await db.getOrdersByMerchantId(merchant.id, startDate, endDate);
+      const orders = await getOrdersByMerchantId(merchant.id, startDate, endDate);
       const conversionRate = totalMessages > 0 ? (orders.length / totalMessages) * 100 : 0;
       
-      const prevOrders = await db.getOrdersByMerchantId(
+      const prevOrders = await getOrdersByMerchantId(
         merchant.id,
         new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime())),
         startDate
@@ -50,11 +55,11 @@ export const performanceRouter = router({
 
       // Customer satisfaction
       const uniqueCustomers = messageStats?.uniqueCustomers || 0;
-      const repeatCustomers = await db.getRepeatCustomersCount(merchant.id, startDate, endDate);
+      const repeatCustomers = await getRepeatCustomersCount(merchant.id, startDate, endDate);
       const customerSatisfaction = uniqueCustomers > 0 ? (repeatCustomers / uniqueCustomers) * 100 : 0;
       
       const prevUniqueCustomers = prevMessageStats?.uniqueCustomers || 0;
-      const prevRepeatCustomers = await db.getRepeatCustomersCount(
+      const prevRepeatCustomers = await getRepeatCustomersCount(
         merchant.id,
         new Date(startDate.getTime() - (endDate.getTime() - startDate.getTime())),
         startDate

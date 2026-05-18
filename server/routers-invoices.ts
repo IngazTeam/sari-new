@@ -5,7 +5,18 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from './_core/trpc';
 import { TRPCError } from '@trpc/server';
-import * as db from './db';
+import {
+  getAllInvoices,
+  getInvoiceById,
+  getInvoiceStats,
+  getInvoicesByMerchantId,
+  getMerchantById,
+  getMerchantByUserId,
+  getPaymentById,
+  getPlanById,
+  getSubscriptionById,
+  updateInvoice,
+} from './db';
 import { generateInvoicePDF } from './invoices/generator';
 
 export const invoicesRouter = router({
@@ -23,7 +34,7 @@ export const invoicesRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
             }
 
-            const allInvoices = await db.getAllInvoices({
+            const allInvoices = await getAllInvoices({
                 status: input.status !== 'all' ? input.status : undefined,
                 limit: input.limit,
                 offset: input.offset,
@@ -36,7 +47,7 @@ export const invoicesRouter = router({
     getById: protectedProcedure
         .input(z.object({ id: z.number() }))
         .query(async ({ ctx, input }) => {
-            const invoice = await db.getInvoiceById(input.id);
+            const invoice = await getInvoiceById(input.id);
 
             if (!invoice) {
                 throw new TRPCError({
@@ -47,21 +58,21 @@ export const invoicesRouter = router({
 
             // SECURITY: Check ownership — user must own the merchant OR be admin
             if (ctx.user.role !== 'admin') {
-                const merchant = await db.getMerchantByUserId(ctx.user.id);
+                const merchant = await getMerchantByUserId(ctx.user.id);
                 if (!merchant || merchant.id !== invoice.merchantId) {
                     throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
                 }
             }
 
             // Get related data
-            const merchant = await db.getMerchantById(invoice.merchantId);
-            const payment = await db.getPaymentById(invoice.paymentId);
+            const merchant = await getMerchantById(invoice.merchantId);
+            const payment = await getPaymentById(invoice.paymentId);
 
             let plan = null;
             if (invoice.subscriptionId) {
-                const subscription = await db.getSubscriptionById(invoice.subscriptionId);
+                const subscription = await getSubscriptionById(invoice.subscriptionId);
                 if (subscription) {
-                    plan = await db.getPlanById(subscription.planId);
+                    plan = await getPlanById(subscription.planId);
                 }
             }
 
@@ -75,13 +86,13 @@ export const invoicesRouter = router({
 
     // Get invoices for current merchant
     myInvoices: protectedProcedure.query(async ({ ctx }) => {
-        const merchant = await db.getMerchantByUserId(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
 
         if (!merchant) {
             return [];
         }
 
-        return await db.getInvoicesByMerchantId(merchant.id);
+        return await getInvoicesByMerchantId(merchant.id);
     }),
 
     // Get invoice statistics (admin only)
@@ -90,7 +101,7 @@ export const invoicesRouter = router({
         if (ctx.user.role !== 'admin') {
             throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
         }
-        const stats = await db.getInvoiceStats();
+        const stats = await getInvoiceStats();
         return stats;
     }),
 
@@ -106,7 +117,7 @@ export const invoicesRouter = router({
                 });
             }
 
-            const invoice = await db.getInvoiceById(input.id);
+            const invoice = await getInvoiceById(input.id);
 
             if (!invoice) {
                 throw new TRPCError({
@@ -126,7 +137,7 @@ export const invoicesRouter = router({
             }
 
             // Update invoice with PDF info
-            await db.updateInvoice(input.id, {
+            await updateInvoice(input.id, {
                 pdfPath: pdfResult.pdfPath,
                 pdfUrl: pdfResult.pdfUrl,
             });
@@ -151,7 +162,7 @@ export const invoicesRouter = router({
                 });
             }
 
-            await db.updateInvoice(input.id, { status: input.status });
+            await updateInvoice(input.id, { status: input.status });
 
             return { success: true };
         }),
