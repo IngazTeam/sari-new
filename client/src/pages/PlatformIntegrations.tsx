@@ -221,7 +221,7 @@ export default function PlatformIntegrations() {
   return (
     <div className="container max-w-6xl py-8 space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">{t('platformIntegrationsPage.text3')}</h1>
+        <h1 className="text-3xl font-bold">{t('platformIntegrationsPage.text12')}</h1>
         <p className="text-muted-foreground mt-2">{t('platformIntegrations.auto_0')}</p>
       </div>
 
