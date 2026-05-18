@@ -83,6 +83,9 @@ export const appRouter = router({
   // Merchants — modularized to routers-merchants.ts
   merchants: merchantsRouter,
 
+  // Integrations — platform connections (Byaan, Salla, Zid, etc.)
+  integrations: integrationsRouter,
+
   auth: router({
     me: protectedProcedure.query(opts => {
       const { password, openId, ...safeUser } = opts.ctx.user as any;
