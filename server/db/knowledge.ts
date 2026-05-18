@@ -613,7 +613,7 @@ export async function calculateHealthScore(merchantId: number): Promise<Knowledg
   if (pool) {
     try {
       const [prodRows] = await pool.execute(
-        `SELECT COUNT(*) as cnt FROM products WHERE merchant_id = ?`, [merchantId]
+        `SELECT COUNT(*) as cnt FROM products WHERE merchantId = ?`, [merchantId]
       );
       hasProducts = (prodRows as any[])[0]?.cnt >= 3;
 

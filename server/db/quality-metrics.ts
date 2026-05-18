@@ -358,9 +358,9 @@ export async function generateWeeklyReport(merchantId: number): Promise<WeeklyRe
   try {
     const [msgRows] = await pool.execute(
       `SELECT COUNT(*) as cnt FROM messages m
-       JOIN conversations c ON m.conversation_id = c.id
-       WHERE c.merchant_id = ? AND m.direction = 'incoming'
-       AND DATE(m.created_at) BETWEEN ? AND ?`,
+       JOIN conversations c ON m.conversationId = c.id
+       WHERE c.merchantId = ? AND m.direction = 'incoming'
+       AND DATE(m.createdAt) BETWEEN ? AND ?`,
       [merchantId, startStr, endStr]
     );
     totalMessages = Number((msgRows as any[])[0]?.cnt) || total;

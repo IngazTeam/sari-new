@@ -828,7 +828,7 @@ sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) =
 
     if (tenantDomain) {
       const [rows] = await pool.execute(
-        `SELECT m.id, m.business_name, m.status, m.integration_source FROM merchants m 
+        `SELECT m.id, m.businessName, m.status, m.integration_source FROM merchants m 
          INNER JOIN byaan_connections bc ON bc.merchant_id = m.id 
          WHERE bc.tenant_domain = ? AND bc.is_active = 1 LIMIT 1`,
         [stripHtml(String(tenantDomain))]
@@ -836,8 +836,8 @@ sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) =
       merchant = (rows as any[])?.[0];
     } else if (email) {
       const [rows] = await pool.execute(
-        `SELECT m.id, m.business_name, m.status, m.integration_source FROM merchants m 
-         INNER JOIN users u ON u.id = m.user_id 
+        `SELECT m.id, m.businessName, m.status, m.integration_source FROM merchants m 
+         INNER JOIN users u ON u.id = m.userId 
          WHERE u.email = ? AND m.integration_source = ? LIMIT 1`,
         [String(email).toLowerCase().trim(), req.platform]
       );
@@ -848,7 +848,7 @@ sariPlatformRouter.post('/verify', async (req: PlatformRequest, res: Response) =
       connected: !!merchant,
       merchant: merchant ? {
         id: merchant.id,
-        businessName: merchant.business_name,
+        businessName: merchant.businessName,
         status: merchant.status,
       } : null,
     });

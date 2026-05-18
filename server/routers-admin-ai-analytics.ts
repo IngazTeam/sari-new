@@ -140,7 +140,7 @@ export const adminAiAnalyticsRouter = router({
 
       // Sites needing improvement (score < 50)
       const [poorRows] = await pool.execute(
-        `SELECT wa.id, wa.url, wa.title, wa.overall_score, wa.industry, wa.analyzed_at, m.business_name
+        `SELECT wa.id, wa.url, wa.title, wa.overall_score, wa.industry, wa.analyzed_at, m.businessName
          FROM website_analyses wa
          JOIN merchants m ON wa.merchant_id = m.id
          WHERE wa.status = 'completed' AND wa.overall_score < 50
@@ -156,7 +156,7 @@ export const adminAiAnalyticsRouter = router({
           title: r.title,
           score: r.overall_score,
           industry: r.industry,
-          merchantName: r.business_name,
+          merchantName: r.businessName,
           analyzedAt: r.analyzed_at,
         })),
       };
@@ -190,7 +190,7 @@ export const adminAiAnalyticsRouter = router({
       const [healthRows] = await pool.execute(
         `SELECT 
           m.id as merchant_id,
-          m.business_name,
+          m.businessName,
           COUNT(ks.id) as section_count,
           COUNT(DISTINCT ks.section_type) as type_count,
           SUM(CASE WHEN ks.section_type = 'sales_intel' THEN 1 ELSE 0 END) as has_intel,
@@ -198,7 +198,7 @@ export const adminAiAnalyticsRouter = router({
          FROM merchants m
          LEFT JOIN knowledge_sections ks ON m.id = ks.merchant_id
          WHERE m.status = 'active'
-         GROUP BY m.id, m.business_name
+         GROUP BY m.id, m.businessName
          ORDER BY section_count DESC
          LIMIT 20`
       );
@@ -208,7 +208,7 @@ export const adminAiAnalyticsRouter = router({
         sourceDistribution: sourceRows as any[],
         merchantHealth: (healthRows as any[]).map((r: any) => ({
           merchantId: r.merchant_id,
-          merchantName: r.business_name,
+          merchantName: r.businessName,
           sectionCount: Number(r.section_count),
           typeCount: Number(r.type_count),
           hasIntel: Number(r.has_intel) > 0,
@@ -317,7 +317,7 @@ export const adminAiAnalyticsRouter = router({
 
     try {
       const [rows] = await pool.execute(
-        `SELECT ks.merchant_id, ks.content, ks.created_at, m.business_name
+        `SELECT ks.merchant_id, ks.content, ks.created_at, m.businessName
          FROM knowledge_sections ks
          JOIN merchants m ON ks.merchant_id = m.id
          WHERE ks.section_type = 'opportunities' AND m.status = 'active'
@@ -326,7 +326,7 @@ export const adminAiAnalyticsRouter = router({
 
       return (rows as any[]).map((r: any) => ({
         merchantId: r.merchant_id,
-        merchantName: r.business_name,
+        merchantName: r.businessName,
         content: (r.content || '').substring(0, 500),
         createdAt: r.created_at,
       }));

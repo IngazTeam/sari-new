@@ -136,7 +136,7 @@ async function collectReportData(
   if (pool) {
     try {
       const [rows] = await pool.execute(
-        `SELECT * FROM orders WHERE merchant_id = ? AND created_at >= ? AND created_at < ?`,
+        `SELECT * FROM orders WHERE merchantId = ? AND createdAt >= ? AND createdAt < ?`,
         [merchantId, startDate.toISOString(), endDate.toISOString()]
       );
       periodOrders = rows as any[];
@@ -166,7 +166,7 @@ async function collectReportData(
       // Conversation count
       const [convRows] = await pool.execute(
         `SELECT COUNT(*) as cnt FROM conversations 
-         WHERE merchant_id = ? AND created_at >= ? AND created_at < ?`,
+         WHERE merchantId = ? AND createdAt >= ? AND createdAt < ?`,
         [merchantId, startDate.toISOString(), endDate.toISOString()]
       );
       totalConversations = Number((convRows as any[])[0]?.cnt) || 0;
@@ -175,8 +175,8 @@ async function collectReportData(
       // Message count — single aggregate instead of N+1
       const [msgRows] = await pool.execute(
         `SELECT COUNT(*) as cnt FROM messages m
-         INNER JOIN conversations c ON c.id = m.conversation_id
-         WHERE c.merchant_id = ? AND m.created_at >= ? AND m.created_at < ?`,
+         INNER JOIN conversations c ON c.id = m.conversationId
+         WHERE c.merchantId = ? AND m.createdAt >= ? AND m.createdAt < ?`,
         [merchantId, startDate.toISOString(), endDate.toISOString()]
       );
       totalMessages = Number((msgRows as any[])[0]?.cnt) || 0;
