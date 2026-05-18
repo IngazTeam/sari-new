@@ -185,7 +185,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   // 6. الإعدادات والربط
   { icon: Settings, label: t('sidebar.merchant.settings', 'إعدادات المتجر'), path: "/merchant/settings", group: 'settings' },
   { icon: Crown, label: t('sidebar.merchant.mySubscription', 'باقتي والفواتير'), path: "/merchant/my-subscription", group: 'settings' },
-  { icon: Webhook, label: t('sidebar.merchant.integrationsDashboard', 'التطبيقات والربط'), path: "/merchant/integrations-dashboard", group: 'settings', secondary: true },
+  { icon: Plug, label: t('sidebar.merchant.platformIntegrations', 'التكاملات والربط'), path: "/merchant/platform-integrations", group: 'settings' },
   { icon: Users, label: t('sidebar.merchant.staffManagement', 'فريق العمل'), path: "/merchant/staff", group: 'settings', secondary: true },
   { icon: Languages, label: t('sidebar.merchant.languageSettings', 'إعدادات اللغة'), path: "/merchant/language-settings", group: 'settings', secondary: true },
   { icon: CreditCard, label: t('sidebar.merchant.merchantPayments', 'مدفوعات التاجر'), path: "/merchant/merchant-payments", group: 'settings', secondary: true },

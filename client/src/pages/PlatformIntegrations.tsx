@@ -155,7 +155,8 @@ export default function PlatformIntegrations() {
       name: 'بيان',
       description: 'منصة إدارة المراكز التدريبية — دورات، متدربين، تسجيلات',
       logo: '🎓',
-      connected: false,
+      connected: currentPlatform?.platform === 'byaan',
+      storeUrl: currentPlatform?.platform === 'byaan' ? currentPlatform.storeUrl : undefined,
       setupUrl: '/merchant/integrations/byaan',
     },
   ];
