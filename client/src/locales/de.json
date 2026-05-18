@@ -837,7 +837,9 @@
       "integrations": "Integrationen",
       "loyalty": "Treueprogramm",
       "payments": "Zahlungen",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen und Integrationen",
+      "operations": "Vertrieb und Betrieb",
+      "channels": "KI-Assistent"
     },
     "merchant": {
       "dashboard": "Dashboard",
@@ -911,7 +913,19 @@
       "mySubscription": "Mein Abonnement",
       "settings": "Einstellungen",
       "languageSettings": "Spracheinstellungen",
-      "notificationSettings": "Benachrichtigungseinstellungen"
+      "notificationSettings": "Benachrichtigungseinstellungen",
+      "notifications": "Benachrichtigungen",
+      "services": "Dienstleistungen",
+      "aiHub": "KI-Assistent Hub",
+      "humanTakeover": "Menschliche Übernahme",
+      "salesHub": "Verkaufszentrum",
+      "analyticsHub": "Analyse-Hub",
+      "smartAnalysis": "Website-Analyse",
+      "competitorAnalysis": "Wettbewerbsanalyse",
+      "platformIntegrations": "Plattform-Integrationen",
+      "merchantPayments": "Händlerzahlungen",
+      "calendar": "Kalender",
+      "virtualTeam": "Virtuelles Team"
     },
     "admin": {
       "dashboard": "Dashboard",
@@ -938,7 +952,8 @@
     "logoutConfirmMessage": "Möchten Sie sich wirklich von Ihrem Konto abmelden?",
     "signInTitle": "Anmelden um fortzufahren",
     "signInDescription": "Der Zugriff auf dieses Dashboard erfordert eine Authentifizierung. Fahren Sie fort, um sich anzumelden.",
-    "signInButton": "Anmelden"
+    "signInButton": "Anmelden",
+    "search": "Menü durchsuchen..."
   },
   "footer": {
     "description": "Intelligenter Verkaufsassistent auf WhatsApp",

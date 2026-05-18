@@ -837,7 +837,9 @@
       "integrations": "Integraciones",
       "loyalty": "Programa de fidelidad",
       "payments": "Pagos",
-      "settings": "Configuración"
+      "settings": "Configuración e integraciones",
+      "operations": "Ventas y operaciones",
+      "channels": "Asistente IA"
     },
     "merchant": {
       "dashboard": "Panel",
@@ -911,7 +913,19 @@
       "mySubscription": "Mi suscripción",
       "settings": "Configuración",
       "languageSettings": "Configuración de idioma",
-      "notificationSettings": "Configuración de notificaciones"
+      "notificationSettings": "Configuración de notificaciones",
+      "notifications": "Notificaciones",
+      "services": "Servicios",
+      "aiHub": "Hub Asistente IA",
+      "humanTakeover": "Intervención humana",
+      "salesHub": "Centro de ventas",
+      "analyticsHub": "Centro de análisis",
+      "smartAnalysis": "Análisis del sitio",
+      "competitorAnalysis": "Análisis de competidores",
+      "platformIntegrations": "Integraciones",
+      "merchantPayments": "Pagos del comerciante",
+      "calendar": "Calendario",
+      "virtualTeam": "Equipo virtual"
     },
     "admin": {
       "dashboard": "Panel",
@@ -938,7 +952,8 @@
     "logoutConfirmMessage": "¿Está seguro de que desea cerrar sesión?",
     "signInTitle": "Inicie sesión para continuar",
     "signInDescription": "El acceso a este panel requiere autenticación. Continúe para iniciar sesión.",
-    "signInButton": "Iniciar sesión"
+    "signInButton": "Iniciar sesión",
+    "search": "Buscar en menú..."
   },
   "footer": {
     "description": "Asistente de ventas inteligente en WhatsApp",

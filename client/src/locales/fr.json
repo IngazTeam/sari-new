@@ -837,7 +837,9 @@
       "integrations": "Intégrations",
       "loyalty": "Programme de fidélité",
       "payments": "Paiements",
-      "settings": "Paramètres"
+      "settings": "Paramètres et intégrations",
+      "operations": "Ventes et opérations",
+      "channels": "Assistant IA"
     },
     "merchant": {
       "dashboard": "Tableau de bord",
@@ -911,7 +913,19 @@
       "mySubscription": "Mon abonnement",
       "settings": "Paramètres",
       "languageSettings": "Paramètres de langue",
-      "notificationSettings": "Paramètres de notification"
+      "notificationSettings": "Paramètres de notification",
+      "notifications": "Notifications",
+      "services": "Services",
+      "aiHub": "Hub Assistant IA",
+      "humanTakeover": "Prise en main humaine",
+      "salesHub": "Hub des ventes",
+      "analyticsHub": "Hub Analytique",
+      "smartAnalysis": "Analyse du site",
+      "competitorAnalysis": "Analyse concurrentielle",
+      "platformIntegrations": "Intégrations",
+      "merchantPayments": "Paiements marchands",
+      "calendar": "Calendrier",
+      "virtualTeam": "Équipe virtuelle"
     },
     "admin": {
       "dashboard": "Tableau de bord",
@@ -938,7 +952,8 @@
     "logoutConfirmMessage": "Êtes-vous sûr de vouloir vous déconnecter de votre compte ?",
     "signInTitle": "Connectez-vous pour continuer",
     "signInDescription": "L'accès à ce tableau de bord nécessite une authentification. Continuez pour lancer le processus de connexion.",
-    "signInButton": "Se connecter"
+    "signInButton": "Se connecter",
+    "search": "Rechercher..."
   },
   "footer": {
     "description": "Assistant de vente intelligent sur WhatsApp",

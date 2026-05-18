@@ -837,7 +837,9 @@
       "integrations": "Entegrasyonlar",
       "loyalty": "Sadakat Programı",
       "payments": "Ödemeler",
-      "settings": "Ayarlar"
+      "settings": "Ayarlar ve entegrasyonlar",
+      "operations": "Satış ve operasyonlar",
+      "channels": "AI Asistanı"
     },
     "merchant": {
       "dashboard": "Panel",
@@ -911,7 +913,19 @@
       "mySubscription": "Aboneliğim",
       "settings": "Ayarlar",
       "languageSettings": "Dil Ayarları",
-      "notificationSettings": "Bildirim Ayarları"
+      "notificationSettings": "Bildirim Ayarları",
+      "notifications": "Bildirimler",
+      "services": "Hizmetler",
+      "aiHub": "AI Asistan Merkezi",
+      "humanTakeover": "İnsan Devralma",
+      "salesHub": "Satış Merkezi",
+      "analyticsHub": "Analitik Merkezi",
+      "smartAnalysis": "Site Analizi",
+      "competitorAnalysis": "Rakip Analizi",
+      "platformIntegrations": "Platform Entegrasyonları",
+      "merchantPayments": "Tüccar Ödemeleri",
+      "calendar": "Takvim",
+      "virtualTeam": "Sanal Ekip"
     },
     "admin": {
       "dashboard": "Panel",
@@ -938,7 +952,8 @@
     "logoutConfirmMessage": "Hesabınızdan çıkış yapmak istediğinizden emin misiniz?",
     "signInTitle": "Devam etmek için giriş yapın",
     "signInDescription": "Bu panele erişim için kimlik doğrulaması gereklidir. Giriş yapmak için devam edin.",
-    "signInButton": "Giriş Yap"
+    "signInButton": "Giriş Yap",
+    "search": "Menüde ara..."
   },
   "footer": {
     "description": "WhatsApp üzerinde akıllı satış asistanı",

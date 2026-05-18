@@ -837,7 +837,9 @@
       "integrations": "Integrazioni",
       "loyalty": "Programma fedeltà",
       "payments": "Pagamenti",
-      "settings": "Impostazioni"
+      "settings": "Impostazioni e integrazioni",
+      "operations": "Vendite e operazioni",
+      "channels": "Assistente AI"
     },
     "merchant": {
       "dashboard": "Dashboard",
@@ -911,7 +913,19 @@
       "mySubscription": "Il mio abbonamento",
       "settings": "Impostazioni",
       "languageSettings": "Impostazioni lingua",
-      "notificationSettings": "Impostazioni notifiche"
+      "notificationSettings": "Impostazioni notifiche",
+      "notifications": "Notifiche",
+      "services": "Servizi",
+      "aiHub": "Hub Assistente AI",
+      "humanTakeover": "Presa in carico umana",
+      "salesHub": "Hub vendite",
+      "analyticsHub": "Hub Analitica",
+      "smartAnalysis": "Analisi del sito",
+      "competitorAnalysis": "Analisi concorrenza",
+      "platformIntegrations": "Integrazioni",
+      "merchantPayments": "Pagamenti commerciante",
+      "calendar": "Calendario",
+      "virtualTeam": "Team virtuale"
     },
     "admin": {
       "dashboard": "Dashboard",
@@ -938,7 +952,8 @@
     "logoutConfirmMessage": "Sei sicuro di voler disconnetterti dal tuo account?",
     "signInTitle": "Accedi per continuare",
     "signInDescription": "L'accesso a questa dashboard richiede l'autenticazione. Continua per accedere.",
-    "signInButton": "Accedi"
+    "signInButton": "Accedi",
+    "search": "Cerca nel menu..."
   },
   "footer": {
     "description": "Assistente di vendita intelligente su WhatsApp",

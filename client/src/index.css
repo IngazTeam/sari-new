@@ -124,7 +124,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Expo Arabic', sans-serif;
+    font-family: 'Expo Arabic', 'Arabic UI Text', system-ui, -apple-system, sans-serif;
     font-weight: 600;
     max-width: 1360px;
     margin: 20px auto;
@@ -186,7 +186,7 @@
   h4,
   h5,
   h6 {
-    font-family: 'Expo Arabic', sans-serif;
+    font-family: 'Expo Arabic', 'Arabic UI Text', system-ui, -apple-system, sans-serif;
     font-weight: 700;
   }
 

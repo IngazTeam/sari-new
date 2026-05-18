@@ -837,7 +837,9 @@
       "integrations": "集成",
       "loyalty": "忠诚计划",
       "payments": "支付",
-      "settings": "设置"
+      "settings": "设置与集成",
+      "operations": "销售与运营",
+      "channels": "AI 助手"
     },
     "merchant": {
       "dashboard": "仪表板",
@@ -911,7 +913,19 @@
       "mySubscription": "我的订阅",
       "settings": "设置",
       "languageSettings": "语言设置",
-      "notificationSettings": "通知设置"
+      "notificationSettings": "通知设置",
+      "notifications": "通知",
+      "services": "服务",
+      "aiHub": "AI 助手中心",
+      "humanTakeover": "人工接管",
+      "salesHub": "销售中心",
+      "analyticsHub": "分析中心",
+      "smartAnalysis": "网站分析",
+      "competitorAnalysis": "竞争对手分析",
+      "platformIntegrations": "平台集成",
+      "merchantPayments": "商户付款",
+      "calendar": "日历",
+      "virtualTeam": "虚拟团队"
     },
     "admin": {
       "dashboard": "仪表板",
@@ -938,7 +952,8 @@
     "logoutConfirmMessage": "您确定要退出登录吗？",
     "signInTitle": "登录以继续",
     "signInDescription": "访问此仪表板需要身份验证。点击继续登录。",
-    "signInButton": "登录"
+    "signInButton": "登录",
+    "search": "搜索菜单..."
   },
   "footer": {
     "description": "WhatsApp智能销售助手",
