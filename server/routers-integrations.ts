@@ -78,27 +78,51 @@ export const integrationsRouter = router({
             tenantDomain: z.string().min(3).max(255).regex(/^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'نطاق غير صالح'),
         }))
         .mutation(async ({ ctx, input }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
+            console.log('[connectByaan] STEP 1: Starting...');
+            
+            let merchant;
+            try {
+                merchant = await getMerchantByUserId(ctx.user.id);
+                console.log('[connectByaan] STEP 2: getMerchantByUserId OK, id=', merchant?.id);
+            } catch (e: any) {
+                console.error('[connectByaan] STEP 2 FAILED:', e?.message, e?.stack);
+                throw e;
+            }
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            // Check no other platform is connected
-            const { getCurrentPlatform } = await import('./integrations/platform-checker');
-            const existing = await getCurrentPlatform(merchant.id);
-            if (existing && existing.platform !== 'byaan') {
-                throw new TRPCError({
-                    code: 'CONFLICT',
-                    message: `لديك منصة ${existing.name} مربوطة بالفعل. افصلها أولاً.`,
-                });
+            try {
+                console.log('[connectByaan] STEP 3: importing platform-checker...');
+                const { getCurrentPlatform } = await import('./integrations/platform-checker');
+                console.log('[connectByaan] STEP 3: import OK, calling getCurrentPlatform...');
+                const existing = await getCurrentPlatform(merchant.id);
+                console.log('[connectByaan] STEP 3: getCurrentPlatform OK, existing=', existing?.platform);
+                if (existing && existing.platform !== 'byaan') {
+                    throw new TRPCError({
+                        code: 'CONFLICT',
+                        message: `لديك منصة ${existing.name} مربوطة بالفعل. افصلها أولاً.`,
+                    });
+                }
+            } catch (e: any) {
+                console.error('[connectByaan] STEP 3 FAILED:', e?.message, e?.stack);
+                throw e;
             }
 
-            const { createByaanConnection } = await import('./integrations/byaan');
-            const connection = await createByaanConnection(merchant.id, input.tenantDomain);
-
-            return {
-                success: true,
-                tenantDomain: input.tenantDomain,
-                connection,
-            };
+            try {
+                console.log('[connectByaan] STEP 4: importing byaan...');
+                const { createByaanConnection } = await import('./integrations/byaan');
+                console.log('[connectByaan] STEP 4: import OK, calling createByaanConnection...');
+                const connection = await createByaanConnection(merchant.id, input.tenantDomain);
+                console.log('[connectByaan] STEP 4: createByaanConnection OK');
+                
+                return {
+                    success: true,
+                    tenantDomain: input.tenantDomain,
+                    connection,
+                };
+            } catch (e: any) {
+                console.error('[connectByaan] STEP 4 FAILED:', e?.message, e?.stack);
+                throw e;
+            }
         }),
 
     /** Test Byaan connection — verify the tenant domain is reachable */
