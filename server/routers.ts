@@ -7948,24 +7948,9 @@ export const appRouter = router({
       }),
   }),
 
-  // Platform Integrations Management
-  integrations: router({
-    // Get current connected platform
-    getCurrentPlatform: protectedProcedure.query(async ({ ctx }) => {
-      const { getCurrentPlatform } = await import('./integrations/platform-checker');
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      return await getCurrentPlatform(merchant.id);
-    }),
+  // Platform Integrations Management — moved to routers-integrations.ts
+  // (registered as `integrations: integrationsRouter` at top of appRouter)
 
-    // Get all connected platforms (for debugging)
-    getAllConnectedPlatforms: protectedProcedure.query(async ({ ctx }) => {
-      const { getAllConnectedPlatforms } = await import('./integrations/platform-checker');
-      const merchant = await db.getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      return await getAllConnectedPlatforms(merchant.id);
-    }),
-  }),
 
   // Push Notifications Management
   push: router({
