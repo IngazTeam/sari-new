@@ -30,13 +30,18 @@ export async function extractTextFromDocument(
  * Extract text from a PDF buffer using pdf-parse
  */
 async function extractFromPdf(buffer: Buffer): Promise<{ text: string; pageCount: number }> {
-  const pdfParse = (await import('pdf-parse')).default;
-  const result = await pdfParse(buffer);
-
-  return {
-    text: cleanAndTruncateText(result.text),
-    pageCount: result.numpages,
-  };
+  // pdf-parse v2 uses class-based API: new PDFParse({ data }) → getText() → destroy()
+  const { PDFParse } = await import('pdf-parse');
+  const parser = new PDFParse({ data: buffer });
+  try {
+    const result = await parser.getText();
+    return {
+      text: cleanAndTruncateText(result.text),
+      pageCount: result.total || 0,
+    };
+  } finally {
+    await parser.destroy();
+  }
 }
 
 /**
