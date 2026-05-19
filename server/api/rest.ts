@@ -1307,13 +1307,18 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
         knowledgeSectionCount = (ksRows as any[])?.[0]?.cnt || 0;
       } catch (e) { /* skip */ }
 
-      // Discovered pages
+      // Discovered pages — PEN-SYNC-05: separate COUNT for accuracy
       try {
+        const [countRows] = await pool.execute(
+          `SELECT COUNT(*) as cnt FROM discovered_pages WHERE merchant_id = ? AND is_active = 1`,
+          [merchant.id]
+        );
+        discoveredPageCount = (countRows as any[])?.[0]?.cnt || 0;
+
         const [dpRows] = await pool.execute(
           `SELECT title, page_type FROM discovered_pages WHERE merchant_id = ? AND is_active = 1 ORDER BY id DESC LIMIT 20`,
           [merchant.id]
         );
-        discoveredPageCount = (dpRows as any[])?.length || 0;
         discoveredPageTitles = (dpRows as any[])?.map((r: any) => r.title || r.page_type).filter(Boolean) || [];
       } catch (e) { /* skip */ }
     }

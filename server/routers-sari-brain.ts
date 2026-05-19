@@ -1533,9 +1533,15 @@ ${sanitizedContent}`
         knowledgeSectionCount = sections.length;
       } catch { /* skip */ }
 
-      // Discovered pages
+      // Discovered pages — PEN-SYNC-05: separate COUNT for accuracy
+      let discoveredPageCount = 0;
       let discoveredPages: { title: string; pageType: string }[] = [];
       try {
+        const [countRows] = await (dbConn as any).execute(
+          `SELECT COUNT(*) as cnt FROM discovered_pages WHERE merchant_id = ? AND is_active = 1`, [merchant.id]
+        );
+        discoveredPageCount = (countRows as any[])?.[0]?.cnt || 0;
+
         const [dpRows] = await (dbConn as any).execute(
           `SELECT title, page_type FROM discovered_pages WHERE merchant_id = ? AND is_active = 1 ORDER BY id DESC LIMIT 20`,
           [merchant.id]
@@ -1571,7 +1577,7 @@ ${sanitizedContent}`
         faqs: faqCount,
         faqCategories,
         knowledgeSections: knowledgeSectionCount,
-        discoveredPages: discoveredPages.length,
+        discoveredPages: discoveredPageCount,
         discoveredPageTitles: discoveredPages.map(p => p.title),
         customers: customerCount,
         lastSyncAt,
