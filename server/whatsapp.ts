@@ -349,6 +349,7 @@ export function parseWebhookMessage(webhookData: any): IncomingMessage | null {
 
 /**
  * Add typing indicator (simulate human behavior)
+ * Uses Green API v5.44+ SendTyping endpoint (replaces deprecated sendChatStateTyping)
  */
 export async function sendTypingIndicator(
   phoneNumber: string,
@@ -359,18 +360,13 @@ export async function sendTypingIndicator(
     const baseURL = getBaseURL(instanceId, token);
 
     const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    const typingTimeMs = Math.min(durationSeconds * 1000, 20000); // max 20s per API docs
 
-    // Send "typing..." indicator
-    await axios.post(`${baseURL}/sendChatStateTyping`, {
+    // Green API v5.44+: SendTyping with typingTime (1000-20000ms)
+    // Auto-expires after typingTime — no need to call stop
+    await axios.post(`${baseURL}/sendTyping`, {
       chatId: `${formattedPhone}@c.us`,
-    });
-
-    // Wait for specified duration
-    await new Promise(resolve => setTimeout(resolve, durationSeconds * 1000));
-
-    // Stop typing indicator
-    await axios.post(`${baseURL}/sendChatStateStopTyping`, {
-      chatId: `${formattedPhone}@c.us`,
+      typingTime: typingTimeMs,
     });
   } catch (error) {
     console.error('Error sending typing indicator:', error);
@@ -380,7 +376,8 @@ export async function sendTypingIndicator(
 /**
  * Send typing indicator with merchant-specific credentials.
  * Fire-and-forget — does NOT wait for duration. Just starts typing.
- * The typing state auto-expires when the next message is sent.
+ * Uses Green API v5.44+ SendTyping endpoint (replaces deprecated sendChatStateTyping).
+ * The typing state auto-expires after typingTime or when the next message is sent.
  */
 export async function sendTypingWithCredentials(
   instanceId: string,
@@ -393,8 +390,10 @@ export async function sendTypingWithCredentials(
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
     const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
 
-    await axios.post(`${baseURL}/sendChatStateTyping/${apiToken}`, {
+    // Green API v5.44+: SendTyping with typingTime (5s default, max 20s)
+    await axios.post(`${baseURL}/sendTyping/${apiToken}`, {
       chatId: `${formattedPhone}@c.us`,
+      typingTime: 5000,
     });
   } catch (error) {
     // Non-blocking — typing indicator is cosmetic
