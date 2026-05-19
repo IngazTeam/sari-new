@@ -569,14 +569,14 @@ async function buildEnhancedContextPrompt(context: {
       cachedMerchant = await getMerchantById(context.merchantId);
       if (cachedMerchant) {
         const profileParts: string[] = [];
-        if (cachedMerchant.phone) profileParts.push(`الهاتف: ${cachedMerchant.phone}`);
-        if (cachedMerchant.email) profileParts.push(`البريد: ${cachedMerchant.email}`);
+        // phone/email intentionally NOT injected — WhatsApp number IS the bot,
+        // and sharing contact info makes the bot parrot numbers uselessly.
         if (cachedMerchant.website) profileParts.push(`الموقع: ${cachedMerchant.website}`);
         if (cachedMerchant.address) profileParts.push(`العنوان: ${cachedMerchant.address}`);
         if (cachedMerchant.city) profileParts.push(`المدينة: ${cachedMerchant.city}`);
         if (cachedMerchant.description) profileParts.push(`الوصف: ${sanitizeForPrompt(cachedMerchant.description)}`);
         if (profileParts.length > 0) {
-          contextPrompt += `\n## بيانات التواصل مع المتجر:\n`;
+          contextPrompt += `\n## معلومات النشاط التجاري:\n`;
           contextPrompt += profileParts.join('\n') + '\n';
         }
       }

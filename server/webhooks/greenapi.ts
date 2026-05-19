@@ -1035,7 +1035,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       sendTypingWithCredentials(
         instance.instanceId,
         instance.token,
-        instance.apiUrl || 'https://api.green-api.com',
+        instance.apiUrl || `https://${instance.instanceId.substring(0, 4)}.api.greenapi.com`,
         customerPhone
       ).catch(() => {}); // truly non-blocking
     } catch { /* non-critical */ }
