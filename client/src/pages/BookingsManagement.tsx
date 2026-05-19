@@ -55,15 +55,15 @@ export default function BookingsManagement() {
   const updateMutation = trpc.bookings.update.useMutation({
     onSuccess: () => {
       toast({
-        title: "تم التحديث",
-        description: "تم تحديث الحجز بنجاح",
+        title: t('bookingsManagementPage.text0'),
+        description: t('bookingsManagementPage.text1'),
       });
       refetch();
       setSelectedBooking(null);
     },
     onError: (error) => {
       toast({
-        title: "خطأ",
+        title: t('bookingsManagementPage.text2'),
         description: error.message,
         variant: "destructive",
       });
@@ -73,14 +73,14 @@ export default function BookingsManagement() {
   const deleteMutation = trpc.bookings.delete.useMutation({
     onSuccess: () => {
       toast({
-        title: "تم الحذف",
-        description: "تم حذف الحجز بنجاح",
+        title: t('bookingsManagementPage.text3'),
+        description: t('bookingsManagementPage.text4'),
       });
       refetch();
     },
     onError: (error) => {
       toast({
-        title: "خطأ",
+        title: t('bookingsManagementPage.text5'),
         description: error.message,
         variant: "destructive",
       });
@@ -100,12 +100,12 @@ export default function BookingsManagement() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      pending: { label: "قيد الانتظار", variant: "secondary" },
-      confirmed: { label: "مؤكد", variant: "default" },
-      in_progress: { label: "جاري التنفيذ", variant: "outline" },
-      completed: { label: "مكتمل", variant: "default" },
-      cancelled: { label: "ملغي", variant: "destructive" },
-      no_show: { label: "لم يحضر", variant: "destructive" },
+      pending: { label: t('bookingsManagementPage.text6'), variant: "secondary" },
+      confirmed: { label: t('bookingsManagementPage.text7'), variant: "default" },
+      in_progress: { label: t('bookingsManagementPage.text8'), variant: "outline" },
+      completed: { label: t('bookingsManagementPage.text9'), variant: "default" },
+      cancelled: { label: t('bookingsManagementPage.text10'), variant: "destructive" },
+      no_show: { label: t('bookingsManagementPage.text11'), variant: "destructive" },
     };
     const config = statusConfig[status] || statusConfig.pending;
     return <Badge variant={config.variant}>{config.label}</Badge>;
@@ -123,7 +123,7 @@ export default function BookingsManagement() {
   };
 
   const handleDelete = (bookingId: number) => {
-    if (confirm("هل أنت متأكد من حذف هذا الحجز؟")) {
+    if (confirm(t('bookingsManagementPage.text12'))) {
       deleteMutation.mutate({ bookingId });
     }
   };
@@ -132,7 +132,7 @@ export default function BookingsManagement() {
     <div className="container py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold">{t('bookingsManagementPage.text0')}</h1>
+          <h1 className="text-3xl font-bold">{t('bookingsManagementPage.text13')}</h1>
           <p className="text-muted-foreground mt-1">{t('bookingsManagement.auto_0')}</p>
         </div>
         <Button>
@@ -148,7 +148,7 @@ export default function BookingsManagement() {
                 <Users className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text1')}</p>
+                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text14')}</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function BookingsManagement() {
                 <CheckCircle className="w-6 h-6 text-green-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text2')}</p>
+                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text15')}</p>
                 <p className="text-2xl font-bold">{stats.completed}</p>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function BookingsManagement() {
                 <Clock className="w-6 h-6 text-yellow-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text3')}</p>
+                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text16')}</p>
                 <p className="text-2xl font-bold">{stats.pending}</p>
               </div>
             </div>
@@ -184,7 +184,7 @@ export default function BookingsManagement() {
                 <DollarSign className="w-6 h-6 text-blue-500" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text4')}</p>
+                <p className="text-sm text-muted-foreground">{t('bookingsManagementPage.text17')}</p>
                 <p className="text-2xl font-bold">{formatPrice(stats.totalRevenue)}</p>
               </div>
             </div>
@@ -198,7 +198,7 @@ export default function BookingsManagement() {
           <div className="flex-1 relative">
             <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder={t('bookingsManagementPage.text5')}
+              placeholder={t('bookingsManagementPage.text18')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pr-10"
@@ -207,16 +207,16 @@ export default function BookingsManagement() {
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full md:w-[200px]">
               <Filter className="w-4 h-4 ml-2" />
-              <SelectValue placeholder={t('bookingsManagementPage.text6')} />
+              <SelectValue placeholder={t('bookingsManagementPage.text19')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('bookingsManagementPage.text7')}</SelectItem>
-              <SelectItem value="pending">{t('bookingsManagementPage.text8')}</SelectItem>
-              <SelectItem value="confirmed">{t('bookingsManagementPage.text9')}</SelectItem>
-              <SelectItem value="in_progress">{t('bookingsManagementPage.text10')}</SelectItem>
-              <SelectItem value="completed">{t('bookingsManagementPage.text11')}</SelectItem>
-              <SelectItem value="cancelled">{t('bookingsManagementPage.text12')}</SelectItem>
-              <SelectItem value="no_show">{t('bookingsManagementPage.text13')}</SelectItem>
+              <SelectItem value="all">{t('bookingsManagementPage.text20')}</SelectItem>
+              <SelectItem value="pending">{t('bookingsManagementPage.text21')}</SelectItem>
+              <SelectItem value="confirmed">{t('bookingsManagementPage.text22')}</SelectItem>
+              <SelectItem value="in_progress">{t('bookingsManagementPage.text23')}</SelectItem>
+              <SelectItem value="completed">{t('bookingsManagementPage.text24')}</SelectItem>
+              <SelectItem value="cancelled">{t('bookingsManagementPage.text25')}</SelectItem>
+              <SelectItem value="no_show">{t('bookingsManagementPage.text26')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -228,12 +228,12 @@ export default function BookingsManagement() {
           <table className="w-full">
             <thead className="border-b">
               <tr className="text-right">
-                <th className="p-4 font-semibold">{t('bookingsManagementPage.text14')}</th>
-                <th className="p-4 font-semibold">{t('bookingsManagementPage.text15')}</th>
-                <th className="p-4 font-semibold">{t('bookingsManagementPage.text16')}</th>
-                <th className="p-4 font-semibold">{t('bookingsManagementPage.text17')}</th>
-                <th className="p-4 font-semibold">{t('bookingsManagementPage.text18')}</th>
-                <th className="p-4 font-semibold">{t('bookingsManagementPage.text19')}</th>
+                <th className="p-4 font-semibold">{t('bookingsManagementPage.text27')}</th>
+                <th className="p-4 font-semibold">{t('bookingsManagementPage.text28')}</th>
+                <th className="p-4 font-semibold">{t('bookingsManagementPage.text29')}</th>
+                <th className="p-4 font-semibold">{t('bookingsManagementPage.text30')}</th>
+                <th className="p-4 font-semibold">{t('bookingsManagementPage.text31')}</th>
+                <th className="p-4 font-semibold">{t('bookingsManagementPage.text32')}</th>
               </tr>
             </thead>
             <tbody>
@@ -245,7 +245,7 @@ export default function BookingsManagement() {
                 <tr>
                   <td colSpan={6} className="p-8 text-center text-muted-foreground">
                     <Calendar className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>{t('bookingsManagementPage.text20')}</p>
+                    <p>{t('bookingsManagementPage.text33')}</p>
                   </td>
                 </tr>
               ) : (
@@ -286,13 +286,13 @@ export default function BookingsManagement() {
                           </DialogTrigger>
                           <DialogContent>
                             <DialogHeader>
-                              <DialogTitle>{t('bookingsManagementPage.text21')}</DialogTitle>
+                              <DialogTitle>{t('bookingsManagementPage.text34')}</DialogTitle>
                               <DialogDescription>{t('bookingsManagement.auto_3')}</DialogDescription>
                             </DialogHeader>
                             {selectedBooking && (
                               <div className="space-y-4">
                                 <div>
-                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text22')}</p>
+                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text35')}</p>
                                   <p className="text-sm text-muted-foreground">
                                     {selectedBooking.customerName || "غير محدد"}
                                   </p>
@@ -301,33 +301,33 @@ export default function BookingsManagement() {
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text23')}</p>
+                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text36')}</p>
                                   <p className="text-sm text-muted-foreground">
                                     {format(new Date(selectedBooking.bookingDate), "dd MMMM yyyy", { locale: ar })}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text24')}</p>
+                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text37')}</p>
                                   <p className="text-sm text-muted-foreground">
                                     {selectedBooking.startTime} - {selectedBooking.endTime}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text25')}</p>
+                                  <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text38')}</p>
                                   <p className="text-sm text-muted-foreground">
                                     {formatPrice(selectedBooking.finalPrice)}
                                   </p>
                                 </div>
                                 {selectedBooking.notes && (
                                   <div>
-                                    <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text26')}</p>
+                                    <p className="text-sm font-medium mb-1">{t('bookingsManagementPage.text39')}</p>
                                     <p className="text-sm text-muted-foreground">
                                       {selectedBooking.notes}
                                     </p>
                                   </div>
                                 )}
                                 <div>
-                                  <p className="text-sm font-medium mb-2">{t('bookingsManagementPage.text27')}</p>
+                                  <p className="text-sm font-medium mb-2">{t('bookingsManagementPage.text40')}</p>
                                   <Select
                                     value={selectedBooking.status}
                                     onValueChange={(value) => handleStatusChange(selectedBooking.id, value)}
@@ -336,12 +336,12 @@ export default function BookingsManagement() {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="pending">{t('bookingsManagementPage.text28')}</SelectItem>
-                                      <SelectItem value="confirmed">{t('bookingsManagementPage.text29')}</SelectItem>
-                                      <SelectItem value="in_progress">{t('bookingsManagementPage.text30')}</SelectItem>
-                                      <SelectItem value="completed">{t('bookingsManagementPage.text31')}</SelectItem>
-                                      <SelectItem value="cancelled">{t('bookingsManagementPage.text32')}</SelectItem>
-                                      <SelectItem value="no_show">{t('bookingsManagementPage.text33')}</SelectItem>
+                                      <SelectItem value="pending">{t('bookingsManagementPage.text41')}</SelectItem>
+                                      <SelectItem value="confirmed">{t('bookingsManagementPage.text42')}</SelectItem>
+                                      <SelectItem value="in_progress">{t('bookingsManagementPage.text43')}</SelectItem>
+                                      <SelectItem value="completed">{t('bookingsManagementPage.text44')}</SelectItem>
+                                      <SelectItem value="cancelled">{t('bookingsManagementPage.text45')}</SelectItem>
+                                      <SelectItem value="no_show">{t('bookingsManagementPage.text46')}</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 </div>
