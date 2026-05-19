@@ -177,11 +177,14 @@ async function notifyByaanPlatform(
     // Build webhook URL from tenant domain
     const webhookUrl = `https://${tenantDomain}/api/sari/webhook`;
 
-    // PEN-SYNC-01: Validate hostname is not internal
+    // PEN-SYNC-01 + PEN-SYNC-12: Validate hostname is not internal (IPv4 + IPv6)
     if (
       tenantDomain === 'localhost' || tenantDomain.startsWith('127.') ||
       tenantDomain.startsWith('10.') || tenantDomain.startsWith('192.168.') ||
-      tenantDomain.startsWith('169.254.') || tenantDomain.endsWith('.local')
+      tenantDomain.startsWith('169.254.') || tenantDomain.endsWith('.local') ||
+      tenantDomain === '::1' || tenantDomain === '[::1]' ||
+      tenantDomain.startsWith('fe80:') || tenantDomain.startsWith('fc00:') ||
+      tenantDomain.includes('::ffff:127.')
     ) {
       console.warn(`[Byaan Webhook] SSRF blocked: ${tenantDomain}`);
       return;
@@ -304,9 +307,13 @@ export async function updateByaanSyncStatus(merchantId: number, status: string, 
   const dbConn = await getPool();
   if (!dbConn) return;
 
+  // PEN-SYNC-14: Validate status enum to prevent invalid ENUM values
+  const validStatuses = ['active', 'syncing', 'error', 'paused'];
+  const safeStatus = validStatuses.includes(status) ? status : 'error';
+
   await (dbConn as any).execute(
     `UPDATE byaan_connections SET sync_status = ?, last_sync_at = NOW(), sync_errors = ? WHERE merchant_id = ?`,
-    [status, errors || null, merchantId]
+    [safeStatus, errors ? String(errors).substring(0, 500) : null, merchantId]
   );
 }
 
@@ -334,10 +341,10 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
     );
 
     if ((existing as any[])?.length > 0) {
-      // PEN-BYAAN-09: Strip HTML from names
+      // PEN-SYNC-10: Strip HTML from names AND emails to prevent stored XSS
       await (dbConn as any).execute(
         `UPDATE customers SET name = ?, phone = ?, email = ? WHERE id = ?`,
-        [trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email || null, (existing as any[])[0].id]
+        [trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email ? String(trainee.email).replace(/<[^>]*>/g, '').trim().substring(0, 320) : null, (existing as any[])[0].id]
       );
       updated++;
       continue;
@@ -362,7 +369,7 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
     try {
       await (dbConn as any).execute(
         `INSERT INTO customers (merchant_id, name, phone, email, external_id, external_source, created_at) VALUES (?, ?, ?, ?, ?, 'byaan', NOW())`,
-        [merchantId, trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email || null, externalId]
+        [merchantId, trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email ? String(trainee.email).replace(/<[^>]*>/g, '').trim().substring(0, 320) : null, externalId]
       );
       created++;
     } catch (e) {
@@ -529,11 +536,15 @@ async function callByaanApi(
       return { success: false, error: 'api_base_url must use HTTPS' };
     }
     const hostname = parsedUrl.hostname;
+    // PEN-SYNC-12: Extended SSRF blocklist (IPv4 + IPv6)
     if (
       hostname === 'localhost' || hostname === '127.0.0.1' ||
+      hostname === '::1' || hostname === '[::1]' || hostname === '[::]' ||
       hostname.startsWith('10.') || hostname.startsWith('192.168.') ||
       hostname.startsWith('172.') || hostname.startsWith('169.254.') ||
-      hostname === '0.0.0.0' || hostname.endsWith('.internal') || hostname.endsWith('.local')
+      hostname === '0.0.0.0' || hostname.endsWith('.internal') || hostname.endsWith('.local') ||
+      hostname.startsWith('fe80:') || hostname.startsWith('fc00:') || hostname.startsWith('fd') ||
+      hostname.includes('::ffff:127.')
     ) {
       console.warn(`[Byaan Live] PEN-SYNC-01 SSRF blocked: ${hostname}`);
       return { success: false, error: 'Internal URLs are not allowed' };

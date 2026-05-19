@@ -411,6 +411,9 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
 export const sariApiRouter = express.Router();
 export const sariPlatformRouter = express.Router();
 
+// PEN-SYNC-13: Body size limit on platform sync endpoints (prevents OOM via oversized payloads)
+sariPlatformRouter.use(express.json({ limit: '2mb' }));
+
 // Apply auth to merchant routes
 sariApiRouter.use(authMiddleware);
 
@@ -803,14 +806,17 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
       await logBrainActivity(merchantId, 'settings_changed', `حساب جديد عبر ${source} — ${email}`, { source, email, tenantDomain });
     } catch (e) { /* skip */ }
 
+    // PEN-SYNC-09: Log apiKey securely, but don't return merchantId/apiKey in response
+    // to match the existing-account response shape and prevent email enumeration
+    console.log(`[SariAPI] Provision success: merchant=${merchantId}, key_prefix=${apiKeyResult.prefix}`);
     res.json({
       success: true,
       created: true,
-      merchantId,
       email: String(email).toLowerCase().trim(),
       loginUrl: 'https://sary.live/login',
       dashboardUrl: 'https://sary.live/merchant/whatsapp-setup',
-      apiKey: apiKeyResult.key,
+      message: 'Account provisioned successfully',
+      messageAr: 'تم تجهيز الحساب بنجاح',
       platform: source,
     });
   } catch (e: any) {
@@ -1421,14 +1427,19 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
           return res.status(400).json({ error: 'api_base_url must use HTTPS', errorAr: 'يجب أن يستخدم رابط API بروتوكول HTTPS' });
         }
         const hostname = parsedUrl.hostname;
+        // PEN-SYNC-12: Extended SSRF blocklist including IPv6
         if (
           hostname === 'localhost' ||
           hostname === '127.0.0.1' ||
+          hostname === '::1' || hostname === '[::1]' ||
+          hostname === '0.0.0.0' || hostname === '[::]' ||
           hostname.startsWith('10.') ||
           hostname.startsWith('192.168.') ||
           hostname.startsWith('172.') ||
           hostname.startsWith('169.254.') ||
-          hostname === '0.0.0.0' ||
+          hostname.startsWith('fe80:') ||
+          hostname.startsWith('fc00:') || hostname.startsWith('fd') ||
+          hostname.includes('::ffff:127.') ||
           hostname.endsWith('.internal') ||
           hostname.endsWith('.local')
         ) {
@@ -1721,7 +1732,8 @@ sariPlatformRouter.get('/merchant/status', async (req: PlatformRequest, res: Res
       sync: connection ? {
         status: connection.sync_status,
         lastSyncAt: connection.last_sync_at,
-        errors: connection.sync_errors,
+        // PEN-SYNC-07: Don't expose raw error messages — only boolean flag
+        hasErrors: !!connection.sync_errors,
       } : null,
     });
   } catch (e) {
