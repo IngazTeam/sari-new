@@ -1221,7 +1221,7 @@ ${sanitizedContent}`
       };
     }),
 
-  /** معاينة رابط قبل إضافته — يسحب المحتوى بدون حفظ */
+  /** معاينة رابط قبل إضافته — يسحب المحتوى، ينظفه، ويصنفه بـ GPT */
   previewUrl: protectedProcedure
     .input(z.object({ url: z.string().url() }))
     .mutation(async ({ ctx, input }) => {
@@ -1230,27 +1230,109 @@ ${sanitizedContent}`
 
       checkTestRateLimit(merchant.id, 10_000); // 10s cooldown
 
-      const { isUrlSafe, scrapeWebsite } = await import('./_core/websiteAnalyzer');
+      const { isUrlSafe, scrapeWebsite, cleanScrapedText } = await import('./_core/websiteAnalyzer');
       if (!isUrlSafe(input.url)) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به' });
       }
 
       try {
-        const { text } = await scrapeWebsite(input.url);
-        const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+        const { text: rawText, dom } = await scrapeWebsite(input.url);
+        
+        // Step 1: Clean the raw scraped text
+        const cleanText = cleanScrapedText(rawText);
+        const wordCount = cleanText.trim().split(/\s+/).filter(Boolean).length;
 
         if (wordCount < 10) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'الصفحة فارغة أو لا تحتوي على محتوى كافي' });
         }
 
-        // Auto-detect title from URL
-        const title = new URL(input.url).pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'صفحة مخصصة';
+        // Auto-detect title — prefer <title> tag, fallback to URL path
+        const document = dom.window.document;
+        const pageTitle = document.querySelector('title')?.textContent?.trim();
+        const title = pageTitle || new URL(input.url).pathname.split('/').filter(Boolean).pop()?.replace(/-/g, ' ') || 'صفحة مخصصة';
+
+        // Step 2: GPT Classification — analyze and categorize content
+        let analysis: {
+          sections: Array<{
+            type: string;
+            title: string;
+            icon: string;
+            points: string[];
+          }>;
+          summary: string;
+          language: string;
+          businessType: string;
+        } | null = null;
+
+        try {
+          const { invokeLLM } = await import('./_core/llm');
+          const gptResult = await invokeLLM({
+            merchantId: merchant.id,
+            messages: [
+              {
+                role: 'system',
+                content: `أنت محلل محتوى مواقع ذكي. مهمتك تحليل النص المسحوب من موقع إلكتروني وتصنيفه في أقسام منظمة.
+
+قواعد:
+- استخرج المعلومات المفيدة فقط (تجاهل القمامة التقنية)
+- صنّف المحتوى في الأقسام المناسبة
+- كل نقطة يجب أن تكون جملة مفيدة واضحة
+- إذا لم يوجد محتوى لقسم ما، لا تضفه
+- الرد يجب أن يكون JSON فقط`,
+              },
+              {
+                role: 'user',
+                content: `حلل هذا المحتوى المسحوب من الموقع (${input.url}) وأعد JSON بالشكل التالي:
+{
+  "summary": "ملخص قصير للموقع في جملة واحدة",
+  "language": "ar أو en",
+  "businessType": "نوع النشاط (مثل: تدريب، تجارة إلكترونية، خدمات...)",
+  "sections": [
+    {
+      "type": "about",
+      "title": "نبذة عن النشاط",
+      "icon": "🏢",
+      "points": ["نقطة 1", "نقطة 2"]
+    }
+  ]
+}
+
+الأقسام المتاحة (استخدم فقط ما ينطبق):
+- about (🏢): نبذة عن النشاط — الوصف، المجال، الميزة التنافسية
+- services (⚙️): الخدمات أو الدورات المتاحة
+- products (🛍️): المنتجات مع أوصافها
+- pricing (💰): الأسعار والباقات
+- policies (📋): سياسات الشحن والإرجاع والخصوصية
+- contact (📞): معلومات التواصل (أرقام، إيميلات، عنوان)
+- features (✨): مميزات وخصائص فريدة
+- faq (❓): أسئلة شائعة مع إجاباتها
+- testimonials (⭐): آراء العملاء والشهادات
+- team (👥): فريق العمل
+
+المحتوى المسحوب:
+${cleanText.substring(0, 12000)}`,
+              },
+            ],
+            responseFormat: { type: 'json_object' },
+            maxTokens: 2048,
+          });
+
+          const content = gptResult.choices[0]?.message?.content;
+          if (content && typeof content === 'string') {
+            analysis = JSON.parse(content);
+          }
+        } catch (gptError) {
+          console.warn('[SariBrain] GPT classification failed, returning clean text only:', (gptError as Error).message);
+          // Fallback: return clean text without classification
+        }
 
         return {
           url: input.url,
           title,
-          content: text.substring(0, 65000),
+          content: cleanText.substring(0, 65000),
+          rawContent: rawText.substring(0, 5000), // Keep small raw sample for debugging
           wordCount,
+          analysis, // GPT-structured analysis (null if failed)
         };
       } catch (error: any) {
         if (error?.code === 'BAD_REQUEST' || error?.code === 'TOO_MANY_REQUESTS') throw error;

@@ -321,6 +321,53 @@ function extractTextFromHtml(html: string): string {
   return unique.join(' ').substring(0, 200000).trim();
 }
 
+/**
+ * Clean raw scraped text — removes JSON-LD artifacts, CSS, navigation cruft
+ * Produces clean readable text suitable for GPT analysis and merchant preview
+ */
+export function cleanScrapedText(raw: string): string {
+  let text = raw;
+
+  // 1. Remove JSON-LD keys and structural artifacts
+  text = text.replace(/@(type|context|id|graph|vocab|language|value|list)\b/gi, '');
+  text = text.replace(/\b(SoftwareApplication|WebSite|Organization|ItemList|itemListElement|SiteNavigationElement|AggregateOffer|BreadcrumbList|ListItem|WebPage|CollectionPage|ImageObject|Thing)\b/g, '');
+  text = text.replace(/\b(applicationCategory|operatingSystem|priceCurrency|lowPrice|offerCount|sameAs|inLanguage|potentialAction|SearchAction|target|query-input)\b/g, '');
+
+  // 2. Remove URLs
+  text = text.replace(/https?:\/\/[^\s,)]+/g, '');
+
+  // 3. Remove hex colors and CSS-like values
+  text = text.replace(/#[0-9a-fA-F]{3,8}\b/g, '');
+  text = text.replace(/\b(gradient|rgba?|hsla?|solid|sticky|absolute|relative|flex|grid|block|inline|none|hidden|visible|overflow|opacity|transition|transform|rotate|scale)\b/gi, '');
+  text = text.replace(/\b\d+px\b/g, '');
+
+  // 4. Remove navigation boilerplate (common patterns)
+  text = text.replace(/\b(home\s+link|center\s+link|features?\s+link|pricing\s+link|menu|navbar|footer|sidebar|breadcrumb)\b/gi, '');
+
+  // 5. Remove repeated commas, colons, semicolons, and structural chars
+  text = text.replace(/[{}[\]]/g, '');
+  text = text.replace(/,\s*,/g, ',');
+  text = text.replace(/:\s*,/g, '');
+  text = text.replace(/,\s*:/g, ':');
+
+  // 6. Remove empty key-value patterns (key: , or : value :)
+  text = text.replace(/\w+\s*:\s*(?=\s*\w+\s*:)/g, '');
+
+  // 7. Remove position/number noise (position 1, position 2...)
+  text = text.replace(/,?\s*position\s*:?\s*\d+/gi, '');
+
+  // 8. Remove very short fragments (likely noise)
+  text = text.replace(/\b\w{1,2}\b(?=\s*[,:])/g, '');
+
+  // 9. Normalize whitespace
+  text = text.replace(/\s+/g, ' ').trim();
+
+  // 10. Remove leading/trailing punctuation noise
+  text = text.replace(/^[\s,.:;]+/, '').replace(/[\s,.:;]+$/, '');
+
+  return text;
+}
+
 // ============================================
 // Core Functions
 // ============================================
