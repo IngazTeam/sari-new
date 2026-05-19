@@ -160,7 +160,9 @@ export default function SariBrain() {
     refetchInterval: polling ? 3000 : false, // Poll every 3s
   });
 
-  // React to status changes
+  // React to status changes — use REAL progress from server
+  const STEP_MAP: Record<string, number> = { scraping: 0, processing: 2, knowledge: 3, embedding: 5, completed: 6 };
+
   useEffect(() => {
     if (!polling || !statusQuery.data) return;
     const data = statusQuery.data as any;
@@ -178,29 +180,35 @@ export default function SariBrain() {
     } else if (data.status === 'error') {
       setPolling(false);
       setAnalysisError(data.error || 'فشل التحليل');
+    } else if (data.status === 'running') {
+      // Real progress from server
+      if (data.currentStep && STEP_MAP[data.currentStep] !== undefined) {
+        setAnalysisStep(STEP_MAP[data.currentStep]);
+      }
+      if (data.progress && data.progress > 0) {
+        setFakeProgress(prev => Math.max(prev, data.progress)); // Never go backward
+      }
     }
   }, [statusQuery.data, polling]);
 
-  // Step progression animation (while polling)
+  // Smooth interpolation + reassurance (while polling) — no more fake step advancement
   useEffect(() => {
     if (!polling) {
       if (!analysisResults && !analysisError) { setAnalysisStep(0); setFakeProgress(0); }
       return;
     }
-    const stepTimer = setInterval(() => {
-      setAnalysisStep(prev => prev < ANALYSIS_STEPS.length - 1 ? prev + 1 : prev);
-    }, 5000);
+    // Smooth progress interpolation between server updates (fills gaps between 3s polls)
     const progressTimer = setInterval(() => {
       setFakeProgress(prev => {
         const target = STEP_PROGRESS[Math.min(analysisStep, STEP_PROGRESS.length - 1)];
         if (prev >= target) return prev;
-        return Math.min(prev + Math.random() * 3 + 1, target);
+        return Math.min(prev + Math.random() * 1.5 + 0.5, target); // Slower than before — just smoothing
       });
-    }, 400);
+    }, 600);
     const reassTimer = setInterval(() => {
       setReassuranceIdx(prev => (prev + 1) % REASSURANCE.length);
     }, 4000);
-    return () => { clearInterval(stepTimer); clearInterval(progressTimer); clearInterval(reassTimer); };
+    return () => { clearInterval(progressTimer); clearInterval(reassTimer); };
   }, [polling, analysisStep]);
 
   const startAnalysis = () => {

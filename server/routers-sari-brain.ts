@@ -83,6 +83,8 @@ const testRateLimit: Record<number, number> = {};
 interface AnalysisStatus {
   status: 'running' | 'completed' | 'error';
   startedAt: number;
+  currentStep?: string;  // scraping | processing | knowledge | embedding
+  progress?: number;     // 0-100 real progress
   result?: any;
   error?: string;
 }
@@ -186,9 +188,16 @@ function sanitizeForTRPC(data: any): any {
  * Stores result in analysisStatusMap for frontend polling via getAnalysisStatus.
  */
 async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
+  const updateProgress = (step: string, progress: number) => {
+    const existing = analysisStatusMap[merchant.id];
+    if (existing) { existing.currentStep = step; existing.progress = progress; }
+  };
   try {
+    updateProgress('scraping', 10);
     const { analyzeWebsite } = await import('./_core/websiteAnalyzer');
+    updateProgress('scraping', 20);
     const result = await analyzeWebsite(websiteUrl);
+    updateProgress('processing', 40);
 
     // Delete old analyses, create new
     try {
@@ -270,6 +279,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
       scrapedText = profileContext + scrapedText;
 
       if (scrapedText.trim().length > 30) {
+        updateProgress('knowledge', 60);
         const { ingestContent } = await import('./ai/knowledge-engine');
         const ingestionResult = await ingestContent(
           merchant.id, scrapedText, 'website',
@@ -277,7 +287,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
         );
         evolveResult = ingestionResult.evolveResult;
 
-        try { const { embedAllSections } = await import('./ai/rag-engine'); await embedAllSections(merchant.id); } catch { /* non-blocking */ }
+        try { updateProgress('embedding', 85); const { embedAllSections } = await import('./ai/rag-engine'); await embedAllSections(merchant.id); } catch { /* non-blocking */ }
         try { const knowledgeDb = await import('./db/knowledge'); await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       } else {
         knowledgeError = 'الموقع لا يحتوي على محتوى نصي كافٍ';
@@ -298,8 +308,9 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
       };
     } catch { /* non-blocking */ }
 
+    updateProgress('completed', 100);
     analysisStatusMap[merchant.id] = {
-      status: 'completed', startedAt: Date.now(),
+      status: 'completed', startedAt: Date.now(), currentStep: 'completed', progress: 100,
       result: { success: true, title: result.title, industry: result.industry, score: result.overallScore, knowledgeEvolution: evolveResult, salesIntelSummary, knowledgeError, crawlStats: (result as any)._crawlStats || null },
     };
     console.log(`[SariBrain] ✅ Background analysis completed for merchant ${merchant.id}`);
@@ -652,7 +663,7 @@ export const sariBrainRouter = router({
       return { status: 'error' as const, error };
     }
 
-    return { status: 'running' as const, elapsedMs: Date.now() - status.startedAt };
+    return { status: 'running' as const, elapsedMs: Date.now() - status.startedAt, currentStep: status.currentStep || 'scraping', progress: status.progress || 0 };
   }),
 
   // Get brain summary — used by AI prompt builder
