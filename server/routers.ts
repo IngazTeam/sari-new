@@ -149,6 +149,7 @@ import {
   getAvailableTimeSlots,
   getBookingById,
   getBookingReviews,
+  getBookingReviewById,
   getBookingStats,
   getBookingsByCustomer,
   getBookingsByMerchant,
@@ -6970,24 +6971,30 @@ export const appRouter = router({
     create: protectedProcedure
       .input(z.object({
         serviceId: z.number(),
-        customerPhone: z.string(),
-        customerName: z.string().optional(),
+        customerPhone: z.string().min(8).max(20).regex(/^\+?\d+$/, 'Invalid phone format'),
+        customerName: z.string().max(255).optional(),
         customerEmail: z.string().email().optional(),
         staffId: z.number().optional(),
-        bookingDate: z.string(),
-        startTime: z.string(),
-        endTime: z.string(),
-        durationMinutes: z.number(),
-        basePrice: z.number(),
-        discountAmount: z.number().optional(),
-        finalPrice: z.number(),
-        notes: z.string().optional(),
+        bookingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
+        startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
+        endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
+        durationMinutes: z.number().min(1).max(1440),
+        basePrice: z.number().min(0),
+        discountAmount: z.number().min(0).optional(),
+        finalPrice: z.number().min(0),
+        notes: z.string().max(2000).optional(),
         bookingSource: z.enum(['whatsapp', 'website', 'phone', 'walk_in']).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // PEN-BK-01: Verify service belongs to this merchant
+        const service = await getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
         }
 
         // Check for conflicts
@@ -7034,12 +7041,12 @@ export const appRouter = router({
     // List bookings with filters
     list: protectedProcedure
       .input(z.object({
-        status: z.string().optional(),
+        status: z.enum(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show']).optional(),
         serviceId: z.number().optional(),
         staffId: z.number().optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
-        limit: z.number().optional(),
+        limit: z.number().min(1).max(500).optional(),
       }))
       .query(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
@@ -7055,7 +7062,7 @@ export const appRouter = router({
     getByService: protectedProcedure
       .input(z.object({
         serviceId: z.number(),
-        status: z.string().optional(),
+        status: z.enum(['pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show']).optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
       }))
@@ -7063,6 +7070,12 @@ export const appRouter = router({
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // PEN-BK-02: Verify service belongs to this merchant
+        const service = await getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
         }
 
         const bookings = await getBookingsByService(input.serviceId, input);
@@ -7172,11 +7185,21 @@ export const appRouter = router({
       .input(z.object({
         serviceId: z.number(),
         staffId: z.number().optional(),
-        bookingDate: z.string(),
-        startTime: z.string(),
-        endTime: z.string(),
+        bookingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
+        startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
+        endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Invalid time format'),
       }))
       .query(async ({ ctx, input }) => {
+        // PEN-BK-03: Verify service belongs to this merchant
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        const service = await getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        }
+
         const hasConflict = await checkBookingConflict(
           input.serviceId,
           input.staffId || null,
@@ -7192,10 +7215,20 @@ export const appRouter = router({
     getAvailableSlots: protectedProcedure
       .input(z.object({
         serviceId: z.number(),
-        date: z.string(),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
         staffId: z.number().optional(),
       }))
       .query(async ({ ctx, input }) => {
+        // PEN-BK-04: Verify service belongs to this merchant
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        const service = await getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        }
+
         const slots = await getAvailableTimeSlots(
           input.serviceId,
           input.date,
@@ -7228,6 +7261,12 @@ export const appRouter = router({
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // PEN-BK-11: Verify booking belongs to this merchant
+        const booking = await getBookingById(input.bookingId);
+        if (!booking || booking.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Booking not found' });
         }
 
         const reviewId = await createBookingReview({
@@ -7264,7 +7303,17 @@ export const appRouter = router({
     // Get reviews by service
     getByService: protectedProcedure
       .input(z.object({ serviceId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        // PEN-BK-05: Verify service belongs to this merchant
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        const service = await getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        }
+
         const reviews = await getReviewsByService(input.serviceId);
         return { reviews };
       }),
@@ -7281,6 +7330,12 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
+        // PEN-BK-06: Verify review belongs to this merchant
+        const review = await getBookingReviewById(input.reviewId);
+        if (!review || review.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Review not found' });
+        }
+
         await replyToReview(input.reviewId, input.reply);
         return { success: true };
       }),
@@ -7288,7 +7343,17 @@ export const appRouter = router({
     // Get rating statistics
     getStats: protectedProcedure
       .input(z.object({ serviceId: z.number() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        // PEN-BK-07: Verify service belongs to this merchant
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+        const service = await getServiceById(input.serviceId);
+        if (!service || service.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Service not found' });
+        }
+
         const stats = await getServiceRatingStats(input.serviceId);
         return { stats };
       }),
