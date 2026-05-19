@@ -119,8 +119,8 @@ export const websiteAnalysisRouter = router({
               imageCount: result.imageCount,
               videoCount: result.videoCount,
               overallScore: result.overallScore,
-              // Save ALL scraped text for AI bot
-              scrapedContent: (result._scrapedText || '') + '\n\n' + (result._enrichedText || ''),
+              // PEN-SESSION-02: Clean scraped text before storage (removes JSON-LD, CSS, nav noise)
+              scrapedContent: analyzer.cleanScrapedText((result._scrapedText || '') + '\n\n' + (result._enrichedText || '')),
               status: 'analyzing',
             });
 
@@ -189,7 +189,8 @@ export const websiteAnalysisRouter = router({
                     try {
                       await pool.execute(
                         `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
-                        [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), (page.content || '').substring(0, 65000)]
+                        // PEN-SESSION-04: Clean page content before storage
+                        [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), analyzer.cleanScrapedText((page.content || '')).substring(0, 65000)]
                       );
                       savedCount++;
                     } catch (insertErr: any) {

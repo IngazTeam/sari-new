@@ -219,8 +219,9 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
       overallScore: result.overallScore || 0, status: 'completed',
     });
 
+    // PEN-SESSION-02: Clean scraped content at write-time
     await updateWebsiteAnalysis(analysisId, {
-      scrapedContent: (result._scrapedText || '') + '\n\n' + (result._enrichedText || ''),
+      scrapedContent: cleanText((result._scrapedText || '') + '\n\n' + (result._enrichedText || '')),
     });
 
     // Save crawled pages
@@ -252,7 +253,8 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
     let evolveResult = null;
     let knowledgeError: string | null = null;
     try {
-      let scrapedText = (result._scrapedText || '') + '\n' + (result._enrichedText || '');
+      // PEN-SESSION-05: Clean raw scraped text before Knowledge Engine ingestion
+      let scrapedText = cleanText((result._scrapedText || '') + '\n' + (result._enrichedText || ''));
       const profileParts: string[] = [];
       if (merchant.businessName) profileParts.push(`اسم النشاط: ${merchant.businessName}`);
       if ((merchant as any).description) profileParts.push(`الوصف: ${(merchant as any).description}`);
@@ -268,7 +270,8 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
         if ((result as any)._crawledPages?.length > 0) {
           for (const page of (result as any)._crawledPages) {
             if (page.success && page.content?.trim().length > 50) {
-              fb.push(`\n[${page.title}]\n${page.content.substring(0, 5000)}`);
+              // PEN-SESSION-01: Clean SPA fallback content before ingesting
+              fb.push(`\n[${page.title}]\n${cleanText(page.content).substring(0, 5000)}`);
             }
           }
         }
