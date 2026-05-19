@@ -706,23 +706,51 @@ export default function SariBrain() {
       {/* Pending Conflicts Banner */}
       {pendingReviews && pendingReviews.length > 0 && (
         <Card className="border-yellow-400 bg-yellow-50/50 dark:bg-yellow-950/20">
-          <CardContent className="flex items-center gap-4 py-4">
-            <AlertTriangle className="h-8 w-8 text-yellow-500 shrink-0" />
-            <div className="flex-1">
-              <p className="font-semibold text-yellow-800 dark:text-yellow-200">⚠️ {pendingReviews.length} تعارض يحتاج مراجعتك</p>
-              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">ساري وجد معلومات متعارضة — البوت يستخدم البيانات القديمة حتى تراجع</p>
+          <CardContent className="py-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-6 w-6 text-yellow-500 shrink-0" />
+              <div>
+                <p className="font-semibold text-yellow-800 dark:text-yellow-200">⚠️ {pendingReviews.length} تعارض يحتاج مراجعتك</p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-0.5">ساري وجد معلومات متعارضة — البوت يستخدم البيانات القديمة حتى تراجع</p>
+              </div>
             </div>
-            <div className="flex gap-2">
-              {pendingReviews.slice(0, 3).map((review: any) => (
-                <div key={review.id} className="flex gap-1">
-                  <Button size="sm" variant="outline" className="text-xs h-7 border-green-300 text-green-700 hover:bg-green-50" onClick={() => approveSectionMut.mutate({ sectionId: review.id, action: 'approve' })}>
-                    ✅ قبول
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-xs h-7 border-red-300 text-red-700 hover:bg-red-50" onClick={() => approveSectionMut.mutate({ sectionId: review.id, action: 'reject' })}>
-                    ❌ رفض
-                  </Button>
-                </div>
-              ))}
+            {/* Show each conflict with details */}
+            <div className="space-y-2">
+              {pendingReviews.slice(0, 5).map((review: any) => {
+                const typeLabels: Record<string, string> = {
+                  about: '🏢 نبذة', services: '⚙️ خدمات', products: '🛍️ منتجات', pricing: '💰 أسعار',
+                  policies: '📋 سياسات', contact: '📞 تواصل', faq: '❓ أسئلة', features: '✨ مميزات',
+                  sales_intel: '📊 ذكاء بيعي', opportunities: '💡 فرص', custom: '📝 مخصص',
+                };
+                const typeLabel = typeLabels[review.sectionType || review.section_type] || `📄 ${review.sectionType || review.section_type || 'قسم'}`;
+                const contentPreview = (review.content || '').substring(0, 120).replace(/\n/g, ' ');
+                return (
+                  <div key={review.id} className="p-3 rounded-lg bg-white/70 dark:bg-white/5 border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium flex items-center gap-1.5">
+                          <span>{typeLabel}</span>
+                          {review.title && <span className="text-yellow-800 dark:text-yellow-200">— {review.title}</span>}
+                        </p>
+                        {contentPreview && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">{contentPreview}{(review.content || '').length > 120 ? '...' : ''}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <Button size="sm" variant="outline" className="text-xs h-7 border-green-300 text-green-700 hover:bg-green-50" onClick={() => approveSectionMut.mutate({ sectionId: review.id, action: 'approve' })}>
+                          ✅ قبول
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-xs h-7 border-red-300 text-red-700 hover:bg-red-50" onClick={() => approveSectionMut.mutate({ sectionId: review.id, action: 'reject' })}>
+                          ❌ رفض
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {pendingReviews.length > 5 && (
+                <p className="text-xs text-center text-yellow-600">و {pendingReviews.length - 5} تعارضات أخرى...</p>
+              )}
             </div>
           </CardContent>
         </Card>

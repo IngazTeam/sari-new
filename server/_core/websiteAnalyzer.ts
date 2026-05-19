@@ -333,8 +333,10 @@ export function cleanScrapedText(raw: string): string {
   text = text.replace(/\b(SoftwareApplication|WebSite|Organization|ItemList|itemListElement|SiteNavigationElement|AggregateOffer|BreadcrumbList|ListItem|WebPage|CollectionPage|ImageObject|Thing)\b/g, '');
   text = text.replace(/\b(applicationCategory|operatingSystem|priceCurrency|lowPrice|offerCount|sameAs|inLanguage|potentialAction|SearchAction|target|query-input)\b/g, '');
 
-  // 2. Remove URLs
-  text = text.replace(/https?:\/\/[^\s,)]+/g, '');
+  // 2. Remove standalone URLs (keep inline text that happens to contain urls)
+  // Preserve key business URLs by only removing bare URL lines, not inline references
+  text = text.replace(/(?:^|\s)https?:\/\/[^\s,)]{50,}/g, ' ');  // Only remove very long URLs (tracking/CDN)
+  text = text.replace(/https?:\/\/[^\s]*\.(css|js|woff2?|ttf|svg|ico|map)\b[^\s]*/gi, ''); // Remove asset URLs
 
   // 3. Remove hex colors and CSS-like values
   text = text.replace(/#[0-9a-fA-F]{3,8}\b/g, '');
@@ -350,14 +352,14 @@ export function cleanScrapedText(raw: string): string {
   text = text.replace(/:\s*,/g, '');
   text = text.replace(/,\s*:/g, ':');
 
-  // 6. Remove empty key-value patterns (key: , or : value :)
-  text = text.replace(/\w+\s*:\s*(?=\s*\w+\s*:)/g, '');
+  // 6. Remove empty key-value patterns — only for English/JSON keys (not Arabic text)
+  text = text.replace(/[a-zA-Z_]+\s*:\s*(?=\s*[a-zA-Z_]+\s*:)/g, '');
 
   // 7. Remove position/number noise (position 1, position 2...)
   text = text.replace(/,?\s*position\s*:?\s*\d+/gi, '');
 
-  // 8. Remove very short fragments (likely noise)
-  text = text.replace(/\b\w{1,2}\b(?=\s*[,:])/g, '');
+  // 8. Remove very short ENGLISH fragments (likely noise) — preserve Arabic/digits
+  text = text.replace(/\b[a-zA-Z]{1,2}\b(?=\s*[,:])/g, '');
 
   // 9. Normalize whitespace
   text = text.replace(/\s+/g, ' ').trim();
