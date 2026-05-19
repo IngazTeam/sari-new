@@ -88,6 +88,25 @@ interface AnalysisStatus {
 }
 const analysisStatusMap: Record<number, AnalysisStatus> = {};
 
+// PEN-SYNC-02 FIX: Periodic cleanup of stale analysis entries (>10 min)
+function cleanupAnalysisStatusMap() {
+  const now = Date.now();
+  const keys = Object.keys(analysisStatusMap);
+  if (keys.length > 50) {
+    for (const k of keys) {
+      const entry = analysisStatusMap[Number(k)];
+      // Remove non-running entries older than 10 minutes
+      if (entry && entry.status !== 'running' && now - entry.startedAt > 600_000) {
+        delete analysisStatusMap[Number(k)];
+      }
+      // Force-expire running entries older than 15 minutes (safety net)
+      if (entry && entry.status === 'running' && now - entry.startedAt > 900_000) {
+        analysisStatusMap[Number(k)] = { status: 'error', startedAt: entry.startedAt, error: 'انتهت مهلة التحليل' };
+      }
+    }
+  }
+}
+
 function checkRateLimit(map: Record<number, number>, merchantId: number, cooldownMs: number): void {
   const now = Date.now();
   const lastAction = map[merchantId];
@@ -608,6 +627,7 @@ export const sariBrainRouter = router({
 
   // Poll for async website analysis status
   getAnalysisStatus: protectedProcedure.query(async ({ ctx }) => {
+    cleanupAnalysisStatusMap(); // PEN-SYNC-02: periodic bulk cleanup
     const merchant = await getMerchantByUserId(ctx.user.id);
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
