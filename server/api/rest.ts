@@ -1094,6 +1094,113 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
   }
 });
 
+// ── POST /api/v1/platform/sync/knowledge — Feed synced data into Knowledge Engine ──
+// Called AFTER all other syncs complete. Reads merchant's products + FAQs + settings,
+// composes rich text, and runs it through ingestContent + embedAllSections.
+// This makes Byaan data searchable by Sari's RAG-powered AI brain.
+sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Response) => {
+  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
+  if (!checkSpecialLimit(syncLimitMap, `platform_sync_k_${keyPrefix}`, 3, 60_000)) {
+    return res.status(429).json({ error: 'Knowledge sync rate limit exceeded (3/min)', errorAr: 'تجاوزت حد مزامنة المعرفة' });
+  }
+
+  const merchant = await resolveMerchantByDomain(req.tenantDomain);
+  if (!merchant) return merchantNotFound(res);
+
+  try {
+    const merchantId = merchant.id;
+    const parts: string[] = [];
+
+    // 1. Merchant profile
+    parts.push(`--- معلومات النشاط ---`);
+    if (merchant.business_name || merchant.businessName) parts.push(`اسم النشاط: ${merchant.business_name || merchant.businessName}`);
+    if ((merchant as any).description) parts.push(`الوصف: ${(merchant as any).description}`);
+    if ((merchant as any).phone) parts.push(`هاتف: ${(merchant as any).phone}`);
+    if ((merchant as any).website_url || (merchant as any).websiteUrl) parts.push(`الموقع: ${(merchant as any).website_url || (merchant as any).websiteUrl}`);
+
+    // 2. Products (courses)
+    const products = await getProductsByMerchantId(merchantId);
+    if (products.length > 0) {
+      parts.push(`\n--- الدورات والمنتجات (${products.length}) ---`);
+      for (const p of products) {
+        let line = `• ${p.name}`;
+        if (p.price) line += ` — السعر: ${p.price} ر.س`;
+        if (p.category) line += ` — التصنيف: ${p.category}`;
+        if (p.description) line += `\n  ${(p.description as string).substring(0, 300)}`;
+        parts.push(line);
+      }
+    }
+
+    // 3. FAQs
+    const faqs = await getExtractedFaqsByMerchantId(merchantId);
+    if (faqs.length > 0) {
+      parts.push(`\n--- الأسئلة الشائعة والمعلومات (${faqs.length}) ---`);
+      for (const f of faqs) {
+        parts.push(`س: ${f.question}\nج: ${f.answer}`);
+      }
+    }
+
+    // 4. Customers count
+    const pool = await getPool();
+    let customerCount = 0;
+    if (pool) {
+      try {
+        const [rows] = await pool.execute(`SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`, [merchantId]);
+        customerCount = (rows as any[])?.[0]?.cnt || 0;
+      } catch { /* skip */ }
+    }
+    if (customerCount > 0) {
+      parts.push(`\n--- إحصائيات ---`);
+      parts.push(`عدد العملاء/المتدربين: ${customerCount}`);
+      parts.push(`عدد المنتجات/الدورات: ${products.length}`);
+    }
+
+    const fullText = parts.join('\n');
+
+    if (fullText.trim().length < 50) {
+      return res.json({ success: true, ingested: false, reason: 'insufficient_content', sectionsCount: 0 });
+    }
+
+    // Run through Knowledge Engine
+    const { ingestContent } = await import('../ai/knowledge-engine');
+    const ingestionResult = await ingestContent(
+      merchantId, fullText, 'byaan_sync',
+      { businessName: merchant.business_name || merchant.businessName },
+      `byaan-sync://${req.tenantDomain || 'unknown'}`
+    );
+
+    // Run RAG embeddings
+    let embeddedCount = 0;
+    try {
+      const { embedAllSections } = await import('../ai/rag-engine');
+      embeddedCount = await embedAllSections(merchantId);
+    } catch { /* non-blocking */ }
+
+    // Invalidate knowledge cache
+    try {
+      const knowledgeDb = await import('../db/knowledge');
+      await knowledgeDb.invalidateCache(merchantId);
+    } catch { /* non-blocking */ }
+
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(merchantId, 'knowledge_synced',
+      `بيان → عقل ساري: ${products.length} منتج + ${faqs.length} FAQ → ${ingestionResult?.evolveResult?.sections || 0} section`,
+      { products: products.length, faqs: faqs.length, embedded: embeddedCount, source: 'byaan_sync' }
+    );
+
+    res.json({
+      success: true,
+      ingested: true,
+      inputLength: fullText.length,
+      sections: ingestionResult?.evolveResult?.sections || 0,
+      embedded: embeddedCount,
+    });
+  } catch (e) {
+    console.error('[SariAPI] Platform knowledge sync failed:', e);
+    res.status(500).json({ error: 'Knowledge sync failed', errorAr: 'فشلت مزامنة المعرفة' });
+  }
+});
+
 // ── GET /api/v1/platform/status — Check connection status + sync stats ──
 sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) => {
   // PEN-SYNC-03: Dedicated rate limit for status reads (DB-heavy)
