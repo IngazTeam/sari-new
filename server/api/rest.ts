@@ -542,7 +542,7 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
           price: Number(p.price) || 0,
           category: p.category ? String(p.category).substring(0, 100) : undefined,
           imageUrl: p.imageUrl ? String(p.imageUrl).substring(0, 500) : undefined,
-          inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
+          isActive: p.inStock !== undefined ? Boolean(p.inStock) : (p.isActive !== undefined ? Boolean(p.isActive) : true),
         });
         created++;
       } catch (insertErr: any) {
@@ -949,14 +949,18 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
       if (!p.name) continue;
       try {
         // SEC-3: Sanitize all text fields to prevent stored XSS
+        // FIX: Use correct schema fields (isActive, not inStock)
         await createProduct({
           merchantId,
           name: stripHtml(String(p.name)).substring(0, 255),
+          nameAr: p.nameAr ? stripHtml(String(p.nameAr)).substring(0, 255) : undefined,
           description: p.description ? stripHtml(String(p.description)).substring(0, 2000) : undefined,
+          descriptionAr: p.descriptionAr ? stripHtml(String(p.descriptionAr)).substring(0, 2000) : undefined,
           price: Number(p.price) || 0,
           category: p.category ? stripHtml(String(p.category)).substring(0, 100) : undefined,
           imageUrl: p.imageUrl ? stripHtml(String(p.imageUrl)).substring(0, 500) : undefined,
-          inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
+          productUrl: p.productUrl ? stripHtml(String(p.productUrl)).substring(0, 500) : undefined,
+          isActive: p.inStock !== undefined ? Boolean(p.inStock) : (p.isActive !== undefined ? Boolean(p.isActive) : true),
         });
         created++;
       } catch (insertErr: any) {
