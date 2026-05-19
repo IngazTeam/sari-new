@@ -1098,6 +1098,8 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
 // Called AFTER all other syncs complete. Reads merchant's products + FAQs + settings,
 // composes rich text, and runs it through ingestContent + embedAllSections.
 // This makes Byaan data searchable by Sari's RAG-powered AI brain.
+// The text is designed to be GPT-analyzable: sections, headings, structured content
+// so that Knowledge Engine extracts sales_intel + opportunities (same as website analysis).
 sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Response) => {
   const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
   if (!checkSpecialLimit(syncLimitMap, `platform_sync_k_${keyPrefix}`, 3, 60_000)) {
@@ -1111,27 +1113,39 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     const merchantId = merchant.id;
     const parts: string[] = [];
 
-    // 1. Merchant profile
-    parts.push(`--- معلومات النشاط ---`);
-    if (merchant.business_name || merchant.businessName) parts.push(`اسم النشاط: ${merchant.business_name || merchant.businessName}`);
-    if ((merchant as any).description) parts.push(`الوصف: ${(merchant as any).description}`);
-    if ((merchant as any).phone) parts.push(`هاتف: ${(merchant as any).phone}`);
-    if ((merchant as any).website_url || (merchant as any).websiteUrl) parts.push(`الموقع: ${(merchant as any).website_url || (merchant as any).websiteUrl}`);
+    // Accept optional siteContent from Byaan (vision, mission, about, policies)
+    const { siteContent } = req.body || {};
 
-    // 2. Products (courses)
+    // 1. Merchant profile — rich context for GPT industry detection
+    parts.push(`--- معلومات النشاط التجاري ---`);
+    const bizName = merchant.business_name || merchant.businessName || '';
+    if (bizName) parts.push(`اسم النشاط: ${bizName}`);
+    if ((merchant as any).description) parts.push(`وصف النشاط: ${(merchant as any).description}`);
+    if ((merchant as any).phone) parts.push(`هاتف التواصل: ${(merchant as any).phone}`);
+    if ((merchant as any).website_url || (merchant as any).websiteUrl) parts.push(`الموقع الإلكتروني: ${(merchant as any).website_url || (merchant as any).websiteUrl}`);
+    if ((merchant as any).industry) parts.push(`القطاع: ${(merchant as any).industry}`);
+
+    // 2. Site content — academy identity (about, vision, mission, policies)
+    if (siteContent && typeof siteContent === 'string' && siteContent.trim().length > 20) {
+      parts.push(`\n--- هوية الأكاديمية ---`);
+      parts.push(stripHtml(siteContent).substring(0, 5000));
+    }
+
+    // 3. Products (courses) — FULL descriptions for deep understanding
     const products = await getProductsByMerchantId(merchantId);
     if (products.length > 0) {
       parts.push(`\n--- الدورات والمنتجات (${products.length}) ---`);
       for (const p of products) {
-        let line = `• ${p.name}`;
-        if (p.price) line += ` — السعر: ${p.price} ر.س`;
-        if (p.category) line += ` — التصنيف: ${p.category}`;
-        if (p.description) line += `\n  ${(p.description as string).substring(0, 300)}`;
+        let line = `\n• ${p.name}`;
+        if (p.price) line += `\nالسعر: ${p.price} ر.س`;
+        if (p.category) line += `\nالتصنيف: ${p.category}`;
+        if ((p as any).inStock === false) line += `\nالحالة: غير متاح حالياً`;
+        if (p.description) line += `\nالوصف: ${(p.description as string).substring(0, 2000)}`;
         parts.push(line);
       }
     }
 
-    // 3. FAQs
+    // 4. FAQs — full content for knowledge enrichment
     const faqs = await getExtractedFaqsByMerchantId(merchantId);
     if (faqs.length > 0) {
       parts.push(`\n--- الأسئلة الشائعة والمعلومات (${faqs.length}) ---`);
@@ -1140,8 +1154,24 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
       }
     }
 
-    // 4. Customers count
+    // 5. Discovered pages content (from previous website analysis)
     const pool = await getPool();
+    if (pool) {
+      try {
+        const [pages] = await pool.execute(
+          `SELECT page_type, title, content FROM discovered_pages WHERE merchant_id = ? AND is_active = 1 AND content IS NOT NULL AND LENGTH(content) > 50 ORDER BY page_type LIMIT 20`,
+          [merchantId]
+        );
+        if (Array.isArray(pages) && pages.length > 0) {
+          parts.push(`\n--- صفحات الموقع المكتشفة ---`);
+          for (const page of pages as any[]) {
+            parts.push(`\n[${page.title || page.page_type}]\n${(page.content || '').substring(0, 3000)}`);
+          }
+        }
+      } catch { /* skip — table might not exist */ }
+    }
+
+    // 6. Statistics — social proof for sales intel
     let customerCount = 0;
     if (pool) {
       try {
@@ -1149,10 +1179,11 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
         customerCount = (rows as any[])?.[0]?.cnt || 0;
       } catch { /* skip */ }
     }
-    if (customerCount > 0) {
+    if (customerCount > 0 || products.length > 0) {
       parts.push(`\n--- إحصائيات ---`);
-      parts.push(`عدد العملاء/المتدربين: ${customerCount}`);
+      if (customerCount > 0) parts.push(`عدد العملاء/المتدربين: ${customerCount}`);
       parts.push(`عدد المنتجات/الدورات: ${products.length}`);
+      if (faqs.length > 0) parts.push(`عدد الأسئلة الشائعة: ${faqs.length}`);
     }
 
     const fullText = parts.join('\n');
@@ -1161,11 +1192,12 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
       return res.json({ success: true, ingested: false, reason: 'insufficient_content', sectionsCount: 0 });
     }
 
-    // Run through Knowledge Engine
+    // Run through Knowledge Engine — same GPT pipeline as website analysis:
+    // classifyContent → analyzeSalesIntelligence → evolveKnowledge
     const { ingestContent } = await import('../ai/knowledge-engine');
     const ingestionResult = await ingestContent(
       merchantId, fullText, 'byaan_sync',
-      { businessName: merchant.business_name || merchant.businessName },
+      { businessName: bizName, industry: (merchant as any).industry },
       `byaan-sync://${req.tenantDomain || 'unknown'}`
     );
 
@@ -1183,17 +1215,25 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     } catch { /* non-blocking */ }
 
     const { logBrainActivity } = await import('../routers-sari-brain');
+    const evolve = ingestionResult?.evolveResult;
+    const salesIntel = ingestionResult?.salesIntel;
     await logBrainActivity(merchantId, 'knowledge_synced',
-      `بيان → عقل ساري: ${products.length} منتج + ${faqs.length} FAQ → ${ingestionResult?.evolveResult?.sections || 0} section`,
-      { products: products.length, faqs: faqs.length, embedded: embeddedCount, source: 'byaan_sync' }
+      `بيان → عقل ساري: ${products.length} منتج + ${faqs.length} FAQ → ${evolve?.added || 0} section جديد, ${evolve?.evolved || 0} محدّث | ${salesIntel?.usps?.length || 0} USP, ${salesIntel?.sellingTips?.length || 0} tip`,
+      { products: products.length, faqs: faqs.length, embedded: embeddedCount, source: 'byaan_sync', evolve, salesIntel: { usps: salesIntel?.usps?.length || 0, tips: salesIntel?.sellingTips?.length || 0, opportunities: salesIntel?.opportunities?.length || 0 } }
     );
 
     res.json({
       success: true,
       ingested: true,
       inputLength: fullText.length,
-      sections: ingestionResult?.evolveResult?.sections || 0,
+      sections: evolve?.added || 0,
+      evolved: evolve?.evolved || 0,
       embedded: embeddedCount,
+      salesIntel: {
+        usps: salesIntel?.usps?.length || 0,
+        sellingTips: salesIntel?.sellingTips?.length || 0,
+        opportunities: salesIntel?.opportunities?.length || 0,
+      },
     });
   } catch (e) {
     console.error('[SariAPI] Platform knowledge sync failed:', e);
