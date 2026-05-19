@@ -331,8 +331,9 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
   for (const trainee of trainees) {
     if (!trainee.name || !trainee.phone) continue;
 
-    const externalId = String(trainee.id);
-    const phone = String(trainee.phone).replace(/\D/g, '');
+    // PEN-SYNC-22: Limit externalId length to prevent storage DoS
+    const externalId = String(trainee.id).substring(0, 100);
+    const phone = String(trainee.phone).replace(/\D/g, '').substring(0, 20);
 
     // Step 1: Search by external_id + external_source + merchant_id
     const [existing] = await (dbConn as any).execute(
@@ -537,12 +538,13 @@ async function callByaanApi(
       return { success: false, error: 'api_base_url must use HTTPS' };
     }
     const hostname = parsedUrl.hostname;
-    // PEN-SYNC-12: Extended SSRF blocklist (IPv4 + IPv6)
+    // PEN-SYNC-25: Fixed 172.x range — only block private 172.16-31, not all 172.x
     if (
       hostname === 'localhost' || hostname === '127.0.0.1' ||
       hostname === '::1' || hostname === '[::1]' || hostname === '[::]' ||
       hostname.startsWith('10.') || hostname.startsWith('192.168.') ||
-      hostname.startsWith('172.') || hostname.startsWith('169.254.') ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+      hostname.startsWith('169.254.') ||
       hostname === '0.0.0.0' || hostname.endsWith('.internal') || hostname.endsWith('.local') ||
       hostname.startsWith('fe80:') || hostname.startsWith('fc00:') || hostname.startsWith('fd') ||
       hostname.includes('::ffff:127.')

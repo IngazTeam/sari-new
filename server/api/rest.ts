@@ -192,9 +192,9 @@ function isValidDomain(domain: string): boolean {
   return /^[a-zA-Z0-9][a-zA-Z0-9.-]*\.[a-zA-Z]{2,}$/.test(domain) && domain.length <= 255;
 }
 
-// Strip HTML tags
+// PEN-SYNC-23: Strip HTML tags — handles unclosed tags to prevent XSS bypass
 function stripHtml(str: string): string {
-  return str.replace(/<[^>]*>/g, '').trim();
+  return str.replace(/<[^>]*>?/g, '').trim();
 }
 
 // Valid action types
@@ -302,9 +302,10 @@ export async function getPlatformKeys(): Promise<Array<{ platform: string; keyPr
   const [rows] = await pool.execute(
     `SELECT platform, key_value, label, created_at FROM sari_platform_keys WHERE is_active = 1`
   );
+  // PEN-SYNC-24: Reduce key exposure — show only platform prefix, not secret chars
   return (rows as any[]).map(r => ({
     platform: r.platform,
-    keyPrefix: r.key_value.substring(0, 24) + '••••••••',
+    keyPrefix: r.key_value.substring(0, 12) + '••••••••••••',
     label: r.label || '',
     createdAt: r.created_at,
   }));
@@ -514,7 +515,9 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
     return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
   }
 
-  const { products, mode } = req.body;
+  const { products, mode: rawMode } = req.body;
+  // PEN-SYNC-21: Whitelist mode parameter (same as platform endpoint)
+  const mode = rawMode === 'replace' ? 'replace' : 'append';
   if (!Array.isArray(products)) {
     return res.status(400).json({ error: 'products array is required', errorAr: 'مصفوفة المنتجات مطلوبة' });
   }
@@ -747,12 +750,13 @@ sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response
     );
 
     if ((existingUsers as any[])?.length > 0) {
-      // PEN-BYAAN-02 + PEN-R2-05: Uniform response
+      // PEN-BYAAN-02 + PEN-R2-05 + PEN-SYNC-28: Fully uniform response (same loginUrl to prevent enumeration)
       return res.json({
         success: true,
         created: true,
         email: String(email).toLowerCase().trim(),
-        loginUrl: 'https://sari.app/login',
+        loginUrl: 'https://sary.live/login',
+        dashboardUrl: 'https://sary.live/merchant/whatsapp-setup',
         message: 'Account provisioned successfully',
         messageAr: 'تم تجهيز الحساب بنجاح',
       });
@@ -1432,6 +1436,7 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
         }
         const hostname = parsedUrl.hostname;
         // PEN-SYNC-12: Extended SSRF blocklist including IPv6
+        // PEN-SYNC-25: Fixed 172.x range — only block private 172.16-31, not all 172.x (e.g. Cloudflare 172.67)
         if (
           hostname === 'localhost' ||
           hostname === '127.0.0.1' ||
@@ -1439,7 +1444,7 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
           hostname === '0.0.0.0' || hostname === '[::]' ||
           hostname.startsWith('10.') ||
           hostname.startsWith('192.168.') ||
-          hostname.startsWith('172.') ||
+          /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
           hostname.startsWith('169.254.') ||
           hostname.startsWith('fe80:') ||
           hostname.startsWith('fc00:') || hostname.startsWith('fd') ||
@@ -1487,11 +1492,11 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
     } catch (callErr: any) {
       await updateByaanSyncStatus(merchant.id, 'error', callErr?.message || 'Connection failed');
       console.error('[SariAPI] Resync call to Byaan failed:', callErr?.message);
+      // PEN-SYNC-20: Don't leak internal error details (IPs, paths, DNS)
       return res.json({
         success: false,
         message: 'Failed to reach Byaan API',
         messageAr: 'فشل الاتصال بـ API بيان — تأكد من صحة api_base_url',
-        error: callErr?.message,
       });
     }
   } catch (e) {
