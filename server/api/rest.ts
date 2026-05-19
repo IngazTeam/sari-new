@@ -528,18 +528,24 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
     }
 
     let created = 0;
+    let errors = 0;
     for (const p of products) {
       if (!p.name) continue;
-      await createProduct({
-        merchantId,
-        name: String(p.name).substring(0, 255),
-        description: p.description ? String(p.description).substring(0, 2000) : undefined,
-        price: p.price ? Number(p.price) : undefined,
-        category: p.category ? String(p.category).substring(0, 100) : undefined,
-        imageUrl: p.imageUrl ? String(p.imageUrl).substring(0, 500) : undefined,
-        inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
-      });
-      created++;
+      try {
+        await createProduct({
+          merchantId,
+          name: String(p.name).substring(0, 255),
+          description: p.description ? String(p.description).substring(0, 2000) : undefined,
+          price: Number(p.price) || 0,
+          category: p.category ? String(p.category).substring(0, 100) : undefined,
+          imageUrl: p.imageUrl ? String(p.imageUrl).substring(0, 500) : undefined,
+          inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
+        });
+        created++;
+      } catch (insertErr: any) {
+        errors++;
+        console.error(`[SariAPI] Product insert failed for "${String(p.name).substring(0, 50)}":`, insertErr?.message);
+      }
     }
 
     // Log activity
@@ -932,19 +938,25 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
     }
 
     let created = 0;
+    let errors = 0;
     for (const p of products) {
       if (!p.name) continue;
-      // SEC-3: Sanitize all text fields to prevent stored XSS
-      await createProduct({
-        merchantId,
-        name: stripHtml(String(p.name)).substring(0, 255),
-        description: p.description ? stripHtml(String(p.description)).substring(0, 2000) : undefined,
-        price: p.price ? Number(p.price) : undefined,
-        category: p.category ? stripHtml(String(p.category)).substring(0, 100) : undefined,
-        imageUrl: p.imageUrl ? stripHtml(String(p.imageUrl)).substring(0, 500) : undefined,
-        inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
-      });
-      created++;
+      try {
+        // SEC-3: Sanitize all text fields to prevent stored XSS
+        await createProduct({
+          merchantId,
+          name: stripHtml(String(p.name)).substring(0, 255),
+          description: p.description ? stripHtml(String(p.description)).substring(0, 2000) : undefined,
+          price: Number(p.price) || 0,
+          category: p.category ? stripHtml(String(p.category)).substring(0, 100) : undefined,
+          imageUrl: p.imageUrl ? stripHtml(String(p.imageUrl)).substring(0, 500) : undefined,
+          inStock: p.inStock !== undefined ? Boolean(p.inStock) : true,
+        });
+        created++;
+      } catch (insertErr: any) {
+        errors++;
+        console.error(`[SariAPI] Platform product insert failed for "${stripHtml(String(p.name)).substring(0, 50)}":`, insertErr?.message);
+      }
     }
 
     const { logBrainActivity } = await import('../routers-sari-brain');
