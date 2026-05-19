@@ -194,7 +194,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
   };
   try {
     updateProgress('scraping', 10);
-    const { analyzeWebsite } = await import('./_core/websiteAnalyzer');
+    const { analyzeWebsite, cleanScrapedText: cleanText } = await import('./_core/websiteAnalyzer');
     updateProgress('scraping', 20);
     const result = await analyzeWebsite(websiteUrl);
     updateProgress('processing', 40);
@@ -236,7 +236,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
             try {
               await (dbConn as any).execute(
                 `INSERT INTO discovered_pages (merchant_id, page_type, title, url, content, is_active, use_in_bot, discovered_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())`,
-                [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), (page.content || '').substring(0, 65000)]
+                [merchant.id, safeType, (page.title || '').substring(0, 500), (page.url || '').substring(0, 1000), cleanText((page.content || '')).substring(0, 65000)]
               );
             } catch { /* skip */ }
           }
@@ -1208,7 +1208,9 @@ ${sanitizedContent}`
         throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
       }
       const page = (rows as any[])[0];
-      const content = (page.content || '').toString();
+      // PEN-DEEP-03: Clean content at read-time for legacy pages saved before the cleanup upgrade
+      const { cleanScrapedText } = await import('./_core/websiteAnalyzer');
+      const content = cleanScrapedText((page.content || '').toString());
       return {
         id: page.id,
         title: page.title,
@@ -1381,7 +1383,7 @@ ${fencedContent}`,
       checkTestRateLimit(merchant.id, 10_000); // 10s cooldown
 
       // SSRF guard
-      const { isUrlSafe, scrapeWebsite } = await import('./_core/websiteAnalyzer');
+      const { isUrlSafe, scrapeWebsite, cleanScrapedText } = await import('./_core/websiteAnalyzer');
       if (!isUrlSafe(input.url)) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط غير مسموح به' });
       }
@@ -1408,8 +1410,9 @@ ${fencedContent}`,
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الرابط مضاف مسبقاً' });
         }
 
-        // Scrape the page
-        const { text } = await scrapeWebsite(input.url);
+        // PEN-DEEP-01: Scrape + clean the page before storing
+        const { text: rawText } = await scrapeWebsite(input.url);
+        const text = cleanScrapedText(rawText);
         const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
 
         if (wordCount < 10) {
