@@ -873,7 +873,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             }
           }
 
-          // Priority 3: Escalation reply — ONLY if message quotes a Sari alert
+          // Priority 3: Escalation reply — quoted alert OR implicit reply with active escalation
           // FIX: Previously ANY message from a chain member was treated as escalation reply,
           // which prevented the merchant from being served as a normal customer
           const quotedText = extractQuotedText(payload);
@@ -882,18 +882,36 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             || quotedText.includes('سؤال عميل')
             || quotedText.includes('العميل ينتظر')
             || quotedText.includes('سيوصله للعميل');
+
+          // BUG-3 FIX: Also detect implicit escalation replies (no quote but reply-intent phrases)
+          const replyIntentPhrases = ['قول له', 'قوله', 'جاوبه', 'ابلغه', 'أبلغه', 'بلغه', 'وصله', 'وصل له', 'رد عليه', 'ردي عليه', 'طمنه'];
+          const hasReplyIntent = !isReplyToAlert && replyIntentPhrases.some(p => incomingText.includes(p));
           
-          if (isReplyToAlert) {
+          if (isReplyToAlert || hasReplyIntent) {
             const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
+
+            // For implicit replies, extract the actual answer (after the intent phrase)
+            let replyText = incomingText;
+            if (hasReplyIntent) {
+              for (const phrase of replyIntentPhrases) {
+                if (incomingText.includes(phrase)) {
+                  const afterPhrase = incomingText.substring(incomingText.indexOf(phrase) + phrase.length).trim();
+                  if (afterPhrase.length > 2) {
+                    replyText = afterPhrase;
+                  }
+                  break;
+                }
+              }
+            }
 
             const result = await handleMerchantEscalationReply({
               merchantId: instance.merchantId,
               merchantPhone: customerPhone,
-              replyText: incomingText,
+              replyText,
             });
 
             if (result.handled) {
-              console.log(`[Escalation] ✅ Chain member reply routed to customer ${result.escalation?.customerPhone?.slice(-4)}`);
+              console.log(`[Escalation] ✅ Chain member reply routed to customer ${result.escalation?.customerPhone?.slice(-4)}${hasReplyIntent ? ' (implicit)' : ''}`);
               return { success: true, message: 'Escalation reply handled' };
             }
           }
@@ -1009,7 +1027,19 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     // Process message based on type
     let response: string;
-    
+
+    // ── BUG-1 FIX: Send typing indicator IMMEDIATELY while GPT processes ──
+    // Fire-and-forget — non-blocking, just starts "typing..." in WhatsApp
+    try {
+      const { sendTypingWithCredentials } = await import('../whatsapp');
+      sendTypingWithCredentials(
+        instance.instanceId,
+        instance.token,
+        instance.apiUrl || 'https://api.green-api.com',
+        customerPhone
+      ).catch(() => {}); // truly non-blocking
+    } catch { /* non-critical */ }
+
     if (payload.messageData.typeMessage === 'voiceMessage' || payload.messageData.typeMessage === 'audioMessage') {
       // Voice message — downloadUrl can be at messageData.downloadUrl OR messageData.fileMessageData.downloadUrl
       const audioDownloadUrl = payload.messageData.downloadUrl 

@@ -53,7 +53,7 @@ import dbZid from '../db_zid';
  */
 function buildSystemPrompt(settings?: SariPersonalitySetting): string {
   // Base personality
-  let prompt = `أنت ساري، مساعد مبيعات ذكي وودود عبر الواتساب. أنت خبير في فهم احتياجات العملاء واقتراح المنتجات المناسبة.
+  let prompt = `أنت مساعد مبيعات ذكي وودود عبر الواتساب. أنت تمثل النشاط التجاري وتتحدث باسمه. أنت خبير في فهم احتياجات العملاء واقتراح المنتجات المناسبة.
 
 ## شخصيتك المميزة:
 `;
@@ -166,7 +166,7 @@ ${settings.customGreeting}
   // Continue with the rest of the original prompt
   prompt += `
 ## مهامك الذكية:
-1. **الترحيب المخصص**: اذكر اسم العميل إن كان متوفراً — لكن رحّب مرة واحدة فقط في أول رسالة
+1. **الترحيب المخصص**: في أول رسالة رحّب باسم النشاط التجاري (من السياق أدناه). إذا عرفت اسم العميل اذكره أيضاً. مثال: "أهلاً [اسم العميل]! حيّاك في [اسم النشاط] 😊". لا تقل "أنا ساري" — تحدث كممثل للنشاط مباشرة. رحّب مرة واحدة فقط
 2. **الفهم العميق**: اسأل أسئلة ذكية لفهم الاحتياجات
 3. **البحث الذكي**: اقترح منتجات محددة من القائمة المتوفرة
 4. **البيع الإضافي**: اقترح منتجات مكملة بطريقة طبيعية
@@ -336,7 +336,7 @@ const FEW_SHOT_EXAMPLES: ChatMessage[] = [
   },
   {
     role: 'assistant',
-    content: 'وعليكم السلام! أهلاً وسهلاً فيك 😊 أنا ساري، كيف أقدر أساعدك اليوم؟',
+    content: 'وعليكم السلام ورحمة الله! حيّاك الله 😊 كيف أقدر أساعدك اليوم؟',
   },
   {
     role: 'user',
@@ -344,7 +344,7 @@ const FEW_SHOT_EXAMPLES: ChatMessage[] = [
   },
   {
     role: 'assistant',
-    content: 'أنا ساري، مساعدك هنا! أقدر أساعدك في منتجاتنا وخدماتنا. وش تبي تعرف؟ 😊',
+    content: 'أقدر أساعدك في منتجاتنا وخدماتنا بس 😊 وش تبي تعرف عن خدماتنا؟',
   },
 ];
 
@@ -358,35 +358,60 @@ async function searchRelevantProducts(
 ): Promise<any[]> {
   if (allProducts.length === 0) return [];
 
-  // Simple keyword matching (can be enhanced with vector search later)
-  const keywords = message.toLowerCase().split(/\s+/);
+  // BUG-4 FIX: Detect price/catalog intent — return ALL products
+  const priceCatalogKeywords = ['سعر', 'أسعار', 'اسعار', 'كم', 'باقة', 'باقات', 'بكج', 'حق', 'تكلفة',
+    'price', 'pricing', 'cost', 'package', 'plan', 'منتجات', 'دورات', 'كتالوج', 'قائمة',
+    'ايش عندكم', 'وش عندكم', 'ايه الباقات', 'ايش الباقات', 'شو عندكم'];
+  const msgLower = message.toLowerCase();
+  const isPriceQuery = priceCatalogKeywords.some(k => msgLower.includes(k));
+  if (isPriceQuery) {
+    // Return all products (up to 10) — customer wants the full menu
+    return allProducts.slice(0, 10);
+  }
+
+  // Arabic stem normalization: strip common prefixes/suffixes for better matching
+  const normalizeArabic = (word: string): string[] => {
+    const stems: string[] = [word];
+    if (word.startsWith('ال')) stems.push(word.substring(2));
+    for (const suffix of ['ات', 'ين', 'ية', 'ة', 'ون']) {
+      if (word.endsWith(suffix) && word.length > suffix.length + 2) {
+        stems.push(word.substring(0, word.length - suffix.length));
+      }
+    }
+    return stems;
+  };
+
+  const keywords = msgLower.split(/\s+/).filter(w => w.length > 1);
   
   const scoredProducts = allProducts.map(product => {
     let score = 0;
     const searchText = `${product.name} ${product.description || ''} ${product.category || ''}`.toLowerCase();
     
     keywords.forEach(keyword => {
-      if (searchText.includes(keyword)) {
-        score += 1;
+      const stems = normalizeArabic(keyword);
+      for (const stem of stems) {
+        if (searchText.includes(stem)) { score += 1; break; }
       }
     });
     
-    // Boost if keyword in name
     keywords.forEach(keyword => {
-      if (product.name.toLowerCase().includes(keyword)) {
-        score += 2;
+      const stems = normalizeArabic(keyword);
+      for (const stem of stems) {
+        if (product.name.toLowerCase().includes(stem)) { score += 2; break; }
       }
     });
     
     return { product, score };
   });
 
-  // Sort by score and return top results
-  return scoredProducts
+  const matched = scoredProducts
     .filter(item => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(item => item.product);
+
+  // If no match found, return first 5 products as fallback (better than nothing)
+  return matched.length > 0 ? matched : allProducts.slice(0, 5);
 }
 
 /**
@@ -573,14 +598,14 @@ async function buildEnhancedContextPrompt(context: {
         contextPrompt += ` - ${formatCurrency(product.price, currency, 'ar-SA')}`;
       }
       if (product.stock !== undefined) contextPrompt += ` (متوفر: ${product.stock})`;
-      if (product.description) contextPrompt += `\n   الوصف: ${product.description.substring(0, 100)}`;
+      if (product.description) contextPrompt += `\n   الوصف: ${product.description.substring(0, 300)}`;
       if (product.category) contextPrompt += `\n   الفئة: ${product.category}`;
       contextPrompt += `\n`;
     }
     
-    contextPrompt += `\n⚠️ استخدم فقط المنتجات المذكورة أعلاه. لا تخترع منتجات أخرى!\n`;
+    contextPrompt += `\n⚠️ استخدم فقط المنتجات المذكورة أعلاه وأسعارها الدقيقة. إذا سأل العميل عن الأسعار أو الباقات، اعرض كل المنتجات بأسمائها وأسعارها. لا تقل "خلني أتأكد" — اعرض ما عندك بثقة!\n`;
   } else {
-    contextPrompt += `\n⚠️ لا توجد قائمة منتجات محددة حالياً. استخدم المعلومات المتاحة أعلاه (تحليل الموقع، ملف التعريف، بيانات الشركة) للرد على العميل. إذا لم تجد معلومات كافية، قل للعميل "خلني أتأكد من المعلومة وأرد عليك" ولا ترسل أرقام أو إيميلات.\n`;
+    contextPrompt += `\n⚠️ لا توجد قائمة منتجات محددة حالياً. استخدم المعلومات المتاحة أعلاه (أقسام المعرفة، تحليل الموقع، ملف التعريف، بيانات الشركة) للرد بدقة. إذا سأل عن أسعار ولم تجدها في المعلومات، قل "لا توجد لدي الأسعار حالياً، تقدر تتواصل مع الفريق مباشرة" — لا تخترع أرقام ولا تقل "خلني أتأكد".\n`;
   }
 
   // === Inject FAQs from website analysis ===

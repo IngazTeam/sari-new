@@ -377,6 +377,31 @@ export async function sendTypingIndicator(
   }
 }
 
+/**
+ * Send typing indicator with merchant-specific credentials.
+ * Fire-and-forget — does NOT wait for duration. Just starts typing.
+ * The typing state auto-expires when the next message is sent.
+ */
+export async function sendTypingWithCredentials(
+  instanceId: string,
+  apiToken: string,
+  apiUrl: string,
+  phoneNumber: string
+): Promise<void> {
+  try {
+    assertGreenApiUrl(apiUrl);
+    const baseURL = `${apiUrl}/waInstance${instanceId}`;
+    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+
+    await axios.post(`${baseURL}/sendChatStateTyping/${apiToken}`, {
+      chatId: `${formattedPhone}@c.us`,
+    });
+  } catch (error) {
+    // Non-blocking — typing indicator is cosmetic
+    console.warn('[WhatsApp] Typing indicator failed (non-blocking):', (error as any)?.message);
+  }
+}
+
 
 /**
  * Send campaign messages to multiple recipients with random delay
