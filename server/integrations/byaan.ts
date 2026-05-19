@@ -394,7 +394,8 @@ export async function syncSettings(merchantId: number, settings: ByaanSettings):
 
   for (const field of ALLOWED_SETTINGS_FIELDS) {
     if (settings[field] !== undefined && settings[field] !== null) {
-      const sanitized = String(settings[field]).substring(0, field === 'description' ? 2000 : 500);
+      // PEN-B2S-06: Strip HTML to prevent stored XSS (description can contain social media URLs from Byaan)
+      const sanitized = String(settings[field]).replace(/<[^>]*>/g, '').trim().substring(0, field === 'description' ? 2000 : 500);
       // PEN-BYAAN-07 FIX: Removed industry→platform_type mapping to prevent overwrite
       const colMap: Record<string, string> = {
         businessName: 'business_name',
