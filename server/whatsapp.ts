@@ -389,15 +389,22 @@ export async function sendTypingWithCredentials(
     assertGreenApiUrl(apiUrl);
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
     const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    const endpoint = `${baseURL}/sendTyping/${apiToken}`;
+
+    console.log(`[WhatsApp] ✏️ Sending typing indicator to ***${formattedPhone.slice(-4)} via ${apiUrl}`);
 
     // Green API v5.44+: SendTyping with typingTime (5s default, max 20s)
-    await axios.post(`${baseURL}/sendTyping/${apiToken}`, {
+    const response = await axios.post(endpoint, {
       chatId: `${formattedPhone}@c.us`,
       typingTime: 5000,
     });
-  } catch (error) {
+
+    console.log(`[WhatsApp] ✅ Typing indicator sent successfully. Status: ${response.status}, Data:`, JSON.stringify(response.data));
+  } catch (error: any) {
     // Non-blocking — typing indicator is cosmetic
-    console.warn('[WhatsApp] Typing indicator failed (non-blocking):', (error as any)?.message);
+    const status = error?.response?.status;
+    const data = error?.response?.data;
+    console.error(`[WhatsApp] ❌ Typing indicator FAILED. Status: ${status}, Data:`, JSON.stringify(data), 'Error:', error?.message);
   }
 }
 
