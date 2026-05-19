@@ -1127,8 +1127,11 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
 
     // 2. Site content — academy identity (about, vision, mission, policies)
     if (siteContent && typeof siteContent === 'string' && siteContent.trim().length > 20) {
+      // PEN-BYAAN-01: Clean CMS content (may contain HTML/JSON-LD artifacts from Byaan pages)
+      const { cleanScrapedText } = await import('../_core/websiteAnalyzer');
+      const cleanSiteContent = cleanScrapedText(stripHtml(siteContent));
       parts.push(`\n--- هوية الأكاديمية ---`);
-      parts.push(stripHtml(siteContent).substring(0, 5000));
+      parts.push(cleanSiteContent.substring(0, 5000));
     }
 
     // 3. Products (courses) — FULL descriptions for deep understanding
@@ -1163,9 +1166,11 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
           [merchantId]
         );
         if (Array.isArray(pages) && pages.length > 0) {
+          // PEN-BYAAN-02: Clean legacy page content at read-time
+          const { cleanScrapedText: cleanPage } = await import('../_core/websiteAnalyzer');
           parts.push(`\n--- صفحات الموقع المكتشفة ---`);
           for (const page of pages as any[]) {
-            parts.push(`\n[${page.title || page.page_type}]\n${(page.content || '').substring(0, 3000)}`);
+            parts.push(`\n[${page.title || page.page_type}]\n${cleanPage((page.content || '')).substring(0, 3000)}`);
           }
         }
       } catch { /* skip — table might not exist */ }
