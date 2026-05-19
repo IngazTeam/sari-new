@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Calendar,
@@ -32,11 +35,28 @@ import {
   XCircle,
   Users,
   DollarSign,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from 'react-i18next';
+
+// Default form state for new booking
+const defaultNewBooking = {
+  serviceId: 0,
+  customerPhone: "",
+  customerName: "",
+  customerEmail: "",
+  bookingDate: "",
+  startTime: "",
+  endTime: "",
+  durationMinutes: 60,
+  basePrice: 0,
+  finalPrice: 0,
+  notes: "",
+  bookingSource: "walk_in" as const,
+};
 
 export default function BookingsManagement() {
   const { t } = useTranslation();
@@ -44,6 +64,8 @@ export default function BookingsManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newBooking, setNewBooking] = useState(defaultNewBooking);
 
   const { data: bookingsData, isLoading, refetch } = trpc.bookings.list.useQuery({
     status: statusFilter === "all" ? undefined : statusFilter,
@@ -51,6 +73,28 @@ export default function BookingsManagement() {
   });
 
   const { data: statsData } = trpc.bookings.getStats.useQuery({});
+
+  // Fetch services for the service selector
+  const { data: servicesData } = trpc.services.list.useQuery();
+
+  const createMutation = trpc.bookings.create.useMutation({
+    onSuccess: () => {
+      toast({
+        title: t('bookingsManagementPage.text0'),
+        description: "تم إنشاء الحجز بنجاح",
+      });
+      refetch();
+      setIsCreateOpen(false);
+      setNewBooking(defaultNewBooking);
+    },
+    onError: (error) => {
+      toast({
+        title: t('bookingsManagementPage.text2'),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const updateMutation = trpc.bookings.update.useMutation({
     onSuccess: () => {
@@ -89,6 +133,7 @@ export default function BookingsManagement() {
 
   const bookings = bookingsData?.bookings || [];
   const stats = statsData?.stats;
+  const services = servicesData?.services || [];
 
   const filteredBookings = bookings.filter((booking: any) => {
     const searchLower = searchTerm.toLowerCase();
@@ -128,6 +173,73 @@ export default function BookingsManagement() {
     }
   };
 
+  // Auto-calculate endTime and price when service/startTime changes
+  const handleServiceChange = (serviceIdStr: string) => {
+    const serviceId = Number(serviceIdStr);
+    const service = services.find((s: any) => s.id === serviceId);
+    if (service) {
+      const duration = service.durationMinutes || 60;
+      const price = service.basePrice || 0;
+      setNewBooking(prev => {
+        const updated = {
+          ...prev,
+          serviceId,
+          durationMinutes: duration,
+          basePrice: price,
+          finalPrice: price,
+        };
+        // Auto-calculate endTime if startTime is set
+        if (prev.startTime) {
+          const [h, m] = prev.startTime.split(":").map(Number);
+          const totalMins = h * 60 + m + duration;
+          const endH = Math.floor(totalMins / 60) % 24;
+          const endM = totalMins % 60;
+          updated.endTime = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+        }
+        return updated;
+      });
+    }
+  };
+
+  const handleStartTimeChange = (startTime: string) => {
+    setNewBooking(prev => {
+      const updated = { ...prev, startTime };
+      if (startTime && prev.durationMinutes) {
+        const [h, m] = startTime.split(":").map(Number);
+        const totalMins = h * 60 + m + prev.durationMinutes;
+        const endH = Math.floor(totalMins / 60) % 24;
+        const endM = totalMins % 60;
+        updated.endTime = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+      }
+      return updated;
+    });
+  };
+
+  const handleCreateBooking = () => {
+    if (!newBooking.serviceId || !newBooking.customerPhone || !newBooking.bookingDate || !newBooking.startTime || !newBooking.endTime) {
+      toast({
+        title: t('bookingsManagementPage.text2'),
+        description: "يرجى ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
+    createMutation.mutate({
+      serviceId: newBooking.serviceId,
+      customerPhone: newBooking.customerPhone,
+      customerName: newBooking.customerName || undefined,
+      customerEmail: newBooking.customerEmail || undefined,
+      bookingDate: newBooking.bookingDate,
+      startTime: newBooking.startTime,
+      endTime: newBooking.endTime,
+      durationMinutes: newBooking.durationMinutes,
+      basePrice: newBooking.basePrice,
+      finalPrice: newBooking.finalPrice,
+      notes: newBooking.notes || undefined,
+      bookingSource: newBooking.bookingSource,
+    });
+  };
+
   return (
     <div className="container py-8">
       <div className="flex items-center justify-between mb-6">
@@ -135,8 +247,185 @@ export default function BookingsManagement() {
           <h1 className="text-3xl font-bold">{t('bookingsManagementPage.text13')}</h1>
           <p className="text-muted-foreground mt-1">{t('bookingsManagement.auto_0')}</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" />{t('bookingsManagement.auto_1')}</Button>
+
+        {/* Create Booking Dialog */}
+        <Dialog open={isCreateOpen} onOpenChange={(open) => {
+          setIsCreateOpen(open);
+          if (!open) setNewBooking(defaultNewBooking);
+        }}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />{t('bookingsManagement.auto_1')}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t('bookingsManagement.auto_1')}</DialogTitle>
+              <DialogDescription>أدخل بيانات الحجز الجديد</DialogDescription>
+            </DialogHeader>
+
+            <div className="grid gap-4 py-4">
+              {/* Service Selector */}
+              <div className="grid gap-2">
+                <Label>الخدمة *</Label>
+                <Select
+                  value={newBooking.serviceId ? String(newBooking.serviceId) : ""}
+                  onValueChange={handleServiceChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر الخدمة" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {services.map((service: any) => (
+                      <SelectItem key={service.id} value={String(service.id)}>
+                        {service.name} {service.basePrice ? `(${(service.basePrice / 100).toFixed(0)} ريال)` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Customer Info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-2">
+                  <Label>اسم العميل</Label>
+                  <Input
+                    placeholder="أحمد محمد"
+                    value={newBooking.customerName}
+                    onChange={(e) => setNewBooking(prev => ({ ...prev, customerName: e.target.value }))}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>رقم الهاتف *</Label>
+                  <Input
+                    placeholder="05xxxxxxxx"
+                    value={newBooking.customerPhone}
+                    onChange={(e) => setNewBooking(prev => ({ ...prev, customerPhone: e.target.value }))}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="grid gap-2">
+                <Label>البريد الإلكتروني</Label>
+                <Input
+                  type="email"
+                  placeholder="email@example.com"
+                  value={newBooking.customerEmail}
+                  onChange={(e) => setNewBooking(prev => ({ ...prev, customerEmail: e.target.value }))}
+                  dir="ltr"
+                />
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="grid gap-2">
+                  <Label>التاريخ *</Label>
+                  <Input
+                    type="date"
+                    value={newBooking.bookingDate}
+                    onChange={(e) => setNewBooking(prev => ({ ...prev, bookingDate: e.target.value }))}
+                    min={new Date().toISOString().split("T")[0]}
+                    dir="ltr"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>وقت البدء *</Label>
+                  <Input
+                    type="time"
+                    value={newBooking.startTime}
+                    onChange={(e) => handleStartTimeChange(e.target.value)}
+                    dir="ltr"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>وقت الانتهاء *</Label>
+                  <Input
+                    type="time"
+                    value={newBooking.endTime}
+                    onChange={(e) => setNewBooking(prev => ({ ...prev, endTime: e.target.value }))}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {/* Duration & Price */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="grid gap-2">
+                  <Label>المدة (دقيقة)</Label>
+                  <Input
+                    type="number"
+                    value={newBooking.durationMinutes}
+                    onChange={(e) => setNewBooking(prev => ({ ...prev, durationMinutes: Number(e.target.value) }))}
+                    dir="ltr"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>السعر (هللة)</Label>
+                  <Input
+                    type="number"
+                    value={newBooking.basePrice}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setNewBooking(prev => ({ ...prev, basePrice: val, finalPrice: val }));
+                    }}
+                    dir="ltr"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>المبلغ النهائي</Label>
+                  <Input
+                    type="number"
+                    value={newBooking.finalPrice}
+                    onChange={(e) => setNewBooking(prev => ({ ...prev, finalPrice: Number(e.target.value) }))}
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+
+              {/* Booking Source */}
+              <div className="grid gap-2">
+                <Label>مصدر الحجز</Label>
+                <Select
+                  value={newBooking.bookingSource}
+                  onValueChange={(value: any) => setNewBooking(prev => ({ ...prev, bookingSource: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="walk_in">حضوري</SelectItem>
+                    <SelectItem value="phone">هاتف</SelectItem>
+                    <SelectItem value="whatsapp">واتساب</SelectItem>
+                    <SelectItem value="website">الموقع</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Notes */}
+              <div className="grid gap-2">
+                <Label>ملاحظات</Label>
+                <Textarea
+                  placeholder="ملاحظات إضافية..."
+                  value={newBooking.notes}
+                  onChange={(e) => setNewBooking(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+                إلغاء
+              </Button>
+              <Button onClick={handleCreateBooking} disabled={createMutation.isPending}>
+                {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                إنشاء الحجز
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Statistics Cards */}
