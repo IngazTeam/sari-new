@@ -1268,6 +1268,12 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
     const products = await getProductsByMerchantId(merchant.id);
     const pool = await getPool();
     let customerCount = 0;
+    let faqCount = 0;
+    let faqCategories: string[] = [];
+    let knowledgeSectionCount = 0;
+    let discoveredPageCount = 0;
+    let discoveredPageTitles: string[] = [];
+
     if (pool) {
       try {
         const [rows] = await pool.execute(
@@ -1275,6 +1281,40 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
           [merchant.id]
         );
         customerCount = (rows as any[])?.[0]?.cnt || 0;
+      } catch (e) { /* skip */ }
+
+      // FAQs count + categories
+      try {
+        const [faqRows] = await pool.execute(
+          `SELECT COUNT(*) as cnt FROM extracted_faqs WHERE merchant_id = ?`,
+          [merchant.id]
+        );
+        faqCount = (faqRows as any[])?.[0]?.cnt || 0;
+
+        const [catRows] = await pool.execute(
+          `SELECT DISTINCT category FROM extracted_faqs WHERE merchant_id = ? AND category IS NOT NULL`,
+          [merchant.id]
+        );
+        faqCategories = (catRows as any[])?.map((r: any) => r.category).filter(Boolean) || [];
+      } catch (e) { /* skip */ }
+
+      // Knowledge sections count
+      try {
+        const [ksRows] = await pool.execute(
+          `SELECT COUNT(*) as cnt FROM knowledge_sections WHERE merchant_id = ?`,
+          [merchant.id]
+        );
+        knowledgeSectionCount = (ksRows as any[])?.[0]?.cnt || 0;
+      } catch (e) { /* skip */ }
+
+      // Discovered pages
+      try {
+        const [dpRows] = await pool.execute(
+          `SELECT title, page_type FROM discovered_pages WHERE merchant_id = ? AND is_active = 1 ORDER BY id DESC LIMIT 20`,
+          [merchant.id]
+        );
+        discoveredPageCount = (dpRows as any[])?.length || 0;
+        discoveredPageTitles = (dpRows as any[])?.map((r: any) => r.title || r.page_type).filter(Boolean) || [];
       } catch (e) { /* skip */ }
     }
 
@@ -1290,7 +1330,13 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
       hasSyncErrors: !!connection?.sync_errors,
       stats: {
         products: products.length,
+        productNames: products.slice(0, 20).map((p: any) => p.name),
         customers: customerCount,
+        faqs: faqCount,
+        faqCategories,
+        knowledgeSections: knowledgeSectionCount,
+        discoveredPages: discoveredPageCount,
+        discoveredPageTitles,
       },
     });
   } catch (e) {

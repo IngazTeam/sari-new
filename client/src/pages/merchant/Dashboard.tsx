@@ -5,7 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone, Brain, Sparkles, Zap, Target, GraduationCap, Dna, AlertTriangle, TrendingDown, Rocket, Circle } from 'lucide-react';
+import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone, Brain, Sparkles, Zap, Target, GraduationCap, Dna, AlertTriangle, TrendingDown, Rocket, Circle, RefreshCw, Globe } from 'lucide-react';
 import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
 import { TrialBanner } from '@/components/TrialBanner';
@@ -72,6 +72,12 @@ export default function MerchantDashboard() {
     retry: false,
   });
   const { data: healthScore } = trpc.sariBrain.getHealthScore.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
+
+  // 🔗 Integration Sync Status — persistent card
+  const { data: syncStatus } = trpc.sariBrain.getIntegrationSyncStatus.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
@@ -539,6 +545,98 @@ export default function MerchantDashboard() {
               </Card>
             );
           })()
+        )}
+
+        {/* ═══ 🔗 Integration Sync Status — ثابت دائماً ═══ */}
+        {syncStatus?.hasData && (
+          <Card className="border border-indigo-200/50 dark:border-indigo-800/50 bg-gradient-to-br from-indigo-50/50 via-white to-blue-50/50 dark:from-indigo-900/10 dark:via-background dark:to-blue-900/10 overflow-hidden relative">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-400 via-blue-400 to-purple-400" />
+            <CardContent className="pt-5 pb-4">
+              <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-500 flex items-center justify-center shadow-md">
+                    <RefreshCw className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold flex items-center gap-2">
+                      🔗 بيانات المزامنة
+                      {syncStatus.integrationPlatform && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-medium">
+                          {syncStatus.integrationPlatform === 'byaan' ? 'بيان' : syncStatus.integrationPlatform}
+                        </span>
+                      )}
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      {syncStatus.lastSyncAt
+                        ? `آخر مزامنة: ${new Date(syncStatus.lastSyncAt).toLocaleDateString('ar-SA')} ${new Date(syncStatus.lastSyncAt).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`
+                        : 'لم تتم المزامنة بعد'}
+                    </p>
+                  </div>
+                </div>
+                <Link href="/merchant/sari-brain">
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                    <Globe className="h-3.5 w-3.5" />
+                    التفاصيل
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/80 border border-indigo-100 dark:border-indigo-800/30">
+                  <Package className="h-4 w-4 text-indigo-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-indigo-600 leading-none"><AnimatedNumber value={syncStatus.products} /></p>
+                    <p className="text-[10px] text-muted-foreground">دورة / منتج</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/80 border border-emerald-100 dark:border-emerald-800/30">
+                  <MessageSquare className="h-4 w-4 text-emerald-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-emerald-600 leading-none"><AnimatedNumber value={syncStatus.faqs} /></p>
+                    <p className="text-[10px] text-muted-foreground">سؤال شائع</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/80 border border-blue-100 dark:border-blue-800/30">
+                  <Globe className="h-4 w-4 text-blue-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-blue-600 leading-none"><AnimatedNumber value={syncStatus.discoveredPages} /></p>
+                    <p className="text-[10px] text-muted-foreground">صفحة موقع</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/80 border border-amber-100 dark:border-amber-800/30">
+                  <Brain className="h-4 w-4 text-amber-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-amber-600 leading-none"><AnimatedNumber value={syncStatus.knowledgeSections} /></p>
+                    <p className="text-[10px] text-muted-foreground">قسم معرفة</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-background/80 border border-purple-100 dark:border-purple-800/30">
+                  <Users className="h-4 w-4 text-purple-500 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold text-purple-600 leading-none"><AnimatedNumber value={syncStatus.customers} /></p>
+                    <p className="text-[10px] text-muted-foreground">عميل</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Names Tags */}
+              {syncStatus.productNames.length > 0 && (
+                <div className="mt-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    {syncStatus.productNames.slice(0, 10).map((name, i) => (
+                      <span key={i} className="text-[11px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800/40">
+                        {name}
+                      </span>
+                    ))}
+                    {syncStatus.productNames.length > 10 && (
+                      <span className="text-[11px] text-muted-foreground px-2 py-0.5">+{syncStatus.productNames.length - 10} أخرى</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Header with Welcome Message */}

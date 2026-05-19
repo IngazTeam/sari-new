@@ -1498,6 +1498,92 @@ ${sanitizedContent}`
     return sanitizeForTRPC(await knowledgeDb.calculateHealthScore(merchant.id));
   }),
 
+  /** Get integration sync status — what data is currently loaded for the merchant */
+  getIntegrationSyncStatus: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await getMerchantByUserId(ctx.user.id);
+    if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+    const dbConn = await getRawPool();
+    if (!dbConn) return null;
+
+    try {
+      // Products
+      const products = await getProductsByMerchantId(merchant.id);
+      const productNames = products.slice(0, 20).map((p: any) => p.name);
+
+      // FAQs
+      let faqCount = 0;
+      let faqCategories: string[] = [];
+      try {
+        const [faqRows] = await (dbConn as any).execute(
+          `SELECT COUNT(*) as cnt FROM extracted_faqs WHERE merchant_id = ?`, [merchant.id]
+        );
+        faqCount = (faqRows as any[])?.[0]?.cnt || 0;
+        const [catRows] = await (dbConn as any).execute(
+          `SELECT DISTINCT category FROM extracted_faqs WHERE merchant_id = ? AND category IS NOT NULL`, [merchant.id]
+        );
+        faqCategories = (catRows as any[])?.map((r: any) => r.category).filter(Boolean) || [];
+      } catch { /* skip */ }
+
+      // Knowledge sections
+      let knowledgeSectionCount = 0;
+      try {
+        const knowledgeDb = await import('./db/knowledge');
+        const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+        knowledgeSectionCount = sections.length;
+      } catch { /* skip */ }
+
+      // Discovered pages
+      let discoveredPages: { title: string; pageType: string }[] = [];
+      try {
+        const [dpRows] = await (dbConn as any).execute(
+          `SELECT title, page_type FROM discovered_pages WHERE merchant_id = ? AND is_active = 1 ORDER BY id DESC LIMIT 20`,
+          [merchant.id]
+        );
+        discoveredPages = (dpRows as any[])?.map((r: any) => ({
+          title: r.title || r.page_type || '',
+          pageType: r.page_type || 'other',
+        })) || [];
+      } catch { /* skip */ }
+
+      // Customers
+      let customerCount = 0;
+      try {
+        const [rows] = await (dbConn as any).execute(
+          `SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`, [merchant.id]
+        );
+        customerCount = (rows as any[])?.[0]?.cnt || 0;
+      } catch { /* skip */ }
+
+      // Last sync time from byaan_connections
+      let lastSyncAt: string | null = null;
+      let integrationPlatform: string | null = null;
+      try {
+        const { getByaanConnection } = await import('./integrations/byaan');
+        const conn = await getByaanConnection(merchant.id);
+        lastSyncAt = conn?.last_sync_at || null;
+        integrationPlatform = conn?.platform || null;
+      } catch { /* skip */ }
+
+      return {
+        products: products.length,
+        productNames,
+        faqs: faqCount,
+        faqCategories,
+        knowledgeSections: knowledgeSectionCount,
+        discoveredPages: discoveredPages.length,
+        discoveredPageTitles: discoveredPages.map(p => p.title),
+        customers: customerCount,
+        lastSyncAt,
+        integrationPlatform,
+        hasData: products.length > 0 || faqCount > 0 || knowledgeSectionCount > 0 || discoveredPages.length > 0,
+      };
+    } catch (error) {
+      console.error('[SariBrain] getIntegrationSyncStatus failed:', error);
+      return null;
+    }
+  }),
+
   /** Get pending review sections (conflicts) */
   getPendingReviews: protectedProcedure.query(async ({ ctx }) => {
     const merchant = await getMerchantByUserId(ctx.user.id);
