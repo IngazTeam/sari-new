@@ -11057,3 +11057,28 @@ export async function incrementPromotionClickCount(id: number): Promise<void> {
     .set({ clickCount: sql`${promotions.clickCount} + 1` })
     .where(eq(promotions.id, id));
 }
+
+/**
+ * PEN-PROMO-03: Auto-deactivate expired promotions for a merchant.
+ * Called before counting active promotions to prevent expired-but-active
+ * promos from blocking new activation slots.
+ */
+export async function deactivateExpiredPromotions(merchantId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const now = formatDateForDB(new Date());
+  const result = await db.update(promotions)
+    .set({ isActive: 0 })
+    .where(and(
+      eq(promotions.merchantId, merchantId),
+      eq(promotions.isActive, 1),
+      lte(promotions.expiresAt, now),
+    ));
+
+  const deactivated = (result as any)[0]?.affectedRows || 0;
+  if (deactivated > 0) {
+    console.log(`[DB] PEN-PROMO-03: Auto-deactivated ${deactivated} expired promotions for merchant ${merchantId}`);
+  }
+  return deactivated;
+}

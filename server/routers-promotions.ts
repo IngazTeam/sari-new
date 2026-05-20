@@ -11,6 +11,7 @@ import {
   createDiscountCode,
   getDiscountCodesByMerchantId,
   getMerchantByUserId,
+  deactivateExpiredPromotions,
 } from './db';
 
 const MAX_ACTIVE_PROMOTIONS = 5;
@@ -64,23 +65,30 @@ export const promotionsRouter = router({
     .input(z.object({
       title: z.string().min(1).max(100),
       description: z.string().max(500).optional(),
-      bannerImageUrl: z.string().max(500).optional(),
+      // PEN-PROMO-02: Validate URL format to prevent SSRF/injection at storage time
+      bannerImageUrl: z.string().url().max(500).optional(),
       type: z.enum(['percentage', 'fixed', 'bundle', 'free_shipping', 'custom']),
-      value: z.number().min(0).optional(),
+      // PEN-PROMO-06: Cap value to prevent financial abuse (100000 riyals or 100%)
+      value: z.number().min(0).max(100000).optional(),
       scope: z.enum(['all', 'products', 'categories']).default('all'),
-      productIds: z.string().optional(), // JSON array string
-      categoryIds: z.string().optional(),
-      minOrderAmount: z.number().min(0).optional(),
-      minQuantity: z.number().min(1).optional(),
-      startsAt: z.string().optional(),
-      expiresAt: z.string().optional(),
+      productIds: z.string().max(2000).optional(), // PEN-PROMO-05: Limit size
+      categoryIds: z.string().max(2000).optional(),
+      minOrderAmount: z.number().min(0).max(1000000).optional(),
+      minQuantity: z.number().min(1).max(10000).optional(),
+      // PEN-PROMO-04: Validate date format (ISO 8601)
+      startsAt: z.string().datetime({ offset: true }).optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional()),
+      expiresAt: z.string().datetime({ offset: true }).optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional()),
       // Auto discount code
       autoGenerateCode: z.boolean().optional(),
-      autoCodeValue: z.number().optional(),
+      // PEN-PROMO-06: Cap discount code value at 100 (% or fixed)
+      autoCodeValue: z.number().min(0).max(100).optional(),
       autoCodeType: z.enum(['percentage', 'fixed']).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchantId = await getMerchantId(ctx);
+
+      // PEN-PROMO-03: Auto-deactivate expired promotions before counting
+      await deactivateExpiredPromotions(merchantId);
 
       // Enforce 5-promotion limit
       const activeCount = await countActivePromotions(merchantId);
@@ -137,16 +145,18 @@ export const promotionsRouter = router({
       id: z.number(),
       title: z.string().min(1).max(100).optional(),
       description: z.string().max(500).optional(),
-      bannerImageUrl: z.string().max(500).optional().nullable(),
+      // PEN-PROMO-02: Validate URL format on update too
+      bannerImageUrl: z.string().url().max(500).optional().nullable(),
       type: z.enum(['percentage', 'fixed', 'bundle', 'free_shipping', 'custom']).optional(),
-      value: z.number().min(0).optional(),
+      value: z.number().min(0).max(100000).optional(),
       scope: z.enum(['all', 'products', 'categories']).optional(),
-      productIds: z.string().optional().nullable(),
-      categoryIds: z.string().optional().nullable(),
-      minOrderAmount: z.number().min(0).optional().nullable(),
-      minQuantity: z.number().min(1).optional().nullable(),
-      startsAt: z.string().optional().nullable(),
-      expiresAt: z.string().optional().nullable(),
+      productIds: z.string().max(2000).optional().nullable(),
+      categoryIds: z.string().max(2000).optional().nullable(),
+      minOrderAmount: z.number().min(0).max(1000000).optional().nullable(),
+      minQuantity: z.number().min(1).max(10000).optional().nullable(),
+      // PEN-PROMO-04: Validate date format on update
+      startsAt: z.string().datetime({ offset: true }).optional().nullable().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional().nullable()),
+      expiresAt: z.string().datetime({ offset: true }).optional().nullable().or(z.string().regex(/^\d{4}-\d{2}-\d{2}/).optional().nullable()),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchantId = await getMerchantId(ctx);
@@ -173,6 +183,8 @@ export const promotionsRouter = router({
 
       // If activating, check limit
       if (newActive === 1) {
+        // PEN-PROMO-03: Auto-deactivate expired promotions before counting
+        await deactivateExpiredPromotions(merchantId);
         const activeCount = await countActivePromotions(merchantId);
         if (activeCount >= MAX_ACTIVE_PROMOTIONS) {
           throw new TRPCError({

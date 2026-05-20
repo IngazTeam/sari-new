@@ -18,6 +18,7 @@ import {
   getActivePromotionsByMerchant,
   getPromotionById,
   incrementPromotionViewCount,
+  incrementPromotionClickCount,
 } from './db';
 
 /**
@@ -560,13 +561,18 @@ export async function parseAICommands(rawText: string, merchantId: number): Prom
     const promoId = parseInt(promoMatch[1]);
     try {
       const promo = await getPromotionById(promoId);
-      if (promo?.bannerImageUrl) {
+      // PEN-PROMO-01: Verify promo belongs to THIS merchant to prevent cross-tenant leakage
+      if (promo?.bannerImageUrl && promo.merchantId === merchantId) {
         media.push({
           type: 'image',
           url: promo.bannerImageUrl,
           caption: promo.title,
         });
+        // Track click when promo banner is actually sent
+        incrementPromotionClickCount(promoId).catch(() => {});
         console.log('[AI] 🔥 Queued promo banner: ' + promo.title + ' (ID: ' + promoId + ')');
+      } else if (promo && promo.merchantId !== merchantId) {
+        console.warn('[AI] ⛔ PEN-PROMO-01: Blocked cross-tenant promo access. PromoID=' + promoId + ' belongs to merchant ' + promo.merchantId + ', not ' + merchantId);
       }
     } catch (err) {
       console.warn('[AI] Failed to fetch promo image for ID ' + promoId + ':', err);
