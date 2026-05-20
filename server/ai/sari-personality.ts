@@ -886,33 +886,8 @@ ${result.orderUrl}
         intent,
         sentiment: fastSentiment, // Keyword-based — zero cost, tracks mid-conversation shifts
       });
-      // Closing Engine: determine if it's time to close
-      const closingHint = buildClosingDirective({
-        message: params.message,
-        intent,
-        previousMessages,
-        session: existingSession,
-        customerProfile,
-        hasAbandonedCart: false,
-        isGoldenHour: isGoldenHour(params.merchantId),
-      });
-
-
-      // ── Mission Block: Tactical brain for this message ──
-      const mission = buildMissionBlock({
-        message: params.message,
-        intent,
-        lastSentiment: fastSentiment,
-        customerProfile,
-        salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
-        merchantId: params.merchantId,
-        closingHint,
-      });
-      const missionPrompt = missionToPrompt(mission);
-
-      // Select persuasion strategy
+      // FAST PATH: Load lightweight arsenal FIRST (needed by Closing Engine for abandonedCart)
       const trajectory = existingSession.sentimentTrajectory || [];
-      // FAST PATH: Load lightweight arsenal (discounts + cart + loyalty) with 5-min cache
       let fastArsenal;
       try {
         fastArsenal = await loadLightweightArsenal(params.merchantId, params.customerPhone);
@@ -925,6 +900,29 @@ ${result.orderUrl}
           availableServices: [],
         };
       }
+
+      // Closing Engine: determine if it's time to close (PEN-01: needs arsenal for abandonedCart)
+      const closingHint = buildClosingDirective({
+        message: params.message,
+        intent,
+        previousMessages: previousMessages as Array<{ role: string; content: string }>,
+        session: existingSession,
+        customerProfile,
+        hasAbandonedCart: !!(fastArsenal?.abandonedCart),
+        isGoldenHour: isGoldenHour(params.merchantId),
+      });
+
+      // ── Mission Block: Tactical brain for this message ──
+      const mission = buildMissionBlock({
+        message: params.message,
+        intent,
+        lastSentiment: fastSentiment,
+        customerProfile,
+        salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
+        merchantId: params.merchantId,
+        closingHint,
+      });
+      const missionPrompt = missionToPrompt(mission);
       const persuasion = selectPersuasion(
         customerProfile || { customerTier: 'new' } as any,
         fastArsenal,
@@ -1138,7 +1136,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     const fullPathClosingHint = buildClosingDirective({
       message: params.message,
       intent,
-      previousMessages,
+      previousMessages: previousMessages as Array<{ role: string; content: string }>,
       session: null,
       customerProfile,
       hasAbandonedCart: false,

@@ -72,6 +72,31 @@ const FOLLOW_UP_DELAYS: Record<FollowUpType, number> = {
   post_interest: 3 * 60 * 60 * 1000,     // 3 hours
 };
 
+// Quiet hours: 11 PM - 8 AM Saudi time (UTC+3)
+const QUIET_HOUR_START = 23; // 11 PM
+const QUIET_HOUR_END = 8;    // 8 AM
+
+function isQuietHours(): boolean {
+  const now = new Date();
+  // Convert to Saudi time (UTC+3)
+  const saudiHour = (now.getUTCHours() + 3) % 24;
+  return saudiHour >= QUIET_HOUR_START || saudiHour < QUIET_HOUR_END;
+}
+
+function getNextAllowedSendTime(): Date {
+  const now = new Date();
+  const saudiOffset = 3 * 60 * 60 * 1000;
+  const saudiNow = new Date(now.getTime() + saudiOffset);
+  // Set to 8 AM Saudi time today or tomorrow
+  const target = new Date(saudiNow);
+  target.setHours(QUIET_HOUR_END, 0, 0, 0);
+  if (target <= saudiNow) {
+    target.setDate(target.getDate() + 1);
+  }
+  // Convert back to UTC
+  return new Date(target.getTime() - saudiOffset);
+}
+
 // ═══════════════════════════════════════════════════════════════
 // In-memory schedule (production would use DB table)
 // ═══════════════════════════════════════════════════════════════
@@ -201,7 +226,7 @@ export function cancelFollowUps(merchantId: number, customerPhone: string): numb
     }
   }
   if (cancelled > 0) {
-    console.log(`[FollowUp] Cancelled ${cancelled} follow-up(s) for ${customerPhone} (customer replied)`);
+    console.log(`[FollowUp] Cancelled ${cancelled} follow-up(s) for ***${customerPhone.slice(-4)} (customer replied)`);
   }
   return cancelled;
 }
@@ -222,6 +247,13 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
 
     // Not yet due
     if (followUp.scheduledAt.getTime() > now) continue;
+
+    // PEN-04: Don't send during quiet hours (11 PM - 8 AM Saudi time)
+    if (isQuietHours()) {
+      // Reschedule to 8 AM next morning
+      followUp.scheduledAt = getNextAllowedSendTime();
+      continue;
+    }
 
     // Safety: Re-check weekly limit at send time
     if (!canSendThisWeek(followUp.merchantId, followUp.customerPhone)) {
@@ -294,6 +326,17 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
   const cleaned = beforeCount - scheduledFollowUps.length;
 
   console.log(`[FollowUp] Run complete: ${sent} sent, ${cancelled} cancelled, ${errors} errors, ${cleaned} cleaned`);
+
+  // PEN-05: Clean stale weeklySends entries
+  const currentWeek = getWeekStart();
+  const weekKeys = Array.from(weeklySends.keys());
+  for (const key of weekKeys) {
+    const rec = weeklySends.get(key);
+    if (rec && rec.weekStart < currentWeek) {
+      weeklySends.delete(key);
+    }
+  }
+
   return { sent, cancelled, errors };
 }
 

@@ -49,7 +49,7 @@ export function detectSentimentFast(message: string): SentimentType {
     'شكراً', 'شكرا', 'ممتاز', 'رائع', 'جميل', 'حلو', 'مبسوط',
     'سعيد', 'الله يعطيك العافية', 'يعطيك العافية', 'ماشاء الله',
     'ما شاء الله', 'thanks', 'thank you', 'amazing', 'great',
-    'أحسنت', 'تمام', 'perfect', 'مشكور', 'يسلمو',
+    'أحسنت', 'perfect', 'مشكور', 'يسلمو',
   ];
   if (happySignals.some(s => msg.includes(s))) return 'happy';
 
