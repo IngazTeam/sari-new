@@ -359,19 +359,21 @@ const FEW_SHOT_EXAMPLES: ChatMessage[] = [
 async function searchRelevantProducts(
   message: string,
   allProducts: any[],
-  limit: number = 5
+  limit: number = 20
 ): Promise<any[]> {
   if (allProducts.length === 0) return [];
 
   // BUG-4 FIX: Detect price/catalog intent — return ALL products
   const priceCatalogKeywords = ['سعر', 'أسعار', 'اسعار', 'كم', 'باقة', 'باقات', 'بكج', 'حق', 'تكلفة',
     'price', 'pricing', 'cost', 'package', 'plan', 'منتجات', 'دورات', 'كتالوج', 'قائمة',
-    'ايش عندكم', 'وش عندكم', 'ايه الباقات', 'ايش الباقات', 'شو عندكم'];
+    'ايش عندكم', 'وش عندكم', 'ايه الباقات', 'ايش الباقات', 'شو عندكم',
+    'المتوفرة', 'متوفرة', 'المتاحة', 'متاحة', 'حاليا', 'حالياً', 'كورسات',
+    'التسجيل', 'مفتوح', 'courses', 'available', 'catalog', 'عندك', 'فيه'];
   const msgLower = message.toLowerCase();
   const isPriceQuery = priceCatalogKeywords.some(k => msgLower.includes(k));
   if (isPriceQuery) {
-    // Return all products (up to 10) — customer wants the full menu
-    return allProducts.slice(0, 10);
+    // Return ALL products — customer wants the full catalog
+    return allProducts;
   }
 
   // Arabic stem normalization: strip common prefixes/suffixes for better matching
@@ -390,7 +392,7 @@ async function searchRelevantProducts(
   
   const scoredProducts = allProducts.map(product => {
     let score = 0;
-    const searchText = `${product.name} ${product.description || ''} ${product.category || ''}`.toLowerCase();
+    const searchText = `${product.name} ${product.description || ''} ${product.category || ''} ${(product as any).tags || ''} ${(product as any).sku || ''} ${(product as any).shortDescription || ''}`.toLowerCase();
     
     keywords.forEach(keyword => {
       const stems = normalizeArabic(keyword);
@@ -415,8 +417,8 @@ async function searchRelevantProducts(
     .slice(0, limit)
     .map(item => item.product);
 
-  // If no match found, return first 5 products as fallback (better than nothing)
-  return matched.length > 0 ? matched : allProducts.slice(0, 5);
+  // If no match found, return first 15 products as fallback (better than nothing)
+  return matched.length > 0 ? matched : allProducts.slice(0, 15);
 }
 
 /**
@@ -591,10 +593,14 @@ async function buildEnhancedContextPrompt(context: {
   }
 
   if (context.availableProducts && context.availableProducts.length > 0) {
-    contextPrompt += `\n## المنتجات المتاحة حالياً:\n`;
+    const productCount = context.availableProducts.length;
+    contextPrompt += `\n## المنتجات/الدورات المتاحة حالياً (${productCount} منتج):\n`;
     
     // Reuse cached merchant instead of duplicate DB call
     const currency = (cachedMerchant?.currency as Currency) || 'SAR';
+    
+    // Compact format when many products to save tokens
+    const isCompact = productCount > 10;
     
     for (let index = 0; index < context.availableProducts.length; index++) {
       const product = context.availableProducts[index];
@@ -603,12 +609,25 @@ async function buildEnhancedContextPrompt(context: {
         contextPrompt += ` - ${formatCurrency(product.price, currency, 'ar-SA')}`;
       }
       if (product.stock !== undefined) contextPrompt += ` (متوفر: ${product.stock})`;
-      if (product.description) contextPrompt += `\n   الوصف: ${product.description.substring(0, 300)}`;
-      if (product.category) contextPrompt += `\n   الفئة: ${product.category}`;
+      // Include schedule/date info if available
+      if ((product as any).startDate || (product as any).schedule) {
+        const startDate = (product as any).startDate ? ` | يبدأ: ${(product as any).startDate}` : '';
+        const schedule = (product as any).schedule ? ` | ${(product as any).schedule}` : '';
+        contextPrompt += startDate + schedule;
+      }
+      if (!isCompact && product.description) {
+        contextPrompt += `\n   الوصف: ${product.description.substring(0, 200)}`;
+      }
+      if (product.category) contextPrompt += ` [${product.category}]`;
       contextPrompt += `\n`;
     }
     
-    contextPrompt += `\n⚠️ استخدم فقط المنتجات المذكورة أعلاه وأسعارها الدقيقة. إذا سأل العميل عن الأسعار أو الباقات، اعرض كل المنتجات بأسمائها وأسعارها. لا تقل "خلني أتأكد" — اعرض ما عندك بثقة!\n`;
+    contextPrompt += `\n⚠️ تعليمات صارمة حول المنتجات:\n`;
+    contextPrompt += `- عندك ${productCount} منتج/دورة — إذا سأل العميل "ايش عندكم" أو "ايش المتوفر" اذكرها كلها بدون استثناء.\n`;
+    contextPrompt += `- استخدم الأسماء والأسعار الدقيقة المذكورة أعلاه فقط.\n`;
+    contextPrompt += `- لا تقل "خلني أتأكد" أو "ما عندي معلومات" — كل المنتجات موجودة أعلاه.\n`;
+    contextPrompt += `- إذا سأل عن منتج محدد (مثل BLS أو سحب دم)، ابحث في القائمة أعلاه وأجب بدقة.\n`;
+    contextPrompt += `- كن مستشار مبيعات محترف: اشرح القيمة والفائدة، لا تكتفي بسرد الأسماء والأسعار.\n`;
   } else {
     contextPrompt += `\n⚠️ لا توجد قائمة منتجات محددة حالياً. استخدم المعلومات المتاحة أعلاه (أقسام المعرفة، تحليل الموقع، ملف التعريف، بيانات الشركة) للرد بدقة. إذا سأل عن أسعار ولم تجدها في المعلومات، قل "لا توجد لدي الأسعار حالياً، تقدر تتواصل مع الفريق مباشرة" — لا تخترع أرقام ولا تقل "خلني أتأكد".\n`;
   }
@@ -949,6 +968,38 @@ ${result.orderUrl}
       // Build system prompt: Mission Block FIRST, then cached context
       let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
 
+      // FAST PATH product re-injection: if customer asks about products/courses,
+      // re-search and inject fresh product catalog (cached context may have 0 products
+      // if the first message was just "مرحبا")
+      const productQueryKeywords = ['دورات', 'منتجات', 'عندكم', 'المتوفرة', 'المتاحة', 'أسعار',
+        'باقات', 'كتالوج', 'courses', 'available', 'catalog', 'عندك', 'فيه', 'متوفر',
+        'كم سعر', 'بكم', 'التسجيل', 'مفتوح', 'كورسات', 'سحب', 'bls', 'cpr', 'phl'];
+      const isProductQuery = productQueryKeywords.some(k => params.message.toLowerCase().includes(k));
+      if (isProductQuery) {
+        try {
+          const allProducts = await getProductsByMerchantId(params.merchantId);
+          if (allProducts.length > 0) {
+            const freshProducts = await searchRelevantProducts(params.message, allProducts, 20);
+            const productsToInject = freshProducts.length > 0 ? freshProducts : allProducts.slice(0, 15);
+            const merchant = await getMerchantById(params.merchantId);
+            const currency = ((merchant as any)?.currency as Currency) || 'SAR';
+            let productInjection = `\n\n## المنتجات/الدورات المتاحة (${productsToInject.length} منتج — أجب من هذه القائمة):\n`;
+            for (let i = 0; i < productsToInject.length; i++) {
+              const p = productsToInject[i];
+              productInjection += `${i + 1}. **${p.name}**`;
+              if (p.price) productInjection += ` - ${formatCurrency(p.price, currency, 'ar-SA')}`;
+              if ((p as any).startDate) productInjection += ` | يبدأ: ${(p as any).startDate}`;
+              if (p.category) productInjection += ` [${p.category}]`;
+              productInjection += `\n`;
+            }
+            productInjection += `\n⚠️ اذكر كل المنتجات أعلاه إذا طلب العميل القائمة الكاملة. لا تقل "ما عندي معلومات".\n`;
+            systemPrompt += productInjection;
+          }
+        } catch (err) {
+          console.warn('[FAST PATH] Product re-injection failed:', (err as any)?.message);
+        }
+      }
+
       // ── Virtual Agent override for FAST PATH ──
       // Without this, message #2+ would lose agent personality and revert to Sari
       try {
@@ -1011,7 +1062,11 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         { role: 'user', content: userContent },
       ];
 
-      const maxTokens = Math.min(personalitySettings.maxResponseLength * 2, 600);
+      // Dynamic maxTokens: higher for catalog/list queries so GPT can list all products
+      const isCatalogQuery = /دورات|منتجات|عندكم|المتوفرة|المتاحة|أسعار|باقات|كتالوج|courses|catalog|available/.test(params.message);
+      const maxTokens = isCatalogQuery
+        ? Math.min(personalitySettings.maxResponseLength * 4, 1500)
+        : Math.min(personalitySettings.maxResponseLength * 2, 600);
       let response = await callGPT4(messages, { temperature: 0.7, maxTokens });
 
       // Record metric (fire-and-forget)
@@ -1072,11 +1127,11 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     const relevantProducts = await searchRelevantProducts(
       params.message,
       allProducts,
-      5
+      20
     );
     const productsToShow = relevantProducts.length > 0 
       ? relevantProducts 
-      : allProducts.slice(0, 5);
+      : allProducts.slice(0, 15);
 
     // === RAG Cache Check ===
     try {
@@ -1372,7 +1427,11 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     ];
 
     // Call GPT-4 with optimized parameters
-    const maxTokens = Math.min(personalitySettings.maxResponseLength * 2, 600);
+    // Dynamic maxTokens: higher for catalog/list queries so GPT can list all products
+    const isCatalogQueryFull = /دورات|منتجات|عندكم|المتوفرة|المتاحة|أسعار|باقات|كتالوج|courses|catalog|available/.test(params.message);
+    const maxTokens = isCatalogQueryFull
+      ? Math.min(personalitySettings.maxResponseLength * 4, 1500)
+      : Math.min(personalitySettings.maxResponseLength * 2, 600);
     let response = await callGPT4(messages, {
       temperature: 0.7, // Balanced between creativity and consistency
       maxTokens,

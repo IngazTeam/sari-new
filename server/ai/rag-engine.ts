@@ -411,7 +411,7 @@ async function buildProductContext(merchantId: number, question: string): Promis
        WHERE p.merchantId = ? AND p.isActive = 1
        AND (${likeClauses})
        ORDER BY p.createdAt DESC
-       LIMIT 5`,
+       LIMIT 15`,
       [merchantId, ...likeParams]
     );
 
