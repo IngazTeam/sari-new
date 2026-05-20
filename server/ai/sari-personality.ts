@@ -885,6 +885,7 @@ ${result.orderUrl}
         lastSentiment: existingSession.sentimentTrajectory?.slice(-1)[0] || 'neutral',
         customerProfile,
         salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
+        merchantId: params.merchantId,
       });
       const missionPrompt = missionToPrompt(mission);
 
@@ -1101,6 +1102,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       lastSentiment: sentiment?.sentiment || 'neutral',
       customerProfile,
       salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
+      merchantId: params.merchantId,
     });
     const missionPrompt = missionToPrompt(mission);
 

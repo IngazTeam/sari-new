@@ -13,6 +13,7 @@ import type { CustomerIntent, HesitationAnalysis } from './session-context';
 import { analyzeHesitation } from './session-context';
 import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
 import type { PersuasionStrategy } from './sales-arsenal';
+import { getBestStrategy, isGoldenHour } from './sales-conductor';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -186,7 +187,26 @@ function selectStrategy(
   objection?: ObjectionAnalysis,
   hesitation?: HesitationAnalysis,
   persona?: SalesPersona,
+  merchantId?: number,
 ): MissionBlock['primaryStrategy'] {
+  // ── Data-driven: Check Conductor playbook first ──
+  if (merchantId) {
+    const conductorStrategy = getBestStrategy(merchantId, intent);
+    if (conductorStrategy) {
+      // Validate it's a known strategy before using
+      const validStrategies: Set<string> = new Set([
+        'warm_welcome', 'need_discovery', 'value_first', 'trust_building',
+        'social_proof', 'value_comparison', 'friction_removal', 'smooth_closing',
+        'proactive_discount', 'cart_recovery', 'empathy_resolve', 'cross_sell',
+        'smart_upsell', 'none',
+      ]);
+      if (validStrategies.has(conductorStrategy)) {
+        return conductorStrategy as MissionBlock['primaryStrategy'];
+      }
+    }
+  }
+
+  // ── Fallback: keyword-based logic ──
   // Ready to buy → close!
   if (intent === 'ready_to_buy') return 'smooth_closing';
 
@@ -379,11 +399,14 @@ function buildRules(
 // Timing Context
 // ═══════════════════════════════════════════════════════════════
 
-function getTimingContext(): string | undefined {
+function getTimingContext(merchantId?: number): string | undefined {
   const now = new Date();
   const hour = now.getHours();
   const day = now.getDay(); // 0=Sun, 5=Fri, 6=Sat
   const dateOfMonth = now.getDate();
+
+  // Check Conductor golden hours (data-driven)
+  if (merchantId && isGoldenHour(merchantId)) return 'conductor_golden_hour';
 
   if (hour >= 22 || hour < 7) return 'late_night';
   if (day === 5 && hour < 14) return 'friday_morning';
@@ -425,17 +448,18 @@ export function buildMissionBlock(params: {
   lastSentiment?: string;
   customerProfile: CustomerProfile | null;
   salesPersona?: SalesPersona;
+  merchantId?: number;
 }): MissionBlock {
-  const { message, intent, lastSentiment, customerProfile, salesPersona } = params;
+  const { message, intent, lastSentiment, customerProfile, salesPersona, merchantId } = params;
   const persona = salesPersona || 'balanced';
 
   // Analyze hesitation/objection if relevant
   const hesitation = intent === 'hesitating' ? analyzeHesitation(message) : undefined;
   const objection = intent === 'objecting' ? analyzeObjection(message) : undefined;
 
-  // Select strategy and CTA
+  // Select strategy and CTA (Conductor-aware)
   const ctaLevel = selectCTALevel(intent, lastSentiment);
-  const primaryStrategy = selectStrategy(intent, objection, hesitation, persona);
+  const primaryStrategy = selectStrategy(intent, objection, hesitation, persona, merchantId);
 
   // Build rules
   const { mustInclude, avoid } = buildRules(intent, ctaLevel, primaryStrategy, persona, hesitation);
@@ -454,7 +478,7 @@ export function buildMissionBlock(params: {
     avoid,
     nextGoal: determineNextGoal(intent),
     memoryDirectives,
-    timingContext: getTimingContext(),
+    timingContext: getTimingContext(merchantId),
   };
 }
 
@@ -524,6 +548,7 @@ export function missionToPrompt(mission: MissionBlock): string {
       friday_golden_hour: 'جمعة بعد العصر — وقت ذهبي',
       post_salary: 'بداية الشهر — العميل مرتاح مالياً',
       end_of_month: 'نهاية الشهر — ركز على القيمة',
+      conductor_golden_hour: '🔥 وقت ذهبي (مبني على بيانات المبيعات) — اضغط أكثر!',
     };
     parts.push(`- التوقيت: ${timingLabels[mission.timingContext] || mission.timingContext}`);
   }
