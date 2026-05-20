@@ -493,8 +493,8 @@ export default function Products() {
               <p className="text-muted-foreground">{t('productsPage.loading')}</p>
             </div>
           ) : products && products.length > 0 ? (
-            <div className="rounded-md border">
-              <Table>
+            <div className="rounded-md border overflow-x-auto">
+              <Table className="table-fixed w-full">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10">
@@ -504,11 +504,11 @@ export default function Products() {
                         aria-label="تحديد الكل"
                       />
                     </TableHead>
-                    <TableHead>{t('productsPage.product')}</TableHead>
-                    <TableHead>{t('productsPage.descriptionLabel')}</TableHead>
-                    <TableHead>{t('productsPage.price')}</TableHead>
-                    <TableHead>{t('productsPage.stock')}</TableHead>
-                    <TableHead>{t('productsPage.actions')}</TableHead>
+                    <TableHead className="min-w-[200px]">{t('productsPage.product')}</TableHead>
+                    <TableHead className="max-w-[300px]">{t('productsPage.descriptionLabel')}</TableHead>
+                    <TableHead className="w-[100px]">{t('productsPage.price')}</TableHead>
+                    <TableHead className="w-[100px]">{t('productsPage.stock')}</TableHead>
+                    <TableHead className="w-[100px]">{t('productsPage.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -527,23 +527,23 @@ export default function Products() {
                             <img
                               src={product.imageUrl}
                               alt={product.name}
-                              className="w-10 h-10 rounded object-cover"
+                              className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border"
                             />
                           ) : (
-                            <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
                               <ImageIcon className="w-5 h-5 text-muted-foreground" />
                             </div>
                           )}
-                          <span className="font-medium">{product.name}</span>
+                          <span className="font-medium truncate max-w-[180px]" title={product.name}>{product.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground line-clamp-2">
+                      <TableCell className="max-w-[300px]">
+                        <span className="text-sm text-muted-foreground truncate block" title={product.description || ''}>
                           {product.description || '-'}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium">{formatCurrency(product.price, currency)}</span>
+                        <span className="font-medium whitespace-nowrap">{formatCurrency(product.price, currency)}</span>
                       </TableCell>
                       <TableCell>
                         {product.trackInventory && product.stock !== null && product.stock !== undefined ? (
@@ -555,7 +555,7 @@ export default function Products() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
+                        <div className="flex gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
