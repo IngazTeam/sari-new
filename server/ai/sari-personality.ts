@@ -43,6 +43,7 @@ import { detectSentimentFast } from './fast-sentiment';
 import { buildClosingDirective } from './closing-engine';
 import { isGoldenHour } from './sales-conductor';
 import { scheduleFollowUp, cancelFollowUps, type FollowUpType } from './proactive-followup';
+import { validateResponse, recordValidation } from './response-validator';
 import { 
   isZidOrderRequest, 
   parseZidOrderMessage, 
@@ -1101,6 +1102,27 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         : Math.min(personalitySettings.maxResponseLength * 2, 600);
       let response = await callGPT4(messages, { temperature: 0.7, maxTokens });
 
+      // ═══ Response Validator — FAST PATH ═══
+      try {
+        const lastBotMsg = previousMessages.filter(m => m.role === 'assistant').pop();
+        const productNames = existingSession.relevantProducts?.map((p: any) => p.name).filter(Boolean) || [];
+        const validation = await validateResponse({
+          response,
+          customerMessage: params.message,
+          intent,
+          productNames,
+          lastBotMessage: typeof lastBotMsg?.content === 'string' ? lastBotMsg.content : undefined,
+        });
+        recordValidation(validation);
+        if (!validation.passed && validation.correctedResponse) {
+          console.log(`[chatWithSari] 🔧 FAST PATH: Response corrected (violations: ${validation.violations.map(v => v.rule).join(', ')})`);
+          response = validation.correctedResponse;
+        }
+      } catch (valErr) {
+        // Non-blocking: validation failure should NEVER block the response
+        console.warn('[chatWithSari] Validator failed (non-blocking):', (valErr as Error).message);
+      }
+
       // Record metric (fire-and-forget)
       recordMetric({
         merchantId: params.merchantId,
@@ -1470,7 +1492,27 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     });
 
     // Adjust response based on sentiment
-    response = adjustResponseForSentiment(response, sentiment);
+    response = adjustResponseForSentiment(response, sentiment, previousMessages);
+
+    // ═══ Response Validator — FULL PATH ═══
+    try {
+      const lastBotMsgFull = previousMessages.filter(m => m.role === 'assistant').pop();
+      const productNamesFull = productsToShow?.map((p: any) => p.name).filter(Boolean) || [];
+      const validationFull = await validateResponse({
+        response,
+        customerMessage: params.message,
+        intent,
+        productNames: productNamesFull,
+        lastBotMessage: typeof lastBotMsgFull?.content === 'string' ? lastBotMsgFull.content : undefined,
+      });
+      recordValidation(validationFull);
+      if (!validationFull.passed && validationFull.correctedResponse) {
+        console.log(`[chatWithSari] 🔧 FULL PATH: Response corrected (violations: ${validationFull.violations.map(v => v.rule).join(', ')})`);
+        response = validationFull.correctedResponse;
+      }
+    } catch (valErrFull) {
+      console.warn('[chatWithSari] Validator failed (non-blocking):', (valErrFull as Error).message);
+    }
 
     // ═══ Knowledge Gap Detection — FULL PATH ═══
     // If GPT responded but couldn't provide specific info → escalate to merchant

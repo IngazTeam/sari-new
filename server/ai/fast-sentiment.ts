@@ -4,11 +4,109 @@
  * Used in FAST PATH (messages 2-20) instead of GPT sentiment call.
  * Detects: angry, frustrated, happy, positive, negative, sad, neutral.
  * 
+ * v2: Mixed Signal Detection — detects conflicting signals like
+ * "حلو بس خلني أفكر" (positive + hesitation = close to buying!)
+ * 
  * Cost: 0 tokens, ~0ms latency.
- * Replaces the 'auto' placeholder that was ignoring sentiment changes mid-conversation.
  */
 
 import type { SentimentType } from './sentiment-analysis';
+
+// ═══════════════════════════════════════════════════════════════
+// Mixed Signal Detection
+// ═══════════════════════════════════════════════════════════════
+
+export interface SentimentWithSignals {
+  primary: SentimentType;
+  secondary: SentimentType | null;
+  mixedSignal: boolean;
+  /** If mixed signal: what does it mean for sales? */
+  salesHint: 'close_to_buying' | 'needs_reassurance' | 'losing_interest' | null;
+}
+
+/**
+ * Detect sentiment with mixed signal awareness.
+ * Returns compound sentiment for smarter strategy selection.
+ * 
+ * Examples:
+ * - "حلو بس بفكر" → primary: neutral, secondary: positive, salesHint: 'close_to_buying'
+ * - "والله حبيته بس غالي" → primary: negative, secondary: positive, salesHint: 'needs_reassurance'
+ * - "ماشي... يلا بعدين" → primary: neutral, secondary: negative, salesHint: 'losing_interest'
+ */
+export function detectSentimentWithSignals(message: string): SentimentWithSignals {
+  const msg = message.toLowerCase();
+  const primary = detectSentimentFast(msg);
+
+  // ── Mixed Signal Detection ──
+  // Check if message contains BOTH positive AND hesitation/negative signals
+  const hasPositive = POSITIVE_SIGNALS.some(s => msg.includes(s));
+  const hasHesitation = HESITATION_SIGNALS.some(s => msg.includes(s));
+  const hasNegative = NEGATIVE_ALL_SIGNALS.some(s => msg.includes(s));
+  const hasBut = /بس\s|لكن|غير إن/.test(msg);
+
+  // Pattern: "positive + but + hesitation" → close to buying
+  if (hasPositive && hasHesitation && hasBut) {
+    return {
+      primary: 'neutral', // Override: treat as neutral (not negative)
+      secondary: 'positive',
+      mixedSignal: true,
+      salesHint: 'close_to_buying',
+    };
+  }
+
+  // Pattern: "positive + but + price objection" → needs reassurance
+  if (hasPositive && hasNegative && hasBut) {
+    return {
+      primary,
+      secondary: 'positive',
+      mixedSignal: true,
+      salesHint: 'needs_reassurance',
+    };
+  }
+
+  // Pattern: "neutral/dismissive + hesitation" → losing interest
+  if (!hasPositive && hasHesitation && /ماشي|يلا|خلاص|أوك/.test(msg)) {
+    return {
+      primary,
+      secondary: 'negative',
+      mixedSignal: true,
+      salesHint: 'losing_interest',
+    };
+  }
+
+  // No mixed signal
+  return {
+    primary,
+    secondary: null,
+    mixedSignal: false,
+    salesHint: null,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Signal Keyword Lists
+// ═══════════════════════════════════════════════════════════════
+
+const POSITIVE_SIGNALS = [
+  'حلو', 'جميل', 'رائع', 'ممتاز', 'عجبني', 'حبيت', 'حبيته',
+  'والله حلو', 'يعجبني', 'مرتب', 'شكل حلو', 'يجنن', 'مرة حلو',
+  'أحسنت', 'يسلمو', 'مشكور', 'nice', 'love', 'great',
+];
+
+const HESITATION_SIGNALS = [
+  'بفكر', 'أفكر', 'بشوف', 'أشوف', 'مو متأكد', 'ما أدري',
+  'محتار', 'أرجع لك', 'بعدين', 'مو الحين', 'الحين مشغول',
+  'بكلمك', 'أرد عليك', 'بتواصل', 'let me think', 'not sure',
+];
+
+const NEGATIVE_ALL_SIGNALS = [
+  'غالي', 'كثير', 'مرتفع', 'أرخص', 'مشكلة', 'خطأ', 'عطل',
+  'ما يشتغل', 'مو زين', 'ما عجبني', 'سيء', 'بعيد', 'يأخذ وقت',
+];
+
+// ═══════════════════════════════════════════════════════════════
+// Original Fast Sentiment (backward-compatible)
+// ═══════════════════════════════════════════════════════════════
 
 /**
  * Detect sentiment from message text using keyword matching.

@@ -163,21 +163,50 @@ function fallbackSentimentAnalysis(message: string): SentimentResult {
 }
 
 /**
- * Adjust response tone based on sentiment
+ * Adjust response tone based on sentiment.
+ * 
+ * Progressive Empathy: escalates apology based on complaint count.
+ * - 1st complaint: Standard empathy
+ * - 2nd complaint: Stronger, more personal
+ * - 3rd+: Personal commitment with action promise
+ * 
+ * @param baseResponse - The generated response
+ * @param sentiment - Detected sentiment
+ * @param previousMessages - Optional conversation history to count complaints
  */
 export function adjustResponseForSentiment(
   baseResponse: string,
-  sentiment: SentimentResult
+  sentiment: SentimentResult,
+  previousMessages?: Array<{ role: string; content: string | any }>,
 ): string {
-  // If customer is angry or frustrated, add empathy
+  // If customer is angry or frustrated, add progressive empathy
   if (sentiment.sentiment === 'angry' || sentiment.sentiment === 'frustrated') {
-    const empathyPhrases = [
-      'أعتذر منك بشدة على هذا الإزعاج 🙏',
-      'أتفهم تماماً شعورك وأعتذر عن المشكلة',
-      'آسف جداً على التجربة السيئة',
-    ];
-    const randomPhrase = empathyPhrases[Math.floor(Math.random() * empathyPhrases.length)];
-    return `${randomPhrase}\n\n${baseResponse}`;
+    // Count previous complaints in conversation
+    const complaintCount = countComplaints(previousMessages);
+
+    if (complaintCount >= 3) {
+      // 3rd+ complaint: Personal commitment
+      const phrases = [
+        'أنا آسف جداً وبشكل شخصي أتابع موضوعك — بتأكد إن المشكلة تنحل اليوم 🙏',
+        'أعتذر منك بشدة — هذا ما يرضيني أبداً. خلني أتأكد شخصياً إن الموضوع ينحل فوراً',
+      ];
+      return `${phrases[Math.floor(Math.random() * phrases.length)]}\n\n${baseResponse}`;
+    } else if (complaintCount === 2) {
+      // 2nd complaint: Stronger empathy
+      const phrases = [
+        'أفهم إحباطك تماماً وأعتذر مرة ثانية — ما أبي تمر بهالتجربة 🙏',
+        'حق لك تزعل، وأنا آسف — خلني أحل الموضوع بأسرع وقت',
+      ];
+      return `${phrases[Math.floor(Math.random() * phrases.length)]}\n\n${baseResponse}`;
+    } else {
+      // 1st complaint: Standard empathy
+      const phrases = [
+        'أعتذر منك بشدة على هذا الإزعاج 🙏',
+        'أتفهم تماماً شعورك وأعتذر عن المشكلة',
+        'آسف جداً على التجربة السيئة',
+      ];
+      return `${phrases[Math.floor(Math.random() * phrases.length)]}\n\n${baseResponse}`;
+    }
   }
 
   // If customer is sad, be more supportive
@@ -197,6 +226,32 @@ export function adjustResponseForSentiment(
 
   // Default: return as is
   return baseResponse;
+}
+
+/**
+ * Count how many complaint messages exist in conversation history.
+ * Used for progressive empathy escalation.
+ */
+function countComplaints(
+  previousMessages?: Array<{ role: string; content: string | any }>,
+): number {
+  if (!previousMessages || previousMessages.length === 0) return 0;
+
+  const complaintSignals = [
+    'غاضب', 'زعلان', 'مستاء', 'مشكلة', 'خطأ', 'عطل', 'ما يشتغل',
+    'فاشل', 'سيء', 'أسوأ', 'تعبت', 'مليت', 'ما ترد', 'تأخرتوا',
+    'كم مرة', 'ما تنحل', 'ما في فايدة', 'شكوى', 'بشتكي',
+  ];
+
+  let count = 0;
+  for (const msg of previousMessages) {
+    if (msg.role !== 'user') continue;
+    const content = typeof msg.content === 'string' ? msg.content.toLowerCase() : '';
+    if (complaintSignals.some(s => content.includes(s))) {
+      count++;
+    }
+  }
+  return count;
 }
 
 /**

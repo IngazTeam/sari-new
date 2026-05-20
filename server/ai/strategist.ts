@@ -64,6 +64,7 @@ export interface MissionBlock {
   mustInclude: string[];
   avoid: string[];
   nextGoal: string;
+  nextTwoMoves: string[];  // Multi-turn planning: what to do in the next 2 messages
   memoryDirectives: MemoryDirective[];
   timingContext?: string;
   closingHint?: ClosingDirective;
@@ -436,6 +437,67 @@ function determineNextGoal(intent: CustomerIntent): string {
   }
 }
 
+/**
+ * Plan the next 2 moves after this response.
+ * Gives GPT awareness of the sales funnel trajectory.
+ * Pure logic — zero cost.
+ */
+function planNextTwoMoves(intent: CustomerIntent, objection?: ObjectionAnalysis): string[] {
+  switch (intent) {
+    case 'browsing':
+      return [
+        'الرسالة الجاية: اسأل عن احتياجه المحدد ("إيش تبي بالضبط؟")',
+        'بعدها: اقترح المنتج المناسب مع سعره',
+      ];
+    case 'inquiring':
+      return [
+        'الرسالة الجاية: إذا سأل عن السعر — اذكره بثقة مع القيمة',
+        'بعدها: اطلب منه الخطوة التالية ("تبي أحجز لك؟")',
+      ];
+    case 'comparing':
+      return [
+        'الرسالة الجاية: أبرز ميزتنا التنافسية الأقوى',
+        'بعدها: اسأل "تبي أجهز لك؟" (soft close)',
+      ];
+    case 'hesitating':
+      return [
+        'الرسالة الجاية: قدم دليل اجتماعي أو ضمان',
+        'بعدها: اقترح خطوة سهلة بدون التزام ("بدون التزام تقدر تجرب")',
+      ];
+    case 'objecting':
+      if (objection?.type === 'price') {
+        return [
+          'الرسالة الجاية: أبرز القيمة مقابل السعر',
+          'بعدها: إذا لسه معترض — اعرض بديل أقل سعراً أو خصم بسيط',
+        ];
+      }
+      return [
+        'الرسالة الجاية: عالج الاعتراض بدليل أو ضمان',
+        'بعدها: اسأل "في شي ثاني يقلقك؟" ثم أغلق',
+      ];
+    case 'ready_to_buy':
+      return [
+        'الرسالة الجاية: أكمل الطلب/الحجز فوراً',
+        'بعدها: اقترح منتج مكمل (cross-sell خفيف)',
+      ];
+    case 'returning':
+      return [
+        'الرسالة الجاية: اسأل عن تجربته مع المنتج السابق',
+        'بعدها: اقترح منتج مكمل أو ترقية',
+      ];
+    case 'post_purchase':
+      return [
+        'الرسالة الجاية: ساعده في استفساره',
+        'بعدها: إذا أبدى رضا — اقترح منتج جديد بلطف',
+      ];
+    default:
+      return [
+        'الرسالة الجاية: اكتشف احتياجه',
+        'بعدها: اقترح الحل المناسب',
+      ];
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Public API — Build Mission Block
 // ═══════════════════════════════════════════════════════════════
@@ -480,6 +542,7 @@ export function buildMissionBlock(params: {
     mustInclude,
     avoid,
     nextGoal: determineNextGoal(intent),
+    nextTwoMoves: planNextTwoMoves(intent, objection),
     memoryDirectives,
     timingContext: getTimingContext(merchantId),
     closingHint: params.closingHint,
@@ -589,6 +652,15 @@ export function missionToPrompt(mission: MissionBlock): string {
     if (mission.closingHint.suggestedCTA) {
       parts.push(`- 💡 CTA مقترح: "${mission.closingHint.suggestedCTA}"`);
     }
+  }
+
+  // Multi-turn planning — next 2 moves
+  if (mission.nextTwoMoves && mission.nextTwoMoves.length > 0) {
+    parts.push(`\n### 🗺️ خطة المحادثة (الخطوتين الجايتين):`);
+    for (const move of mission.nextTwoMoves) {
+      parts.push(`- ${move}`);
+    }
+    parts.push(`- ⚠️ هذه الخطة توجيهية — تكيّف حسب رد العميل`);
   }
 
   return parts.join('\n');
