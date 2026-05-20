@@ -82,8 +82,8 @@ function detectClosingSignals(
   // Product selection signals
   const productSelected = /أبي هذا|أبغى هذا|هذا اللي أبيه|أبي الأول|الثاني|أختار|اختار|i want this|this one/.test(msg);
 
-  // Payment/delivery signals
-  const paymentMentioned = /كيف أدفع|طريقة الدفع|payment|توصيل|شحن|عنوان|أدفع|visa|مدى|apple pay|تحويل/.test(msg);
+  // Payment signals (NOT delivery/shipping inquiries — those are just logistics questions)
+  const paymentMentioned = /كيف أدفع|طريقة الدفع|payment|أدفع|visa|مدى|apple pay|تحويل|ادفع|الدفع/.test(msg);
 
   // High momentum: 5+ messages in session
   const highMomentum = (session?.messageCount || 0) >= 5;

@@ -42,7 +42,7 @@ import { loadLightweightArsenal } from './lightweight-arsenal';
 import { detectSentimentFast } from './fast-sentiment';
 import { buildClosingDirective } from './closing-engine';
 import { isGoldenHour } from './sales-conductor';
-import { scheduleFollowUp, cancelFollowUps } from './proactive-followup';
+import { scheduleFollowUp, cancelFollowUps, type FollowUpType } from './proactive-followup';
 import { 
   isZidOrderRequest, 
   parseZidOrderMessage, 
@@ -1042,12 +1042,12 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
       // Proactive Follow-up: schedule if customer is hesitating
       if (intent === 'hesitating' || intent === 'objecting') {
-        const followUpType = intent === 'hesitating' ? 'hesitating' : 'post_interest';
+        const followUpType: FollowUpType = intent === 'hesitating' ? 'hesitating' : 'post_interest';
         scheduleFollowUp({
           merchantId: params.merchantId,
           customerPhone: params.customerPhone,
           conversationId: params.conversationId || 0,
-          followUpType: followUpType as any,
+          followUpType,
           customerName: params.customerName,
         });
       }
@@ -1132,30 +1132,35 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     let arsenalPrompt = '';
     const intent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
 
-    // Closing Engine for FULL PATH
-    const fullPathClosingHint = buildClosingDirective({
-      message: params.message,
-      intent,
-      previousMessages: previousMessages as Array<{ role: string; content: string }>,
-      session: null,
-      customerProfile,
-      hasAbandonedCart: false,
-      isGoldenHour: isGoldenHour(params.merchantId),
-    });
-    // ── Mission Block for FULL PATH (outside try block for scope) ──
-    const mission = buildMissionBlock({
-      message: params.message,
-      intent,
-      lastSentiment: sentiment?.sentiment || 'neutral',
-      customerProfile,
-      salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
-      merchantId: params.merchantId,
-      closingHint: fullPathClosingHint,
-    });
-    const missionPrompt = missionToPrompt(mission);
+    // Closing Engine + Mission Block moved inside try for arsenal access (PEN2-02)
+    let fullPathClosingHint: ReturnType<typeof buildClosingDirective> = { mode: 'none' as const, confidence: 0, prompt: '' };
+    let missionPrompt = '';
 
     try {
       const arsenal = await loadArsenal(params.merchantId, params.customerPhone);
+
+      // PEN2-02: Now we have arsenal data, build closing hint with real abandonedCart
+      fullPathClosingHint = buildClosingDirective({
+        message: params.message,
+        intent,
+        previousMessages: previousMessages as Array<{ role: string; content: string }>,
+        session: null,
+        customerProfile,
+        hasAbandonedCart: !!(arsenal?.abandonedCart),
+        isGoldenHour: isGoldenHour(params.merchantId),
+      });
+
+      // ── Mission Block for FULL PATH ──
+      const mission = buildMissionBlock({
+        message: params.message,
+        intent,
+        lastSentiment: sentiment?.sentiment || 'neutral',
+        customerProfile,
+        salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
+        merchantId: params.merchantId,
+        closingHint: fullPathClosingHint,
+      });
+      missionPrompt = missionToPrompt(mission);
 
       // v6: Build cross-sell suggestions from purchase history
       if (customerProfile?.purchaseHistory) {
