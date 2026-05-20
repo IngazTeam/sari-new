@@ -641,22 +641,36 @@ export const merchantsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        // Parse escalation phones JSON, fallback to legacy emergencyPhone
+        // Use raw SQL to avoid Drizzle type mismatches
+        const pool = await getPool();
         let phones: { phone: string; label: string; order: number }[] = [];
-        try {
-            const raw = (merchant as any).escalationPhones;
-            if (raw) phones = JSON.parse(raw);
-        } catch { /* invalid JSON */ }
+        
+        if (pool) {
+            try {
+                const [rows] = await pool.execute(
+                    `SELECT escalation_phones, emergency_phone FROM merchants WHERE id = ?`,
+                    [merchant.id]
+                );
+                const row = (rows as any[])[0];
+                if (row?.escalation_phones) {
+                    phones = JSON.parse(row.escalation_phones);
+                } else if (row?.emergency_phone) {
+                    phones = [{ phone: row.emergency_phone, label: 'المسؤول الأول', order: 1 }];
+                }
+            } catch (e: any) {
+                // Columns may not exist yet — fall through to default
+                console.warn('[Escalation] getEscalationPhones SQL error:', e?.message);
+            }
+        }
 
-        // Backward compat: if no escalation phones, use legacy emergencyPhone
-        if (phones.length === 0 && (merchant as any).emergencyPhone) {
-            phones = [{ phone: (merchant as any).emergencyPhone, label: 'المسؤول الأول', order: 1 }];
+        // Default: use merchant's registered phone if no escalation phones configured
+        if (phones.length === 0 && merchant.phone) {
+            phones = [{ phone: merchant.phone, label: 'المدير (افتراضي)', order: 1 }];
         }
 
         return {
             phones: phones.sort((a, b) => a.order - b.order),
-            // Legacy field for backward compat
-            emergencyPhone: (merchant as any).emergencyPhone || null,
+            emergencyPhone: phones.length > 0 ? phones[0].phone : (merchant.phone || null),
         };
     }),
 
@@ -701,11 +715,17 @@ export const merchantsRouter = router({
                 .filter(p => p.phone.length > 0)
                 .sort((a, b) => a.order - b.order);
 
-            // Save JSON to escalation_phones + first phone to legacy emergency_phone
-            await updateMerchant(merchant.id, {
-                escalationPhones: cleaned.length > 0 ? JSON.stringify(cleaned) : null,
-                emergencyPhone: cleaned.length > 0 ? cleaned[0].phone : null,
-            } as any);
+            // Save using raw SQL to avoid Drizzle type issues with 'as any'
+            if (pool) {
+                const escalationJson = cleaned.length > 0 ? JSON.stringify(cleaned) : null;
+                const emergencyPhone = cleaned.length > 0 ? cleaned[0].phone : null;
+                await pool.execute(
+                    `UPDATE merchants SET escalation_phones = ?, emergency_phone = ? WHERE id = ?`,
+                    [escalationJson, emergencyPhone, merchant.id]
+                );
+            } else {
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
+            }
 
             console.log(`[Escalation] 📱 Chain updated for merchant ${merchant.id}: ${cleaned.length} contacts`);
             return { success: true, count: cleaned.length };
