@@ -40,6 +40,8 @@ import { buildCustomerStateSummary } from './customer-state';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { loadLightweightArsenal } from './lightweight-arsenal';
 import { detectSentimentFast } from './fast-sentiment';
+import { buildClosingDirective } from './closing-engine';
+import { isGoldenHour } from './sales-conductor';
 import { 
   isZidOrderRequest, 
   parseZidOrderMessage, 
@@ -880,6 +882,17 @@ ${result.orderUrl}
         intent,
         sentiment: fastSentiment, // Keyword-based — zero cost, tracks mid-conversation shifts
       });
+      // Closing Engine: determine if it's time to close
+      const closingHint = buildClosingDirective({
+        message: params.message,
+        intent,
+        previousMessages,
+        session: existingSession,
+        customerProfile,
+        hasAbandonedCart: false,
+        isGoldenHour: isGoldenHour(params.merchantId),
+      });
+
 
       // ── Mission Block: Tactical brain for this message ──
       const mission = buildMissionBlock({
@@ -889,6 +902,7 @@ ${result.orderUrl}
         customerProfile,
         salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
         merchantId: params.merchantId,
+        closingHint,
       });
       const missionPrompt = missionToPrompt(mission);
 
@@ -1104,6 +1118,16 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     let arsenalPrompt = '';
     const intent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
 
+    // Closing Engine for FULL PATH
+    const fullPathClosingHint = buildClosingDirective({
+      message: params.message,
+      intent,
+      previousMessages,
+      session: null,
+      customerProfile,
+      hasAbandonedCart: false,
+      isGoldenHour: isGoldenHour(params.merchantId),
+    });
     // ── Mission Block for FULL PATH (outside try block for scope) ──
     const mission = buildMissionBlock({
       message: params.message,
@@ -1112,6 +1136,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       customerProfile,
       salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
       merchantId: params.merchantId,
+      closingHint: fullPathClosingHint,
     });
     const missionPrompt = missionToPrompt(mission);
 

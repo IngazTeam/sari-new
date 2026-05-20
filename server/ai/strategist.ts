@@ -14,6 +14,7 @@ import { analyzeHesitation } from './session-context';
 import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
 import type { PersuasionStrategy } from './sales-arsenal';
 import { getBestStrategy, isGoldenHour } from './sales-conductor';
+import type { ClosingDirective } from './closing-engine';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -65,6 +66,7 @@ export interface MissionBlock {
   nextGoal: string;
   memoryDirectives: MemoryDirective[];
   timingContext?: string;
+  closingHint?: ClosingDirective;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -449,6 +451,7 @@ export function buildMissionBlock(params: {
   customerProfile: CustomerProfile | null;
   salesPersona?: SalesPersona;
   merchantId?: number;
+  closingHint?: ClosingDirective;
 }): MissionBlock {
   const { message, intent, lastSentiment, customerProfile, salesPersona, merchantId } = params;
   const persona = salesPersona || 'balanced';
@@ -479,6 +482,7 @@ export function buildMissionBlock(params: {
     nextGoal: determineNextGoal(intent),
     memoryDirectives,
     timingContext: getTimingContext(merchantId),
+    closingHint: params.closingHint,
   };
 }
 
@@ -578,5 +582,14 @@ export function missionToPrompt(mission: MissionBlock): string {
   }
 
   parts.push(''); // Empty line before context
+
+  // Closing hint (from Closing Engine)
+  if (mission.closingHint && mission.closingHint.mode !== 'none' && mission.closingHint.prompt) {
+    parts.push(mission.closingHint.prompt);
+    if (mission.closingHint.suggestedCTA) {
+      parts.push(`- 💡 CTA مقترح: "${mission.closingHint.suggestedCTA}"`);
+    }
+  }
+
   return parts.join('\n');
 }
