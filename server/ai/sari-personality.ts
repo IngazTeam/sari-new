@@ -1003,8 +1003,8 @@ ${result.orderUrl}
         }).catch(() => {});
       }
 
-      // v6: If intent is ready_to_buy, mark last strategy as success
-      if (intent === 'ready_to_buy' && convId) {
+      // v6: If intent is ready_to_buy (or mixed-signal override), mark last strategy as success
+      if ((intent === 'ready_to_buy' || effectiveIntent === 'ready_to_buy') && convId) {
         markStrategySuccess(params.merchantId, convId).catch(() => {});
       }
 
@@ -1018,12 +1018,14 @@ ${result.orderUrl}
         'باقات', 'كتالوج', 'courses', 'available', 'catalog', 'عندك', 'فيه', 'متوفر',
         'كم سعر', 'بكم', 'التسجيل', 'مفتوح', 'كورسات', 'سحب', 'bls', 'cpr', 'phl'];
       const isProductQuery = productQueryKeywords.some(k => params.message.toLowerCase().includes(k));
+      let freshInjectedProducts: any[] | null = null; // BUG-6: Track fresh products for validator
       if (isProductQuery) {
         try {
           const allProducts = await getProductsByMerchantId(params.merchantId);
           if (allProducts.length > 0) {
             const freshProducts = await searchRelevantProducts(params.message, allProducts, 20);
             const productsToInject = freshProducts.length > 0 ? freshProducts : allProducts.slice(0, 15);
+            freshInjectedProducts = productsToInject; // BUG-6: Capture for validator
             const merchant = await getMerchantById(params.merchantId);
             const currency = ((merchant as any)?.currency as Currency) || 'SAR';
             let productInjection = `\n\n## المنتجات/الدورات المتاحة (${productsToInject.length} منتج — أجب من هذه القائمة):\n`;
@@ -1115,12 +1117,16 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       // ═══ Response Validator — FAST PATH ═══
       try {
         const lastBotMsg = previousMessages.filter(m => m.role === 'assistant').pop();
-        const productNames = existingSession.relevantProducts?.map((p: any) => p.name).filter(Boolean) || [];
+        // BUG-6 FIX: Use fresh product names from re-injection if available,
+        // otherwise fall back to cached session products
+        const validatorProductNames = freshInjectedProducts
+          ? freshInjectedProducts.map((p: any) => p.name).filter(Boolean)
+          : existingSession.relevantProducts?.map((p: any) => p.name).filter(Boolean) || [];
         const validation = await validateResponse({
           response,
           customerMessage: params.message,
           intent,
-          productNames,
+          productNames: validatorProductNames,
           lastBotMessage: typeof lastBotMsg?.content === 'string' ? lastBotMsg.content : undefined,
         });
         recordValidation(validation);
@@ -1160,8 +1166,9 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
 
 
       // Proactive Follow-up: schedule if customer is hesitating
-      if (intent === 'hesitating' || intent === 'objecting') {
-        const followUpType: FollowUpType = intent === 'hesitating' ? 'hesitating' : 'post_interest';
+      // BUG-4 FIX: Use effectiveIntent — don't schedule follow-up if mixed signal says 'close_to_buying'
+      if (effectiveIntent === 'hesitating' || effectiveIntent === 'objecting') {
+        const followUpType: FollowUpType = effectiveIntent === 'hesitating' ? 'hesitating' : 'post_interest';
         scheduleFollowUp({
           merchantId: params.merchantId,
           customerPhone: params.customerPhone,
@@ -1501,10 +1508,8 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       maxTokens,
     });
 
-    // Adjust response based on sentiment
-    response = adjustResponseForSentiment(response, sentiment, previousMessages);
-
     // ═══ Response Validator — FULL PATH ═══
+    // BUG-7 FIX: Validate BEFORE adjustResponseForSentiment so empathy prefix isn't flagged as preamble
     try {
       const lastBotMsgFull = previousMessages.filter(m => m.role === 'assistant').pop();
       const productNamesFull = productsToShow?.map((p: any) => p.name).filter(Boolean) || [];
@@ -1523,6 +1528,9 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     } catch (valErrFull) {
       console.warn('[chatWithSari] Validator failed (non-blocking):', (valErrFull as Error).message);
     }
+
+    // Adjust response based on sentiment — AFTER validator to preserve empathy prefix
+    response = adjustResponseForSentiment(response, sentiment, previousMessages);
 
     // ═══ Knowledge Gap Detection — FULL PATH ═══
     // If GPT responded but couldn't provide specific info → escalate to merchant
