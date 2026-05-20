@@ -494,21 +494,29 @@ export default function Products() {
             </div>
           ) : products && products.length > 0 ? (
             <div className="rounded-md border overflow-x-auto">
-              <Table className="table-fixed w-full">
+              <Table style={{ tableLayout: 'fixed', width: '100%' }}>
+                <colgroup>
+                  <col style={{ width: '40px' }} />
+                  <col style={{ width: '30%' }} />
+                  <col style={{ width: 'auto' }} />
+                  <col style={{ width: '100px' }} />
+                  <col style={{ width: '100px' }} />
+                  <col style={{ width: '100px' }} />
+                </colgroup>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10">
+                    <TableHead>
                       <Checkbox
                         checked={paginatedProducts.length > 0 && paginatedProducts.every((p: any) => selectedIds.has(p.id))}
                         onCheckedChange={toggleSelectAll}
                         aria-label="تحديد الكل"
                       />
                     </TableHead>
-                    <TableHead className="min-w-[200px]">{t('productsPage.product')}</TableHead>
-                    <TableHead className="max-w-[300px]">{t('productsPage.descriptionLabel')}</TableHead>
-                    <TableHead className="w-[100px]">{t('productsPage.price')}</TableHead>
-                    <TableHead className="w-[100px]">{t('productsPage.stock')}</TableHead>
-                    <TableHead className="w-[100px]">{t('productsPage.actions')}</TableHead>
+                    <TableHead>{t('productsPage.product')}</TableHead>
+                    <TableHead>{t('productsPage.descriptionLabel')}</TableHead>
+                    <TableHead>{t('productsPage.price')}</TableHead>
+                    <TableHead>{t('productsPage.stock')}</TableHead>
+                    <TableHead>{t('productsPage.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -522,7 +530,7 @@ export default function Products() {
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 overflow-hidden">
                           {product.imageUrl ? (
                             <img
                               src={product.imageUrl}
@@ -534,11 +542,11 @@ export default function Products() {
                               <ImageIcon className="w-5 h-5 text-muted-foreground" />
                             </div>
                           )}
-                          <span className="font-medium truncate max-w-[180px]" title={product.name}>{product.name}</span>
+                          <span className="font-medium truncate" title={product.name}>{product.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="max-w-[300px]">
-                        <span className="text-sm text-muted-foreground truncate block" title={product.description || ''}>
+                      <TableCell style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={product.description || ''}>
+                        <span className="text-sm text-muted-foreground">
                           {product.description || '-'}
                         </span>
                       </TableCell>
