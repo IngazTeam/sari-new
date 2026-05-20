@@ -112,6 +112,7 @@ const PaymentSuccess = lazyLoad(() => import("./pages/merchant/PaymentSuccess"))
 const PaymentCancel = lazyLoad(() => import("./pages/merchant/PaymentCancel"));
 const AbandonedCartsPage = lazyLoad(() => import("./pages/merchant/AbandonedCartsPage"));
 const OccasionCampaignsPage = lazyLoad(() => import("./pages/merchant/OccasionCampaignsPage"));
+const PromotionsPage = lazyLoad(() => import("./pages/merchant/Promotions"));
 const AnalyticsDashboard = lazyLoad(() => import("./pages/merchant/AnalyticsDashboard"));
 const Analytics = lazyLoad(() => import("./pages/merchant/Analytics"));
 const OverviewAnalytics = lazyLoad(() => import("./pages/merchant/OverviewAnalytics"));
@@ -467,6 +468,12 @@ function Router() {
       <Route path="/merchant/occasion-campaigns">
         <DashboardLayout>
           <OccasionCampaignsPage />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/promotions">
+        <DashboardLayout>
+          <PromotionsPage />
         </DashboardLayout>
       </Route>
 

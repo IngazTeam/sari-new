@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { insightsRouter } from "./routers-insights";
 import { offersRouter } from "./routers-offers";
+import { promotionsRouter } from "./routers-promotions";
 import { performanceRouter } from "./routers-performance";
 import { googleAuthRouter } from "./routers-google-auth";
 import { sheetsRouter } from "./routers-sheets";
@@ -5763,6 +5764,9 @@ export const appRouter = router({
   // Offers and AB Testing
   offers: offersRouter.offers,
   signupPrompt: offersRouter.signupPrompt,
+
+  // Merchant Promotions — AI-driven promotional offers
+  promotions: promotionsRouter,
 
   // SEO Router
   seo: router({

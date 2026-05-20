@@ -2734,3 +2734,48 @@ export const quotationTemplates = mysqlTable("quotation_templates", {
 	index("idx_merchant").on(table.merchantId),
 ]);
 
+// --- Merchant Promotions (AI-driven promotional offers) ---
+export const promotions = mysqlTable("promotions", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+
+	// Content
+	title: varchar({ length: 255 }).notNull(),
+	description: text(),
+	bannerImageUrl: varchar("banner_image_url", { length: 500 }),
+
+	// Offer Type
+	type: mysqlEnum(['percentage', 'fixed', 'bundle', 'free_shipping', 'custom']).notNull(),
+	value: int(),
+
+	// Scope — which products this applies to
+	scope: mysqlEnum(['all', 'products', 'categories']).default('all').notNull(),
+	productIds: text("product_ids"),     // JSON array: [1, 5, 12]
+	categoryIds: text("category_ids"),   // JSON array: [3, 7]
+
+	// Conditions
+	minOrderAmount: int("min_order_amount"),
+	minQuantity: int("min_quantity"),
+
+	// Auto Discount Code (optional link to discount_codes table)
+	autoDiscountCodeId: int("auto_discount_code_id"),
+
+	// Validity
+	startsAt: timestamp("starts_at", { mode: 'string' }),
+	expiresAt: timestamp("expires_at", { mode: 'string' }),
+	isActive: tinyint("is_active").default(1).notNull(),
+
+	// Analytics
+	viewCount: int("view_count").default(0).notNull(),
+	clickCount: int("click_count").default(0).notNull(),
+
+	// Timestamps
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	index("idx_promotions_merchant").on(table.merchantId),
+	index("idx_promotions_active").on(table.isActive),
+]);
+
+export type Promotion = InferSelectModel<typeof promotions>;
+export type InsertPromotion = InferInsertModel<typeof promotions>;

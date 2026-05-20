@@ -99,7 +99,8 @@ import {
   FileCode2,
   KeyRound,
   ChartPie,
-  Webhook
+  Webhook,
+  Flame
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -170,6 +171,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Ticket, label: t('sidebar.merchant.discounts', 'كوبونات الخصم'), path: "/merchant/discounts", group: 'marketing' },
   { icon: ShoppingBag, label: t('sidebar.merchant.abandonedCarts', 'السلات المتروكة'), path: "/merchant/abandoned-carts", group: 'marketing' },
   { icon: PartyPopper, label: t('sidebar.merchant.occasionCampaigns', 'حملات المناسبات'), path: "/merchant/occasion-campaigns", group: 'marketing', secondary: true },
+  { icon: Flame, label: t('sidebar.merchant.promotions', 'العروض الترويجية'), path: "/merchant/promotions", group: 'marketing' },
   { icon: Gem, label: t('sidebar.merchant.loyaltySettings', 'برنامج الولاء'), path: "/merchant/loyalty/settings", group: 'marketing', secondary: true },
   { icon: UserPlus, label: t('sidebar.merchant.referrals', 'الإحالات'), path: "/merchant/referrals", group: 'marketing', secondary: true },
 

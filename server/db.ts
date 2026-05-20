@@ -254,6 +254,9 @@ import {
   virtualAgents,
   VirtualAgent,
   InsertVirtualAgent,
+  promotions,
+  Promotion,
+  InsertPromotion,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import mysql from "mysql2/promise";
@@ -10955,4 +10958,102 @@ export async function updateEmailTemplate(id: number, data: {
     .update(emailTemplates)
     .set(updates)
     .where(eq(emailTemplates.id, id));
+}
+
+// ============================================
+// Promotions Management
+// ============================================
+
+export async function createPromotion(data: InsertPromotion): Promise<Promotion | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.insert(promotions).values(data);
+  const insertId = Number(result[0].insertId);
+  return getPromotionById(insertId);
+}
+
+export async function getPromotionById(id: number): Promise<Promotion | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  const result = await db.select().from(promotions).where(eq(promotions.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getPromotionsByMerchant(merchantId: number): Promise<Promotion[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db.select().from(promotions)
+    .where(eq(promotions.merchantId, merchantId))
+    .orderBy(desc(promotions.createdAt));
+}
+
+export async function getActivePromotionsByMerchant(merchantId: number): Promise<Promotion[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const now = formatDateForDB(new Date());
+  return db.select().from(promotions)
+    .where(and(
+      eq(promotions.merchantId, merchantId),
+      eq(promotions.isActive, 1),
+      or(
+        eq(promotions.startsAt, null as any),
+        lte(promotions.startsAt, now)
+      ),
+      or(
+        eq(promotions.expiresAt, null as any),
+        gte(promotions.expiresAt, now)
+      ),
+    ))
+    .orderBy(desc(promotions.createdAt))
+    .limit(5); // Max 5 active promotions for AI context
+}
+
+export async function countActivePromotions(merchantId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const result = await db.select({ count: sql<number>`COUNT(*)` })
+    .from(promotions)
+    .where(and(
+      eq(promotions.merchantId, merchantId),
+      eq(promotions.isActive, 1),
+    ));
+  return result[0]?.count || 0;
+}
+
+export async function updatePromotion(id: number, data: Partial<InsertPromotion>): Promise<Promotion | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+
+  await db.update(promotions).set(data).where(eq(promotions.id, id));
+  return getPromotionById(id);
+}
+
+export async function deletePromotion(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.delete(promotions).where(eq(promotions.id, id));
+}
+
+export async function incrementPromotionViewCount(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(promotions)
+    .set({ viewCount: sql`${promotions.viewCount} + 1` })
+    .where(eq(promotions.id, id));
+}
+
+export async function incrementPromotionClickCount(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(promotions)
+    .set({ clickCount: sql`${promotions.clickCount} + 1` })
+    .where(eq(promotions.id, id));
 }

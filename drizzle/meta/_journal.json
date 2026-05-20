@@ -15,6 +15,13 @@
       "when": 1778954269097,
       "tag": "0001_fine_meteorite",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1779237688885,
+      "tag": "0002_quiet_exiles",
+      "breakpoints": true
     }
   ]
 }
