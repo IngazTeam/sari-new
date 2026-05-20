@@ -39,6 +39,7 @@ import { enrichCustomerProfile } from './profile-enrichment';
 import { buildCustomerStateSummary } from './customer-state';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { loadLightweightArsenal } from './lightweight-arsenal';
+import { detectSentimentFast } from './fast-sentiment';
 import { 
   isZidOrderRequest, 
   parseZidOrderMessage, 
@@ -874,16 +875,17 @@ ${result.orderUrl}
     if (existingSession && !needsTopicRebuild) {
       // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
       const intent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
+      const fastSentiment = detectSentimentFast(params.message);
       updateSession(params.merchantId, convId, {
         intent,
-        sentiment: 'auto', // Lightweight — no GPT call for sentiment on cached path
+        sentiment: fastSentiment, // Keyword-based — zero cost, tracks mid-conversation shifts
       });
 
       // ── Mission Block: Tactical brain for this message ──
       const mission = buildMissionBlock({
         message: params.message,
         intent,
-        lastSentiment: existingSession.sentimentTrajectory?.slice(-1)[0] || 'neutral',
+        lastSentiment: fastSentiment,
         customerProfile,
         salesPersona: (personalitySettings as any)?.salesPersona as SalesPersona || undefined,
         merchantId: params.merchantId,
