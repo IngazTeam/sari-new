@@ -191,6 +191,8 @@ const AIWhatsAppHub = lazyLoad(() => import("./pages/merchant/AIWhatsAppHub"));
 const AnalyticsHub = lazyLoad(() => import("./pages/merchant/AnalyticsHub"));
 const SalesHub = lazyLoad(() => import("./pages/merchant/SalesHub"));
 const AcquisitionReport = lazyLoad(() => import("./pages/merchant/AcquisitionReport"));
+const QuotationTemplates = lazyLoad(() => import("./pages/merchant/QuotationTemplates"));
+const MediaLibrary = lazyLoad(() => import("./pages/merchant/MediaLibrary"));
 
 // Admin pages - lazy loaded
 const AdminDashboard = lazyLoad(() => import("./pages/admin/Dashboard"));
@@ -586,6 +588,18 @@ function Router() {
       <Route path="/merchant/acquisition-report">
         <DashboardLayout>
           <AcquisitionReport />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/quotation-templates">
+        <DashboardLayout>
+          <QuotationTemplates />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/media-library">
+        <DashboardLayout>
+          <MediaLibrary />
         </DashboardLayout>
       </Route>
 

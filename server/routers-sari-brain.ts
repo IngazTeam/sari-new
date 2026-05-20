@@ -1999,7 +1999,8 @@ ${fencedContent}`,
   /** Create a quotation */
   createQuotation: protectedProcedure
     .input(z.object({
-      customerPhone: z.string().max(20).optional(),
+      // UX-05: Standardize phone validation (same regex as sendQuotationToCustomer)
+      customerPhone: z.string().min(8).max(20).regex(/^\+?[0-9]+$/, 'رقم هاتف غير صالح').optional(),
       customerName: z.string().max(255).optional(),
       items: z.array(z.object({
         name: z.string().min(1).max(500),
@@ -2091,6 +2092,86 @@ ${fencedContent}`,
       return sanitizeForTRPC({ message, quotation });
     }),
 
+
+  /** Send quotation as PDF to customer via WhatsApp */
+  sendQuotationToCustomer: protectedProcedure
+    .input(z.object({
+      quotationId: z.number(),
+      customerPhone: z.string().min(8).max(20).regex(/^\+?[0-9]+$/, 'رقم هاتف غير صالح'),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      // SEC: Rate limit — max 1 PDF send per 5 seconds
+      checkTestRateLimit(merchant.id, 5_000);
+
+      const quotationsDb = await import('./db/sales-quotations');
+      const quotation = await quotationsDb.getQuotationById(input.quotationId, merchant.id);
+      if (!quotation) throw new TRPCError({ code: 'NOT_FOUND', message: 'عرض السعر غير موجود' });
+
+      // Get template for terms/footer
+      const templates = await quotationsDb.getTemplates(merchant.id);
+      const defaultTemplate = templates.find((t: any) => t.isDefault) || templates[0] || null;
+
+      // Generate PDF
+      const { generateQuotationPDF } = await import('./services/quotation-pdf');
+      const pdfUrl = await generateQuotationPDF({
+        quotationNumber: quotation.quotationNumber,
+        merchantName: merchant.businessName,
+        merchantPhone: merchant.phone,
+        customerName: quotation.customerName,
+        customerPhone: input.customerPhone,
+        items: quotation.items,
+        subtotal: quotation.subtotal,
+        taxRate: quotation.taxRate || 0,
+        taxAmount: quotation.taxAmount,
+        total: quotation.total,
+        currency: quotation.currency,
+        validUntil: quotation.validUntil,
+        termsText: defaultTemplate?.termsText || null,
+        footerText: defaultTemplate?.footerText || null,
+        createdAt: new Date(quotation.createdAt).toLocaleDateString('ar-SA'),
+      });
+
+      // Send text summary + PDF via WhatsApp
+      const { getPrimaryWhatsAppInstance } = await import('./db');
+      const instance = await getPrimaryWhatsAppInstance(merchant.id);
+      if (!instance) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد اتصال واتساب نشط' });
+      }
+
+      const whatsapp = await import('./whatsapp');
+      const instancePrefix = instance.instanceId.substring(0, 4);
+      const apiUrl = `https://${instancePrefix}.api.greenapi.com`;
+
+      // Send text summary first
+      const textMessage = quotationsDb.formatQuotationMessage(quotation, merchant.businessName, defaultTemplate);
+      await whatsapp.sendMessageWithCredentials(
+        instance.instanceId, instance.token, apiUrl,
+        input.customerPhone, textMessage
+      );
+
+      // Then send PDF document
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      await whatsapp.sendFileWithCredentials(
+        instance.instanceId, instance.token, apiUrl,
+        input.customerPhone, pdfUrl,
+        `عرض-سعر-${quotation.quotationNumber.replace(/[^a-zA-Z0-9-]/g, "")}.pdf`,
+        `📄 عرض سعر #${quotation.quotationNumber} من ${merchant.businessName}`
+      );
+
+      // Update quotation status to 'sent'
+      await quotationsDb.updateQuotationStatus(input.quotationId, merchant.id, 'sent');
+
+      await logBrainActivity(merchant.id, 'quotation_sent',
+        `تم إرسال عرض سعر #${quotation.quotationNumber} كـ PDF إلى ${input.customerPhone}`
+      );
+
+      // STR-03: Don't expose storage URL to frontend — only confirm send success
+      return sanitizeForTRPC({ success: true, sentAt: new Date().toISOString() });
+    }),
+
   // ─── Sales Targets ─────────────────────────────
 
   /** Get current target */
@@ -2158,6 +2239,31 @@ ${fencedContent}`,
         ...input,
       });
       return { success: true, templateId: id };
+    }),
+
+  /** Update template */
+  updateQuotationTemplate: protectedProcedure
+    .input(z.object({
+      templateId: z.number(),
+      name: z.string().min(1).max(255).optional(),
+      headerImageUrl: z.string().url().max(500).nullable().optional(),
+      footerText: z.string().max(5000).nullable().optional(),
+      termsText: z.string().max(5000).nullable().optional(),
+      isDefault: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const quotationsDb = await import('./db/sales-quotations');
+      await quotationsDb.updateTemplate(input.templateId, merchant.id, {
+        name: input.name,
+        headerImageUrl: input.headerImageUrl,
+        footerText: input.footerText,
+        termsText: input.termsText,
+        isDefault: input.isDefault,
+      });
+      return { success: true };
     }),
 
   /** Delete template */

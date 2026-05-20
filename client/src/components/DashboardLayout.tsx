@@ -100,7 +100,9 @@ import {
   KeyRound,
   ChartPie,
   Webhook,
-  Flame
+  Flame,
+  FileText,
+  ImageIcon,
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -152,6 +154,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: HandCoins, label: t('sidebar.merchant.paymentsPage', 'المدفوعات'), path: "/merchant/payments", group: 'operations', secondary: true },
   { icon: Star, label: t('sidebar.merchant.reviews', 'التقييمات'), path: "/merchant/reviews", group: 'operations', secondary: true },
   { icon: Receipt, label: t('sidebar.merchant.salesHub', 'مركز المبيعات'), path: "/merchant/sales-hub", group: 'operations', secondary: true },
+  { icon: FileText, label: t('sidebar.merchant.quotationTemplates', 'قوالب عروض الأسعار'), path: "/merchant/quotation-templates", group: 'operations', secondary: true },
 
   // 3. المساعد الذكي
   { icon: Brain, label: t('sidebar.merchant.sariBrain', 'عقل ساري'), path: "/merchant/sari-brain", group: 'channels', hero: true },
@@ -191,6 +194,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Users, label: t('sidebar.merchant.staffManagement', 'فريق العمل'), path: "/merchant/staff", group: 'settings', secondary: true },
   { icon: Languages, label: t('sidebar.merchant.languageSettings', 'إعدادات اللغة'), path: "/merchant/language-settings", group: 'settings', secondary: true },
   { icon: CreditCard, label: t('sidebar.merchant.merchantPayments', 'مدفوعات التاجر'), path: "/merchant/merchant-payments", group: 'settings', secondary: true },
+  { icon: ImageIcon, label: t('sidebar.merchant.mediaLibrary', 'مكتبة الوسائط'), path: "/merchant/media-library", group: 'settings', secondary: true },
 ];
 
 const getAdminMenuItems = (t: any): MenuItem[] => [

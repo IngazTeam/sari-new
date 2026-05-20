@@ -14,6 +14,38 @@ function assertGreenApiUrl(url: string): void {
 }
 
 /**
+ * PEN-MEDIA-01 FIX: Validate that media URLs are safe before sending to Green API.
+ * Prevents SSRF via merchant-controlled product image/file URLs.
+ */
+function assertSafeMediaUrl(url: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid media URL: ${url.substring(0, 50)}`);
+  }
+
+  // Only allow HTTP/HTTPS
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`SSRF blocked: non-HTTP protocol "${parsed.protocol}" in media URL`);
+  }
+
+  // Block internal/metadata/localhost IPs
+  const hostname = parsed.hostname.toLowerCase();
+  const blockedPatterns = [
+    /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.)/,  // Private IPs
+    /169\.254\./,                                                  // AWS metadata
+    /^localhost$/i,
+    /\.local$/i,
+    /\.internal$/i,
+    /^metadata\./i,
+  ];
+  if (blockedPatterns.some(p => p.test(hostname))) {
+    throw new Error(`SSRF blocked: "${hostname}" is a restricted address`);
+  }
+}
+
+/**
  * Green API WhatsApp Integration
  * 
  * This module provides functions to interact with Green API for WhatsApp messaging.
@@ -643,6 +675,117 @@ export async function sendMessageWithCredentials(
     };
   } catch (error: any) {
     console.error('Error sending message:', error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+}
+
+
+/**
+ * Send file/document with custom credentials (for AI bot rich responses)
+ * Supports PDF, DOCX, images, and any file accessible via URL.
+ * Uses Green API sendFileByUrl endpoint.
+ */
+export async function sendFileWithCredentials(
+  instanceId: string,
+  apiToken: string,
+  apiUrl: string,
+  phoneNumber: string,
+  fileUrl: string,
+  fileName: string,
+  caption?: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    assertGreenApiUrl(apiUrl);
+    assertSafeMediaUrl(fileUrl); // PEN-MEDIA-01: Block SSRF via file URLs
+    const baseURL = `${apiUrl}/waInstance${instanceId}`;
+    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+
+    console.log(`[WhatsApp] 📎 Sending file "${fileName}" to ***${formattedPhone.slice(-4)}`);
+
+    const response = await axios.post(`${baseURL}/sendFileByUrl/${apiToken}`, {
+      chatId: `${formattedPhone}@c.us`,
+      urlFile: fileUrl,
+      fileName,
+      caption: caption || '',
+    });
+
+    if (response.data && response.data.idMessage) {
+      console.log(`[WhatsApp] ✅ File sent successfully: ${response.data.idMessage}`);
+      return {
+        success: true,
+        messageId: response.data.idMessage,
+      };
+    }
+
+    return {
+      success: false,
+      error: 'Failed to send file',
+    };
+  } catch (error: any) {
+    console.error('[WhatsApp] ❌ Error sending file:', error.response?.data || error.message);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message,
+    };
+  }
+}
+
+
+/**
+ * Send image with custom credentials (for AI bot product photos)
+ * Wrapper around sendFileByUrl optimized for images with captions.
+ */
+export async function sendImageWithCredentials(
+  instanceId: string,
+  apiToken: string,
+  apiUrl: string,
+  phoneNumber: string,
+  imageUrl: string,
+  caption?: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  try {
+    assertGreenApiUrl(apiUrl);
+    assertSafeMediaUrl(imageUrl); // PEN-MEDIA-01: Block SSRF via image URLs
+    const baseURL = `${apiUrl}/waInstance${instanceId}`;
+    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+
+    // PEN-MEDIA-09: Safely extract file extension, with fallback
+    let fileName = 'product.jpg';
+    try {
+      const urlPath = new URL(imageUrl).pathname;
+      const ext = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
+      const validExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      fileName = `product.${validExts.includes(ext) ? ext : 'jpg'}`;
+    } catch {
+      console.warn('[WhatsApp] Invalid image URL format, using default filename');
+    }
+
+    console.log(`[WhatsApp] 🖼️ Sending image to ***${formattedPhone.slice(-4)}`);
+
+    const response = await axios.post(`${baseURL}/sendFileByUrl/${apiToken}`, {
+      chatId: `${formattedPhone}@c.us`,
+      urlFile: imageUrl,
+      fileName,
+      caption: caption || '',
+    });
+
+    if (response.data && response.data.idMessage) {
+      console.log(`[WhatsApp] ✅ Image sent successfully: ${response.data.idMessage}`);
+      return {
+        success: true,
+        messageId: response.data.idMessage,
+      };
+    }
+
+    return {
+      success: false,
+      error: 'Failed to send image',
+    };
+  } catch (error: any) {
+    console.error('[WhatsApp] ❌ Error sending image:', error.response?.data || error.message);
     return {
       success: false,
       error: error.response?.data?.message || error.message,

@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { insightsRouter } from "./routers-insights";
 import { offersRouter } from "./routers-offers";
 import { promotionsRouter } from "./routers-promotions";
+import { mediaRouter } from "./routers-media";
 import { performanceRouter } from "./routers-performance";
 import { googleAuthRouter } from "./routers-google-auth";
 import { sheetsRouter } from "./routers-sheets";
@@ -5767,6 +5768,9 @@ export const appRouter = router({
 
   // Merchant Promotions — AI-driven promotional offers
   promotions: promotionsRouter,
+
+  // Media Library — centralized media asset management
+  media: mediaRouter,
 
   // SEO Router
   seo: router({

@@ -408,6 +408,43 @@ export async function deleteTemplate(id: number, merchantId: number): Promise<vo
   );
 }
 
+/** Update a template */
+export async function updateTemplate(id: number, merchantId: number, data: {
+  name?: string;
+  headerImageUrl?: string | null;
+  footerText?: string | null;
+  termsText?: string | null;
+  isDefault?: boolean;
+}): Promise<void> {
+  const pool = await getPool();
+  if (!pool) return;
+
+  // If setting as default, unset others first
+  if (data.isDefault) {
+    await pool.execute(
+      `UPDATE quotation_templates SET is_default = 0 WHERE merchant_id = ?`,
+      [merchantId]
+    );
+  }
+
+  const setClauses: string[] = [];
+  const params: any[] = [];
+
+  if (data.name !== undefined) { setClauses.push('name = ?'); params.push(data.name.substring(0, 255)); }
+  if (data.headerImageUrl !== undefined) { setClauses.push('header_image_url = ?'); params.push(data.headerImageUrl); }
+  if (data.footerText !== undefined) { setClauses.push('footer_text = ?'); params.push(data.footerText); }
+  if (data.termsText !== undefined) { setClauses.push('terms_text = ?'); params.push(data.termsText); }
+  if (data.isDefault !== undefined) { setClauses.push('is_default = ?'); params.push(data.isDefault ? 1 : 0); }
+
+  if (setClauses.length === 0) return;
+
+  params.push(id, merchantId);
+  await pool.execute(
+    `UPDATE quotation_templates SET ${setClauses.join(', ')} WHERE id = ? AND merchant_id = ?`,
+    params
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Format Quotation as WhatsApp Message
 // ═══════════════════════════════════════════════════════════════

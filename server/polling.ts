@@ -15,7 +15,7 @@ import {
   getWhatsAppConnectionRequestByMerchantId,
   updateConversation,
 } from './db';
-import { processIncomingMessage } from './ai';
+import { processIncomingMessage, type AIResponse } from './ai';
 import { processVoiceMessage } from './ai/voice-handler';
 
 // Store active polling intervals
@@ -30,7 +30,28 @@ const processedMessages: Set<string> = new Set();
 // Clean up old processed messages every 5 minutes
 setInterval(() => {
   processedMessages.clear();
+  // LIM-02: Also clean AI rate limit counters
+  aiRateLimiter.clear();
 }, 5 * 60 * 1000);
+
+// LIM-02: AI call rate limiter — max 100 calls per hour per merchant
+const AI_MAX_CALLS_PER_HOUR = 100;
+const aiRateLimiter: Map<number, { count: number; resetAt: number }> = new Map();
+
+function checkAIRateLimit(merchantId: number): boolean {
+  const now = Date.now();
+  const entry = aiRateLimiter.get(merchantId);
+  if (!entry || now > entry.resetAt) {
+    aiRateLimiter.set(merchantId, { count: 1, resetAt: now + 60 * 60 * 1000 });
+    return true;
+  }
+  if (entry.count >= AI_MAX_CALLS_PER_HOUR) {
+    console.warn(`[Polling] ⚠️ AI rate limit reached for merchant ${merchantId}: ${entry.count}/${AI_MAX_CALLS_PER_HOUR} calls/hour`);
+    return false;
+  }
+  entry.count++;
+  return true;
+}
 
 /**
  * Start polling for a specific merchant
@@ -286,6 +307,12 @@ async function handleIncomingMessage(
       lastMessageAt: new Date(),
     });
 
+    // LIM-02: Check AI rate limit before processing
+    if (!checkAIRateLimit(merchantId)) {
+      console.log(`[Polling] Skipping AI response due to rate limit for merchant ${merchantId}`);
+      return;
+    }
+
     // Process with AI and send response
     const aiResponse = await processIncomingMessage(
       merchantId,
@@ -295,19 +322,83 @@ async function handleIncomingMessage(
     );
 
     if (aiResponse) {
-      // Send response via WhatsApp
+      // Phase 2: Send text response first
       const sendResult = await whatsapp.sendMessageWithCredentials(
         instanceId,
         apiToken,
         apiUrl,
         customerPhone,
-        aiResponse
+        aiResponse.text
       );
 
       if (sendResult.success) {
-        console.log(`[Polling] Sent AI response to ${customerPhone}`);
+        console.log(`[Polling] ✅ Sent AI text response to ${customerPhone}`);
       } else {
-        console.error(`[Polling] Failed to send AI response:`, sendResult.error);
+        console.error(`[Polling] ❌ Failed to send AI response:`, sendResult.error);
+      }
+
+      // Phase 2: Send media attachments (product images, documents)
+      if (aiResponse.media && aiResponse.media.length > 0) {
+        for (const mediaItem of aiResponse.media) {
+          // Rate-limit: wait 1.5s between media sends
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          try {
+            if (mediaItem.type === 'image') {
+              const imgResult = await whatsapp.sendImageWithCredentials(
+                instanceId, apiToken, apiUrl, customerPhone,
+                mediaItem.url, mediaItem.caption
+              );
+              if (imgResult.success) {
+                console.log(`[Polling] 🖼️ Sent product image to ${customerPhone}`);
+              } else {
+                // UX-02: Notify customer that image failed with fallback text
+                console.warn(`[Polling] Image send failed, sending fallback text`);
+                await whatsapp.sendMessageWithCredentials(
+                  instanceId, apiToken, apiUrl, customerPhone,
+                  `📷 ${mediaItem.caption || 'صورة المنتج غير متوفرة مؤقتاً'}`
+                );
+              }
+            } else if (mediaItem.type === 'document') {
+              const fileResult = await whatsapp.sendFileWithCredentials(
+                instanceId, apiToken, apiUrl, customerPhone,
+                mediaItem.url, mediaItem.fileName || 'document.pdf', mediaItem.caption
+              );
+              if (fileResult.success) {
+                console.log(`[Polling] 📎 Sent document to ${customerPhone}`);
+              }
+            }
+          } catch (mediaErr) {
+            console.error(`[Polling] Failed to send media:`, mediaErr);
+          }
+        }
+      }
+
+      // Phase 4: Send discount code if AI shared one — with validation
+      if (aiResponse.discountCode) {
+        // UX-04: Verify discount code exists and is valid before sending
+        try {
+          const { getDiscountCodesByMerchantId } = await import('./db');
+          const allDiscounts = await getDiscountCodesByMerchantId(merchantId);
+          const validDiscount = allDiscounts.find((d: any) =>
+            d.code.toUpperCase() === aiResponse.discountCode!.toUpperCase() &&
+            d.isActive === 1 &&
+            (!d.expiresAt || new Date(d.expiresAt) > new Date()) &&
+            (!d.maxUses || d.usedCount < d.maxUses)
+          );
+
+          if (validDiscount) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await whatsapp.sendMessageWithCredentials(
+              instanceId, apiToken, apiUrl, customerPhone,
+              `🎁 كود خصم خاص لك: *${aiResponse.discountCode}*\nاستخدمه عند الطلب للحصول على الخصم ✨`
+            );
+            console.log(`[Polling] 🎁 Sent validated discount code ${aiResponse.discountCode} to ${customerPhone}`);
+          } else {
+            console.warn(`[Polling] ⚠️ AI hallucinated discount code "${aiResponse.discountCode}" — not sent to customer`);
+          }
+        } catch (discountErr) {
+          console.error(`[Polling] Error validating discount code:`, discountErr);
+        }
       }
     }
 
@@ -371,22 +462,41 @@ async function handleVoiceMessage(
       audioUrl,
     });
 
-    console.log(`[Polling] Voice transcription: ${result.transcription}`);
-    console.log(`[Polling] AI response: ${result.response}`);
+    // UX-03: Parse voice AI response through rich media pipeline
+    // This ensures [SEND_IMAGE:id] and [SEND_DISCOUNT:CODE] commands work for voice messages too
+    const { parseAICommands: parseVoiceCommands } = await import('./ai');
+    const voiceAiResponse = await parseVoiceCommands(result.response, merchantId);
 
-    // Send response via WhatsApp
+    // Send text response
     const sendResult = await whatsapp.sendMessageWithCredentials(
       instanceId,
       apiToken,
       apiUrl,
       customerPhone,
-      result.response
+      voiceAiResponse.text
     );
 
     if (sendResult.success) {
       console.log(`[Polling] Sent voice response to ${customerPhone}`);
     } else {
       console.error(`[Polling] Failed to send voice response:`, sendResult.error);
+    }
+
+    // Send media attachments from voice response
+    if (voiceAiResponse.media && voiceAiResponse.media.length > 0) {
+      for (const mediaItem of voiceAiResponse.media) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+          if (mediaItem.type === 'image') {
+            await whatsapp.sendImageWithCredentials(
+              instanceId, apiToken, apiUrl, customerPhone,
+              mediaItem.url, mediaItem.caption
+            );
+          }
+        } catch (mediaErr) {
+          console.error(`[Polling] Failed to send voice media:`, mediaErr);
+        }
+      }
     }
 
   } catch (error: any) {
