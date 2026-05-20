@@ -142,7 +142,7 @@ export function scheduleFollowUp(params: {
 
   // Safety: Check weekly limit
   if (!canSendThisWeek(merchantId, customerPhone)) {
-    console.log(`[FollowUp] Weekly limit reached for ${customerPhone} — skipping`);
+    console.log(`[FollowUp] Weekly limit reached for ***${customerPhone.slice(-4)} — skipping`);
     return false;
   }
 
@@ -154,7 +154,7 @@ export function scheduleFollowUp(params: {
          !f.cancelled && !f.sentAt
   );
   if (existing) {
-    console.log(`[FollowUp] Already scheduled for ${customerPhone} in conv ${conversationId}`);
+    console.log(`[FollowUp] Already scheduled for ***${customerPhone.slice(-4)} in conv ${conversationId}`);
     return false;
   }
 
@@ -183,7 +183,7 @@ export function scheduleFollowUp(params: {
   };
 
   scheduledFollowUps.push(record);
-  console.log(`[FollowUp] Scheduled ${followUpType} for ${customerPhone} at ${record.scheduledAt.toISOString()}`);
+  console.log(`[FollowUp] Scheduled ${followUpType} for ***${customerPhone.slice(-4)} at ${record.scheduledAt.toISOString()}`);
   return true;
 }
 
@@ -236,7 +236,7 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
       if (pool) {
         const convs = await pool.execute(
           `SELECT human_takeover FROM sari_conversations 
-           WHERE id = ${followUp.conversationId} AND merchant_id = ${followUp.merchantId}
+           WHERE id = ${Number(followUp.conversationId)} AND merchant_id = ${Number(followUp.merchantId)}
            LIMIT 1`
         );
         if (Array.isArray(convs) && (convs as any)[0]?.human_takeover) {
@@ -256,7 +256,7 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
       
       const merchants = await pool.execute(
         `SELECT greenapi_instance_id, greenapi_token, greenapi_url FROM sari_merchants 
-         WHERE id = ${followUp.merchantId} LIMIT 1`
+         WHERE id = ${Number(followUp.merchantId)} LIMIT 1`
       );
       
       if (!Array.isArray(merchants) || !(merchants as any)[0]?.greenapi_instance_id) {
@@ -275,10 +275,10 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
       followUp.sentAt = new Date();
       recordWeeklySend(followUp.merchantId, followUp.customerPhone);
       sent++;
-      console.log(`[FollowUp] ✅ Sent ${followUp.followUpType} to ${followUp.customerPhone}`);
+      console.log(`[FollowUp] ✅ Sent ${followUp.followUpType} to ***${followUp.customerPhone.slice(-4)}`);
     } catch (err: any) {
       errors++;
-      console.error(`[FollowUp] ❌ Failed to send to ${followUp.customerPhone}:`, err.message);
+      console.error(`[FollowUp] ❌ Failed to send to ***${followUp.customerPhone.slice(-4)}:`, err.message);
     }
   }
 
