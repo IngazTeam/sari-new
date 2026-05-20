@@ -12,6 +12,25 @@ import { getPool } from '../db';
 import { ensureKnowledgeTables } from './knowledge';
 
 // ═══════════════════════════════════════════════════════════════
+// PEN-TMPL-03 FIX: URL Sanitization for header images
+// ═══════════════════════════════════════════════════════════════
+
+function sanitizeHeaderUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+      return url.substring(0, 500);
+    }
+    console.warn(`[QuotationTemplates] Blocked non-HTTP header URL: ${parsed.protocol}`);
+    return null;
+  } catch {
+    console.warn('[QuotationTemplates] Invalid header URL rejected');
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════
 
@@ -374,27 +393,42 @@ export async function createTemplate(data: {
   const pool = await getPool();
   if (!pool) throw new Error('DB unavailable');
 
-  if (data.isDefault) {
-    // Unset other defaults
-    await pool.execute(
-      `UPDATE quotation_templates SET is_default = 0 WHERE merchant_id = ?`,
-      [data.merchantId]
-    );
-  }
+  // PEN-TMPL-03 FIX: Validate headerImageUrl protocol
+  const safeHeaderUrl = sanitizeHeaderUrl(data.headerImageUrl);
 
-  const [result] = await pool.execute(
-    `INSERT INTO quotation_templates (merchant_id, name, header_image_url, footer_text, terms_text, is_default)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [
-      data.merchantId,
-      data.name.substring(0, 255),
-      data.headerImageUrl ?? null,
-      data.footerText ?? null,
-      data.termsText ?? null,
-      data.isDefault ? 1 : 0,
-    ]
-  );
-  return (result as any).insertId;
+  // PEN-TMPL-04 FIX: Use transaction for atomic default flag handling
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    if (data.isDefault) {
+      await conn.execute(
+        `UPDATE quotation_templates SET is_default = 0 WHERE merchant_id = ?`,
+        [data.merchantId]
+      );
+    }
+
+    const [result] = await conn.execute(
+      `INSERT INTO quotation_templates (merchant_id, name, header_image_url, footer_text, terms_text, is_default)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        data.merchantId,
+        data.name.substring(0, 255),
+        safeHeaderUrl,
+        data.footerText?.substring(0, 5000) ?? null,
+        data.termsText?.substring(0, 5000) ?? null,
+        data.isDefault ? 1 : 0,
+      ]
+    );
+
+    await conn.commit();
+    return (result as any).insertId;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }
 
 /** Delete a template */
@@ -419,30 +453,47 @@ export async function updateTemplate(id: number, merchantId: number, data: {
   const pool = await getPool();
   if (!pool) return;
 
-  // If setting as default, unset others first
-  if (data.isDefault) {
-    await pool.execute(
-      `UPDATE quotation_templates SET is_default = 0 WHERE merchant_id = ?`,
-      [merchantId]
-    );
+  // PEN-TMPL-03 FIX: Validate headerImageUrl protocol
+  const safeHeaderUrl = data.headerImageUrl !== undefined
+    ? sanitizeHeaderUrl(data.headerImageUrl)
+    : undefined;
+
+  // PEN-TMPL-04 FIX: Use transaction for atomic default flag handling
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    if (data.isDefault) {
+      await conn.execute(
+        `UPDATE quotation_templates SET is_default = 0 WHERE merchant_id = ?`,
+        [merchantId]
+      );
+    }
+
+    const setClauses: string[] = [];
+    const params: any[] = [];
+
+    if (data.name !== undefined) { setClauses.push('name = ?'); params.push(data.name.substring(0, 255)); }
+    if (safeHeaderUrl !== undefined) { setClauses.push('header_image_url = ?'); params.push(safeHeaderUrl); }
+    if (data.footerText !== undefined) { setClauses.push('footer_text = ?'); params.push(data.footerText?.substring(0, 5000) ?? null); }
+    if (data.termsText !== undefined) { setClauses.push('terms_text = ?'); params.push(data.termsText?.substring(0, 5000) ?? null); }
+    if (data.isDefault !== undefined) { setClauses.push('is_default = ?'); params.push(data.isDefault ? 1 : 0); }
+
+    if (setClauses.length > 0) {
+      params.push(id, merchantId);
+      await conn.execute(
+        `UPDATE quotation_templates SET ${setClauses.join(', ')} WHERE id = ? AND merchant_id = ?`,
+        params
+      );
+    }
+
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
   }
-
-  const setClauses: string[] = [];
-  const params: any[] = [];
-
-  if (data.name !== undefined) { setClauses.push('name = ?'); params.push(data.name.substring(0, 255)); }
-  if (data.headerImageUrl !== undefined) { setClauses.push('header_image_url = ?'); params.push(data.headerImageUrl); }
-  if (data.footerText !== undefined) { setClauses.push('footer_text = ?'); params.push(data.footerText); }
-  if (data.termsText !== undefined) { setClauses.push('terms_text = ?'); params.push(data.termsText); }
-  if (data.isDefault !== undefined) { setClauses.push('is_default = ?'); params.push(data.isDefault ? 1 : 0); }
-
-  if (setClauses.length === 0) return;
-
-  params.push(id, merchantId);
-  await pool.execute(
-    `UPDATE quotation_templates SET ${setClauses.join(', ')} WHERE id = ? AND merchant_id = ?`,
-    params
-  );
 }
 
 // ═══════════════════════════════════════════════════════════════

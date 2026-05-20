@@ -3,6 +3,12 @@
  * Handles file upload, listing, and deletion for merchant media assets
  * 
  * This is a standalone module following the "Parallel Coexistence" pattern.
+ * 
+ * Security Hardening (PEN-MEDIA-01 through PEN-MEDIA-06):
+ * - Magic bytes validation to prevent MIME spoofing
+ * - Per-merchant upload/delete rate limiting
+ * - Filename sanitization (path traversal + HTML stripping)
+ * - S3 orphan file logging on deletion
  */
 
 import { z } from 'zod';
@@ -32,6 +38,64 @@ const MIME_TO_EXT: Record<string, string> = {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// PEN-MEDIA-01 FIX: Magic bytes signatures for MIME validation
+// ═══════════════════════════════════════════════════════════════
+
+const MAGIC_BYTES: Record<string, { offset: number; bytes: number[] }[]> = {
+  'image/jpeg': [{ offset: 0, bytes: [0xFF, 0xD8, 0xFF] }],
+  'image/png':  [{ offset: 0, bytes: [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A] }],
+  'image/webp': [{ offset: 0, bytes: [0x52, 0x49, 0x46, 0x46] }], // RIFF header
+  'image/gif':  [
+    { offset: 0, bytes: [0x47, 0x49, 0x46, 0x38, 0x37, 0x61] }, // GIF87a
+    { offset: 0, bytes: [0x47, 0x49, 0x46, 0x38, 0x39, 0x61] }, // GIF89a
+  ],
+  'application/pdf': [{ offset: 0, bytes: [0x25, 0x50, 0x44, 0x46] }], // %PDF
+};
+
+function validateMagicBytes(buffer: Buffer, declaredMime: string): boolean {
+  const signatures = MAGIC_BYTES[declaredMime];
+  if (!signatures) return false;
+
+  return signatures.some(sig => {
+    if (buffer.length < sig.offset + sig.bytes.length) return false;
+    return sig.bytes.every((byte, i) => buffer[sig.offset + i] === byte);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PEN-MEDIA-03/04 FIX: Rate Limiting
+// ═══════════════════════════════════════════════════════════════
+
+const uploadRateLimit: Record<number, number> = {};
+const deleteRateLimit: Record<number, number> = {};
+
+function checkRateLimit(map: Record<number, number>, merchantId: number, cooldownMs: number, label: string): void {
+  const now = Date.now();
+  const last = map[merchantId] || 0;
+  if (now - last < cooldownMs) {
+    const waitSec = Math.ceil((cooldownMs - (now - last)) / 1000);
+    throw new TRPCError({
+      code: 'TOO_MANY_REQUESTS',
+      message: `عدد الطلبات كثير. الرجاء الانتظار ${waitSec} ثانية قبل ${label}.`,
+    });
+  }
+  map[merchantId] = now;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PEN-MEDIA-05 FIX: Filename Sanitization
+// ═══════════════════════════════════════════════════════════════
+
+function sanitizeFileName(name: string): string {
+  return name
+    .replace(/[<>"'`&;\\\/]/g, '') // Strip HTML/path-dangerous chars
+    .replace(/\.\./g, '')          // Strip directory traversal
+    .replace(/[\x00-\x1F\x7F]/g, '') // Strip control characters
+    .trim()
+    .substring(0, 255) || 'unnamed';
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Helper
 // ═══════════════════════════════════════════════════════════════
 
@@ -59,6 +123,9 @@ export const mediaRouter = router({
     .mutation(async ({ ctx, input }) => {
       const merchantId = await getMerchantId(ctx);
 
+      // PEN-MEDIA-03 FIX: Rate limit — max 1 upload per 3 seconds
+      checkRateLimit(uploadRateLimit, merchantId, 3_000, 'رفع ملف آخر');
+
       // SEC: MIME whitelist
       const normalizedMime = input.mimeType.toLowerCase().trim();
       if (!ALLOWED_MIMES.includes(normalizedMime)) {
@@ -78,6 +145,15 @@ export const mediaRouter = router({
         });
       }
 
+      // PEN-MEDIA-01 FIX: Validate magic bytes to prevent MIME spoofing
+      if (!validateMagicBytes(buffer, normalizedMime)) {
+        console.warn(`[Media] PEN-MEDIA-01: MIME spoofing attempt blocked. Declared: ${normalizedMime}, merchant: ${merchantId}`);
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'محتوى الملف لا يتطابق مع نوعه المعلن. يُرجى التأكد من صحة الملف.',
+        });
+      }
+
       // Check storage quota
       const mediaDb = await import('./db/media');
       const stats = await mediaDb.getMediaStats(merchantId);
@@ -90,7 +166,7 @@ export const mediaRouter = router({
         });
       }
 
-      // Generate unique filename
+      // Generate unique filename (safe — no user input in path)
       const ext = MIME_TO_EXT[normalizedMime] || 'bin';
       const randomStr = crypto.randomBytes(6).toString('hex');
       const timestamp = Date.now();
@@ -100,18 +176,21 @@ export const mediaRouter = router({
       const { storagePut } = await import('./storage');
       const { url } = await storagePut(fileName, buffer, normalizedMime);
 
+      // PEN-MEDIA-05 FIX: Sanitize originalName before DB storage
+      const safeName = sanitizeFileName(input.originalName);
+
       // Save to DB
       const mediaItem = await mediaDb.createMediaItem({
         merchantId,
         fileName,
-        originalName: input.originalName,
+        originalName: safeName,
         mimeType: normalizedMime,
         fileSize: buffer.length,
         url,
         category: input.category,
       });
 
-      console.log(`[Media] Uploaded ${input.originalName} (${(buffer.length / 1024).toFixed(1)}KB) for merchant ${merchantId}`);
+      console.log(`[Media] Uploaded ${safeName} (${(buffer.length / 1024).toFixed(1)}KB) for merchant ${merchantId}`);
 
       return {
         id: mediaItem.id,
@@ -143,6 +222,10 @@ export const mediaRouter = router({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const merchantId = await getMerchantId(ctx);
+
+      // PEN-MEDIA-04 FIX: Rate limit — max 1 delete per 1 second
+      checkRateLimit(deleteRateLimit, merchantId, 1_000, 'حذف ملف آخر');
+
       const mediaDb = await import('./db/media');
 
       // Verify ownership
@@ -150,6 +233,9 @@ export const mediaRouter = router({
       if (!item) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'الملف غير موجود' });
       }
+
+      // PEN-MEDIA-02 FIX: Log orphaned S3 key for manual/automated cleanup
+      console.log(`[Media] ORPHAN_CLEANUP_NEEDED: s3Key="${item.fileName}" merchant=${merchantId} originalName="${item.originalName}"`);
 
       await mediaDb.deleteMediaItem(input.id, merchantId);
       console.log(`[Media] Deleted ${item.originalName} for merchant ${merchantId}`);

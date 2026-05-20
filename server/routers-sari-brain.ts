@@ -2233,7 +2233,20 @@ ${fencedContent}`,
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+      // PEN-TMPL-02 FIX: Rate limit
+      checkTestRateLimit(merchant.id, 3_000);
+
       const quotationsDb = await import('./db/sales-quotations');
+
+      // PEN-TMPL-01 FIX: Cap template count at 20 per merchant
+      const existing = await quotationsDb.getTemplates(merchant.id);
+      if (existing.length >= 20) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'تم الوصول للحد الأقصى من القوالب (20). احذف قوالب قديمة لإنشاء جديدة.',
+        });
+      }
+
       const id = await quotationsDb.createTemplate({
         merchantId: merchant.id,
         ...input,
@@ -2255,6 +2268,9 @@ ${fencedContent}`,
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
+      // PEN-TMPL-02 FIX: Rate limit
+      checkTestRateLimit(merchant.id, 2_000);
+
       const quotationsDb = await import('./db/sales-quotations');
       await quotationsDb.updateTemplate(input.templateId, merchant.id, {
         name: input.name,
@@ -2272,6 +2288,9 @@ ${fencedContent}`,
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      // PEN-TMPL-02 FIX: Rate limit
+      checkDestructiveRateLimit(merchant.id, 2_000);
 
       const quotationsDb = await import('./db/sales-quotations');
       await quotationsDb.deleteTemplate(input.templateId, merchant.id);
