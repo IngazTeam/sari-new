@@ -7,6 +7,7 @@ import cron from "node-cron";
 import { runRemindersForAllMerchants } from "./appointmentReminders";
 import { runTrialExpiryCheck } from "./cron/trial-expiry-check";
 import { runDailyForAllMerchants, runWeeklyForAllMerchants } from "./ai/sales-conductor";
+import { runFollowUps } from "./ai/proactive-followup";
 
 /**
  * تشغيل جميع Cron Jobs
@@ -61,12 +62,25 @@ export function startCronJobs() {
       console.error("[Cron] Error running Sales Conductor weekly:", error);
     }
   });
+  // Proactive Follow-up: إرسال المتابعات المجدولة
+  // يعمل كل 15 دقيقة
+  cron.schedule("*/15 * * * *", async () => {
+    try {
+      const result = await runFollowUps();
+      if (result.sent > 0) {
+        console.log(`[Cron] Follow-ups: ${result.sent} sent, ${result.cancelled} cancelled`);
+      }
+    } catch (error) {
+      console.error("[Cron] Error running follow-ups:", error);
+    }
+  });
 
   console.log("[Cron] Cron jobs started successfully");
   console.log("[Cron] - Appointment reminders: Every hour at minute 0");
   console.log("[Cron] - Trial expiry check: Every day at 9:00 AM");
   console.log("[Cron] - Sales Conductor daily: Every day at 3:00 AM");
   console.log("[Cron] - Sales Conductor weekly: Every Sunday at 4:00 AM");
+  console.log("[Cron] - Proactive follow-ups: Every 15 minutes");
 }
 
 /**

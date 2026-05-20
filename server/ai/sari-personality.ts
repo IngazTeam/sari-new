@@ -42,6 +42,7 @@ import { loadLightweightArsenal } from './lightweight-arsenal';
 import { detectSentimentFast } from './fast-sentiment';
 import { buildClosingDirective } from './closing-engine';
 import { isGoldenHour } from './sales-conductor';
+import { scheduleFollowUp, cancelFollowUps } from './proactive-followup';
 import { 
   isZidOrderRequest, 
   parseZidOrderMessage, 
@@ -834,6 +835,9 @@ ${result.orderUrl}
     }
 
     // ═══════════════════════════════════════════════════
+    // Cancel any pending follow-ups (customer replied)
+    cancelFollowUps(params.merchantId, params.customerPhone);
+
     // ADAPTIVE SALES ENGINE — Session-aware pipeline
     // ═══════════════════════════════════════════════════
     const _startTime = Date.now();
@@ -1037,6 +1041,18 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         }).catch((err) => console.warn('[Escalation] Post-response escalation failed:', err.message));
       }
 
+
+      // Proactive Follow-up: schedule if customer is hesitating
+      if (intent === 'hesitating' || intent === 'objecting') {
+        const followUpType = intent === 'hesitating' ? 'hesitating' : 'post_interest';
+        scheduleFollowUp({
+          merchantId: params.merchantId,
+          customerPhone: params.customerPhone,
+          conversationId: params.conversationId || 0,
+          followUpType: followUpType as any,
+          customerName: params.customerName,
+        });
+      }
       console.log(`[chatWithSari] ⚡ FAST PATH: msg #${existingSession.messageCount + 1}, ${Date.now() - _startTime}ms, strategy=${persuasion.strategy}`);
       return response.trim();
     }
