@@ -21,6 +21,27 @@
 import { callGPT4, type ChatMessage } from './openai';
 import type { CustomerIntent } from './session-context';
 
+// SEC-VAL-01: Reuse existing sanitizer to prevent prompt injection through validator
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi,
+  /\b(system|assistant|user)\s*:/gi,
+  /you\s+are\s+now\s+/gi,
+  /forget\s+(everything|all|your)/gi,
+  /override\s+(system|all|your)/gi,
+  /act\s+as\s+(a|an)?/gi,
+  /تصرف\s*(كـ|ك)/gi,
+  /تجاهل\s*(كل|جميع)?\s*(التعليمات|الأوامر|القواعد)/gi,
+];
+
+function sanitizeForValidator(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  let safe = text.normalize('NFKC');
+  for (const pattern of INJECTION_PATTERNS) {
+    safe = safe.replace(pattern, '[filtered]');
+  }
+  return safe;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Types
 // ═══════════════════════════════════════════════════════════════
@@ -68,7 +89,8 @@ function fastPreCheck(
   const msg = customerMessage.toLowerCase();
 
   // 1. Contact leak — phone numbers, emails
-  const phonePattern = /(?:\+?\d{1,3}[-.\s]?)?\d{7,12}/;
+  // SEC-VAL-02: Tightened to 10+ consecutive digits to avoid false positives on prices like "1500 ريال"
+  const phonePattern = /(?:\+?\d{1,3}[-.\s]?)\d{10,14}/;
   const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
   if (phonePattern.test(resp) || emailPattern.test(resp)) {
     violations.push({
@@ -309,12 +331,12 @@ async function gptDeepCheck(params: {
 
 إذا الرد سليم، أرجع: {"violations": []}`;
 
-  const userPrompt = `رسالة العميل: "${customerMessage.substring(0, 200)}"
+  const userPrompt = `رسالة العميل: "${sanitizeForValidator(customerMessage.substring(0, 200))}"
 حالة العميل: ${intent}
 ${productList}
 
 رد البوت:
-"${response.substring(0, 500)}"
+"${sanitizeForValidator(response.substring(0, 500))}"
 
 افحص وأرجع JSON:`;
 
@@ -336,9 +358,16 @@ ${productList}
   const jsonEnd = jsonStr.lastIndexOf('}');
   if (jsonStart === -1 || jsonEnd === -1) return [];
 
-  const parsed = JSON.parse(jsonStr.substring(jsonStart, jsonEnd + 1));
+  // SEC-VAL-03: Defensive JSON parsing
+  let parsed: any;
+  try {
+    parsed = JSON.parse(jsonStr.substring(jsonStart, jsonEnd + 1));
+  } catch {
+    console.warn('[Validator] GPT returned invalid JSON, skipping deep check');
+    return [];
+  }
   
-  if (!Array.isArray(parsed.violations)) return [];
+  if (!parsed || !Array.isArray(parsed.violations)) return [];
 
   // Validate and normalize violations
   const validRules: Set<string> = new Set([
@@ -390,11 +419,11 @@ async function generateCorrectedResponse(params: {
 
 أعد الرد المصحح فقط — بدون شرح.`;
 
-  const userPrompt = `رسالة العميل: "${customerMessage.substring(0, 200)}"
+  const userPrompt = `رسالة العميل: "${sanitizeForValidator(customerMessage.substring(0, 200))}"
 ${productContext}
 
 الرد الأصلي (فيه مشاكل):
-"${response.substring(0, 400)}"
+"${sanitizeForValidator(response.substring(0, 400))}"
 
 المشاكل المكتشفة:
 ${violationList}
@@ -418,7 +447,17 @@ ${violationList}
     return response;
   }
 
-  return corrected.trim();
+  // SEC-VAL-04: Re-validate corrected response for contact leaks
+  // (prevent the correction itself from introducing violations)
+  const correctedTrimmed = corrected.trim();
+  const phoneCheck = /(?:\+?\d{1,3}[-.\s]?)\d{10,14}/;
+  const emailCheck = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+  if (phoneCheck.test(correctedTrimmed) || emailCheck.test(correctedTrimmed)) {
+    console.warn('[Validator] SEC-VAL-04: Corrected response contains contact info, using original');
+    return response;
+  }
+
+  return correctedTrimmed;
 }
 
 // ═══════════════════════════════════════════════════════════════

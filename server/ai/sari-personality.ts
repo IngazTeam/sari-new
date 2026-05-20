@@ -39,7 +39,7 @@ import { enrichCustomerProfile } from './profile-enrichment';
 import { buildCustomerStateSummary } from './customer-state';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
 import { loadLightweightArsenal } from './lightweight-arsenal';
-import { detectSentimentFast } from './fast-sentiment';
+import { detectSentimentFast, detectSentimentWithSignals } from './fast-sentiment';
 import { buildClosingDirective } from './closing-engine';
 import { isGoldenHour } from './sales-conductor';
 import { scheduleFollowUp, cancelFollowUps, type FollowUpType } from './proactive-followup';
@@ -934,6 +934,7 @@ ${result.orderUrl}
       // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
       const intent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
       const fastSentiment = detectSentimentFast(params.message);
+      const sentimentSignals = detectSentimentWithSignals(params.message);
       updateSession(params.merchantId, convId, {
         intent,
         sentiment: fastSentiment, // Keyword-based — zero cost, tracks mid-conversation shifts
@@ -975,10 +976,19 @@ ${result.orderUrl}
         closingHint,
       });
       const missionPrompt = missionToPrompt(mission);
+
+      // v7: If mixed signal detected, override strategy for better targeting
+      let effectiveIntent = intent;
+      if (sentimentSignals.mixedSignal && sentimentSignals.salesHint) {
+        if (sentimentSignals.salesHint === 'close_to_buying' && intent === 'hesitating') {
+          effectiveIntent = 'ready_to_buy'; // Override: customer is actually close!
+        }
+      }
+
       const persuasion = selectPersuasion(
         customerProfile || { customerTier: 'new' } as any,
         fastArsenal,
-        intent,
+        effectiveIntent,
         trajectory[trajectory.length - 1] || 'neutral',
         existingSession.persuasionUsed || []
       );
