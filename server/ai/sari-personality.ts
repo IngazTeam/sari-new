@@ -979,10 +979,21 @@ ${result.orderUrl}
 
       // v7: If mixed signal detected, override strategy for better targeting
       let effectiveIntent = intent;
+      let mixedSignalHint = '';
       if (sentimentSignals.mixedSignal && sentimentSignals.salesHint) {
         if (sentimentSignals.salesHint === 'close_to_buying' && intent === 'hesitating') {
           effectiveIntent = 'ready_to_buy'; // Override: customer is actually close!
         }
+        // STRATEGIC FIX #3: needs_reassurance — build on the positive before addressing objection
+        if (sentimentSignals.salesHint === 'needs_reassurance') {
+          mixedSignalHint = '\n\n## 💡 إشارة مختلطة — العميل أبدى إعجاب + اعتراض:\n- ابدأ بتأكيد اختياره: "ذوقك ممتاز! هذا فعلاً من أفضل..." \n- ثم عالج الاعتراض بطريقة خفيفة\n- ⚠️ لا تبدأ بالدفاع عن السعر — ابدأ بالموافقة';
+        }
+      }
+
+      // STRATEGIC FIX #1: browsing + bestSellers → proactively suggest top products
+      if (intent === 'browsing' && fastArsenal?.bestSellers?.length > 0) {
+        const topProducts = fastArsenal.bestSellers.slice(0, 3).map(p => p.name).join('، ');
+        mixedSignalHint += `\n\n## 💡 عميل يتصفح — لا تنتظر سؤاله:\n- بعد الترحيب، اقترح مباشرة: "عندنا ${topProducts}" مع تفاصيل مختصرة\n- لا تقل فقط "كيف أقدر أساعدك؟" — العميل يحتاج بادرة`;
       }
 
       const persuasion = selectPersuasion(
@@ -1010,6 +1021,11 @@ ${result.orderUrl}
 
       // Build system prompt: Mission Block FIRST, then cached context
       let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
+
+      // Inject strategic hints from mixed signal / browsing analysis
+      if (mixedSignalHint) {
+        systemPrompt += mixedSignalHint;
+      }
 
       // FAST PATH product re-injection: if customer asks about products/courses,
       // re-search and inject fresh product catalog (cached context may have 0 products
