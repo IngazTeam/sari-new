@@ -38,6 +38,7 @@ import { virtualAgents } from '../../drizzle/schema';
 import { enrichCustomerProfile } from './profile-enrichment';
 import { buildCustomerStateSummary } from './customer-state';
 import { getCustomerLoyaltyInfo, getAvailableRewardsInfo } from '../loyalty-integration';
+import { loadLightweightArsenal } from './lightweight-arsenal';
 import { 
   isZidOrderRequest, 
   parseZidOrderMessage, 
@@ -891,16 +892,22 @@ ${result.orderUrl}
 
       // Select persuasion strategy
       const trajectory = existingSession.sentimentTrajectory || [];
-      // Fast path: no arsenal loaded — pass empty to avoid undefined.length crashes
-      const emptyArsenal = {
-        activeDiscounts: [], loyaltyPoints: 0, loyaltyTier: null,
-        availableRewards: [], abandonedCart: null, bestSellers: [],
-        totalProducts: 0, crossSellSuggestions: [], upcomingBookings: [],
-        availableServices: [],
-      };
+      // FAST PATH: Load lightweight arsenal (discounts + cart + loyalty) with 5-min cache
+      let fastArsenal;
+      try {
+        fastArsenal = await loadLightweightArsenal(params.merchantId, params.customerPhone);
+      } catch {
+        // Fallback to empty if lightweight load fails — never block the response
+        fastArsenal = {
+          activeDiscounts: [], loyaltyPoints: 0, loyaltyTier: null,
+          availableRewards: [], abandonedCart: null, bestSellers: [],
+          totalProducts: 0, crossSellSuggestions: [], upcomingBookings: [],
+          availableServices: [],
+        };
+      }
       const persuasion = selectPersuasion(
         customerProfile || { customerTier: 'new' } as any,
-        emptyArsenal,
+        fastArsenal,
         intent,
         trajectory[trajectory.length - 1] || 'neutral',
         existingSession.persuasionUsed || []
