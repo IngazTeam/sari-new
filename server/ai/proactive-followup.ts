@@ -14,7 +14,7 @@
  * - Never send if humanTakeover is active
  */
 
-import { getDb } from '../db';
+import { getPool, getWhatsAppInstancesByMerchantId } from '../db';
 import { sendMessageWithCredentials } from '../whatsapp';
 
 // ═══════════════════════════════════════════════════════════════
@@ -264,14 +264,15 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
 
     // Check humanTakeover (from DB)
     try {
-      const pool = await getDb();
+      const pool = await getPool();
       if (pool) {
-        const convs = await pool.execute(
-          `SELECT human_takeover FROM sari_conversations 
-           WHERE id = ${Number(followUp.conversationId)} AND merchant_id = ${Number(followUp.merchantId)}
-           LIMIT 1`
+        const [convRows] = await pool.execute(
+          `SELECT human_takeover FROM conversations 
+           WHERE id = ? AND merchant_id = ?
+           LIMIT 1`,
+          [followUp.conversationId, followUp.merchantId]
         );
-        if (Array.isArray(convs) && (convs as any)[0]?.human_takeover) {
+        if (Array.isArray(convRows) && (convRows as any[])[0]?.human_takeover) {
           followUp.cancelled = true;
           cancelled++;
           console.log(`[FollowUp] Cancelled — human takeover active for conv ${followUp.conversationId}`);
@@ -282,24 +283,18 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
 
     // Send the message
     try {
-      // Get merchant's Green API credentials
-      const pool = await getDb();
-      if (!pool) throw new Error('No DB pool');
+      // Get merchant's WhatsApp instance (same pattern as smart-escalation)
+      const instances = await getWhatsAppInstancesByMerchantId(followUp.merchantId);
+      const activeInstance = (instances as any[]).find((i: any) => i.status === 'active');
       
-      const merchants = await pool.execute(
-        `SELECT greenapi_instance_id, greenapi_token, greenapi_url FROM sari_merchants 
-         WHERE id = ${Number(followUp.merchantId)} LIMIT 1`
-      );
-      
-      if (!Array.isArray(merchants) || !(merchants as any)[0]?.greenapi_instance_id) {
-        throw new Error('No Green API credentials');
+      if (!activeInstance?.instanceId) {
+        throw new Error('No active WhatsApp instance');
       }
 
-      const merchant = (merchants as any)[0];
       await sendMessageWithCredentials(
-        merchant.greenapi_instance_id,
-        merchant.greenapi_token,
-        merchant.greenapi_url || 'https://api.green-api.com',
+        activeInstance.instanceId,
+        activeInstance.token,
+        activeInstance.apiUrl || 'https://api.green-api.com',
         followUp.customerPhone,
         followUp.messageTemplate
       );
