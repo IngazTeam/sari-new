@@ -954,6 +954,9 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
       try {
         // SEC-3: Sanitize all text fields to prevent stored XSS
         // FIX: Use correct schema fields (isActive, not inStock)
+        // FIX: Byaan courses — set trackInventory=0 (Byaan manages enrollment), 
+        // use maxStudents as stock if provided, otherwise null (unlimited)
+        const stockValue = p.maxStudents ? Number(p.maxStudents) : (p.stock ? Number(p.stock) : null);
         await createProduct({
           merchantId,
           name: stripHtml(String(p.name)).substring(0, 255),
@@ -965,6 +968,8 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
           imageUrl: p.imageUrl ? stripHtml(String(p.imageUrl)).substring(0, 500) : undefined,
           productUrl: p.productUrl ? stripHtml(String(p.productUrl)).substring(0, 500) : undefined,
           isActive: p.inStock !== undefined ? Boolean(p.inStock) : (p.isActive !== undefined ? Boolean(p.isActive) : true),
+          stock: stockValue,
+          trackInventory: stockValue !== null ? 1 : 0, // Only track if Byaan sent a capacity limit
         });
         created++;
       } catch (insertErr: any) {

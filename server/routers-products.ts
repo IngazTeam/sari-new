@@ -257,6 +257,31 @@ function buildSheetRows(
     return rows;
 }
 
+// One-time migration: fix Byaan courses imported with stock=0 (appeared as "out of stock")
+let _stockMigrationDone = false;
+async function migrateByaanStockDefaults(merchantId: number) {
+    if (_stockMigrationDone) return;
+    try {
+        const { getPool } = await import('./db');
+        const pool = await getPool();
+        if (!pool) return;
+        // Fix: products with stock=0 AND trackInventory=1 (default values from schema)
+        // These are Byaan courses that never had stock tracking — set to unlimited
+        const [result] = await pool.execute(
+            `UPDATE products SET track_inventory = 0, stock = NULL WHERE stock = 0 AND track_inventory = 1 AND merchant_id = ?`,
+            [merchantId]
+        );
+        const affected = (result as any)?.affectedRows || 0;
+        if (affected > 0) {
+            console.log(`[Products] 🔧 Fixed ${affected} products with false stock=0 for merchant ${merchantId}`);
+        }
+        _stockMigrationDone = true;
+    } catch (e) {
+        // Non-blocking migration
+        console.warn('[Products] Stock migration skipped:', (e as any)?.message);
+    }
+}
+
 export const productsRouter = router({
     // List products for merchant — PERF-03 FIX: server-side pagination + search
     list: protectedProcedure
@@ -268,6 +293,9 @@ export const productsRouter = router({
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            // One-time fix for Byaan courses imported with stock=0
+            await migrateByaanStockDefaults(merchant.id);
 
             const page = input?.page ?? 1;
             const pageSize = input?.pageSize ?? 50;

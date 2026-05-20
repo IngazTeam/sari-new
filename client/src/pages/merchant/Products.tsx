@@ -437,7 +437,7 @@ export default function Products() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{products?.length || 0}</div>
+            <div className="text-2xl font-bold">{totalProducts}</div>
           </CardContent>
         </Card>
 
@@ -448,7 +448,7 @@ export default function Products() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {products?.filter((p: any) => !p.stock || p.stock > 0).length || 0}
+              {totalProducts}
             </div>
           </CardContent>
         </Card>
@@ -460,7 +460,7 @@ export default function Products() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {products?.filter((p: any) => p.stock === 0).length || 0}
+              {products?.filter((p: any) => p.trackInventory && p.stock !== null && p.stock !== undefined && p.stock <= 0).length || 0}
             </div>
           </CardContent>
         </Card>
@@ -546,12 +546,12 @@ export default function Products() {
                         <span className="font-medium">{formatCurrency(product.price, currency)}</span>
                       </TableCell>
                       <TableCell>
-                        {product.stock !== null && product.stock !== undefined ? (
+                        {product.trackInventory && product.stock !== null && product.stock !== undefined ? (
                           <Badge variant={product.stock > 0 ? "default" : "destructive"}>
                             {product.stock}
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <Badge variant="outline" className="text-green-600 border-green-200">∞ مفتوح</Badge>
                         )}
                       </TableCell>
                       <TableCell>
