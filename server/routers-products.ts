@@ -275,6 +275,21 @@ async function migrateByaanStockDefaults(merchantId: number) {
         if (affected > 0) {
             console.log(`[Products] 🔧 Fixed ${affected} products with false stock=0 for merchant ${merchantId}`);
         }
+
+        // Deduplication: remove duplicate products (same name, keep newest)
+        const [dupes] = await pool.execute(
+            `DELETE p1 FROM products p1
+             INNER JOIN products p2
+             WHERE p1.merchant_id = ? AND p2.merchant_id = ?
+               AND p1.name = p2.name
+               AND p1.id < p2.id`,
+            [merchantId, merchantId]
+        );
+        const dupesRemoved = (dupes as any)?.affectedRows || 0;
+        if (dupesRemoved > 0) {
+            console.log(`[Products] 🧹 Removed ${dupesRemoved} duplicate products for merchant ${merchantId}`);
+        }
+
         _stockMigrationDone.add(merchantId);
     } catch (e) {
         // Non-blocking migration
