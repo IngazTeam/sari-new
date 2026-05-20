@@ -124,7 +124,7 @@ function buildSystemPrompt(settings?: SariPersonalitySetting): string {
   if (settings?.customInstructions) {
     prompt += `
 ## تعليمات إضافية من التاجر:
-${settings.customInstructions}
+${sanitizeForPrompt(settings.customInstructions.substring(0, 2000))}
 `;
   }
 
@@ -132,7 +132,7 @@ ${settings.customInstructions}
   if (settings?.brandVoice) {
     prompt += `
 ## صوت العلامة التجارية:
-${settings.brandVoice}
+${sanitizeForPrompt(settings.brandVoice.substring(0, 1000))}
 `;
   }
 
@@ -140,7 +140,7 @@ ${settings.brandVoice}
   if (settings?.customGreeting) {
     prompt += `
 ## رسالة الترحيب المخصصة:
-${settings.customGreeting}
+${sanitizeForPrompt(settings.customGreeting.substring(0, 500))}
 `;
   }
 

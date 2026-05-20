@@ -258,9 +258,9 @@ function buildSheetRows(
 }
 
 // One-time migration: fix Byaan courses imported with stock=0 (appeared as "out of stock")
-let _stockMigrationDone = false;
+const _stockMigrationDone = new Set<number>(); // Per-merchant flag
 async function migrateByaanStockDefaults(merchantId: number) {
-    if (_stockMigrationDone) return;
+    if (_stockMigrationDone.has(merchantId)) return;
     try {
         const { getPool } = await import('./db');
         const pool = await getPool();
@@ -275,7 +275,7 @@ async function migrateByaanStockDefaults(merchantId: number) {
         if (affected > 0) {
             console.log(`[Products] 🔧 Fixed ${affected} products with false stock=0 for merchant ${merchantId}`);
         }
-        _stockMigrationDone = true;
+        _stockMigrationDone.add(merchantId);
     } catch (e) {
         // Non-blocking migration
         console.warn('[Products] Stock migration skipped:', (e as any)?.message);
