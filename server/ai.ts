@@ -374,6 +374,21 @@ export async function generateAIResponse(
     try {
       const activePromos = await getActivePromotionsByMerchant(merchantId);
       if (activePromos.length > 0) {
+        // PEN-PROMO-07: Sanitize merchant-controlled text before injecting into system prompt
+        // Prevents indirect prompt injection via promo title/description
+        const sanitizeForPrompt = (text: string | null | undefined): string => {
+          if (!text) return '';
+          return text
+            .substring(0, 100) // Truncate to prevent bloat
+            .replace(/[\n\r]/g, ' ') // Strip newlines (prevent section breakout)
+            .replace(/---/g, '—') // Prevent Markdown section delimiters
+            .replace(/\[SEND_IMAGE:\d+\]/gi, '')
+            .replace(/\[SEND_PROMO_IMAGE:\d+\]/gi, '')
+            .replace(/\[SEND_DISCOUNT:[^\]]*\]/gi, '')
+            .replace(/تعليمات|أوامر|instructions|system|assistant/gi, '[filtered]')
+            .trim();
+        };
+
         const promoLines = activePromos.map(p => {
           const typeMap: Record<string, string> = {
             percentage: p.value + '% خصم',
@@ -389,7 +404,7 @@ export async function generateAIResponse(
           if (p.minOrderAmount) conditions.push('حد أدنى: ' + p.minOrderAmount + ' ريال');
           if (p.minQuantity) conditions.push('حد أدنى: ' + p.minQuantity + ' قطعة');
           const condStr = conditions.length > 0 ? ' - ' + conditions.join(', ') : '';
-          return '🔥 [#' + p.id + '] "' + p.title + '": ' + typeLabel + condStr + expiry + hasBanner;
+          return '🔥 [#' + p.id + '] "' + sanitizeForPrompt(p.title) + '": ' + typeLabel + condStr + expiry + hasBanner;
         }).join('\n');
 
         promotionsContext = '\n\n--- العروض الترويجية النشطة ---\n' + promoLines + '\n\nقواعد ذكر العروض الترويجية:\n- اذكر العرض المناسب حسب اهتمام العميل، لا تذكر الكل مرة واحدة\n- ادمج العرض بشكل طبيعي في الحوار (لا تقرأ من قائمة)\n- إذا العرض فيه صورة بانر 📷: أضف [SEND_PROMO_IMAGE:رقم_العرض]\n- لا تذكر أكثر من عرض واحد في الرد الواحد\n--- نهاية العروض ---';

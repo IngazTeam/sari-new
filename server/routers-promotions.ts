@@ -102,19 +102,36 @@ export const promotionsRouter = router({
       // Auto-generate discount code if requested
       let autoDiscountCodeId: number | undefined;
       if (input.autoGenerateCode && input.autoCodeValue) {
-        const codePrefix = input.title.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '').slice(0, 6).toUpperCase();
-        const codeSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-        const generatedCode = `${codePrefix}${codeSuffix}`;
-
-        const discountCode = await createDiscountCode({
-          merchantId,
-          code: generatedCode,
-          type: input.autoCodeType || 'percentage',
-          value: input.autoCodeValue,
-          minOrderAmount: input.minOrderAmount || 0,
-          expiresAt: input.expiresAt || undefined,
-          isActive: 1,
-        });
+        // PEN-PROMO-09: Use crypto-secure randomness + collision retry
+        const crypto = await import('crypto');
+        const codePrefix = input.title.replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '').slice(0, 4).toUpperCase();
+        
+        let discountCode = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const codeSuffix = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8 hex chars
+          const generatedCode = `${codePrefix}${codeSuffix}`;
+          
+          try {
+            discountCode = await createDiscountCode({
+              merchantId,
+              code: generatedCode,
+              type: input.autoCodeType || 'percentage',
+              value: input.autoCodeValue,
+              minOrderAmount: input.minOrderAmount || 0,
+              expiresAt: input.expiresAt || undefined,
+              isActive: 1,
+            });
+            if (discountCode) break;
+          } catch (err: any) {
+            // Duplicate key — retry with new random suffix
+            if (err?.code === 'ER_DUP_ENTRY' || err?.message?.includes('Duplicate')) {
+              console.warn(`[Promotions] Discount code collision on attempt ${attempt + 1}, retrying...`);
+              continue;
+            }
+            throw err;
+          }
+        }
+        
         if (discountCode) {
           autoDiscountCodeId = discountCode.id;
         }

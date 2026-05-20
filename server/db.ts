@@ -1,5 +1,5 @@
 import {
-  eq, ne, and, or, desc, gte, lte, lt, gt, sql, like
+  eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull
 } from "drizzle-orm";
 
 // Helper function to format Date for MySQL timestamp comparison
@@ -10995,16 +10995,19 @@ export async function getActivePromotionsByMerchant(merchantId: number): Promise
   if (!db) return [];
 
   const now = formatDateForDB(new Date());
+  // PEN-PROMO-08 FIX: Use isNull() instead of eq(col, null as any)
+  // eq(col, NULL) generates `col = NULL` which is ALWAYS FALSE in SQL.
+  // isNull(col) generates the correct `col IS NULL`.
   return db.select().from(promotions)
     .where(and(
       eq(promotions.merchantId, merchantId),
       eq(promotions.isActive, 1),
       or(
-        eq(promotions.startsAt, null as any),
+        isNull(promotions.startsAt),
         lte(promotions.startsAt, now)
       ),
       or(
-        eq(promotions.expiresAt, null as any),
+        isNull(promotions.expiresAt),
         gte(promotions.expiresAt, now)
       ),
     ))
@@ -11036,6 +11039,17 @@ export async function updatePromotion(id: number, data: Partial<InsertPromotion>
 export async function deletePromotion(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
+
+  // PEN-PROMO-10: Clean up orphaned auto-discount code before deleting promo
+  const promo = await getPromotionById(id);
+  if (promo?.autoDiscountCodeId) {
+    try {
+      await db.delete(discountCodes).where(eq(discountCodes.id, promo.autoDiscountCodeId));
+      console.log(`[DB] PEN-PROMO-10: Cleaned up orphaned discount code ID=${promo.autoDiscountCodeId} for promo ID=${id}`);
+    } catch (err) {
+      console.warn(`[DB] Failed to clean up discount code for promo ${id}:`, err);
+    }
+  }
 
   await db.delete(promotions).where(eq(promotions.id, id));
 }
