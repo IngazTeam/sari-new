@@ -99,7 +99,6 @@ async function startServer() {
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
     });
   });
 
