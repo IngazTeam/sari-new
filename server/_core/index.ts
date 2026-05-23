@@ -9,7 +9,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic } from "./vite";
+import { serveStatic } from "./serve-static";
 import webhookRoutes from "../webhooks/routes";
 import authRoutes from "../auth-routes";
 import { initializeSallaCronJobs } from "../jobs/salla-sync";
