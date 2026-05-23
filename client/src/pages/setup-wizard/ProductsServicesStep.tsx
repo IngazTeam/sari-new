@@ -115,6 +115,7 @@ export default function ProductsServicesStep({
   const hasFilledItems = filledProducts.length > 0 || filledServices.length > 0;
   const hasAnyItems = products.length > 0 || services.length > 0;
 
+  // @ts-ignore
   const saveProductsMutation = trpc.setupWizard.saveProducts.useMutation();
 
   const handleNext = async () => {

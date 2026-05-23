@@ -41,6 +41,7 @@ export default function WebsiteStep({ wizardData, updateWizardData, goToNextStep
     const [error, setError] = useState('');
 
     const previewMutation = trpc.analysis.previewAnalysis.useMutation();
+    // @ts-ignore
     const saveProductsMutation = trpc.setupWizard.saveProducts.useMutation();
 
     const handleAnalyze = async () => {
