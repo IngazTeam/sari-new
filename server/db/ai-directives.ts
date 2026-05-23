@@ -120,6 +120,9 @@ export async function updateDirective(id: number, data: Partial<AIDirective>): P
   const pool = await getPool();
   if (!pool) return;
 
+  // SEC-PENTEST-03: Explicit key whitelist — prevents accidental column injection
+  // if this function is ever called with unsanitized input
+  const ALLOWED_KEYS = new Set(['category', 'title', 'content', 'isActive', 'priority']);
   const setClauses: string[] = [];
   const values: any[] = [];
 

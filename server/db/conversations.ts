@@ -106,7 +106,7 @@ export async function createMessage(message: InsertMessage): Promise<Message | u
     if (msg) {
         const conversation = await getConversationById(msg.conversationId);
         if (conversation) {
-            await updateConversation(conversation.id, { lastMessageAt: new Date() });
+            await updateConversation(conversation.id, { lastMessageAt: new Date().toISOString().slice(0, 19).replace("T", " ") });
         }
     }
 

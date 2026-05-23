@@ -1,4 +1,11 @@
-import { getDb } from "./db";
+﻿import { getDb as _getDb } from './db';
+
+/** Non-nullable wrapper */
+async function getDb() {
+  const db = await _getDb();
+  if (!db) throw new Error('Database not initialized');
+  return db;
+}
 import { smtpSettings, emailLogs } from "../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import crypto from "node:crypto";

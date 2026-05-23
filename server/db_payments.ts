@@ -1,5 +1,5 @@
 /**
- * دوال قاعدة البيانات لنظام الدفع Tap Payments
+ * ط¯ظˆط§ظ„ ظ‚ط§ط¹ط¯ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ظ„ظ†ط¸ط§ظ… ط§ظ„ط¯ظپط¹ Tap Payments
  */
 
 import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
@@ -14,14 +14,21 @@ import {
   type PaymentRefund,
   type NewPaymentRefund
 } from "../drizzle/schema";
-import { getDb } from "./db";
+import { getDb as _getDb } from "./db";
+
+/** Non-nullable wrapper — throws if DB not initialized */
+async function getDb() {
+  const db = await _getDb();
+  if (!db) throw new Error('Database not initialized');
+  return db;
+}
 
 // ============================================
 // Order Payments Functions
 // ============================================
 
 /**
- * إنشاء معاملة دفع جديدة
+ * ط¥ظ†ط´ط§ط، ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ ط¬ط¯ظٹط¯ط©
  */
 export async function createOrderPayment(data: NewOrderPayment): Promise<OrderPayment | null> {
   const db = await getDb();
@@ -31,7 +38,7 @@ export async function createOrderPayment(data: NewOrderPayment): Promise<OrderPa
 }
 
 /**
- * الحصول على معاملة دفع بالمعرف
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ ط¨ط§ظ„ظ…ط¹ط±ظپ
  */
 export async function getOrderPaymentById(id: number): Promise<OrderPayment | null> {
   const db = await getDb();
@@ -43,7 +50,7 @@ export async function getOrderPaymentById(id: number): Promise<OrderPayment | nu
 }
 
 /**
- * الحصول على معاملة دفع بمعرف Tap Charge
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ ط¨ظ…ط¹ط±ظپ Tap Charge
  */
 export async function getOrderPaymentByTapChargeId(tapChargeId: string): Promise<OrderPayment | null> {
   const db = await getDb();
@@ -55,7 +62,7 @@ export async function getOrderPaymentByTapChargeId(tapChargeId: string): Promise
 }
 
 /**
- * الحصول على معاملات الدفع الخاصة بطلب
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ظ…ط¹ط§ظ…ظ„ط§طھ ط§ظ„ط¯ظپط¹ ط§ظ„ط®ط§طµط© ط¨ط·ظ„ط¨
  */
 export async function getOrderPaymentsByOrderId(orderId: number): Promise<OrderPayment[]> {
   const db = await getDb();
@@ -67,7 +74,7 @@ export async function getOrderPaymentsByOrderId(orderId: number): Promise<OrderP
 }
 
 /**
- * الحصول على معاملات الدفع الخاصة بحجز
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ظ…ط¹ط§ظ…ظ„ط§طھ ط§ظ„ط¯ظپط¹ ط§ظ„ط®ط§طµط© ط¨ط­ط¬ط²
  */
 export async function getOrderPaymentsByBookingId(bookingId: number): Promise<OrderPayment[]> {
   const db = await getDb();
@@ -79,7 +86,7 @@ export async function getOrderPaymentsByBookingId(bookingId: number): Promise<Or
 }
 
 /**
- * الحصول على جميع معاملات الدفع لتاجر
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¬ظ…ظٹط¹ ظ…ط¹ط§ظ…ظ„ط§طھ ط§ظ„ط¯ظپط¹ ظ„طھط§ط¬ط±
  */
 export async function getOrderPaymentsByMerchant(
   merchantId: number,
@@ -96,7 +103,7 @@ export async function getOrderPaymentsByMerchant(
     .from(orderPayments)
     .where(eq(orderPayments.merchantId, merchantId));
 
-  // تطبيق الفلاتر
+  // طھط·ط¨ظٹظ‚ ط§ظ„ظپظ„ط§طھط±
   const conditions = [eq(orderPayments.merchantId, merchantId)];
   
   if (filters?.status) {
@@ -122,7 +129,7 @@ export async function getOrderPaymentsByMerchant(
 }
 
 /**
- * تحديث معاملة دفع
+ * طھط­ط¯ظٹط« ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
  */
 export async function updateOrderPayment(
   id: number,
@@ -137,7 +144,7 @@ export async function updateOrderPayment(
 }
 
 /**
- * تحديث حالة معاملة دفع
+ * طھط­ط¯ظٹط« ط­ط§ظ„ط© ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
  */
 export async function updateOrderPaymentStatus(
   id: number,
@@ -154,7 +161,7 @@ export async function updateOrderPaymentStatus(
     updatedAt: new Date().toISOString(),
   };
 
-  // تحديث timestamps حسب الحالة
+  // طھط­ط¯ظٹط« timestamps ط­ط³ط¨ ط§ظ„ط­ط§ظ„ط©
   const now = new Date().toISOString();
   if (status === 'authorized') {
     updateData.authorizedAt = now;
@@ -166,7 +173,7 @@ export async function updateOrderPaymentStatus(
     updateData.refundedAt = now;
   }
 
-  // إضافة البيانات الإضافية
+  // ط¥ط¶ط§ظپط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¥ط¶ط§ظپظٹط©
   if (additionalData) {
     Object.assign(updateData, additionalData);
   }
@@ -180,7 +187,7 @@ export async function updateOrderPaymentStatus(
 }
 
 /**
- * حذف معاملة دفع
+ * ط­ط°ظپ ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
  */
 export async function deleteOrderPayment(id: number): Promise<void> {
   const db = await getDb();
@@ -188,7 +195,7 @@ export async function deleteOrderPayment(id: number): Promise<void> {
 }
 
 /**
- * إحصائيات الدفع لتاجر
+ * ط¥ط­طµط§ط¦ظٹط§طھ ط§ظ„ط¯ظپط¹ ظ„طھط§ط¬ط±
  */
 export async function getPaymentStats(
   merchantId: number,
@@ -256,7 +263,7 @@ export async function getPaymentStats(
 // ============================================
 
 /**
- * إنشاء رابط دفع جديد
+ * ط¥ظ†ط´ط§ط، ط±ط§ط¨ط· ط¯ظپط¹ ط¬ط¯ظٹط¯
  */
 export async function createPaymentLink(data: NewPaymentLink): Promise<PaymentLink | null> {
   const db = await getDb();
@@ -266,7 +273,7 @@ export async function createPaymentLink(data: NewPaymentLink): Promise<PaymentLi
 }
 
 /**
- * الحصول على رابط دفع بالمعرف
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط±ط§ط¨ط· ط¯ظپط¹ ط¨ط§ظ„ظ…ط¹ط±ظپ
  */
 export async function getPaymentLinkById(id: number): Promise<PaymentLink | null> {
   const db = await getDb();
@@ -278,7 +285,7 @@ export async function getPaymentLinkById(id: number): Promise<PaymentLink | null
 }
 
 /**
- * الحصول على رابط دفع بمعرف الرابط
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط±ط§ط¨ط· ط¯ظپط¹ ط¨ظ…ط¹ط±ظپ ط§ظ„ط±ط§ط¨ط·
  */
 export async function getPaymentLinkByLinkId(linkId: string): Promise<PaymentLink | null> {
   const db = await getDb();
@@ -290,7 +297,7 @@ export async function getPaymentLinkByLinkId(linkId: string): Promise<PaymentLin
 }
 
 /**
- * الحصول على روابط الدفع لتاجر
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط±ظˆط§ط¨ط· ط§ظ„ط¯ظپط¹ ظ„طھط§ط¬ط±
  */
 export async function getPaymentLinksByMerchant(
   merchantId: number,
@@ -321,7 +328,7 @@ export async function getPaymentLinksByMerchant(
 }
 
 /**
- * الحصول على رابط دفع لطلب
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط±ط§ط¨ط· ط¯ظپط¹ ظ„ط·ظ„ط¨
  */
 export async function getPaymentLinkByOrderId(orderId: number): Promise<PaymentLink | null> {
   const db = await getDb();
@@ -334,7 +341,7 @@ export async function getPaymentLinkByOrderId(orderId: number): Promise<PaymentL
 }
 
 /**
- * الحصول على رابط دفع لحجز
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط±ط§ط¨ط· ط¯ظپط¹ ظ„ط­ط¬ط²
  */
 export async function getPaymentLinkByBookingId(bookingId: number): Promise<PaymentLink | null> {
   const db = await getDb();
@@ -347,7 +354,7 @@ export async function getPaymentLinkByBookingId(bookingId: number): Promise<Paym
 }
 
 /**
- * تحديث رابط دفع
+ * طھط­ط¯ظٹط« ط±ط§ط¨ط· ط¯ظپط¹
  */
 export async function updatePaymentLink(
   id: number,
@@ -362,7 +369,7 @@ export async function updatePaymentLink(
 }
 
 /**
- * زيادة عداد استخدام رابط الدفع
+ * ط²ظٹط§ط¯ط© ط¹ط¯ط§ط¯ ط§ط³طھط®ط¯ط§ظ… ط±ط§ط¨ط· ط§ظ„ط¯ظپط¹
  */
 export async function incrementPaymentLinkUsage(
   id: number,
@@ -385,7 +392,7 @@ export async function incrementPaymentLinkUsage(
     updateData.failedPayments = link.failedPayments + 1;
   }
 
-  // التحقق من انتهاء صلاحية الرابط
+  // ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† ط§ظ†طھظ‡ط§ط، طµظ„ط§ط­ظٹط© ط§ظ„ط±ط§ط¨ط·
   if (link.maxUsageCount && updateData.usageCount >= link.maxUsageCount) {
     updateData.status = 'completed';
     updateData.isActive = 0;
@@ -398,7 +405,7 @@ export async function incrementPaymentLinkUsage(
 }
 
 /**
- * تعطيل رابط دفع
+ * طھط¹ط·ظٹظ„ ط±ط§ط¨ط· ط¯ظپط¹
  */
 export async function disablePaymentLink(id: number): Promise<void> {
   const db = await getDb();
@@ -413,7 +420,7 @@ export async function disablePaymentLink(id: number): Promise<void> {
 }
 
 /**
- * حذف رابط دفع
+ * ط­ط°ظپ ط±ط§ط¨ط· ط¯ظپط¹
  */
 export async function deletePaymentLink(id: number): Promise<void> {
   const db = await getDb();
@@ -425,7 +432,7 @@ export async function deletePaymentLink(id: number): Promise<void> {
 // ============================================
 
 /**
- * إنشاء عملية استرجاع
+ * ط¥ظ†ط´ط§ط، ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
  */
 export async function createPaymentRefund(data: NewPaymentRefund): Promise<PaymentRefund | null> {
   const db = await getDb();
@@ -435,7 +442,7 @@ export async function createPaymentRefund(data: NewPaymentRefund): Promise<Payme
 }
 
 /**
- * الحصول على عملية استرجاع بالمعرف
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹ ط¨ط§ظ„ظ…ط¹ط±ظپ
  */
 export async function getPaymentRefundById(id: number): Promise<PaymentRefund | null> {
   const db = await getDb();
@@ -447,7 +454,7 @@ export async function getPaymentRefundById(id: number): Promise<PaymentRefund | 
 }
 
 /**
- * الحصول على عمليات الاسترجاع لمعاملة دفع
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¹ظ…ظ„ظٹط§طھ ط§ظ„ط§ط³طھط±ط¬ط§ط¹ ظ„ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
  */
 export async function getPaymentRefundsByPaymentId(paymentId: number): Promise<PaymentRefund[]> {
   const db = await getDb();
@@ -459,7 +466,7 @@ export async function getPaymentRefundsByPaymentId(paymentId: number): Promise<P
 }
 
 /**
- * الحصول على عمليات الاسترجاع لتاجر
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¹ظ…ظ„ظٹط§طھ ط§ظ„ط§ط³طھط±ط¬ط§ط¹ ظ„طھط§ط¬ط±
  */
 export async function getPaymentRefundsByMerchant(
   merchantId: number,
@@ -485,7 +492,7 @@ export async function getPaymentRefundsByMerchant(
 }
 
 /**
- * تحديث عملية استرجاع
+ * طھط­ط¯ظٹط« ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
  */
 export async function updatePaymentRefund(
   id: number,
@@ -500,7 +507,7 @@ export async function updatePaymentRefund(
 }
 
 /**
- * تحديث حالة عملية استرجاع
+ * طھط­ط¯ظٹط« ط­ط§ظ„ط© ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
  */
 export async function updatePaymentRefundStatus(
   id: number,
@@ -530,7 +537,7 @@ export async function updatePaymentRefundStatus(
 }
 
 /**
- * حذف عملية استرجاع
+ * ط­ط°ظپ ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
  */
 export async function deletePaymentRefund(id: number): Promise<void> {
   const db = await getDb();
@@ -542,14 +549,14 @@ export async function deletePaymentRefund(id: number): Promise<void> {
 // ============================================
 
 /**
- * الحصول على معاملة دفع بمعرف Tap Charge (alias)
+ * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ ط¨ظ…ط¹ط±ظپ Tap Charge (alias)
  */
 export async function getPaymentByTapChargeId(tapChargeId: string): Promise<OrderPayment | null> {
   return await getOrderPaymentByTapChargeId(tapChargeId);
 }
 
 /**
- * تحديث حالة معاملة دفع (alias للتوافق مع webhook)
+ * طھط­ط¯ظٹط« ط­ط§ظ„ط© ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ (alias ظ„ظ„طھظˆط§ظپظ‚ ظ…ط¹ webhook)
  */
 export async function updatePaymentStatus(
   id: number,
@@ -560,7 +567,7 @@ export async function updatePaymentStatus(
     errorCode?: string;
   }
 ): Promise<OrderPayment | null> {
-  // تحويل الحالة إلى الحالة المناسبة في النظام
+  // طھط­ظˆظٹظ„ ط§ظ„ط­ط§ظ„ط© ط¥ظ„ظ‰ ط§ظ„ط­ط§ظ„ط© ط§ظ„ظ…ظ†ط§ط³ط¨ط© ظپظٹ ط§ظ„ظ†ط¸ط§ظ…
   let dbStatus: 'pending' | 'authorized' | 'captured' | 'failed' | 'cancelled' | 'refunded';
   
   switch (status) {
@@ -587,7 +594,7 @@ export async function updatePaymentStatus(
 }
 
 /**
- * حفظ سجل webhook
+ * ط­ظپط¸ ط³ط¬ظ„ webhook
  */
 export async function createWebhookLog(data: {
   merchantId: number;
@@ -597,8 +604,8 @@ export async function createWebhookLog(data: {
   payload: string;
   processedAt: Date;
 }): Promise<void> {
-  // يمكن إضافة جدول webhook_logs لاحقاً
-  // حالياً نحفظ في logs
+  // ظٹظ…ظƒظ† ط¥ط¶ط§ظپط© ط¬ط¯ظˆظ„ webhook_logs ظ„ط§ط­ظ‚ط§ظ‹
+  // ط­ط§ظ„ظٹط§ظ‹ ظ†ط­ظپط¸ ظپظٹ logs
   console.log('[WebhookLog]', {
     merchantId: data.merchantId,
     paymentId: data.paymentId,

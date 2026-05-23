@@ -388,16 +388,16 @@ export async function getAllTransactions(merchantId: number, limit = 100, offset
 export async function getLoyaltyRewards(merchantId: number, activeOnly = false) {
   const db = await getDb();
   if (!db) return [];
-  let query = db
-    .select()
-    .from(loyaltyRewards)
-    .where(eq(loyaltyRewards.merchantId, merchantId));
-
+  const conditions = [eq(loyaltyRewards.merchantId, merchantId)];
   if (activeOnly) {
-    query = query.where(eq(loyaltyRewards.isActive, 1)) as any;
+    conditions.push(eq(loyaltyRewards.isActive, 1 as any));
   }
 
-  return query.orderBy(loyaltyRewards.pointsCost);
+  return db
+    .select()
+    .from(loyaltyRewards)
+    .where(and(...conditions))
+    .orderBy(loyaltyRewards.pointsCost);
 }
 
 export async function getLoyaltyRewardById(id: number) {
