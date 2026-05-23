@@ -64,7 +64,7 @@ export const occasionCampaignsRouter = router({
             }
 
             await updateOccasionCampaign(input.campaignId, {
-                enabled: input.enabled,
+                enabled: input.enabled ? 1 : 0,
             });
 
             return { success: true };
@@ -101,7 +101,7 @@ export const occasionCampaignsRouter = router({
                 merchantId: input.merchantId,
                 occasionType: input.occasionType,
                 year,
-                enabled: true,
+                enabled: 1,
                 discountPercentage: input.discountPercentage,
                 status: 'pending',
             });

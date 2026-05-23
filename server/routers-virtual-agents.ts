@@ -17,6 +17,7 @@ export const virtualAgentsRouter = router({
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const pool = await getDb();
+    if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
     const agents = await pool.select().from(virtualAgents)
       .where(eq(virtualAgents.merchantId, merchant.id))
       .orderBy(virtualAgents.sortOrder);
@@ -43,6 +44,7 @@ export const virtualAgentsRouter = router({
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
+    if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
 
       // If setting as default, unset existing default
       if (input.isDefault) {
@@ -101,6 +103,7 @@ export const virtualAgentsRouter = router({
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
+    if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       const { id, ...data } = input;
 
       // Verify ownership
@@ -144,6 +147,7 @@ export const virtualAgentsRouter = router({
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
+    if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
       await pool.delete(virtualAgents)
         .where(and(eq(virtualAgents.id, input.id), eq(virtualAgents.merchantId, merchant.id)));
 
@@ -158,6 +162,7 @@ export const virtualAgentsRouter = router({
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
       const pool = await getDb();
+    if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
 
       // Validate all IDs belong to this merchant
       const existing = await pool.select().from(virtualAgents)
@@ -186,6 +191,7 @@ export const virtualAgentsRouter = router({
     if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
     const pool = await getDb();
+    if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database not available' });
 
     // Check if already has agents
     const existing = await pool.select().from(virtualAgents)

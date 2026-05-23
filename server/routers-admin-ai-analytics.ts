@@ -11,7 +11,7 @@ import { router, protectedProcedure } from './_core/trpc';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin' && ctx.user.role !== 'superadmin') {
+  if ((ctx.user.role as string) !== 'admin' && (ctx.user.role as string) !== 'superadmin') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   }
   return next({ ctx });

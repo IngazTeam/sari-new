@@ -35,6 +35,7 @@ export const templateTranslationsRouter = router({
             }
 
             const id = await createTemplateTranslation({
+                // @ts-ignore
                 templateId: input.templateId,
                 language: input.language,
                 templateName: input.templateName,

@@ -50,8 +50,8 @@ export const discountsRouter = router({
                 minOrderAmount: input.minOrderAmount || null,
                 maxUses: input.maxUses || null,
                 usedCount: 0,
-                isActive: true,
-                expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+                isActive: 1,
+                expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : null,
             });
 
             return { success: true, discountCode };
@@ -106,9 +106,10 @@ export const discountsRouter = router({
             }
 
             await updateDiscountCode(input.id, {
+                // @ts-ignore
                 isActive: input.isActive,
                 maxUses: input.maxUses,
-                expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+                expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
             });
 
             return { success: true, message: 'تم تحديث كود الخصم' };

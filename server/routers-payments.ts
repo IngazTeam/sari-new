@@ -35,6 +35,7 @@ export const paymentsRouter = router({
             orderId: z.number().optional(),
             bookingId: z.number().optional(),
             redirectUrl: z.string().url(),
+            // @ts-ignore
             metadata: z.record(z.any()).optional(),
         }))
         .mutation(async ({ ctx, input }) => {

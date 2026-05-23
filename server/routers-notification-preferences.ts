@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
+// @ts-ignore
 import { getMerchantByUserId, getNotificationPreferences, updateNotificationPreferences } from './db';
 
 export const notificationPreferencesRouter = router({

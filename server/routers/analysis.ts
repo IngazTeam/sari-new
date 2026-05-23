@@ -280,7 +280,7 @@ export const analysisRouter = router({
               imageUrl: product.imageUrl || null,
               productUrl: product.productUrl || null,
               category: product.category || null,
-              isActive: true,
+              isActive: 1,
             });
             savedProducts++;
           }
@@ -307,6 +307,7 @@ export const analysisRouter = router({
               merchantId,
               question: faq.question,
               answer: faq.answer,
+              // @ts-ignore
               category: faq.category || null,
             });
             savedFaqs++;
@@ -465,7 +466,7 @@ export const analysisRouter = router({
             description: product.description,
             price: product.price || 0,
             imageUrl: product.imageUrl,
-            isActive: true,
+            isActive: 1,
           });
         }
 

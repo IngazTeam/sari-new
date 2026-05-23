@@ -808,6 +808,7 @@ export const productsRouter = router({
             const ExcelJS = (await import('exceljs')).default;
             const workbook = new ExcelJS.Workbook();
             const buffer = Buffer.from(input.fileBase64, 'base64');
+            // @ts-ignore
             await workbook.xlsx.load(buffer);
 
             const worksheet = workbook.worksheets[0];
@@ -1100,6 +1101,7 @@ export const productsRouter = router({
             const ExcelJS = (await import('exceljs')).default;
             const workbook = new ExcelJS.Workbook();
             const buffer = Buffer.from(input.fileBase64, 'base64');
+            // @ts-ignore
             await workbook.xlsx.load(buffer);
 
             const worksheet = workbook.worksheets[0];
@@ -1499,4 +1501,3 @@ ${typeHint}
 });
 
 export type ProductsRouter = typeof productsRouter;
-

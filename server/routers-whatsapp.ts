@@ -234,14 +234,14 @@ export const whatsappRouter = router({
                         apiUrl: input.apiUrl,
                         phoneNumber: request.phoneNumber,
                         status: 'active',
-                        isPrimary: true,
-                        connectedAt: new Date(),
+                        isPrimary: 1,
+                        connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                     });
                     console.log(`[WhatsApp] Auto-created instance record for merchant ${request.merchantId}`);
                 } else if (existingInstance.merchantId !== request.merchantId) {
                     // Instance belongs to another merchant — deactivate it and create new
                     console.log(`[WhatsApp] Instance ${input.instanceId} belonged to merchant ${existingInstance.merchantId}, deactivating`);
-                    await updateWhatsAppInstance(existingInstance.id, { status: 'inactive', isPrimary: false });
+                    await updateWhatsAppInstance(existingInstance.id, { status: 'inactive', isPrimary: 0 });
                     await createWhatsAppInstance({
                         merchantId: request.merchantId,
                         instanceId: input.instanceId,
@@ -249,14 +249,14 @@ export const whatsappRouter = router({
                         apiUrl: input.apiUrl,
                         phoneNumber: request.phoneNumber,
                         status: 'active',
-                        isPrimary: true,
-                        connectedAt: new Date(),
+                        isPrimary: 1,
+                        connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                     });
                 } else {
                     await updateWhatsAppInstance(existingInstance.id, {
                         token: input.apiToken,
                         status: 'active',
-                        connectedAt: new Date(),
+                        connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                     });
                     console.log(`[WhatsApp] Updated existing instance record for merchant ${request.merchantId}`);
                 }
@@ -410,7 +410,7 @@ export const whatsappRouter = router({
                 if (request.status !== 'connected') {
                     await updateWhatsAppConnectionRequest(request.id, {
                         status: 'connected',
-                        connectedAt: new Date(),
+                        connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                     });
                 }
                 return {
@@ -619,7 +619,7 @@ export const whatsappRouter = router({
             if (existing && existing.merchantId !== merchant.id) {
                 // VULN-1 FIX: Instead of blocking, deactivate old and allow transfer
                 console.log(`[WhatsApp] Instance ${input.instanceId} was used by merchant ${existing.merchantId}, deactivating for transfer to merchant ${merchant.id}`);
-                await updateWhatsAppInstance(existing.id, { status: 'inactive', isPrimary: false });
+                await updateWhatsAppInstance(existing.id, { status: 'inactive', isPrimary: 0 });
             }
 
             // VULN-1 FIX: Check phone number conflict and auto-deactivate
@@ -636,8 +636,8 @@ export const whatsappRouter = router({
                     token: input.token,
                     phoneNumber: input.phoneNumber,
                     status: 'active',
-                    connectedAt: new Date(),
-                    expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+                    connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+                    expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
                 });
                 return { success: true, instanceId: existing.id };
             } else {
@@ -647,9 +647,9 @@ export const whatsappRouter = router({
                     token: input.token,
                     phoneNumber: input.phoneNumber,
                     status: 'active',
-                    isPrimary: true,
-                    connectedAt: new Date(),
-                    expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+                    isPrimary: 1,
+                    connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
+                    expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
                 });
                 return { success: true, instanceId: instance?.id };
             }

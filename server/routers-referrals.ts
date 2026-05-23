@@ -110,7 +110,7 @@ export const referralsRouter = router({
                 referralCodeId: referralCode.id,
                 referredPhone: referredMerchant.phone || '',
                 referredName: referredMerchant.businessName,
-                orderCompleted: false,
+                orderCompleted: 0,
             });
 
             if (!referral) {
@@ -127,7 +127,7 @@ export const referralsRouter = router({
                 referralId: referral.id,
                 rewardType: 'discount_10',
                 status: 'pending',
-                expiresAt,
+                expiresAt: expiresAt as any,
                 description: `خصم 10% على الاشتراك القادم لإحالة ${referredMerchant.businessName}`,
             });
 

@@ -27,8 +27,9 @@ export const personalityRouter = router({
             tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic']).optional(),
             style: z.enum(['saudi_dialect', 'formal_arabic', 'english', 'bilingual']).optional(),
             emojiUsage: z.enum(['none', 'minimal', 'moderate', 'frequent']).optional(),
-            customInstructions: z.string().optional(),
-            brandVoice: z.string().optional(),
+            // SEC-PENTEST-LOW06: Max length prevents storage abuse
+            customInstructions: z.string().max(2000).optional(),
+            brandVoice: z.string().max(2000).optional(),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);

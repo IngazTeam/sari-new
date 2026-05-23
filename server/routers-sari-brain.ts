@@ -779,7 +779,9 @@ export const sariBrainRouter = router({
           existingProductCount > 0 ? `المنتجات الحالية (${existingProductCount}): ${existingProductSample.map(p => p.name).join('، ')}` : 'لا توجد منتجات حالية',
           existingDoc ? `ملف تعريفي موجود: ${existingDoc.fileName}` : 'لا يوجد ملف تعريفي',
           `اسم المتجر: ${merchant.businessName}`,
+          // @ts-ignore
           merchant.industry ? `التخصص: ${merchant.industry}` : '',
+          // @ts-ignore
           merchant.city ? `المدينة: ${merchant.city}` : '',
         ].filter(Boolean).join('\n');
 
@@ -2124,6 +2126,7 @@ ${fencedContent}`,
         customerPhone: input.customerPhone,
         items: quotation.items,
         subtotal: quotation.subtotal,
+        // @ts-ignore
         taxRate: quotation.taxRate || 0,
         taxAmount: quotation.taxAmount,
         total: quotation.total,

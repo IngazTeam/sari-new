@@ -26,7 +26,7 @@ export const staffRouter = router({
             phone: z.string().optional(),
             email: z.string().email().optional(),
             role: z.string().optional(),
-            workingHours: z.record(z.object({
+            workingHours: z.record(z.string(), z.object({
                 start: z.string(),
                 end: z.string(),
             })).optional(),
@@ -89,7 +89,7 @@ export const staffRouter = router({
             phone: z.string().optional(),
             email: z.string().email().optional(),
             role: z.string().optional(),
-            workingHours: z.record(z.object({
+            workingHours: z.record(z.string(), z.object({
                 start: z.string(),
                 end: z.string(),
             })).optional(),

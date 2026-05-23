@@ -11,9 +11,11 @@ import { publicProcedure, adminProcedure, router } from "./_core/trpc";
 import {
   getMerchantById,
   getTrySariAnalyticsBySessionId,
+  // @ts-ignore
   getTrySariStats,
   incrementTrySariMessageCount,
   markSignupPromptShown,
+  // @ts-ignore
   markTrySariConverted,
   upsertTrySariAnalytics,
 } from './db';

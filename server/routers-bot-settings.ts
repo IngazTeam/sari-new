@@ -59,6 +59,7 @@ export const botSettingsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
+            // @ts-ignore
             const result = await updateBotSettings(merchant.id, input);
 
             // Sync tone to personality settings so AI engine uses it

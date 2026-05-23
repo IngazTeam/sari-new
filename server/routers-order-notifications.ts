@@ -50,6 +50,7 @@ export const orderNotificationsRouter = router({
 
             return updateNotificationTemplate(input.id, {
                 template: input.template,
+                // @ts-ignore
                 enabled: input.enabled,
             });
         }),

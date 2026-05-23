@@ -9,7 +9,7 @@ import { eq, desc, and, gte, sql, count } from 'drizzle-orm';
 
 // Admin-only procedure — SEC-FIX: accepts both admin and superadmin
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
-  if (ctx.user.role !== 'admin' && ctx.user.role !== 'superadmin') {
+  if ((ctx.user.role as string) !== 'admin' && (ctx.user.role as string) !== 'superadmin') {
     throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
   }
   return next({ ctx });
@@ -144,7 +144,7 @@ export const monitorRouter = router({
 
       // Enrich with merchant names
       const { merchants } = await import('../drizzle/schema');
-      const merchantIds = [...new Set(rows.map(r => r.merchantId))];
+      const merchantIds = Array.from(new Set(rows.map(r => r.merchantId)));
       const merchantMap = new Map<number, string>();
       if (merchantIds.length > 0) {
         const merchantRows = await db
@@ -207,7 +207,7 @@ export const monitorRouter = router({
       }
 
       // Get merchant names
-      const merchantIds = [...merchantStats.keys()];
+      const merchantIds = Array.from(merchantStats.keys());
       const merchantMap = new Map<number, string>();
       if (merchantIds.length > 0) {
         const merchantRows = await db
@@ -219,7 +219,7 @@ export const monitorRouter = router({
         }
       }
 
-      return [...merchantStats.entries()].map(([merchantId, stats]) => ({
+      return Array.from(merchantStats.entries()).map(([merchantId, stats]) => ({
         merchantId,
         merchantName: merchantMap.get(merchantId) || `تاجر #${merchantId}`,
         total: stats.total,

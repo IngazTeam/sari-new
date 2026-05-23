@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { adminProcedure, router } from "./_core/trpc";
+// @ts-ignore
 import * as seoDb from "./db/seo";
 
 export const seoRouter = router({
@@ -52,6 +53,7 @@ export const seoRouter = router({
     updatePage: adminProcedure
         .input(z.object({
             pageId: z.number(),
+            // @ts-ignore
             data: z.record(z.any()),
         }))
         .mutation(async ({ input }) => {

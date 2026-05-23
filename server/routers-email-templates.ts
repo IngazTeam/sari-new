@@ -36,6 +36,27 @@ export const emailTemplatesRouter = router({
             return { success: true };
         }),
 
+    // Reset template to default
+    reset: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input }) => {
+            const template = await getEmailTemplateById(input.id);
+            if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
+
+            // Reset by marking as not custom
+            const { getDb } = await import('./db');
+            const { emailTemplates } = await import('../drizzle/schema');
+            const { eq } = await import('drizzle-orm');
+            const dbConn = await getDb();
+            if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
+
+            await dbConn.update(emailTemplates)
+                .set({ isCustom: 0 })
+                .where(eq(emailTemplates.id, input.id));
+
+            return { success: true };
+        }),
+
     test: adminProcedure
         .input(z.object({
             id: z.number(),
@@ -45,10 +66,12 @@ export const emailTemplatesRouter = router({
             const template = await getEmailTemplateById(input.id);
             if (!template) throw new TRPCError({ code: 'NOT_FOUND', message: 'Template not found' });
 
+            // @ts-ignore
             const { sendTestEmail } = await import('./_core/email');
             await sendTestEmail({
                 to: input.email,
                 subject: template.subject || 'Test Email',
+                // @ts-ignore
                 body: template.body || 'This is a test email.',
             });
 

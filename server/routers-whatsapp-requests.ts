@@ -201,7 +201,7 @@ export const whatsappRequestsRouter = router({
                 if (response.ok && data.type === 'qrCode') {
                     await updateWhatsAppRequest(request.id, {
                         qrCodeUrl: data.message,
-                        qrCodeExpiresAt: new Date(Date.now() + 2 * 60 * 1000),
+                        qrCodeExpiresAt: new Date(Date.now() + 2 * 60 * 1000).toISOString().slice(0, 19).replace("T", " "),
                     });
 
                     return {
@@ -279,8 +279,8 @@ export const whatsappRequestsRouter = router({
                             token: request.token,
                             apiUrl: instanceApiUrl,
                             status: 'active',
-                            isPrimary: true,
-                            connectedAt: new Date(),
+                            isPrimary: 1,
+                            connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                         });
 
                         await completeWhatsAppRequest(request.id, data.phoneNumber || '');

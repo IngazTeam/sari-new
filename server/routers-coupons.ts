@@ -91,7 +91,7 @@ export const couponsRouter = router({
             }
 
             const merchantUsage = await getCouponUsageCountByMerchant(coupon.id, merchant.id);
-            if (merchantUsage >= coupon.maxUsagePerMerchant) {
+            if (merchantUsage >= coupon.maxUsagePerMerchant!) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'لقد استخدمت هذا الكوبون من قبل' });
             }
 

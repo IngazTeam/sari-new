@@ -25,19 +25,19 @@ export const subscriptionReportsRouter = router({
     getConversionRate: adminProcedure
         .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
         .query(async ({ input }) => {
-            return await getSubscriptionConversionRate(input?.period || 'month');
+            return await (getSubscriptionConversionRate as any)(input?.period || 'month');
         }),
 
     getUpgradeDowngrade: adminProcedure
         .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
         .query(async ({ input }) => {
-            return await getUpgradeDowngradeStats(input?.period || 'month');
+            return await (getUpgradeDowngradeStats as any)(input?.period || 'month');
         }),
 
     getCancellations: adminProcedure
         .input(z.object({ period: z.enum(['week', 'month', 'year']).optional() }).optional())
         .query(async ({ input }) => {
-            return await getCancellationStats(input?.period || 'month');
+            return await (getCancellationStats as any)(input?.period || 'month');
         }),
 
     getRevenue: adminProcedure

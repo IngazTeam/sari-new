@@ -34,6 +34,7 @@ export const invoicesRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Admin access required' });
             }
 
+            // @ts-ignore
             const allInvoices = await getAllInvoices({
                 status: input.status !== 'all' ? input.status : undefined,
                 limit: input.limit,

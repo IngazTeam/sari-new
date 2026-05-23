@@ -88,7 +88,7 @@ export const reviewsRouter = router({
 
             await updateCustomerReview(input.reviewId, {
                 merchantReply: input.reply,
-                repliedAt: new Date(),
+                repliedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
             });
 
             try {

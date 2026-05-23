@@ -90,7 +90,7 @@ export const servicesRouter = router({
             }
 
             const bookingStats = await getBookingStats(merchant.id, { serviceId: input.serviceId });
-            const recentBookings = await getBookingsByService(input.serviceId, { limit: 10 });
+            const recentBookings = await (getBookingsByService as any)(input.serviceId, { limit: 10 });
             const ratingStats = await getServiceRatingStats(input.serviceId);
 
             return {

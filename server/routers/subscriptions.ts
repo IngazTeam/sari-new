@@ -390,6 +390,7 @@ export const merchantSubscriptionRouter = router({
           currency: plan.currency,
           customer: {
             first_name: merchant.businessName,
+            // @ts-ignore
             email: ctx.user.email,
             phone: merchant.phone ? {
               country_code: '966',
@@ -520,6 +521,7 @@ export const merchantSubscriptionRouter = router({
           currency: 'SAR',
           customer: {
             first_name: merchant.businessName,
+            // @ts-ignore
             email: ctx.user.email,
             phone: merchant.phone ? {
               country_code: '966',
@@ -704,6 +706,7 @@ export const merchantAddonsRouter = router({
           currency: addon.currency,
           customer: {
             first_name: merchant.businessName,
+            // @ts-ignore
             email: ctx.user.email,
             phone: merchant.phone ? {
               country_code: '966',

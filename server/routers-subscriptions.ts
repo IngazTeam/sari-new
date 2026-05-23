@@ -74,9 +74,9 @@ export const subscriptionsRouter = router({
                 status: 'active', // FIX #6: was 'pending' with no activation path
                 conversationsUsed: 0,
                 voiceMessagesUsed: 0,
-                startDate,
-                endDate,
-                autoRenew: true,
+                startDate: startDate as any,
+                endDate: endDate as any,
+                autoRenew: 1,
             });
 
             return subscription;
@@ -97,7 +97,7 @@ export const subscriptionsRouter = router({
 
             await updateSubscription(subscription.id, {
                 status: 'cancelled',
-                autoRenew: false,
+                autoRenew: 0,
             });
 
             return { success: true, message: 'تم إلغاء الاشتراك' };

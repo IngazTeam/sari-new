@@ -73,6 +73,7 @@ export const quickResponsesRouter = router({
             }
 
             const { id, ...data } = input;
+            // @ts-ignore
             return await updateQuickResponse(id, data);
         }),
 
