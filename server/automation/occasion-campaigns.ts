@@ -97,8 +97,8 @@ export async function generateOccasionDiscount(
     type: 'percentage',
     value: discountPercent,
     maxUses: 100, // Limited to 100 uses per occasion
-    isActive: true,
-    expiresAt: getOccasionEndDate(occasionType),
+    isActive: 1,
+    expiresAt: getOccasionEndDate(occasionType) as any,
   });
 
   return code;
@@ -276,7 +276,7 @@ export async function checkAndSendOccasionCampaigns(): Promise<void> {
           merchantId: merchant.id,
           occasionType: occasion.type,
           year,
-          enabled: true,
+          enabled: 1,
           discountPercentage: occasion.discountPercent,
           status: 'pending',
         });

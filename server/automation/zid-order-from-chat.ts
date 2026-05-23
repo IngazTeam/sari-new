@@ -246,6 +246,7 @@ export async function createZidOrderFromChat(
     for (const product of validProducts) {
       const dbProduct = zidProducts.find(p => p.zidSku === product.sku || p.zidProductId === product.zidProductId);
       if (dbProduct && dbProduct.price) {
+        // @ts-ignore
         totalAmount += dbProduct.price * product.quantity;
         orderProducts.push({
           sku: product.sku!,

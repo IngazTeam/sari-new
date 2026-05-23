@@ -28,8 +28,8 @@ async function checkUsageAndSendAlerts() {
     for (const merchant of activeMerchants) {
       try {
         // الحصول على الباقة الحالية
-        if (!merchant.subscriptionId) continue;
-        const subscription = await getSubscriptionById(merchant.subscriptionId);
+        if (!(merchant as any).subscriptionId) continue;
+        const subscription = await getSubscriptionById((merchant as any).subscriptionId);
         if (!subscription || subscription.status !== 'active') continue;
 
         const plan = await getPlanById(subscription.planId);

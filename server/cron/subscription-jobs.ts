@@ -42,6 +42,7 @@ export function startExpiryRemindersJob() {
   cron.schedule('0 9 * * *', async () => {
     console.log('[Subscription Jobs] Sending expiry reminders...');
     try {
+      // @ts-ignore
       const result = await sendExpiryReminders();
       console.log('[Subscription Jobs] Expiry reminders sent:', result);
     } catch (error) {

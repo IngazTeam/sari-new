@@ -265,7 +265,7 @@ export async function createOrderFromChat(
       totalAmount: finalAmount, // Use final amount after discount
       status: 'pending',
       paymentUrl: sallaOrder.paymentUrl || null,
-      isGift: parsedOrder.isGift || false,
+      isGift: parsedOrder.isGift ? 1 : 0,
       giftRecipientName: parsedOrder.giftRecipientName,
       giftMessage: parsedOrder.giftMessage,
       discountCode: discountInfo?.code

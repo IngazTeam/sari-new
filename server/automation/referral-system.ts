@@ -69,7 +69,7 @@ export async function createReferralCodeForCustomer(
       referrerPhone: customerPhone,
       referrerName: customerName,
       referralCount: 0,
-      rewardGiven: false,
+      rewardGiven: 0,
     });
 
     if (referralCode) {
@@ -121,7 +121,7 @@ export async function trackReferral(
       referralCodeId: code.id,
       referredPhone,
       referredName,
-      orderCompleted: false,
+      orderCompleted: 0,
     });
 
     console.log(`[Referral System] Tracked referral: ${referredPhone} referred by ${code.referrerPhone}`);

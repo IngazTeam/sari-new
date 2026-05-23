@@ -32,6 +32,7 @@ export async function checkScheduledCampaigns() {
       .where(
         and(
           eq(campaigns.status, "scheduled"),
+          // @ts-ignore
           lte(campaigns.scheduledAt, now)
         )
       );

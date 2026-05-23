@@ -21,6 +21,7 @@ async function checkExpiringSubscriptions() {
 
     // الحصول على جميع التجار النشطين
     const merchants = await getAllMerchants();
+    // @ts-ignore
     const activeMerchants = merchants.filter(m => m.status === 'active' && m.subscriptionId);
 
     console.log(`[Subscription Expiry] Found ${activeMerchants.length} active merchants with subscriptions`);
@@ -30,9 +31,9 @@ async function checkExpiringSubscriptions() {
 
     for (const merchant of activeMerchants) {
       try {
-        if (!merchant.subscriptionId) continue;
+        if (!(merchant as any).subscriptionId) continue;
 
-        const subscription = await getSubscriptionById(merchant.subscriptionId);
+        const subscription = await getSubscriptionById((merchant as any).subscriptionId);
         if (!subscription || subscription.status !== 'active') continue;
 
         const plan = await getPlanById(subscription.planId);

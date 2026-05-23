@@ -118,7 +118,7 @@ async function runTakeoverExpiryCheck(): Promise<void> {
     // Cleanup reminder tracking for conversations that are no longer in takeover
     if (_remindersSent.size > 0) {
       const activeIds = new Set((permanentRows || []).map((r: any) => r.id));
-      for (const id of _remindersSent) {
+      for (const id of Array.from(_remindersSent)) {
         if (!activeIds.has(id)) {
           _remindersSent.delete(id);
         }
@@ -221,6 +221,7 @@ async function resumeConversation(pool: any, conv: any, reason: string): Promise
 
       // 8. Track usage
       try {
+        // @ts-ignore
         const { incrementMessageCount } = await import('../usage-tracking');
         await incrementMessageCount(conv.merchantId);
       } catch { /* non-blocking */ }

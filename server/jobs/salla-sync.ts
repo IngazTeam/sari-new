@@ -54,7 +54,7 @@ export function startDailyFullSync() {
               title: 'تم تحديث منتجاتك من Salla',
               message: `تمت مزامنة ${result.synced} منتج بنجاح ✅`,
               link: '/merchant/products',
-              isRead: false,
+              isRead: 0,
             });
           }
           

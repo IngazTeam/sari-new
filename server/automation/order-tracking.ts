@@ -121,7 +121,7 @@ export async function sendOrderStatusUpdate(
         oldStatus: order.status,
         newStatus,
         trackingNumber,
-        notificationSent: true,
+        notificationSent: 1,
         notificationMessage: message,
       });
 
@@ -135,7 +135,7 @@ export async function sendOrderStatusUpdate(
         oldStatus: order.status,
         newStatus,
         trackingNumber,
-        notificationSent: false,
+        notificationSent: 0,
         errorMessage: result.error,
       });
 
@@ -223,7 +223,7 @@ export async function processOrderStatusUpdate(
         oldStatus: order.status,
         newStatus,
         trackingNumber,
-        notificationSent: false,
+        notificationSent: 0,
       });
 
       console.log(`[Order Tracking] Order ${orderId} status updated to ${newStatus} (no notification)`);

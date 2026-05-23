@@ -160,7 +160,7 @@ export async function processReviewResponse(
       customerName: order.customerName,
       rating,
       comment: comment || null,
-      isPublic: rating >= 4, // Only show positive reviews publicly
+      isPublic: (rating >= 4) ? 1 : 0, // Only show positive reviews publicly
     });
     
     if (!review) {
