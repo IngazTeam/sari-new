@@ -5,7 +5,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "tsx watch server/_core/index.ts",
-    "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --banner:js=\"import{readFileSync as _rF}from'fs';import{resolve as _rS,dirname as _dN}from'path';import{fileURLToPath as _fU}from'url';try{const _d=typeof __dirname!=='undefined'?__dirname:_dN(_fU(import.meta.url));const _p=_rS(_d,'../../.env');for(const _l of _rF(_p,'utf-8').split('\\n')){const _t=_l.trim();if(!_t||_t.startsWith('#'))continue;const _i=_t.indexOf('=');if(_i===-1)continue;const _k=_t.substring(0,_i).trim();const _v=_t.substring(_i+1).trim();if(!process.env[_k])process.env[_k]=_v;}console.log('[ENV] Loaded .env file from',_p);}catch(_e){console.warn('[ENV] Could not load .env:',_e.message);}\"",
+    "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --external:./vite --bundle --format=esm --outdir=dist --banner:js=\"import{readFileSync as _rF}from'fs';import{resolve as _rS,dirname as _dN}from'path';import{fileURLToPath as _fU}from'url';try{const _d=typeof __dirname!=='undefined'?__dirname:_dN(_fU(import.meta.url));const _p=_rS(_d,'../../.env');for(const _l of _rF(_p,'utf-8').split('\\n')){const _t=_l.trim();if(!_t||_t.startsWith('#'))continue;const _i=_t.indexOf('=');if(_i===-1)continue;const _k=_t.substring(0,_i).trim();const _v=_t.substring(_i+1).trim();if(!process.env[_k])process.env[_k]=_v;}console.log('[ENV] Loaded .env file from',_p);}catch(_e){console.warn('[ENV] Could not load .env:',_e.message);}\"",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",

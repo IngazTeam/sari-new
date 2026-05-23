@@ -477,8 +477,10 @@ async function startServer() {
 
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
-    // Dynamic import: vite is a devDependency, not available in production
-    const { setupVite } = await import("./vite");
+    // Keep the specifier non-literal so esbuild does not bundle the Vite dev server
+    // into the production build. Vite and its plugins are devDependencies only.
+    const devServerModule = "./vite";
+    const { setupVite } = await import(devServerModule);
     await setupVite(app, server);
   } else {
     serveStatic(app);
