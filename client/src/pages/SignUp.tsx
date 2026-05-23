@@ -16,25 +16,28 @@ import { useTranslation } from 'react-i18next';
 export default function SignUp() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  // Read query params for prefill (from SignupPromptDialog) and Byaan integration
+  const urlParams = new URLSearchParams(window.location.search);
+  const byaanDomain = urlParams.get('domain') || '';
+  const byaanPlatform = urlParams.get('platform') || '';
+  const prefillName = urlParams.get('name') || '';
+  const prefillEmail = urlParams.get('email') || '';
+  const prefillPhone = urlParams.get('phone') || '';
+
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: prefillName,
+    email: prefillEmail,
     password: '',
     confirmPassword: '',
     businessName: '',
-    phone: '',
+    phone: prefillPhone,
   });
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Read Byaan query params: ?domain=iht.com.sa&platform=byaan
-  const urlParams = new URLSearchParams(window.location.search);
-  const byaanDomain = urlParams.get('domain') || '';
-  const byaanPlatform = urlParams.get('platform') || '';
-
   const signupMutation = trpc.auth.signup.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       // Redirect based on role
       if (data.user.role === 'admin' || data.user.role === 'superadmin') {
         setLocation('/admin/dashboard');
@@ -43,7 +46,7 @@ export default function SignUp() {
         setLocation('/merchant/setup-wizard');
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       setError(error.message || 'فشل التسجيل. يرجى المحاولة مرة أخرى.');
     },
   });
