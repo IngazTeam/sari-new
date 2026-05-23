@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>بروفايل مصغر - العين الثامنة للتدريب الصحي</title>
+    <style>
+      @font-face {
+        font-family: "Aqum";
+        src: url("./assets/Aqum-2-Regular.otf") format("opentype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      :root {
+        --navy: #11136f;
+        --royal: #17499b;
+        --blue: #04aeea;
+        --cyan: #39c0e6;
+        --green: #67d076;
+        --mint: #96eab0;
+        --ink: #101841;
+        --muted: #7caed0;
+        --paper: #f5fbff;
+        --white: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        background: #dbeaf4;
+        color: var(--white);
+        font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+        line-height: 1.45;
+      }
+
+      @page {
+        size: A4;
+        margin: 0;
+      }
+
+      .page {
+        position: relative;
+        width: 210mm;
+        height: 297mm;
+        margin: 0 auto;
+        overflow: hidden;
+        background: var(--navy);
+        break-after: page;
+        isolation: isolate;
+      }
+
+      @media screen {
+        body {
+          padding: 22px 0;
+        }
+
+        .page {
+          margin-bottom: 22px;
+          box-shadow: 0 24px 80px rgba(11, 19, 65, 0.28);
+        }
+      }
+
+      @media print {
+        body {
+          background: transparent;
+          padding: 0;
+        }
+
+        .page {
+          margin: 0;
+          box-shadow: none;
+        }
+      }
+
+      .brand-font {
+        font-family: "Aqum", "Segoe UI", Tahoma, Arial, sans-serif;
+      }
+
+      .ltr {
+        direction: ltr;
+        unicode-bidi: embed;
+        display: inline-block;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
+
+      .logo {
+        width: 54mm;
+        height: auto;
+        display: block;
+      }
+
+      .logo-mark {
+        width: 26mm;
+        height: auto;
+        display: block;
+      }
+
+      .cover {
+        background:
+          linear-gradient(145deg, rgba(16, 18, 112, 0.58), rgba(0, 33, 98, 0.92)),
+          url("./assets/brand-cover.jpg") center / cover no-repeat;
+      }
+
+      .cover::before {
+        content: "";
+        position: absolute;
+        inset: -35mm -28mm auto auto;
+        width: 180mm;
+        height: 180mm;
+        border: 25mm solid rgba(35, 185, 228, 0.14);
+        border-radius: 50%;
+        z-index: -1;
+      }
+
+      .cover::after {
+        content: "";
+        position: absolute;
+        inset: auto auto -72mm -42mm;
+        width: 190mm;
+        height: 190mm;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 58% 40%, rgba(103, 208, 118, 0.42), transparent 0 34%),
+          radial-gradient(circle at 43% 42%, rgba(4, 174, 234, 0.58), transparent 0 52%);
+        opacity: 0.8;
+        z-index: -1;
+      }
+
+      .cover-top {
+        position: absolute;
+        inset: 21mm 18mm auto 18mm;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+      }
+
+      .label {
+        display: inline-flex;
+        align-items: center;
+        gap: 3mm;
+        padding: 3mm 5mm;
+        border: 1px solid rgba(255, 255, 255, 0.24);
+        border-radius: 999px;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0;
+        backdrop-filter: blur(10px);
+        background: rgba(8, 17, 78, 0.2);
+      }
+
+      .label-dot {
+        width: 7mm;
+        height: 2mm;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--green), var(--cyan));
+      }
+
+      .cover-main {
+        position: absolute;
+        inset: auto 18mm 34mm 18mm;
+      }
+
+      .kicker {
+        margin: 0 0 7mm;
+        color: var(--mint);
+        font-size: 25px;
+        font-weight: 800;
+      }
+
+      .cover h1 {
+        width: 140mm;
+        margin: 0;
+        color: var(--white);
+        font-size: 62px;
+        font-weight: 900;
+        line-height: 1.12;
+      }
+
+      .cover h1 span {
+        color: var(--cyan);
+      }
+
+      .cover-summary {
+        width: 128mm;
+        margin: 10mm 0 0;
+        color: rgba(255, 255, 255, 0.86);
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .cover-footer {
+        position: absolute;
+        inset: auto 18mm 16mm 18mm;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: rgba(255, 255, 255, 0.88);
+      }
+
+      .site-pill {
+        padding: 4mm 7mm;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.26);
+        color: var(--white);
+        font-size: 24px;
+        font-weight: 900;
+      }
+
+      .profile-year {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .services {
+        background: var(--paper);
+        color: var(--ink);
+      }
+
+      .services::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 61mm;
+        background:
+          linear-gradient(125deg, rgba(17, 19, 111, 0.96), rgba(23, 73, 155, 0.86)),
+          url("./assets/training-vision.jpg") center 30% / cover no-repeat;
+      }
+
+      .services::after {
+        content: "";
+        position: absolute;
+        inset: -48mm auto auto -42mm;
+        width: 132mm;
+        height: 132mm;
+        border-radius: 50%;
+        border: 20mm solid rgba(4, 174, 234, 0.13);
+      }
+
+      .services-header {
+        position: relative;
+        z-index: 1;
+        height: 61mm;
+        padding: 13mm 17mm 0;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: start;
+        gap: 12mm;
+      }
+
+      .services-header h2 {
+        margin: 5mm 0 0;
+        color: var(--white);
+        font-size: 36px;
+        line-height: 1.18;
+        font-weight: 900;
+      }
+
+      .services-header p {
+        width: 112mm;
+        margin: 3mm 0 0;
+        color: rgba(255, 255, 255, 0.84);
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .content {
+        position: relative;
+        z-index: 2;
+        padding: 8mm 17mm 0;
+      }
+
+      .intro-card {
+        display: grid;
+        grid-template-columns: 1fr 36mm;
+        gap: 7mm;
+        align-items: center;
+        padding: 5mm 7mm;
+        border-radius: 8px;
+        background: var(--white);
+        box-shadow: 0 12px 38px rgba(14, 30, 82, 0.12);
+        border: 1px solid rgba(57, 192, 230, 0.16);
+      }
+
+      .intro-card h3,
+      .section-title {
+        margin: 0;
+        color: var(--royal);
+        font-size: 21px;
+        font-weight: 900;
+      }
+
+      .intro-card p {
+        margin: 3mm 0 0;
+        color: #2c4a74;
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .intro-orbit {
+        position: relative;
+        width: 34mm;
+        height: 34mm;
+        margin-inline-start: auto;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at 50% 50%, var(--white) 0 27%, transparent 28%),
+          conic-gradient(from 35deg, var(--green), var(--cyan), var(--navy), var(--blue), var(--green));
+        box-shadow: inset 0 0 0 3mm rgba(255, 255, 255, 0.48);
+      }
+
+      .intro-orbit::before,
+      .intro-orbit::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        background: var(--green);
+      }
+
+      .intro-orbit::before {
+        width: 5mm;
+        height: 5mm;
+        inset: 5mm 3mm auto auto;
+      }
+
+      .intro-orbit::after {
+        width: 3mm;
+        height: 3mm;
+        inset: 12mm 5mm auto auto;
+        background: var(--cyan);
+      }
+
+      .services-block {
+        margin-top: 6mm;
+      }
+
+      .section-title {
+        display: flex;
+        align-items: center;
+        gap: 3mm;
+      }
+
+      .section-title::before {
+        content: "";
+        width: 12mm;
+        height: 2.2mm;
+        border-radius: 99px;
+        background: linear-gradient(90deg, var(--green), var(--cyan));
+      }
+
+      .service-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 3mm;
+        margin-top: 4mm;
+      }
+
+      .service {
+        min-height: 20mm;
+        padding: 3.5mm;
+        border-radius: 8px;
+        background: #ffffff;
+        border: 1px solid rgba(23, 73, 155, 0.12);
+        box-shadow: 0 6px 20px rgba(14, 30, 82, 0.08);
+      }
+
+      .service strong {
+        display: block;
+        color: var(--navy);
+        font-size: 13.5px;
+        font-weight: 900;
+      }
+
+      .service span {
+        display: block;
+        margin-top: 1mm;
+        color: #587394;
+        font-size: 10.3px;
+        font-weight: 700;
+      }
+
+      .trust-contact {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 5mm;
+        margin-top: 6mm;
+      }
+
+      .trust {
+        padding: 5mm;
+        border-radius: 8px;
+        background: linear-gradient(145deg, var(--navy), #143f93);
+        color: var(--white);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .trust::after {
+        content: "";
+        position: absolute;
+        inset: auto auto -20mm -14mm;
+        width: 70mm;
+        height: 70mm;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(4, 174, 234, 0.38), transparent 64%);
+      }
+
+      .trust h3 {
+        position: relative;
+        margin: 0 0 3mm;
+        color: var(--mint);
+        font-size: 19px;
+        font-weight: 900;
+      }
+
+      .trust ul {
+        position: relative;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .trust li {
+        margin: 1.8mm 0;
+        color: rgba(255, 255, 255, 0.88);
+        font-size: 12.2px;
+        font-weight: 700;
+      }
+
+      .contact {
+        padding: 5mm;
+        border-radius: 8px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.98)),
+          url("./assets/brand-cover.jpg") center / cover no-repeat;
+        border: 1px solid rgba(57, 192, 230, 0.18);
+      }
+
+      .contact h3 {
+        margin: 0 0 3mm;
+        color: var(--royal);
+        font-size: 19px;
+        font-weight: 900;
+      }
+
+      .contact-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4mm;
+        padding: 2.4mm 0;
+        border-bottom: 1px solid rgba(23, 73, 155, 0.12);
+        color: #183866;
+        font-size: 12.7px;
+        font-weight: 800;
+      }
+
+      .contact-row:last-child {
+        border-bottom: 0;
+      }
+
+      .contact-label {
+        color: #6992b6;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .footer-note {
+        position: absolute;
+        inset: auto 17mm 8mm 17mm;
+        display: flex;
+        justify-content: space-between;
+        color: #7294b4;
+        font-size: 10.5px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="page cover" aria-label="الغلاف">
+        <div class="cover-top">
+          <img class="logo" src="./assets/logo.png" alt="العين الثامنة للتدريب الصحي" />
+          <div class="label">
+            <span class="label-dot"></span>
+            <span>بروفايل الخدمات</span>
+          </div>
+        </div>
+
+        <div class="cover-main">
+          <p class="kicker brand-font">عين على المستقبل</p>
+          <h1 class="brand-font">العين الثامنة <span>للتدريب الصحي</span></h1>
+          <p class="cover-summary">تدريب صحي معتمد يطوّر كفاءة الممارسين ويرتقي بجودة الأداء.</p>
+        </div>
+
+        <div class="cover-footer">
+          <div class="site-pill ltr">eehtc.sa</div>
+          <div class="profile-year">بروفايل مؤسسي مصغر</div>
+        </div>
+      </section>
+
+      <section class="page services" aria-label="الخدمات والتواصل">
+        <header class="services-header">
+          <div>
+            <img class="logo-mark" src="./assets/logo.png" alt="شعار العين الثامنة" />
+            <h2 class="brand-font">حلول تدريب صحي رقمية ومؤسسية</h2>
+            <p>منصة تجمع بين المحتوى المعتمد، تجربة التعلم المرنة، والدعم التشغيلي للدورات الصحية.</p>
+          </div>
+        </header>
+
+        <div class="content">
+          <section class="intro-card">
+            <div>
+              <h3>نبذة مختصرة</h3>
+              <p>
+                العين الثامنة للتدريب الصحي تعمل على تمكين الممارسين والجهات الصحية عبر برامج تدريبية
+                رقمية، فصول افتراضية، ومحتوى مهني مصمم لرفع جودة الأداء وتحقيق أثر تدريبي واضح.
+              </p>
+            </div>
+            <div class="intro-orbit" aria-hidden="true"></div>
+          </section>
+
+          <section class="services-block">
+            <h3 class="section-title">الخدمات الرئيسية</h3>
+            <div class="service-grid">
+              <article class="service">
+                <strong>دورات أونلاين</strong>
+                <span>تعلم مرن عبر المنصة</span>
+              </article>
+              <article class="service">
+                <strong>شهادات احترافية</strong>
+                <span>إثبات إنجاز للمتدرب</span>
+              </article>
+              <article class="service">
+                <strong>ساعات معتمدة</strong>
+                <span>برامج تطوير مهني مستمر</span>
+              </article>
+              <article class="service">
+                <strong>وصول دائم</strong>
+                <span>إتاحة للمحتوى بعد التسجيل</span>
+              </article>
+              <article class="service">
+                <strong>فصول افتراضية</strong>
+                <span>تدريب مباشر وتفاعلي</span>
+              </article>
+              <article class="service">
+                <strong>تطوير المحتوى</strong>
+                <span>صياغة وتنظيم المادة التدريبية</span>
+              </article>
+              <article class="service">
+                <strong>اختبارات وتقييم</strong>
+                <span>قياس الأثر ومخرجات التعلم</span>
+              </article>
+              <article class="service">
+                <strong>شرائح وجرافيك</strong>
+                <span>تصميم بصري للمحاضرات</span>
+              </article>
+              <article class="service">
+                <strong>إنتاج فيديو</strong>
+                <span>مواد تعليمية جاهزة للنشر</span>
+              </article>
+              <article class="service">
+                <strong>إطلاق الدورات</strong>
+                <span>تهيئة البرامج على المنصة</span>
+              </article>
+              <article class="service">
+                <strong>إدارة التفاعل</strong>
+                <span>متابعة الحضور والمشاركة</span>
+              </article>
+              <article class="service">
+                <strong>دعم فني</strong>
+                <span>مساندة للمتدربين والمدربين</span>
+              </article>
+            </div>
+          </section>
+
+          <section class="trust-contact">
+            <div class="trust">
+              <h3>الثقة والاعتمادية</h3>
+              <ul>
+                <li>ترخيص وتوثيق للأنشطة التدريبية حسب ما يورده الموقع الرسمي.</li>
+                <li>بيئة تعليم إلكتروني تدعم التعلم الذاتي والفصول الافتراضية.</li>
+                <li>سياسات دعم فني وإرشادات استخدام للمتدرب والمدرب.</li>
+              </ul>
+            </div>
+
+            <div class="contact">
+              <h3>تواصل معنا</h3>
+              <div class="contact-row">
+                <span class="contact-label">الموقع</span>
+                <span class="ltr">eehtc.sa</span>
+              </div>
+              <div class="contact-row">
+                <span class="contact-label">البريد</span>
+                <span class="ltr">eehtc88@gmail.com</span>
+              </div>
+              <div class="contact-row">
+                <span class="contact-label">الهاتف</span>
+                <span class="ltr">0504324744</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <footer class="footer-note">
+          <span>العين الثامنة للتدريب الصحي</span>
+          <span>مستند إلى بيانات الموقع الرسمي وسياسات المنصة</span>
+        </footer>
+      </section>
+    </main>
+  </body>
+</html>
