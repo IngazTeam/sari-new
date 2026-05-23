@@ -9,7 +9,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./vite";
 import webhookRoutes from "../webhooks/routes";
 import authRoutes from "../auth-routes";
 import { initializeSallaCronJobs } from "../jobs/salla-sync";
@@ -477,6 +477,8 @@ async function startServer() {
 
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
+    // Dynamic import: vite is a devDependency, not available in production
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
     serveStatic(app);
