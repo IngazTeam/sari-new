@@ -150,16 +150,16 @@ export async function applyWinningVariant(testId: number): Promise<number | null
     trigger: test.keyword,
     keywords: test.keyword,
     response: winningText,
-    isActive: true,
+    isActive: 1,
     priority: 10, // أولوية عالية
   });
 
   // تعطيل الردود القديمة لنفس الكلمة المفتاحية
   if (test.variantAId) {
-    await updateQuickResponse(test.variantAId, { isActive: false });
+    await updateQuickResponse(test.variantAId, { isActive: 0 });
   }
   if (test.variantBId) {
-    await updateQuickResponse(test.variantBId, { isActive: false });
+    await updateQuickResponse(test.variantBId, { isActive: 0 });
   }
 
   return responseId ? Number(responseId) : null;

@@ -174,7 +174,7 @@ function calculateTextSimilarity(a: string, b: string): number {
   if (wordsA.size === 0 || wordsB.size === 0) return 0;
   
   let intersection = 0;
-  for (const word of wordsA) {
+  for (const word of Array.from(wordsA)) {
     if (wordsB.has(word)) intersection++;
   }
   return intersection / Math.max(wordsA.size, wordsB.size);

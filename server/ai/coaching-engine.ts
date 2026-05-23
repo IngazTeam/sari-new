@@ -59,6 +59,7 @@ export async function handleTeachCommand(
   merchantId: number,
   messageText: string
 ): Promise<{ handled: boolean; response?: string }> {
+  // @ts-ignore
   const teachPattern = /#علم[_\s]?ساري\s+(.+)/s;
   const match = messageText.trim().match(teachPattern);
   if (!match) return { handled: false };
@@ -81,6 +82,7 @@ export async function handleTeachCommand(
   }
 
   // Parse "إذا سأل عن X قل/رد Y" pattern
+  // @ts-ignore
   const ifPattern = /(?:إذا|لو|لما)\s+(?:سأل|يسأل|سألك?)\s+(?:العميل\s+)?(?:عن\s+)?(.+?)(?:\s+(?:قل|رد|قول|جاوب)\s+(?:له\s+)?(.+))/s;
   const parsed = instruction.match(ifPattern);
 
