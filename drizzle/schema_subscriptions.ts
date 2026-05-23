@@ -1,4 +1,5 @@
-import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, index, foreignKey, InferSelectModel, InferInsertModel } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, index, foreignKey } from "drizzle-orm/mysql-core"
+import { InferSelectModel, InferInsertModel } from "drizzle-orm"
 import { merchants } from "./schema"
 
 // ============================================

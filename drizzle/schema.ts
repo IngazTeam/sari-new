@@ -1,5 +1,5 @@
-import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, date, index, uniqueIndex, InferSelectModel, InferInsertModel } from "drizzle-orm/mysql-core"
-import { sql } from "drizzle-orm"
+import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, date, index, uniqueIndex } from "drizzle-orm/mysql-core"
+import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
 	id: int().autoincrement().primaryKey(),
@@ -1538,8 +1538,9 @@ export type SeoPage = InferSelectModel<typeof seoPages>;
 export type InsertSeoPage = InferInsertModel<typeof seoPages>;
 export type SeoKeyword = InferSelectModel<typeof seoKeywordsAnalysis>;
 export type InsertSeoKeyword = InferInsertModel<typeof seoKeywordsAnalysis>;
-export type SeoRanking = InferSelectModel<typeof seoRankingHistory>;
-export type InsertSeoRanking = InferInsertModel<typeof seoRankingHistory>;
+// seoRankingHistory table not yet defined
+// export type SeoRanking = InferSelectModel<typeof seoRankingHistory>;
+// export type InsertSeoRanking = InferInsertModel<typeof seoRankingHistory>;
 export type SeoBacklink = InferSelectModel<typeof seoBacklinks>;
 export type InsertSeoBacklink = InferInsertModel<typeof seoBacklinks>;
 export type SeoPerformanceAlert = InferSelectModel<typeof seoPerformanceAlerts>;
@@ -2779,3 +2780,27 @@ export const promotions = mysqlTable("promotions", {
 
 export type Promotion = InferSelectModel<typeof promotions>;
 export type InsertPromotion = InferInsertModel<typeof promotions>;
+
+// ─── Missing Type Exports (used by server/db.ts) ───────────────
+export type QuickResponse = InferSelectModel<typeof quickResponses>;
+export type InsertQuickResponse = InferInsertModel<typeof quickResponses>;
+
+export type SariPersonalitySetting = InferSelectModel<typeof sariPersonalitySettings>;
+export type InsertSariPersonalitySetting = InferInsertModel<typeof sariPersonalitySettings>;
+
+export type SentimentAnalysis = InferSelectModel<typeof sentimentAnalysis>;
+export type InsertSentimentAnalysis = InferInsertModel<typeof sentimentAnalysis>;
+
+export type LimitedTimeOffer = InferSelectModel<typeof limitedTimeOffers>;
+export type InsertLimitedTimeOffer = InferInsertModel<typeof limitedTimeOffers>;
+
+export type SignupPromptVariant = InferSelectModel<typeof signupPromptVariants>;
+export type InsertSignupPromptVariant = InferInsertModel<typeof signupPromptVariants>;
+
+export type SignupPromptTestResult = InferSelectModel<typeof signupPromptTestResults>;
+export type InsertSignupPromptTestResult = InferInsertModel<typeof signupPromptTestResults>;
+
+export type PasswordResetToken = InferSelectModel<typeof passwordResetTokens>;
+export type PasswordResetAttempt = InferSelectModel<typeof passwordResetAttempts>;
+
+export type TrySariAnalytics = InferSelectModel<typeof trySariAnalytics>;

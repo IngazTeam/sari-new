@@ -2,7 +2,8 @@
  * Message Delivery Log Schema
  * Tracks every incoming WhatsApp message and its delivery outcome.
  */
-import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, index, InferSelectModel, InferInsertModel } from "drizzle-orm/mysql-core";
+import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, index } from "drizzle-orm/mysql-core";
+import { InferSelectModel, InferInsertModel } from "drizzle-orm";
 
 export const messageDeliveryLog = mysqlTable("message_delivery_log", {
   id: int().autoincrement().primaryKey(),
