@@ -30,7 +30,7 @@ export default function ServicesManagement() {
       refetch();
       setDeleteDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل حذف الخدمة: ' + error.message);
     },
   });

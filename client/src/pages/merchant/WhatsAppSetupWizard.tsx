@@ -80,7 +80,7 @@ export default function WhatsAppSetupWizard() {
           setPhoneNumber('');
           refetchRequests();
         },
-        onError: (error) => {
+        onError: (error: any) => {
           toast.error(error.message || t('whatsAppSetupWizardPage.text24'));
         },
       }

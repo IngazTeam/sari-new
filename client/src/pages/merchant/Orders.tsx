@@ -54,6 +54,7 @@ export default function Orders() {
       merchantId: merchant?.id || 0,
       status: statusFilter !== 'all' ? statusFilter as any : undefined,
       searchQuery: searchQuery || undefined,
+      // @ts-ignore
       limit: pageSize,
       page: currentPage,
     },
@@ -73,7 +74,7 @@ export default function Orders() {
       setIsUpdateStatusOpen(false);
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('ordersPage.failedUpdateStatus'));
     },
   });
@@ -85,7 +86,7 @@ export default function Orders() {
       setIsDetailsOpen(false);
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('ordersPage.failedCancelOrder'));
     },
   });

@@ -42,14 +42,14 @@ export default function MerchantDashboard() {
   const { formatCurrency } = useCurrency();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [dateRange, setDateRange] = useState(30);
-  const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getCurrent.useQuery();
-  const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery();
+  const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getCurrent.useQuery(undefined as any);
+  const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery(undefined as any);
   const completeOnboarding = trpc.merchants.completeOnboarding.useMutation();
-  const { data: subscription, isLoading: subscriptionLoading } = trpc.subscriptions.getCurrent.useQuery();
+  const { data: subscription, isLoading: subscriptionLoading } = trpc.subscriptions.getCurrent.useQuery(undefined as any);
   // Performance: load only 5 recent conversations instead of ALL
   const { data: recentConversations, isLoading: conversationsLoading } = trpc.conversations.listRecent.useQuery({ limit: 5 });
-  const { data: conversationCount } = trpc.conversations.count.useQuery();
-  const { data: campaignStats, isLoading: campaignsLoading } = trpc.campaigns.getStats.useQuery();
+  const { data: conversationCount } = trpc.conversations.count.useQuery(undefined as any);
+  const { data: campaignStats, isLoading: campaignsLoading } = trpc.campaigns.getStats.useQuery(undefined as any);
 
   // Combined dashboard summary - reduces 5 requests to 1
   const { data: dashboardSummary, isLoading: summaryLoading } = trpc.dashboard.getSummary.useQuery({ days: dateRange, topProductsLimit: 5 });
@@ -92,7 +92,7 @@ export default function MerchantDashboard() {
   }, [onboardingStatus]);
 
   // Show trial banner if trial is active
-  const { data: trialStatus } = trpc.trial.getStatus.useQuery();
+  const { data: trialStatus } = trpc.trial.getStatus.useQuery(undefined as any);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
@@ -164,13 +164,13 @@ export default function MerchantDashboard() {
   ];
 
   // Prepare chart data for orders trend
-  const ordersChartData = ordersTrend?.map(item => ({
+  const ordersChartData = ordersTrend?.map((item: any) => ({
     date: new Date(item.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language, { month: 'short', day: 'numeric' }),
     orders: Number(item.count),
   })) || [];
 
   // Prepare chart data for revenue trend
-  const revenueChartData = revenueTrend?.map(item => ({
+  const revenueChartData = revenueTrend?.map((item: any) => ({
     date: new Date(item.date).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language, { month: 'short', day: 'numeric' }),
     revenue: Number(item.revenue),
   })) || [];
@@ -329,7 +329,7 @@ export default function MerchantDashboard() {
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
               {insightsLoading ? (
                 /* Skeleton loading */
-                Array.from({ length: 2 }).map((_, i) => (
+                Array.from({ length: 2 }).map((_: any, i: number) => (
                   <div key={i} className="p-4 rounded-xl border bg-muted/20 animate-pulse">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-8 h-8 rounded-lg bg-muted" />
@@ -339,7 +339,7 @@ export default function MerchantDashboard() {
                     <div className="h-3 w-2/3 bg-muted rounded" />
                   </div>
                 ))
-              ) : aiInsights?.map((insight, i) => {
+              ) : aiInsights?.map((insight: any, i: number) => {
                 const colorMap: Record<string, string> = {
                   opportunity: 'from-purple-500/10 to-indigo-500/5 border-purple-200 dark:border-purple-800',
                   momentum: 'from-emerald-500/10 to-green-500/5 border-emerald-200 dark:border-emerald-800',
@@ -624,7 +624,7 @@ export default function MerchantDashboard() {
               {syncStatus.productNames.length > 0 && (
                 <div className="mt-3">
                   <div className="flex flex-wrap gap-1.5">
-                    {syncStatus.productNames.slice(0, 10).map((name, i) => (
+                    {syncStatus.productNames.slice(0, 10).map((name: any, i: number) => (
                       <span key={i} className="text-[11px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800/40">
                         {name}
                       </span>
@@ -663,7 +663,7 @@ export default function MerchantDashboard() {
 
         {/* Main Stats Grid — Hero Metrics */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
-          {mainStats.map((stat, idx) => {
+          {mainStats.map((stat: any, idx: number) => {
             const Icon = stat.icon;
             const isPositiveGrowth = stat.growth >= 0;
             const GrowthIcon = isPositiveGrowth ? ArrowUp : ArrowDown;
@@ -837,7 +837,7 @@ export default function MerchantDashboard() {
             <CardContent>
               {topProducts && topProducts.length > 0 ? (
                 <div className="space-y-4">
-                  {topProducts.map((product, index) => (
+                  {topProducts.map((product: any, index: number) => (
                     <div key={index} className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
                         {index + 1}

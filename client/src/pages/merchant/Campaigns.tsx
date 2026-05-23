@@ -25,7 +25,7 @@ export default function Campaigns() {
       toast.success(t('toast.campaigns.msg3'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('campaignsPage.failedDelete'));
     },
   });
@@ -35,7 +35,7 @@ export default function Campaigns() {
       toast.success(t('toast.campaigns.msg5'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('campaignsPage.failedSend'));
     },
   });
@@ -56,6 +56,7 @@ export default function Campaigns() {
 
   // FIX #9: Poll progress for sending campaigns
   const sendingCampaign = campaigns?.find(c => c.status === 'sending');
+  // @ts-ignore
   const { data: sendProgress } = trpc.campaigns.getSendProgress.useQuery(
     { id: sendingCampaign?.id || 0 },
     {

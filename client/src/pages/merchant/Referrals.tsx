@@ -23,7 +23,7 @@ export default function Referrals() {
     onSuccess: () => {
       toast.success(t('referralsPage.text0'));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('referralsPage.text21'));
     },
   });

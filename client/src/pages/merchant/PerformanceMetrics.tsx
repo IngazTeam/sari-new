@@ -30,7 +30,7 @@ export default function PerformanceMetrics() {
       id: 1,
       title: t('performanceMetricsPage.text11'),
       value: metrics?.totalMessages || 0,
-      change: `${metrics?.messageChange >= 0 ? '+' : ''}${metrics?.messageChange?.toFixed(1) || 0}%`,
+      change: `${(metrics?.messageChange ?? 0) >= 0 ? '+' : ''}${metrics?.messageChange?.toFixed(1) || 0}%`,
       icon: BarChart3,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
@@ -40,7 +40,7 @@ export default function PerformanceMetrics() {
       id: 2,
       title: t('performanceMetricsPage.text13'),
       value: `${metrics?.conversionRate?.toFixed(1) || 0}%`,
-      change: `${metrics?.conversionRateChange >= 0 ? '+' : ''}${metrics?.conversionRateChange?.toFixed(1) || 0}%`,
+      change: `${(metrics?.conversionRateChange ?? 0) >= 0 ? '+' : ''}${metrics?.conversionRateChange?.toFixed(1) || 0}%`,
       icon: Target,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -73,7 +73,7 @@ export default function PerformanceMetrics() {
       id: 5,
       title: t('performanceMetricsPage.text19'),
       value: t('performanceMetricsPage.text29', { var0: metrics?.responseTime?.toFixed(1) || 0 }),
-      change: `${metrics?.responseTimeChange >= 0 ? '+' : ''}${metrics?.responseTimeChange?.toFixed(1) || 0}%`,
+      change: `${(metrics?.responseTimeChange ?? 0) >= 0 ? '+' : ''}${metrics?.responseTimeChange?.toFixed(1) || 0}%`,
       icon: Clock,
       color: "text-cyan-600",
       bgColor: "bg-cyan-50",
@@ -83,7 +83,7 @@ export default function PerformanceMetrics() {
       id: 6,
       title: t('performanceMetricsPage.text21'),
       value: `${metrics?.customerSatisfaction?.toFixed(1) || 0}%`,
-      change: `${metrics?.customerSatisfactionChange >= 0 ? '+' : ''}${metrics?.customerSatisfactionChange?.toFixed(1) || 0}%`,
+      change: `${(metrics?.customerSatisfactionChange ?? 0) >= 0 ? '+' : ''}${metrics?.customerSatisfactionChange?.toFixed(1) || 0}%`,
       icon: Target,
       color: "text-pink-600",
       bgColor: "bg-pink-50",
@@ -93,7 +93,7 @@ export default function PerformanceMetrics() {
       id: 7,
       title: t('performanceMetricsPage.text23'),
       value: `${metrics?.orderFulfillmentRate?.toFixed(1) || 0}%`,
-      change: `${metrics?.orderFulfillmentRateChange >= 0 ? '+' : ''}${metrics?.orderFulfillmentRateChange?.toFixed(1) || 0}%`,
+      change: `${(metrics?.orderFulfillmentRateChange ?? 0) >= 0 ? '+' : ''}${metrics?.orderFulfillmentRateChange?.toFixed(1) || 0}%`,
       icon: BarChart3,
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
@@ -103,7 +103,7 @@ export default function PerformanceMetrics() {
       id: 8,
       title: t('performanceMetricsPage.text25'),
       value: `${metrics?.repeatPurchaseRate?.toFixed(1) || 0}%`,
-      change: `${metrics?.repeatPurchaseRateChange >= 0 ? '+' : ''}${metrics?.repeatPurchaseRateChange?.toFixed(1) || 0}%`,
+      change: `${(metrics?.repeatPurchaseRateChange ?? 0) >= 0 ? '+' : ''}${metrics?.repeatPurchaseRateChange?.toFixed(1) || 0}%`,
       icon: Zap,
       color: "text-green-600",
       bgColor: "bg-green-50",
@@ -233,7 +233,7 @@ export default function PerformanceMetrics() {
                 {metrics?.roi?.toFixed(1) || 0}%
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                {t('performanceMetricsPage.text34', { var0: metrics?.roiChange >= 0 ? '+' : '', var1: metrics?.roiChange?.toFixed(1) || 0 })}
+                {t('performanceMetricsPage.text34', { var0: (metrics?.roiChange ?? 0) >= 0 ? '+' : '', var1: metrics?.roiChange?.toFixed(1) || 0 })}
               </div>
             </div>
           </div>

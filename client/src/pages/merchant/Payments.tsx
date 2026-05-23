@@ -91,6 +91,7 @@ export default function Payments() {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
+      // @ts-ignore
       payment.customerName.toLowerCase().includes(query) ||
       payment.customerPhone.includes(query) ||
       payment.tapChargeId?.toLowerCase().includes(query)

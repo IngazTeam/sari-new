@@ -21,7 +21,7 @@ export default function CampaignDetails() {
       toast.success(t('toast.campaigns.msg5'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('campaignDetailsPage.text4'));
     },
   });

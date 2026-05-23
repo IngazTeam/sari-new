@@ -14,10 +14,10 @@ export default function Subscriptions() {
   const { data: currentPlan, isLoading: currentPlanLoading } = trpc.merchants.getCurrentPlan.useQuery();
   const { data: plans, isLoading: plansLoading } = trpc.plans.list.useQuery();
   const upgradeMutation = trpc.merchants.requestUpgrade.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(data.message);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message);
     },
   });

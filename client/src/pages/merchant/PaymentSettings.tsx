@@ -50,7 +50,7 @@ export default function PaymentSettings() {
       toast.success(t('paymentSettingsPage.text0'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('paymentSettingsPage.text18'));
     },
   });
@@ -60,7 +60,7 @@ export default function PaymentSettings() {
       toast.success(t('paymentSettingsPage.text1'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('paymentSettingsPage.text19'));
     },
   });

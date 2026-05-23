@@ -109,7 +109,7 @@ export default function TestSari() {
 
   // Create conversation on mount
   const createConversationMutation = trpc.testSari.createConversation.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setConversationId(data.conversationId);
     },
   });
@@ -122,7 +122,7 @@ export default function TestSari() {
   const markAsDealMutation = trpc.testSari.markAsDeal.useMutation();
 
   const sendMessageMutation = trpc.testSari.sendMessage.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
@@ -141,7 +141,7 @@ export default function TestSari() {
         });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t("toast.conversations.sendFailed"));
       console.error("Error sending message:", error);
       setIsTyping(false);
@@ -716,6 +716,7 @@ export default function TestSari() {
                         hour: "2-digit",
                         minute: "2-digit",
                       }),
+                      // @ts-ignore
                       نسبة_الرضا: item.rating,
                     }))}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}

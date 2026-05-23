@@ -26,18 +26,18 @@ export default function UploadProducts() {
 
   // Mutations
   const uploadCSV = trpc.products.uploadCSV.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setUploadResult(data);
       toast.success(t('uploadProductsPage.importSuccess', { count: data.imported }));
       resetFile();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('uploadProductsPage.uploadFailed') + error.message);
     },
   });
 
   const uploadExcel = trpc.products.uploadExcel.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setUploadResult(data);
       if (data.autoDetected) {
         toast.success(data.message || `تم التعرف تلقائياً على الأعمدة واستيراد ${data.imported} عنصر`);
@@ -58,14 +58,14 @@ export default function UploadProducts() {
       resetFile();
       sheetStatus.refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('uploadProductsPage.uploadFailed') + error.message);
     },
   });
 
   // GPT Smart Import
   const smartImport = trpc.products.smartImport.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setUploadResult(data);
       setSmartResult(data);
       toast.success(data.message || `تم استيراد ${data.imported} عنصر بنجاح`);
@@ -80,13 +80,13 @@ export default function UploadProducts() {
       resetFile();
       sheetStatus.refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل الاستيراد الذكي: ' + error.message);
     },
   });
 
   const syncSheets = trpc.products.syncFromGoogleSheets.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(data.message);
       setUploadResult({
         imported: data.created,
@@ -96,7 +96,7 @@ export default function UploadProducts() {
       });
       sheetStatus.refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('uploadProductsPage.syncFailed') + error.message);
     },
   });

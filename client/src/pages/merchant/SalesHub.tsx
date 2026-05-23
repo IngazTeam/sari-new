@@ -45,7 +45,7 @@ export default function SalesHub() {
   const [targetAmount, setTargetAmount] = useState('');
 
   const createMut = trpc.sariBrain.createQuotation.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`تم إنشاء عرض سعر #${data.quotationNumber}`);
       setCreateOpen(false);
       resetForm();

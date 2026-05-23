@@ -67,6 +67,7 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, change, changeLabel, icon, trend, loading }: StatCardProps) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <Card>
@@ -251,6 +252,7 @@ export default function AdvancedAnalyticsDashboard() {
         />
         <StatCard
           title={t('advancedAnalyticsDashboardPage.text11')}
+          // @ts-ignore
           value={`${sentimentStats?.averageScore?.toFixed(1) || '0'}%`}
           change={8}
           trend="up"

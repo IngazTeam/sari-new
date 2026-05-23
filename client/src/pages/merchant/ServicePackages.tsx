@@ -45,7 +45,7 @@ export default function ServicePackages() {
       setDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل إنشاء الحزمة: ' + error.message);
     },
   });
@@ -57,7 +57,7 @@ export default function ServicePackages() {
       setDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل تحديث الحزمة: ' + error.message);
     },
   });
@@ -68,7 +68,7 @@ export default function ServicePackages() {
       refetch();
       setDeleteDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل حذف الحزمة: ' + error.message);
     },
   });

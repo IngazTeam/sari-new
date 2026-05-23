@@ -87,14 +87,14 @@ function WhatsAppConnectionContent() {
       refetchRequest();
       setPhoneNumber('');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('whatsAppPage.text25'));
     },
   });
 
   // Get QR Code mutation
   const getQRCodeMutation = trpc.whatsapp.getQRCode.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.alreadyConnected) {
         toast.success(t('whatsAppPage.text1'));
         refetchRequest();
@@ -104,7 +104,7 @@ function WhatsAppConnectionContent() {
         setShowQRDialog(true);
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('whatsAppPage.text26'));
     },
   });
@@ -118,7 +118,7 @@ function WhatsAppConnectionContent() {
       setCountryCode('+966');
       setQrCode(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('whatsAppPage.text27'));
     },
   });

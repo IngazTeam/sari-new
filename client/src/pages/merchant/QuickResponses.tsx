@@ -312,7 +312,7 @@ export default function QuickResponses() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleToggleActive(response.id, response.isActive)}
+                          onClick={() => handleToggleActive(response.id, !!response.isActive)}
                         >
                           {response.isActive ? (
                             <ToggleLeft className="h-4 w-4" />

@@ -65,14 +65,14 @@ export default function CalendlyIntegration() {
 
   // Mutations
   const connectMutation = trpc.calendly.connect.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('calendlyIntegrationPage.text40'), {
         description: data.message,
       });
       setApiKey('');
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text41'), {
         description: error.message,
       });
@@ -83,13 +83,13 @@ export default function CalendlyIntegration() {
   });
 
   const disconnectMutation = trpc.calendly.disconnect.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('calendlyIntegrationPage.text42'), {
         description: data.message,
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text43'), {
         description: error.message,
       });
@@ -97,13 +97,13 @@ export default function CalendlyIntegration() {
   });
 
   const syncMutation = trpc.calendly.syncNow.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('calendlyIntegrationPage.text44'), {
         description: data.message,
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text45'), {
         description: error.message,
       });
@@ -114,7 +114,7 @@ export default function CalendlyIntegration() {
     onSuccess: () => {
       toast.success(t('calendlyIntegrationPage.text0'));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('calendlyIntegrationPage.text46'), {
         description: error.message,
       });

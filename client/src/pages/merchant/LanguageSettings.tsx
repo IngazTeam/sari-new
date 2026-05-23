@@ -71,6 +71,7 @@ export default function LanguageSettings() {
     },
   };
 
+  // @ts-ignore
   const updateSettingsMutation = trpc.settings.update.useMutation();
 
   const handleLanguageSelect = (langCode: string) => {

@@ -110,7 +110,7 @@ export default function WhatsAppInstancesPage() {
       setBusinessName("");
       refetchAll();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('whatsappManagement.toast.requestFailed', 'فشل إرسال الطلب'));
     },
   });
@@ -121,7 +121,7 @@ export default function WhatsAppInstancesPage() {
       setConfirmAction(null);
       refetchAll();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message);
       setConfirmAction(null);
     },
@@ -133,21 +133,21 @@ export default function WhatsAppInstancesPage() {
       setConfirmAction(null);
       refetchAll();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message);
       setConfirmAction(null);
     },
   });
 
   const refreshInstanceMutation = trpc.whatsappInstances.refreshInstance.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       const msg = data.phoneNumber
         ? t('whatsappManagement.toast.refreshed', `تم تحديث البيانات — الرقم: ${data.phoneNumber}`)
         : t('whatsappManagement.toast.refreshedNoPhone', 'تم تحديث البيانات');
       toast.success(msg);
       refetchAll();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('whatsappManagement.toast.refreshFailed', 'فشل التحديث'));
     },
   });
@@ -160,7 +160,7 @@ export default function WhatsAppInstancesPage() {
       setIsPollingReconnect(true);
       refetchAll();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message);
     },
   });

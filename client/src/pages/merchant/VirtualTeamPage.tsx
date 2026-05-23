@@ -59,7 +59,7 @@ export default function VirtualTeamPage() {
     onError: (e) => toast.error('خطأ: ' + e.message),
   });
   const seedMutation = trpc.virtualAgents.seedTemplates.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) { toast.success(`تم إضافة ${data.count} شخصيات`); utils.virtualAgents.list.invalidate(); }
       else toast.info('لديك شخصيات بالفعل');
     },

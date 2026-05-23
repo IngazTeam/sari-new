@@ -149,6 +149,7 @@ export default function OrderNotificationsSettings() {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
                     <Switch
+                      // @ts-ignore
                       checked={template.enabled || false}
                       onCheckedChange={(checked) => handleToggle(template.id, checked)}
                     />

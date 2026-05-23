@@ -48,18 +48,18 @@ export default function WooCommerceSettings() {
       toast.success(t('wooCommerceSettingsPage.text0'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('wooCommerceSettingsPage.text25'));
     },
   });
 
   // Test connection mutation
   const testConnectionMutation = trpc.woocommerce.testConnection.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setTestResult({ success: true, message: data.message });
       toast.success(t('wooCommerceSettingsPage.text1'));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       setTestResult({ success: false, message: error.message });
       toast.error(t('wooCommerceSettingsPage.text2'));
     },
@@ -70,19 +70,19 @@ export default function WooCommerceSettings() {
 
   // Manual sync mutations
   const syncProductsMutation = trpc.woocommerce.syncProducts.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('wooCommerceSettingsPage.text3'));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('wooCommerceSettingsPage.text26'));
     },
   });
 
   const syncOrdersMutation = trpc.woocommerce.syncOrders.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('wooCommerceSettingsPage.text5'));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('wooCommerceSettingsPage.text27'));
     },
   });

@@ -53,7 +53,7 @@ export default function ServiceForm() {
       toast.success(t('serviceFormPage.text0'));
       setLocation('/merchant/services');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل إنشاء الخدمة: ' + error.message);
     },
   });
@@ -63,7 +63,7 @@ export default function ServiceForm() {
       toast.success(t('serviceFormPage.text1'));
       setLocation('/merchant/services');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل تحديث الخدمة: ' + error.message);
     },
   });

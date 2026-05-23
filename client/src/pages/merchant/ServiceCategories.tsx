@@ -43,7 +43,7 @@ export default function ServiceCategories() {
       setDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل إنشاء التصنيف: ' + error.message);
     },
   });
@@ -55,7 +55,7 @@ export default function ServiceCategories() {
       setDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل تحديث التصنيف: ' + error.message);
     },
   });
@@ -66,7 +66,7 @@ export default function ServiceCategories() {
       refetch();
       setDeleteDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل حذف التصنيف: ' + error.message);
     },
   });

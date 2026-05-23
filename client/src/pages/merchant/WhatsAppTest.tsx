@@ -78,7 +78,7 @@ export default function WhatsAppTest() {
       setIsSaved(true);
       refetchInstance();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('whatsAppTestPage.text1'));
     },
   });
@@ -93,7 +93,7 @@ export default function WhatsAppTest() {
       setTestResults({});
       refetchInstance();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('whatsAppTestPage.text4'));
     },
   });
@@ -110,7 +110,7 @@ export default function WhatsAppTest() {
         }
       }));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('whatsAppTestPage.text7'));
       setTestResults(prev => ({
         ...prev,
@@ -135,7 +135,7 @@ export default function WhatsAppTest() {
         }
       }));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('whatsAppTestPage.text10'));
       setTestResults(prev => ({
         ...prev,
@@ -149,7 +149,7 @@ export default function WhatsAppTest() {
   });
 
   const testConnectionMutation = trpc.whatsapp.testConnection.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setConnectionStatus(data);
       setTestResults(prev => ({
         ...prev,

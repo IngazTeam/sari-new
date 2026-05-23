@@ -54,7 +54,7 @@ export default function PaymentLinks() {
 
   // إنشاء رابط جديد
   const createLinkMutation = trpc.payments.createLink.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: t('paymentLinksPage.text30'),
         description: t('paymentLinksPage.text31'),
@@ -72,7 +72,7 @@ export default function PaymentLinks() {
         });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: t('paymentLinksPage.text34'),
         description: error.message,
@@ -90,7 +90,7 @@ export default function PaymentLinks() {
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: t('paymentLinksPage.text37'),
         description: error.message,

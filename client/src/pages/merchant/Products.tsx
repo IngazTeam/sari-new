@@ -79,7 +79,7 @@ export default function Products() {
       setIsCreateDialogOpen(false);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('toast.products.msg2') + ': ' + error.message);
     },
   });
@@ -92,7 +92,7 @@ export default function Products() {
       setEditingProduct(null);
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('toast.products.msg4') + ': ' + error.message);
     },
   });
@@ -102,18 +102,18 @@ export default function Products() {
       toast.success(t('toast.products.msg5'));
       utils.products.list.invalidate();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('toast.products.msg6') + ': ' + error.message);
     },
   });
 
   const bulkDeleteMutation = trpc.products.bulkDelete.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`تم حذف ${data.deleted} منتج بنجاح`);
       setSelectedIds(new Set());
       utils.products.list.invalidate();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل الحذف الجماعي: ' + error.message);
     },
   });
