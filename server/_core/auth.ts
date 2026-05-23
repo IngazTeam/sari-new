@@ -124,7 +124,7 @@ export async function authenticateRequest(req: Request): Promise<User> {
   // Update last signed in (use updateUser instead of upsertUser)
   try {
     await updateUser(user.id, {
-      lastSignedIn: new Date(),
+      lastSignedIn: new Date().toISOString().slice(0, 19).replace("T", " "),
     });
   } catch (updateError) {
     // Ignore update errors - user is still authenticated

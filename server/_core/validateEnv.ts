@@ -100,9 +100,12 @@ export function validateEnv(): ValidationResult {
     } else {
         console.log('[ENV] ❌ Environment validation failed');
 
-        // In production, throw error to prevent server from starting
+        // SEC-PENTEST-04: In production, HARD EXIT to prevent broken-state server.
+        // throw was previously caught by startServer().catch(console.error)
+        // which allowed the server to continue booting without JWT_SECRET.
         if (process.env.NODE_ENV === 'production') {
-            throw new Error(`Missing required environment variables: ${result.errors.join(', ')}`);
+            console.error(`FATAL: Missing required environment variables: ${result.errors.join(', ')}`);
+            process.exit(1);
         } else {
             console.log('[ENV] ⚠️  Running in development mode - continuing despite errors');
         }

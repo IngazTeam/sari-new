@@ -163,7 +163,7 @@ function getApiBaseUrl(isLive: boolean): string {
  */
 export async function createCharge(request: TapChargeRequest): Promise<TapChargeResponse> {
 	const settings = await getTapSettings();
-	const baseUrl = getApiBaseUrl(settings.isLive);
+	const baseUrl = getApiBaseUrl(!!settings.isLive);
 
 	try {
 		const response = await fetch(`${baseUrl}/charges`, {
@@ -200,7 +200,7 @@ export async function createCharge(request: TapChargeRequest): Promise<TapCharge
  */
 export async function retrieveCharge(chargeId: string): Promise<TapChargeResponse> {
 	const settings = await getTapSettings();
-	const baseUrl = getApiBaseUrl(settings.isLive);
+	const baseUrl = getApiBaseUrl(!!settings.isLive);
 
 	try {
 		const response = await fetch(`${baseUrl}/charges/${chargeId}`, {
@@ -236,7 +236,7 @@ export async function retrieveCharge(chargeId: string): Promise<TapChargeRespons
  */
 export async function refundCharge(request: TapRefundRequest): Promise<TapRefundResponse> {
 	const settings = await getTapSettings();
-	const baseUrl = getApiBaseUrl(settings.isLive);
+	const baseUrl = getApiBaseUrl(!!settings.isLive);
 
 	try {
 		const response = await fetch(`${baseUrl}/refunds`, {
@@ -307,7 +307,7 @@ export async function verifyWebhook(payload: string, signature: string): Promise
 export async function testConnection(): Promise<{ success: boolean; message: string }> {
 	try {
 		const settings = await getTapSettings();
-		const baseUrl = getApiBaseUrl(settings.isLive);
+		const baseUrl = getApiBaseUrl(!!settings.isLive);
 
 		// Try to retrieve a charge (will fail if no charges exist, but will confirm API key is valid)
 		const response = await fetch(`${baseUrl}/charges?limit=1`, {

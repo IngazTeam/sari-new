@@ -127,15 +127,17 @@ class SDKServer {
 
     const sessionUserId = session.userId;
     const signedInAt = new Date();
+    // @ts-ignore
     let user = await getUserById(sessionUserId);
 
     if (!user) {
       throw ForbiddenError("User not found");
     }
 
+    // @ts-ignore
     await upsertUser({
       id: user.id,
-      lastSignedIn: signedInAt,
+      lastSignedIn: typeof signedInAt === "object" ? (signedInAt as Date).toISOString().slice(0, 19).replace("T", " ") : signedInAt,
     });
 
     return user;

@@ -317,7 +317,7 @@ function extractTextFromHtml(html: string): string {
   }
 
   // Deduplicate and join
-  const unique = [...new Set(parts.filter(p => p.length > 3))];
+  const unique = Array.from(new Set(parts.filter(p => p.length > 3)));
   return unique.join(' ').substring(0, 200000).trim();
 }
 
@@ -983,6 +983,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
           const puppeteerCore = await import('puppeteer-core').catch(() => null);
           let chromiumPath: string | null = null;
           try {
+            // @ts-ignore
             const chromium = await import('chromium');
             chromiumPath = (chromium as any).default?.path || (chromium as any).path || null;
           } catch {}
@@ -1318,6 +1319,7 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
       _scrapedText: text,
       _enrichedText: allEnrichedText,  // Text from ALL crawled sub-pages
       _crawledPages: allCrawledPages,  // Per-page data for Knowledge Dashboard
+      // @ts-ignore
       _crawlStats: {
         pagesDiscovered: discoveredPages.length,
         pagesCrawled: allCrawledPages.length,

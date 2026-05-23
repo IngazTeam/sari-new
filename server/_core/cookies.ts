@@ -32,7 +32,10 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: isSecure ? "none" : "lax",
+    // SEC-PENTEST-01: SameSite=lax prevents CSRF. 'none' was incorrect —
+    // Sari frontend/backend share the same origin (sary.live), so 'lax' works.
+    // SameSite=none + Secure allows cookies in ALL cross-site contexts (CSRF risk).
+    sameSite: "lax",
     secure: isSecure,
   };
 }
