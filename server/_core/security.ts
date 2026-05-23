@@ -52,14 +52,14 @@ const allowedOrigins = [
 
 export const corsConfig = cors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-        // Allow requests with no origin ONLY in development
-        // SEC-04 FIX: In production, null-origin requests must come via webhooks or API keys
+        // Allow requests with no origin in development
         if (!origin) {
             if (process.env.NODE_ENV === 'development') {
                 return callback(null, true);
             }
-            // In production, allow null-origin for webhooks/server-to-server only
-            // These are handled by their own auth (e.g., webhook signatures)
+            // Production: Allow null-origin for server-to-server calls
+            // Webhooks (WooCommerce, Zid, Salla), health checks, and REST API
+            // authenticate via webhook signatures or API keys, not CORS
             return callback(null, true);
         }
 

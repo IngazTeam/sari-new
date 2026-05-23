@@ -3,7 +3,14 @@
  * دوال قاعدة البيانات الخاصة بتكامل زد
  */
 
-import { getDb } from "./db";
+import { getDb as _getDb } from './db';
+
+/** Non-nullable wrapper */
+async function getDb() {
+  const db = await _getDb();
+  if (!db) throw new Error('Database not initialized');
+  return db;
+}
 import { zidSettings, zidSyncLogs } from "../drizzle/schema";
 import type { ZidSettings, InsertZidSettings, ZidSyncLog, InsertZidSyncLog } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -29,8 +36,11 @@ export async function getZidSettings(merchantId: number): Promise<ZidSettings | 
  */
 export async function createZidSettings(data: InsertZidSettings): Promise<ZidSettings> {
   const db = await getDb();
-  const [settings] = await db.insert(zidSettings).values(data);
-  return settings;
+  const result = await db.insert(zidSettings).values(data);
+  const insertedId = Number((result[0] as any).insertId);
+  // Re-fetch the created row
+  const created = await getZidSettings(data.merchantId);
+  return created!;
 }
 
 /**
@@ -145,11 +155,14 @@ export async function updateAutoSyncSettings(
  */
 export async function createZidSyncLog(data: InsertZidSyncLog): Promise<ZidSyncLog> {
   const db = await getDb();
-  const [log] = await db.insert(zidSyncLogs).values({
+  const result = await db.insert(zidSyncLogs).values({
     ...data,
     startedAt: new Date().toISOString(),
   });
-  return log;
+  const logId = Number((result[0] as any).insertId);
+  // Re-fetch the created row
+  const created = await getZidSyncLog(logId);
+  return created!;
 }
 
 /**

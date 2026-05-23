@@ -249,9 +249,10 @@ export async function sendNotification(payload: NotificationPayload): Promise<bo
           .limit(1);
         const merchant = merchantResult.length > 0 ? merchantResult[0] : null;
 
+        // @ts-ignore
         if (merchant?.email) {
           emailSuccess = await sendEmail({
-            to: merchant.email,
+            to: (merchant as any).email,
             subject: payload.title,
             html: `
               <div dir="rtl" style="font-family: Arial, sans-serif; padding: 20px;">

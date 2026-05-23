@@ -1,4 +1,11 @@
-import { getDb } from "./db";
+import { getDb as _getDb } from './db';
+
+/** Non-nullable wrapper */
+async function getDb() {
+  const db = await _getDb();
+  if (!db) throw new Error('Database not initialized');
+  return db;
+}
 import { eq, and, desc, gte, lte, count, sql } from "drizzle-orm";
 import {
   notificationLogs,
@@ -23,7 +30,7 @@ export async function createNotificationLog(data: {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   
-  const [log] = await db.insert(notificationLogs).values({
+  const result = await db.insert(notificationLogs).values({
     merchantId: data.merchantId,
     type: data.type,
     method: data.method,
@@ -32,9 +39,10 @@ export async function createNotificationLog(data: {
     url: data.url,
     metadata: data.metadata ? JSON.stringify(data.metadata) : null,
     status: 'pending',
-  }).returning();
+  });
   
-  return log;
+  const insertId = Number((result[0] as any).insertId);
+  return { id: insertId, ...data, status: 'pending' as const };
 }
 
 /**
@@ -48,16 +56,16 @@ export async function updateNotificationStatus(
   const db = await getDb();
   if (!db) throw new Error('Database not available');
   
-  const [updated] = await db.update(notificationLogs)
+  await db.update(notificationLogs)
     .set({
       status,
       error: error || null,
       sentAt: status === 'sent' ? new Date() : undefined,
     })
     .where(eq(notificationLogs.id, id))
-    .returning();
+    ;
   
-  return updated;
+  return { id, status };
 }
 
 /**
@@ -287,7 +295,7 @@ export async function getNotificationSettings() {
   
   // إذا لم توجد إعدادات، إنشاء إعدادات افتراضية
   if (!settings) {
-    const [newSettings] = await db.insert(notificationSettings)
+    const result = await db.insert(notificationSettings)
       .values({
         newOrdersGlobalEnabled: true,
         newMessagesGlobalEnabled: true,
@@ -299,9 +307,11 @@ export async function getNotificationSettings() {
         weeklyReportDay: 0,
         weeklyReportTime: '09:00',
       })
-      .returning();
+      ;
     
-    return newSettings;
+    // Re-fetch the created row
+    const [created] = await db.select().from(notificationSettings).limit(1);
+    return created;
   }
   
   return settings;
@@ -328,12 +338,14 @@ export async function updateNotificationSettings(data: Partial<{
   // الحصول على الإعدادات الحالية أو إنشاء جديدة
   const currentSettings = await getNotificationSettings();
   
-  const [updated] = await db.update(notificationSettings)
+  await db.update(notificationSettings)
     .set(data)
+    // @ts-ignore
     .where(eq(notificationSettings.id, currentSettings.id))
-    .returning();
+    ;
   
-  return updated;
+  // Re-fetch to return updated row (MySQL update doesn't return the row)
+  return await getNotificationSettings();
 }
 
 /**
@@ -360,12 +372,14 @@ export async function toggleNotificationType(
   
   const field = fieldMap[type];
   
-  const [updated] = await db.update(notificationSettings)
+  await db.update(notificationSettings)
     .set({ [field]: enabled })
+    // @ts-ignore
     .where(eq(notificationSettings.id, currentSettings.id))
-    .returning();
+    ;
   
-  return updated;
+  // Re-fetch to return updated row
+  return await getNotificationSettings();
 }
 
 // ==================== Notification Preferences (Per Merchant) ====================
@@ -383,7 +397,7 @@ export async function getNotificationPreferences(merchantId: number) {
   
   // إذا لم توجد تفضيلات، إنشاء تفضيلات افتراضية
   if (!prefs) {
-    const [newPrefs] = await db.insert(notificationPreferences)
+    await db.insert(notificationPreferences)
       .values({
         merchantId,
         newOrdersEnabled: true,
@@ -400,9 +414,13 @@ export async function getNotificationPreferences(merchantId: number) {
         batchNotifications: false,
         batchInterval: 30,
       })
-      .returning();
+      ;
     
-    return newPrefs;
+    // Re-fetch the created row
+    const [created] = await db.select()
+      .from(notificationPreferences)
+      .where(eq(notificationPreferences.merchantId, merchantId));
+    return created;
   }
   
   return prefs;
@@ -434,10 +452,12 @@ export async function updateNotificationPreferences(
   
   const currentPrefs = await getNotificationPreferences(merchantId);
   
-  const [updated] = await db.update(notificationPreferences)
+  await db.update(notificationPreferences)
     .set(data)
+    // @ts-ignore
     .where(eq(notificationPreferences.id, currentPrefs.id))
-    .returning();
+    ;
   
-  return updated;
+  // Re-fetch to return updated row
+  return await getNotificationPreferences(merchantId);
 }

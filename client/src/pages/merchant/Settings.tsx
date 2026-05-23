@@ -110,7 +110,8 @@ export default function MerchantSettings() {
     if (merchant) {
       setBusinessName(merchant.businessName || '');
       setPhone(merchant.phone || '');
-      setAutoReplyEnabled(merchant.autoReplyEnabled ?? true);
+      // @ts-ignore
+      setAutoReplyEnabled((merchant as any).autoReplyEnabled != null ? !!(merchant as any).autoReplyEnabled : true);
       setCurrency(merchant.currency || 'SAR');
     }
   }, [merchant]);
@@ -120,7 +121,7 @@ export default function MerchantSettings() {
       toast.success(t('toast.settings.msg1'));
       refetchUser();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('settingsPage.failedUpdateAccount'));
     },
   });
@@ -130,7 +131,7 @@ export default function MerchantSettings() {
       toast.success(t('toast.settings.msg3'));
       refetchMerchant();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || t('settingsPage.failedUpdateStore'));
     },
   });

@@ -29,16 +29,13 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 
     // Create email log
     const logResult = await createEmailLog({
-      recipient: options.to,
+      toEmail: options.to,
       subject: options.subject,
       body: options.html,
       status: 'pending',
-      emailType: options.type || 'custom',
-      merchantId: options.merchantId || null,
-      metadata: options.metadata ? JSON.stringify(options.metadata) : null,
     });
 
-    const logId = logResult.insertId;
+    const logId = Number((logResult[0] as any).insertId);
 
     // Send via SMTP2GO API
     const response = await fetch('https://api.smtp2go.com/v3/email/send', {

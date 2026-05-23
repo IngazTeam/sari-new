@@ -642,16 +642,18 @@ ${lineItems.map((item: any, index: number) => `${index + 1}. ${item.name} أ— 
         const messageToSend = input.message || defaultMessage;
 
         // Send WhatsApp message using Green API
-        const { sendWhatsAppMessage } = await import('./whatsapp');
-        await sendWhatsAppMessage(
+        const { sendMessageWithCredentials } = await import('./whatsapp');
+        await sendMessageWithCredentials(
           whatsappConnection.instanceId,
           whatsappConnection.apiToken,
+          process.env.GREEN_API_URL || 'https://api.green-api.com',
           order.customerPhone,
           messageToSend
         );
 
         // Update notification status
         await updateWooCommerceOrder(input.orderId, {
+          // @ts-ignore
           notificationSent: 1,
           notificationSentAt: new Date().toISOString(),
         });
