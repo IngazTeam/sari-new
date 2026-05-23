@@ -13,15 +13,15 @@ export default function SheetsReports() {
 
   // توليد تقرير يومي
   const dailyMutation = trpc.sheets.generateDailyReport.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setGeneratingReport(null);
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'نجح التوليد',
           description: 'تم توليد التقرير اليومي بنجاح',
         });
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل التوليد',
           description: data.message,
           variant: 'destructive',
@@ -35,15 +35,15 @@ export default function SheetsReports() {
 
   // توليد تقرير أسبوعي
   const weeklyMutation = trpc.sheets.generateWeeklyReport.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setGeneratingReport(null);
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'نجح التوليد',
           description: 'تم توليد التقرير الأسبوعي بنجاح',
         });
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل التوليد',
           description: data.message,
           variant: 'destructive',
@@ -57,15 +57,15 @@ export default function SheetsReports() {
 
   // توليد تقرير شهري
   const monthlyMutation = trpc.sheets.generateMonthlyReport.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setGeneratingReport(null);
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'نجح التوليد',
           description: 'تم توليد التقرير الشهري بنجاح',
         });
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل التوليد',
           description: data.message,
           variant: 'destructive',
@@ -79,14 +79,14 @@ export default function SheetsReports() {
 
   // إرسال تقرير عبر WhatsApp
   const sendMutation = trpc.sheets.sendReportViaWhatsApp.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'تم الإرسال',
           description: data.message,
         });
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل الإرسال',
           description: data.message,
           variant: 'destructive',

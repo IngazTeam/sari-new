@@ -51,7 +51,7 @@ export default function SallaIntegration() {
 
   // Mutations
   const connectMutation = trpc.salla.connect.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('toast.common.msg10'), {
         description: data.message,
       });
@@ -59,7 +59,7 @@ export default function SallaIntegration() {
       setAccessToken('');
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('toast.common.msg11'), {
         description: error.message,
       });
@@ -70,13 +70,13 @@ export default function SallaIntegration() {
   });
 
   const disconnectMutation = trpc.salla.disconnect.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('toast.common.msg12'), {
         description: data.message,
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('toast.common.msg13'), {
         description: error.message,
       });
@@ -84,13 +84,13 @@ export default function SallaIntegration() {
   });
 
   const syncMutation = trpc.salla.syncNow.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('toast.common.msg14'), {
         description: data.message,
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('toast.common.msg15'), {
         description: error.message,
       });

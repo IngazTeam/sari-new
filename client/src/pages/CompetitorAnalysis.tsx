@@ -55,7 +55,7 @@ export default function CompetitorAnalysis() {
       setName('');
       setUrl('');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل إضافة المنافس');
     },
   });
@@ -65,7 +65,7 @@ export default function CompetitorAnalysis() {
       toast.success(t('competitorAnalysisPage.text1'));
       utils.websiteAnalysis.listCompetitors.invalidate();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل حذف المنافس');
     },
   });

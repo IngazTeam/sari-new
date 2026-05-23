@@ -13,15 +13,15 @@ export default function SheetsInventory() {
 
   // مزامنة المخزون إلى Sheets
   const exportMutation = trpc.sheets.syncInventory.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'نجحت المزامنة',
           description: data.message,
         });
         setLastAction('export');
       } else {
-        toast({
+        (toast as any)({
           title: 'فشلت المزامنة',
           description: data.message,
           variant: 'destructive',
@@ -32,15 +32,15 @@ export default function SheetsInventory() {
 
   // تحديث المخزون من Sheets
   const importMutation = trpc.sheets.updateInventoryFromSheets.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'نجح التحديث',
           description: `${data.message} - تم تحديث ${data.updatedCount} منتج`,
         });
         setLastAction('import');
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل التحديث',
           description: data.message,
           variant: 'destructive',

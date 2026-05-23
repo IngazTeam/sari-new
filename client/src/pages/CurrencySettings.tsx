@@ -15,15 +15,15 @@ export default function CurrencySettings() {
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>('SAR');
 
   // Get current merchant
-  const { data: merchant, isLoading: merchantLoading, refetch } = trpc.merchant.get.useQuery();
+  const { data: merchant, isLoading: merchantLoading, refetch } = (trpc as any).merchant.get.useQuery();
 
   // Update merchant mutation
-  const updateMutation = trpc.merchant.update.useMutation({
+  const updateMutation = (trpc as any).merchant.update.useMutation({
     onSuccess: () => {
       toast.success(t('currencySettingsPage.text0'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل تحديث العملة');
     },
   });

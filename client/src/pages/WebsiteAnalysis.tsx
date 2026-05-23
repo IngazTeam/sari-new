@@ -76,13 +76,13 @@ export default function WebsiteAnalysis() {
 
   // Mutations
   const analyzeMutation = trpc.websiteAnalysis.analyze.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(t('websiteAnalysisPage.text0'));
       setSelectedAnalysisId(data.analysisId);
       utils.websiteAnalysis.listAnalyses.invalidate();
       setUrl('');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل بدء التحليل');
     },
   });
@@ -95,7 +95,7 @@ export default function WebsiteAnalysis() {
         setSelectedAnalysisId(null);
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل حذف التحليل');
     },
   });

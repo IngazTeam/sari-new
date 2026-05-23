@@ -32,7 +32,7 @@ export default function WooCommerceSettings() {
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: 'خطأ',
         description: error.message,
@@ -42,7 +42,7 @@ export default function WooCommerceSettings() {
   });
 
   const testConnection = trpc.woocommerce.testConnection.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
         toast({
           title: 'نجح الاتصال',
@@ -57,7 +57,7 @@ export default function WooCommerceSettings() {
         });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: 'خطأ',
         description: error.message,
@@ -77,7 +77,7 @@ export default function WooCommerceSettings() {
       setConsumerSecret('');
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: 'خطأ',
         description: error.message,

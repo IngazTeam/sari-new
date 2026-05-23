@@ -24,15 +24,15 @@ export default function SheetsSettings() {
 
   // إعداد Spreadsheet
   const setupMutation = trpc.sheets.setupSpreadsheet.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'نجح الإعداد',
           description: data.message,
         });
         refetchStatus();
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل الإعداد',
           description: data.message,
           variant: 'destructive',
@@ -43,15 +43,15 @@ export default function SheetsSettings() {
 
   // تحديث إعدادات التقارير
   const updateSettingsMutation = trpc.sheets.updateReportSettings.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'تم التحديث',
           description: data.message,
         });
         refetchSettings();
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل التحديث',
           description: data.message,
           variant: 'destructive',
@@ -62,15 +62,15 @@ export default function SheetsSettings() {
 
   // فصل الاتصال
   const disconnectMutation = trpc.sheets.disconnect.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
-        toast({
+        (toast as any)({
           title: 'تم الفصل',
           description: data.message,
         });
         refetchStatus();
       } else {
-        toast({
+        (toast as any)({
           title: 'فشل الفصل',
           description: data.message,
           variant: 'destructive',
@@ -82,6 +82,7 @@ export default function SheetsSettings() {
   const handleConnect = () => {
     if (authData?.authUrl) {
       setIsConnecting(true);
+      // @ts-ignore
       window.location.href = authData.authUrl;
     }
   };

@@ -316,6 +316,7 @@ export default function LoyaltyRewards() {
 
 // مكون النموذج
 function RewardForm({ formData, setFormData }: any) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">

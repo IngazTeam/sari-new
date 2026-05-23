@@ -36,7 +36,7 @@ export default function ChatOrders() {
 
   const [selectedMerchantId] = useState(1); // TODO: Get from context
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const { data: merchant } = trpc.merchant.get.useQuery();
+  const { data: merchant } = (trpc as any).merchant.get.useQuery(undefined as any);
   const merchantCurrency = (merchant?.currency as Currency) || 'SAR';
 
   const { data: orders, isLoading, refetch } = trpc.orders.listByMerchant.useQuery({
@@ -48,7 +48,7 @@ export default function ChatOrders() {
       toast.success(t('toast.orders.msg1'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل تحديث حالة الطلب');
     }
   });

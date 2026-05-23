@@ -53,7 +53,7 @@ export default function AdminABTestDashboard() {
         variantsQuery.refetch();
         alert('تم إنشاء المتغير بنجاح');
       },
-      onError: (error) => {
+      onError: (error: any) => {
         alert('خطأ في إنشاء المتغير: ' + (error as any).message);
       },
     });

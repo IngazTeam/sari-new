@@ -22,7 +22,7 @@ export default function ForgotPassword() {
       setSubmitted(true);
       setRemainingTime(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       // Check if it's a rate limit error
       if (error.data?.code === 'TOO_MANY_REQUESTS') {
         // Extract remainingTime from error message or data

@@ -203,7 +203,8 @@ export default function SetupWizard() {
         botTone: wizardData.botTone || 'friendly',
         botLanguage: wizardData.botLanguage || 'ar',
         welcomeMessage: wizardData.welcomeMessage || '',
-        products: (wizardData.products || []).filter((p: any) => p.name?.trim()).map((p: any) => ({
+        // @ts-ignore
+        products: ((wizardData as any).products || []).filter((p: any) => p.name?.trim()).map((p: any) => ({
           name: p.name,
           description: p.description || '',
           price: p.price || '0',

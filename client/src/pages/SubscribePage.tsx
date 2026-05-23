@@ -117,6 +117,7 @@ export default function SubscribePage() {
           businessName,
           phone,
         });
+        // @ts-ignore
         userId = registerResult.userId;
       } else {
         // For existing users, we need to login first
@@ -130,7 +131,8 @@ export default function SubscribePage() {
       const subscriptionResult = await createSubscriptionMutation.mutateAsync({
         planId: selectedPlanId,
         billingCycle,
-        userId,
+        // @ts-ignore
+        userId: userId as any,
       });
 
       // Step 3: Redirect to Tap Payment

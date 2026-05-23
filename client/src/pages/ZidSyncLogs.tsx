@@ -7,8 +7,8 @@ import { useTranslation } from 'react-i18next';
 
 export default function ZidSyncLogs() {
   const { t } = useTranslation();
-  const { data: logs, isLoading } = trpc.zid.getSyncLogs.useQuery({ limit: 50 });
-  const { data: stats } = trpc.zid.getSyncStats.useQuery();
+  const { data: logs, isLoading } = trpc.zid.getSyncLogs.useQuery({ limit: 50 } as any);
+  const { data: stats } = trpc.zid.getSyncStats.useQuery(undefined as any);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -76,7 +76,7 @@ export default function ZidSyncLogs() {
               <CardTitle className="text-sm font-medium">{t('zidSyncLogsPage.text5')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalSyncs}</div>
+              <div className="text-2xl font-bold">{(stats as any)?.totalSyncs}</div>
             </CardContent>
           </Card>
 
@@ -87,7 +87,7 @@ export default function ZidSyncLogs() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-500">
-                {stats.successfulSyncs}
+                {(stats as any)?.successfulSyncs}
               </div>
             </CardContent>
           </Card>
@@ -99,7 +99,7 @@ export default function ZidSyncLogs() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-500">
-                {stats.failedSyncs}
+                {(stats as any)?.failedSyncs}
               </div>
             </CardContent>
           </Card>
@@ -136,23 +136,23 @@ export default function ZidSyncLogs() {
                         {getStatusBadge(log.status)}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {new Date(log.createdAt).toLocaleString('ar-SA')}
+                        {new Date((log as any).createdAt).toLocaleString('ar-SA')}
                       </p>
-                      {log.status === 'completed' && (
+                      {(log.status as string) === 'completed' && (
                         <div className="mt-2 text-sm">
                           <span className="text-green-600">
-                            ✓ {log.successCount} نجح
+                            ✓ {(log as any).successCount} نجح
                           </span>
-                          {log.failedCount > 0 && (
+                          {(log as any).failedCount > 0 && (
                             <span className="text-red-600 mr-3">
-                              ✗ {log.failedCount} فشل
+                              ✗ {(log as any).failedCount} فشل
                             </span>
                           )}
                         </div>
                       )}
-                      {log.errorMessage && (
+                      {(log as any).errorMessage && (
                         <p className="mt-2 text-sm text-red-600">
-                          {log.errorMessage}
+                          {(log as any).errorMessage}
                         </p>
                       )}
                     </div>
@@ -163,7 +163,7 @@ export default function ZidSyncLogs() {
                         استغرق:{' '}
                         {Math.round(
                           (new Date(log.completedAt).getTime() -
-                            new Date(log.startedAt || log.createdAt).getTime()) /
+                            new Date(log.startedAt || (log as any).createdAt).getTime()) /
                             1000
                         )}{' '}
                         ثانية

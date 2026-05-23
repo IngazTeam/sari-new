@@ -35,14 +35,14 @@ export default function WooCommerceProducts() {
 
   // Mutations
   const syncProducts = trpc.woocommerce.syncProducts.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast({
         title: 'تمت المزامنة',
         description: data.message,
       });
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: 'خطأ',
         description: error.message,
