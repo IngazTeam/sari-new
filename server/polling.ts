@@ -304,7 +304,7 @@ async function handleIncomingMessage(
 
     // Update conversation
     await updateConversation(conversation.id, {
-      lastMessageAt: new Date(),
+      lastMessageAt: new Date().toISOString().slice(0, 19).replace("T", " "),
     });
 
     // LIM-02: Check AI rate limit before processing

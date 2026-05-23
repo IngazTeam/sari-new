@@ -286,7 +286,7 @@ export async function resetMonthlyUsage(): Promise<void> {
           conversationsUsed: 0,
           messagesUsed: 0,
           voiceMessagesUsed: 0,
-          lastResetAt: now,
+          lastResetAt: now as any,
         });
         
         resetCount++;

@@ -10,7 +10,7 @@ export async function getOrdersTrend(merchantId: number, days: number = 30) {
   if (!db) return [];
 
   const now = new Date();
-  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
   const result = await db
     .select({
@@ -38,7 +38,7 @@ export async function getRevenueTrend(merchantId: number, days: number = 30) {
   if (!db) return [];
 
   const now = new Date();
-  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
   const result = await db
     .select({
@@ -71,8 +71,8 @@ export async function getComparisonStats(merchantId: number, days: number = 30) 
   };
 
   const now = new Date();
-  const currentPeriodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-  const previousPeriodStart = new Date(now.getTime() - 2 * days * 24 * 60 * 60 * 1000);
+  const currentPeriodStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+  const previousPeriodStart = new Date(now.getTime() - 2 * days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
   // الفترة الحالية
   const currentPeriod = await db
@@ -258,7 +258,7 @@ export async function getDashboardStats(merchantId: number) {
   };
 
   const now = new Date();
-  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
   // إجمالي الطلبات والإيرادات
   const stats = await db

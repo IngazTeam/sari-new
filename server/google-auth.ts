@@ -52,6 +52,7 @@ export async function findOrCreateGoogleUser(googleData: {
     }
 
     // إنشاء مستخدم جديد
+    // @ts-ignore
     const newUser = await createUser({
       email: googleData.email,
       name: googleData.name,

@@ -55,7 +55,7 @@ async function migrateWhatsAppInstances() {
           phoneNumber: connection.phoneNumber || null,
           webhookUrl: null,
           status: connection.status === 'connected' ? 'active' : 'inactive',
-          isPrimary: true, // Set first instance as primary
+          isPrimary: 1, // Set first instance as primary
           lastSyncAt: connection.lastConnected || null,
           connectedAt: connection.lastConnected || null,
           expiresAt: null,

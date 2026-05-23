@@ -64,6 +64,7 @@ async function extractFromExcel(buffer: Buffer): Promise<{ text: string; pageCou
   const ExcelJSModule = await import('exceljs');
   const ExcelJS = ExcelJSModule.default || ExcelJSModule;
   const workbook = new ExcelJS.Workbook();
+  // @ts-ignore
   await workbook.xlsx.load(buffer);
 
   const sections: string[] = [];

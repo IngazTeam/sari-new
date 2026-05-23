@@ -68,7 +68,7 @@ export async function calculateAllMetrics(merchantId: number, period: 'day' | 'w
  * 1. معدل التحويل (Conversion Rate)
  * النسبة المئوية للمحادثات التي تحولت إلى اتفاق
  */
-async function calculateConversionRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateConversionRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -104,7 +104,7 @@ async function calculateConversionRate(merchantId: number, startDate: Date, endD
  * 2. متوسط قيمة الصفقة (Average Deal Value)
  * متوسط قيمة المبيعات من الاتفاقات
  */
-async function calculateAvgDealValue(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateAvgDealValue(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -126,7 +126,7 @@ async function calculateAvgDealValue(merchantId: number, startDate: Date, endDat
  * 3. الإيرادات المحتملة (Potential Revenue)
  * إجمالي قيمة جميع الاتفاقات
  */
-async function calculateTotalRevenue(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateTotalRevenue(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -150,7 +150,7 @@ async function calculateTotalRevenue(merchantId: number, startDate: Date, endDat
  * 4. متوسط وقت الرد (Average Response Time)
  * متوسط الوقت بالميلي ثانية بين رسالة العميل ورد ساري
  */
-async function calculateAvgResponseTime(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateAvgResponseTime(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -175,7 +175,7 @@ async function calculateAvgResponseTime(merchantId: number, startDate: Date, end
  * 5. متوسط طول المحادثة (Conversation Length)
  * متوسط عدد الرسائل في المحادثة الواحدة
  */
-async function calculateAvgConversationLength(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateAvgConversationLength(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -205,7 +205,7 @@ async function calculateAvgConversationLength(merchantId: number, startDate: Dat
  * 6. وقت التحويل (Time to Conversion)
  * متوسط الوقت بالثواني من بداية المحادثة حتى الاتفاق
  */
-async function calculateAvgTimeToConversion(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateAvgTimeToConversion(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -229,7 +229,7 @@ async function calculateAvgTimeToConversion(merchantId: number, startDate: Date,
  * 7. معدل الاستفسارات المحلولة (Resolution Rate)
  * نسبة المحادثات التي تم حلها بنجاح (حصلت على تقييم إيجابي)
  */
-async function calculateResolutionRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateResolutionRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -268,7 +268,7 @@ async function calculateResolutionRate(merchantId: number, startDate: Date, endD
  * 8. معدل التصعيد (Escalation Rate)
  * نسبة المحادثات التي تم تصعيدها للبشر (افتراضياً: المحادثات بدون اتفاق وبتقييم سلبي)
  */
-async function calculateEscalationRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateEscalationRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -307,7 +307,7 @@ async function calculateEscalationRate(merchantId: number, startDate: Date, endD
  * 9. معدل التفاعل (Engagement Rate)
  * نسبة المحادثات التي تجاوزت 3 رسائل (مؤشر على التفاعل الجيد)
  */
-async function calculateEngagementRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateEngagementRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -352,7 +352,7 @@ async function calculateEngagementRate(merchantId: number, startDate: Date, endD
  * نسبة المحادثات المتكررة (افتراضياً: محادثات بنفس conversationId أو أكثر من محادثة)
  * ملاحظة: في الوضع الحالي نحسبها كنسبة المحادثات التي تحتوي على أكثر من 5 رسائل
  */
-async function calculateReturnRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateReturnRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -394,7 +394,7 @@ async function calculateReturnRate(merchantId: number, startDate: Date, endDate:
  * 11. معدل الإحالة (Referral Indicator)
  * نسبة المحادثات التي تحولت لاتفاق (كمؤشر على احتمالية التوصية)
  */
-async function calculateReferralRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateReferralRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   // نفس معدل التحويل لكن كمؤشر على الإحالة
   return calculateConversionRate(merchantId, startDate, endDate);
 }
@@ -406,7 +406,7 @@ async function calculateReferralRate(merchantId: number, startDate: Date, endDat
  * افتراضياً: نسبة المحادثات التي تحتوي على استفسارات عن المنتجات
  * (نحسبها كنسبة المحادثات التي أدت لاتفاق)
  */
-async function calculateProductClickRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateProductClickRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   return calculateConversionRate(merchantId, startDate, endDate);
 }
 
@@ -414,7 +414,7 @@ async function calculateProductClickRate(merchantId: number, startDate: Date, en
  * 13. معدل إكمال الطلب (Order Completion Rate)
  * نسبة الاتفاقات من إجمالي المحادثات
  */
-async function calculateOrderCompletionRate(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateOrderCompletionRate(merchantId: number, startDate: string, endDate: string): Promise<number> {
   return calculateConversionRate(merchantId, startDate, endDate);
 }
 
@@ -423,7 +423,7 @@ async function calculateOrderCompletionRate(merchantId: number, startDate: Date,
  * متوسط التقييمات (نسبة التقييمات الإيجابية من إجمالي التقييمات)
  * نعرضها من 5 (100% إيجابي = 5، 0% إيجابي = 0)
  */
-async function calculateCSATScore(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateCSATScore(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -467,7 +467,7 @@ async function calculateCSATScore(merchantId: number, startDate: Date, endDate: 
  * مقياس من -100 إلى +100 بناءً على التقييمات
  * (نسبة الإيجابي - نسبة السلبي) × 100
  */
-async function calculateNPSScore(merchantId: number, startDate: Date, endDate: Date): Promise<number> {
+async function calculateNPSScore(merchantId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   
@@ -524,22 +524,23 @@ async function calculateNPSScore(merchantId: number, startDate: Date, endDate: D
 
 // ==================== دوال مساعدة ====================
 
-function getDateRange(period: 'day' | 'week' | 'month'): { startDate: Date; endDate: Date } {
-  const endDate = new Date();
-  let startDate: Date;
+function getDateRange(period: 'day' | 'week' | 'month'): { startDate: string; endDate: string } {
+  const now = new Date();
+  let start: Date;
   
   switch (period) {
     case 'day':
-      startDate = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       break;
     case 'week':
-      startDate = new Date(endDate);
-      startDate.setDate(endDate.getDate() - 7);
+      start = new Date(now);
+      start.setDate(now.getDate() - 7);
       break;
     case 'month':
-      startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
       break;
   }
   
-  return { startDate, endDate };
+  const fmt = (d: Date) => d.toISOString().slice(0, 19).replace('T', ' ');
+  return { startDate: fmt(start), endDate: fmt(now) };
 }

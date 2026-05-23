@@ -95,7 +95,7 @@ export async function sendNewOrderEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -173,7 +173,7 @@ export async function sendOrderStatusChangedEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -217,7 +217,7 @@ export async function sendNewCustomerMessageEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -281,7 +281,7 @@ export async function sendScheduledReportEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -338,7 +338,7 @@ export async function sendPaymentFailedEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -388,7 +388,7 @@ export async function sendIntegrationConnectedEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -442,7 +442,7 @@ export async function sendSyncErrorEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -500,7 +500,7 @@ export async function sendLowStockAlertEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -548,7 +548,7 @@ export async function sendNewReviewEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }
 
 /**
@@ -612,5 +612,5 @@ export async function sendCampaignSentEmail(
   `;
 
   const html = getEmailTemplate(content);
-  return await sendEmail(email, subject, html);
+  return await sendEmail({ to: email, subject, html });
 }

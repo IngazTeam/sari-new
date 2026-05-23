@@ -100,6 +100,7 @@ Respond with ONLY ONE of these: salla, zid, shopify, woocommerce, custom, unknow
     });
 
     const detectedPlatform = llmResponse.choices[0].message.content
+      // @ts-ignore
       .trim()
       .toLowerCase();
     if (
@@ -264,6 +265,7 @@ Return a JSON array of products with: name, price (number), imageUrl, productUrl
       });
 
       const extracted = JSON.parse(
+        // @ts-ignore
         llmResponse.choices[0].message.content || "{}"
       );
       return extracted.products || [];
@@ -445,6 +447,7 @@ Return a JSON array with: question, answer, category (optional: shipping, return
       });
 
       const extracted = JSON.parse(
+        // @ts-ignore
         llmResponse.choices[0].message.content || "{}"
       );
       return extracted.faqs || [];

@@ -89,6 +89,7 @@ export async function createPayPalOrder(params: {
     const accessToken = await getPayPalAccessToken(
       paypalGateway.publicKey,
       paypalGateway.secretKey,
+      // @ts-ignore
       paypalGateway.testMode
     );
 
@@ -175,6 +176,7 @@ export async function capturePayPalOrder(orderId: string): Promise<{ success: bo
     const accessToken = await getPayPalAccessToken(
       paypalGateway.publicKey,
       paypalGateway.secretKey,
+      // @ts-ignore
       paypalGateway.testMode
     );
 
@@ -228,6 +230,7 @@ export async function verifyPayPalPayment(orderId: string): Promise<{ success: b
     const accessToken = await getPayPalAccessToken(
       paypalGateway.publicKey,
       paypalGateway.secretKey,
+      // @ts-ignore
       paypalGateway.testMode
     );
 

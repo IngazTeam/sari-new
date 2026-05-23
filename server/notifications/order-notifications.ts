@@ -127,7 +127,7 @@ export async function sendOrderNotification(
       customerPhone,
       status,
       message,
-      sent: false,
+      sent: 0,
     });
     
     if (!notification) {
@@ -141,8 +141,8 @@ export async function sendOrderNotification(
     
     // Update notification status
     await updateOrderNotification(notification.id, {
-      sent,
-      sentAt: sent ? new Date() : undefined,
+      sent: sent ? 1 : 0,
+      sentAt: sent ? new Date().toISOString().slice(0, 19).replace("T", " ") : undefined,
       error: sent ? undefined : result.error || 'Failed to send WhatsApp message',
     });
     
@@ -167,7 +167,7 @@ export async function initializeDefaultTemplates(merchantId: number): Promise<vo
         merchantId,
         status,
         template: defaultTemplates[status as keyof typeof defaultTemplates],
-        enabled: true,
+        enabled: 1,
       });
     }
   }

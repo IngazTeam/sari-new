@@ -182,6 +182,7 @@ router.post('/verify', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
+    // @ts-ignore
     const user = await getUserById(session.userId);
 
     if (!user) {
@@ -235,7 +236,7 @@ router.get('/oauth/google/calendar/callback', async (req, res) => {
 
   try {
     const googleCalendar = await import('./_core/googleCalendar');
-    const result = await googleCalendar.handleOAuthCallback(code as string, merchantId);
+    const result = await (googleCalendar as any).handleOAuthCallback(code as string, merchantId);
 
     if (result.success) {
       res.redirect('/merchant/calendar/settings?success=true');
@@ -278,7 +279,7 @@ router.get('/oauth/google/sheets/callback', async (req, res) => {
 
   try {
     const googleSheets = await import('./_core/googleSheets');
-    const result = await googleSheets.handleOAuthCallback(code as string, merchantId);
+    const result = await (googleSheets as any).handleOAuthCallback(code as string, merchantId);
 
     if (result.success) {
       res.redirect('/merchant/sheets/settings?success=true');

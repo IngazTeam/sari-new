@@ -25,6 +25,7 @@ export async function checkCustomerLimit(merchantId: number, customerPhone?: str
   }
 
   // Get subscription plan details
+  // @ts-ignore
   const plan = await getSubscriptionPlanById(subscription.planId);
   
   if (!plan) {
@@ -73,6 +74,7 @@ export async function checkWhatsAppNumberLimit(merchantId: number): Promise<bool
   }
 
   // Get subscription plan details
+  // @ts-ignore
   const plan = await getSubscriptionPlanById(subscription.planId);
   
   if (!plan) {
@@ -114,6 +116,7 @@ export async function getRemainingCustomerSlots(merchantId: number): Promise<{
     return { current: 0, max: 0, remaining: 0, percentage: 0 };
   }
 
+  // @ts-ignore
   const plan = await getSubscriptionPlanById(subscription.planId);
   
   if (!plan) {

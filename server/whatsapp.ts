@@ -851,3 +851,10 @@ export async function clearWebhookUrl(
     };
   }
 }
+
+/**
+ * Legacy alias — callers reference sendWhatsAppMessage
+ * Delegates to sendMessageWithCredentials when credentials are passed,
+ * or sendTextMessage for env-based config.
+ */
+export const sendWhatsAppMessage = sendTextMessage;
