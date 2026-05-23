@@ -84,7 +84,7 @@ export const LazyAdminInvoices = lazy(() => import('./pages/admin/Invoices'));
 // Public Heavy Pages
 // ============================================
 export const LazyTrySari = lazy(() => import('./pages/TrySari'));
-export const LazyTrySariEnhanced = lazy(() => import('./pages/TrySariEnhanced'));
+// LazyTrySariEnhanced removed — merged into TrySari
 export const LazySariPlayground = lazy(() => import('./pages/SariPlayground'));
 
 // ============================================

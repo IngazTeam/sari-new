@@ -63,7 +63,7 @@ const Contact = lazyLoad(() => import("./pages/company/Contact"));
 const Terms = lazyLoad(() => import("./pages/company/Terms"));
 const Privacy = lazyLoad(() => import("./pages/company/Privacy"));
 const TrySari = lazyLoad(() => import("./pages/TrySari"));
-const TrySariEnhanced = lazyLoad(() => import("./pages/TrySariEnhanced"));
+// TrySariEnhanced removed — merged into TrySari
 const SubscribePage = lazyLoad(() => import("./pages/SubscribePage"));
 const PaymentCallback = lazyLoad(() => import("./pages/PaymentCallback"));
 
@@ -281,7 +281,9 @@ function Router() {
       <Route path="/company/terms" component={Terms} />
       <Route path="/company/privacy" component={Privacy} />
       <Route path="/try-sari" component={TrySari} />
-      <Route path="/try-sari-enhanced" component={TrySariEnhanced} />
+      <Route path="/try-sari-enhanced">
+        <Redirect to="/try-sari" />
+      </Route>
 
       {/* SEO Landing Pages */}
       <Route path="/ai-whatsapp-sales-agent" component={AISalesAgent} />

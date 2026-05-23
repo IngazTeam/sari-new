@@ -6,7 +6,6 @@ import { Card } from '@/components/ui/card';
 import { Send, Bot, User, Sparkles, MessageCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import SignupPromptDialog from '@/components/SignupPromptDialog';
 import { SeoHead, useSeoConfig } from '@/components/SeoHead';
 import { useTranslation } from 'react-i18next';
 
@@ -15,6 +14,8 @@ interface Message {
   content: string;
   timestamp: Date;
 }
+
+const MAX_MESSAGES = 5;
 
 const EXAMPLE_MESSAGES = [
   { text: 'مرحبا، أريد شراء منتج', category: 'basic' },
@@ -39,8 +40,7 @@ export default function TrySari() {
   const [inputMessage, setInputMessage] = useState('');
   const [sessionId] = useState(() => `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   const [messageCount, setMessageCount] = useState(0);
-  const [showSignupPrompt, setShowSignupPrompt] = useState(false);
-  const [signupPromptShown, setSignupPromptShown] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
   const [showAdvancedExamples, setShowAdvancedExamples] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatMutation = trpc.publicSari.chat.useMutation();
@@ -57,7 +57,7 @@ export default function TrySari() {
 
   const handleSendMessage = async (message?: string, exampleUsed?: string) => {
     const messageToSend = message || inputMessage.trim();
-    if (!messageToSend) return;
+    if (!messageToSend || limitReached) return;
 
     // Add user message
     const userMessage: Message = {
@@ -72,21 +72,13 @@ export default function TrySari() {
     const newCount = messageCount + 1;
     setMessageCount(newCount);
 
-    // Show signup prompt after 3-5 messages (random)
-    const promptThreshold = 3 + Math.floor(Math.random() * 3); // 3, 4, or 5
-    if (newCount >= promptThreshold && !signupPromptShown) {
-      setShowSignupPrompt(true);
-      setSignupPromptShown(true);
-      trackSignupPromptMutation.mutate({ sessionId });
-    }
-
     try {
       // Get AI response with analytics tracking
       const response = await chatMutation.mutateAsync({
         message: messageToSend,
         sessionId,
         exampleUsed,
-        ipAddress: undefined, // Could be added if needed
+        ipAddress: undefined,
         userAgent: navigator.userAgent,
       });
 
@@ -97,6 +89,12 @@ export default function TrySari() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // Show limit CTA after the AI reply on the final message
+      if (newCount >= MAX_MESSAGES) {
+        setLimitReached(true);
+        trackSignupPromptMutation.mutate({ sessionId });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
@@ -112,13 +110,8 @@ export default function TrySari() {
     handleSendMessage(example.text, example.text);
   };
 
-  const handleSignupPromptClose = () => {
-    setShowSignupPrompt(false);
-  };
-
   const handleSignupConversion = () => {
     trackConversionMutation.mutate({ sessionId });
-    setShowSignupPrompt(false);
   };
 
   const handleReset = () => {
@@ -130,10 +123,12 @@ export default function TrySari() {
       },
     ]);
     setMessageCount(0);
+    setLimitReached(false);
   };
 
   const basicExamples = EXAMPLE_MESSAGES.filter(e => e.category === 'basic');
   const advancedExamples = EXAMPLE_MESSAGES.filter(e => e.category === 'advanced');
+  const remainingMessages = MAX_MESSAGES - messageCount;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col">
@@ -240,28 +235,58 @@ export default function TrySari() {
 
               {/* Input Area */}
               <div className="border-t p-4">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSendMessage();
-                  }}
-                  className="flex gap-2"
-                >
-                  <Input
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder={t('trySariPage.text3')}
-                    className="flex-1 text-right"
-                    disabled={chatMutation.isPending}
-                  />
-                  <Button
-                    type="submit"
-                    disabled={!inputMessage.trim() || chatMutation.isPending}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </form>
+                {limitReached ? (
+                  <div className="text-center space-y-3">
+                    <p className="text-sm text-gray-600 font-medium">✨ أعجبك ساري؟ سجّل مجاناً واحصل على مساعد مبيعات ذكي لمتجرك</p>
+                    <Button
+                      className="w-full bg-[#00d25e] hover:bg-[#00b84e] text-white h-12 text-base font-bold"
+                      onClick={() => {
+                        handleSignupConversion();
+                        window.location.href = '/signup';
+                      }}
+                    >
+                      سجّل الآن مجاناً — 14 يوم تجربة
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleReset}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      أو أعد التجربة من البداية
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {messageCount > 0 && (
+                      <p className="text-xs text-gray-400 text-center mb-2">
+                        {remainingMessages} رسائل متبقية في التجربة
+                      </p>
+                    )}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }}
+                      className="flex gap-2"
+                    >
+                      <Input
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        placeholder={t('trySariPage.text3')}
+                        className="flex-1 text-right"
+                        disabled={chatMutation.isPending}
+                      />
+                      <Button
+                        type="submit"
+                        disabled={!inputMessage.trim() || chatMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Send className="w-4 h-4" />
+                      </Button>
+                    </form>
+                  </>
+                )}
               </div>
             </Card>
 
@@ -280,7 +305,7 @@ export default function TrySari() {
                       variant="outline"
                       className="w-full justify-start text-right text-sm"
                       onClick={() => handleExampleClick(example)}
-                      disabled={chatMutation.isPending}
+                      disabled={chatMutation.isPending || limitReached}
                     >
                       {example.text}
                     </Button>
@@ -305,7 +330,7 @@ export default function TrySari() {
                           variant="outline"
                           className="w-full justify-start text-right text-xs"
                           onClick={() => handleExampleClick(example)}
-                          disabled={chatMutation.isPending}
+                          disabled={chatMutation.isPending || limitReached}
                         >
                           {example.text}
                         </Button>
@@ -355,13 +380,6 @@ export default function TrySari() {
       </main>
 
       <Footer />
-      
-      {/* Signup Prompt Dialog */}
-      <SignupPromptDialog
-        open={showSignupPrompt}
-        onClose={handleSignupPromptClose}
-        onSignup={handleSignupConversion}
-      />
     </div>
   );
 }
