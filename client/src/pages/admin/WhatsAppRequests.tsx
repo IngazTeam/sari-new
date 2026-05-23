@@ -40,7 +40,7 @@ export default function WhatsAppRequests() {
       setSelectedRequest(null);
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل قبول الطلب');
     },
   });
@@ -54,7 +54,7 @@ export default function WhatsAppRequests() {
       setSelectedRequest(null);
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل رفض الطلب');
     },
   });

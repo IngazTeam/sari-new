@@ -66,33 +66,33 @@ export default function MerchantsManagement() {
       toast.success(t('toast.merchants.msg1'));
       utils.merchants.list.invalidate();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(t('toast.merchants.msg2') + ': ' + error.message);
     },
   });
 
   const deleteMutation = trpc.merchants.delete.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`تم حذف التاجر #${data.deletedId} بنجاح`);
       utils.merchants.list.invalidate();
       setDeleteTarget(null);
       selectedIds.delete(data.deletedId);
       setSelectedIds(new Set(selectedIds));
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error('فشل حذف التاجر: ' + error.message);
       setDeleteTarget(null);
     },
   });
 
   const createMutation = trpc.merchants.adminCreate.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`تم إنشاء التاجر بنجاح (ID: ${data.merchantId})`);
       setShowCreateDialog(false);
       setCreateForm({ name: '', email: '', password: '', businessName: '', phone: '', status: 'active' });
       utils.merchants.list.invalidate();
     },
-    onError: (error) => toast.error(error.message || 'فشل إنشاء التاجر'),
+    onError: (error: any) => toast.error(error.message || 'فشل إنشاء التاجر'),
   });
 
   // Filter & search

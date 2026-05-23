@@ -96,7 +96,7 @@ export default function MerchantDetails() {
       utils.merchants.getById.invalidate({ merchantId });
       utils.merchants.list.invalidate();
     },
-    onError: (error) => toast.error(error.message || 'فشل تحديث البيانات'),
+    onError: (error: any) => toast.error(error.message || 'فشل تحديث البيانات'),
   });
 
   const adminResetPasswordMutation = trpc.merchants.adminResetPassword.useMutation({
@@ -105,7 +105,7 @@ export default function MerchantDetails() {
       setShowPasswordReset(false);
       setNewPassword('');
     },
-    onError: (error) => toast.error(error.message || 'فشل تغيير كلمة المرور'),
+    onError: (error: any) => toast.error(error.message || 'فشل تغيير كلمة المرور'),
   });
 
   const startEditing = () => {
@@ -128,20 +128,20 @@ export default function MerchantDetails() {
   };
 
   const assignMutation = trpc.merchants.assignSubscription.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`تم تفعيل الاشتراك — ${data.planName}`);
       setShowAssignForm(false);
       setSelectedPlanId('');
       refetchSubs();
       utils.merchants.getById.invalidate({ merchantId });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل تفعيل الاشتراك');
     },
   });
 
   const extendMutation = trpc.merchants.extendSubscription.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       toast.success(`تم تمديد الاشتراك حتى ${new Date(data.newEndDate).toLocaleDateString('ar-SA')}`);
       setShowExtendForm(false);
       // Force hard refetch — invalidate all cached subscription data
@@ -149,7 +149,7 @@ export default function MerchantDetails() {
       utils.merchants.getById.invalidate({ merchantId });
       refetchSubs();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل تمديد الاشتراك');
     },
   });
@@ -160,7 +160,7 @@ export default function MerchantDetails() {
       refetchSubs();
       utils.merchants.getById.invalidate({ merchantId });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل إلغاء الاشتراك');
     },
   });

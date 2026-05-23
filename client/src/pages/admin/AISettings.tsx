@@ -1,4 +1,4 @@
-Ôªøimport { useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -44,7 +44,7 @@ export default function AISettings() {
   // Mutations
   const updateMutation = trpc.aiSettings.updateSettings.useMutation({
     onSuccess: () => {
-      toast.success("ÿ™ŸÖ ÿ≠ŸÅÿ∏ ÿßŸÑÿ•ÿπÿØÿßÿØÿßÿ™ ÿ®ŸÜÿ¨ÿßÿ≠ ‚úÖ");
+      toast.success(" „ Õ›Ÿ «·≈⁄œ«œ«  »‰Ã«Õ ?");
       refetchSettings();
       setApiKey("");
     },
@@ -52,11 +52,11 @@ export default function AISettings() {
   });
 
   const testMutation = trpc.aiSettings.testConnection.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
-        toast.success(data.message || "ÿ™ŸÖ ÿßŸÑÿßÿ™ÿµÿßŸÑ ÿ®ŸÜÿ¨ÿßÿ≠!");
+        toast.success(data.message || " „ «·« ’«· »‰Ã«Õ!");
       } else {
-        toast.error(data.error || "ŸÅÿ¥ŸÑ ÿßŸÑÿßÿ™ÿµÿßŸÑ");
+        toast.error(data.error || "›‘· «·« ’«·");
       }
     },
     onError: (err) => toast.error(err.message),
@@ -212,7 +212,7 @@ export default function AISettings() {
                 {updateMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
                 ) : null}
-                ÿ≠ŸÅÿ∏ ÿßŸÑÿ•ÿπÿØÿßÿØÿßÿ™
+                Õ›Ÿ «·≈⁄œ«œ« 
               </Button>
               <Button
                 variant="outline"
@@ -224,7 +224,7 @@ export default function AISettings() {
                   } else if (settings?.hasKey) {
                     testMutation.mutate({}); // Server uses stored key
                   } else {
-                    toast.error("ÿ£ÿØÿÆŸÑ ŸÖŸÅÿ™ÿßÿ≠ API ÿ£ŸàŸÑÿßŸã");
+                    toast.error("√œŒ· „› «Õ API √Ê·«");
                   }
                 }}
                 disabled={testMutation.isPending}
@@ -234,7 +234,7 @@ export default function AISettings() {
                 ) : (
                   <RefreshCw className="h-4 w-4 ml-2" />
                 )}
-                ÿßÿÆÿ™ÿ®ÿßÿ± ÿßŸÑÿßÿ™ÿµÿßŸÑ
+                «Œ »«— «·« ’«·
               </Button>
             </div>
           </CardContent>
@@ -251,7 +251,7 @@ export default function AISettings() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{t('aISettings.auto_17')}</span>
-                <Badge variant="secondary">{formatNumber(monthStats?.chatRequests || 0)} ÿ∑ŸÑÿ®</Badge>
+                <Badge variant="secondary">{formatNumber(monthStats?.chatRequests || 0)} ÿ·»</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
                 <div
@@ -266,7 +266,7 @@ export default function AISettings() {
 
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{t('aISettings.auto_18')}</span>
-                <Badge variant="secondary">{formatNumber(monthStats?.whisperRequests || 0)} ÿ∑ŸÑÿ®</Badge>
+                <Badge variant="secondary">{formatNumber(monthStats?.whisperRequests || 0)} ÿ·»</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
                 <div
@@ -294,7 +294,7 @@ export default function AISettings() {
               </div>
               <div className="p-2 rounded bg-muted/50">
                 <p className="text-muted-foreground">{t('aISettings.auto_19')}</p>
-                <p className="font-semibold">{Math.round((monthStats?.totalAudioDuration || 0) / 60)} ÿØŸÇŸäŸÇÿ©</p>
+                <p className="font-semibold">{Math.round((monthStats?.totalAudioDuration || 0) / 60)} œﬁÌﬁ…</p>
               </div>
               <div className="p-2 rounded bg-muted/50">
                 <p className="text-muted-foreground">{t('aISettings.auto_20')}</p>
@@ -329,7 +329,7 @@ export default function AISettings() {
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
                     <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-2 text-xs whitespace-nowrap">
                       <p className="font-medium">{day.date}</p>
-                      <p>{formatNumber(day.requests)} ÿ∑ŸÑÿ®</p>
+                      <p>{formatNumber(day.requests)} ÿ·»</p>
                       <p>{formatNumber(day.tokens)} token</p>
                       <p>{formatCost(day.cost)}</p>
                     </div>
@@ -404,7 +404,7 @@ export default function AISettings() {
                       <TableRow key={log.id}>
                         <TableCell>
                           <Badge variant={log.requestType === "chat" ? "default" : "secondary"}>
-                            {log.requestType === "chat" ? "üí¨" : "üé§"} {log.requestType}
+                            {log.requestType === "chat" ? "??" : "??"} {log.requestType}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs font-mono">{log.model}</TableCell>

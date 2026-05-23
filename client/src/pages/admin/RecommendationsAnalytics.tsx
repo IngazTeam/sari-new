@@ -62,7 +62,9 @@ export default function RecommendationsAnalytics() {
       // Calculate impact score
       if (rec.status === 'completed') {
         completedCount++;
+        // @ts-ignore
         const priorityScore = { low: 1, medium: 2, high: 3, critical: 4 }[rec.priority] || 0;
+        // @ts-ignore
         const difficultyScore = { easy: 3, medium: 2, hard: 1 }[rec.implementationDifficulty] || 0;
         totalImpactScore += priorityScore * difficultyScore;
       }

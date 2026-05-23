@@ -41,7 +41,7 @@ export default function PlatformKeys() {
   const { data: keys, isLoading } = trpc.merchants.listPlatformKeys.useQuery();
 
   const generateMutation = trpc.merchants.generatePlatformKey.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setGeneratedKey(data);
       utils.merchants.listPlatformKeys.invalidate();
       toast.success(`تم إنشاء مفتاح ${data.platform} بنجاح`);
@@ -50,7 +50,7 @@ export default function PlatformKeys() {
   });
 
   const regenerateMutation = trpc.merchants.regeneratePlatformKey.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       setGeneratedKey(data);
       utils.merchants.listPlatformKeys.invalidate();
       toast.success(`تم تجديد مفتاح ${data.platform}`);

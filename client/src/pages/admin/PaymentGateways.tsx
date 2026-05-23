@@ -19,7 +19,7 @@ export default function PaymentGateways() {
       toast.success(t('toast.common.msg1'));
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message);
     },
   });
@@ -66,11 +66,11 @@ export default function PaymentGateways() {
     try {
       await upsertMutation.mutateAsync({
         gateway: 'tap',
-        isEnabled: tapEnabled,
+        isEnabled: !!tapEnabled,
         publicKey: tapPublicKey,
         secretKey: tapSecretKey,
         webhookSecret: tapWebhookSecret,
-        testMode: tapTestMode,
+        testMode: !!tapTestMode,
       });
     } catch (error) {
       // Error already handled by onError callback
@@ -81,11 +81,11 @@ export default function PaymentGateways() {
     try {
       await upsertMutation.mutateAsync({
         gateway: 'paypal',
-        isEnabled: paypalEnabled,
+        isEnabled: !!paypalEnabled,
         publicKey: paypalClientId,
         secretKey: paypalSecret,
         webhookSecret: paypalWebhookId,
-        testMode: paypalTestMode,
+        testMode: !!paypalTestMode,
       });
     } catch (error) {
       // Error already handled by onError callback
@@ -136,7 +136,7 @@ export default function PaymentGateways() {
               <Label htmlFor="tap-enabled">{t('adminPaymentGatewaysPage.text3')}</Label>
               <Switch
                 id="tap-enabled"
-                checked={tapEnabled}
+                checked={!!tapEnabled}
                 onCheckedChange={setTapEnabled}
               />
             </div>
@@ -145,7 +145,7 @@ export default function PaymentGateways() {
               <Label htmlFor="tap-test-mode">{t('adminPaymentGatewaysPage.text4')}</Label>
               <Switch
                 id="tap-test-mode"
-                checked={tapTestMode}
+                checked={!!tapTestMode}
                 onCheckedChange={setTapTestMode}
               />
             </div>
@@ -244,7 +244,7 @@ export default function PaymentGateways() {
               <Label htmlFor="paypal-enabled">{t('adminPaymentGatewaysPage.text8')}</Label>
               <Switch
                 id="paypal-enabled"
-                checked={paypalEnabled}
+                checked={!!paypalEnabled}
                 onCheckedChange={setPaypalEnabled}
               />
             </div>
@@ -253,7 +253,7 @@ export default function PaymentGateways() {
               <Label htmlFor="paypal-test-mode">{t('adminPaymentGatewaysPage.text9')}</Label>
               <Switch
                 id="paypal-test-mode"
-                checked={paypalTestMode}
+                checked={!!paypalTestMode}
                 onCheckedChange={setPaypalTestMode}
               />
             </div>

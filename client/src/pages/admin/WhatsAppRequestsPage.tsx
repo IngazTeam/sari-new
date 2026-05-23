@@ -58,7 +58,7 @@ export default function WhatsAppRequestsPage() {
           resetForm();
           refetch();
         },
-        onError: (error) => {
+        onError: (error: any) => {
           toast.error(error.message || 'فشلت الموافقة على الطلب');
         },
       }
@@ -84,7 +84,7 @@ export default function WhatsAppRequestsPage() {
           resetForm();
           refetch();
         },
-        onError: (error) => {
+        onError: (error: any) => {
           toast.error(error.message || 'فشل رفض الطلب');
         },
       }

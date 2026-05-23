@@ -185,7 +185,7 @@ function GASetupCard({ config, onConfigured }: { config: any; onConfigured: () =
   });
 
   const testMutation = trpc.googleAnalytics.testConnection.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data.success) {
         toast.success(`✅ متصل بنجاح — ${data.propertyName}`);
       } else {

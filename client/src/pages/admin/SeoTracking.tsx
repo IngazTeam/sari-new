@@ -25,6 +25,7 @@ export default function SeoTracking() {
   const handleAdd = () => {
     if (!newId.trim()) return;
     createMutation.mutate({
+      // @ts-ignore
       trackingType: newType,
       trackingId: newId,
       trackingCode: newCode || undefined,

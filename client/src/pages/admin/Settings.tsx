@@ -109,7 +109,7 @@ export default function Settings() {
       setIsDialogOpen(false);
       setEditingPlan(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل إضافة الباقة');
     },
   });
@@ -122,7 +122,7 @@ export default function Settings() {
       setIsDialogOpen(false);
       setEditingPlan(null);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل تحديث الباقة');
     },
   });
