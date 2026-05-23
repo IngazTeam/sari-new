@@ -32,7 +32,7 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
   // ═══════════════════════════════════════════
   try {
     const db = await getDb();
-    const [sallaConnection] = await db
+    const [sallaConnection] = await db!
       .select()
       .from(sallaConnections)
       .where(

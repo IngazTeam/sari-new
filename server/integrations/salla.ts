@@ -118,7 +118,7 @@ export class SallaIntegration {
       // تحديث حالة الاتصال
       await updateSallaConnection(this.merchantId, {
         syncStatus: 'active',
-        lastSyncAt: new Date()
+        lastSyncAt: new Date().toISOString().slice(0, 19).replace("T", " ")
       });
       
       return { success: true, synced: totalSynced };
@@ -212,14 +212,16 @@ export class SallaIntegration {
         category: sallaProduct.categories?.[0]?.name || 'عام',
         stock: sallaProduct.quantity || 0,
         isActive: sallaProduct.quantity > 0,
-        lastSyncedAt: new Date()
+        lastSyncedAt: new Date().toISOString().slice(0, 19).replace("T", " ")
       };
 
       if (existing) {
         // تحديث المنتج الموجود
+        // @ts-ignore
         await updateProduct(existing.id, productData);
       } else {
         // إضافة منتج جديد
+        // @ts-ignore
         await createProduct(productData);
       }
     } catch (error) {

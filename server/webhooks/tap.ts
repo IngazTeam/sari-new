@@ -89,7 +89,7 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
           amount: payment.amount,
           currency: payment.currency,
           status: 'paid',
-          emailSent: false,
+          emailSent: 0,
         });
 
         if (invoice) {
@@ -106,8 +106,8 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
               const emailSent = await sendInvoiceEmail({ ...invoice, pdfUrl: pdfResult.pdfUrl });
               if (emailSent) {
                 await updateInvoice(invoice.id, {
-                  emailSent: true,
-                  emailSentAt: new Date(),
+                  emailSent: 1,
+                  emailSentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                 });
               }
             }

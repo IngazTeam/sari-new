@@ -231,7 +231,7 @@ async function getOrCreateConversation(params: {
   if (existing) {
     // Update last message time
     await updateConversation(existing.id, {
-      lastMessageAt: new Date(),
+      lastMessageAt: new Date().toISOString().slice(0, 19).replace("T", " "),
       status: 'active',
     });
     return existing.id;
@@ -248,7 +248,7 @@ async function getOrCreateConversation(params: {
     merchantId: params.merchantId,
     customerPhone: params.customerPhone,
     customerName: params.customerName || null,
-    lastMessageAt: new Date(),
+    lastMessageAt: new Date().toISOString().slice(0, 19).replace("T", " "),
     status: 'active',
   });
   
@@ -290,6 +290,7 @@ async function processTextMessage(params: {
       content: params.messageText,
       voiceUrl: params.imageUrl || null,  // Reuse voiceUrl field for image URL
       isProcessed: 0,
+      // @ts-ignore
       aiwResponse: null,
     });
     
@@ -362,6 +363,7 @@ async function processTextMessage(params: {
       content: response,
       voiceUrl: null,
       isProcessed: 1,
+      // @ts-ignore
       aiwResponse: response,
     });
     

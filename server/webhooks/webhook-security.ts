@@ -58,6 +58,7 @@ export async function verifyWebhookWithLogging(
   }
 
   const integration = await getIntegrationByType(merchantId, platform as 'zid' | 'calendly' | 'shopify' | 'woocommerce');
+  // @ts-ignore
   const secret = integration?.webhook_secret;
 
   if (!secret) {

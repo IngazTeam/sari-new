@@ -83,7 +83,7 @@ export async function handlePayPalWebhook(payload: any): Promise<{ success: bool
           amount: payment.amount,
           currency: payment.currency,
           status: 'paid',
-          emailSent: false,
+          emailSent: 0,
         });
 
         if (invoice) {
@@ -100,8 +100,8 @@ export async function handlePayPalWebhook(payload: any): Promise<{ success: bool
               const emailSent = await sendInvoiceEmail({ ...invoice, pdfUrl: pdfResult.pdfUrl });
               if (emailSent) {
                 await updateInvoice(invoice.id, {
-                  emailSent: true,
-                  emailSentAt: new Date(),
+                  emailSent: 1,
+                  emailSentAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                 });
               }
             }

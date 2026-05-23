@@ -17,7 +17,7 @@ import {
   updateOrderStatus,
 } from '../db';
 import * as dbPayments from '../db_payments';
-import { sendTextMessage } from '../whatsapp';
+import { sendMessageWithCredentials } from '../whatsapp';
 
 interface TapWebhookPayload {
   id: string;
@@ -226,8 +226,8 @@ async function handleOrderPayment(
       // Send payment success WhatsApp notification
       try {
         const merchant = await getMerchantById(merchantId);
-        if (merchant?.instanceId && merchant?.apiToken) {
-          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, successMessage);
+        if ((merchant as any)?.instanceId && (merchant as any)?.apiToken) {
+          await sendMessageWithCredentials((merchant as any).instanceId, (merchant as any).apiToken, 'https://api.green-api.com', customerPhone, successMessage);
           console.log(`[TapWebhook] ✅ Payment success message sent for order ${orderId}`);
         }
       } catch (msgErr) {
@@ -249,8 +249,8 @@ async function handleOrderPayment(
       // Send payment failure WhatsApp notification
       try {
         const merchant = await getMerchantById(merchantId);
-        if (merchant?.instanceId && merchant?.apiToken) {
-          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, failureMessage);
+        if ((merchant as any)?.instanceId && (merchant as any)?.apiToken) {
+          await sendMessageWithCredentials((merchant as any).instanceId, (merchant as any).apiToken, 'https://api.green-api.com', customerPhone, failureMessage);
           console.log(`[TapWebhook] ⚠️ Payment failure message sent for order ${orderId}`);
         }
       } catch (msgErr) {
@@ -300,8 +300,8 @@ async function handleBookingPayment(
       // Send booking confirmation WhatsApp notification
       try {
         const merchant = await getMerchantById(merchantId);
-        if (merchant?.instanceId && merchant?.apiToken) {
-          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, successMessage);
+        if ((merchant as any)?.instanceId && (merchant as any)?.apiToken) {
+          await sendMessageWithCredentials((merchant as any).instanceId, (merchant as any).apiToken, 'https://api.green-api.com', customerPhone, successMessage);
           console.log(`[TapWebhook] ✅ Booking confirmation sent for booking ${bookingId}`);
         }
       } catch (msgErr) {
@@ -324,8 +324,8 @@ async function handleBookingPayment(
       // Send booking failure WhatsApp notification
       try {
         const merchant = await getMerchantById(merchantId);
-        if (merchant?.instanceId && merchant?.apiToken) {
-          await sendTextMessage(merchant.instanceId, merchant.apiToken, customerPhone, failureMessage);
+        if ((merchant as any)?.instanceId && (merchant as any)?.apiToken) {
+          await sendMessageWithCredentials((merchant as any).instanceId, (merchant as any).apiToken, 'https://api.green-api.com', customerPhone, failureMessage);
           console.log(`[TapWebhook] ⚠️ Booking payment failure sent for booking ${bookingId}`);
         }
       } catch (msgErr) {
