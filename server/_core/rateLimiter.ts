@@ -149,6 +149,6 @@ export function checkRateLimit(
 export const TRPC_LIMITS = {
     /** Public AI chat: 20 messages / minute / IP */
     CHAT_PER_IP: { max: 20, windowMs: 60_000 },
-    /** Public AI chat: 50 messages / hour / session */
-    CHAT_PER_SESSION: { max: 50, windowMs: 3_600_000 },
+    /** Public AI chat: 10 messages / hour / session (client limit is 5, 2x margin) */
+    CHAT_PER_SESSION: { max: 10, windowMs: 3_600_000 },
 } as const;
