@@ -111,3 +111,13 @@ temp/
 setup-db.mjs
 full-setup.mjs
 .tmp/
+
+# Security: Test/scratch files — never track credentials, sessions, or API test data
+cookies.txt
+login_body.json
+scratch_login.json
+test_no_storeid.json
+test_zid_api.json
+test_page.html
+*.session
+*.cookies
