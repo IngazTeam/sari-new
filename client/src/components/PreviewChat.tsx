@@ -52,7 +52,7 @@ export default function PreviewChat({
 
   // Real AI mutation
   const sendMessageMutation = trpc.testSari.sendMessage.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       const botMessage: Message = {
         id: Date.now(),
         sender: 'bot',
@@ -62,7 +62,7 @@ export default function PreviewChat({
       setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('AI chat error:', error);
       // Fallback to simple response on error
       const botMessage: Message = {

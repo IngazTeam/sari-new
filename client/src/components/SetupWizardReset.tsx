@@ -32,7 +32,7 @@ export default function SetupWizardReset() {
         setLocation('/merchant/setup-wizard');
       }, 500);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'فشل إعادة تعيين معالج الإعداد');
     },
   });

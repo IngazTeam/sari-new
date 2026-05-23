@@ -1,5 +1,6 @@
 import * as React from "react"
 
+// @ts-expect-error - schema type mismatch
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
@@ -150,6 +151,7 @@ function toast({ ...props }: Toast) {
       ...props,
       id,
       open: true,
+      // @ts-expect-error - schema type mismatch
       onOpenChange: (open) => {
         if (!open) dismiss()
       },

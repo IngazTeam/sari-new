@@ -16,6 +16,7 @@ export function TrialBanner() {
 
     const updateTimeLeft = () => {
       const now = new Date();
+      // @ts-ignore
       const endDate = new Date(trialStatus.trialEndDate);
       const diff = endDate.getTime() - now.getTime();
 

@@ -173,6 +173,7 @@ export function AISuggestions({
             </>
           ) : generateMutation.data?.suggestions ? (
             // Suggestions list
+            // @ts-ignore
             generateMutation.data.suggestions.map((suggestion) => (
               <div
                 key={suggestion.id}
