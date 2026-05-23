@@ -114,7 +114,7 @@ export async function runDailyAnalysis(merchantId: number): Promise<void> {
     const [rows] = await pool.execute(
       `SELECT strategy, 
               COUNT(*) as total_uses,
-              SUM(CASE WHEN was_successful = 1 THEN 1 ELSE 0 END) as successes
+              SUM(CASE WHEN led_to_purchase = 1 THEN 1 ELSE 0 END) as successes
        FROM sari_strategy_metrics 
        WHERE merchant_id = ?
          AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
@@ -136,7 +136,7 @@ export async function runDailyAnalysis(merchantId: number): Promise<void> {
       `SELECT HOUR(created_at) as hour,
               DAYOFWEEK(created_at) as day_of_week,
               COUNT(*) as total,
-              SUM(CASE WHEN was_successful = 1 THEN 1 ELSE 0 END) as successes
+              SUM(CASE WHEN led_to_purchase = 1 THEN 1 ELSE 0 END) as successes
        FROM sari_strategy_metrics
        WHERE merchant_id = ?
          AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
