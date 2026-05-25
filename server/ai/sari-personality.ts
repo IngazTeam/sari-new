@@ -754,6 +754,48 @@ async function buildEnhancedContextPrompt(context: {
   return contextPrompt;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Deal Stage Helper — single source of truth for pipeline progression
+// Called BEFORE any path split (cache, fast, full) to ensure every
+// customer message updates the pipeline, regardless of response path.
+// ═══════════════════════════════════════════════════════════════
+
+const DEAL_STAGE_MAP: Record<string, string> = {
+  browsing: 'new',
+  inquiring: 'interested',
+  comparing: 'qualified',
+  hesitating: 'qualified',
+  objecting: 'qualified',
+  ready_to_buy: 'ready',
+  post_purchase: 'purchased',
+  returning: 'returning',
+};
+
+const STAGE_ORDER: Record<string, number> = {
+  new: 0, interested: 1, qualified: 2, ready: 3, purchased: 4, paid: 5, returning: 6,
+};
+
+async function updateDealStage(convId: number, intent: string): Promise<void> {
+  const newStage = DEAL_STAGE_MAP[intent];
+  if (!newStage) return;
+  try {
+    const { getPool } = await import('../db');
+    const pool = await getPool();
+    if (!pool) return;
+    const [rows] = await pool.execute(
+      `SELECT deal_stage FROM conversations WHERE id = ? LIMIT 1`,
+      [convId]
+    );
+    const current = (rows as any[])[0]?.deal_stage || 'new';
+    if ((STAGE_ORDER[newStage] ?? 0) > (STAGE_ORDER[current] ?? 0) || newStage === 'returning') {
+      await pool.execute(
+        `UPDATE conversations SET deal_stage = ? WHERE id = ?`,
+        [newStage, convId]
+      );
+    }
+  } catch { /* dealStage is non-blocking */ }
+}
+
 /**
  * Enhanced chat with Sari AI Agent
  */
@@ -974,9 +1016,17 @@ ${result.orderUrl}
     let existingSession = convId ? getSession(params.merchantId, convId) : null;
     const needsTopicRebuild = existingSession && detectTopicChange(existingSession, params.message);
 
+    // ENH-FIX: Detect intent ONCE before path split — shared by FAST + FULL paths
+    const earlyIntent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
+
+    // ENH-FIX: Update dealStage BEFORE any early return (cache, fast path, etc.)
+    if (convId) {
+      updateDealStage(convId, earlyIntent).catch(() => {});
+    }
+
     if (existingSession && !needsTopicRebuild) {
       // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
-      const intent = detectIntent(params.message, customerProfile?.totalConversations, (customerProfile?.preferences as any)?.buyingStage);
+      const intent = earlyIntent; // reuse pre-computed intent
       const fastSentiment = detectSentimentFast(params.message);
       const sentimentSignals = detectSentimentWithSignals(params.message);
       updateSession(params.merchantId, convId, {
@@ -1062,46 +1112,10 @@ ${result.orderUrl}
         }).catch(() => {});
       }
 
-      // v6 → v7: markStrategySuccess REMOVED from intent detection.
-      // Reason: led_to_purchase must only be set by Tap webhook on CAPTURED payment,
-      // not by ready_to_buy intent (customer may say "أبي أشتري" then ghost).
-      // Real conversion tracking: tap-webhook.ts → handleOrderPayment → CAPTURED
 
-      // ENH: Update conversation dealStage based on detected intent (persistent pipeline)
-      if (convId) {
-        const dealStageMap: Record<string, string> = {
-          browsing: 'new',
-          inquiring: 'interested',
-          comparing: 'qualified',
-          hesitating: 'qualified',
-          objecting: 'qualified',
-          ready_to_buy: 'ready',
-          post_purchase: 'purchased',
-          returning: 'returning',
-        };
-        const newStage = dealStageMap[effectiveIntent] || dealStageMap[intent];
-        if (newStage) {
-          try {
-            const { getPool } = await import('../db');
-            const pool = await getPool();
-            if (pool) {
-              // Only advance stage, never regress (except returning)
-              const stageOrder: Record<string, number> = { new: 0, interested: 1, qualified: 2, ready: 3, purchased: 4, paid: 5, returning: 6 };
-              const [currentRows] = await pool.execute(
-                `SELECT deal_stage FROM conversations WHERE id = ? LIMIT 1`,
-                [convId]
-              );
-              const current = (currentRows as any[])[0]?.deal_stage || 'new';
-              if ((stageOrder[newStage] ?? 0) > (stageOrder[current] ?? 0) || newStage === 'returning') {
-                await pool.execute(
-                  `UPDATE conversations SET deal_stage = ? WHERE id = ?`,
-                  [newStage, convId]
-                );
-              }
-            }
-          } catch { /* dealStage is non-blocking */ }
-        }
-      }
+      // v6 → v7: markStrategySuccess REMOVED from intent detection.
+      // Reason: led_to_purchase must only be set by Tap webhook on CAPTURED payment.
+      // v7 → v8: dealStage update MOVED to updateDealStage() helper, called before path split.
 
       // Build system prompt: Mission Block FIRST, then cached context
       let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
@@ -1458,39 +1472,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           initialSentiment: sentiment?.sentiment || 'neutral',
           initialIntent: intent,
         });
-
-        // ENH-FIX: Update dealStage in FULL PATH too (was missing — only FAST PATH had it)
-        const dealStageMapFull: Record<string, string> = {
-          browsing: 'new',
-          inquiring: 'interested',
-          comparing: 'qualified',
-          hesitating: 'qualified',
-          objecting: 'qualified',
-          ready_to_buy: 'ready',
-          post_purchase: 'purchased',
-          returning: 'returning',
-        };
-        const newStageFull = dealStageMapFull[intent];
-        if (newStageFull) {
-          try {
-            const { getPool } = await import('../db');
-            const pool = await getPool();
-            if (pool) {
-              const stageOrderFull: Record<string, number> = { new: 0, interested: 1, qualified: 2, ready: 3, purchased: 4, paid: 5, returning: 6 };
-              const [curRows] = await pool.execute(
-                `SELECT deal_stage FROM conversations WHERE id = ? LIMIT 1`,
-                [convId]
-              );
-              const curStage = (curRows as any[])[0]?.deal_stage || 'new';
-              if ((stageOrderFull[newStageFull] ?? 0) > (stageOrderFull[curStage] ?? 0) || newStageFull === 'returning') {
-                await pool.execute(
-                  `UPDATE conversations SET deal_stage = ? WHERE id = ?`,
-                  [newStageFull, convId]
-                );
-              }
-            }
-          } catch { /* dealStage is non-blocking */ }
-        }
+        // v8: dealStage update handled by updateDealStage() helper before path split
       }
     } catch (arsenalErr) {
       console.warn('[chatWithSari] Arsenal load failed:', arsenalErr);
