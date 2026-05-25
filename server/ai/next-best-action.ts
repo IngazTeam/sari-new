@@ -280,6 +280,14 @@ function checkUrgencyTrigger(ctx: NBAContext): NBAResult | null {
 // Helper: Load NBA Context from Database
 // ═══════════════════════════════════════════════════════════════
 
+// Objection patterns — used to detect last objection from message history
+const NBA_OBJECTION_PATTERNS: Record<string, RegExp> = {
+  price: /غالي|كثير|مبالغ|السعر عالي|أرخص|أقل|خصم|تخفيض|expensive|too much|cheaper/i,
+  trust: /ما أعرفكم|مضمون|موثوق|أول مرة|مو نصب|ضمان|ما أثق|مجرب/i,
+  delivery: /توصيل|شحن|يوصل|كم يوم|ما يوصل|بعيد/i,
+  competitor: /مكان ثاني|محل ثاني|أقارن|بشوف عند|لقيت أفضل|عند غيركم|منافس|بديل/i,
+};
+
 export async function loadNBAContext(
   merchantId: number,
   conversationId: number,
@@ -319,16 +327,32 @@ export async function loadNBAContext(
       `SELECT id FROM discount_codes WHERE merchantId = ? AND isActive = 1 AND 
        (expiresAt IS NULL OR expiresAt > NOW()) LIMIT 1`,
       [merchantId]
-    ).catch(() => [[]]);
+    ).catch(() => [[]] as any);
 
-    // Get last objection from strategy metrics
-    const [objRows] = await pool.execute(
-      `SELECT JSON_EXTRACT(strategy_snapshot, '$.dominant_objection') as objection
-       FROM sari_strategy_metrics
-       WHERE merchant_id = ? AND conversation_id = ?
-       ORDER BY created_at DESC LIMIT 1`,
-      [merchantId, conversationId]
-    ).catch(() => [[]]);
+    // P0-FIX: Detect last objection from recent incoming messages
+    // instead of relying on the non-existent strategy_snapshot column
+    let lastObjection: string | null = null;
+    try {
+      const [msgRows] = await pool.execute(
+        `SELECT content FROM messages
+         WHERE conversationId = ? AND direction = 'incoming'
+         ORDER BY id DESC LIMIT 10`,
+        [conversationId]
+      );
+      // Scan messages from newest to oldest, return first objection found
+      for (const msg of (msgRows as any[])) {
+        const content = msg.content || '';
+        for (const [type, pattern] of Object.entries(NBA_OBJECTION_PATTERNS)) {
+          if (pattern.test(content)) {
+            lastObjection = type;
+            break;
+          }
+        }
+        if (lastObjection) break;
+      }
+    } catch {
+      // Non-blocking: if messages query fails, continue without objection
+    }
 
     return {
       ...defaults,
@@ -338,7 +362,7 @@ export async function loadNBAContext(
       timeSinceLastMessage: conv.hours_since || 0,
       messageCount: conv.messageCount || 0,
       hasDiscount: (discountRows as any[]).length > 0,
-      lastObjection: (objRows as any[])[0]?.objection?.replace(/"/g, '') || null,
+      lastObjection,
     };
   } catch (err) {
     console.warn('[NBA] Context load failed (non-blocking):', err);

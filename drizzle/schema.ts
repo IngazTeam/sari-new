@@ -2826,6 +2826,8 @@ export const salesFollowups = mysqlTable("sales_followups", {
 	messageText: text("message_text").notNull(),
 	customerName: varchar("customer_name", { length: 255 }),
 	source: varchar({ length: 30 }).default('proactive').notNull(), // proactive, action_selector
+	// P0-FIX: claim-lock token for atomic follow-up processing (prevents double-send)
+	processingToken: varchar("processing_token", { length: 60 }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_followup_merchant_phone").on(table.merchantId, table.customerPhone),

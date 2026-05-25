@@ -1,10 +1,29 @@
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Flame, Clock, CreditCard, AlertTriangle, TrendingUp, TrendingDown,
   Minus, Users, ShoppingCart, Phone, DollarSign, BarChart3,
+  MessageCircle, ExternalLink, RefreshCw,
 } from 'lucide-react';
+import { useLocation } from 'wouter';
+
+// ═══════════════════════════════════════════════════════════════
+// Navigation Helper
+// ═══════════════════════════════════════════════════════════════
+
+function useOpenConversation() {
+  const [, navigate] = useLocation();
+  return (phone?: string, name?: string) => {
+    if (!phone) return;
+    // Navigate to conversations page with phone filter
+    const params = new URLSearchParams();
+    params.set('phone', phone);
+    if (name) params.set('name', name);
+    navigate(`/merchant/conversations?${params.toString()}`);
+  };
+}
 
 // ═══════════════════════════════════════════════════════════════
 // Loss Reason Labels
@@ -42,6 +61,8 @@ export default function SalesPipeline() {
   const { data: kpis } = trpc.salesPipeline.getKPIs.useQuery();
   const { data: pipeline } = trpc.salesPipeline.getPipeline.useQuery();
   const { data: lossBreakdown } = trpc.salesPipeline.getLossBreakdown.useQuery({ days: 30 });
+  const openConversation = useOpenConversation();
+  const [, navigate] = useLocation();
 
   const trendIcon = kpis?.weeklyTrend === 'up'
     ? <TrendingUp className="h-4 w-4 text-green-600" />
@@ -58,13 +79,16 @@ export default function SalesPipeline() {
           غرفة قيادة المبيعات
         </h1>
         <p className="text-muted-foreground mt-2">
-          تابع صفقاتك ومبيعاتك في الوقت الحقيقي
+          تابع صفقاتك ومبيعاتك في الوقت الحقيقي — انقر على أي بطاقة للتنفيذ
         </p>
       </div>
 
       {/* ═══════ Row 1: Action Cards — "ماذا يحتاج انتباهك" ═══════ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md transition-shadow">
+        <Card
+          className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-300 transition-all"
+          onClick={() => navigate('/merchant/conversations?stage=ready')}
+        >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
               <div className="p-2 rounded-full bg-emerald-100">
@@ -73,10 +97,16 @@ export default function SalesPipeline() {
             </div>
             <p className="text-3xl font-bold text-emerald-700">{actions?.readyToPay || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">🔥 جاهزون للدفع</p>
+            <p className="text-[10px] text-emerald-600 mt-1 flex items-center justify-center gap-1">
+              <ExternalLink className="h-3 w-3" /> انقر لفتح المحادثات
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-md transition-shadow">
+        <Card
+          className="border-orange-200 bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-orange-300 transition-all"
+          onClick={() => navigate('/merchant/conversations?needs_human=1')}
+        >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
               <div className="p-2 rounded-full bg-orange-100">
@@ -85,10 +115,16 @@ export default function SalesPipeline() {
             </div>
             <p className="text-3xl font-bold text-orange-700">{actions?.needsHuman || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">⚠️ تحتاج تدخلك</p>
+            <p className="text-[10px] text-orange-600 mt-1 flex items-center justify-center gap-1">
+              <ExternalLink className="h-3 w-3" /> انقر للمراجعة
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-amber-200 bg-gradient-to-br from-amber-50 to-white cursor-pointer hover:shadow-md transition-shadow">
+        <Card
+          className="border-amber-200 bg-gradient-to-br from-amber-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-amber-300 transition-all"
+          onClick={() => navigate('/merchant/conversations?stage=payment_link_sent')}
+        >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
               <div className="p-2 rounded-full bg-amber-100">
@@ -97,10 +133,16 @@ export default function SalesPipeline() {
             </div>
             <p className="text-3xl font-bold text-amber-700">{actions?.paymentPending || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">💳 دفع لم يكتمل</p>
+            <p className="text-[10px] text-amber-600 mt-1 flex items-center justify-center gap-1">
+              <ExternalLink className="h-3 w-3" /> انقر للمتابعة
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200 bg-gradient-to-br from-slate-50 to-white cursor-pointer hover:shadow-md transition-shadow">
+        <Card
+          className="border-slate-200 bg-gradient-to-br from-slate-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-slate-300 transition-all"
+          onClick={() => navigate('/merchant/conversations?stage=stalled')}
+        >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
               <div className="p-2 rounded-full bg-slate-100">
@@ -109,6 +151,9 @@ export default function SalesPipeline() {
             </div>
             <p className="text-3xl font-bold text-slate-700">{actions?.stalled || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">⏸️ متوقفة</p>
+            <p className="text-[10px] text-slate-600 mt-1 flex items-center justify-center gap-1">
+              <ExternalLink className="h-3 w-3" /> انقر لإعادة التواصل
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -174,7 +219,11 @@ export default function SalesPipeline() {
                 if (!info) return null;
                 return (
                   <div key={stage} className="flex items-center gap-2">
-                    <div className={`px-3 py-2 rounded-lg text-center min-w-[80px] ${info.color}`}>
+                    <div
+                      className={`px-3 py-2 rounded-lg text-center min-w-[80px] cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all ${info.color}`}
+                      onClick={() => navigate(`/merchant/conversations?stage=${stage}`)}
+                      title={`عرض محادثات: ${info.label}`}
+                    >
                       <p className="text-xl font-bold">{count}</p>
                       <p className="text-[10px]">{info.label}</p>
                     </div>
@@ -200,12 +249,24 @@ export default function SalesPipeline() {
             {pipeline?.hotLeads && pipeline.hotLeads.length > 0 ? (
               <div className="space-y-2">
                 {pipeline.hotLeads.map((lead: any) => (
-                  <div key={lead.id} className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 border border-emerald-100">
+                  <div
+                    key={lead.id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 border border-emerald-100 hover:bg-emerald-100/50 transition-colors cursor-pointer group"
+                    onClick={() => openConversation(lead.customerPhone, lead.customerName)}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <Phone className="h-3 w-3 text-emerald-600 shrink-0" />
                       <span className="text-sm font-medium truncate">{lead.customerName || lead.customerPhone}</span>
                     </div>
-                    <Badge className="bg-emerald-100 text-emerald-800 text-[10px] shrink-0">جاهز</Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-emerald-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); openConversation(lead.customerPhone, lead.customerName); }}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 ml-1" />
+                      فتح المحادثة
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -226,14 +287,27 @@ export default function SalesPipeline() {
             {pipeline?.paymentPending && pipeline.paymentPending.length > 0 ? (
               <div className="space-y-2">
                 {pipeline.paymentPending.map((item: any) => (
-                  <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-amber-50/50 border border-amber-100">
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-amber-50/50 border border-amber-100 hover:bg-amber-100/50 transition-colors cursor-pointer group"
+                    onClick={() => openConversation(item.customerPhone, item.customerName)}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <ShoppingCart className="h-3 w-3 text-amber-600 shrink-0" />
                       <span className="text-sm font-medium truncate">{item.customerName || item.customerPhone}</span>
+                      <span className="text-[10px] text-muted-foreground shrink-0">
+                        {item.payment_link_sent_at ? new Date(item.payment_link_sent_at).toLocaleDateString('ar-SA') : ''}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground shrink-0">
-                      {item.payment_link_sent_at ? new Date(item.payment_link_sent_at).toLocaleDateString('ar-SA') : ''}
-                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-amber-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => { e.stopPropagation(); openConversation(item.customerPhone, item.customerName); }}
+                    >
+                      <MessageCircle className="h-3.5 w-3.5 ml-1" />
+                      تذكير
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -254,7 +328,11 @@ export default function SalesPipeline() {
             {pipeline?.recentWins && pipeline.recentWins.length > 0 ? (
               <div className="space-y-2">
                 {pipeline.recentWins.map((win: any) => (
-                  <div key={win.id} className="flex items-center justify-between p-2 rounded-lg bg-green-50/50 border border-green-100">
+                  <div
+                    key={win.id}
+                    className="flex items-center justify-between p-2 rounded-lg bg-green-50/50 border border-green-100 hover:bg-green-100/50 transition-colors cursor-pointer"
+                    onClick={() => openConversation(win.customerPhone, win.customerName)}
+                  >
                     <div className="flex items-center gap-2 min-w-0">
                       <DollarSign className="h-3 w-3 text-green-600 shrink-0" />
                       <span className="text-sm font-medium truncate">{win.customerName || win.customerPhone}</span>
@@ -284,12 +362,25 @@ export default function SalesPipeline() {
                 {pipeline.recentLosses.map((loss: any) => {
                   const info = LOSS_LABELS[loss.loss_reason] || { label: loss.loss_reason, icon: '❓', color: 'bg-gray-100 text-gray-800 border-gray-200' };
                   return (
-                    <div key={loss.id} className="flex items-center justify-between p-2 rounded-lg bg-red-50/50 border border-red-100">
+                    <div
+                      key={loss.id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-red-50/50 border border-red-100 hover:bg-red-100/50 transition-colors cursor-pointer group"
+                      onClick={() => openConversation(loss.customerPhone, loss.customerName)}
+                    >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-sm">{info.icon}</span>
                         <span className="text-sm font-medium truncate">{loss.customerName || loss.customerPhone}</span>
+                        <Badge className={`text-[10px] ${info.color}`}>{info.label}</Badge>
                       </div>
-                      <Badge className={`text-[10px] ${info.color}`}>{info.label}</Badge>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-red-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => { e.stopPropagation(); openConversation(loss.customerPhone, loss.customerName); }}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5 ml-1" />
+                        محاولة استرداد
+                      </Button>
                     </div>
                   );
                 })}

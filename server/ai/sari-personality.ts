@@ -801,6 +801,40 @@ async function updateDealStage(convId: number, intent: string): Promise<void> {
 }
 
 /**
+ * P0-FIX: Load real payment context for Smart Escalation V2.
+ * Returns paymentLinkSent, hoursSincePaymentLink, and dealStage from DB.
+ * Non-blocking — returns safe defaults on any error.
+ */
+async function _loadPaymentContext(convId: number): Promise<{
+  paymentLinkSent: boolean;
+  hoursSincePaymentLink?: number;
+  dealStage: string | null;
+}> {
+  const defaults = { paymentLinkSent: false, hoursSincePaymentLink: undefined, dealStage: null };
+  if (!convId) return defaults;
+  try {
+    const { getPool } = await import('../db');
+    const pool = await getPool();
+    if (!pool) return defaults;
+    const [rows] = await pool.execute(
+      `SELECT deal_stage, payment_link_sent_at,
+              TIMESTAMPDIFF(HOUR, payment_link_sent_at, NOW()) as hours_since_payment
+       FROM conversations WHERE id = ? LIMIT 1`,
+      [convId]
+    );
+    const row = (rows as any[])[0];
+    if (!row) return defaults;
+    return {
+      paymentLinkSent: !!row.payment_link_sent_at,
+      hoursSincePaymentLink: row.hours_since_payment ?? undefined,
+      dealStage: row.deal_stage || null,
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+/**
  * Enhanced chat with Sari AI Agent
  */
 export async function chatWithSari(params: {
@@ -1344,15 +1378,18 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       // ═══ Smart Escalation v2 — Proactive triggers (FAST PATH) ═══
       try {
         const { evaluateSmartEscalationV2 } = await import('./smart-escalation');
+        // P0-FIX: Load real payment context from DB so payment_stuck trigger works
+        const v2PaymentCtx = await _loadPaymentContext(params.conversationId || 0);
         const v2Decision = evaluateSmartEscalationV2({
           merchantId: params.merchantId,
           conversationId: params.conversationId || 0,
           customerPhone: params.customerPhone,
           customerName: params.customerName,
           customerMessage: params.message,
-          dealStage: existingSession.dealStage || null,
+          dealStage: existingSession.dealStage || v2PaymentCtx.dealStage,
           sentiment: fastSentiment || 'neutral',
-          paymentLinkSent: false,
+          paymentLinkSent: v2PaymentCtx.paymentLinkSent,
+          hoursSincePaymentLink: v2PaymentCtx.hoursSincePaymentLink,
         });
         if (v2Decision.shouldEscalate && v2Decision.trigger) {
           console.log(`[Escalation-v2] 🎯 FAST PATH: ${v2Decision.trigger} (${v2Decision.priority})`);
@@ -1762,15 +1799,18 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     // ═══ Smart Escalation v2 — Proactive triggers (FULL PATH) ═══
     try {
       const { evaluateSmartEscalationV2 } = await import('./smart-escalation');
+      // P0-FIX: Load real payment context from DB so payment_stuck trigger works
+      const v2PaymentCtxFull = await _loadPaymentContext(params.conversationId || 0);
       const v2Decision = evaluateSmartEscalationV2({
         merchantId: params.merchantId,
         conversationId: params.conversationId || 0,
         customerPhone: params.customerPhone,
         customerName: params.customerName,
         customerMessage: params.message,
-        dealStage: null,
+        dealStage: v2PaymentCtxFull.dealStage,
         sentiment: sentiment?.sentiment || 'neutral',
-        paymentLinkSent: false,
+        paymentLinkSent: v2PaymentCtxFull.paymentLinkSent,
+        hoursSincePaymentLink: v2PaymentCtxFull.hoursSincePaymentLink,
       });
       if (v2Decision.shouldEscalate && v2Decision.trigger) {
         console.log(`[Escalation-v2] 🎯 FULL PATH: ${v2Decision.trigger} (${v2Decision.priority})`);
