@@ -212,16 +212,38 @@ async function handleOrderPayment(
       // دفع ناجح
       await updateOrderStatus(orderId, 'paid');
 
+      // ENH: Mark sales strategy as REAL success (payment confirmed, not just intent)
+      try {
+        const { getPool } = await import('../db');
+        const pool = await getPool();
+        if (pool) {
+          const [convRows] = await pool.execute(
+            `SELECT id FROM conversations WHERE merchantId = ? AND customerPhone = ? ORDER BY lastMessageAt DESC LIMIT 1`,
+            [merchantId, customerPhone]
+          );
+          const convId = (convRows as any[])[0]?.id;
+          if (convId) {
+            // Mark strategy as led_to_purchase (real conversion)
+            await pool.execute(
+              `UPDATE sari_strategy_metrics SET led_to_purchase = 1
+               WHERE merchant_id = ? AND conversation_id = ? AND led_to_purchase = 0
+               ORDER BY created_at DESC LIMIT 1`,
+              [merchantId, convId]
+            );
+            // Update conversation dealStage to 'paid'
+            await pool.execute(
+              `UPDATE conversations SET deal_stage = 'paid' WHERE id = ?`,
+              [convId]
+            );
+            console.log(`[TapWebhook] 📊 Strategy marked as REAL success + dealStage=paid for conv #${convId}`);
+          }
+        }
+      } catch (stratErr) {
+        console.warn(`[TapWebhook] Strategy success tracking failed (non-blocking):`, stratErr);
+      }
+
       // إرسال إشعار للعميل
-      const successMessage = `✅ *تم استلام الدفع بنجاح!*
-
-📦 *رقم الطلب:* ${order.orderNumber}
-💰 *المبلغ:* ${order.totalAmount} ريال
-
-🎉 طلبك قيد المعالجة الآن
-📱 سنرسل لك تحديثات عن حالة الشحن
-
-شكراً لثقتك بنا! 🌟`;
+      const successMessage = `✅ *تم استلام الدفع بنجاح!*\n\n📦 *رقم الطلب:* ${order.orderNumber}\n💰 *المبلغ:* ${order.totalAmount} ريال\n\n🎉 طلبك قيد المعالجة الآن\n📱 سنرسل لك تحديثات عن حالة الشحن\n\nشكراً لثقتك بنا! 🌟`;
 
       // Send payment success WhatsApp notification
       try {
@@ -238,13 +260,7 @@ async function handleOrderPayment(
       // دفع فاشل
       await updateOrderStatus(orderId, 'cancelled');
 
-      const failureMessage = `❌ *فشلت عملية الدفع*
-
-📦 *رقم الطلب:* ${order.orderNumber}
-
-يرجى المحاولة مرة أخرى أو التواصل معنا للمساعدة.
-
-نعتذر عن الإزعاج 🙏`;
+      const failureMessage = `❌ *فشلت عملية الدفع*\n\n📦 *رقم الطلب:* ${order.orderNumber}\n\nيرجى المحاولة مرة أخرى أو التواصل معنا للمساعدة.\n\nنعتذر عن الإزعاج 🙏`;
 
       // Send payment failure WhatsApp notification
       try {
@@ -285,17 +301,7 @@ async function handleBookingPayment(
       // دفع ناجح
       await updateBookingStatus(bookingId, 'confirmed');
 
-      const successMessage = `✅ *تم تأكيد حجزك!*
-
-📅 *الخدمة:* ${serviceName}
-📆 *التاريخ:* ${booking.bookingDate}
-⏰ *الوقت:* ${booking.startTime}
-💰 *المبلغ:* ${booking.finalPrice} ريال
-
-🎉 حجزك مؤكد الآن
-📱 سنرسل لك تذكير قبل الموعد
-
-نتطلع لخدمتك! 💚`;
+      const successMessage = `✅ *تم تأكيد حجزك!*\n\n📅 *الخدمة:* ${serviceName}\n📆 *التاريخ:* ${booking.bookingDate}\n⏰ *الوقت:* ${booking.startTime}\n💰 *المبلغ:* ${booking.finalPrice} ريال\n\n🎉 حجزك مؤكد الآن\n📱 سنرسل لك تذكير قبل الموعد\n\nنتطلع لخدمتك! 💚`;
 
       // Send booking confirmation WhatsApp notification
       try {
@@ -312,14 +318,7 @@ async function handleBookingPayment(
       // دفع فاشل
       await updateBookingStatus(bookingId, 'cancelled');
 
-      const failureMessage = `❌ *فشلت عملية الدفع*
-
-📅 *الحجز:* ${serviceName}
-📆 *التاريخ:* ${booking.bookingDate}
-
-يرجى المحاولة مرة أخرى أو التواصل معنا للمساعدة.
-
-نعتذر عن الإزعاج 🙏`;
+      const failureMessage = `❌ *فشلت عملية الدفع*\n\n📅 *الحجز:* ${serviceName}\n📆 *التاريخ:* ${booking.bookingDate}\n\nيرجى المحاولة مرة أخرى أو التواصل معنا للمساعدة.\n\nنعتذر عن الإزعاج 🙏`;
 
       // Send booking failure WhatsApp notification
       try {
