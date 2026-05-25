@@ -932,7 +932,7 @@ ${result.orderUrl}
 
     // ═══════════════════════════════════════════════════
     // Cancel any pending follow-ups (customer replied)
-    cancelFollowUps(params.merchantId, params.customerPhone);
+    await cancelFollowUps(params.merchantId, params.customerPhone);
 
     // ADAPTIVE SALES ENGINE — Session-aware pipeline
     // ═══════════════════════════════════════════════════
@@ -1062,13 +1062,80 @@ ${result.orderUrl}
         }).catch(() => {});
       }
 
-      // v6: If intent is ready_to_buy (or mixed-signal override), mark last strategy as success
-      if ((intent === 'ready_to_buy' || effectiveIntent === 'ready_to_buy') && convId) {
-        markStrategySuccess(params.merchantId, convId).catch(() => {});
+      // v6 → v7: markStrategySuccess REMOVED from intent detection.
+      // Reason: led_to_purchase must only be set by Tap webhook on CAPTURED payment,
+      // not by ready_to_buy intent (customer may say "أبي أشتري" then ghost).
+      // Real conversion tracking: tap-webhook.ts → handleOrderPayment → CAPTURED
+
+      // ENH: Update conversation dealStage based on detected intent (persistent pipeline)
+      if (convId) {
+        const dealStageMap: Record<string, string> = {
+          browsing: 'new',
+          inquiring: 'interested',
+          comparing: 'qualified',
+          hesitating: 'qualified',
+          objecting: 'qualified',
+          ready_to_buy: 'ready',
+          post_purchase: 'purchased',
+          returning: 'returning',
+        };
+        const newStage = dealStageMap[effectiveIntent] || dealStageMap[intent];
+        if (newStage) {
+          try {
+            const { getPool } = await import('../db');
+            const pool = await getPool();
+            if (pool) {
+              // Only advance stage, never regress (except returning)
+              const stageOrder: Record<string, number> = { new: 0, interested: 1, qualified: 2, ready: 3, purchased: 4, paid: 5, returning: 6 };
+              const [currentRows] = await pool.execute(
+                `SELECT deal_stage FROM conversations WHERE id = ? LIMIT 1`,
+                [convId]
+              );
+              const current = (currentRows as any[])[0]?.deal_stage || 'new';
+              if ((stageOrder[newStage] ?? 0) > (stageOrder[current] ?? 0) || newStage === 'returning') {
+                await pool.execute(
+                  `UPDATE conversations SET deal_stage = ? WHERE id = ?`,
+                  [newStage, convId]
+                );
+              }
+            }
+          } catch { /* dealStage is non-blocking */ }
+        }
       }
 
       // Build system prompt: Mission Block FIRST, then cached context
       let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
+
+      // SAFETY: If cached context is too short, the first message likely had no knowledge
+      // (e.g., customer said "مرحبا" → RAG returned 0 sections → empty contextPrompt was cached)
+      // Re-inject essential knowledge sections to prevent "knowledge amnesia"
+      if (existingSession.contextPrompt.length < 200 && params.merchantId) {
+        try {
+          const sections = await getBotSections(params.merchantId);
+          if (sections.length > 0) {
+            const ragContext = await buildRAGContext(params.merchantId, params.message);
+            let reInjected = '';
+            if (ragContext.facts) {
+              reInjected += `\n## معلومات عن النشاط التجاري (مصنفة بالذكاء الاصطناعي):\n${ragContext.facts}\n`;
+            }
+            if (ragContext.behaviors) {
+              reInjected += `\n## إرشادات البيع:\n${ragContext.behaviors}\n`;
+            }
+            if (ragContext.productContext) {
+              reInjected += ragContext.productContext;
+            }
+            if (reInjected) {
+              systemPrompt += reInjected;
+              // PEN-FAST-01 FIX: Update session so subsequent messages don't re-inject
+              updateSession(params.merchantId, convId, {});
+              existingSession.contextPrompt += reInjected;
+            }
+            console.log(`[chatWithSari] ⚡ FAST PATH: Re-injected ${ragContext.sectionsUsed} knowledge sections (cached context was too short)`);
+          }
+        } catch (reInjectErr) {
+          console.warn('[chatWithSari] FAST PATH re-injection failed:', (reInjectErr as Error).message);
+        }
+      }
 
       // Inject strategic hints from mixed signal / browsing analysis
       if (mixedSignalHint) {
@@ -1391,6 +1458,39 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           initialSentiment: sentiment?.sentiment || 'neutral',
           initialIntent: intent,
         });
+
+        // ENH-FIX: Update dealStage in FULL PATH too (was missing — only FAST PATH had it)
+        const dealStageMapFull: Record<string, string> = {
+          browsing: 'new',
+          inquiring: 'interested',
+          comparing: 'qualified',
+          hesitating: 'qualified',
+          objecting: 'qualified',
+          ready_to_buy: 'ready',
+          post_purchase: 'purchased',
+          returning: 'returning',
+        };
+        const newStageFull = dealStageMapFull[intent];
+        if (newStageFull) {
+          try {
+            const { getPool } = await import('../db');
+            const pool = await getPool();
+            if (pool) {
+              const stageOrderFull: Record<string, number> = { new: 0, interested: 1, qualified: 2, ready: 3, purchased: 4, paid: 5, returning: 6 };
+              const [curRows] = await pool.execute(
+                `SELECT deal_stage FROM conversations WHERE id = ? LIMIT 1`,
+                [convId]
+              );
+              const curStage = (curRows as any[])[0]?.deal_stage || 'new';
+              if ((stageOrderFull[newStageFull] ?? 0) > (stageOrderFull[curStage] ?? 0) || newStageFull === 'returning') {
+                await pool.execute(
+                  `UPDATE conversations SET deal_stage = ? WHERE id = ?`,
+                  [newStageFull, convId]
+                );
+              }
+            }
+          } catch { /* dealStage is non-blocking */ }
+        }
       }
     } catch (arsenalErr) {
       console.warn('[chatWithSari] Arsenal load failed:', arsenalErr);
@@ -1693,21 +1793,9 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       if (retryResponse && retryResponse.trim().length > 10) {
         console.log('[chatWithSari] ✅ Stripped-context fallback succeeded');
 
-        // Save the retry response as outgoing message
-        if (params.conversationId) {
-          try {
-            await createMessage({
-              conversationId: params.conversationId,
-              direction: 'outgoing',
-              messageType: 'text',
-              content: retryResponse.trim(),
-              voiceUrl: null,
-              isProcessed: 1,
-              // @ts-ignore
-              aiwResponse: retryResponse.trim(),
-            });
-          } catch { /* silent */ }
-        }
+        // PEN-DW-01 FIX: Do NOT save message here — processIncomingMessage() 
+        // in ai.ts already saves the returned response to DB.
+        // Saving here would create a duplicate outgoing message.
 
         return retryResponse.trim();
       }
