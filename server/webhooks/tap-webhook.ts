@@ -139,7 +139,8 @@ export async function processTapWebhook(
         parseInt(metadata.orderId),
         status,
         payment.merchantId,
-        charge.customer.phone.country_code + charge.customer.phone.number
+        charge.customer.phone.country_code + charge.customer.phone.number,
+        metadata.conversationId ? parseInt(String(metadata.conversationId)) : undefined
       );
     } else if (metadata.type === 'booking' && metadata.bookingId) {
       await handleBookingPayment(
@@ -194,12 +195,14 @@ function mapTapStatusToPaymentStatus(
 
 /**
  * معالجة دفع الطلب
+ * P0-FIX: Now accepts conversationId from charge metadata for accurate attribution
  */
 async function handleOrderPayment(
   orderId: number,
   status: string,
   merchantId: number,
-  customerPhone: string
+  customerPhone: string,
+  metadataConversationId?: number
 ): Promise<void> {
   try {
     const order = await getOrderById(orderId);
@@ -207,6 +210,9 @@ async function handleOrderPayment(
       console.warn(`[TapWebhook] Order ${orderId} not found`);
       return;
     }
+
+    // P0-FIX: Resolve conversation ID — prefer metadata, fallback to phone lookup
+    let convId: number | null = metadataConversationId || null;
 
     if (status === 'CAPTURED') {
       // دفع ناجح
@@ -217,11 +223,20 @@ async function handleOrderPayment(
         const { getPool } = await import('../db');
         const pool = await getPool();
         if (pool) {
-          const [convRows] = await pool.execute(
-            `SELECT id FROM conversations WHERE merchantId = ? AND customerPhone = ? ORDER BY lastMessageAt DESC LIMIT 1`,
-            [merchantId, customerPhone]
-          );
-          const convId = (convRows as any[])[0]?.id;
+          // P0-FIX: Use metadata conversationId first, fallback to phone-based lookup
+          if (!convId) {
+            const [convRows] = await pool.execute(
+              `SELECT id FROM conversations WHERE merchantId = ? AND customerPhone = ? ORDER BY lastMessageAt DESC LIMIT 1`,
+              [merchantId, customerPhone]
+            );
+            convId = (convRows as any[])[0]?.id || null;
+            if (convId) {
+              console.log(`[TapWebhook] ⚠️ No conversationId in metadata — resolved by phone lookup: conv #${convId}`);
+            }
+          } else {
+            console.log(`[TapWebhook] ✅ Using conversationId from payment metadata: conv #${convId}`);
+          }
+
           if (convId) {
             // Mark strategy as led_to_purchase (real conversion)
             await pool.execute(
@@ -230,9 +245,9 @@ async function handleOrderPayment(
                ORDER BY created_at DESC LIMIT 1`,
               [merchantId, convId]
             );
-            // Update conversation dealStage to 'paid'
+            // Update conversation dealStage to 'paid' + clear loss_reason
             await pool.execute(
-              `UPDATE conversations SET deal_stage = 'paid' WHERE id = ?`,
+              `UPDATE conversations SET deal_stage = 'paid', loss_reason = NULL WHERE id = ?`,
               [convId]
             );
             console.log(`[TapWebhook] 📊 Strategy marked as REAL success + dealStage=paid for conv #${convId}`);
@@ -259,6 +274,28 @@ async function handleOrderPayment(
     } else if (status === 'FAILED' || status === 'DECLINED') {
       // دفع فاشل
       await updateOrderStatus(orderId, 'cancelled');
+
+      // P0-FIX: Track payment_failed deal stage + loss_reason
+      try {
+        const { getPool } = await import('../db');
+        const pool = await getPool();
+        if (pool) {
+          if (!convId) {
+            const [convRows] = await pool.execute(
+              `SELECT id FROM conversations WHERE merchantId = ? AND customerPhone = ? ORDER BY lastMessageAt DESC LIMIT 1`,
+              [merchantId, customerPhone]
+            );
+            convId = (convRows as any[])[0]?.id || null;
+          }
+          if (convId) {
+            await pool.execute(
+              `UPDATE conversations SET deal_stage = 'payment_failed', loss_reason = 'payment_failed' WHERE id = ?`,
+              [convId]
+            );
+            console.log(`[TapWebhook] 📊 dealStage=payment_failed + loss_reason set for conv #${convId}`);
+          }
+        }
+      } catch { /* non-blocking */ }
 
       const failureMessage = `❌ *فشلت عملية الدفع*\n\n📦 *رقم الطلب:* ${order.orderNumber}\n\nيرجى المحاولة مرة أخرى أو التواصل معنا للمساعدة.\n\nنعتذر عن الإزعاج 🙏`;
 

@@ -119,6 +119,7 @@ export const merchantPaymentsRouter = router({
     }),
 
     // Create payment link using merchant's Tap keys
+    // P0-FIX: Added conversationId to metadata for accurate payment↔conversation attribution
     createPaymentLink: protectedProcedure
         .input(z.object({
             amount: z.number().min(1),
@@ -128,6 +129,7 @@ export const merchantPaymentsRouter = router({
             description: z.string().optional(),
             orderId: z.number().optional(),
             bookingId: z.number().optional(),
+            conversationId: z.number().optional(),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);
@@ -163,6 +165,7 @@ export const merchantPaymentsRouter = router({
                         merchantId: merchant.id,
                         orderId: input.orderId,
                         bookingId: input.bookingId,
+                        conversationId: input.conversationId,
                     },
                 };
 
@@ -182,6 +185,20 @@ export const merchantPaymentsRouter = router({
                         code: 'BAD_REQUEST',
                         message: result.message || 'فشل إنشاء رابط الدفع'
                     });
+                }
+
+                // P0-FIX: Update deal_stage to payment_link_sent
+                if (input.conversationId) {
+                    try {
+                        const { getPool } = await import('./db');
+                        const pool = await getPool();
+                        if (pool) {
+                            await pool.execute(
+                                `UPDATE conversations SET deal_stage = 'payment_link_sent', payment_link_sent_at = NOW() WHERE id = ?`,
+                                [input.conversationId]
+                            );
+                        }
+                    } catch { /* non-blocking */ }
                 }
 
                 return {

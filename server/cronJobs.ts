@@ -8,6 +8,7 @@ import { runRemindersForAllMerchants } from "./appointmentReminders";
 import { runTrialExpiryCheck } from "./cron/trial-expiry-check";
 import { runDailyForAllMerchants, runWeeklyForAllMerchants } from "./ai/sales-conductor";
 import { runFollowUps } from "./ai/proactive-followup";
+import { detectLostDeals } from "./ai/loss-detector";
 
 /**
  * تشغيل جميع Cron Jobs
@@ -75,12 +76,26 @@ export function startCronJobs() {
     }
   });
 
+  // Loss Detector: كشف الصفقات الخاسرة وتصنيف أسباب الخسارة
+  // يعمل كل ساعة في الدقيقة 30
+  cron.schedule("30 * * * *", async () => {
+    try {
+      const results = await detectLostDeals();
+      if (results.length > 0) {
+        console.log(`[Cron] Loss Detector: ${results.length} lost deals classified`);
+      }
+    } catch (error) {
+      console.error("[Cron] Error running loss detector:", error);
+    }
+  });
+
   console.log("[Cron] Cron jobs started successfully");
   console.log("[Cron] - Appointment reminders: Every hour at minute 0");
   console.log("[Cron] - Trial expiry check: Every day at 9:00 AM");
   console.log("[Cron] - Sales Conductor daily: Every day at 3:00 AM");
   console.log("[Cron] - Sales Conductor weekly: Every Sunday at 4:00 AM");
   console.log("[Cron] - Proactive follow-ups: Every 15 minutes");
+  console.log("[Cron] - Loss Detector: Every hour at minute 30");
 }
 
 /**

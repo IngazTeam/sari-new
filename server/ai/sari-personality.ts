@@ -771,8 +771,12 @@ const DEAL_STAGE_MAP: Record<string, string> = {
   returning: 'returning',
 };
 
-const STAGE_ORDER: Record<string, number> = {
-  new: 0, interested: 1, qualified: 2, ready: 3, purchased: 4, paid: 5, returning: 6,
+export const STAGE_ORDER: Record<string, number> = {
+  new: 0, interested: 1, qualified: 2, ready: 3,
+  payment_link_sent: 4, purchased: 5, paid: 6,
+  returning: 7,
+  // Terminal stages (don't block progression):
+  payment_failed: -1, lost: -2,
 };
 
 async function updateDealStage(convId: number, intent: string): Promise<void> {
