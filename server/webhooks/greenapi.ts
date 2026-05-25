@@ -348,30 +348,30 @@ async function processTextMessage(params: {
         finalResponse = abTestResult.text;
         console.log(`[Webhook] Using A/B test variant: ${abTestResult.variant}`);
         
-        // تسجيل الاستخدام (سيتم تحديد النجاح لاحقاً بناءً على رد العميل)
-        await recordABTestResult(abTestResult.testId, abTestResult.variant, true);
+        // BUG-FIX: Record as impression (false), not success — conversion tracked later
+        await recordABTestResult(abTestResult.testId, abTestResult.variant, false);
       }
     } catch (error) {
       console.error('[Webhook] Error applying A/B test:', error);
     }
     
-    // Save outgoing message
+    // Save outgoing message — BUG-FIX: use finalResponse (was using original `response`)
     await createMessage({
       conversationId: params.conversationId,
       direction: 'outgoing',
       messageType: 'text',
-      content: response,
+      content: finalResponse,
       voiceUrl: null,
       isProcessed: 1,
       // @ts-ignore
-      aiwResponse: response,
+      aiwResponse: finalResponse,
     });
     
     // Increment message usage (incoming + outgoing = 2 messages)
     await incrementMessageUsage(params.merchantId);
     await incrementMessageUsage(params.merchantId);
     
-    return response;
+    return finalResponse;
   } catch (error: any) {
     console.error('[Webhook] Error processing text message:', error);
     throw error;
