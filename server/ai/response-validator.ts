@@ -95,7 +95,7 @@ function fastPreCheck(
   if (phonePattern.test(resp) || emailPattern.test(resp)) {
     violations.push({
       rule: 'contact_leak',
-      severity: 'critical',
+      severity: 'critical', // Restored to critical — surgical regex strip prevents GPT detail loss
       description: 'الرد يحتوي على رقم هاتف أو إيميل — ممنوع مشاركة معلومات التواصل',
     });
   }
@@ -216,10 +216,33 @@ export async function validateResponse(params: {
   // If critical violation found in fast check, skip GPT and return immediately
   const hasCritical = fastViolations.some(v => v.severity === 'critical');
   if (hasCritical) {
-    // Build correction prompt for critical violations
+    // SURGICAL FIX: Strip contact info via regex FIRST (preserves product details)
+    // Then only fall back to GPT rewrite if other critical violations exist
+    const hasContactLeak = fastViolations.some(v => v.rule === 'contact_leak');
+    let surgicallyFixed = response;
+    if (hasContactLeak) {
+      const phoneStrip = /(?:\+?\d{1,3}[-.\s]?)\d{10,14}/g;
+      const emailStrip = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+      surgicallyFixed = surgicallyFixed.replace(phoneStrip, '[رقم محذوف]');
+      surgicallyFixed = surgicallyFixed.replace(emailStrip, '[إيميل محذوف]');
+      console.log(`[Validator] 🔧 Surgically stripped contact info (preserved product details)`);
+    }
+
+    // If only contact_leak was the critical violation, return surgical fix (no GPT)
+    const otherCritical = fastViolations.filter(v => v.severity === 'critical' && v.rule !== 'contact_leak');
+    if (otherCritical.length === 0 && hasContactLeak) {
+      return {
+        passed: false,
+        violations: fastViolations,
+        correctedResponse: surgicallyFixed,
+        validationTimeMs: Date.now() - startTime,
+      };
+    }
+
+    // Other critical violations exist — use GPT rewrite on the already-stripped response
     try {
       const corrected = await generateCorrectedResponse({
-        response,
+        response: surgicallyFixed,
         customerMessage,
         violations: fastViolations,
         intent,
@@ -233,11 +256,12 @@ export async function validateResponse(params: {
         validationTimeMs: Date.now() - startTime,
       };
     } catch (err) {
-      // If correction fails, send original — never block the response
-      console.warn('[Validator] Correction failed, sending original:', (err as Error).message);
+      // If GPT correction fails, return surgical fix if available, otherwise original
+      console.warn('[Validator] Correction failed, using surgical fix:', (err as Error).message);
       return {
-        passed: true, // Pass to avoid blocking
+        passed: false,
         violations: fastViolations,
+        correctedResponse: hasContactLeak ? surgicallyFixed : undefined,
         validationTimeMs: Date.now() - startTime,
       };
     }
