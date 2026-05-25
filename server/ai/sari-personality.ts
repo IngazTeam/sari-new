@@ -1333,6 +1333,36 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         }).catch((err) => console.warn('[Escalation] Post-response escalation failed:', err.message));
       }
 
+      // ═══ Smart Escalation v2 — Proactive triggers (FAST PATH) ═══
+      try {
+        const { evaluateSmartEscalationV2 } = await import('./smart-escalation');
+        const v2Decision = evaluateSmartEscalationV2({
+          merchantId: params.merchantId,
+          conversationId: params.conversationId || 0,
+          customerPhone: params.customerPhone,
+          customerName: params.customerName,
+          customerMessage: params.message,
+          dealStage: existingSession.dealStage || null,
+          sentiment: fastSentiment || 'neutral',
+          paymentLinkSent: false,
+        });
+        if (v2Decision.shouldEscalate && v2Decision.trigger) {
+          console.log(`[Escalation-v2] 🎯 FAST PATH: ${v2Decision.trigger} (${v2Decision.priority})`);
+          handleSmartEscalation({
+            merchantId: params.merchantId,
+            conversationId: params.conversationId || 0,
+            customerPhone: params.customerPhone,
+            customerName: params.customerName,
+            customerQuestion: params.message,
+            botResponse: v2Decision.customerMessage || response,
+          }).catch(() => {});
+          if (v2Decision.customerMessage) {
+            response = v2Decision.customerMessage;
+          }
+        }
+      } catch {
+        // v2 is non-blocking
+      }
 
       // Proactive Follow-up: schedule if customer is hesitating
       // BUG-4 FIX: Use effectiveIntent — don't schedule follow-up if mixed signal says 'close_to_buying'
@@ -1719,6 +1749,38 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         customerQuestion: params.message,
         botResponse: response,
       }).catch((err) => console.warn('[Escalation] Post-response escalation failed:', err.message));
+    }
+
+    // ═══ Smart Escalation v2 — Proactive triggers (FULL PATH) ═══
+    try {
+      const { evaluateSmartEscalationV2 } = await import('./smart-escalation');
+      const v2Decision = evaluateSmartEscalationV2({
+        merchantId: params.merchantId,
+        conversationId: params.conversationId || 0,
+        customerPhone: params.customerPhone,
+        customerName: params.customerName,
+        customerMessage: params.message,
+        dealStage: null,
+        sentiment: sentiment?.sentiment || 'neutral',
+        paymentLinkSent: false,
+      });
+      if (v2Decision.shouldEscalate && v2Decision.trigger) {
+        console.log(`[Escalation-v2] 🎯 FULL PATH: ${v2Decision.trigger} (${v2Decision.priority})`);
+        handleSmartEscalation({
+          merchantId: params.merchantId,
+          conversationId: params.conversationId || 0,
+          customerPhone: params.customerPhone,
+          customerName: params.customerName,
+          customerQuestion: params.message,
+          botResponse: v2Decision.customerMessage || response,
+        }).catch(() => {});
+        // Override bot response with empathetic v2 response if available
+        if (v2Decision.customerMessage) {
+          response = v2Decision.customerMessage;
+        }
+      }
+    } catch {
+      // v2 is non-blocking
     }
 
     // === RAG: Cache successful response for future reuse ===

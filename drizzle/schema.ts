@@ -136,6 +136,10 @@ export const conversations = mysqlTable("conversations", {
 	agentHistory: text("agent_history"),
 	// Sales Pipeline — persistent deal stage
 	dealStage: varchar("deal_stage", { length: 30 }).default('new'),
+	// P0: Loss tracking columns (match loss-detector.ts)
+	lossReason: varchar("loss_reason", { length: 30 }),
+	stalledSince: timestamp("stalled_since", { mode: 'string' }),
+	paymentLinkSentAt: timestamp("payment_link_sent_at", { mode: 'string' }),
 });
 
 export const customerReviews = mysqlTable("customer_reviews", {

@@ -536,6 +536,7 @@ export async function executeAction(params: {
                   merchantId: merchantId.toString(),
                   orderId: order.id.toString(),
                   type: 'order',  // Must match tap-webhook.ts handler check
+                  conversationId: conversationId.toString(), // P0-FIX: Attribution
                 },
               };
 
@@ -566,6 +567,18 @@ export async function executeAction(params: {
                   status: 'pending',
                   description: `طلب واتساب #${order.id}`,
                 });
+
+                // P0-FIX: Update deal_stage + payment_link_sent_at for pipeline tracking
+                try {
+                  const { getPool } = await import('../db');
+                  const pool2 = await getPool();
+                  if (pool2) {
+                    await pool2.execute(
+                      `UPDATE conversations SET deal_stage = 'payment_link_sent', payment_link_sent_at = NOW() WHERE id = ? AND merchantId = ?`,
+                      [conversationId, merchantId]
+                    );
+                  }
+                } catch { /* non-blocking */ }
 
                 console.log(`[ActionSelector] ✅ Tap payment link created: ${paymentUrl}`);
               }

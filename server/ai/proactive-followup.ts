@@ -26,7 +26,8 @@ import { sendMessageWithCredentials } from '../whatsapp';
 // Types
 // ═══════════════════════════════════════════════════════════════
 
-export type FollowUpType = 'hesitating' | 'abandoned_cart' | 'price_no_reply' | 'ghost' | 'post_interest' | 'action_selector';
+export type FollowUpType = 'hesitating' | 'abandoned_cart' | 'price_no_reply' | 'ghost' | 'post_interest' | 'action_selector'
+  | 'recovery_price' | 'recovery_trust' | 'recovery_competitor' | 'recovery_delivery' | 'recovery_payment' | 'recovery_general';
 
 export interface FollowUpRecord {
   id?: number;
@@ -156,21 +157,24 @@ async function ensureTable(): Promise<void> {
       message_text TEXT NOT NULL,
       customer_name VARCHAR(255) NULL,
       source VARCHAR(30) DEFAULT 'proactive' NOT NULL,
+      processing_token VARCHAR(60) NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       INDEX idx_followup_merchant_phone (merchant_id, customer_phone),
       INDEX idx_followup_scheduled (scheduled_at),
-      INDEX idx_followup_pending (merchant_id, sent_at, cancelled_at)
+      INDEX idx_followup_pending (merchant_id, sent_at, cancelled_at),
+      INDEX idx_followup_processing (processing_token)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
-  // ENH-FIX: Auto-add deal_stage column to conversations (no formal migration needed)
-  try {
-    await pool.execute(`ALTER TABLE conversations ADD COLUMN deal_stage VARCHAR(30) DEFAULT 'new'`);
-    console.log('[FollowUp] ✅ Added deal_stage column to conversations');
-  } catch (e: any) {
-    // Error 1060 = "Duplicate column name" — column already exists, safe to ignore
-    if (e.code !== 'ER_DUP_FIELDNAME' && e.errno !== 1060) {
-      console.warn('[FollowUp] deal_stage column check:', e.message);
-    }
+  // Auto-add columns if missing (emergency migration pattern)
+  const autoColumns = [
+    `ALTER TABLE conversations ADD COLUMN deal_stage VARCHAR(30) DEFAULT 'new'`,
+    `ALTER TABLE conversations ADD COLUMN loss_reason VARCHAR(30) DEFAULT NULL`,
+    `ALTER TABLE conversations ADD COLUMN stalled_since TIMESTAMP NULL`,
+    `ALTER TABLE conversations ADD COLUMN payment_link_sent_at TIMESTAMP NULL`,
+    `ALTER TABLE sales_followups ADD COLUMN processing_token VARCHAR(60) NULL`,
+  ];
+  for (const ddl of autoColumns) {
+    try { await pool.execute(ddl); } catch { /* column already exists */ }
   }
   _tableCreated = true;
 }
@@ -313,14 +317,23 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
       return { sent, cancelled, errors };
     }
 
-    // Find due follow-ups
+    // Find due follow-ups — CLAIM-LOCK: atomic UPDATE to prevent double-send
+    // when multiple cron intervals overlap (cronJobs 15min + followup-reminders 5min)
+    const claimToken = `claim_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    await pool.execute(
+      `UPDATE sales_followups SET processing_token = ?
+       WHERE sent_at IS NULL AND cancelled_at IS NULL AND processing_token IS NULL
+       AND scheduled_at <= NOW()
+       LIMIT 20`,
+      [claimToken]
+    );
+
     const [rows] = await pool.execute(
       `SELECT f.id, f.merchant_id, f.conversation_id, f.customer_phone, 
               f.follow_up_type, f.message_text, f.customer_name
        FROM sales_followups f
-       WHERE f.sent_at IS NULL AND f.cancelled_at IS NULL
-       AND f.scheduled_at <= NOW()
-       LIMIT 20`
+       WHERE f.processing_token = ?`,
+      [claimToken]
     );
 
     const followUps = rows as any[];

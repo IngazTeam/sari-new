@@ -200,6 +200,45 @@ export async function detectLostDeals(): Promise<LossDetectionResult[]> {
       }).catch(() => {});
     }
 
+    // ── 5. Schedule recovery follow-ups based on loss reason ──
+    try {
+      const { scheduleFollowUp } = await import('./proactive-followup');
+      const LOSS_TO_FOLLOWUP: Record<string, string> = {
+        price: 'recovery_price',
+        trust: 'recovery_trust',
+        competitor: 'recovery_competitor',
+        delivery: 'recovery_delivery',
+        payment_abandoned: 'recovery_payment',
+        payment_failed: 'recovery_payment',
+        no_response: 'recovery_general',
+      };
+
+      for (const loss of results) {
+        const followUpType = LOSS_TO_FOLLOWUP[loss.reason];
+        if (!followUpType) continue;
+
+        // Resolve customerPhone from DB
+        const [phoneRows] = await pool.execute(
+          `SELECT customerPhone, customerName FROM conversations WHERE id = ? LIMIT 1`,
+          [loss.conversationId]
+        );
+        const row = (phoneRows as any[])[0];
+        if (!row?.customerPhone) continue;
+
+        scheduleFollowUp({
+          merchantId: loss.merchantId,
+          customerPhone: row.customerPhone,
+          conversationId: loss.conversationId,
+          followUpType: followUpType as any,
+          customerName: row.customerName || row.customerPhone,
+          customDelayMs: 24 * 60 * 60 * 1000, // 24h after detection before recovery outreach
+          source: 'loss_recovery',
+        }).catch(() => {});
+      }
+    } catch {
+      // Recovery follow-ups are supplementary — non-blocking
+    }
+
     if (results.length > 0) {
       console.log(`[LossDetector] 📊 Detected ${results.length} lost deals:`,
         results.reduce((acc, r) => {
