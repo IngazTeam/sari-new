@@ -89,8 +89,8 @@ function fastPreCheck(
   const msg = customerMessage.toLowerCase();
 
   // 1. Contact leak — phone numbers, emails
-  // SEC-VAL-02: Tightened to 10+ consecutive digits to avoid false positives on prices like "1500 ريال"
-  const phonePattern = /(?:\+?\d{1,3}[-.\s]?)\d{10,14}/;
+  // SEC-VAL-03: Catches Saudi local (05xxxxxxxx), international (+966), and generic 10+ digit numbers
+  const phonePattern = /(?:\+?966[-.\s]?)?0?5\d[-.\s]?\d{3}[-.\s]?\d{4}|(?:\+?\d{1,3}[-.\s]?)\d{10,14}/;
   const emailPattern = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
   if (phonePattern.test(resp) || emailPattern.test(resp)) {
     violations.push({
@@ -221,7 +221,7 @@ export async function validateResponse(params: {
     const hasContactLeak = fastViolations.some(v => v.rule === 'contact_leak');
     let surgicallyFixed = response;
     if (hasContactLeak) {
-      const phoneStrip = /(?:\+?\d{1,3}[-.\s]?)\d{10,14}/g;
+      const phoneStrip = /(?:\+?966[-.\s]?)?0?5\d[-.\s]?\d{3}[-.\s]?\d{4}|(?:\+?\d{1,3}[-.\s]?)\d{10,14}/g;
       const emailStrip = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
       surgicallyFixed = surgicallyFixed.replace(phoneStrip, '[رقم محذوف]');
       surgicallyFixed = surgicallyFixed.replace(emailStrip, '[إيميل محذوف]');
