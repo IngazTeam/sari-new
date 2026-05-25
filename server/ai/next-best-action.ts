@@ -312,11 +312,13 @@ export async function loadNBAContext(
   if (!pool) return defaults;
 
   try {
+    // P0-FIX: messageCount is NOT a column in conversations schema.
+    // Use subquery from messages table to avoid query failure.
     const [rows] = await pool.execute(
-      `SELECT deal_stage, loss_reason, payment_link_sent_at,
-              TIMESTAMPDIFF(HOUR, lastMessageAt, NOW()) as hours_since,
-              messageCount
-       FROM conversations WHERE id = ? AND merchantId = ? LIMIT 1`,
+      `SELECT c.deal_stage, c.loss_reason, c.payment_link_sent_at,
+              TIMESTAMPDIFF(HOUR, c.lastMessageAt, NOW()) as hours_since,
+              (SELECT COUNT(*) FROM messages WHERE conversationId = c.id) as msg_count
+       FROM conversations c WHERE c.id = ? AND c.merchantId = ? LIMIT 1`,
       [conversationId, merchantId]
     );
     const conv = (rows as any[])[0];
@@ -360,7 +362,7 @@ export async function loadNBAContext(
       lossReason: conv.loss_reason || null,
       paymentLinkSent: !!conv.payment_link_sent_at,
       timeSinceLastMessage: conv.hours_since || 0,
-      messageCount: conv.messageCount || 0,
+      messageCount: conv.msg_count || 0,
       hasDiscount: (discountRows as any[]).length > 0,
       lastObjection,
     };

@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { MessageSquare, User, Bot, Clock, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -23,6 +23,15 @@ export default function Conversations() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // P0-FIX: Read URL params from SalesPipeline deep-links
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const phone = params.get('phone');
+    if (phone) {
+      setSearchQuery(phone);
+    }
+  }, []);
 
   const { data: conversationsData, isLoading } = trpc.conversations.list.useQuery({ page: currentPage, pageSize: 50 });
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();

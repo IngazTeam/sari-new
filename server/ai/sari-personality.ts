@@ -805,7 +805,7 @@ async function updateDealStage(convId: number, intent: string): Promise<void> {
  * Returns paymentLinkSent, hoursSincePaymentLink, and dealStage from DB.
  * Non-blocking — returns safe defaults on any error.
  */
-async function _loadPaymentContext(convId: number): Promise<{
+async function _loadPaymentContext(convId: number, merchantId: number): Promise<{
   paymentLinkSent: boolean;
   hoursSincePaymentLink?: number;
   dealStage: string | null;
@@ -819,8 +819,8 @@ async function _loadPaymentContext(convId: number): Promise<{
     const [rows] = await pool.execute(
       `SELECT deal_stage, payment_link_sent_at,
               TIMESTAMPDIFF(HOUR, payment_link_sent_at, NOW()) as hours_since_payment
-       FROM conversations WHERE id = ? LIMIT 1`,
-      [convId]
+       FROM conversations WHERE id = ? AND merchantId = ? LIMIT 1`,
+      [convId, merchantId]
     );
     const row = (rows as any[])[0];
     if (!row) return defaults;
@@ -1379,7 +1379,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       try {
         const { evaluateSmartEscalationV2 } = await import('./smart-escalation');
         // P0-FIX: Load real payment context from DB so payment_stuck trigger works
-        const v2PaymentCtx = await _loadPaymentContext(params.conversationId || 0);
+        const v2PaymentCtx = await _loadPaymentContext(params.conversationId || 0, params.merchantId);
         const v2Decision = evaluateSmartEscalationV2({
           merchantId: params.merchantId,
           conversationId: params.conversationId || 0,
@@ -1800,7 +1800,7 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     try {
       const { evaluateSmartEscalationV2 } = await import('./smart-escalation');
       // P0-FIX: Load real payment context from DB so payment_stuck trigger works
-      const v2PaymentCtxFull = await _loadPaymentContext(params.conversationId || 0);
+      const v2PaymentCtxFull = await _loadPaymentContext(params.conversationId || 0, params.merchantId);
       const v2Decision = evaluateSmartEscalationV2({
         merchantId: params.merchantId,
         conversationId: params.conversationId || 0,
