@@ -190,6 +190,7 @@ const SmartAnalysis = lazyLoad(() => import("./pages/SmartAnalysis"));
 const AIWhatsAppHub = lazyLoad(() => import("./pages/merchant/AIWhatsAppHub"));
 const AnalyticsHub = lazyLoad(() => import("./pages/merchant/AnalyticsHub"));
 const SalesHub = lazyLoad(() => import("./pages/merchant/SalesHub"));
+const SalesPipeline = lazyLoad(() => import("./pages/merchant/SalesPipeline"));
 const AcquisitionReport = lazyLoad(() => import("./pages/merchant/AcquisitionReport"));
 const QuotationTemplates = lazyLoad(() => import("./pages/merchant/QuotationTemplates"));
 const MediaLibrary = lazyLoad(() => import("./pages/merchant/MediaLibrary"));
@@ -584,6 +585,12 @@ function Router() {
       <Route path="/merchant/sales-hub">
         <DashboardLayout>
           <SalesHub />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/sales-pipeline">
+        <DashboardLayout>
+          <SalesPipeline />
         </DashboardLayout>
       </Route>
 

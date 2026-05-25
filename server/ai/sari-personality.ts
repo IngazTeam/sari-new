@@ -1028,6 +1028,21 @@ ${result.orderUrl}
       updateDealStage(convId, earlyIntent).catch(() => {});
     }
 
+    // P1-NBA: Next Best Action — sales decision BEFORE reply generation
+    let nbaPromptInjection = '';
+    try {
+      const { loadNBAContext, determineNextBestAction } = await import('./next-best-action');
+      const nbaCtx = await loadNBAContext(params.merchantId, convId, params.message, earlyIntent);
+      const nba = await determineNextBestAction(nbaCtx);
+      if (nba.action !== 'continue_conversation' && nba.promptInjection) {
+        nbaPromptInjection = nba.promptInjection;
+        console.log(`[NBA] 🎯 ${nba.action} (${nba.confidence}) — ${nba.reason}`);
+      }
+    } catch (nbaErr) {
+      // NBA is non-blocking
+      console.warn('[NBA] Engine failed (non-blocking):', nbaErr);
+    }
+
     if (existingSession && !needsTopicRebuild) {
       // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
       const intent = earlyIntent; // reuse pre-computed intent
@@ -1158,6 +1173,11 @@ ${result.orderUrl}
       // Inject strategic hints from mixed signal / browsing analysis
       if (mixedSignalHint) {
         systemPrompt += mixedSignalHint;
+      }
+
+      // P1-NBA: Inject Next Best Action directive into system prompt
+      if (nbaPromptInjection) {
+        systemPrompt += '\n\n' + nbaPromptInjection;
       }
 
       // FAST PATH product re-injection: if customer asks about products/courses,
@@ -1629,6 +1649,11 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     // Append resume context after agent selection (preserved across rebuilds)
     if (resumePrompt) {
       systemPrompt += resumePrompt;
+    }
+
+    // P1-NBA: Inject Next Best Action directive into FULL PATH system prompt
+    if (nbaPromptInjection) {
+      systemPrompt += '\n\n' + nbaPromptInjection;
     }
 
     // Build user message — multimodal if image is present
