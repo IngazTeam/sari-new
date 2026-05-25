@@ -134,6 +134,8 @@ export const conversations = mysqlTable("conversations", {
 	// Virtual Agent fields
 	currentAgentId: int("current_agent_id"),
 	agentHistory: text("agent_history"),
+	// Sales Pipeline — persistent deal stage
+	dealStage: varchar("deal_stage", { length: 30 }).default('new'),
 });
 
 export const customerReviews = mysqlTable("customer_reviews", {
@@ -2804,3 +2806,28 @@ export type PasswordResetToken = InferSelectModel<typeof passwordResetTokens>;
 export type PasswordResetAttempt = InferSelectModel<typeof passwordResetAttempts>;
 
 export type TrySariAnalytics = InferSelectModel<typeof trySariAnalytics>;
+
+// --- Sales Follow-ups (Unified) ---
+// Replaces: in-memory proactive-followup.ts + agent_history overwrite in action-selector + followup-reminders
+export const salesFollowups = mysqlTable("sales_followups", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	followUpType: varchar("follow_up_type", { length: 30 }).notNull(), // hesitating, abandoned_cart, price_no_reply, ghost, post_interest, action_selector
+	scheduledAt: timestamp("scheduled_at", { mode: 'string' }).notNull(),
+	sentAt: timestamp("sent_at", { mode: 'string' }),
+	cancelledAt: timestamp("cancelled_at", { mode: 'string' }),
+	cancelReason: varchar("cancel_reason", { length: 50 }), // customer_replied, weekly_limit, human_takeover, quiet_hours_expired
+	messageText: text("message_text").notNull(),
+	customerName: varchar("customer_name", { length: 255 }),
+	source: varchar({ length: 30 }).default('proactive').notNull(), // proactive, action_selector
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_followup_merchant_phone").on(table.merchantId, table.customerPhone),
+	index("idx_followup_scheduled").on(table.scheduledAt),
+	index("idx_followup_pending").on(table.merchantId, table.sentAt, table.cancelledAt),
+]);
+
+export type SalesFollowup = InferSelectModel<typeof salesFollowups>;
+export type InsertSalesFollowup = InferInsertModel<typeof salesFollowups>;

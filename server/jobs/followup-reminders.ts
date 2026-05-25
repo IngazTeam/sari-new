@@ -1,111 +1,29 @@
 /**
- * Follow-Up Reminder Job
+ * Follow-Up Reminder Job — Unified
  * 
  * Runs every 5 minutes.
- * Checks for conversations with a scheduled follow-up (from Action Selector).
- * When the follow-up time arrives, sends a gentle reminder to the customer
- * and clears the follow-up flag.
+ * Processes all due follow-ups from the unified `sales_followups` table.
  * 
- * Follow-ups are stored in conversations.agent_history as JSON string:
- * { "followup_at": "2026-05-18T10:00:00Z", "followup_reason": "العميل متردد" }
+ * BUG-FIX: Previously this job read from `conversations.agent_history` (TEXT column)
+ * which was overwritten by action-selector and resume-context. Now uses dedicated
+ * `sales_followups` table shared with proactive-followup.ts.
  */
 
-import { getPool, getWhatsAppInstancesByMerchantId } from '../db';
-import { sendMessageWithCredentials } from '../whatsapp';
-
-const FOLLOWUP_MESSAGES = [
-  'مرحباً! 😊 رجعت أتطمن عليك — هل قدرت تاخذ قرار بخصوص ما ناقشناه؟ إذا عندك أي سؤال أنا هنا 🙏',
-  'أهلاً! 👋 أبغى أتأكد إنك لقيت اللي تبحث عنه — تبي أساعدك بشي إضافي؟',
-  'هلا! 😄 حبيت أتابع معك — لا تتردد إذا فيه أي استفسار!',
-];
-
-/** Process due follow-up reminders */
-async function processFollowUps(): Promise<void> {
-  try {
-    const pool = await getPool();
-    if (!pool) return;
-
-    // Find conversations with follow-ups stored in agent_history (TEXT column with JSON)
-    // We use LIKE for TEXT columns since JSON_EXTRACT requires JSON type
-    const [rows] = await pool.execute(
-      `SELECT c.id, c.merchantId, c.customerPhone, c.agent_history
-       FROM conversations c
-       WHERE c.agent_history IS NOT NULL
-       AND c.agent_history LIKE '%followup_at%'
-       AND c.status = 'active'
-       LIMIT 20`
-    );
-
-    const conversations = rows as any[];
-    if (conversations.length === 0) return;
-
-    const now = new Date();
-    let processed = 0;
-
-    for (const conv of conversations) {
-      try {
-        // Parse the agent_history JSON string
-        let history: any;
-        try {
-          history = JSON.parse(conv.agent_history);
-        } catch {
-          continue; // Skip if not valid JSON
-        }
-
-        if (!history.followup_at) continue;
-
-        // Check if follow-up time has arrived
-        const followUpTime = new Date(history.followup_at);
-        if (followUpTime > now) continue; // Not due yet
-
-        const merchantId = conv.merchantId;
-        const customerPhone = conv.customerPhone;
-
-        // Get WhatsApp instance for this merchant
-        const instances = await getWhatsAppInstancesByMerchantId(merchantId);
-        const activeInstance = instances.find((i: any) => i.status === 'active');
-
-        if (!activeInstance) continue;
-
-        // Send follow-up message
-        const msgIdx = Math.floor(Math.random() * FOLLOWUP_MESSAGES.length);
-        await sendMessageWithCredentials(
-          (activeInstance as any).instanceId,
-          (activeInstance as any).token,
-          (activeInstance as any).apiUrl || 'https://api.green-api.com',
-          customerPhone,
-          FOLLOWUP_MESSAGES[msgIdx]
-        );
-
-        // Clear the follow-up flag by setting agent_history to null
-        await pool.execute(
-          `UPDATE conversations SET agent_history = NULL WHERE id = ?`,
-          [conv.id]
-        );
-
-        processed++;
-        console.log(`[FollowUpJob] ✅ Follow-up sent to ***${customerPhone.slice(-4)} (conv #${conv.id})`);
-
-      } catch (convErr: any) {
-        console.warn(`[FollowUpJob] Failed for conv #${conv.id}: ${convErr.message}`);
-      }
-    }
-
-    if (processed > 0) {
-      console.log(`[FollowUpJob] Processed ${processed} follow-up(s)`);
-    }
-  } catch (err: any) {
-    console.error('[FollowUpJob] Error:', err.message);
-  }
-}
+import { runFollowUps } from '../ai/proactive-followup';
 
 /** Start the follow-up reminder job (runs every 5 minutes) */
 export function startFollowUpJob(): void {
-  console.log('[FollowUpJob] ✅ Started — checking every 5min for due follow-ups');
+  console.log('[FollowUpJob] ✅ Started — checking every 5min for due follow-ups (unified DB)');
 
   // Run immediately on startup
-  processFollowUps();
+  runFollowUps().catch(err => {
+    console.warn('[FollowUpJob] Initial run failed:', err);
+  });
 
   // Then every 5 minutes
-  setInterval(processFollowUps, 5 * 60_000);
+  setInterval(() => {
+    runFollowUps().catch(err => {
+      console.warn('[FollowUpJob] Run failed:', err);
+    });
+  }, 5 * 60_000);
 }

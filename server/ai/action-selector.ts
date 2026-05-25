@@ -373,23 +373,19 @@ export async function executeAction(params: {
       }
 
       case 'schedule_followup': {
-        // Save follow-up as a conversation tag for cron processing
+        // BUG-FIX: Use unified sales_followups table instead of overwriting agent_history
         try {
-          const { getPool } = await import('../db');
-          const pool = await getPool();
-          if (pool) {
-            const followUpAt = new Date(Date.now() + action.delayHours * 3600 * 1000);
-            const followUpData = JSON.stringify({
-              followup_at: followUpAt.toISOString(),
-              followup_reason: action.reason,
-            });
-            await pool.execute(
-              `UPDATE conversations SET agent_history = ?
-               WHERE id = ? AND merchantId = ?`,
-              [followUpData, conversationId, merchantId]
-            );
-            console.log(`[ActionSelector] ✅ Follow-up scheduled in ${action.delayHours}h for conv #${conversationId}`);
-          }
+          const { scheduleFollowUp } = await import('./proactive-followup');
+          await scheduleFollowUp({
+            merchantId,
+            customerPhone,
+            conversationId,
+            followUpType: 'action_selector',
+            customDelayMs: action.delayHours * 3600 * 1000,
+            customMessage: undefined, // use default template
+            source: 'action_selector',
+          });
+          console.log(`[ActionSelector] ✅ Follow-up scheduled in ${action.delayHours}h for conv #${conversationId}`);
         } catch (fuErr: any) {
           console.warn(`[ActionSelector] Follow-up scheduling failed: ${fuErr.message}`);
         }
