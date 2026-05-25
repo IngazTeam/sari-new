@@ -711,11 +711,47 @@ export const merchantsRouter = router({
                 } catch { /* columns already exist */ }
             }
 
-            // Clean phones
+            // === Normalize phone numbers: ensure country code ===
+            const normalizePhone = (phone: string): string => {
+                let p = phone.replace(/[\s\-()]/g, '');
+                // Saudi local → international: 05xxxxxxxx → 9665xxxxxxxx
+                if (/^05\d{8}$/.test(p)) {
+                    p = '966' + p.slice(1); // drop leading 0
+                }
+                // Ensure no leading +
+                p = p.replace(/^\+/, '');
+                return p;
+            };
+
+            // Clean and normalize phones
             const cleaned = input.phones
-                .map(p => ({ ...p, phone: p.phone.replace(/\s/g, '') }))
+                .map(p => ({ ...p, phone: normalizePhone(p.phone) }))
                 .filter(p => p.phone.length > 0)
                 .sort((a, b) => a.order - b.order);
+
+            // === LOOP GUARD: Block bot's own WhatsApp number ===
+            // If merchant adds the same number the bot uses, escalation messages
+            // would be received by the webhook → treated as customer → infinite loop
+            try {
+                const { getWhatsAppInstancesByMerchantId } = await import('./db');
+                const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
+                const botPhones = instances
+                    .filter((i: any) => i.status === 'active')
+                    .map((i: any) => normalizePhone(String(i.phoneNumber || '')))
+                    .filter(p => p.length > 0);
+
+                const conflicting = cleaned.filter(c => botPhones.includes(c.phone));
+                if (conflicting.length > 0) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: '⚠️ لا يمكن إضافة نفس رقم الواتساب المفعّل للبوت كرقم تصعيد — سيسبب حلقة لا نهائية',
+                    });
+                }
+            } catch (e: any) {
+                // Only rethrow if it's our TRPCError — don't block on DB failures
+                if (e instanceof TRPCError) throw e;
+                console.warn('[Escalation] Bot phone check failed (non-blocking):', e?.message);
+            }
 
             // Save using raw SQL to avoid Drizzle type issues with 'as any'
             if (pool) {

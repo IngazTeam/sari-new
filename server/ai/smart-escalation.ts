@@ -462,8 +462,12 @@ export async function handleMerchantEscalationReply(params: {
  */
 export async function isPhoneInEscalationChain(merchantId: number, phone: string): Promise<boolean> {
   const chain = await getEscalationChain(merchantId);
-  // Normalize: strip leading + and whitespace
-  const normalize = (p: string) => p.replace(/[\s+\-()]/g, '');
+  // Normalize: strip symbols + convert Saudi local 05→966
+  const normalize = (p: string) => {
+    let n = p.replace(/[\s+\-()]/g, '');
+    if (/^05\d{8}$/.test(n)) n = '966' + n.slice(1);
+    return n;
+  };
   const normalizedPhone = normalize(phone);
   return chain.some(c => normalize(c.phone) === normalizedPhone);
 }
