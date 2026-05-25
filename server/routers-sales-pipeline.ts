@@ -147,7 +147,7 @@ export const salesPipelineRouter = router({
    * Loss reasons breakdown — for the loss analysis chart
    */
   getLossBreakdown: protectedProcedure
-    .input(z.object({ days: z.number().default(30) }))
+    .input(z.object({ days: z.number().min(1).max(365).default(30) }))
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
@@ -168,12 +168,15 @@ export const salesPipelineRouter = router({
         human_needed: '🙋 يحتاج إنسان',
       };
 
+      // PEN-FIX: MySQL prepared statements cannot use ? inside INTERVAL ... DAY.
+      // Sanitize input.days as integer to prevent SQL injection.
+      const safeDays = Math.floor(Math.abs(input.days));
       const [rows] = await pool.execute(
         `SELECT loss_reason, COUNT(*) as count FROM conversations
          WHERE merchantId = ? AND loss_reason IS NOT NULL
-           AND stalled_since > DATE_SUB(NOW(), INTERVAL ? DAY)
+           AND stalled_since > DATE_SUB(NOW(), INTERVAL ${safeDays} DAY)
          GROUP BY loss_reason ORDER BY count DESC`,
-        [merchant.id, input.days]
+        [merchant.id]
       );
 
       return (rows as any[]).map(r => ({

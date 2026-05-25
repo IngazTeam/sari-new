@@ -308,8 +308,8 @@ export async function loadNBAContext(
       `SELECT deal_stage, loss_reason, payment_link_sent_at,
               TIMESTAMPDIFF(HOUR, lastMessageAt, NOW()) as hours_since,
               messageCount
-       FROM conversations WHERE id = ? LIMIT 1`,
-      [conversationId]
+       FROM conversations WHERE id = ? AND merchantId = ? LIMIT 1`,
+      [conversationId, merchantId]
     );
     const conv = (rows as any[])[0];
     if (!conv) return defaults;
