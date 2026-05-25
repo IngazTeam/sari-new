@@ -888,8 +888,22 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           // BUG-3 FIX: Also detect implicit escalation replies (no quote but reply-intent phrases)
           const replyIntentPhrases = ['قول له', 'قوله', 'جاوبه', 'ابلغه', 'أبلغه', 'بلغه', 'وصله', 'وصل له', 'رد عليه', 'ردي عليه', 'طمنه'];
           const hasReplyIntent = !isReplyToAlert && replyIntentPhrases.some(p => incomingText.includes(p));
+
+          // Priority 4 (NEW): Auto-detect — chain member sent ANY message while escalation is active
+          // This catches the common case: merchant reads alert, types plain answer without quoting
+          let hasActiveEscalation = false;
+          if (!isReplyToAlert && !hasReplyIntent) {
+            try {
+              const { getActiveEscalationForMerchant } = await import('../db/learning');
+              const activeEsc = await getActiveEscalationForMerchant(instance.merchantId);
+              if (activeEsc) {
+                hasActiveEscalation = true;
+                console.log(`[Escalation] 🎯 Chain member has active escalation #${activeEsc.id} — treating as reply`);
+              }
+            } catch { /* non-blocking */ }
+          }
           
-          if (isReplyToAlert || hasReplyIntent) {
+          if (isReplyToAlert || hasReplyIntent || hasActiveEscalation) {
             const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
 
             // For implicit replies, extract the actual answer (after the intent phrase)
@@ -913,11 +927,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             });
 
             if (result.handled) {
-              console.log(`[Escalation] ✅ Chain member reply routed to customer ${result.escalation?.customerPhone?.slice(-4)}${hasReplyIntent ? ' (implicit)' : ''}`);
+              console.log(`[Escalation] ✅ Chain member reply routed to customer ${result.escalation?.customerPhone?.slice(-4)}${hasReplyIntent ? ' (implicit)' : hasActiveEscalation ? ' (auto-detected)' : ''}`);
               return { success: true, message: 'Escalation reply handled' };
             }
           }
-          // No explicit escalation reply — continue normal customer flow
+          // No explicit escalation reply AND no active escalation — continue normal customer flow
           // (merchant is treated as a regular customer)
         }
       }
