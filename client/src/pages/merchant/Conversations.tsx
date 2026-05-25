@@ -23,17 +23,35 @@ export default function Conversations() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  // Pipeline filter state (from SalesPipeline deep-links)
+  const [stageFilter, setStageFilter] = useState<string | undefined>();
+  const [needsHumanFilter, setNeedsHumanFilter] = useState<boolean | undefined>();
 
   // P0-FIX: Read URL params from SalesPipeline deep-links
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const phone = params.get('phone');
-    if (phone) {
-      setSearchQuery(phone);
-    }
+    const stage = params.get('stage');
+    const needsHuman = params.get('needs_human');
+    if (phone) setSearchQuery(phone);
+    if (stage) setStageFilter(stage);
+    if (needsHuman === '1') setNeedsHumanFilter(true);
   }, []);
 
-  const { data: conversationsData, isLoading } = trpc.conversations.list.useQuery({ page: currentPage, pageSize: 50 });
+  const STAGE_LABELS: Record<string, string> = {
+    ready: '🔥 جاهزون للدفع',
+    payment_link_sent: '💳 دفع لم يكتمل',
+    stalled: '⏸️ متوقفة',
+    new: 'جديد', interested: 'مهتم', qualified: 'مؤهل',
+    paid: 'مدفوع', lost: 'خسارة',
+  };
+
+  const { data: conversationsData, isLoading } = trpc.conversations.list.useQuery({
+    page: currentPage,
+    pageSize: 50,
+    stage: stageFilter,
+    needsHuman: needsHumanFilter,
+  });
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
 
   const { data: messages } = trpc.conversations.getMessages.useQuery(
@@ -53,6 +71,8 @@ export default function Conversations() {
     conv.customerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const hasActiveFilter = stageFilter || needsHumanFilter;
+
   const selectedConversation = conversations?.find(c => c.id === selectedConversationId);
 
   return (
@@ -63,6 +83,22 @@ export default function Conversations() {
         <p className="text-muted-foreground mt-2">
           {t('conversationsPage.description')}
         </p>
+        {hasActiveFilter && (
+          <div className="flex items-center gap-2 mt-3">
+            <Badge variant="secondary" className="text-sm py-1 px-3">
+              {needsHumanFilter ? '⚠️ تحتاج تدخل بشري' : `🔍 ${STAGE_LABELS[stageFilter!] || stageFilter}`}
+              {' '}({conversationsData?.total || 0})
+            </Badge>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 text-xs"
+              onClick={() => { setStageFilter(undefined); setNeedsHumanFilter(undefined); window.history.replaceState({}, '', window.location.pathname); }}
+            >
+              ✕ إزالة الفلتر
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
