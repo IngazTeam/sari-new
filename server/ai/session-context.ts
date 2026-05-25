@@ -26,6 +26,8 @@ export interface ConversationSession {
   topicsDiscussed: string[];
   persuasionUsed: string[];       // Track used tactics to avoid repetition
   messageCount: number;
+  // === Sales Pipeline ===
+  dealStage?: string;             // Synced from DB — used by V2 escalation
   // === Metadata ===
   createdAt: number;
   lastActivityAt: number;

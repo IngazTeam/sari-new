@@ -592,13 +592,15 @@ export function evaluateSmartEscalationV2(ctx: {
   }
 
   // ── T2: Competitor Threat (P0) ──
+  // Note: customerMessage is empty — GPT already has NBA guidance for competitor handling.
+  // This trigger notifies the merchant only (silent escalation).
   if (V2_COMPETITOR_PATTERNS.some(p => p.test(ctx.customerMessage))) {
     return {
       shouldEscalate: true,
       trigger: 'competitor_threat',
       priority: 'P0',
       merchantMessage: `⚔️ تنبيه منافسة!\n\nالعميل ${displayName} يقارنك بمنافس.\n\n💬 رسالته: "${ctx.customerMessage.substring(0, 200)}"\n\n💡 تدخل شخصي يمكن أن يقلب الميزان لصالحك.`,
-      customerMessage: 'سؤال ممتاز! 😊 خلني أوصّلك بأحد فريقنا يعطيك المقارنة الكاملة.',
+      customerMessage: '',  // Silent — let GPT handle with NBA competitor strategy
     };
   }
 

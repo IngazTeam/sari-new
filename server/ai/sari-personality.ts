@@ -1026,6 +1026,14 @@ ${result.orderUrl}
     // ENH-FIX: Update dealStage BEFORE any early return (cache, fast path, etc.)
     if (convId) {
       updateDealStage(convId, earlyIntent).catch(() => {});
+      // Sync dealStage to in-memory session for V2 escalation
+      if (existingSession) {
+        const stageMap: Record<string, string> = {
+          browsing: 'new', inquiring: 'interested', comparing: 'qualified',
+          ready_to_buy: 'ready', post_purchase: 'returning',
+        };
+        if (stageMap[earlyIntent]) existingSession.dealStage = stageMap[earlyIntent];
+      }
     }
 
     // P1-NBA: Next Best Action — sales decision BEFORE reply generation
