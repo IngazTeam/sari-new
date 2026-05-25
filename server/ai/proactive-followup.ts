@@ -403,6 +403,13 @@ export async function runFollowUps(): Promise<{ sent: number; cancelled: number;
       }
     }
 
+    // Cleanup: Release stale processing_tokens (claimed > 10 min ago but never sent — crash recovery)
+    await pool.execute(
+      `UPDATE sales_followups SET processing_token = NULL
+       WHERE processing_token IS NOT NULL AND sent_at IS NULL AND cancelled_at IS NULL
+       AND scheduled_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)`
+    ).catch(() => {});
+
     // Cleanup: Cancel follow-ups older than 7 days that were never sent
     await pool.execute(
       `UPDATE sales_followups 

@@ -219,8 +219,8 @@ export async function detectLostDeals(): Promise<LossDetectionResult[]> {
 
         // Resolve customerPhone from DB
         const [phoneRows] = await pool.execute(
-          `SELECT customerPhone, customerName FROM conversations WHERE id = ? LIMIT 1`,
-          [loss.conversationId]
+          `SELECT customerPhone, customerName FROM conversations WHERE id = ? AND merchantId = ? LIMIT 1`,
+          [loss.conversationId, loss.merchantId]
         );
         const row = (phoneRows as any[])[0];
         if (!row?.customerPhone) continue;
