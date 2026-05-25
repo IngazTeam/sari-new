@@ -330,9 +330,16 @@ export async function buildRAGContext(
   const facts: string[] = [];
   const behaviors: string[] = [];
 
+  // Essential section types that should ALWAYS be injected regardless of similarity
+  // This ensures the bot always knows the business identity even for greetings
+  const ESSENTIAL_TYPES = new Set(['identity', 'services', 'contact']);
+
   for (const { section, similarity } of results) {
-    // Skip very low relevance sections
-    if (similarity < 0.3) continue;
+    const sectionType = section.sectionType || (section as any).section_type || '';
+    const isEssential = ESSENTIAL_TYPES.has(sectionType);
+
+    // Skip very low relevance sections — UNLESS they are essential
+    if (similarity < 0.3 && !isEssential) continue;
 
     const injectAs = section.injectAs || (section as any).inject_as || 'fact';
     const title = section.title || (section as any).title || '';
@@ -344,6 +351,28 @@ export async function buildRAGContext(
       facts.push(`[${title}]: ${content}`);
     }
     // inject_as === 'none' → skip (merchant-only data)
+  }
+
+  // If NO sections passed the threshold at all, inject ALL essential sections as fallback
+  // PEN-RAG-01 FIX: Reuse existing results instead of calling searchRelevantSections again
+  // This eliminates a redundant embedding API call + DB query
+  if (facts.length === 0 && behaviors.length === 0) {
+    for (const { section } of results) {
+      const sectionType = section.sectionType || (section as any).section_type || '';
+      if (ESSENTIAL_TYPES.has(sectionType)) {
+        const injectAs = section.injectAs || (section as any).inject_as || 'fact';
+        const title = section.title || (section as any).title || '';
+        const content = section.content || (section as any).content || '';
+        if (injectAs === 'behavior') {
+          behaviors.push(content);
+        } else {
+          facts.push(`[${title}]: ${content}`);
+        }
+      }
+    }
+    if (facts.length > 0 || behaviors.length > 0) {
+      console.log(`[RAG] Low similarity fallback: injected ${facts.length} essential facts for merchant ${merchantId}`);
+    }
   }
 
   // Product-aware context: search merchant's products when relevant
@@ -358,10 +387,13 @@ export async function buildRAGContext(
     docContext = await buildDocumentContext(merchantId, question);
   } catch { /* doc search is supplementary */ }
 
+  // Count sections used: essential sections + threshold-passing sections
+  const sectionsUsed = facts.length + behaviors.length;
+
   return {
     facts: facts.join('\n\n'),
     behaviors: behaviors.join('\n'),
-    sectionsUsed: results.filter(r => r.similarity >= 0.3).length,
+    sectionsUsed,
     productContext: productContext + docContext,
   };
 }

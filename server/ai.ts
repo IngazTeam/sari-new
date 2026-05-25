@@ -476,6 +476,15 @@ export async function generateAIResponse(
 
 /**
  * معالجة رسالة واردة من العميل
+ * 
+ * FIX: Uses chatWithSari() (advanced pipeline) instead of legacy generateAIResponse().
+ * This ensures ALL WhatsApp messages go through the full AI brain:
+ * ✅ RAG (semantic search)
+ * ✅ Knowledge Sections (classified merchant data)
+ * ✅ Session Context (conversation memory)
+ * ✅ Sales Arsenal + Cultural Engine
+ * ✅ Response Validator (quality gate)
+ * ✅ Smart Escalation (knowledge gap detection)
  */
 export async function processIncomingMessage(
   merchantId: number,
@@ -491,15 +500,16 @@ export async function processIncomingMessage(
       return null;
     }
 
-    // الحصول على تاريخ المحادثة
-    const messages = await getMessagesByConversationId(conversationId);
-    const conversationHistory = messages.slice(-10).map((msg: any) => ({
-      role: msg.direction === 'incoming' ? 'user' as const : 'assistant' as const,
-      content: msg.content
-    }));
-
-    // توليد الرد مع تمرير رقم هاتف العميل
-    const rawAIText = await generateAIResponse(merchantId, messageText, conversationHistory, customerPhone);
+    // استخدام المسار المتقدم (chatWithSari) بدلاً من generateAIResponse القديم
+    // هذا يضمن أن كل الرسائل تمر عبر RAG + Knowledge + Session + Sales Arsenal
+    const { chatWithSari } = await import('./ai/sari-personality');
+    const rawAIText = await chatWithSari({
+      merchantId,
+      customerPhone,
+      customerName: undefined, // Will be resolved inside chatWithSari from conversation
+      message: messageText,
+      conversationId,
+    });
 
     // Phase 2: Parse AI commands into structured response
     const aiResponse = await parseAICommands(rawAIText, merchantId);

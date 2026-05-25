@@ -95,7 +95,7 @@ export function analyzeHesitation(message: string): HesitationAnalysis {
 // In-Memory Cache (Map)
 // ═══════════════════════════════════════════════════════════════
 
-const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const SESSION_TTL_MS = 60 * 60 * 1000; // 60 minutes — WhatsApp customers may take breaks
 const MAX_SESSIONS = 500;               // Memory cap
 
 const sessions = new Map<string, ConversationSession>();
