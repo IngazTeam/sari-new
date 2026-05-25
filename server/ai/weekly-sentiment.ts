@@ -25,6 +25,13 @@ interface WeeklySentimentReport {
   neutralPercentage: number;
   topKeywords: Array<{ keyword: string; count: number }>;
   improvementSuggestions: string[];
+  // P3: Sales KPIs
+  salesKPIs?: {
+    conversionRate: number;
+    totalPaid: number;
+    totalLost: number;
+    topLossReason: string | null;
+  };
 }
 
 /**
@@ -123,6 +130,34 @@ export async function generateWeeklySentimentReport(
       topKeywords,
       improvementSuggestions
     };
+
+    // P3: Load Sales KPIs from loss-detector pipeline
+    try {
+      const { getPipelineSummary } = await import('./loss-detector');
+      const pipeline = await getPipelineSummary(merchantId);
+      const totalPaid = pipeline.stages['paid'] || 0;
+      const totalLost = pipeline.stages['lost'] || 0;
+      const total = totalPaid + totalLost;
+      const topLoss = Object.entries(pipeline.lossReasons).sort((a, b) => b[1] - a[1])[0];
+      report.salesKPIs = {
+        conversionRate: total > 0 ? Math.round((totalPaid / total) * 100) : 0,
+        totalPaid,
+        totalLost,
+        topLossReason: topLoss ? topLoss[0] : null,
+      };
+      // Sales-based improvement suggestions
+      if (report.salesKPIs.conversionRate < 20 && total > 0) {
+        improvementSuggestions.push(`📉 نسبة التحويل منخفضة (${report.salesKPIs.conversionRate}%). راجع أسعارك أو أضف عروض.`);
+      }
+      if (report.salesKPIs.topLossReason === 'price') {
+        improvementSuggestions.push('💰 أكثر سبب لخسارة العملاء هو السعر. فكّر بإضافة باقات بأسعار مختلفة.');
+      }
+      if (report.salesKPIs.topLossReason === 'no_response') {
+        improvementSuggestions.push('👻 كثير من العملاء يختفون. حاول تحسين المتابعة الاستباقية.');
+      }
+    } catch {
+      // Sales KPIs are supplementary — non-blocking
+    }
 
     // حفظ التقرير في قاعدة البيانات
     await createWeeklySentimentReport({

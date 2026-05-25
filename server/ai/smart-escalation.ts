@@ -516,3 +516,134 @@ export async function sendKnowledgeGapDigest(merchantId: number): Promise<void> 
     console.error('[Escalation] Gap digest failed:', err.message);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// v2: Smart Escalation Triggers — Beyond Knowledge Gaps
+// ═══════════════════════════════════════════════════════════════════
+
+export type EscalationTriggerV2 =
+  | 'knowledge_gap'
+  | 'complaint_risk'
+  | 'competitor_threat'
+  | 'payment_stuck'
+  | 'repeat_objection';
+
+export interface EscalationDecisionV2 {
+  shouldEscalate: boolean;
+  trigger: EscalationTriggerV2 | null;
+  priority: 'P0' | 'P1' | 'P2';
+  merchantMessage: string;
+  customerMessage: string;
+}
+
+const V2_COMPETITOR_PATTERNS = [
+  /مكان ثاني/i, /محل ثاني/i, /أقارن/i, /بشوف عند/i,
+  /لقيت أفضل/i, /عند غيركم/i, /منافس/i, /بديل/i,
+  /وش الفرق بينكم/i, /ليش عندكم أغلى/i,
+];
+
+const V2_COMPLAINT_PATTERNS = [
+  /شكوى/i, /زعلان/i, /مستاء/i, /سيء/i, /أسوأ/i,
+  /ما بشتري/i, /خلاص/i, /ما أبي/i, /مضيعة وقت/i,
+  /ما فيه فايدة/i, /بلغ عنكم/i, /حقوق المستهلك/i,
+];
+
+const V2_OBJECTION_PATTERNS: Record<string, RegExp[]> = {
+  price: [/غالي/i, /كثير/i, /مبالغ/i, /أرخص/i, /خصم/i],
+  quality: [/جودة/i, /ردي/i, /مو كويس/i, /ضعيف/i],
+  timing: [/طويل/i, /كم يوم/i, /يأخر/i, /متأخر/i],
+};
+
+// In-memory objection counter (per conversation)
+const _v2ObjectionCounts = new Map<string, Map<string, number>>();
+
+/**
+ * v2: Evaluate if this message needs proactive escalation
+ * beyond the standard knowledge-gap detection.
+ */
+export function evaluateSmartEscalationV2(ctx: {
+  merchantId: number;
+  conversationId: number;
+  customerPhone: string;
+  customerName?: string;
+  customerMessage: string;
+  dealStage: string | null;
+  sentiment: string;
+  paymentLinkSent: boolean;
+  hoursSincePaymentLink?: number;
+}): EscalationDecisionV2 {
+  const noEscalation: EscalationDecisionV2 = {
+    shouldEscalate: false, trigger: null, priority: 'P2',
+    merchantMessage: '', customerMessage: '',
+  };
+
+  const displayName = ctx.customerName || ctx.customerPhone;
+
+  // ── T1: Complaint Risk (P0) ──
+  if (V2_COMPLAINT_PATTERNS.some(p => p.test(ctx.customerMessage)) &&
+      ['negative', 'angry', 'frustrated'].includes(ctx.sentiment)) {
+    return {
+      shouldEscalate: true,
+      trigger: 'complaint_risk',
+      priority: 'P0',
+      merchantMessage: `🚨 تنبيه عاجل!\n\nالعميل ${displayName} غير راضٍ ويحتاج تدخلك الفوري.\n\n💬 آخر رسالة: "${ctx.customerMessage.substring(0, 200)}"\n\n⚡ تدخل فوري مطلوب لمنع خسارة العميل.`,
+      customerMessage: 'أعتذر جداً عن أي إزعاج 🙏 أحد المسؤولين سيتواصل معك خلال دقائق.',
+    };
+  }
+
+  // ── T2: Competitor Threat (P0) ──
+  if (V2_COMPETITOR_PATTERNS.some(p => p.test(ctx.customerMessage))) {
+    return {
+      shouldEscalate: true,
+      trigger: 'competitor_threat',
+      priority: 'P0',
+      merchantMessage: `⚔️ تنبيه منافسة!\n\nالعميل ${displayName} يقارنك بمنافس.\n\n💬 رسالته: "${ctx.customerMessage.substring(0, 200)}"\n\n💡 تدخل شخصي يمكن أن يقلب الميزان لصالحك.`,
+      customerMessage: 'سؤال ممتاز! 😊 خلني أوصّلك بأحد فريقنا يعطيك المقارنة الكاملة.',
+    };
+  }
+
+  // ── T3: Payment Stuck (P1) ──
+  if (ctx.paymentLinkSent && ctx.hoursSincePaymentLink &&
+      ctx.hoursSincePaymentLink >= 6 && ctx.hoursSincePaymentLink < 48 &&
+      ctx.dealStage === 'payment_link_sent') {
+    return {
+      shouldEscalate: true,
+      trigger: 'payment_stuck',
+      priority: 'P1',
+      merchantMessage: `💳 دفع متعثر!\n\nالعميل ${displayName} عنده رابط دفع من ${Math.round(ctx.hoursSincePaymentLink)} ساعة ولم يدفع.\n\n💡 ممكن يحتاج مساعدة تقنية أو خصم إضافي.`,
+      customerMessage: '',  // Silent — no customer notification
+    };
+  }
+
+  // ── T4: Repeat Objection (P1) ──
+  for (const [type, patterns] of Object.entries(V2_OBJECTION_PATTERNS)) {
+    if (patterns.some(p => p.test(ctx.customerMessage))) {
+      const key = `${ctx.merchantId}:${ctx.conversationId}`;
+      if (!_v2ObjectionCounts.has(key)) _v2ObjectionCounts.set(key, new Map());
+      const counts = _v2ObjectionCounts.get(key)!;
+      counts.set(type, (counts.get(type) || 0) + 1);
+
+      if ((counts.get(type) || 0) >= 3) {
+        return {
+          shouldEscalate: true,
+          trigger: 'repeat_objection',
+          priority: 'P1',
+          merchantMessage: `🔄 اعتراض متكرر!\n\nالعميل ${displayName} كرر اعتراض "${type}" ${counts.get(type)} مرات.\n\n💡 الذكاء الاصطناعي لم يقنعه — تدخلك الشخصي مطلوب.`,
+          customerMessage: 'أفهم تماماً 🙏 خلني أوصّلك مع أحد المسؤولين يقدر يساعدك بشكل أفضل.',
+        };
+      }
+    }
+  }
+
+  return noEscalation;
+}
+
+// Cleanup stale objection counts every 30 min
+setInterval(() => {
+  if (_v2ObjectionCounts.size > 500) {
+    const entries = Array.from(_v2ObjectionCounts.entries());
+    _v2ObjectionCounts.clear();
+    entries.slice(-200).forEach(([k, v]) => _v2ObjectionCounts.set(k, v));
+  }
+}, 30 * 60 * 1000);
+
