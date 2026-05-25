@@ -51,6 +51,7 @@ import { productsRouter } from "./routers-products";
 import { woocommerceRouter } from "./woocommerce_router";
 import { knowledgeDocsRouter } from "./routers-knowledge-docs";
 import { sariBrainRouter } from "./routers-sari-brain";
+import { salesPipelineRouter } from "./routers-sales-pipeline";
 import { virtualAgentsRouter } from "./routers-virtual-agents";
 import { aiSettingsRouter } from "./routers-ai-settings";
 import { aiDirectivesRouter } from "./routers-ai-directives";
@@ -8810,6 +8811,9 @@ export const appRouter = router({
 
   // Sari Brain Management — modularized to routers-sari-brain.ts
   sariBrain: sariBrainRouter,
+
+  // Sales Pipeline Board — modularized to routers-sales-pipeline.ts
+  salesPipeline: salesPipelineRouter,
 
   // AI Settings & Usage — modularized to routers-ai-settings.ts
   aiSettings: aiSettingsRouter,
