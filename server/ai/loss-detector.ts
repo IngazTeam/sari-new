@@ -124,8 +124,8 @@ export async function detectLostDeals(): Promise<LossDetectionResult[]> {
 
     for (const row of paymentAbandoned as any[]) {
       await pool.execute(
-        `UPDATE conversations SET deal_stage = 'lost', loss_reason = 'payment_abandoned', stalled_since = payment_link_sent_at WHERE id = ?`,
-        [row.id]
+        `UPDATE conversations SET deal_stage = 'lost', loss_reason = 'payment_abandoned', stalled_since = payment_link_sent_at WHERE id = ? AND merchantId = ?`,
+        [row.id, row.merchantId]
       );
       results.push({
         merchantId: row.merchantId,
@@ -150,8 +150,8 @@ export async function detectLostDeals(): Promise<LossDetectionResult[]> {
 
     for (const row of escalationExpired as any[]) {
       await pool.execute(
-        `UPDATE conversations SET deal_stage = 'lost', loss_reason = 'human_needed', stalled_since = NOW() WHERE id = ?`,
-        [row.id]
+        `UPDATE conversations SET deal_stage = 'lost', loss_reason = 'human_needed', stalled_since = NOW() WHERE id = ? AND merchantId = ?`,
+        [row.id, row.merchantId]
       );
       results.push({
         merchantId: row.merchantId,
@@ -176,8 +176,8 @@ export async function detectLostDeals(): Promise<LossDetectionResult[]> {
     for (const row of ghostConvs as any[]) {
       const reason = classifyLossReason(row.lastMessage || '');
       await pool.execute(
-        `UPDATE conversations SET deal_stage = 'lost', loss_reason = ?, stalled_since = lastMessageAt WHERE id = ?`,
-        [reason, row.id]
+        `UPDATE conversations SET deal_stage = 'lost', loss_reason = ?, stalled_since = lastMessageAt WHERE id = ? AND merchantId = ?`,
+        [reason, row.id, row.merchantId]
       );
       results.push({
         merchantId: row.merchantId,

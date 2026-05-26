@@ -779,25 +779,28 @@ export const STAGE_ORDER: Record<string, number> = {
   payment_failed: -1, lost: -2,
 };
 
-async function updateDealStage(convId: number, intent: string): Promise<void> {
+async function updateDealStage(convId: number, intent: string, merchantId?: number): Promise<void> {
   const newStage = DEAL_STAGE_MAP[intent];
   if (!newStage) return;
   try {
     const { getPool } = await import('../db');
     const pool = await getPool();
     if (!pool) return;
+    // SEC: Scope by merchantId when available
+    const whereClause = merchantId ? 'WHERE id = ? AND merchantId = ?' : 'WHERE id = ?';
+    const params = merchantId ? [convId, merchantId] : [convId];
     const [rows] = await pool.execute(
-      `SELECT deal_stage FROM conversations WHERE id = ? LIMIT 1`,
-      [convId]
+      `SELECT deal_stage FROM conversations ${whereClause} LIMIT 1`,
+      params
     );
     const current = (rows as any[])[0]?.deal_stage || 'new';
     if ((STAGE_ORDER[newStage] ?? 0) > (STAGE_ORDER[current] ?? 0) || newStage === 'returning') {
       await pool.execute(
-        `UPDATE conversations SET deal_stage = ? WHERE id = ?`,
-        [newStage, convId]
+        `UPDATE conversations SET deal_stage = ? ${whereClause}`,
+        [newStage, ...params]
       );
     }
-  } catch { /* dealStage is non-blocking */ }
+  } catch (err) { console.warn('[DealStage] Update failed (non-blocking):', err); }
 }
 
 /**
@@ -1059,7 +1062,7 @@ ${result.orderUrl}
 
     // ENH-FIX: Update dealStage BEFORE any early return (cache, fast path, etc.)
     if (convId) {
-      updateDealStage(convId, earlyIntent).catch(() => {});
+      updateDealStage(convId, earlyIntent, params.merchantId).catch(() => {});
       // Sync dealStage to in-memory session for V2 escalation
       if (existingSession) {
         const stageMap: Record<string, string> = {
