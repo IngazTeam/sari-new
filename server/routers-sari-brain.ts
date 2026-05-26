@@ -925,6 +925,9 @@ ${sanitizedContent}`
         category: input.category,
       });
 
+      // Invalidate cache so bot sees new FAQ immediately
+      try { const kDb = await import('./db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
+
       return { success: true, id };
     }),
 
@@ -951,6 +954,9 @@ ${sanitizedContent}`
       await updateExtractedFaq(id, data);
       await logBrainActivity(merchant.id, 'faq_updated', `تم تحديث سؤال رقم ${id}`);
 
+      // Invalidate cache so bot sees FAQ changes immediately
+      try { const kDb = await import('./db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
+
       return { success: true };
     }),
 
@@ -968,6 +974,9 @@ ${sanitizedContent}`
 
       await deleteExtractedFaq(input.id);
       await logBrainActivity(merchant.id, 'faq_deleted', `تم حذف سؤال رقم ${input.id}`);
+
+      // Invalidate cache so bot stops using deleted FAQ immediately
+      try { const kDb = await import('./db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
 
       return { success: true };
     }),
@@ -1446,6 +1455,18 @@ ${fencedContent}`,
           url: input.url,
           wordCount,
         });
+
+        // Feed into Knowledge Engine so custom page becomes RAG knowledge
+        try {
+          if (text.length > 100) {
+            const { ingestContent } = await import('./ai/knowledge-engine');
+            await ingestContent(merchant.id, text, 'website', { businessName: merchant.businessName || '' }, input.url);
+            const { embedAllSections } = await import('./ai/rag-engine');
+            await embedAllSections(merchant.id, true);
+            const knowledgeDb = await import('./db/knowledge');
+            await knowledgeDb.invalidateCache(merchant.id);
+          }
+        } catch { /* non-blocking — page is saved regardless */ }
 
         return { success: true, title: pageTitle, wordCount };
       } catch (error: any) {
