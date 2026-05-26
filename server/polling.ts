@@ -338,9 +338,9 @@ async function handleIncomingMessage(
         });
         return;
       }
-      const canRespond = await shouldBotRespond(merchantId);
+      const { shouldRespond: canRespond, reason: respondReason } = await shouldBotRespond(merchantId);
       if (!canRespond) {
-        console.log(`[Polling] Outside working hours for merchant ${merchantId}`);
+        console.log(`[Polling] Outside working hours for merchant ${merchantId} — reason: ${respondReason}`);
         await createMessage({
           conversationId: conversation.id,
           direction: 'incoming',
