@@ -37,8 +37,8 @@ export const conversationsRouter = router({
             const needsHuman = input?.needsHuman;
 
             // Whitelist of valid deal stages — invalid values fall through to unfiltered default
-            const { VALID_DEAL_STAGES } = await import('@shared/const');
-            const isValidFilter = needsHuman || (stage && (stage === 'stalled' || (VALID_DEAL_STAGES as readonly string[]).includes(stage)));
+            const { isValidDealStage } = await import('@shared/const');
+            const isValidFilter = needsHuman || (stage && isValidDealStage(stage));
 
             // If pipeline filters are active, use targeted SQL query
             if (isValidFilter) {

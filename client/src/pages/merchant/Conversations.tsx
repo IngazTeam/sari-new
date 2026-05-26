@@ -1,5 +1,5 @@
 import { trpc } from '@/lib/trpc';
-import { VALID_DEAL_STAGES } from '@shared/const';
+import { isValidDealStage } from '@shared/const';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ export default function Conversations() {
     const stage = params.get('stage');
     const needsHuman = params.get('needs_human');
     if (phone) setSearchQuery(phone);
-    if (stage && (stage === 'stalled' || (VALID_DEAL_STAGES as readonly string[]).includes(stage))) setStageFilter(stage);
+    if (stage && isValidDealStage(stage)) setStageFilter(stage);
     if (needsHuman === '1') setNeedsHumanFilter(true);
   }, []);
 

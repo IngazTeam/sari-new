@@ -7,3 +7,8 @@ export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';
 /** Valid deal stages for the Sales Pipeline. Single source of truth for server + client filtering. */
 export const VALID_DEAL_STAGES = ['new', 'interested', 'qualified', 'ready', 'payment_link_sent', 'purchased', 'paid', 'lost', 'payment_failed'] as const;
 export type DealStage = typeof VALID_DEAL_STAGES[number] | 'stalled';
+
+/** Check if a string is a valid deal stage (including the virtual 'stalled' stage). */
+export function isValidDealStage(stage: string): stage is DealStage {
+  return stage === 'stalled' || (VALID_DEAL_STAGES as readonly string[]).includes(stage);
+}
