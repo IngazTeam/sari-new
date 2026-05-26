@@ -377,7 +377,7 @@ function findBestMatch(
   if (sameType.length === 0) return null;
   if (sameType.length === 1) return sameType[0];
 
-  // Multiple same-type sections: compare titles
+  // Multiple same-type sections: compare titles first
   const titleLower = newSection.title.toLowerCase();
   const titleMatch = sameType.find(e => {
     const existingTitle = (e.title || '').toLowerCase();
@@ -386,7 +386,21 @@ function findBestMatch(
       titleLower.includes(existingTitle);
   });
 
-  return titleMatch || sameType[0];
+  if (titleMatch) return titleMatch;
+
+  // No title match — use content similarity to find best match (P1-4 FIX)
+  // Prevents blind sameType[0] from merging unrelated sections
+  let bestMatch = sameType[0];
+  let bestSim = 0;
+  for (const s of sameType) {
+    const sim = textSimilarity(s.content, newSection.content);
+    if (sim > bestSim) {
+      bestSim = sim;
+      bestMatch = s;
+    }
+  }
+  // Only return match if there's meaningful overlap (>20%)
+  return bestSim > 0.2 ? bestMatch : null;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -429,9 +443,9 @@ async function decideEvolution(
     if (['unchanged', 'evolve', 'conflict'].includes(decision)) {
       return decision as 'unchanged' | 'evolve' | 'conflict';
     }
-    return 'evolve'; // Default: treat as evolution
+    return 'unchanged'; // Default: preserve existing knowledge (safer than evolve)
   } catch {
-    return 'evolve'; // On AI failure, default to evolve (safer than conflict)
+    return 'unchanged'; // On AI failure, preserve existing (P1-5 FIX: was 'evolve')
   }
 }
 

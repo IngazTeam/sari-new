@@ -1490,6 +1490,12 @@ ${fencedContent}`,
         `${input.useInBot ? 'تفعيل' : 'إيقاف'} الصفحة "${page.title}" في ردود ساري`
       );
 
+      // P1-6 FIX: Invalidate cache so bot respects the toggle immediately
+      try {
+        const knowledgeDb = await import('./db/knowledge');
+        await knowledgeDb.invalidateCache(merchant.id);
+      } catch { /* non-blocking */ }
+
       return { success: true };
     }),
 
@@ -1549,6 +1555,12 @@ ${fencedContent}`,
       await logBrainActivity(merchant.id, 'document_deleted',
         `تم حذف الصفحة "${page.title}" (${page.url}) من ذاكرة ساري`
       );
+
+      // P1-6 FIX: Invalidate cache so bot stops using deleted page content
+      try {
+        const knowledgeDb2 = await import('./db/knowledge');
+        await knowledgeDb2.invalidateCache(merchant.id);
+      } catch { /* non-blocking */ }
 
       console.log(`[SariBrain] Deleted discovered page ${input.pageId} (${page.url}) for merchant ${merchant.id}`);
       return { success: true, deletedTitle: page.title };

@@ -130,13 +130,15 @@ export async function embedSection(section: KnowledgeSection, merchantId: number
 
 /**
  * Batch embed all sections that don't have embeddings yet.
+ * forceAll=true re-embeds ALL sections (use after content updates/evolution).
  */
-export async function embedAllSections(merchantId: number): Promise<number> {
+export async function embedAllSections(merchantId: number, forceAll: boolean = false): Promise<number> {
   const sections = await getBotSectionsWithEmbedding(merchantId);
   let embedded = 0;
 
   for (const section of sections) {
-    if (!section.embedding && !(section as any).embedding) {
+    const hasEmbedding = section.embedding || (section as any).embedding;
+    if (!hasEmbedding || forceAll) {
       const success = await embedSection(section, merchantId);
       if (success) embedded++;
       // Small delay to avoid rate limiting
@@ -144,7 +146,7 @@ export async function embedAllSections(merchantId: number): Promise<number> {
     }
   }
 
-  console.log(`[RAG] Embedded ${embedded}/${sections.length} sections for merchant ${merchantId}`);
+  console.log(`[RAG] Embedded ${embedded}/${sections.length} sections for merchant ${merchantId} (forceAll=${forceAll})`);
   return embedded;
 }
 

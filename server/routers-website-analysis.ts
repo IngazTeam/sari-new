@@ -376,6 +376,40 @@ export const websiteAnalysisRouter = router({
             console.error('[WebsiteAnalysis] Phase 3 FAILED:', insightsError instanceof Error ? insightsError.message : insightsError);
           }
 
+          // Phase 4: Feed into Knowledge Engine (RAG) — bridges the gap with sariBrain.reanalyzeWebsite
+          console.log(`[WebsiteAnalysis] Phase 4 START: Knowledge Engine ingestion`);
+          try {
+            const allScrapedText = (scrapedText + '\n\n' + enrichedText).trim();
+            if (allScrapedText.length > 100) {
+              const { ingestContent } = await import('./ai/knowledge-engine');
+              const ingestionResult = await ingestContent(
+                merchant.id,
+                allScrapedText,
+                'website',
+                {
+                  businessName: merchant.businessName || '',
+                  industry: '',
+                },
+                input.url
+              );
+              console.log(`[WebsiteAnalysis] Phase 4 ingestion: +${ingestionResult.evolveResult.added} added, ↗${ingestionResult.evolveResult.evolved} evolved, ⚠${ingestionResult.evolveResult.conflicts} conflicts`);
+
+              // Embed all new sections for RAG
+              try {
+                const { embedAllSections } = await import('./ai/rag-engine');
+                await embedAllSections(merchant.id, true);
+              } catch { /* non-blocking */ }
+
+              // Invalidate knowledge cache so bot uses new data immediately
+              try {
+                const knowledgeDb = await import('./db/knowledge');
+                await knowledgeDb.invalidateCache(merchant.id);
+              } catch { /* non-blocking */ }
+            }
+          } catch (knowledgeError) {
+            console.error('[WebsiteAnalysis] Phase 4 FAILED (non-blocking):', knowledgeError instanceof Error ? knowledgeError.message : knowledgeError);
+          }
+
           // Final: Mark analysis as completed after all phases finish
           try {
             await updateWebsiteAnalysis(analysisId, { status: 'completed' });
