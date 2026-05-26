@@ -184,6 +184,34 @@ function sanitizeForTRPC(data: any): any {
 }
 
 /**
+ * Normalize a URL for comparison:
+ * - Strip protocol (http/https)
+ * - Strip www. prefix
+ * - Strip trailing slash
+ * - Lowercase
+ * This handles: "https://www.example.com/" === "http://example.com"
+ */
+function normalizeUrl(url: string): string {
+  return url
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .replace(/\/+$/, '')
+    .toLowerCase();
+}
+
+/**
+ * Check if two URLs match — exact normalized match OR one contains the other.
+ * Handles:
+ *   "https://example.com/about" === "http://www.example.com/about" (normalized)
+ *   "example.com/about" matches "example.com" (parent contains sub-page)
+ */
+function urlsMatch(sectionSourceUrl: string, pageUrl: string): boolean {
+  const a = normalizeUrl(sectionSourceUrl);
+  const b = normalizeUrl(pageUrl);
+  return a === b;
+}
+
+/**
  * Background analysis runner — fire-and-forget.
  * Stores result in analysisStatusMap for frontend polling via getAnalysisStatus.
  */
@@ -1516,7 +1544,7 @@ ${fencedContent}`,
           const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
           for (const section of sections) {
             const sourceUrl = (section as any).source_url || (section as any).sourceUrl || '';
-            if (sourceUrl && sourceUrl === page.url) {
+            if (sourceUrl && urlsMatch(sourceUrl, page.url)) {
               await knowledgeDb.updateSection((section as any).id, merchant.id, { useInBot: input.useInBot });
             }
           }
@@ -1581,7 +1609,7 @@ ${fencedContent}`,
         const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
         for (const section of sections) {
           const sourceUrl = (section as any).source_url || (section as any).sourceUrl || '';
-          if (sourceUrl && page.url && sourceUrl === page.url) {
+          if (sourceUrl && page.url && urlsMatch(sourceUrl, page.url)) {
             await knowledgeDb.deleteSection((section as any).id, merchant.id);
           }
         }
