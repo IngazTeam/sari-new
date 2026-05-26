@@ -200,10 +200,14 @@ function normalizeUrl(url: string): string {
 }
 
 /**
- * Check if two URLs match — exact normalized match OR one contains the other.
- * Handles:
- *   "https://example.com/about" === "http://www.example.com/about" (normalized)
- *   "example.com/about" matches "example.com" (parent contains sub-page)
+ * Check if two URLs match after normalization (protocol/www/trailing-slash stripped).
+ * Uses EXACT normalized match only — NOT parent/sub-page matching.
+ * 
+ * Why no parent matching: toggling off "example.com/about" must NOT disable
+ * sections sourced from "example.com" (the whole site), and vice versa.
+ * Phase 4 sections tagged with the main URL are unaffected by sub-page toggles.
+ * 
+ * Example: "https://www.example.com/about/" === "http://example.com/about" ✅
  */
 function urlsMatch(sectionSourceUrl: string, pageUrl: string): boolean {
   const a = normalizeUrl(sectionSourceUrl);
