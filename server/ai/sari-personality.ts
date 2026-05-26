@@ -744,7 +744,7 @@ async function buildEnhancedContextPrompt(context: {
       const pages = await getDiscoveredPagesByMerchantId(context.merchantId);
       const policyPages = pages.filter((p: any) =>
         ['shipping', 'returns', 'faq', 'about'].includes(p.pageType) && p.content
-        && (p.use_in_bot !== 0 && p.useInBot !== false) // Respect merchant's toggle
+        && p.useInBot !== false // Respect merchant's toggle (DB normalizes to boolean)
       );
       if (policyPages.length > 0) {
         contextPrompt += `\n## سياسات المتجر:\n`;

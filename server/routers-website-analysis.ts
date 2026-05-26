@@ -87,6 +87,7 @@ export const websiteAnalysisRouter = router({
           let scrapedHtml = '';
           let scrapedText = '';
           let enrichedText = '';  // Text from ALL crawled sub-pages
+          let analyzedIndustry = '';  // Captured from Phase 1 for Phase 4
 
           // Phase 1: Analyze website (120s timeout — increased for up to 30-page crawl)
           console.log(`[WebsiteAnalysis] Phase 1 START: scrape + analyze ${input.url}`);
@@ -131,6 +132,7 @@ export const websiteAnalysisRouter = router({
               enrichedText = result._enrichedText || '';
               console.log(`[WebsiteAnalysis] Cached ${scrapedHtml.length} bytes HTML, ${scrapedText.length + enrichedText.length} chars text from Phase 1`);
             }
+            analyzedIndustry = result.industry || '';
             // Save enriched contact info to merchant profile
             if (result.contactInfo) {
               const ci = result.contactInfo;
@@ -388,7 +390,7 @@ export const websiteAnalysisRouter = router({
                 'website',
                 {
                   businessName: merchant.businessName || '',
-                  industry: '',
+                  industry: analyzedIndustry,
                 },
                 input.url
               );

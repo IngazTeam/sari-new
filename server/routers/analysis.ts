@@ -681,6 +681,13 @@ export const analysisRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // IDOR FIX: Verify ownership before update
+      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const pages = await getDiscoveredPagesByMerchantId(merchant.id);
+      const owned = pages.find((p: any) => p.id === input.pageId);
+      if (!owned) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
+      }
       const { pageId, ...data } = input;
       await updateDiscoveredPage(pageId, data);
       return { success: true };
@@ -692,6 +699,13 @@ export const analysisRouter = router({
   deletePage: protectedProcedure
     .input(z.object({ pageId: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      // IDOR FIX: Verify ownership before delete
+      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const pages = await getDiscoveredPagesByMerchantId(merchant.id);
+      const owned = pages.find((p: any) => p.id === input.pageId);
+      if (!owned) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
+      }
       await deleteDiscoveredPage(input.pageId);
       return { success: true };
     }),
@@ -738,6 +752,13 @@ export const analysisRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // IDOR FIX: Verify ownership before update
+      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const faqs = await getExtractedFaqsByMerchantId(merchant.id);
+      const owned = faqs.find((f: any) => f.id === input.faqId);
+      if (!owned) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'السؤال غير موجود' });
+      }
       const { faqId, ...data } = input;
       await updateExtractedFaq(faqId, data);
       return { success: true };
@@ -749,6 +770,13 @@ export const analysisRouter = router({
   deleteFaq: protectedProcedure
     .input(z.object({ faqId: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      // IDOR FIX: Verify ownership before delete
+      const merchant = await getMerchantOrThrow(ctx.user.id);
+      const faqs = await getExtractedFaqsByMerchantId(merchant.id);
+      const owned = faqs.find((f: any) => f.id === input.faqId);
+      if (!owned) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'السؤال غير موجود' });
+      }
       await deleteExtractedFaq(input.faqId);
       return { success: true };
     }),
