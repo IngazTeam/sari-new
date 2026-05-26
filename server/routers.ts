@@ -2039,8 +2039,8 @@ export const appRouter = router({
         const needsHuman = input?.needsHuman;
 
         // Whitelist of valid deal stages — invalid values fall through to unfiltered default
-        const VALID_STAGES = ['new', 'interested', 'qualified', 'ready', 'payment_link_sent', 'purchased', 'paid', 'lost', 'payment_failed'];
-        const isValidFilter = needsHuman || (stage && (stage === 'stalled' || VALID_STAGES.includes(stage)));
+        const { VALID_DEAL_STAGES } = await import('@shared/const');
+        const isValidFilter = needsHuman || (stage && (stage === 'stalled' || (VALID_DEAL_STAGES as readonly string[]).includes(stage)));
 
         // If pipeline filters are active, use targeted SQL query
         if (isValidFilter) {
