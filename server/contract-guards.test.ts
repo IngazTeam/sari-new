@@ -292,3 +292,84 @@ describe('CG-08: Group message reply routing', () => {
     expect(fnBlock).toContain("phoneNumber.includes('@')");
   });
 });
+
+// ═══════════════════════════════════════════════════════════════
+// CG-09: Setup Wizard ↔ Schema — language enum parity
+// ═══════════════════════════════════════════════════════════════
+describe('CG-09: Setup wizard language ↔ schema parity', () => {
+  it('wizard botLanguage enum must include all schema language values', () => {
+    const wizard = readFile('./server/routers-setup-wizard.ts');
+    const schema = readFile('./drizzle/schema.ts');
+
+    // Extract schema language values
+    const schemaMatch = schema.match(/language:\s*mysqlEnum\(\[([^\]]+)\]/);
+    expect(schemaMatch).not.toBeNull();
+    const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
+
+    // Each schema value must be accepted by the wizard
+    for (const val of schemaValues) {
+      expect(wizard).toContain(`'${val}'`);
+    }
+  });
+
+  it('wizard botTone enum must match schema tone enum', () => {
+    const wizard = readFile('./server/routers-setup-wizard.ts');
+    const schema = readFile('./drizzle/schema.ts');
+
+    const schemaMatch = schema.match(/tone:\s*mysqlEnum\(\[([^\]]+)\]/);
+    expect(schemaMatch).not.toBeNull();
+    const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
+
+    const wizardMatch = wizard.match(/botTone:\s*z\.enum\(\[([^\]]+)\]/);
+    expect(wizardMatch).not.toBeNull();
+    const wizardValues = wizardMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
+
+    expect(wizardValues.sort()).toEqual(schemaValues.sort());
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CG-10: Group routing — ALL message types use groupChatId
+// ═══════════════════════════════════════════════════════════════
+describe('CG-10: Complete group routing coverage', () => {
+  const webhook = () => readFile('./server/webhooks/greenapi.ts');
+
+  // Count occurrences of `groupChatId || customerPhone` — must be >= 5:
+  // 1. out-of-hours, 2. resume, 3. welcome, 4. main AI response, 5. actions
+  it('must route at least 5 send paths through groupChatId', () => {
+    const wh = webhook();
+    const matches = wh.match(/groupChatId \|\| customerPhone/g);
+    expect(matches).not.toBeNull();
+    expect(matches!.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('out-of-hours message must use groupChatId', () => {
+    const wh = webhook();
+    // Find the out-of-hours block
+    const oohIdx = wh.indexOf('outOfHoursMessage');
+    const oohBlock = wh.substring(oohIdx, oohIdx + 500);
+    expect(oohBlock).toContain('groupChatId || customerPhone');
+  });
+
+  it('typing indicator must use groupChatId', () => {
+    const wh = webhook();
+    const typingIdx = wh.indexOf('sendTypingWithCredentials');
+    const typingBlock = wh.substring(typingIdx, typingIdx + 300);
+    expect(typingBlock).toContain('groupChatId || customerPhone');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CG-11: No stale LanguageSettings file
+// ═══════════════════════════════════════════════════════════════
+describe('CG-11: Dead code guard', () => {
+  it('stale pages/LanguageSettings.tsx must not exist (dead code)', () => {
+    const exists = fs.existsSync('./client/src/pages/LanguageSettings.tsx');
+    expect(exists).toBe(false);
+  });
+
+  it('App.tsx must route to merchant/LanguageSettings (not root)', () => {
+    const app = readFile('./client/src/App.tsx');
+    expect(app).toContain('pages/merchant/LanguageSettings');
+  });
+});

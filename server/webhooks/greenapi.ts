@@ -1027,7 +1027,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const settings = await getBotSettings(instance.merchantId);
         if (settings.outOfHoursMessage) {
           await sendResponseWithDelay({
-            customerPhone: extractPhoneNumber(payload.senderData.chatId),
+            customerPhone: groupChatId || customerPhone,
             message: settings.outOfHoursMessage,
             delayMs: 1000,
             instanceId: instance.instanceId,
@@ -1097,7 +1097,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         // Send resume message
         const resumeMsg = botSettings.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
         await sendResponseWithDelay({
-          customerPhone,
+          customerPhone: groupChatId || customerPhone,
           message: resumeMsg,
           delayMs: 500,
           instanceId: instance.instanceId,
@@ -1114,7 +1114,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         if (existingMessages.length === 0) {
           console.log(`[Webhook] 🎉 First-time customer ${customerPhone} — sending welcome message`);
           await sendResponseWithDelay({
-            customerPhone,
+            customerPhone: groupChatId || customerPhone,
             message: botSettings.welcomeMessage,
             delayMs: 500,
             instanceId: instance.instanceId,
@@ -1138,7 +1138,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         instance.instanceId,
         instance.token,
         instance.apiUrl || `https://${instance.instanceId.substring(0, 4)}.api.greenapi.com`,
-        customerPhone
+        groupChatId || customerPhone
       ).catch(() => {}); // truly non-blocking
     } catch { /* non-critical */ }
 
@@ -1326,7 +1326,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           await executeAction({
             action,
             merchantId: instance.merchantId,
-            customerPhone,
+            customerPhone: groupChatId || customerPhone,
             customerName: customerName || undefined,
             customerMessage: messageText || undefined,
             conversationId,

@@ -135,7 +135,8 @@ export const setupWizardRouter = router({
             workingHoursType: z.enum(['24_7', 'weekdays', 'custom']).optional().default('24_7'),
             workingHours: z.record(z.string(), z.any()).optional(),
             botTone: z.enum(['friendly', 'professional', 'casual']).optional(),
-            botLanguage: z.enum(['ar', 'en', 'both']).optional(),
+            // Must match schema bot_settings.language enum exactly
+            botLanguage: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
             welcomeMessage: z.string().optional(),
             products: z.array(z.object({
                 name: z.string(),
