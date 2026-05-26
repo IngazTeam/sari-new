@@ -716,6 +716,8 @@ export const analysisRouter = router({
       }
       const { pageId, ...data } = input;
       await updateDiscoveredPage(pageId, data);
+      // Invalidate cache so bot sees changes immediately
+      try { const kDb = await import('../db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       return { success: true };
     }),
 
@@ -733,6 +735,8 @@ export const analysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'الصفحة غير موجودة' });
       }
       await deleteDiscoveredPage(input.pageId);
+      // Invalidate cache so bot stops using deleted page
+      try { const kDb = await import('../db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       return { success: true };
     }),
 
@@ -787,6 +791,8 @@ export const analysisRouter = router({
       }
       const { faqId, ...data } = input;
       await updateExtractedFaq(faqId, data);
+      // Invalidate cache so bot sees FAQ changes
+      try { const kDb = await import('../db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       return { success: true };
     }),
 
@@ -804,6 +810,8 @@ export const analysisRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'السؤال غير موجود' });
       }
       await deleteExtractedFaq(input.faqId);
+      // Invalidate cache so bot stops using deleted FAQ
+      try { const kDb = await import('../db/knowledge'); await kDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       return { success: true };
     }),
 

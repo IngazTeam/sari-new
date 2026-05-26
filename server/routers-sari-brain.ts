@@ -1959,7 +1959,7 @@ ${fencedContent}`,
     checkDestructiveRateLimit(merchant.id, 60_000); // 1 min cooldown
 
     const ragEngine = await import('./ai/rag-engine');
-    const count = await ragEngine.embedAllSections(merchant.id);
+    const count = await ragEngine.embedAllSections(merchant.id, true);
     
     await logBrainActivity(merchant.id, 'sections_reembedded', `إعادة تحويل ${count} قسم إلى vectors`);
     return { success: true, embeddedCount: count };
