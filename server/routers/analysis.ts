@@ -359,6 +359,32 @@ export const analysisRouter = router({
           analysisStatus: "completed",
           lastAnalysisDate: new Date(),
         });
+        // ── GAP-1 FIX: Feed saved data into Knowledge Engine ──
+        try {
+          const savedContent: string[] = [];
+          if (input.products.length > 0) {
+            savedContent.push('--- المنتجات ---');
+            for (const p of input.products) {
+              savedContent.push(`• ${p.name}: ${p.description || ''} — ${p.price || 0} ر.س`);
+            }
+          }
+          if (input.faqs.length > 0) {
+            savedContent.push('--- الأسئلة الشائعة ---');
+            for (const f of input.faqs) {
+              savedContent.push(`س: ${f.question}\nج: ${f.answer}`);
+            }
+          }
+          const fullText = savedContent.join('\n');
+          if (fullText.length > 100) {
+            const { ingestContent } = await import('../ai/knowledge-engine');
+            const { embedAllSections } = await import('../ai/rag-engine');
+            const knowledgeDb = await import('../db/knowledge');
+
+            await ingestContent(merchantId, fullText, 'website', { businessName: merchant.businessName || '' }, input.websiteUrl);
+            await embedAllSections(merchantId, true);
+            await knowledgeDb.invalidateCache(merchantId);
+          }
+        } catch { /* non-blocking */ }
 
         return {
           success: true,

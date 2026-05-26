@@ -290,7 +290,7 @@ async function runAnalysisInBackground(merchant: any, websiteUrl: string) {
         );
         evolveResult = ingestionResult.evolveResult;
 
-        try { updateProgress('embedding', 85); const { embedAllSections } = await import('./ai/rag-engine'); await embedAllSections(merchant.id); } catch { /* non-blocking */ }
+        try { updateProgress('embedding', 85); const { embedAllSections } = await import('./ai/rag-engine'); await embedAllSections(merchant.id, true); } catch { /* non-blocking */ }
         try { const knowledgeDb = await import('./db/knowledge'); await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       } else {
         knowledgeError = 'الموقع لا يحتوي على محتوى نصي كافٍ';

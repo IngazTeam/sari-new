@@ -584,10 +584,17 @@ export async function invalidateCache(merchantId: number): Promise<void> {
   const pool = await getPool();
   if (!pool) return;
 
+  // 1. Invalidate response cache in DB
   await pool.execute(
     `UPDATE sari_response_cache SET is_valid = 0 WHERE merchant_id = ?`,
     [merchantId]
   );
+
+  // 2. GAP-4 FIX: Evict in-memory session contexts so stale knowledge is purged
+  try {
+    const { destroyMerchantSessions } = await import('../ai/session-context');
+    destroyMerchantSessions(merchantId);
+  } catch { /* session-context module may not be loaded yet */ }
 }
 
 // ═══════════════════════════════════════════════════════════════

@@ -379,7 +379,7 @@ async function startServer() {
               { businessName: merchant.businessName },
             );
             
-            await embedAllSections(merchant.id);
+            await embedAllSections(merchant.id, true);
             await knowledgeDb.invalidateCache(merchant.id);
             console.log(`[KnowledgeDocs] ✅ Knowledge Engine processed uploaded document for merchant ${merchant.id}`);
           }

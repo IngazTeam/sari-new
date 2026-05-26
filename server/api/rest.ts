@@ -1290,7 +1290,7 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     let embeddedCount = 0;
     try {
       const { embedAllSections } = await import('../ai/rag-engine');
-      embeddedCount = await embedAllSections(merchantId);
+      embeddedCount = await embedAllSections(merchantId, true);
     } catch { /* non-blocking */ }
 
     // Invalidate knowledge cache

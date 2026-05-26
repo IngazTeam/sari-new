@@ -235,6 +235,26 @@ export function destroySession(merchantId: number, conversationId: number): void
 }
 
 /**
+ * GAP-4 FIX: Destroy ALL sessions for a merchant.
+ * Called when knowledge is invalidated so stale contextPrompt/ragFacts
+ * are purged and rebuilt from fresh data on next message.
+ */
+export function destroyMerchantSessions(merchantId: number): number {
+  const prefix = `${merchantId}:`;
+  let evicted = 0;
+  for (const key of Array.from(sessions.keys())) {
+    if (key.startsWith(prefix)) {
+      sessions.delete(key);
+      evicted++;
+    }
+  }
+  if (evicted > 0) {
+    console.log(`[Session] GAP-4: Evicted ${evicted} sessions for merchant ${merchantId} (knowledge changed)`);
+  }
+  return evicted;
+}
+
+/**
  * Check if a topic change requires rebuilding the session.
  * Uses simple keyword comparison — not embedding (too expensive).
  */

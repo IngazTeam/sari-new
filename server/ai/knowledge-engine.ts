@@ -375,7 +375,12 @@ function findBestMatch(
   );
 
   if (sameType.length === 0) return null;
-  if (sameType.length === 1) return sameType[0];
+  if (sameType.length === 1) {
+    // GAP-3 FIX: Even single match must pass similarity threshold
+    // Prevents merging unrelated FAQs/sections that happen to share a type
+    const sim = textSimilarity(sameType[0].content, newSection.content);
+    return sim > 0.2 ? sameType[0] : null;
+  }
 
   // Multiple same-type sections: compare titles first
   const titleLower = newSection.title.toLowerCase();

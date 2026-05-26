@@ -80,7 +80,7 @@ export const knowledgeDocsRouter = router({
             { businessName: merchant.businessName },
           );
           
-          await embedAllSections(merchant.id);
+          await embedAllSections(merchant.id, true);
           await knowledgeDb.invalidateCache(merchant.id);
         }
       } catch (keErr: any) {
