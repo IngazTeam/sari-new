@@ -1138,6 +1138,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             && (parsed.hostname.endsWith('.digitaloceanspaces.com')
               || parsed.hostname.endsWith('.whatsapp.net')
               || parsed.hostname.endsWith('.green-api.com')
+              || parsed.hostname.endsWith('.greenapi.com')       // GreenAPI without hyphen
+              || parsed.hostname.endsWith('.yandexcloud.net')     // GreenAPI file CDN (Yandex Cloud)
+              || parsed.hostname.endsWith('.storage.googleapis.com') // Google Cloud media
               || parsed.hostname.endsWith('.wa.me'));
           
           if (isTrustedDomain) {
