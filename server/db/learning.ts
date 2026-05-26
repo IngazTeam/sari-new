@@ -576,7 +576,23 @@ export async function resolveEscalation(data: {
     [data.merchantAnswer.substring(0, 2000), escalation.id, data.merchantId]
   );
 
-  return { ...escalation, status: 'answered', merchantAnswer: data.merchantAnswer } as EscalationItem;
+  // Normalize snake_case SQL columns to camelCase for JS consumers
+  return {
+    ...escalation,
+    customerPhone: escalation.customer_phone || escalation.customerPhone,
+    customerName: escalation.customer_name || escalation.customerName,
+    merchantId: escalation.merchant_id || escalation.merchantId,
+    conversationId: escalation.conversation_id || escalation.conversationId,
+    botResponse: escalation.bot_response || escalation.botResponse,
+    merchantAnswer: data.merchantAnswer,
+    merchantNotifiedAt: escalation.merchant_notified_at || escalation.merchantNotifiedAt,
+    merchantAnsweredAt: new Date(),
+    currentEscalationLevel: escalation.current_escalation_level ?? escalation.currentEscalationLevel ?? 0,
+    lastEscalatedAt: escalation.last_escalated_at || escalation.lastEscalatedAt,
+    expiresAt: escalation.expires_at || escalation.expiresAt,
+    followedUp: escalation.followed_up ?? escalation.followedUp ?? false,
+    status: 'answered',
+  } as EscalationItem;
 }
 
 /** Get active escalation for a customer */

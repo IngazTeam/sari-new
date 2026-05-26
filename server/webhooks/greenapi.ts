@@ -480,7 +480,12 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     console.log('[Webhook] Received webhook:', JSON.stringify(payload, null, 2));
     
     // ── Handle outgoing messages (Human Takeover detection) ──
-    if (payload.typeWebhook === 'outgoingMessageReceived' || payload.typeWebhook === 'outgoingAPIMessageWebhook') {
+    // GreenAPI docs: outgoingMessageReceived (manual), outgoingAPIMessageReceived (API-sent)
+    // Legacy compat: some instances may still send outgoingAPIMessageWebhook
+    const isOutgoing = payload.typeWebhook === 'outgoingMessageReceived'
+      || payload.typeWebhook === 'outgoingAPIMessageReceived'
+      || payload.typeWebhook === 'outgoingAPIMessageWebhook';
+    if (isOutgoing) {
       const instanceId = payload.instanceData.idInstance.toString();
       const instance = await getWhatsAppInstanceByInstanceId(instanceId);
       if (!instance) return { success: true, message: 'Instance not found' };
@@ -562,9 +567,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
       // Auto-detect: merchant replied manually → activate takeover
       // ── VULN-2 FIX: Skip system-generated messages (cron reminders, API messages) ──
+      const isAPIMessage = payload.typeWebhook === 'outgoingAPIMessageReceived'
+        || payload.typeWebhook === 'outgoingAPIMessageWebhook';
       if (outText && (
         outText.startsWith('⚠️ *تنبيه من ساري:*') || // System reminder from takeover-expiry job
-        payload.typeWebhook === 'outgoingAPIMessageWebhook'  // Message sent via API (Sari's own responses)
+        isAPIMessage  // Message sent via API (Sari's own responses)
       )) {
         console.log('[Takeover] Skipping system/API message — not a manual merchant reply');
         return { success: true, message: 'System message ignored' };
@@ -966,7 +973,19 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             });
 
             if (result.handled) {
-              console.log(`[Escalation] ✅ Chain member reply routed to customer ${result.escalation?.customerPhone?.slice(-4)}${hasReplyIntent ? ' (implicit)' : hasActiveEscalation ? ' (auto-detected)' : ''}`);
+              const customerSlice = result.escalation?.customerPhone?.slice(-4) || '****';
+              console.log(`[Escalation] ✅ Chain member reply routed to customer ***${customerSlice}${hasReplyIntent ? ' (implicit)' : hasActiveEscalation ? ' (auto-detected)' : ''}`);
+              
+              // ── UX: Confirm to merchant that their reply was delivered ──
+              try {
+                const { notifyNewMessage } = await import('../_core/notificationService');
+                await notifyNewMessage(
+                  instance.merchantId,
+                  'ساري ✅',
+                  `تم إيصال ردك للعميل ***${customerSlice} بنجاح! ساري سيتابع المحادثة من هنا 🤝`
+                );
+              } catch { /* non-blocking */ }
+              
               return { success: true, message: 'Escalation reply handled' };
             }
           }

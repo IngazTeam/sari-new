@@ -293,6 +293,74 @@ async function handleIncomingMessage(
       return;
     }
 
+    // ── Human Takeover Check (parity with webhook path) ──
+    if ((conversation as any).humanTakeover) {
+      const expiresAt = (conversation as any).humanExpiresAt;
+      const takeoverAge = (conversation as any).humanTakeoverAt
+        ? Date.now() - new Date((conversation as any).humanTakeoverAt).getTime()
+        : Infinity;
+      const MAX_TAKEOVER_MS = 24 * 60 * 60 * 1000;
+
+      if (takeoverAge > MAX_TAKEOVER_MS) {
+        // Force-expire stuck takeover
+        await updateConversation(conversation.id, { humanTakeover: 0, humanExpiresAt: null } as any);
+        console.log(`[Polling] ⚠️ Force-expired stuck takeover on conv ${conversation.id}`);
+      } else if (!expiresAt || new Date(expiresAt) > new Date()) {
+        // Human is still active — save message but don't respond
+        console.log(`[Polling] Sari silent — human takeover active on conv ${conversation.id}`);
+        await createMessage({
+          conversationId: conversation.id,
+          direction: 'incoming',
+          content: messageText,
+          messageType: 'text',
+          isProcessed: 0,
+        });
+        return;
+      } else {
+        // Takeover expired — clear and continue
+        await updateConversation(conversation.id, { humanTakeover: 0, humanExpiresAt: null } as any);
+        console.log(`[Polling] Takeover expired on conv ${conversation.id} — resuming`);
+      }
+    }
+
+    // ── Bot Settings Check (autoReply + working hours) ──
+    try {
+      const { getBotSettings, shouldBotRespond } = await import('./db');
+      const botSettings = await getBotSettings(merchantId);
+      if (!botSettings.autoReplyEnabled) {
+        console.log(`[Polling] Auto-reply disabled for merchant ${merchantId}`);
+        await createMessage({
+          conversationId: conversation.id,
+          direction: 'incoming',
+          content: messageText,
+          messageType: 'text',
+          isProcessed: 0,
+        });
+        return;
+      }
+      const canRespond = await shouldBotRespond(merchantId);
+      if (!canRespond) {
+        console.log(`[Polling] Outside working hours for merchant ${merchantId}`);
+        await createMessage({
+          conversationId: conversation.id,
+          direction: 'incoming',
+          content: messageText,
+          messageType: 'text',
+          isProcessed: 0,
+        });
+        // Send out-of-hours message if configured
+        if (botSettings.outOfHoursMessage) {
+          await whatsapp.sendMessageWithCredentials(
+            instanceId, apiToken, apiUrl, customerPhone,
+            botSettings.outOfHoursMessage as string
+          );
+        }
+        return;
+      }
+    } catch (settingsErr) {
+      console.warn('[Polling] Bot settings check failed, continuing:', settingsErr);
+    }
+
     // Save incoming message
     await createMessage({
       conversationId: conversation.id,

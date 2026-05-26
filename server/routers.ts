@@ -59,6 +59,7 @@ import { googleAnalyticsRouter } from "./routers-google-analytics";
 import { dashboardRouter } from "./routers-dashboard";
 import { merchantsRouter } from "./routers-merchants";
 import { monitorRouter } from "./routers-monitor";
+import { botSettingsRouter } from "./routers-bot-settings";
 import { adminAiAnalyticsRouter } from "./routers-admin-ai-analytics";
 import { emailTemplatesRouter } from "./routers-email-templates";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
@@ -334,6 +335,9 @@ export const appRouter = router({
 
   // Merchants — modularized to routers-merchants.ts
   merchants: merchantsRouter,
+
+  // Bot Settings — takeover, groups, working hours (modularized)
+  botSettings: botSettingsRouter,
 
   // Integrations — platform connections (Byaan, Salla, Zid, etc.)
   integrations: integrationsRouter,
@@ -5092,112 +5096,7 @@ export const appRouter = router({
       }),
   }),
 
-  // Bot Settings
-  botSettings: router({
-    // Get bot settings for current merchant
-    get: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      return await getBotSettings(merchant.id);
-    }),
-
-    // Update bot settings
-    update: protectedProcedure
-      .input(z.object({
-        autoReplyEnabled: z.boolean().optional(),
-        workingHoursEnabled: z.boolean().optional(),
-        workingHoursStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-        workingHoursEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
-        workingDays: z.string().optional(),
-        welcomeMessage: z.string().optional(),
-        outOfHoursMessage: z.string().optional(),
-        responseDelay: z.number().min(1).max(10).optional(),
-        maxResponseLength: z.number().min(50).max(500).optional(),
-        tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic', 'empathetic', 'persuasive']).optional(),
-        language: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
-      }))
-      .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        const result = await updateBotSettings(merchant.id, input as any);
-
-        // Sync tone to personality settings so AI engine uses it
-        if (input.tone) {
-          try {
-            await getOrCreatePersonalitySettings(merchant.id);
-            await updateSariPersonalitySettings(merchant.id, { tone: input.tone as any });
-          } catch (e) {
-            console.error('[BotSettings] Failed to sync tone to personality:', e);
-          }
-        }
-
-        return result;
-      }),
-
-    // Check if bot should respond (for testing)
-    shouldRespond: protectedProcedure.query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      return await shouldBotRespond(merchant.id);
-    }),
-
-    // Send test message
-    sendTestMessage: protectedProcedure.mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      }
-
-      // Get WhatsApp connection
-      const connection = await getWhatsappConnectionByMerchantId(merchant.id);
-      if (!connection || connection.status !== 'connected') {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: 'يجب ربط حساب WhatsApp أولاً'
-        });
-      }
-
-      // Get bot settings
-      const settings = await getBotSettings(merchant.id);
-      if (!settings) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Bot settings not found' });
-      }
-
-      // Import WhatsApp module
-      const { sendTextMessage } = await import('./whatsapp');
-
-      // Send welcome message to merchant's phone
-      if (!merchant.phone) {
-        throw new TRPCError({
-          code: 'PRECONDITION_FAILED',
-          message: 'يجب إضافة رقم هاتف في الإعدادات'
-        });
-      }
-
-      const result = await sendTextMessage(
-        merchant.phone,
-        settings.welcomeMessage || 'مرحباً! هذه رسالة تجريبية من ساري.'
-      );
-
-      if (!result.success) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: `فشل إرسال الرسالة: ${result.error}`
-        });
-      }
-
-      return { success: true, message: 'تم إرسال الرسالة التجريبية بنجاح!' };
-    }),
-  }),
+  // Bot Settings — REMOVED inline router (now using modular botSettingsRouter above)
 
   // Scheduled Messages
   scheduledMessages: router({
