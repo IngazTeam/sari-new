@@ -127,6 +127,13 @@ export async function processTapWebhook(
       return { success: false, message: 'Payment not found' };
     }
 
+    // SEC: Idempotency guard — skip if payment already reached a terminal status
+    const terminalStatuses = ['captured', 'completed', 'refunded'];
+    if (terminalStatuses.includes(payment.status) && (status === 'CAPTURED' || status === 'FAILED')) {
+      console.log(`[TapWebhook] ⏭️ Duplicate webhook skipped: charge ${chargeId} already in terminal status '${payment.status}'`);
+      return { success: true, message: 'Webhook already processed (idempotent)' };
+    }
+
     // تحديث حالة المعاملة
     const newStatus = mapTapStatusToPaymentStatus(status);
     await dbPayments.updatePaymentStatus(payment.id, newStatus, {
@@ -245,10 +252,10 @@ async function handleOrderPayment(
                ORDER BY created_at DESC LIMIT 1`,
               [merchantId, convId]
             );
-            // Update conversation dealStage to 'paid' + clear loss_reason
+            // Update conversation dealStage to 'paid' + clear loss_reason (multi-tenant guard)
             await pool.execute(
-              `UPDATE conversations SET deal_stage = 'paid', loss_reason = NULL WHERE id = ?`,
-              [convId]
+              `UPDATE conversations SET deal_stage = 'paid', loss_reason = NULL WHERE id = ? AND merchantId = ?`,
+              [convId, merchantId]
             );
             console.log(`[TapWebhook] 📊 Strategy marked as REAL success + dealStage=paid for conv #${convId}`);
           }
@@ -289,13 +296,13 @@ async function handleOrderPayment(
           }
           if (convId) {
             await pool.execute(
-              `UPDATE conversations SET deal_stage = 'payment_failed', loss_reason = 'payment_failed' WHERE id = ?`,
-              [convId]
+              `UPDATE conversations SET deal_stage = 'payment_failed', loss_reason = 'payment_failed' WHERE id = ? AND merchantId = ?`,
+              [convId, merchantId]
             );
             console.log(`[TapWebhook] 📊 dealStage=payment_failed + loss_reason set for conv #${convId}`);
           }
         }
-      } catch { /* non-blocking */ }
+      } catch (err) { console.warn(`[TapWebhook] Failed to update payment_failed stage:`, err); }
 
       const failureMessage = `❌ *فشلت عملية الدفع*\n\n📦 *رقم الطلب:* ${order.orderNumber}\n\nيرجى المحاولة مرة أخرى أو التواصل معنا للمساعدة.\n\nنعتذر عن الإزعاج 🙏`;
 
