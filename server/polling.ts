@@ -13,6 +13,7 @@ import {
   getConversationByMerchantAndPhone,
   getConversationsByMerchantId,
   getWhatsAppConnectionRequestByMerchantId,
+  getMessagesByConversationId,
   updateConversation,
 } from './db';
 import { processIncomingMessage, type AIResponse } from './ai';
@@ -367,6 +368,22 @@ async function handleIncomingMessage(
     } catch (settingsErr) {
       console.warn('[Polling] Bot settings check failed, continuing:', settingsErr);
     }
+
+    // ── Welcome Message for first-time customers (parity with webhook) ──
+    try {
+      const { getBotSettings: getBSWelcome } = await import('./db');
+      const bsWelcome = await getBSWelcome(merchantId);
+      if (bsWelcome.welcomeMessage) {
+        const existingMsgs = await getMessagesByConversationId(conversation.id);
+        if (existingMsgs.length === 0) {
+          console.log(`[Polling] 🎉 First-time customer ${customerPhone} — sending welcome`);
+          await whatsapp.sendMessageWithCredentials(
+            instanceId, apiToken, apiUrl, customerPhone,
+            bsWelcome.welcomeMessage as string
+          );
+        }
+      }
+    } catch { /* non-blocking */ }
 
     // Save incoming message
     await createMessage({

@@ -146,6 +146,15 @@ ${sanitizeForPrompt(settings.customGreeting.substring(0, 500))}
 `;
   }
 
+  // Custom farewell
+  if ((settings as any)?.customFarewell) {
+    prompt += `
+## رسالة الوداع المخصصة:
+عند شعورك أن العميل ينهي المحادثة (مثل: شكراً، الله يعطيك العافية، باي)، استخدم هذا الأسلوب:
+${sanitizeForPrompt(((settings as any).customFarewell as string).substring(0, 500))}
+`;
+  }
+
   // Recommendation style
   if (settings?.recommendationStyle === 'direct') {
     prompt += `
