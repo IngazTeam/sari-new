@@ -880,6 +880,41 @@ export async function chatWithSari(params: {
     // Get personality settings
     const personalitySettings = await getOrCreatePersonalitySettings(params.merchantId);
 
+    // Get bot settings (language, tone, maxResponseLength overrides)
+    let botSettingsOverridePrompt = '';
+    try {
+      const { getBotSettings } = await import('../db');
+      const botSettings = await getBotSettings(params.merchantId);
+      
+      // Language override: bot_settings.language → force AI response language
+      if (botSettings.language && botSettings.language !== 'ar') {
+        const langMap: Record<string, string> = {
+          'en': 'Respond ONLY in English. Do not use Arabic.',
+          'fr': 'Réponds UNIQUEMENT en français. Ne pas utiliser l\'arabe.',
+          'tr': 'SADECE Türkçe yanıt ver. Arapça kullanma.',
+          'es': 'Responde SOLO en español. No uses árabe.',
+          'it': 'Rispondi SOLO in italiano. Non usare l\'arabo.',
+          'both': 'رد بنفس لغة العميل. إذا كتب بالإنجليزية رد إنجليزي، إذا كتب عربي رد عربي.',
+        };
+        botSettingsOverridePrompt += `\n## تعليمات اللغة:\n${langMap[botSettings.language] || ''}\n`;
+      }
+
+      // Tone override: if bot_settings has a different tone, override personality
+      if (botSettings.tone && botSettings.tone !== personalitySettings.tone) {
+        (personalitySettings as any).tone = botSettings.tone;
+      }
+
+      // maxResponseLength override: use the smaller of the two
+      if (botSettings.maxResponseLength && botSettings.maxResponseLength !== 200) {
+        (personalitySettings as any).maxResponseLength = Math.min(
+          botSettings.maxResponseLength,
+          personalitySettings.maxResponseLength || 200
+        );
+      }
+    } catch (settingsErr) {
+      console.warn('[chatWithSari] Bot settings override load failed:', settingsErr);
+    }
+
     // Check for loyalty commands first
     const messageLower = params.message.toLowerCase().trim();
     
@@ -1187,7 +1222,7 @@ ${result.orderUrl}
       // v7 → v8: dealStage update MOVED to updateDealStage() helper, called before path split.
 
       // Build system prompt: Mission Block FIRST, then cached context
-      let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + existingSession.contextPrompt;
+      let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + botSettingsOverridePrompt + existingSession.contextPrompt;
 
       // SAFETY: If cached context is too short, the first message likely had no knowledge
       // (e.g., customer said "مرحبا" → RAG returned 0 sections → empty contextPrompt was cached)
@@ -1592,7 +1627,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     } catch { /* silent — DNA is supplementary */ }
 
     // Build system prompt: Mission Block FIRST, then personality + all engines
-    let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + dnaPrompt;
+    let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + botSettingsOverridePrompt + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + dnaPrompt;
     let resumePrompt = ''; // Extracted so it survives agent personality rebuild
     if (customerProfile) {
       systemPrompt += buildProfileContext(customerProfile);

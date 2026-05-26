@@ -1099,6 +1099,26 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       }
     }
     
+    // ── Welcome Message: Send to first-time customers ──
+    if (botSettings.welcomeMessage) {
+      try {
+        const existingMessages = await getMessagesByConversationId(conversationId);
+        if (existingMessages.length === 0) {
+          console.log(`[Webhook] 🎉 First-time customer ${customerPhone} — sending welcome message`);
+          await sendResponseWithDelay({
+            customerPhone,
+            message: botSettings.welcomeMessage,
+            delayMs: 500,
+            instanceId: instance.instanceId,
+            token: instance.token,
+            apiUrl: instance.apiUrl || undefined,
+          });
+        }
+      } catch (welcomeErr) {
+        console.warn('[Webhook] Welcome message send failed:', welcomeErr);
+      }
+    }
+
     // Process message based on type
     let response: string;
 

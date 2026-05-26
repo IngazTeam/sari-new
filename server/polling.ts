@@ -317,9 +317,16 @@ async function handleIncomingMessage(
         });
         return;
       } else {
-        // Takeover expired — clear and continue
+        // Takeover expired — clear and send resume message
         await updateConversation(conversation.id, { humanTakeover: 0, humanExpiresAt: null } as any);
         console.log(`[Polling] Takeover expired on conv ${conversation.id} — resuming`);
+        // Send resume message from botSettings
+        try {
+          const { getBotSettings: getBS } = await import('./db');
+          const bs = await getBS(merchantId);
+          const resumeMsg = bs.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
+          await whatsapp.sendMessageWithCredentials(instanceId, apiToken, apiUrl, customerPhone, resumeMsg);
+        } catch { /* non-blocking */ }
       }
     }
 
@@ -390,6 +397,14 @@ async function handleIncomingMessage(
     );
 
     if (aiResponse) {
+      // Apply responseDelay from botSettings (parity with webhook)
+      try {
+        const { getBotSettings: getBSForDelay } = await import('./db');
+        const bsDelay = await getBSForDelay(merchantId);
+        const delayMs = (bsDelay.responseDelay ?? 2) * 1000;
+        if (delayMs > 0) await new Promise(resolve => setTimeout(resolve, delayMs));
+      } catch { /* use no delay on error */ }
+
       // Phase 2: Send text response first
       const sendResult = await whatsapp.sendMessageWithCredentials(
         instanceId,
