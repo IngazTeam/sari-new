@@ -26,7 +26,9 @@ import {
   AtSign,
   KeyRound,
   ArrowUpRight,
-  X
+  X,
+  Percent,
+  Gift,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -75,6 +77,10 @@ export default function BotSettings() {
     maxResponseLength: 200,
     tone: 'friendly' as 'friendly' | 'professional' | 'casual',
     language: 'ar' as 'ar' | 'en' | 'both',
+    // Auto-Discount
+    autoDiscountEnabled: false,
+    autoDiscountMaxPercent: 15,
+    autoDiscountExpireHours: 48,
   });
 
   // Group settings state
@@ -101,6 +107,10 @@ export default function BotSettings() {
         tone: settings.tone,
         // @ts-ignore
         language: settings.language,
+        // Auto-Discount
+        autoDiscountEnabled: !!(settings as any).autoDiscountEnabled,
+        autoDiscountMaxPercent: (settings as any).autoDiscountMaxPercent ?? 15,
+        autoDiscountExpireHours: (settings as any).autoDiscountExpireHours ?? 48,
       });
       setGroupMode((settings as any).groupMode || 'disabled');
       try {
@@ -117,6 +127,9 @@ export default function BotSettings() {
       groupMode,
       groupKeywords: JSON.stringify(groupKeywords),
       groupRedirectMessage,
+      autoDiscountEnabled: formData.autoDiscountEnabled,
+      autoDiscountMaxPercent: formData.autoDiscountMaxPercent,
+      autoDiscountExpireHours: formData.autoDiscountExpireHours,
     } as any);
   };
 
@@ -713,6 +726,106 @@ export default function BotSettings() {
                   rows={2}
                   maxLength={500}
                 />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Auto-Discount Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white">
+                <Gift className="h-4 w-4" />
+              </div>
+              خصومات تلقائية
+            </CardTitle>
+            <CardDescription>
+              اسمح لساري بإنشاء أكواد خصم مخصصة تلقائياً عند اعتراض العميل على السعر
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="autoDiscountEnabled" className="font-semibold">تفعيل الخصومات التلقائية</Label>
+                <p className="text-sm text-muted-foreground">
+                  ساري ينشئ كود خصم باسم العميل عند الحاجة لإقناعه بالشراء
+                </p>
+              </div>
+              <Switch
+                id="autoDiscountEnabled"
+                checked={formData.autoDiscountEnabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, autoDiscountEnabled: checked })}
+              />
+            </div>
+
+            {formData.autoDiscountEnabled && (
+              <div className="space-y-4 p-4 rounded-xl bg-muted/50 animate-in slide-in-from-top-2">
+                {/* How it works */}
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+                  <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-2">💡 كيف يعمل:</p>
+                  <ul className="text-xs text-amber-700 dark:text-amber-300 space-y-1">
+                    <li>• عميل يقول "غالي شوي" ← خصم 5%</li>
+                    <li>• عميل يقول "كثير والله" ← خصم 10%</li>
+                    <li>• عميل يقول "بروح لغيركم" ← أقصى خصم ({formData.autoDiscountMaxPercent}%)</li>
+                  </ul>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="autoDiscountMaxPercent" className="flex items-center gap-2">
+                      <Percent className="h-4 w-4" />
+                      أقصى نسبة خصم
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="autoDiscountMaxPercent"
+                        type="number"
+                        min={5}
+                        max={50}
+                        value={formData.autoDiscountMaxPercent}
+                        onChange={(e) => setFormData({ ...formData, autoDiscountMaxPercent: Math.min(50, Math.max(5, parseInt(e.target.value) || 15)) })}
+                        className="w-24"
+                      />
+                      <span className="text-sm text-muted-foreground">% (5 - 50)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      ساري يتدرج من 5% ← 10% ← هذه النسبة حسب إصرار العميل
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="autoDiscountExpireHours" className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      صلاحية الكود
+                    </Label>
+                    <div className="flex items-center gap-3">
+                      <Input
+                        id="autoDiscountExpireHours"
+                        type="number"
+                        min={1}
+                        max={168}
+                        value={formData.autoDiscountExpireHours}
+                        onChange={(e) => setFormData({ ...formData, autoDiscountExpireHours: Math.min(168, Math.max(1, parseInt(e.target.value) || 48)) })}
+                        className="w-24"
+                      />
+                      <span className="text-sm text-muted-foreground">ساعة (1 - 168)</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      الفترة المحدودة تحفّز العميل على الشراء بسرعة
+                    </p>
+                  </div>
+                </div>
+
+                {/* Security info */}
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                  <Info className="h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                  <div className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                    <p>• كل كود يُستخدم مرة واحدة فقط ويحمل اسم العميل</p>
+                    <p>• كود واحد لكل عميل كل 24 ساعة (حماية من الإساءة)</p>
+                    <p>• الأكواد تظهر في صفحة الخصومات كـ "تلقائي" لتمييزها</p>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

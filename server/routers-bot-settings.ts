@@ -52,6 +52,10 @@ export const botSettingsRouter = router({
             groupMode: z.enum(['disabled', 'mention_only', 'keyword_only', 'private_redirect']).optional(),
             groupKeywords: z.string().max(5000).optional(), // JSON string of keywords array
             groupRedirectMessage: z.string().max(500).optional(),
+            // Auto-Discount settings
+            autoDiscountEnabled: z.boolean().optional(),
+            autoDiscountMaxPercent: z.number().min(5).max(50).optional(),
+            autoDiscountExpireHours: z.number().min(1).max(168).optional(), // max 7 days
         }))
         .mutation(async ({ input, ctx }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);
