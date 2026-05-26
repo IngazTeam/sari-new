@@ -1318,6 +1318,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             action,
             merchantId: instance.merchantId,
             customerPhone,
+            customerName: customerName || undefined,
+            customerMessage: messageText || undefined,
             conversationId,
             sendMessage: async (phone, msg) => {
               await sendMessageWithCredentials(

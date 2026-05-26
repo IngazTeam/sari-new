@@ -272,6 +272,8 @@ export async function executeAction(params: {
   action: SariAction;
   merchantId: number;
   customerPhone: string;
+  customerName?: string;
+  customerMessage?: string;
   conversationId: number;
   sendMessage: (phone: string, message: string) => Promise<void>;
 }): Promise<void> {
@@ -325,12 +327,14 @@ export async function executeAction(params: {
         try {
           const { getPool } = await import('../db');
           const pool = await getPool();
+          let discountSent = false;
           if (pool) {
             const [rows] = await pool.execute(
               `SELECT id, code, type, value FROM discount_codes 
                WHERE merchantId = ? AND isActive = 1 
                AND (expiresAt IS NULL OR expiresAt > NOW())
                AND (maxUses IS NULL OR usedCount < maxUses)
+               AND is_auto_generated = 0
                ORDER BY createdAt DESC LIMIT 1`,
               [merchantId]
             );
@@ -344,9 +348,36 @@ export async function executeAction(params: {
               // Track discount usage + rate-limit
               await incrementDiscountCodeUsage(d.code);
               _discountRateLimit.set(discountKey, Date.now());
-              console.log(`[ActionSelector] ✅ Sent discount code: ${d.code} (usage tracked, rate-limited 1h)`);
-            } else {
-              console.log(`[ActionSelector] ℹ️ No active discounts for merchant ${merchantId}`);
+              discountSent = true;
+              console.log(`[ActionSelector] ✅ Sent existing discount code: ${d.code}`);
+            }
+          }
+
+          // ── Auto-Discount Fallback: no existing codes → generate personalized one ──
+          if (!discountSent && params.customerMessage) {
+            try {
+              const { generateAutoDiscount } = await import('./auto-discount');
+              const autoCode = await generateAutoDiscount({
+                merchantId,
+                customerPhone,
+                customerName: params.customerName,
+                customerMessage: params.customerMessage,
+              });
+              if (autoCode) {
+                const expireDate = autoCode.expiresAt;
+                const expireText = `${Math.round((expireDate.getTime() - Date.now()) / 3600_000)} ساعة`;
+                await sendMessage(customerPhone,
+                  `🎁 عندي عرض خاص *لك أنت*!\n\n` +
+                  `كود الخصم: *${autoCode.code}*\n` +
+                  `قيمة الخصم: *${autoCode.value}%*\n` +
+                  `⏰ صالح لمدة ${expireText} فقط\n\n` +
+                  `هذا الكود مخصص لك — استغله قبل ما ينتهي! 🔥`
+                );
+                _discountRateLimit.set(discountKey, Date.now());
+                console.log(`[ActionSelector] ✅ Auto-generated discount: ${autoCode.code} (${autoCode.value}%)`);
+              }
+            } catch (autoErr: any) {
+              console.warn(`[ActionSelector] Auto-discount failed: ${autoErr.message}`);
             }
           }
         } catch (discErr: any) {
