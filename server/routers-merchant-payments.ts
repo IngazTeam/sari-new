@@ -187,16 +187,21 @@ export const merchantPaymentsRouter = router({
                     });
                 }
 
-                // P0-FIX: Update deal_stage to payment_link_sent
+                // P0-FIX: Update deal_stage to payment_link_sent (with multi-tenant guard)
                 if (input.conversationId) {
                     try {
                         const { getPool } = await import('./db');
                         const pool = await getPool();
                         if (pool) {
-                            await pool.execute(
-                                `UPDATE conversations SET deal_stage = 'payment_link_sent', payment_link_sent_at = NOW() WHERE id = ?`,
-                                [input.conversationId]
+                            // SEC: Only update if conversation belongs to this merchant
+                            const [updated] = await pool.execute(
+                                `UPDATE conversations SET deal_stage = 'payment_link_sent', payment_link_sent_at = NOW() WHERE id = ? AND merchantId = ?`,
+                                [input.conversationId, merchant.id]
                             );
+                            const affectedRows = (updated as any).affectedRows || 0;
+                            if (affectedRows === 0) {
+                                console.warn(`[PaymentLink] Conversation ${input.conversationId} not found or not owned by merchant ${merchant.id}`);
+                            }
                         }
                     } catch { /* non-blocking */ }
                 }
