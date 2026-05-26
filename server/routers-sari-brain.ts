@@ -191,12 +191,12 @@ function sanitizeForTRPC(data: any): any {
  * - Lowercase
  * This handles: "https://www.example.com/" === "http://example.com"
  */
-function normalizeUrl(url: string): string {
+export function normalizeUrl(url: string): string {
   return url
+    .toLowerCase()              // Must be first — regexes below are case-sensitive
     .replace(/^https?:\/\//, '')
     .replace(/^www\./, '')
-    .replace(/\/+$/, '')
-    .toLowerCase();
+    .replace(/\/+$/, '');
 }
 
 /**
@@ -209,7 +209,7 @@ function normalizeUrl(url: string): string {
  * 
  * Example: "https://www.example.com/about/" === "http://example.com/about" ✅
  */
-function urlsMatch(sectionSourceUrl: string, pageUrl: string): boolean {
+export function urlsMatch(sectionSourceUrl: string, pageUrl: string): boolean {
   const a = normalizeUrl(sectionSourceUrl);
   const b = normalizeUrl(pageUrl);
   return a === b;
