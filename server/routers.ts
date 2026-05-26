@@ -2038,11 +2038,15 @@ export const appRouter = router({
         const stage = input?.stage;
         const needsHuman = input?.needsHuman;
 
+        // Whitelist of valid deal stages — invalid values fall through to unfiltered default
+        const VALID_STAGES = ['new', 'interested', 'qualified', 'ready', 'payment_link_sent', 'purchased', 'paid', 'lost', 'payment_failed'];
+        const isValidFilter = needsHuman || (stage && (stage === 'stalled' || VALID_STAGES.includes(stage)));
+
         // If pipeline filters are active, use targeted SQL query
-        if (stage || needsHuman) {
+        if (isValidFilter) {
           const { getPool } = await import('./db');
           const pool = await getPool();
-          if (!pool) return { items: [], total: 0, page, pageSize };
+          if (!pool) return { items: [], total: 0, page, pageSize, totalPages: 0 };
 
           let where = 'c.merchantId = ?';
           const params: any[] = [merchant.id];
@@ -2052,12 +2056,12 @@ export const appRouter = router({
             params.push(merchant.id);
           } else if (stage === 'stalled') {
             where += ` AND c.deal_stage IN ('interested', 'qualified') AND c.lastMessageAt < DATE_SUB(NOW(), INTERVAL 48 HOUR) AND c.loss_reason IS NULL`;
+          } else if (stage === 'ready') {
+            // Match pipeline card: only show ready leads active in last 48h
+            where += ` AND c.deal_stage = 'ready' AND c.lastMessageAt > DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
           } else if (stage) {
-            const VALID_STAGES = ['new', 'interested', 'qualified', 'ready', 'payment_link_sent', 'purchased', 'paid', 'lost', 'payment_failed'];
-            if (VALID_STAGES.includes(stage)) {
-              where += ` AND c.deal_stage = ?`;
-              params.push(stage);
-            }
+            where += ` AND c.deal_stage = ?`;
+            params.push(stage);
           }
 
           const [countRows] = await pool.execute(
@@ -2070,16 +2074,16 @@ export const appRouter = router({
             [...params, pageSize, offset]
           );
 
-          return { items: rows as any[], total, page, pageSize };
+          return { items: rows as any[], total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
         }
 
-        // Default: no filter
+        // Default: no filter (also reached if stage is invalid)
         const [items, total] = await Promise.all([
           getConversationsByMerchantId(merchant.id, { limit: pageSize, offset }),
           getConversationCountByMerchantId(merchant.id),
         ]);
 
-        return { items, total, page, pageSize };
+        return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
       }),
 
     // Lightweight: get only recent conversations (for Dashboard)

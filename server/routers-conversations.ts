@@ -36,8 +36,12 @@ export const conversationsRouter = router({
             const stage = input?.stage;
             const needsHuman = input?.needsHuman;
 
+            // Whitelist of valid deal stages — invalid values fall through to unfiltered default
+            const VALID_STAGES = ['new', 'interested', 'qualified', 'ready', 'payment_link_sent', 'purchased', 'paid', 'lost', 'payment_failed'];
+            const isValidFilter = needsHuman || (stage && (stage === 'stalled' || VALID_STAGES.includes(stage)));
+
             // If pipeline filters are active, use targeted SQL query
-            if (stage || needsHuman) {
+            if (isValidFilter) {
                 const { getPool } = await import('./db');
                 const pool = await getPool();
                 if (!pool) return { items: [], total: 0, page, pageSize, totalPages: 0 };
@@ -52,13 +56,12 @@ export const conversationsRouter = router({
                 } else if (stage === 'stalled') {
                     // Stalled = interested/qualified + no activity 48h + not lost
                     where += ` AND c.deal_stage IN ('interested', 'qualified') AND c.lastMessageAt < DATE_SUB(NOW(), INTERVAL 48 HOUR) AND c.loss_reason IS NULL`;
+                } else if (stage === 'ready') {
+                    // Match pipeline card: only show ready leads active in last 48h
+                    where += ` AND c.deal_stage = 'ready' AND c.lastMessageAt > DATE_SUB(NOW(), INTERVAL 48 HOUR)`;
                 } else if (stage) {
-                    // Whitelist valid stages to prevent SQL injection
-                    const VALID_STAGES = ['new', 'interested', 'qualified', 'ready', 'payment_link_sent', 'purchased', 'paid', 'lost', 'payment_failed'];
-                    if (VALID_STAGES.includes(stage)) {
-                        where += ` AND c.deal_stage = ?`;
-                        params.push(stage);
-                    }
+                    where += ` AND c.deal_stage = ?`;
+                    params.push(stage);
                 }
 
                 const [countRows] = await pool.execute(

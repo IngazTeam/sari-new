@@ -28,13 +28,14 @@ export default function Conversations() {
   const [needsHumanFilter, setNeedsHumanFilter] = useState<boolean | undefined>();
 
   // P0-FIX: Read URL params from SalesPipeline deep-links
+  const VALID_STAGES = ['new', 'interested', 'qualified', 'ready', 'payment_link_sent', 'purchased', 'paid', 'lost', 'payment_failed', 'stalled'];
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const phone = params.get('phone');
     const stage = params.get('stage');
     const needsHuman = params.get('needs_human');
     if (phone) setSearchQuery(phone);
-    if (stage) setStageFilter(stage);
+    if (stage && VALID_STAGES.includes(stage)) setStageFilter(stage);
     if (needsHuman === '1') setNeedsHumanFilter(true);
   }, []);
 
