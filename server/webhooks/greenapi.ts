@@ -736,6 +736,45 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             }
           } catch { /* silent — learning is non-blocking */ }
         }
+
+        // ── UX: Confirm takeover + AI feedback to merchant (in-app notification) ──
+        // NOTE: We CANNOT send WhatsApp in the customer chat (customer would see "تم إيقاف ساري")
+        // Instead, use in-app notification that only the merchant dashboard shows
+        try {
+          let feedbackLine = '';
+          // Quick AI feedback on merchant reply (only if outText is substantive)
+          if (outText && outText.length > 5) {
+            try {
+              const messages = await getMessagesByConversationId(conv.id);
+              const lastCustomerMsg = messages.filter((m: any) => m.direction === 'incoming').pop();
+              const customerQuestion = (lastCustomerMsg as any)?.content?.substring(0, 300) || '';
+              if (customerQuestion) {
+                const { callGPT4 } = await import('../ai/openai');
+                const quickFeedback = await callGPT4([
+                  {
+                    role: 'system' as const,
+                    content: `أنت ساري. قيّم رد التاجر على سؤال العميل بجملة واحدة فقط باللهجة السعودية. إذا الرد ممتاز أثنِ عليه، وإذا ناقص اقترح إضافة محددة. لا تزيد عن سطر واحد.`
+                  },
+                  {
+                    role: 'user' as const,
+                    content: `سؤال العميل: "${sanitizeForPrompt(customerQuestion)}"\nرد التاجر: "${sanitizeForPrompt(outText.substring(0, 500))}"`
+                  }
+                ], { model: 'gpt-4o-mini', temperature: 0.7, maxTokens: 100, noRetry: true });
+                feedbackLine = ` | ${quickFeedback.trim()}`;
+              }
+            } catch { /* AI feedback is non-blocking */ }
+          }
+
+          const { notifyNewMessage } = await import('../_core/notificationService');
+          await notifyNewMessage(
+            instance.merchantId,
+            'ساري ⏸️',
+            `تم إيقاف ساري ${timeoutMin} دقيقة على محادثة ${conv.customerPhone?.slice(-4) || 'عميل'}. أرسل "يسعدنا خدمتكم" للاستئناف${feedbackLine}`
+          );
+          console.log(`[Takeover] 📩 In-app confirmation sent to merchant for conv ${conv.id}`);
+        } catch (confirmErr) {
+          console.warn('[Takeover] Failed to send confirmation (non-blocking):', confirmErr);
+        }
       }
       return { success: true, message: 'Human takeover activated' };
     }
