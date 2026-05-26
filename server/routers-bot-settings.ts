@@ -42,7 +42,8 @@ export const botSettingsRouter = router({
             outOfHoursMessage: z.string().optional(),
             responseDelay: z.number().min(1).max(10).optional(),
             maxResponseLength: z.number().min(50).max(500).optional(),
-            tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic', 'empathetic', 'persuasive']).optional(),
+            // GAP-5 FIX: Must match MySQL enum exactly — schema only accepts these 3 values
+            tone: z.enum(['friendly', 'professional', 'casual']).optional(),
             language: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
             // Human Takeover settings
             takeoverTimeoutMinutes: z.number().min(5).max(120).optional(),

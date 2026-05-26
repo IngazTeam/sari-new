@@ -796,6 +796,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
     
     // ── Smart Group Handling ──
+    // GAP-4 FIX: Track group chatId so replies go to the group, not sender's private chat
+    let groupChatId: string | null = null;
     if (isGroupMessage(payload.senderData.chatId)) {
       // Need instance to get settings
       const gInstanceId = payload.instanceData.idInstance.toString();
@@ -817,7 +819,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           if (!msgText.includes(`@${botPhone}`)) {
             return { success: true, message: 'Group: no mention' };
           }
-          // Has mention — fall through to process normally
+          // Has mention — reply to group
+          groupChatId = payload.senderData.chatId; // e.g. "120363XXX@g.us"
           break;
         }
 
@@ -829,6 +832,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           if (!hasKeyword) {
             return { success: true, message: 'Group: no keyword match' };
           }
+          // Has keyword — reply to group
+          groupChatId = payload.senderData.chatId;
           break;
         }
 
@@ -849,10 +854,13 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
     
     // Extract customer info
-    const customerPhone = extractPhoneNumber(payload.senderData.chatId);
+    // GAP-4 FIX: For group messages, use sender (personal phone), not chatId (group ID)
+    const customerPhone = groupChatId
+      ? extractPhoneNumber(payload.senderData.sender || payload.senderData.chatId)
+      : extractPhoneNumber(payload.senderData.chatId);
     const customerName = payload.senderData.senderName || payload.senderData.chatName;
     
-    console.log('[Webhook] Customer:', customerPhone, customerName);
+    console.log('[Webhook] Customer:', customerPhone, customerName, groupChatId ? `(group: ${groupChatId})` : '');
     
     // Find merchant by instance ID
     const instanceId = payload.instanceData.idInstance.toString();
@@ -1253,8 +1261,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
     
     // Send response with custom delay from settings using merchant's WhatsApp instance
+    // GAP-4 FIX: Reply to group chatId when triggered from mention/keyword group modes
     await sendResponseWithDelay({
-      customerPhone,
+      customerPhone: groupChatId || customerPhone,
       message: response,
       delayMs: (botSettings.responseDelay ?? 2) * 1000,
       instanceId: instance.instanceId,

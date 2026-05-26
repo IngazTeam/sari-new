@@ -654,11 +654,14 @@ export async function sendMessageWithCredentials(
     assertGreenApiUrl(apiUrl);
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
 
-    // Format phone number (remove + and spaces)
-    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    // GAP-4 FIX: Support group chatIds (e.g. "120363XXX@g.us") alongside personal phones
+    // If phoneNumber already contains @, treat as pre-formatted chatId
+    const chatId = phoneNumber.includes('@')
+      ? phoneNumber
+      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
 
     const response = await axios.post(`${baseURL}/sendMessage/${apiToken}`, {
-      chatId: `${formattedPhone}@c.us`,
+      chatId,
       message,
     });
 

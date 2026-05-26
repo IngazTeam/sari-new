@@ -1888,6 +1888,9 @@ ${fencedContent}`,
         if (section) await ragEngine.embedSection(section, merchant.id);
       } catch { /* non-blocking */ }
 
+      // GAP-3 FIX: Invalidate cache so the bot immediately sees the new section
+      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
+
       await logBrainActivity(merchant.id, 'section_created', `إضافة قسم: ${input.title}`);
       return { success: true, sectionId };
     }),
@@ -1938,10 +1941,11 @@ ${fencedContent}`,
           const updated = await knowledgeDb.getSectionById(input.sectionId, merchant.id);
           if (updated) await ragEngine.embedSection(updated, merchant.id);
         } catch { /* non-blocking */ }
-
-        // ARCH-03 FIX: Invalidate stale cached responses when knowledge changes
-        try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
       }
+
+      // GAP-3 FIX: Always invalidate cache on ANY section update (content, useInBot, status, title)
+      // Previously only invalidated on content change — useInBot/status changes were invisible to bot
+      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
 
       await logBrainActivity(merchant.id, 'section_updated', `تعديل قسم: ${input.title || existing.title || (existing as any).title}`);
       return { success: true };
@@ -2014,6 +2018,9 @@ ${fencedContent}`,
         }
       }
 
+      // GAP-3 FIX: Invalidate cache after approve/reject so bot reflects the change immediately
+      try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
+
       await logBrainActivity(merchant.id, 'conflict_resolved',
         `${input.action === 'approve' ? 'قبول' : 'رفض'} تعارض: ${section.title || (section as any).title}`
       );
@@ -2030,6 +2037,10 @@ ${fencedContent}`,
     const ragEngine = await import('./ai/rag-engine');
     const count = await ragEngine.embedAllSections(merchant.id, true);
     
+    // GAP-3 FIX: Purge stale cache after full re-embedding
+    const knowledgeDb = await import('./db/knowledge');
+    try { await knowledgeDb.invalidateCache(merchant.id); } catch { /* non-blocking */ }
+
     await logBrainActivity(merchant.id, 'sections_reembedded', `إعادة تحويل ${count} قسم إلى vectors`);
     return { success: true, embeddedCount: count };
   }),

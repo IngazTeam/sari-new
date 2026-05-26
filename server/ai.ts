@@ -4,6 +4,7 @@ import {
   createBooking,
   createMessage,
   getActiveKnowledgeDoc,
+  getBotSettings,
   getBookingsByService,
   getDiscountCodesByMerchantId,
   getMerchantById,
@@ -493,10 +494,11 @@ export async function processIncomingMessage(
   messageText: string
 ): Promise<AIResponse | null> {
   try {
-    // التحقق من تفعيل الرد الآلي للتاجر
-    const merchant = await getMerchantById(merchantId);
-    if (!merchant || !merchant.autoReplyEnabled) {
-      console.log(`[AI] Auto-reply disabled for merchant ${merchantId}`);
+    // GAP-1 FIX: Read autoReplyEnabled from bot_settings (single source of truth)
+    // Previously read from merchants.autoReplyEnabled which could be stale/different
+    const botSettings = await getBotSettings(merchantId);
+    if (!botSettings?.autoReplyEnabled) {
+      console.log(`[AI] Auto-reply disabled for merchant ${merchantId} (bot_settings)`);
       return null;
     }
 
