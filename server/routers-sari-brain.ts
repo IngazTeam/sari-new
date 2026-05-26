@@ -1491,9 +1491,9 @@ ${fencedContent}`,
       const dbConn = await getRawPool();
       if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB not available' });
 
-      // Verify ownership
+      // Verify ownership + get URL for knowledge sync
       const [rows] = await (dbConn as any).execute(
-        `SELECT id, title FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
+        `SELECT id, title, url FROM discovered_pages WHERE id = ? AND merchant_id = ?`,
         [input.pageId, merchant.id]
       );
       if (!rows || (rows as any[]).length === 0) {
@@ -1507,6 +1507,22 @@ ${fencedContent}`,
       );
 
       const page = (rows as any[])[0];
+
+      // SYNC FIX: Also toggle knowledge_sections sourced from this URL
+      // RAG reads from knowledge_sections.use_in_bot, NOT discovered_pages.use_in_bot
+      try {
+        const knowledgeDb = await import('./db/knowledge');
+        if (page.url) {
+          const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+          for (const section of sections) {
+            const sourceUrl = (section as any).source_url || (section as any).sourceUrl || '';
+            if (sourceUrl && sourceUrl === page.url) {
+              await knowledgeDb.updateSection((section as any).id, merchant.id, { useInBot: input.useInBot });
+            }
+          }
+        }
+      } catch { /* non-blocking */ }
+
       await logBrainActivity(merchant.id, input.useInBot ? 'faq_updated' : 'faq_updated',
         `${input.useInBot ? 'تفعيل' : 'إيقاف'} الصفحة "${page.title}" في ردود ساري`
       );
