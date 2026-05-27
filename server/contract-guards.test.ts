@@ -170,11 +170,12 @@ describe('CG-03: Webhook ↔ Polling — config source parity', () => {
 // ═══════════════════════════════════════════════════════════════
 // CG-04: LanguageSettings ↔ bot_settings sync
 // ═══════════════════════════════════════════════════════════════
-describe('CG-04: LanguageSettings must dual-sync', () => {
-  it('LanguageSettings must call BOTH settings.update AND botSettings.update', () => {
+describe('CG-04: LanguageSettings must sync via botSettings', () => {
+  it('LanguageSettings must call botSettings.update (single source of truth)', () => {
     const lang = readFile('./client/src/pages/merchant/LanguageSettings.tsx');
-    expect(lang).toContain('settings.update');
     expect(lang).toContain('botSettings.update');
+    // settings.update was removed — no longer exists as a router
+    expect(lang).not.toContain('settings.update');
   });
 
   it('LanguageSettings must pass language code to botSettings.update', () => {

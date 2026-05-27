@@ -71,9 +71,6 @@ export default function LanguageSettings() {
     },
   };
 
-  // @ts-ignore
-  const updateSettingsMutation = trpc.settings.update.useMutation();
-  // GAP-2 FIX: Also sync language to bot_settings so the AI engine reads it
   const updateBotSettingsMutation = trpc.botSettings.update.useMutation();
 
   const handleLanguageSelect = (langCode: string) => {
@@ -86,21 +83,11 @@ export default function LanguageSettings() {
       const lang = languages.find(l => l.code === selectedLanguage);
       if (!lang) return;
 
-      // Save to general settings (UI language + currency)
-      await updateSettingsMutation.mutateAsync({
-        botLanguage: lang.code,
-        currency: lang.currency,
-      });
-
-      // GAP-2 FIX: Sync language to bot_settings so the AI brain uses the correct language
+      // Save language to bot_settings — this is the single source of truth
       // bot_settings.language is what chatWithSari reads for prompt language injection
-      try {
-        await updateBotSettingsMutation.mutateAsync({
-          language: lang.code as any,
-        });
-      } catch (e) {
-        console.warn('Failed to sync language to bot_settings:', e);
-      }
+      await updateBotSettingsMutation.mutateAsync({
+        language: lang.code as any,
+      });
 
       // Update i18n language
       i18n.changeLanguage(lang.code);

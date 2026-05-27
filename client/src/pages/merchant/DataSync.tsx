@@ -14,16 +14,12 @@ export default function DataSync() {
   const [syncing, setSyncing] = useState(false);
   const utils = trpc.useUtils();
 
-  // Get sync status
-  // @ts-ignore
-  const { data: syncStatus, isLoading } = trpc.googleSheets.getSyncStatus.useQuery();
+  const { data: syncStatus, isLoading } = trpc.sheets.getStatus.useQuery() as { data: any; isLoading: boolean };
 
   // Trigger manual sync
-  // @ts-ignore
-  const syncMutation = trpc.googleSheets.syncToSheets.useMutation({
+  const syncMutation = trpc.sheets.syncInventory.useMutation({
     onSuccess: () => {
-      // @ts-ignore
-      utils.googleSheets.getSyncStatus.invalidate();
+      utils.sheets.getStatus.invalidate();
       setSyncing(false);
     },
     onError: () => {
@@ -252,14 +248,14 @@ export default function DataSync() {
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">{t('dataSyncPage.text13')}</span>
               <span className="font-medium">
-                {syncStatus?.autoSyncEnabled ? t('dataSyncPage.text20') : t('dataSyncPage.text21')}
+                {(syncStatus as any)?.autoSyncEnabled ? t('dataSyncPage.text20') : t('dataSyncPage.text21')}
               </span>
             </div>
-            {syncStatus?.nextSyncAt && (
+            {(syncStatus as any)?.nextSyncAt && (
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">{t('dataSyncPage.text14')}</span>
                 <span className="font-medium">
-                  {formatDistanceToNow(new Date(syncStatus.nextSyncAt), {
+                  {formatDistanceToNow(new Date((syncStatus as any).nextSyncAt), {
                     addSuffix: true,
                     locale: ar,
                   })}
