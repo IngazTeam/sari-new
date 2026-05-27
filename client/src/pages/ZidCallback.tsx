@@ -13,7 +13,7 @@ export default function ZidCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Ã«—Ì „⁄«·Ã… «·« ’«·...');
 
-  const handleCallbackMutation = trpc.zid.connect.useMutation({
+  const handleCallbackMutation = trpc.zid.handleOAuthCallback.useMutation({
     onSuccess: () => {
       setStatus('success');
       setMessage(' „ —»ÿ Zid »‰Ã«Õ!');
@@ -57,9 +57,11 @@ export default function ZidCallback() {
 
       // Handle callback
       handleCallbackMutation.mutate({
-        storeUrl: redirectUri || '',
-        accessToken: code,
-      } as any);
+        code,
+        clientId,
+        clientSecret,
+        redirectUri: redirectUri || '',
+      });
     };
 
     processCallback();

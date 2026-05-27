@@ -117,6 +117,88 @@ export const zidRouter = router({
       }
     }),
 
+  // Handle OAuth callback — exchange authorization code for access token
+  handleOAuthCallback: protectedProcedure
+    .input(z.object({
+      code: z.string(),
+      clientId: z.string(),
+      clientSecret: z.string(),
+      redirectUri: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      try {
+        // Exchange authorization code for access token via Zid OAuth
+        const tokenResponse = await fetch('https://oauth.zid.sa/oauth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            grant_type: 'authorization_code',
+            client_id: input.clientId,
+            client_secret: input.clientSecret,
+            redirect_uri: input.redirectUri,
+            code: input.code,
+          }),
+        });
+
+        if (!tokenResponse.ok) {
+          const errorBody = await tokenResponse.text();
+          console.error('[Zid OAuth] Token exchange failed:', errorBody);
+          throw new Error('فشل تبادل رمز التفويض مع Zid');
+        }
+
+        const tokenData = await tokenResponse.json();
+        const accessToken = tokenData.access_token;
+        const managerToken = tokenData.authorization?.manager_token || accessToken;
+
+        if (!accessToken) {
+          throw new Error('لم يتم الحصول على Access Token من Zid');
+        }
+
+        // Verify the token by fetching store profile
+        const profileResponse = await zidApiRequest(
+          '/managers/account/profile',
+          accessToken,
+          managerToken
+        );
+
+        const storeName = profileResponse?.user?.store?.name
+          || profileResponse?.store?.name
+          || profileResponse?.name
+          || 'متجر زد';
+
+        const storeUrl = profileResponse?.user?.store?.url
+          || profileResponse?.store?.url
+          || `https://${storeName}.zid.store`;
+
+        // Save integration
+        await createIntegration({
+          merchantId: merchant.id,
+          type: 'zid',
+          storeName,
+          storeUrl,
+          accessToken,
+          isActive: true,
+          settings: JSON.stringify({
+            autoSync: true,
+            syncProducts: true,
+            syncOrders: true,
+            syncCustomers: true,
+            managerToken,
+          }),
+        });
+
+        return { success: true, message: 'تم ربط متجر زد بنجاح عبر OAuth' };
+      } catch (error: any) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: error.message || 'فشل ربط متجر زد عبر OAuth',
+        });
+      }
+    }),
+
   // Disconnect from Zid store
   disconnect: protectedProcedure
     .mutation(async ({ ctx }) => {

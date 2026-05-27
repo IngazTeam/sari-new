@@ -38,15 +38,12 @@ export default function SallaIntegration() {
   const merchantId = parseInt(localStorage.getItem('merchantId') || '0');
 
   // Get connection status
-  const { data: connection, isLoading, refetch } = trpc.salla.getConnection.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 }
-  );
+  const { data: connection, isLoading, refetch } = trpc.salla.getConnection.useQuery();
 
   // Get sync logs
   const { data: syncLogs } = trpc.salla.getSyncLogs.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 && connection?.connected }
+    undefined as any,
+    { enabled: connection?.connected }
   );
 
   // Mutations
@@ -107,7 +104,6 @@ export default function SallaIntegration() {
 
     setIsConnecting(true);
     connectMutation.mutate({
-      merchantId,
       storeUrl,
       accessToken,
     });
@@ -115,12 +111,12 @@ export default function SallaIntegration() {
 
   const handleDisconnect = () => {
     if (confirm('هل أنت متأكد من فصل المتجر؟')) {
-      disconnectMutation.mutate({ merchantId });
+      disconnectMutation.mutate();
     }
   };
 
   const handleSync = (syncType: 'full' | 'stock') => {
-    syncMutation.mutate({ merchantId, syncType });
+    syncMutation.mutate({ syncType });
   };
 
   if (isLoading) {

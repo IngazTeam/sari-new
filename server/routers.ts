@@ -2345,15 +2345,14 @@ export const appRouter = router({
   salla: router({
     // Get connection status
     getConnection: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      .query(async ({ ctx }) => {
+        // SECURITY: derive merchantId from session
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          return { connected: false };
         }
 
-        const connection = await getSallaConnectionByMerchantId(input.merchantId);
+        const connection = await getSallaConnectionByMerchantId(merchant.id);
         if (!connection) {
           return { connected: false };
         }
@@ -2369,21 +2368,18 @@ export const appRouter = router({
     // Connect to Salla store
     connect: protectedProcedure
       .input(z.object({
-        merchantId: z.number(),
         storeUrl: z.string().url(),
         accessToken: z.string().min(10),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
+        // SECURITY: derive merchantId from session
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
 
         // Check for existing platform connections
         const { validateNewPlatformConnection } = await import('./integrations/platform-checker');
         try {
-          await validateNewPlatformConnection(input.merchantId, 'سلة');
+          await validateNewPlatformConnection(merchant.id, 'سلة');
         } catch (error: any) {
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -2393,7 +2389,7 @@ export const appRouter = router({
 
         // Test connection first
         const { SallaIntegration } = await import('./integrations/salla');
-        const salla = new SallaIntegration(input.merchantId, input.accessToken);
+        const salla = new SallaIntegration(merchant.id, input.accessToken);
         const testResult = await salla.testConnection();
 
         if (!testResult.success) {
@@ -2404,11 +2400,11 @@ export const appRouter = router({
         }
 
         // Check if connection already exists
-        const existing = await getSallaConnectionByMerchantId(input.merchantId);
+        const existing = await getSallaConnectionByMerchantId(merchant.id);
 
         if (existing) {
           // Update existing connection
-          await updateSallaConnection(input.merchantId, {
+          await updateSallaConnection(merchant.id, {
             storeUrl: input.storeUrl,
             accessToken: input.accessToken,
             syncStatus: 'active',
@@ -2416,7 +2412,7 @@ export const appRouter = router({
         } else {
           // Create new connection
           await createSallaConnection({
-            merchantId: input.merchantId,
+            merchantId: merchant.id,
             storeUrl: input.storeUrl,
             accessToken: input.accessToken,
             syncStatus: 'active',
@@ -2436,38 +2432,32 @@ export const appRouter = router({
 
     // Disconnect from Salla
     disconnect: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .mutation(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
+      .mutation(async ({ ctx }) => {
+        // SECURITY: derive merchantId from session
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
 
-        await deleteSallaConnection(input.merchantId);
+        await deleteSallaConnection(merchant.id);
         return { success: true, message: 'تم فصل المتجر بنجاح' };
       }),
 
     // Manual sync
     syncNow: protectedProcedure
       .input(z.object({
-        merchantId: z.number(),
         syncType: z.enum(['full', 'stock']).default('stock'),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
+        // SECURITY: derive merchantId from session
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
 
-        const connection = await getSallaConnectionByMerchantId(input.merchantId);
+        const connection = await getSallaConnectionByMerchantId(merchant.id);
         if (!connection) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'المتجر غير مربوط' });
         }
 
         const { SallaIntegration } = await import('./integrations/salla');
-        const salla = new SallaIntegration(input.merchantId, connection.accessToken);
+        const salla = new SallaIntegration(merchant.id, connection.accessToken);
 
         try {
           let result;

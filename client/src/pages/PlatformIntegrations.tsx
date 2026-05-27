@@ -89,7 +89,7 @@ export default function PlatformIntegrations() {
 
   // استعلام حالة كل منصة
   const { data: sallaConnection } = trpc.salla.getConnection.useQuery(
-    { merchantId: 1 }, // TODO: استخدام merchantId الحقيقي
+    undefined,
     { enabled: !currentPlatform || currentPlatform.platform === 'salla' }
   );
 
@@ -146,7 +146,7 @@ export default function PlatformIntegrations() {
     try {
       switch (platform) {
         case 'salla':
-          await disconnectSalla.mutateAsync({ merchantId: 1 }); // TODO: merchantId الحقيقي
+          await disconnectSalla.mutateAsync({} as any);
           break;
         case 'zid':
           await disconnectZid.mutateAsync({} as any);

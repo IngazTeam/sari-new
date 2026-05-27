@@ -403,7 +403,7 @@ describe('Customer Intelligence — Tier Classification', () => {
     const context = buildProfileContext(profile);
     expect(context).toContain('أبو عبدالله');
     expect(context).toContain('VIP');
-    expect(context).toContain('5000');
+    expect(context).toContain('عميل دائم ومميز'); // spend is hidden for privacy
     expect(context).toContain('يهتم بالسعر');
     expect(context).toContain('التأخير');
     expect(context).toContain('iPhone 15');
