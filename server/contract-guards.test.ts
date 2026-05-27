@@ -297,34 +297,62 @@ describe('CG-08: Group message reply routing', () => {
 // CG-09: Setup Wizard ↔ Schema — language enum parity
 // ═══════════════════════════════════════════════════════════════
 describe('CG-09: Setup wizard language ↔ schema parity', () => {
-  it('wizard botLanguage enum must include all schema language values', () => {
-    const wizard = readFile('./server/routers-setup-wizard.ts');
-    const schema = readFile('./drizzle/schema.ts');
+  // CRITICAL: routers.ts is the LIVE mounted router used by appRouter.
+  // routers-setup-wizard.ts is a standalone module that may not be mounted.
+  // We MUST check routers.ts to avoid false-positive passes.
+  const liveRouter = () => readFile('./server/routers.ts');
+  const standaloneWizard = () => readFile('./server/routers-setup-wizard.ts');
+  const schema = () => readFile('./drizzle/schema.ts');
+
+  it('LIVE router botLanguage enum must include all schema language values', () => {
+    const router = liveRouter();
+    const s = schema();
 
     // Extract schema language values
-    const schemaMatch = schema.match(/language:\s*mysqlEnum\(\[([^\]]+)\]/);
+    const schemaMatch = s.match(/language:\s*mysqlEnum\(\[([^\]]+)\]/);
     expect(schemaMatch).not.toBeNull();
     const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
 
-    // Each schema value must be accepted by the wizard
+    // Find botLanguage in the setupWizard section of routers.ts
+    const wizardIdx = router.indexOf('setupWizard: router({');
+    expect(wizardIdx).toBeGreaterThan(-1);
+    const wizardBlock = router.substring(wizardIdx, wizardIdx + 5000);
+    
+    // Each schema value must be accepted by the live wizard router
+    for (const val of schemaValues) {
+      expect(wizardBlock).toContain(`'${val}'`);
+    }
+  });
+
+  it('standalone wizard botLanguage must also match schema (prevent drift)', () => {
+    const wizard = standaloneWizard();
+    const s = schema();
+
+    const schemaMatch = s.match(/language:\s*mysqlEnum\(\[([^\]]+)\]/);
+    expect(schemaMatch).not.toBeNull();
+    const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
+
     for (const val of schemaValues) {
       expect(wizard).toContain(`'${val}'`);
     }
   });
 
-  it('wizard botTone enum must match schema tone enum', () => {
-    const wizard = readFile('./server/routers-setup-wizard.ts');
-    const schema = readFile('./drizzle/schema.ts');
+  it('LIVE router botTone enum must match schema tone enum', () => {
+    const router = liveRouter();
+    const s = schema();
 
-    const schemaMatch = schema.match(/tone:\s*mysqlEnum\(\[([^\]]+)\]/);
+    const schemaMatch = s.match(/tone:\s*mysqlEnum\(\[([^\]]+)\]/);
     expect(schemaMatch).not.toBeNull();
     const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
 
-    const wizardMatch = wizard.match(/botTone:\s*z\.enum\(\[([^\]]+)\]/);
-    expect(wizardMatch).not.toBeNull();
-    const wizardValues = wizardMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
+    // Find botTone in setupWizard section
+    const wizardIdx = router.indexOf('setupWizard: router({');
+    const wizardBlock = router.substring(wizardIdx, wizardIdx + 5000);
+    const toneMatch = wizardBlock.match(/botTone:\s*z\.enum\(\[([^\]]+)\]/);
+    expect(toneMatch).not.toBeNull();
+    const toneValues = toneMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
 
-    expect(wizardValues.sort()).toEqual(schemaValues.sort());
+    expect(toneValues.sort()).toEqual(schemaValues.sort());
   });
 });
 
