@@ -9,6 +9,7 @@ import {
   deleteIntegrationByType,
   getAppointmentStatsByMerchant,
   getIntegrationByType,
+  getMerchantByUserId,
   updateIntegrationLastSync,
   updateIntegrationSettings,
   upsertAppointmentFromCalendly,
@@ -40,9 +41,10 @@ async function calendlyApiRequest(endpoint: string, apiKey: string, options: Req
 export const calendlyRouter = router({
   // Get connection status
   getConnection: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .query(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'calendly');
+    .query(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'calendly');
       
       if (!integration) {
         return { connected: false };
@@ -60,17 +62,18 @@ export const calendlyRouter = router({
   // Connect to Calendly
   connect: protectedProcedure
     .input(z.object({
-      merchantId: z.number(),
       apiKey: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       try {
         // Verify the API key by fetching current user
         const userInfo = await calendlyApiRequest('/users/me', input.apiKey);
 
         // Save integration
         await createIntegration({
-          merchantId: input.merchantId,
+          merchantId: merchant.id,
           type: 'calendly',
           storeName: userInfo.resource.name || 'Calendly User',
           storeUrl: userInfo.resource.uri,
@@ -94,17 +97,19 @@ export const calendlyRouter = router({
 
   // Disconnect from Calendly
   disconnect: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .mutation(async ({ input }) => {
-      await deleteIntegrationByType(input.merchantId, 'calendly');
+    .mutation(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      await deleteIntegrationByType(merchant.id, 'calendly');
       return { success: true, message: 'تم فصل حساب Calendly' };
     }),
 
   // Sync now
   syncNow: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .mutation(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'calendly');
+    .mutation(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'calendly');
       
       if (!integration || !integration.accessToken) {
         throw new TRPCError({
@@ -128,7 +133,7 @@ export const calendlyRouter = router({
         
         if (events.collection) {
           for (const event of events.collection) {
-            await (upsertAppointmentFromCalendly as any)(input.merchantId, event);
+            await (upsertAppointmentFromCalendly as any)(merchant.id, event);
             syncedEvents++;
           }
         }
@@ -137,15 +142,14 @@ export const calendlyRouter = router({
         await updateIntegrationLastSync(integration.id);
 
         // Log sync
-        await createSyncLog(input.merchantId ?? 0, 'calendly_sync' as any, 'success');
+        await createSyncLog(merchant.id, 'calendly_sync' as any, 'success');
 
         return { 
           success: true, 
           message: `تمت مزامنة ${syncedEvents} موعد بنجاح` 
         };
       } catch (error: any) {
-        // @ts-ignore
-        await createSyncLog(merchantId ?? (input as any).merchantId, 'calendly_sync' as any, 'error');
+        await createSyncLog(merchant.id, 'calendly_sync' as any, 'failed');
 
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -157,13 +161,14 @@ export const calendlyRouter = router({
   // Update settings
   updateSettings: protectedProcedure
     .input(z.object({
-      merchantId: z.number(),
       autoConfirm: z.boolean(),
       sendReminders: z.boolean(),
       syncToWhatsApp: z.boolean(),
     }))
-    .mutation(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'calendly');
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'calendly');
       
       if (!integration) {
         throw new TRPCError({
@@ -184,11 +189,12 @@ export const calendlyRouter = router({
   // Get upcoming events
   getUpcomingEvents: protectedProcedure
     .input(z.object({ 
-      merchantId: z.number(),
       limit: z.number().optional().default(5),
     }))
-    .query(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'calendly');
+    .query(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'calendly');
       
       if (!integration || !integration.accessToken) {
         return [];
@@ -220,9 +226,10 @@ export const calendlyRouter = router({
 
   // Get event types
   getEventTypes: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .query(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'calendly');
+    .query(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'calendly');
       
       if (!integration || !integration.accessToken) {
         return [];
@@ -252,16 +259,17 @@ export const calendlyRouter = router({
 
   // Get stats
   getStats: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .query(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'calendly');
+    .query(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'calendly');
       
       if (!integration) {
         return null;
       }
 
       // Get appointment stats from database
-      const stats = await getAppointmentStatsByMerchant(input.merchantId);
+      const stats = await getAppointmentStatsByMerchant(merchant.id);
       
       return {
         totalEvents: stats.total || 0,

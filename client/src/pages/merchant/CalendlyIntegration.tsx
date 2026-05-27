@@ -41,26 +41,25 @@ export default function CalendlyIntegration() {
 
   // Get connection status
   const { data: connection, isLoading, refetch } = trpc.calendly.getConnection.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 }
+    undefined,
   );
 
   // Get upcoming events
   const { data: upcomingEvents } = trpc.calendly.getUpcomingEvents.useQuery(
-    { merchantId, limit: 5 },
-    { enabled: merchantId > 0 && connection?.connected }
+    { limit: 5 },
+    { enabled: connection?.connected }
   );
 
   // Get event types
   const { data: eventTypes } = trpc.calendly.getEventTypes.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 && connection?.connected }
+    undefined,
+    { enabled: connection?.connected }
   );
 
   // Get stats
   const { data: stats } = trpc.calendly.getStats.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 && connection?.connected }
+    undefined,
+    { enabled: connection?.connected }
   );
 
   // Mutations
@@ -131,24 +130,22 @@ export default function CalendlyIntegration() {
 
     setIsConnecting(true);
     connectMutation.mutate({
-      merchantId,
       apiKey,
     });
   };
 
   const handleDisconnect = () => {
     if (confirm(t('calendlyIntegrationPage.text48'))) {
-      disconnectMutation.mutate({ merchantId });
+      disconnectMutation.mutate();
     }
   };
 
   const handleSync = () => {
-    syncMutation.mutate({ merchantId });
+    syncMutation.mutate();
   };
 
   const handleSaveSettings = () => {
     updateSettingsMutation.mutate({
-      merchantId,
       autoConfirm,
       sendReminders,
       syncToWhatsApp,
