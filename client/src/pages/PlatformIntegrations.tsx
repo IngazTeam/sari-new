@@ -93,8 +93,7 @@ export default function PlatformIntegrations() {
     { enabled: !currentPlatform || currentPlatform.platform === 'salla' }
   );
 
-  // @ts-ignore
-  const { data: zidStatus } = trpc.zid.getStatus.useQuery(
+  const { data: zidStatus } = trpc.zid.getConnection.useQuery(
     undefined,
     { enabled: !currentPlatform || currentPlatform.platform === 'zid' }
   );
@@ -120,8 +119,7 @@ export default function PlatformIntegrations() {
     onSuccess: () => {
       toast.success(t('platformIntegrationsPage.text1'));
       utils.integrations.getCurrentPlatform.invalidate();
-      // @ts-ignore
-      utils.zid.getStatus.invalidate();
+      utils.zid.getConnection.invalidate();
     },
     onError: (error: any) => {
       toast.error(error.message || 'فشل فصل زد');
@@ -151,8 +149,7 @@ export default function PlatformIntegrations() {
           await disconnectSalla.mutateAsync({ merchantId: 1 }); // TODO: merchantId الحقيقي
           break;
         case 'zid':
-          // @ts-ignore
-          await disconnectZid.mutateAsync();
+          await disconnectZid.mutateAsync({} as any);
           break;
         case 'woocommerce':
           await disconnectWoo.mutateAsync();
