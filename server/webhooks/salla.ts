@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'node:crypto';
 import {
   deleteProduct,
   getAllSallaConnections,
@@ -32,6 +33,34 @@ interface SallaWebhookEvent {
 
 export async function handleSallaWebhook(req: Request, res: Response) {
   try {
+    // SECURITY: Verify webhook signature if secret is configured
+    const webhookSecret = process.env.SALLA_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const signature = req.headers['x-salla-signature'] as string;
+      if (!signature) {
+        console.warn('[Salla Webhook] Missing X-Salla-Signature header — rejecting');
+        return res.status(401).json({ error: 'Missing signature' });
+      }
+
+      const rawBody = JSON.stringify(req.body);
+      const expectedSig = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+
+      // Timing-safe comparison
+      try {
+        const sigBuffer = Buffer.from(signature, 'hex');
+        const expectedBuffer = Buffer.from(expectedSig, 'hex');
+        if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+          console.warn('[Salla Webhook] Invalid signature — rejecting');
+          return res.status(401).json({ error: 'Invalid signature' });
+        }
+      } catch {
+        console.warn('[Salla Webhook] Signature comparison error — rejecting');
+        return res.status(401).json({ error: 'Invalid signature' });
+      }
+    } else {
+      console.warn('[Salla Webhook] SALLA_WEBHOOK_SECRET not configured — accepting without verification');
+    }
+
     const event: SallaWebhookEvent = req.body;
     
     console.log(`[Salla Webhook] Received event: ${event.event} from ${event.merchant.domain}`);

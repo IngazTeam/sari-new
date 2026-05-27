@@ -17,8 +17,7 @@ export default function Checkout() {
   const planId = parseInt(planIdStr || '0', 10);
 
   const { data: plan, isLoading: planLoading } = trpc.plans.getById.useQuery({ id: planId });
-  // @ts-ignore
-  const createSessionMutation = trpc.payments.createSession.useMutation({
+  const createSessionMutation = trpc.subscriptionPayments.createSession.useMutation({
     onSuccess: (data: any) => {
       if (data.paymentUrl) {
         // Redirect to payment gateway

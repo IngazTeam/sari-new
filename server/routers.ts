@@ -2298,15 +2298,22 @@ export const appRouter = router({
     }),
 
     getByMerchant: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input }) => {
-        return await getInvoicesByMerchantId(input.merchantId);
+      .query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        return await getInvoicesByMerchantId(merchant.id);
       }),
 
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return await getInvoiceById(input.id);
+      .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        const invoice = await getInvoiceById(input.id);
+        if (!invoice || invoice.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
+        }
+        return invoice;
       }),
   }),
 
@@ -7268,6 +7275,8 @@ export const appRouter = router({
         metadata: z.record(z.any()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const tapPayments = await import('./_core/tapPayments');
 
@@ -7277,7 +7286,7 @@ export const appRouter = router({
         });
 
         const payment = await dbPayments.createOrderPayment({
-          merchantId: (ctx as any).merchant.id,
+          merchantId: merchant.id,
           orderId: input.orderId || null,
           bookingId: input.bookingId || null,
           customerPhone: input.customerPhone,
@@ -7318,9 +7327,11 @@ export const appRouter = router({
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
       .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const payment = await dbPayments.getOrderPaymentById(input.id);
-        if (!payment || payment.merchantId !== (ctx as any).merchant.id) {
+        if (!payment || payment.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
         }
         return payment;
@@ -7334,11 +7345,13 @@ export const appRouter = router({
         limit: z.number().default(50),
       }))
       .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const filters: any = { status: input.status, limit: input.limit };
         if (input.startDate) filters.startDate = new Date(input.startDate);
         if (input.endDate) filters.endDate = new Date(input.endDate);
-        return await dbPayments.getOrderPaymentsByMerchant((ctx as any).merchant.id, filters);
+        return await dbPayments.getOrderPaymentsByMerchant(merchant.id, filters);
       }),
 
     getStats: protectedProcedure
@@ -7347,10 +7360,12 @@ export const appRouter = router({
         endDate: z.string().optional(),
       }))
       .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const startDate = input.startDate ? new Date(input.startDate) : undefined;
         const endDate = input.endDate ? new Date(input.endDate) : undefined;
-        return await dbPayments.getPaymentStats((ctx as any).merchant.id, startDate, endDate);
+        return await dbPayments.getPaymentStats(merchant.id, startDate, endDate);
       }),
 
     createRefund: protectedProcedure
@@ -7360,11 +7375,13 @@ export const appRouter = router({
         reason: z.string(),
       }))
       .mutation(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const tapPayments = await import('./_core/tapPayments');
 
         const payment = await dbPayments.getOrderPaymentById(input.paymentId);
-        if (!payment || payment.merchantId !== (ctx as any).merchant.id) {
+        if (!payment || payment.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
         }
         if (!payment.tapChargeId) {
@@ -7380,7 +7397,7 @@ export const appRouter = router({
 
         const dbRefund = await dbPayments.createPaymentRefund({
           paymentId: payment.id,
-          merchantId: (ctx as any).merchant.id,
+          merchantId: merchant.id,
           amount: input.amount,
           currency: payment.currency,
           reason: input.reason,
@@ -7400,11 +7417,13 @@ export const appRouter = router({
         limit: z.number().default(50),
       }))
       .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         if (input.paymentId) {
           return await dbPayments.getPaymentRefundsByPaymentId(input.paymentId);
         }
-        return await dbPayments.getPaymentRefundsByMerchant((ctx as any).merchant.id, { status: input.status, limit: input.limit });
+        return await dbPayments.getPaymentRefundsByMerchant(merchant.id, { status: input.status, limit: input.limit });
       }),
 
     createLink: protectedProcedure
@@ -7420,13 +7439,15 @@ export const appRouter = router({
         bookingId: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const crypto = await import('node:crypto');
         const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;
         const tapPaymentUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL}/pay/${linkId}`;
 
         const link = await dbPayments.createPaymentLink({
-          merchantId: (ctx as any).merchant.id,
+          merchantId: merchant.id,
           linkId,
           title: input.title,
           description: input.description || null,
@@ -7450,9 +7471,11 @@ export const appRouter = router({
     getLink: protectedProcedure
       .input(z.object({ linkId: z.string() }))
       .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const link = await dbPayments.getPaymentLinkByLinkId(input.linkId);
-        if (!link || link.merchantId !== (ctx as any).merchant.id) {
+        if (!link || link.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment link not found' });
         }
         return link;
@@ -7465,16 +7488,20 @@ export const appRouter = router({
         limit: z.number().default(50),
       }))
       .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
-        return await dbPayments.getPaymentLinksByMerchant((ctx as any).merchant.id, { status: input.status, isActive: input.isActive, limit: input.limit });
+        return await dbPayments.getPaymentLinksByMerchant(merchant.id, { status: input.status, isActive: input.isActive, limit: input.limit });
       }),
 
     disableLink: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         const link = await dbPayments.getPaymentLinkById(input.id);
-        if (!link || link.merchantId !== (ctx as any).merchant.id) {
+        if (!link || link.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment link not found' });
         }
         await dbPayments.disablePaymentLink(input.id);
@@ -7719,11 +7746,13 @@ export const appRouter = router({
         status: z.enum(['all', 'active', 'new', 'inactive']).optional(),
       }))
       .query(async ({ ctx, input }) => {
-        let customers = await getCustomersByMerchant(ctx.user.id);
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        let customers = await getCustomersByMerchant(merchant.id);
 
         // Apply search filter
         if (input.search) {
-          customers = await searchCustomers(ctx.user.id, input.search);
+          customers = await searchCustomers(merchant.id, input.search);
         }
 
         // Apply status filter
@@ -7738,7 +7767,9 @@ export const appRouter = router({
     getByPhone: protectedProcedure
       .input(z.object({ customerPhone: z.string() }))
       .query(async ({ ctx, input }) => {
-        const customer = await getCustomerByPhone(ctx.user.id, input.customerPhone);
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        const customer = await getCustomerByPhone(merchant.id, input.customerPhone);
         if (!customer) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'العميل غير موجود' });
         }
@@ -7747,12 +7778,16 @@ export const appRouter = router({
 
     // Get customer statistics
     getStats: protectedProcedure.query(async ({ ctx }) => {
-      return await getCustomerStats(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      return await getCustomerStats(merchant.id);
     }),
 
     // Export customers data
     export: protectedProcedure.query(async ({ ctx }) => {
-      const customers = await getCustomersByMerchant(ctx.user.id);
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const customers = await getCustomersByMerchant(merchant.id);
       return customers.map(c => ({
         '\u0627\u0644\u0627\u0633\u0645': c.customerName || '\u063a\u064a\u0631 \u0645\u0639\u0631\u0648\u0641',
         '\u0631\u0642\u0645 \u0627\u0644\u062c\u0648\u0627\u0644': c.customerPhone,

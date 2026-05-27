@@ -41,22 +41,21 @@ export default function ZidIntegration() {
 
   // Get connection status
   const { data: connection, isLoading, refetch } = trpc.zid.getConnection.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 }
+    undefined,
   );
 
   // Get sync logs
   const { data: syncLogs } = trpc.zid.getSyncLogs.useQuery(
-    { merchantId, limit: 10 },
+    { limit: 10 },
     // @ts-ignore
-    { enabled: merchantId > 0 && connection?.connected }
+    { enabled: connection?.connected }
   );
 
   // Get sync stats
   const { data: syncStats } = trpc.zid.getSyncStats.useQuery(
-    { merchantId },
+    undefined,
     // @ts-ignore
-    { enabled: merchantId > 0 && connection?.connected }
+    { enabled: connection?.connected }
   );
 
   // Mutations
@@ -128,7 +127,6 @@ export default function ZidIntegration() {
 
     setIsConnecting(true);
     connectMutation.mutate({
-      merchantId,
       storeUrl,
       accessToken,
     });
@@ -136,17 +134,16 @@ export default function ZidIntegration() {
 
   const handleDisconnect = () => {
     if (confirm(t('zidIntegrationPage.text52'))) {
-      disconnectMutation.mutate({ merchantId });
+      disconnectMutation.mutate();
     }
   };
 
   const handleSync = () => {
-    syncMutation.mutate({ merchantId });
+    syncMutation.mutate();
   };
 
   const handleSaveSettings = () => {
     updateSettingsMutation.mutate({
-      merchantId,
       autoSync,
       syncProducts,
       syncOrders,

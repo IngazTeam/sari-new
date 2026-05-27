@@ -7,6 +7,7 @@ import {
   deleteIntegrationByType,
   getCustomerCountByMerchant,
   getIntegrationByType,
+  getMerchantByUserId,
   getOrderCountByMerchant,
   getProductCountByMerchant,
   getSyncLogsByMerchant,
@@ -47,9 +48,10 @@ async function zidApiRequest(endpoint: string, accessToken: string, managerToken
 export const zidRouter = router({
   // Get connection status
   getConnection: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .query(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'zid');
+    .query(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration) {
         return { connected: false };
@@ -67,12 +69,13 @@ export const zidRouter = router({
   // Connect to Zid store
   connect: protectedProcedure
     .input(z.object({
-      merchantId: z.number(),
       storeUrl: z.string().url(),
       accessToken: z.string(),
       managerToken: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       try {
         // Verify the access token by fetching store manager profile
         // Zid v1 API: GET /managers/account/profile
@@ -90,7 +93,7 @@ export const zidRouter = router({
 
         // Save integration — store both tokens
         await createIntegration({
-          merchantId: input.merchantId,
+          merchantId: merchant.id,
           type: 'zid',
           storeName,
           storeUrl: input.storeUrl,
@@ -116,17 +119,19 @@ export const zidRouter = router({
 
   // Disconnect from Zid store
   disconnect: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .mutation(async ({ input }) => {
-      await deleteIntegrationByType(input.merchantId, 'zid');
+    .mutation(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      await deleteIntegrationByType(merchant.id, 'zid');
       return { success: true, message: 'تم فصل متجر زد' };
     }),
 
   // Sync now
   syncNow: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .mutation(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'zid');
+    .mutation(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration || !integration.accessToken) {
         throw new TRPCError({
@@ -144,7 +149,7 @@ export const zidRouter = router({
 
         if (products.data) {
           for (const product of products.data) {
-            await upsertProductFromZid(input.merchantId, product);
+            await upsertProductFromZid(merchant.id, product);
             syncedProducts++;
           }
         }
@@ -153,7 +158,7 @@ export const zidRouter = router({
         await updateIntegrationLastSync(integration.id);
 
         // Log sync
-        await createSyncLog(input.merchantId ?? 0, 'zid_sync' as any, 'success');
+        await createSyncLog(merchant.id, 'zid_sync' as any, 'success');
 
         return {
           success: true,
@@ -161,7 +166,7 @@ export const zidRouter = router({
         };
       } catch (error: any) {
         // @ts-ignore
-        await createSyncLog(merchantId ?? (input as any).merchantId, 'zid_sync' as any, 'error');
+        await createSyncLog(merchant.id, 'zid_sync' as any, 'error');
 
         throw new TRPCError({
           code: 'INTERNAL_SERVER_ERROR',
@@ -173,14 +178,15 @@ export const zidRouter = router({
   // Update settings
   updateSettings: protectedProcedure
     .input(z.object({
-      merchantId: z.number(),
       autoSync: z.boolean(),
       syncProducts: z.boolean(),
       syncOrders: z.boolean(),
       syncCustomers: z.boolean(),
     }))
-    .mutation(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'zid');
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration) {
         throw new TRPCError({
@@ -202,26 +208,28 @@ export const zidRouter = router({
   // Get sync logs
   getSyncLogs: protectedProcedure
     .input(z.object({
-      merchantId: z.number(),
       limit: z.number().optional().default(10),
     }))
-    .query(async ({ input }) => {
-      return await getSyncLogsByMerchant(input.merchantId, 'zid', input.limit);
+    .query(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      return await getSyncLogsByMerchant(merchant.id, 'zid', input.limit);
     }),
 
   // Get sync stats
   getSyncStats: protectedProcedure
-    .input(z.object({ merchantId: z.number() }))
-    .query(async ({ input }) => {
-      const integration = await getIntegrationByType(input.merchantId, 'zid');
+    .query(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const integration = await getIntegrationByType(merchant.id, 'zid');
 
       if (!integration) {
         return null;
       }
 
-      const products = await getProductCountByMerchant(input.merchantId);
-      const orders = await getOrderCountByMerchant(input.merchantId);
-      const customers = await getCustomerCountByMerchant(input.merchantId);
+      const products = await getProductCountByMerchant(merchant.id);
+      const orders = await getOrderCountByMerchant(merchant.id);
+      const customers = await getCustomerCountByMerchant(merchant.id);
 
       return {
         products,

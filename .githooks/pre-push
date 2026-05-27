@@ -1,0 +1,54 @@
+#!/bin/sh
+# ═══════════════════════════════════════════════════════════════
+# LAYER 1: Pre-push Protection Hook
+# ═══════════════════════════════════════════════════════════════
+#
+# Prevents pushing code that breaks type safety or fails tests.
+# Runs 3 checks in order — aborts push on first failure:
+#   1. TypeScript type-check (tsc --noEmit)
+#   2. Contract guards (schema ↔ router ↔ frontend parity)
+#   3. Runtime integration tests (actual function behavior)
+#
+# To bypass in emergency: git push --no-verify
+# ═══════════════════════════════════════════════════════════════
+
+echo "🔒 Sari Pre-push Guard — Checking before push..."
+
+# 1. TypeScript type-check
+echo ""
+echo "📋 Step 1/3: TypeScript type-check..."
+npx tsc --noEmit 2>&1
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ TypeScript errors found. Push aborted."
+    echo "   Fix type errors and try again."
+    exit 1
+fi
+echo "✅ TypeScript: 0 errors"
+
+# 2. Contract guards (fast — file-based checks)
+echo ""
+echo "📋 Step 2/3: Contract guards..."
+npx vitest run server/contract-guards.test.ts --reporter=dot 2>&1
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Contract guard FAILED. Schema/Router/Frontend mismatch detected."
+    echo "   A layer is out of sync. Fix it before pushing."
+    exit 1
+fi
+echo "✅ Contract guards: all passed"
+
+# 3. Runtime integration tests
+echo ""
+echo "📋 Step 3/3: Runtime integration tests..."
+npx vitest run server/runtime-integration.test.ts --reporter=dot 2>&1
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "❌ Runtime test FAILED. A function's behavior has changed."
+    echo "   Check the test output above for details."
+    exit 1
+fi
+echo "✅ Runtime tests: all passed"
+
+echo ""
+echo "🚀 All 3 layers passed — push proceeding."
