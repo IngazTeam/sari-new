@@ -35,30 +35,31 @@ export async function handleSallaWebhook(req: Request, res: Response) {
   try {
     // SECURITY: Verify webhook signature if secret is configured
     const webhookSecret = process.env.SALLA_WEBHOOK_SECRET;
-    if (webhookSecret) {
-      const signature = req.headers['x-salla-signature'] as string;
-      if (!signature) {
-        console.warn('[Salla Webhook] Missing X-Salla-Signature header — rejecting');
-        return res.status(401).json({ error: 'Missing signature' });
-      }
+    if (!webhookSecret) {
+      console.error('[Salla Webhook] SALLA_WEBHOOK_SECRET not configured — rejecting');
+      return res.status(500).json({ error: 'Webhook secret not configured' });
+    }
 
-      const rawBody = JSON.stringify(req.body);
-      const expectedSig = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+    const signature = req.headers['x-salla-signature'] as string;
+    if (!signature) {
+      console.warn('[Salla Webhook] Missing X-Salla-Signature header — rejecting');
+      return res.status(401).json({ error: 'Missing signature' });
+    }
 
-      // Timing-safe comparison
-      try {
-        const sigBuffer = Buffer.from(signature, 'hex');
-        const expectedBuffer = Buffer.from(expectedSig, 'hex');
-        if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
-          console.warn('[Salla Webhook] Invalid signature — rejecting');
-          return res.status(401).json({ error: 'Invalid signature' });
-        }
-      } catch {
-        console.warn('[Salla Webhook] Signature comparison error — rejecting');
+    const rawBody = JSON.stringify(req.body);
+    const expectedSig = crypto.createHmac('sha256', webhookSecret).update(rawBody).digest('hex');
+
+    // Timing-safe comparison
+    try {
+      const sigBuffer = Buffer.from(signature, 'hex');
+      const expectedBuffer = Buffer.from(expectedSig, 'hex');
+      if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+        console.warn('[Salla Webhook] Invalid signature — rejecting');
         return res.status(401).json({ error: 'Invalid signature' });
       }
-    } else {
-      console.warn('[Salla Webhook] SALLA_WEBHOOK_SECRET not configured — accepting without verification');
+    } catch {
+      console.warn('[Salla Webhook] Signature comparison error — rejecting');
+      return res.status(401).json({ error: 'Invalid signature' });
     }
 
     const event: SallaWebhookEvent = req.body;

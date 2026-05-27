@@ -34,22 +34,7 @@ export default function Checkout() {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
-  // @ts-ignore
-  const validateCouponMutation = trpc.coupon.validate.useMutation({
-    onSuccess: (data: any) => {
-      if (data.valid) {
-        setAppliedCoupon(data.coupon);
-        toast.success(t('checkoutPage.text0'));
-      } else {
-        toast.error(data.message || t('checkoutPage.text26'));
-      }
-      setIsValidatingCoupon(false);
-    },
-    onError: (error: any) => {
-      toast.error(error.message);
-      setIsValidatingCoupon(false);
-    },
-  });
+  const trpcUtils = trpc.useUtils();
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -57,7 +42,19 @@ export default function Checkout() {
       return;
     }
     setIsValidatingCoupon(true);
-    await validateCouponMutation.mutateAsync({ code: couponCode });
+    try {
+      const coupon = await trpcUtils.coupons.validate.fetch({ code: couponCode, planId });
+      if (coupon) {
+        setAppliedCoupon(coupon);
+        toast.success(t('checkoutPage.text0'));
+      } else {
+        toast.error(t('checkoutPage.text26'));
+      }
+    } catch (error: any) {
+      toast.error(error.message || t('checkoutPage.text26'));
+    } finally {
+      setIsValidatingCoupon(false);
+    }
   };
 
   const handleRemoveCoupon = () => {

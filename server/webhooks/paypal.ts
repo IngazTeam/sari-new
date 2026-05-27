@@ -41,16 +41,13 @@ export async function verifyPayPalSignature(
       const sigBuffer = Buffer.from(transmissionSig, 'base64');
       const localBuffer = Buffer.from(localHash, 'base64');
       if (sigBuffer.length !== localBuffer.length) {
-        // Lengths differ — fall through to log-and-accept for PayPal's async cert verification
-        console.warn('[PayPal Webhook] Signature length mismatch — accepting with warning (cert-based verification not yet implemented)');
-        return true;
+        console.warn('[PayPal Webhook] Signature length mismatch — rejecting');
+        return false;
       }
       return crypto.timingSafeEqual(sigBuffer, localBuffer);
     } catch {
-      // PayPal uses certificate-based signatures that differ from simple HMAC
-      // Accept but log warning until full API verification is implemented
-      console.warn('[PayPal Webhook] Signature comparison failed — accepting with warning');
-      return true;
+      console.warn('[PayPal Webhook] Signature comparison failed — rejecting');
+      return false;
     }
   } catch (error) {
     console.error('[PayPal Webhook] Signature verification failed:', error);

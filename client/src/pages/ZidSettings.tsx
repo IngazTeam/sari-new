@@ -18,8 +18,7 @@ export default function ZidSettings() {
   const [isConnecting, setIsConnecting] = useState(false);
 
   // Get Zid status
-  // @ts-ignore
-  const { data: status, isLoading, refetch } = trpc.zid.getStatus.useQuery();
+  const { data: status, isLoading, refetch } = trpc.zid.getConnection.useQuery();
 
   // Mutations
   const disconnectMutation = trpc.zid.disconnect.useMutation({
@@ -39,8 +38,7 @@ export default function ZidSettings() {
     },
   });
 
-  // @ts-ignore
-  const updateAutoSyncMutation = trpc.zid.updateAutoSync.useMutation({
+  const updateAutoSyncMutation = trpc.zid.updateSettings.useMutation({
     onSuccess: () => {
       toast({
         title: 'تم التحديث',
@@ -79,13 +77,12 @@ export default function ZidSettings() {
 
   const handleDisconnect = () => {
     if (confirm('هل أنت متأكد من فصل الاتصال مع Zid؟')) {
-      // @ts-ignore
-      disconnectMutation.mutate();
+      disconnectMutation.mutate({} as any);
     }
   };
 
   const handleAutoSyncToggle = (field: 'autoSyncProducts' | 'autoSyncOrders' | 'autoSyncCustomers', value: boolean) => {
-    updateAutoSyncMutation.mutate({ [field]: value });
+    updateAutoSyncMutation.mutate({ [field]: value } as any);
   };
 
   if (isLoading) {
@@ -195,8 +192,8 @@ export default function ZidSettings() {
                 <div>
                   <Label>{t('zidSettingsPage.text4')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    {status.lastProductSync
-                      ? new Date(status.lastProductSync).toLocaleString('ar-SA')
+                    {status.lastSync
+                      ? new Date(status.lastSync).toLocaleString('ar-SA')
                       : 'لم تتم المزامنة بعد'}
                   </p>
                 </div>
@@ -204,8 +201,8 @@ export default function ZidSettings() {
                 <div>
                   <Label>{t('zidSettingsPage.text5')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    {status.lastOrderSync
-                      ? new Date(status.lastOrderSync).toLocaleString('ar-SA')
+                    {status.lastSync
+                      ? new Date(status.lastSync).toLocaleString('ar-SA')
                       : 'لم تتم المزامنة بعد'}
                   </p>
                 </div>
@@ -213,8 +210,8 @@ export default function ZidSettings() {
                 <div>
                   <Label>{t('zidSettingsPage.text6')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    {status.lastCustomerSync
-                      ? new Date(status.lastCustomerSync).toLocaleString('ar-SA')
+                    {status.lastSync
+                      ? new Date(status.lastSync).toLocaleString('ar-SA')
                       : 'لم تتم المزامنة بعد'}
                   </p>
                 </div>
@@ -253,7 +250,7 @@ export default function ZidSettings() {
                 <p className="text-sm text-muted-foreground">{t('zidSettings.auto_8')}</p>
               </div>
               <Switch
-                checked={status.autoSyncProducts}
+                checked={status.settings?.autoSyncProducts}
                 onCheckedChange={(checked) =>
                   handleAutoSyncToggle('autoSyncProducts', checked)
                 }
@@ -267,7 +264,7 @@ export default function ZidSettings() {
                 <p className="text-sm text-muted-foreground">{t('zidSettings.auto_9')}</p>
               </div>
               <Switch
-                checked={status.autoSyncOrders}
+                checked={status.settings?.autoSyncOrders}
                 onCheckedChange={(checked) =>
                   handleAutoSyncToggle('autoSyncOrders', checked)
                 }
@@ -281,7 +278,7 @@ export default function ZidSettings() {
                 <p className="text-sm text-muted-foreground">{t('zidSettings.auto_10')}</p>
               </div>
               <Switch
-                checked={status.autoSyncCustomers}
+                checked={status.settings?.autoSyncCustomers}
                 onCheckedChange={(checked) =>
                   handleAutoSyncToggle('autoSyncCustomers', checked)
                 }

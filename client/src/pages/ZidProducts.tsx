@@ -14,12 +14,10 @@ export default function ZidProducts() {
   const [, navigate] = useLocation();
 
   // Get Zid status
-  // @ts-ignore
-  const { data: status, isLoading: statusLoading } = trpc.zid.getStatus.useQuery();
+  const { data: status, isLoading: statusLoading } = trpc.zid.getConnection.useQuery();
 
   // Sync products mutation
-  // @ts-ignore
-  const syncProductsMutation = trpc.zid.syncProducts.useMutation({
+  const syncProductsMutation = trpc.zid.syncNow.useMutation({
     onSuccess: (data: any) => {
       toast({
         title: 'نجحت المزامنة',
@@ -80,10 +78,10 @@ export default function ZidProducts() {
           <CardDescription>{t('zidProducts.auto_3')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {status.lastProductSync && (
+          {status.lastSync && (
             <div>
               <p className="text-sm text-muted-foreground">
-                آخر مزامنة: {new Date(status.lastProductSync).toLocaleString('ar-SA')}
+                آخر مزامنة: {new Date(status.lastSync).toLocaleString('ar-SA')}
               </p>
             </div>
           )}
@@ -106,7 +104,7 @@ export default function ZidProducts() {
           {syncProductsMutation.isSuccess && (
             <Alert>
               <AlertDescription>
-                تمت مزامنة {syncProductsMutation.data.productsCount} منتج بنجاح
+                تمت المزامنة بنجاح: {(syncProductsMutation.data as any).message}
               </AlertDescription>
             </Alert>
           )}
