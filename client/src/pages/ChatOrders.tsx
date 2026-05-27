@@ -39,9 +39,9 @@ export default function ChatOrders() {
   const { data: merchant } = (trpc as any).merchant.get.useQuery(undefined as any);
   const merchantCurrency = (merchant?.currency as Currency) || 'SAR';
 
-  const { data: orders, isLoading, refetch } = trpc.orders.listByMerchant.useQuery({
-    merchantId: selectedMerchantId
-  });
+  const { data: orders, isLoading, refetch } = trpc.orders.listByMerchant.useQuery(
+    {} as any
+  );
 
   const updateStatusMutation = trpc.orders.updateStatus.useMutation({
     onSuccess: () => {

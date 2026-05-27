@@ -2623,30 +2623,28 @@ export const appRouter = router({
     // List orders for merchant
     listByMerchant: protectedProcedure
       .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      .query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await getOrdersByMerchantId(input.merchantId);
+        return await getOrdersByMerchantId(merchant.id);
       }),
 
     // Get orders with filters
     getWithFilters: protectedProcedure
       .input(z.object({
-        merchantId: z.number(),
         status: z.enum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']).optional(),
         startDate: z.string().optional(),
         endDate: z.string().optional(),
         searchQuery: z.string().optional(),
+        search: z.string().optional(),
       }))
       .query(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
         const filters: any = {};
@@ -2654,21 +2652,20 @@ export const appRouter = router({
         if (input.startDate) filters.startDate = new Date(input.startDate);
         if (input.endDate) filters.endDate = new Date(input.endDate);
         if (input.searchQuery) filters.searchQuery = input.searchQuery;
+        if (input.search) filters.searchQuery = input.search;
 
-        return await getOrdersWithFilters(input.merchantId, filters);
+        return await getOrdersWithFilters(merchant.id, filters);
       }),
 
     // Get order statistics
     getStats: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      .query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await getOrderStats(input.merchantId);
+        return await getOrderStats(merchant.id);
       }),
 
     // Cancel order

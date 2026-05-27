@@ -38,8 +38,8 @@ export default function OverviewAnalytics() {
   const { data: referralStats, isLoading: loadingReferrals } = trpc.referrals.getStats.useQuery();
 
   const { data: orderStats, isLoading: loadingOrders } = trpc.orders.getStats.useQuery(
-    { merchantId },
-    { enabled: merchantId > 0 }
+    undefined,
+    { enabled: !!merchant }
   );
 
   const isLoading = loadingCarts || loadingConversion || loadingReferrals || loadingOrders;

@@ -51,19 +51,15 @@ export default function Orders() {
   // Get orders with filters
   const { data: orders, isLoading, refetch } = trpc.orders.getWithFilters.useQuery(
     {
-      merchantId: merchant?.id || 0,
       status: statusFilter !== 'all' ? statusFilter as any : undefined,
       searchQuery: searchQuery || undefined,
-      // @ts-ignore
-      limit: pageSize,
-      page: currentPage,
-    },
+    } as any,
     { enabled: !!merchant }
   );
 
   // Get order stats
   const { data: stats } = trpc.orders.getStats.useQuery(
-    { merchantId: merchant?.id || 0 },
+    undefined,
     { enabled: !!merchant }
   );
 

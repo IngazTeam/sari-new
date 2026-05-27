@@ -57,14 +57,12 @@ export default function Orders() {
   const [showDetails, setShowDetails] = useState(false);
 
   // Fetch orders
-  // @ts-ignore
-  const { data: orders = [], isLoading } = trpc.orders.list.useQuery({
+  const { data: orders = [], isLoading } = trpc.orders.getWithFilters.useQuery({
     search: searchQuery,
     status: statusFilter === "all" ? undefined : statusFilter,
-  });
+  } as any);
 
   // Fetch stats
-  // @ts-ignore
   const { data: stats } = trpc.orders.getStats.useQuery();
 
   // Update status mutation
@@ -87,8 +85,7 @@ export default function Orders() {
     if (!selectedOrder) return;
     updateStatusMutation.mutate({
       orderId: selectedOrder.id,
-      // @ts-ignore
-      status: newStatus,
+      status: newStatus as any,
     });
   };
 
