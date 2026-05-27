@@ -2484,15 +2484,12 @@ export const appRouter = router({
 
     // Get sync logs
     getSyncLogs: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-        }
+      .query(async ({ ctx }) => {
+        // SECURITY: derive merchantId from session
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) return [];
 
-        return await getSyncLogsByMerchantId(input.merchantId, 20);
+        return await getSyncLogsByMerchantId(merchant.id, 20);
       }),
   }),
 

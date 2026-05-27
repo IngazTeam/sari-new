@@ -42,8 +42,8 @@ export default function SallaIntegration() {
 
   // Get sync logs
   const { data: syncLogs } = trpc.salla.getSyncLogs.useQuery(
-    undefined as any,
-    { enabled: connection?.connected }
+    undefined,
+    { enabled: !!connection?.connected }
   );
 
   // Mutations
