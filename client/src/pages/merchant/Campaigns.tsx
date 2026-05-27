@@ -56,7 +56,6 @@ export default function Campaigns() {
 
   // FIX #9: Poll progress for sending campaigns
   const sendingCampaign = campaigns?.find(c => c.status === 'sending');
-  // @ts-ignore
   const { data: sendProgress } = trpc.campaigns.getSendProgress.useQuery(
     { id: sendingCampaign?.id || 0 },
     {

@@ -1117,6 +1117,30 @@ export const appRouter = router({
       };
     }),
 
+    // Get send progress for live tracking (FIX #9)
+    getSendProgress: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const campaign = await getCampaignById(input.id);
+        if (!campaign) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Campaign not found' });
+        }
+
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant || (campaign.merchantId !== merchant.id && ctx.user.role !== 'admin')) {
+          throw new TRPCError({ code: 'FORBIDDEN' });
+        }
+
+        return {
+          status: campaign.status,
+          sentCount: campaign.sentCount,
+          totalRecipients: campaign.totalRecipients,
+          progress: campaign.totalRecipients > 0
+            ? Math.round((campaign.sentCount / campaign.totalRecipients) * 100)
+            : 0,
+        };
+      }),
+
     // Get timeline data for charts
     getTimelineData: protectedProcedure
       .input(z.object({
