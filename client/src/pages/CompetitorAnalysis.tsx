@@ -85,7 +85,7 @@ export default function CompetitorAnalysis() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm('هل أنت متأكد من حذف هذا المنافس؟')) {
+    if (confirm(t('competitorAnalysisPage.text19'))) {
       deleteMutation.mutate({ id });
     }
   };
