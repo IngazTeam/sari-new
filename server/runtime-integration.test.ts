@@ -25,7 +25,7 @@ describe('RT-01: detectObjectionStrength — real execution', () => {
   it('must classify "غالي شوي" as mild', async () => {
     const { detectObjectionStrength } = await getEngine();
     expect(detectObjectionStrength('غالي شوي')).toBe('mild');
-  });
+  }, 15_000); // Extended timeout — cold import of auto-discount + transitive deps
 
   it('must classify "في خصم عندكم؟" as mild', async () => {
     const { detectObjectionStrength } = await getEngine();
