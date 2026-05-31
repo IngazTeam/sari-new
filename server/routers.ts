@@ -2151,6 +2151,64 @@ export const appRouter = router({
 
         return getMessagesByConversationId(input.conversationId);
       }),
+
+    // Send reply from merchant dashboard
+    sendReply: protectedProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        message: z.string().min(1).max(5000),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        // Check ownership
+        const conversation = await getConversationById(input.conversationId);
+        if (!conversation || conversation.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
+        }
+
+        // Get merchant WhatsApp credentials
+        const waRequest = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
+        if (!waRequest || !waRequest.instanceId || !waRequest.apiToken) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'يجب ربط حساب WhatsApp أولاً',
+          });
+        }
+
+        // Send via WhatsApp
+        const { sendMessageWithCredentials } = await import('./whatsapp');
+        const apiUrl = waRequest.apiUrl || 'https://api.green-api.com';
+        const result = await sendMessageWithCredentials(
+          waRequest.instanceId,
+          waRequest.apiToken,
+          apiUrl,
+          conversation.customerPhone,
+          input.message,
+        );
+
+        if (!result.success) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `فشل إرسال الرسالة: ${result.error}`,
+          });
+        }
+
+        // Save to DB
+        const { createMessage } = await import('./db');
+        await createMessage({
+          conversationId: input.conversationId,
+          direction: 'outgoing',
+          messageType: 'text',
+          content: input.message,
+          externalId: result.messageId || null,
+        });
+
+        return { success: true, messageId: result.messageId };
+      }),
   }),
 
   // Subscription Payments Router
