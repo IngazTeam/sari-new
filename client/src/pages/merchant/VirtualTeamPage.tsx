@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Users, Plus, Pencil, Trash2, Save, Sparkles,
-  MessageCircle, X, Star, Zap, Shield
+  MessageCircle, X, Star, Zap, Shield, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
@@ -35,11 +35,14 @@ type AgentFormData = {
   avatarEmoji: string;
   isDefault: boolean;
   triggerKeywords: string[];
+  shiftStart: string;
+  shiftEnd: string;
 };
 
 const emptyForm: AgentFormData = {
   name: '', role: '', department: '', personalityPrompt: '',
   tone: 'friendly', avatarEmoji: 'reception', isDefault: false, triggerKeywords: [],
+  shiftStart: '', shiftEnd: '',
 };
 
 export default function VirtualTeamPage() {
@@ -91,6 +94,8 @@ export default function VirtualTeamPage() {
       avatarEmoji: agent.avatarEmoji || 'default',
       isDefault: agent.isDefault === 1,
       triggerKeywords: keywords,
+      shiftStart: agent.shiftStart || '',
+      shiftEnd: agent.shiftEnd || '',
     });
     setDialogOpen(true);
   };
@@ -107,6 +112,8 @@ export default function VirtualTeamPage() {
       tone: form.tone as any, avatarEmoji: form.avatarEmoji,
       isDefault: form.isDefault,
       triggerKeywords: JSON.stringify(form.triggerKeywords),
+      shiftStart: form.shiftStart || undefined,
+      shiftEnd: form.shiftEnd || undefined,
     };
     if (editingId) updateMutation.mutate({ id: editingId, ...payload });
     else createMutation.mutate(payload);
@@ -225,6 +232,17 @@ export default function VirtualTeamPage() {
                     <Badge className={`text-xs border ${toneInfo.color}`}>
                       {toneInfo.label}
                     </Badge>
+                    {agent.shiftStart && agent.shiftEnd ? (
+                      <Badge variant="outline" className="text-xs font-normal gap-1">
+                        <Clock className="h-3 w-3" />
+                        {agent.shiftStart} - {agent.shiftEnd}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs font-normal gap-1 text-emerald-600 border-emerald-200">
+                        <Clock className="h-3 w-3" />
+                        24/7
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Keywords */}
@@ -464,6 +482,47 @@ export default function VirtualTeamPage() {
                 }}
                 placeholder="اكتب كلمة ثم Enter"
               />
+            </div>
+
+            {/* Work Schedule */}
+            <div className="space-y-2">
+              <Label className="font-semibold text-sm flex items-center gap-2">
+                <Clock className="h-4 w-4 text-violet-600" />
+                مواعيد العمل
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                حدد ساعات عمل هذه الشخصية. اتركه فارغاً لجعلها متاحة 24/7
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">من الساعة</Label>
+                  <Input
+                    type="time"
+                    value={form.shiftStart}
+                    onChange={(e) => setForm(f => ({ ...f, shiftStart: e.target.value }))}
+                    className="text-center"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">إلى الساعة</Label>
+                  <Input
+                    type="time"
+                    value={form.shiftEnd}
+                    onChange={(e) => setForm(f => ({ ...f, shiftEnd: e.target.value }))}
+                    className="text-center"
+                  />
+                </div>
+              </div>
+              {form.shiftStart && form.shiftEnd && (
+                <div className="text-xs text-violet-600 bg-violet-50 dark:bg-violet-950/30 rounded-lg p-2 text-center">
+                  ⏰ ستعمل هذه الشخصية من {form.shiftStart} إلى {form.shiftEnd} يومياً
+                </div>
+              )}
+              {!form.shiftStart && !form.shiftEnd && (
+                <div className="text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-2 text-center">
+                  🟢 متاحة 24/7 — ترد في أي وقت
+                </div>
+              )}
             </div>
 
             <Separator />
