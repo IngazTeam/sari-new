@@ -29,9 +29,32 @@ export function EmergencyPhoneButton() {
   const [phones, setPhones] = useState<EscalationContact[]>([]);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [conflictIndexes, setConflictIndexes] = useState<Set<number>>(new Set());
 
   // Always enabled so the badge shows even when dialog is closed
   const { data, isLoading } = trpc.merchants.getEscalationPhones.useQuery(undefined);
+
+  // Fetch merchant ID for WhatsApp instances query
+  const { data: merchantData } = trpc.merchants.getCurrent.useQuery(undefined);
+  
+  // Fetch bot's connected WhatsApp numbers for client-side validation
+  const { data: instancesData } = trpc.whatsappInstances.listSafe.useQuery(
+    { merchantId: merchantData?.id! },
+    { enabled: open && !!merchantData?.id },
+  );
+
+  // Normalize phone for comparison
+  const normalizePhone = (phone: string): string => {
+    let p = phone.replace(/[\s\-()]/g, '').replace(/^\+/, '');
+    if (/^05\d{8}$/.test(p)) p = '966' + p.slice(1);
+    return p;
+  };
+
+  // Get list of bot phone numbers (normalized)
+  const botPhones = (instancesData || [])
+    .filter((i: any) => i.status === 'active')
+    .map((i: any) => normalizePhone(String(i.phoneNumber || '')))
+    .filter((p: string) => p.length > 0);
 
   const updateMut = trpc.merchants.updateEscalationPhones.useMutation({
     onSuccess: () => {
@@ -52,6 +75,21 @@ export function EmergencyPhoneButton() {
     }
   }, [data]);
 
+  // Check for conflicts whenever phones change
+  useEffect(() => {
+    if (botPhones.length === 0) return;
+    const conflicts = new Set<number>();
+    phones.forEach((contact, index) => {
+      const normalized = normalizePhone(contact.phone);
+      if (normalized && botPhones.includes(normalized)) {
+        conflicts.add(index);
+      }
+    });
+    setConflictIndexes(conflicts);
+  }, [phones, instancesData]);
+
+  const hasConflict = conflictIndexes.size > 0;
+
   const handleSave = () => {
     setErrorMsg(null);
     const cleaned = phones
@@ -60,6 +98,10 @@ export function EmergencyPhoneButton() {
     
     if (cleaned.length === 0) {
       setErrorMsg('⚠️ أضف رقم واحد على الأقل لسلسلة التصعيد');
+      return;
+    }
+    if (hasConflict) {
+      setErrorMsg('🚫 أزل أرقام الواتساب المربوطة بالبوت أولاً — لا يمكن استخدامها للتصعيد');
       return;
     }
     updateMut.mutate({ phones: cleaned });
@@ -189,8 +231,10 @@ export function EmergencyPhoneButton() {
               </div>
             ) : (
               <div className="space-y-2">
-                {phones.map((contact, index) => (
-                  <div key={index} className="group flex items-start gap-2 p-3 rounded-xl border border-border bg-background hover:border-primary/30 transition-colors">
+                {phones.map((contact, index) => {
+                  const isConflict = conflictIndexes.has(index);
+                  return (
+                  <div key={index} className={`group flex items-start gap-2 p-3 rounded-xl border bg-background transition-colors ${isConflict ? 'border-red-400 bg-red-50/50 dark:bg-red-950/20' : 'border-border hover:border-primary/30'}`}>
                     {/* Level indicator */}
                     <div className="flex flex-col items-center gap-0.5 pt-1.5">
                       <span className={`flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold ${
@@ -218,8 +262,14 @@ export function EmergencyPhoneButton() {
                         value={contact.phone}
                         onChange={(e) => updatePhone(index, 'phone', e.target.value)}
                         placeholder="966501234567"
-                        className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring focus:border-primary placeholder:text-muted-foreground/40 transition-all"
+                        className={`w-full h-9 px-3 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 placeholder:text-muted-foreground/40 transition-all ${isConflict ? 'border-red-400 focus:ring-red-300 text-red-700' : 'border-border focus:ring-ring focus:border-primary'}`}
                       />
+                      {isConflict && (
+                        <p className="text-[10px] text-red-600 dark:text-red-400 font-medium flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          هذا الرقم مربوط بالبوت — سيسبب حلقة لا نهائية!
+                        </p>
+                      )}
                       <input
                         type="text"
                         value={contact.label}
@@ -256,7 +306,8 @@ export function EmergencyPhoneButton() {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
