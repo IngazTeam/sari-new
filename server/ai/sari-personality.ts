@@ -45,6 +45,7 @@ import { buildClosingDirective } from './closing-engine';
 import { isGoldenHour } from './sales-conductor';
 import { scheduleFollowUp, cancelFollowUps, type FollowUpType } from './proactive-followup';
 import { validateResponse, recordValidation } from './response-validator';
+import { critiqueResponse, fixResponse, recordCritique } from './response-critic';
 import { 
   isZidOrderRequest, 
   parseZidOrderMessage, 
@@ -1443,6 +1444,24 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         : Math.min(personalitySettings.maxResponseLength * 2, 600);
       let response = await callGPT4(messages, { temperature: 0.7, maxTokens });
 
+      // ═══ Response Critic — FAST PATH (Layer 1: Quality Check) ═══
+      try {
+        const critique = await critiqueResponse({
+          response,
+          customerMessage: params.message,
+          conversationHistory: previousMessages,
+        });
+        if (!critique.passed) {
+          console.log(`[chatWithSari] 🔍 FAST PATH Critic: ${critique.failures.length} issues (score: ${critique.score}/7)`);
+          response = await fixResponse({ originalResponse: response, critique, customerMessage: params.message, conversationHistory: previousMessages });
+          recordCritique(critique, true);
+        } else {
+          recordCritique(critique, false);
+        }
+      } catch (criticErr) {
+        console.warn('[chatWithSari] Critic failed (non-blocking):', (criticErr as Error).message);
+      }
+
       // ═══ Response Validator — FAST PATH ═══
       try {
         const lastBotMsg = previousMessages.filter(m => m.role === 'assistant').pop();
@@ -1875,6 +1894,24 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       temperature: 0.7, // Balanced between creativity and consistency
       maxTokens,
     });
+
+    // ═══ Response Critic — FULL PATH (Layer 1: Quality Check) ═══
+    try {
+      const critiqueFull = await critiqueResponse({
+        response,
+        customerMessage: params.message,
+        conversationHistory: previousMessages,
+      });
+      if (!critiqueFull.passed) {
+        console.log(`[chatWithSari] 🔍 FULL PATH Critic: ${critiqueFull.failures.length} issues (score: ${critiqueFull.score}/7)`);
+        response = await fixResponse({ originalResponse: response, critique: critiqueFull, customerMessage: params.message, conversationHistory: previousMessages });
+        recordCritique(critiqueFull, true);
+      } else {
+        recordCritique(critiqueFull, false);
+      }
+    } catch (criticErrFull) {
+      console.warn('[chatWithSari] Critic failed (non-blocking):', (criticErrFull as Error).message);
+    }
 
     // ═══ Response Validator — FULL PATH ═══
     // BUG-7 FIX: Validate BEFORE adjustResponseForSentiment so empathy prefix isn't flagged as preamble

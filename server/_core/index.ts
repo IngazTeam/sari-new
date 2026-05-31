@@ -30,6 +30,7 @@ import { startEscalationCascadeJob } from "../jobs/escalation-cascade";
 import { startCoachingTriggerJob } from "../jobs/coaching-trigger";
 import { startTakeoverExpiryJob } from "../jobs/takeover-expiry";
 import { startFollowUpJob } from "../jobs/followup-reminders";
+import { startSupervisorRecoveryJob } from "../jobs/supervisor-cron";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { validateEnv } from "./validateEnv";
@@ -553,6 +554,9 @@ async function startServer() {
 
       // Initialize Follow-Up Reminders job (runs every 5min — sends proactive follow-ups to hesitant customers)
       startFollowUpJob();
+
+      // Initialize Supervisor Recovery job (runs every 5min — re-engages silent customers with supervisor persona)
+      startSupervisorRecoveryJob();
 
       // Initialize Occasion Campaigns cron job (runs daily at 9:00 AM)
       cron.schedule('0 9 * * *', async () => {

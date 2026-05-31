@@ -260,6 +260,54 @@ export const analyticsRouter = router({
 
       return { sources, totalCustomers };
     }),
+
+  // Supervisor Recovery statistics
+  supervisorStats: protectedProcedure
+    .input(z.object({
+      merchantId: z.number(),
+      days: z.number().int().min(1).max(90).default(30),
+    }))
+    .query(async ({ input, ctx }) => {
+      const merchant = await getMerchantById(input.merchantId);
+      if (!merchant || merchant.userId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      }
+
+      const pool = await getPool();
+      if (!pool) return { total: 0, responded: 0, converted: 0, responseRate: 0, conversionRate: 0, byReason: {} };
+
+      try {
+        const [rows] = await pool.execute(
+          `SELECT reason, customer_responded, led_to_conversion, created_at
+           FROM supervisor_interventions
+           WHERE merchant_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+           ORDER BY created_at DESC`,
+          [input.merchantId, input.days]
+        );
+
+        const interventions = rows as any[];
+        const total = interventions.length;
+        const responded = interventions.filter(i => i.customer_responded).length;
+        const converted = interventions.filter(i => i.led_to_conversion).length;
+        const byReason: Record<string, number> = {};
+
+        for (const i of interventions) {
+          byReason[i.reason] = (byReason[i.reason] || 0) + 1;
+        }
+
+        return {
+          total,
+          responded,
+          converted,
+          responseRate: total > 0 ? Math.round((responded / total) * 100) : 0,
+          conversionRate: total > 0 ? Math.round((converted / total) * 100) : 0,
+          byReason,
+        };
+      } catch {
+        // Table may not exist yet
+        return { total: 0, responded: 0, converted: 0, responseRate: 0, conversionRate: 0, byReason: {} };
+      }
+    }),
 });
 
 export type AnalyticsRouter = typeof analyticsRouter;
