@@ -216,30 +216,26 @@ export async function validateResponse(params: {
   // If critical violation found in fast check, skip GPT and return immediately
   const hasCritical = fastViolations.some(v => v.severity === 'critical');
   if (hasCritical) {
-    // SURGICAL FIX: Strip contact info via regex FIRST (preserves product details)
-    // Then only fall back to GPT rewrite if other critical violations exist
+    // FIX: Strip contact info FIRST, then ALWAYS GPT-rewrite for natural output.
+    // Old behavior left ugly [محذوف] markers — unacceptable for customer-facing messages.
     const hasContactLeak = fastViolations.some(v => v.rule === 'contact_leak');
     let surgicallyFixed = response;
     if (hasContactLeak) {
       const phoneStrip = /(?:\+?966[-.\s]?)?0?5\d[-.\s]?\d{3}[-.\s]?\d{4}|(?:\+?\d{1,3}[-.\s]?)\d{10,14}/g;
       const emailStrip = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-      surgicallyFixed = surgicallyFixed.replace(phoneStrip, '[رقم محذوف]');
-      surgicallyFixed = surgicallyFixed.replace(emailStrip, '[إيميل محذوف]');
-      console.log(`[Validator] 🔧 Surgically stripped contact info (preserved product details)`);
+      surgicallyFixed = surgicallyFixed.replace(phoneStrip, '');
+      surgicallyFixed = surgicallyFixed.replace(emailStrip, '');
+      // Clean up leftover formatting artifacts from stripped contacts
+      surgicallyFixed = surgicallyFixed
+        .replace(/\[\s*\]/g, '')
+        .replace(/\(\s*\)/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      console.log(`[Validator] 🔧 Stripped contact info — sending to GPT for clean rewrite`);
     }
 
-    // If only contact_leak was the critical violation, return surgical fix (no GPT)
-    const otherCritical = fastViolations.filter(v => v.severity === 'critical' && v.rule !== 'contact_leak');
-    if (otherCritical.length === 0 && hasContactLeak) {
-      return {
-        passed: false,
-        violations: fastViolations,
-        correctedResponse: surgicallyFixed,
-        validationTimeMs: Date.now() - startTime,
-      };
-    }
-
-    // Other critical violations exist — use GPT rewrite on the already-stripped response
+    // ALWAYS use GPT rewrite when contacts were stripped — produces natural response
+    // (No more returning surgical fix with ugly markers directly)
     try {
       const corrected = await generateCorrectedResponse({
         response: surgicallyFixed,
@@ -436,10 +432,11 @@ async function generateCorrectedResponse(params: {
 1. ابدأ بالإجابة المباشرة — لا مقدمات ولا ديباجات
 2. اذكر السعر إذا سأل العميل عنه
 3. لا تذكر منتجات غير موجودة في القائمة
-4. لا تشارك أرقام هواتف أو إيميلات
+4. لا تشارك أرقام هواتف أو إيميلات — بدلاً من ذلك قل "خلني أوصل طلبك للفريق المختص ويتواصلون معك" أو "سجلت طلبك وبيتواصل معك أحد من الفريق"
 5. اجعل الرد قصير ومباشر (150-250 حرف)
 6. إذا ما عرفت الإجابة: "خلني أتأكد من المعلومة وأرد عليك 📝"
 7. حالة العميل: ${intent} — اختر CTA مناسب
+8. إذا كان العميل يطلب تعاون أو شراكة — رحب بالطلب وقل "وصّلت طلبك للمسؤول المختص وبيتواصل معك مباشرة 🙏" بدون ذكر أي بيانات تواصل
 
 أعد الرد المصحح فقط — بدون شرح.`;
 
