@@ -6,12 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { MessageSquare, User, Bot, Clock, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { MessageSquare, User, Bot, Clock, Search, Send, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { ConversationsSkeleton } from '@/components/ConversationsSkeleton';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { ConversationPreviewMode } from '@/components/ConversationPreviewMode';
@@ -24,6 +25,9 @@ export default function Conversations() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [replyText, setReplyText] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   // Pipeline filter state (from SalesPipeline deep-links)
   const [stageFilter, setStageFilter] = useState<string | undefined>();
   const [needsHumanFilter, setNeedsHumanFilter] = useState<boolean | undefined>();
@@ -54,11 +58,18 @@ export default function Conversations() {
     needsHuman: needsHumanFilter,
   });
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
+  const sendReplyMutation = trpc.conversations.sendReply.useMutation();
+  const utils = trpc.useUtils();
 
   const { data: messages } = trpc.conversations.getMessages.useQuery(
     { conversationId: selectedConversationId! },
     { enabled: selectedConversationId !== null }
   );
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Show loading skeleton
   if (isLoading) {
@@ -75,6 +86,43 @@ export default function Conversations() {
   const hasActiveFilter = stageFilter || needsHumanFilter;
 
   const selectedConversation = conversations?.find(c => c.id === selectedConversationId);
+
+  // Send text reply
+  const handleSendReply = async () => {
+    if (!replyText.trim() || !selectedConversationId || isSending) return;
+
+    setIsSending(true);
+    try {
+      await sendReplyMutation.mutateAsync({
+        conversationId: selectedConversationId,
+        message: replyText.trim(),
+      });
+      setReplyText('');
+      toast.success('تم إرسال الرسالة ✓');
+      // Refresh messages
+      utils.conversations.getMessages.invalidate({ conversationId: selectedConversationId });
+    } catch (error: any) {
+      toast.error(error.message || 'فشل إرسال الرسالة');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Send quick action message
+  const handleQuickAction = async (action: string, data?: any) => {
+    if (!selectedConversationId || !data?.message) return;
+
+    try {
+      await sendReplyMutation.mutateAsync({
+        conversationId: selectedConversationId,
+        message: data.message,
+      });
+      toast.success(`تم تنفيذ: ${action} ✓`);
+      utils.conversations.getMessages.invalidate({ conversationId: selectedConversationId });
+    } catch (error: any) {
+      toast.error(error.message || 'فشل تنفيذ الإجراء');
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -142,47 +190,43 @@ export default function Conversations() {
         </Card>
       </div>
 
-      {/* Main Content */}
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Conversations List */}
-        <Card className="md:col-span-1">
-          <CardHeader>
-            <CardTitle>{t('conversationsPage.conversationList')}</CardTitle>
-            <CardDescription>{t('conversationsPage.selectConversation')}</CardDescription>
-            <div className="relative mt-4">
+      {/* Main Content — 5-col grid: 2 for list, 3 for chat */}
+      <div className="grid gap-4 lg:grid-cols-5">
+        {/* Conversations List — wider */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{t('conversationsPage.conversationList')}</CardTitle>
+            <CardDescription className="text-xs">{t('conversationsPage.selectConversation')}</CardDescription>
+            <div className="relative mt-2">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t('conversationsPage.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
+                className="pr-10 h-9 text-sm"
               />
             </div>
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[600px]">
-              {isLoading ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  {t('conversationsPage.loading')}
-                </div>
-              ) : filteredConversations && filteredConversations.length > 0 ? (
-                <div className="space-y-1">
+              {filteredConversations && filteredConversations.length > 0 ? (
+                <div className="space-y-0">
                   {filteredConversations.map((conversation) => (
                     <div
                       key={conversation.id}
-                      className={`p-4 cursor-pointer hover:bg-muted/50 transition-colors ${selectedConversationId === conversation.id ? 'bg-muted' : ''
+                      className={`px-3 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/40 ${selectedConversationId === conversation.id ? 'bg-muted' : ''
                         }`}
                       onClick={() => setSelectedConversationId(conversation.id)}
                     >
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>
-                            <User className="h-5 w-5" />
+                      <div className="flex items-start gap-2">
+                        <Avatar className="h-9 w-9 shrink-0">
+                          <AvatarFallback className="text-xs">
+                            <User className="h-4 w-4" />
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="font-medium truncate">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="font-medium text-sm truncate max-w-[140px]">
                               {conversation.customerName || t('conversationsPage.customer')}
                             </p>
                             <Badge
@@ -193,17 +237,17 @@ export default function Conversations() {
                                     ? 'secondary'
                                     : 'outline'
                               }
-                              className="text-xs"
+                              className="text-[10px] px-1.5 py-0 shrink-0"
                             >
                               {conversation.status === 'active' && t('conversationsPage.statusActive')}
                               {conversation.status === 'closed' && t('conversationsPage.statusClosed')}
                               {conversation.status === 'archived' && t('conversationsPage.statusArchived')}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground truncate" dir="ltr">
                             {conversation.customerPhone}
                           </p>
-                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
                             <Clock className="h-3 w-3" />
                             <span>
                               {formatDistanceToNow(new Date(conversation.lastMessageAt), {
@@ -228,10 +272,10 @@ export default function Conversations() {
         </Card>
 
         {/* Messages View */}
-        <Card className="md:col-span-2">
+        <Card className="lg:col-span-3 flex flex-col">
           {selectedConversation ? (
             <>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-10 w-10">
@@ -240,8 +284,8 @@ export default function Conversations() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle>{selectedConversation.customerName || t('conversationsPage.customer')}</CardTitle>
-                      <CardDescription>{selectedConversation.customerPhone}</CardDescription>
+                      <CardTitle className="text-base">{selectedConversation.customerName || t('conversationsPage.customer')}</CardTitle>
+                      <CardDescription className="text-xs" dir="ltr">{selectedConversation.customerPhone}</CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -271,8 +315,8 @@ export default function Conversations() {
                 </div>
               </CardHeader>
               <Separator />
-              <CardContent className="p-0">
-                <ScrollArea className="h-[600px] p-4">
+              <CardContent className="p-0 flex-1">
+                <ScrollArea className="h-[400px] p-4">
                   {messages && messages.length > 0 ? (
                     <div className="space-y-4">
                       {messages.map((message) => (
@@ -334,6 +378,7 @@ export default function Conversations() {
                           </div>
                         </div>
                       ))}
+                      <div ref={messagesEndRef} />
                     </div>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -345,6 +390,7 @@ export default function Conversations() {
                   )}
                 </ScrollArea>
               </CardContent>
+
               {/* AI Suggestions */}
               <Separator />
               <CardContent className="p-3">
@@ -357,8 +403,7 @@ export default function Conversations() {
                     }))}
                     customerName={selectedConversation.customerName || undefined}
                     onSelectSuggestion={(text) => {
-                      // يمكن إضافة النص إلى حقل الإدخال أو إرساله مباشرة
-                      toast.success(`${t('conversationsPage.selected')}: ${text.substring(0, 30)}...`);
+                      setReplyText(text);
                     }}
                     compact
                   />
@@ -371,53 +416,83 @@ export default function Conversations() {
                 <QuickActionsBar
                   conversationId={selectedConversationId!}
                   customerPhone={selectedConversation.customerPhone}
-                  onActionComplete={(action, data) => {
-                    toast.success(`${t('conversationsPage.actionExecuted')}: ${action}`);
-                  }}
+                  onActionComplete={handleQuickAction}
                 />
               </CardContent>
 
-              {/* Voice Recorder */}
+              {/* Text Input + Voice */}
               <Separator />
-              <CardContent className="p-4">
-                <VoiceRecorder
-                  onRecordingComplete={async (audioBlob, duration) => {
-                    try {
-                      // تحويل Blob إلى base64
-                      const reader = new FileReader();
-                      reader.readAsDataURL(audioBlob);
-                      reader.onloadend = async () => {
-                        const base64 = reader.result as string;
-                        const audioBase64 = base64.split(',')[1]; // إزالة data:audio/webm;base64,
-
-                        toast.loading(t('conversationsPage.uploadingRecording'));
-
-                        // رفع الملف إلى S3
-                        const uploadResult = await uploadAudioMutation.mutateAsync({
-                          audioBase64,
-                          mimeType: audioBlob.type,
-                          duration,
-                          conversationId: selectedConversationId!,
-                        });
-
-                        if (uploadResult.success) {
-                          toast.dismiss();
-                          toast.success(`${t('toast.conversations.msg1')} (${uploadResult.size.toFixed(2)}MB)`);
-
-                          // TODO: إرسال الرسالة الصوتية عبر WhatsApp
-                          console.log('Audio URL:', uploadResult.audioUrl);
+              <CardContent className="p-3">
+                <div className="flex items-end gap-2">
+                  <div className="flex-1">
+                    <Textarea
+                      placeholder="اكتب رسالتك هنا..."
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendReply();
                         }
-                      };
-                    } catch (error) {
-                      toast.dismiss();
-                      toast.error(t('toast.conversations.msg2'));
-                      console.error('Upload error:', error);
-                    }
-                  }}
-                  onCancel={() => {
-                    toast.info(t('toast.conversations.msg3'));
-                  }}
-                />
+                      }}
+                      className="min-h-[44px] max-h-[120px] resize-none text-sm"
+                      rows={1}
+                      dir="auto"
+                    />
+                  </div>
+                  <Button
+                    size="icon"
+                    onClick={handleSendReply}
+                    disabled={!replyText.trim() || isSending}
+                    className="shrink-0 h-[44px] w-[44px]"
+                  >
+                    {isSending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <div className="mt-2">
+                  <VoiceRecorder
+                    onRecordingComplete={async (audioBlob, duration) => {
+                      try {
+                        // تحويل Blob إلى base64
+                        const reader = new FileReader();
+                        reader.readAsDataURL(audioBlob);
+                        reader.onloadend = async () => {
+                          const base64 = reader.result as string;
+                          const audioBase64 = base64.split(',')[1]; // إزالة data:audio/webm;base64,
+
+                          toast.loading(t('conversationsPage.uploadingRecording'));
+
+                          // رفع الملف إلى S3
+                          const uploadResult = await uploadAudioMutation.mutateAsync({
+                            audioBase64,
+                            mimeType: audioBlob.type,
+                            duration,
+                            conversationId: selectedConversationId!,
+                          });
+
+                          if (uploadResult.success) {
+                            toast.dismiss();
+                            toast.success(`${t('toast.conversations.msg1')} (${uploadResult.size.toFixed(2)}MB)`);
+
+                            // TODO: إرسال الرسالة الصوتية عبر WhatsApp
+                            console.log('Audio URL:', uploadResult.audioUrl);
+                          }
+                        };
+                      } catch (error) {
+                        toast.dismiss();
+                        toast.error(t('toast.conversations.msg2'));
+                        console.error('Upload error:', error);
+                      }
+                    }}
+                    onCancel={() => {
+                      toast.info(t('toast.conversations.msg3'));
+                    }}
+                  />
+                </div>
               </CardContent>
             </>
           ) : (
