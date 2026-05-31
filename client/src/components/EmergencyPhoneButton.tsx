@@ -28,15 +28,20 @@ export function EmergencyPhoneButton() {
   const [open, setOpen] = useState(false);
   const [phones, setPhones] = useState<EscalationContact[]>([]);
   const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const { data, isLoading } = trpc.merchants.getEscalationPhones.useQuery(undefined, {
-    enabled: open,
-  });
+  // Always enabled so the badge shows even when dialog is closed
+  const { data, isLoading } = trpc.merchants.getEscalationPhones.useQuery(undefined);
 
   const updateMut = trpc.merchants.updateEscalationPhones.useMutation({
     onSuccess: () => {
       setSaved(true);
+      setErrorMsg(null);
       setTimeout(() => setSaved(false), 2500);
+    },
+    onError: (err) => {
+      setErrorMsg(err.message || 'حدث خطأ أثناء الحفظ');
+      setTimeout(() => setErrorMsg(null), 8000);
     },
   });
 
@@ -48,9 +53,15 @@ export function EmergencyPhoneButton() {
   }, [data]);
 
   const handleSave = () => {
+    setErrorMsg(null);
     const cleaned = phones
       .map(p => ({ ...p, phone: p.phone.replace(/\s/g, '') }))
       .filter(p => p.phone.length > 0);
+    
+    if (cleaned.length === 0) {
+      setErrorMsg('⚠️ أضف رقم واحد على الأقل لسلسلة التصعيد');
+      return;
+    }
     updateMut.mutate({ phones: cleaned });
   };
 
@@ -80,6 +91,7 @@ export function EmergencyPhoneButton() {
 
   const hasPhones = data?.phones && data.phones.length > 0 && data.phones[0]?.phone;
   const configuredCount = data?.phones?.filter(p => p.phone)?.length || 0;
+  const needsAttention = !isLoading && !hasPhones;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -89,7 +101,7 @@ export function EmergencyPhoneButton() {
           className={`relative flex items-center justify-center h-9 w-9 rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
             hasPhones
               ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-              : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 animate-pulse'
+              : 'bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 animate-pulse'
           }`}
           title={hasPhones
             ? t('emergencyPhone.configured', `${configuredCount} أرقام تصعيد مفعّلة`)
@@ -108,9 +120,9 @@ export function EmergencyPhoneButton() {
           ) : (
             <>
               <Phone className="h-4 w-4" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex items-center justify-center rounded-full h-4 w-4 bg-red-500 text-white text-[8px] font-bold">!</span>
               </span>
             </>
           )}
@@ -267,6 +279,14 @@ export function EmergencyPhoneButton() {
               <p className="text-xs text-amber-700 dark:text-amber-300">
                 {t('emergencyPhone.warning', 'بدون أرقام تصعيد، ساري يبلّغ العميل بالانتظار لكن ما يقدر يوصل لك السؤال.')}
               </p>
+            </div>
+          )}
+
+          {/* Error Alert */}
+          {errorMsg && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/40 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
+              <p className="text-xs text-red-700 dark:text-red-300 font-medium">{errorMsg}</p>
             </div>
           )}
 
