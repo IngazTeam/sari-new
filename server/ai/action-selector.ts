@@ -50,11 +50,11 @@ export type SariAction =
 
 const ACTION_SIGNALS: { signal: RegExp; possibleActions: SariAction['type'][] }[] = [
   // Product inquiry → might need product link
-  { signal: /كم سعر|سعر|عندكم|متوفر|أبغى|أبي/i, possibleActions: ['send_product_link', 'send_catalog'] },
+  { signal: /كم سعر|سعر|عندكم|أبغى|أبي/i, possibleActions: ['send_product_link', 'send_catalog'] },
   // Ready to buy → order confirmation
   { signal: /أبغى اطلب|كيف أطلب|أبي آخذ|سجلني/i, possibleActions: ['confirm_order'] },
   // Price objection → discount
-  { signal: /غالي|كثير|خصم|تخفيض|عرض/i, possibleActions: ['offer_discount'] },
+  { signal: /غالي|كثير|خصم|تخفيض|عرض|مافي\s*خصم|ممكن\s*أقل/i, possibleActions: ['offer_discount'] },
   // Complex question → escalation
   { signal: /مشكلة|شكوى|عيب|كسر|استرجاع/i, possibleActions: ['escalate_to_merchant'] },
   // Hesitation → follow-up

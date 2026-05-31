@@ -1,7 +1,7 @@
 /**
  * Response Critic — Layer 1: Generate-Critique-Fix
  * 
- * Reviews every GPT response against 7 quality criteria BEFORE sending.
+ * Reviews every GPT response against 8 quality criteria BEFORE sending.
  * Uses GPT-4o-mini for fast, cheap critique (~0.5s, ~$0.001/call).
  * If issues found, GPT-4o rewrites the response.
  * 
@@ -13,6 +13,7 @@
  * 5. Short and direct (2-4 lines)
  * 6. No contact info leaked
  * 7. Context-aware (didn't ignore previous questions)
+ * 8. Quoted-reply awareness (understood [رد على رسالة: ...] context)
  */
 
 import { callGPT4 } from './openai';
@@ -37,7 +38,7 @@ interface ChatMessage {
 // Critique Prompt
 // ════════════════════════════════════════════════
 
-const CRITIQUE_PROMPT = `أنت مراجع جودة لردود مبيعات واتساب. قيّم الرد التالي على 7 معايير:
+const CRITIQUE_PROMPT = `أنت مراجع جودة لردود مبيعات واتساب. قيّم الرد التالي على 8 معايير:
 
 1. **جاوب السؤال**: إذا سأل "متى" هل أعطاه تاريخ؟ إذا سأل "كم" هل أعطاه سعر؟ إذا سأل عن شي محدد هل جاوب عليه بالضبط؟
 2. **لهجة سعودية**: هل استخدم "هل تود"، "إذا كنت"، "لدينا"، "يمكنك"، "أفهم وجهة نظرك"، "المتاحة تشمل"؟ هذي فصحى ممنوعة. المطلوب: "تبي"، "عندنا"، "تقدر"، "أبغى".
@@ -46,13 +47,14 @@ const CRITIQUE_PROMPT = `أنت مراجع جودة لردود مبيعات وا
 5. **قصير ومباشر**: هل الرد أطول من 4 أسطر بدون ضرورة؟
 6. **بدون بيانات تواصل**: هل تسرب إيميل أو رقم هاتف أو رابط؟
 7. **سياق المحادثة**: هل تجاهل سؤال سابق ما اتجاوب عليه؟
+8. **فهم الردود المقتبسة**: إذا رسالة العميل تبدأ بـ [رد على رسالة: "..."] هل فهم الرد أن العميل يشير للرسالة المقتبسة؟ مثلاً [رد على رسالة: "BLS بـ 230"] + "اريد" = يبي BLS. هل الرد فهم هذا؟
 
 أجب بصيغة JSON فقط:
 {
   "passed": true/false,
   "failures": ["رقم المعيار: وصف المشكلة"],
   "suggestions": "كيف يُصلح الرد",
-  "score": 0-7
+  "score": 0-8
 }`;
 
 // ════════════════════════════════════════════════

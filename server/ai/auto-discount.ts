@@ -40,6 +40,9 @@ const _autoDiscountRateLimit = new Map<string, number>();
 const MILD_PATTERNS = [
   /غالي\s*شوي/i, /سعر.*عالي/i, /ممكن.*أقل/i, /في.*خصم/i,
   /عندكم.*عرض/i, /expensive/i, /too much/i,
+  /مافي\s*خصم/i, /ما\s*في\s*خصم/i, /مافيه\s*خصم/i,
+  /خصم\s*من\s*(حيث|ناحية)/i, /ممكن\s*خصم/i, /عندكم\s*خصم/i,
+  /نبي\s*خصم/i, /أبغى\s*خصم/i, /ابي\s*خصم/i,
 ];
 
 const STRONG_PATTERNS = [
