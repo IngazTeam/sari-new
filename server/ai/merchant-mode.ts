@@ -355,24 +355,40 @@ async function handleMerchantQuestion(params: {
   const { sendMessageWithCredentials } = await import('../whatsapp');
 
   try {
+    // ── Load tenant knowledge (RAG + web + docs + products) ──
+    const { buildEnhancedContextPrompt } = await import('./sari-personality');
+    const { getMerchantById } = await import('../db');
+    
+    const merchant = await getMerchantById(params.merchantId);
+    const merchantName = merchant?.businessName || 'المتجر';
+    
+    const tenantContext = await buildEnhancedContextPrompt({
+      merchantName,
+      merchantId: params.merchantId,
+      customerMessage: params.message, // used for RAG semantic search
+    });
+
     const merchantAssistantPrompt: ChatMessage[] = [
       {
         role: 'system',
-        content: `أنت مساعد ذكي للتاجر (وليس للعملاء). التاجر يتحدث معك مباشرة عبر واتساب.
+        content: `أنت مساعد ذكي للتاجر صاحب "${merchantName}" (وليس للعملاء). التاجر يتحدث معك مباشرة عبر واتساب.
 
 أنت تساعد التاجر في:
-- الإجابة على أسئلته عن متجره وأدائه
-- تقديم نصائح لتحسين المبيعات
+- الإجابة على أسئلته عن متجره وأدائه ومنتجاته وخدماته
+- تقديم نصائح لتحسين المبيعات بناءً على بيانات متجره
 - شرح كيفية استخدام ميزات لوحة التحكم
-- الإجابة على أي استفسار عام
+- الإجابة باستخدام قاعدة المعرفة الخاصة بمتجره (مرفقة أدناه)
 
 🚫 قاعدة صارمة: لا تذكر اسم "ساري" أو "Sari" أبداً. أنت "المساعد الذكي" فقط.
+🚫 لا تختلق معلومات عن المتجر — استخدم فقط البيانات المرفقة أدناه.
 
 قواعد:
 - اللهجة السعودية الودية
 - ردود مختصرة ومباشرة (3-5 أسطر)
 - نادِ التاجر بـ "يا غالي" أو بصيغة احترافية ودودة — لا تقل "يا بطل" أبداً
-- لا تتصرف كبائع — أنت مستشار التاجر الشخصي`
+- لا تتصرف كبائع — أنت مستشار التاجر الشخصي
+
+${tenantContext}`
       },
       {
         role: 'user',
@@ -388,7 +404,7 @@ async function handleMerchantQuestion(params: {
 
     // Apply sanitizer to merchant chat responses too
     const { sanitizeIdentity } = await import('./response-validator');
-    const cleanResponse = sanitizeIdentity(response.trim());
+    const cleanResponse = sanitizeIdentity(response.trim(), merchantName);
 
     await sendMessageWithCredentials(
       params.instanceId, params.token, params.apiUrl,

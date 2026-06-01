@@ -629,7 +629,7 @@ function stripContactInfoFromContent(text: string): string {
     .trim();
 }
 
-async function buildEnhancedContextPrompt(context: {
+export async function buildEnhancedContextPrompt(context: {
   customerName?: string;
   merchantName?: string;
   merchantId?: number;
