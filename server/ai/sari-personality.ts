@@ -2112,9 +2112,19 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       return 'الضغط كبير شوي الحين 😅 أقدر أساعدك خلال لحظات';
     }
     
-    // API key issue: internal error, don't expose
+    // API key issue: internal error, don't expose — but DO respond meaningfully
     if (error.message?.includes('API key') || error.message?.includes('authentication') || error.status === 401) {
-      console.error('[chatWithSari] CRITICAL: API key issue!');
+      console.error('[chatWithSari] CRITICAL: API key issue! All AI calls will fail.');
+      // Auto-escalate to merchant — AI is completely down
+      handleSmartEscalation({
+        merchantId: params.merchantId,
+        conversationId: params.conversationId || 0,
+        customerPhone: params.customerPhone,
+        customerName: params.customerName,
+        customerQuestion: params.message,
+        botResponse: '⚠️ [تنبيه نظام] مفتاح AI غير صالح — البوت لا يستطيع الرد بذكاء. يرجى تحديث مفتاح OpenAI.',
+      }).catch(() => {});
+      return 'شكراً لتواصلك! 😊 سؤالك وصلني وراح أرد عليك بالتفصيل قريباً — فريقنا يتابع 🙏';
     }
 
     // Timeout
@@ -2137,12 +2147,12 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
           customerQuestion: params.message,
         }).catch(() => {});
 
-        return `أهلاً! أنا هنا لمساعدتك بخصوص ${name} 😊 خلني أتأكد من المعلومة وأرد عليك بأسرع وقت 🙏`;
+        return `شكراً لسؤالك عن ${name}! 😊 خلني أتأكد من المعلومة وأرد عليك بأسرع وقت 🙏`;
       }
     } catch { /* silent */ }
     
-    // Absolute last resort — still sounds human, not robotic
-    return 'أهلاً! وش أقدر أساعدك فيه؟ 😊';
+    // Absolute last resort — acknowledge the question, don't ask a new one
+    return 'شكراً لتواصلك! سؤالك وصلني وراح أرد عليك قريباً 🙏';
   }
 }
 
