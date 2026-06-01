@@ -37,7 +37,10 @@ const TEACH_KEYWORDS = [
 
 function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quotedText: string): MerchantIntent {
   // Check for escalation reply first
-  const isReplyToAlert = quotedText.includes('تنبيه من ساري')
+  const isReplyToAlert = quotedText.includes('تنبيه من ساري')  // legacy format (backward compat)
+    || quotedText.includes('تنبيه — سؤال عميل')  // new format
+    || quotedText.includes('تصعيد عاجل')
+    || quotedText.includes('تصعيد أخير')
     || quotedText.includes('سؤال عميل')
     || quotedText.includes('العميل ينتظر')
     || quotedText.includes('سيوصله للعميل');
@@ -190,7 +193,7 @@ async function coachEscalationReply(params: {
     const coachPrompt: ChatMessage[] = [
       {
         role: 'system',
-        content: `أنت ساري، مستشار مبيعات ذكي تساعد التاجر على الرد بأفضل طريقة.
+        content: `أنت مستشار مبيعات ذكي تساعد التاجر على الرد بأفضل طريقة.
 
 مهمتك:
 1. حلّل رد التاجر مقابل سؤال العميل وبيانات تحليل العميل
@@ -225,14 +228,14 @@ ${profileContext || 'عميل جديد — لا توجد بيانات سابقة
     });
 
     // Build the coaching message to merchant
-    const coachMessage = `🧠 *تحليل ساري قبل الإرسال:*
+    const coachMessage = `🧠 *تحليل المساعد الذكي قبل الإرسال:*
 
 ${coaching.trim()}
 
 ━━━━━━━━━━━━━━━
 ✅ أرسل *"موافق"* — لإرسال الرد المحسّن
 📤 أرسل *"أرسل"* — لإرسال ردك الأصلي كما هو
-✏️ أو اكتب رد جديد — وساري يراجعه لك`;
+✏️ أو اكتب رد جديد — والمساعد يراجعه لك`;
 
     // Store pending reply for confirmation
     _pendingReplies.set(params.merchantId, {
@@ -314,7 +317,7 @@ async function sendMerchantReport(params: {
     const orders = orderRows?.[0]?.cnt || 0;
     const revenue = Number(orderRows?.[0]?.total || 0);
 
-    const report = `📊 *تقرير ساري — اليوم*
+    const report = `📊 *التقرير اليومي*
 
 💬 المحادثات النشطة: *${conversations}*
 📩 الرسائل: *${messages}*
@@ -355,13 +358,15 @@ async function handleMerchantQuestion(params: {
     const merchantAssistantPrompt: ChatMessage[] = [
       {
         role: 'system',
-        content: `أنت ساري، مساعد ذكي للتاجر (وليس للعملاء). التاجر يتحدث معك مباشرة عبر واتساب.
+        content: `أنت مساعد ذكي للتاجر (وليس للعملاء). التاجر يتحدث معك مباشرة عبر واتساب.
 
 أنت تساعد التاجر في:
 - الإجابة على أسئلته عن متجره وأدائه
 - تقديم نصائح لتحسين المبيعات
-- شرح كيفية استخدام ميزات ساري
+- شرح كيفية استخدام ميزات لوحة التحكم
 - الإجابة على أي استفسار عام
+
+🚫 قاعدة صارمة: لا تذكر اسم "ساري" أو "Sari" أبداً. أنت "المساعد الذكي" فقط.
 
 قواعد:
 - اللهجة السعودية الودية
@@ -381,9 +386,13 @@ async function handleMerchantQuestion(params: {
       maxTokens: 300,
     });
 
+    // Apply sanitizer to merchant chat responses too
+    const { sanitizeIdentity } = await import('./response-validator');
+    const cleanResponse = sanitizeIdentity(response.trim());
+
     await sendMessageWithCredentials(
       params.instanceId, params.token, params.apiUrl,
-      params.merchantPhone, response.trim()
+      params.merchantPhone, cleanResponse
     );
   } catch (err: any) {
     console.error('[MerchantMode] Chat failed:', err.message);
