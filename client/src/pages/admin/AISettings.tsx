@@ -17,6 +17,7 @@ import {
 import {
   Key, Zap, BarChart3, TrendingUp, Clock, Users, CheckCircle,
   AlertCircle, Loader2, Eye, EyeOff, RefreshCw, Activity,
+  Mail, Shield, ShieldCheck, ShieldAlert, HeartPulse,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,6 +26,7 @@ export default function AISettings() {
   const [apiKey, setApiKey] = useState("");
   const [showKey, setShowKey] = useState(false);
   const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+  const [alertEmail, setAlertEmail] = useState("");
 
   // Queries
   const { data: settings, refetch: refetchSettings } = trpc.aiSettings.getSettings.useQuery();
@@ -34,17 +36,20 @@ export default function AISettings() {
   const { data: topMerchants } = trpc.aiSettings.getTopMerchants.useQuery();
   const { data: recentLogs } = trpc.aiSettings.getRecentLogs.useQuery({ limit: 20 });
 
-  // Sync model from server settings
+  // Sync from server settings
   useEffect(() => {
     if (settings?.model) {
       setSelectedModel(settings.model);
     }
-  }, [settings?.model]);
+    if (settings?.alertEmail) {
+      setAlertEmail(settings.alertEmail);
+    }
+  }, [settings?.model, settings?.alertEmail]);
 
   // Mutations
   const updateMutation = trpc.aiSettings.updateSettings.useMutation({
     onSuccess: () => {
-      toast.success("�� ��� ��������� ����� ?");
+      toast.success("تم حفظ الإعدادات بنجاح ✓");
       refetchSettings();
       setApiKey("");
     },
@@ -54,10 +59,22 @@ export default function AISettings() {
   const testMutation = trpc.aiSettings.testConnection.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
-        toast.success(data.message || "�� ������� �����!");
+        toast.success(data.message || "تم الاتصال بنجاح!");
       } else {
-        toast.error(data.error || "��� �������");
+        toast.error(data.error || "فشل الاتصال");
       }
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const healthCheckMutation = trpc.aiSettings.runHealthCheck.useMutation({
+    onSuccess: (data: any) => {
+      if (data.ok) {
+        toast.success("🟢 الاتصال يعمل بنجاح");
+      } else {
+        toast.error(`🔴 ${data.error || "فشل الفحص"}`);
+      }
+      refetchSettings();
     },
     onError: (err) => toast.error(err.message),
   });
@@ -65,6 +82,11 @@ export default function AISettings() {
   const handleSaveSettings = () => {
     const data: Record<string, any> = { model: selectedModel };
     if (apiKey.trim()) data.openaiApiKey = apiKey.trim();
+    if (alertEmail.trim()) {
+      data.alertEmail = alertEmail.trim();
+    } else {
+      data.alertEmail = null;
+    }
     updateMutation.mutate(data);
   };
 
@@ -77,6 +99,12 @@ export default function AISettings() {
 
   // Chart: simple bar visualization
   const maxTokens = dailyUsage ? Math.max(...dailyUsage.map((d: any) => d.tokens || 0), 1) : 1;
+
+  // Health status helpers
+  const isHealthy = settings?.healthStatus === "ok";
+  const lastCheck = settings?.lastHealthCheck
+    ? new Date(settings.lastHealthCheck).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" })
+    : null;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -102,7 +130,6 @@ export default function AISettings() {
             <p className="text-2xl font-bold">{formatNumber(todayStats?.totalRequests || 0)}</p>
           </CardContent>
         </Card>
-
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
@@ -112,7 +139,6 @@ export default function AISettings() {
             <p className="text-2xl font-bold">{formatNumber(monthStats?.totalRequests || 0)}</p>
           </CardContent>
         </Card>
-
         <Card className="border-l-4 border-l-purple-500">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
@@ -122,20 +148,72 @@ export default function AISettings() {
             <p className="text-2xl font-bold">{formatNumber(monthStats?.totalTokens || 0)}</p>
           </CardContent>
         </Card>
-
         <Card className="border-l-4 border-l-amber-500">
           <CardContent className="pt-4 pb-3">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <Clock className="h-4 w-4" />
+              <Zap className="h-4 w-4" />
               <span>{t('aISettings.auto_5')}</span>
             </div>
-            <p className="text-2xl font-bold text-amber-600">{formatCost(monthStats?.totalCost || "0")}</p>
+            <p className="text-2xl font-bold">{formatCost(monthStats?.totalCost || 0)}</p>
           </CardContent>
         </Card>
       </div>
 
+      {/* ═══════════ Health Monitor Card ═══════════ */}
+      <Card className={`border-l-4 ${isHealthy ? 'border-l-emerald-500' : 'border-l-red-500'}`}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <HeartPulse className="h-5 w-5" />
+            مراقبة حالة OpenAI
+          </CardTitle>
+          <CardDescription>فحص تلقائي كل 15 دقيقة مع تنبيه بالبريد عند الفشل</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+            {/* Status Badge */}
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
+              isHealthy
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : 'bg-red-500/10 border-red-500/30 text-red-400'
+            }`}>
+              {isHealthy
+                ? <ShieldCheck className="h-5 w-5" />
+                : <ShieldAlert className="h-5 w-5" />
+              }
+              <span className="font-semibold text-sm">
+                {isHealthy ? '🟢 يعمل بنجاح' : '🔴 متوقف أو فاشل'}
+              </span>
+            </div>
+
+            {/* Last Check Time */}
+            {lastCheck && (
+              <div className="text-sm text-muted-foreground">
+                <Clock className="h-3.5 w-3.5 inline ml-1" />
+                آخر فحص: {lastCheck}
+              </div>
+            )}
+
+            {/* Manual Check Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => healthCheckMutation.mutate({})}
+              disabled={healthCheckMutation.isPending}
+              className="mr-auto"
+            >
+              {healthCheckMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-1" />
+              ) : (
+                <RefreshCw className="h-4 w-4 ml-1" />
+              )}
+              فحص الآن
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* API Key Settings */}
+        {/* API Settings */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -143,11 +221,11 @@ export default function AISettings() {
             <CardDescription>{t('aISettings.auto_7')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Current Status */}
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+            {/* Current Key Status */}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
               {settings?.hasKey ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">{t('aISettings.auto_8')}</p>
                     <p className="text-xs text-muted-foreground font-mono">{settings.openaiApiKey}</p>
@@ -155,7 +233,7 @@ export default function AISettings() {
                 </>
               ) : (
                 <>
-                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-amber-600">{t('aISettings.auto_9')}</p>
                     <p className="text-xs text-muted-foreground">{t('aISettings.auto_10')}</p>
@@ -202,6 +280,26 @@ export default function AISettings() {
               </Select>
             </div>
 
+            {/* ═══════ Alert Email ═══════ */}
+            <div className="space-y-2">
+              <Label htmlFor="alert-email" className="flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5" />
+                إيميل التنبيهات والتقارير
+              </Label>
+              <Input
+                id="alert-email"
+                type="email"
+                value={alertEmail}
+                onChange={(e) => setAlertEmail(e.target.value)}
+                placeholder="admin@example.com"
+                className="font-mono text-sm"
+                dir="ltr"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                يستقبل تنبيهات فشل الاتصال وتقرير الاستهلاك اليومي الساعة 8 صباحاً
+              </p>
+            </div>
+
             {/* Actions */}
             <div className="flex gap-2">
               <Button
@@ -212,7 +310,7 @@ export default function AISettings() {
                 {updateMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
                 ) : null}
-                ��� ���������
+                حفظ الإعدادات
               </Button>
               <Button
                 variant="outline"
@@ -224,7 +322,7 @@ export default function AISettings() {
                   } else if (settings?.hasKey) {
                     testMutation.mutate({}); // Server uses stored key
                   } else {
-                    toast.error("���� ����� API �����");
+                    toast.error("أدخل مفتاح API أولاً");
                   }
                 }}
                 disabled={testMutation.isPending}
@@ -234,7 +332,7 @@ export default function AISettings() {
                 ) : (
                   <RefreshCw className="h-4 w-4 ml-2" />
                 )}
-                ������ �������
+                اختبار الاتصال
               </Button>
             </div>
           </CardContent>
@@ -251,7 +349,7 @@ export default function AISettings() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{t('aISettings.auto_17')}</span>
-                <Badge variant="secondary">{formatNumber(monthStats?.chatRequests || 0)} ���</Badge>
+                <Badge variant="secondary">{formatNumber(monthStats?.chatRequests || 0)} طلب</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
                 <div
@@ -266,7 +364,7 @@ export default function AISettings() {
 
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{t('aISettings.auto_18')}</span>
-                <Badge variant="secondary">{formatNumber(monthStats?.whisperRequests || 0)} ���</Badge>
+                <Badge variant="secondary">{formatNumber(monthStats?.whisperRequests || 0)} طلب</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
                 <div
@@ -294,7 +392,7 @@ export default function AISettings() {
               </div>
               <div className="p-2 rounded bg-muted/50">
                 <p className="text-muted-foreground">{t('aISettings.auto_19')}</p>
-                <p className="font-semibold">{Math.round((monthStats?.totalAudioDuration || 0) / 60)} �����</p>
+                <p className="font-semibold">{Math.round((monthStats?.totalAudioDuration || 0) / 60)} دقيقة</p>
               </div>
               <div className="p-2 rounded bg-muted/50">
                 <p className="text-muted-foreground">{t('aISettings.auto_20')}</p>
@@ -329,7 +427,7 @@ export default function AISettings() {
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
                     <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-2 text-xs whitespace-nowrap">
                       <p className="font-medium">{day.date}</p>
-                      <p>{formatNumber(day.requests)} ���</p>
+                      <p>{formatNumber(day.requests)} طلب</p>
                       <p>{formatNumber(day.tokens)} token</p>
                       <p>{formatCost(day.cost)}</p>
                     </div>
@@ -365,11 +463,11 @@ export default function AISettings() {
                 </TableHeader>
                 <TableBody>
                   {topMerchants.map((m: any, i: number) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">#{m.merchantId}</TableCell>
+                    <TableRow key={m.merchantId || i}>
+                      <TableCell>#{m.merchantId}</TableCell>
                       <TableCell>{formatNumber(m.requests)}</TableCell>
                       <TableCell>{formatNumber(m.totalTokens)}</TableCell>
-                      <TableCell className="text-amber-600">{formatCost(m.totalCost)}</TableCell>
+                      <TableCell>{formatCost(m.totalCost)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -388,7 +486,7 @@ export default function AISettings() {
           </CardHeader>
           <CardContent>
             {recentLogs && recentLogs.length > 0 ? (
-              <div className="max-h-80 overflow-y-auto">
+              <div className="max-h-[400px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -404,14 +502,14 @@ export default function AISettings() {
                       <TableRow key={log.id}>
                         <TableCell>
                           <Badge variant={log.requestType === "chat" ? "default" : "secondary"}>
-                            {log.requestType === "chat" ? "??" : "??"} {log.requestType}
+                            {log.requestType}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-xs font-mono">{log.model}</TableCell>
-                        <TableCell>{formatNumber(log.totalTokens)}</TableCell>
-                        <TableCell className="text-amber-600">{formatCost(log.estimatedCost || "0")}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {log.durationMs ? `${log.durationMs}ms` : "-"}
+                        <TableCell className="text-xs">{log.model}</TableCell>
+                        <TableCell>{log.totalTokens}</TableCell>
+                        <TableCell>{formatCost(log.estimatedCost)}</TableCell>
+                        <TableCell className="text-xs">
+                          {new Date(log.createdAt).toLocaleString("ar-SA")}
                         </TableCell>
                       </TableRow>
                     ))}

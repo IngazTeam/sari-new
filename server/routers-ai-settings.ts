@@ -47,6 +47,7 @@ export const aiSettingsRouter = router({
       whisperModel: z.enum(ALLOWED_WHISPER_MODELS).optional(),
       isActive: z.boolean().optional(),
       monthlyBudgetLimit: z.string().nullable().optional(),
+      alertEmail: z.string().email("إيميل غير صالح").nullable().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       assertAdmin(ctx.user.role);
@@ -58,6 +59,7 @@ export const aiSettingsRouter = router({
       if (input.whisperModel !== undefined) data.whisperModel = input.whisperModel;
       if (input.isActive !== undefined) data.isActive = input.isActive;
       if (input.monthlyBudgetLimit !== undefined) data.monthlyBudgetLimit = input.monthlyBudgetLimit;
+      if (input.alertEmail !== undefined) data.alertEmail = input.alertEmail;
 
       await upsertAiSettings(data);
 
@@ -87,7 +89,7 @@ export const aiSettingsRouter = router({
       }
 
       if (!keyToTest) {
-        return { success: false, error: "لا يوجد مفتاح API للاختبار" };
+        return { success: false, error: "لا يوجد مفتاح API مُعرّف" };
       }
 
       try {
@@ -109,7 +111,7 @@ export const aiSettingsRouter = router({
 
         return {
           success: true,
-          message: "تم الاتصال بنجاح ✅",
+          message: "تم الاتصال بنجاح ✓",
           availableModels: models.slice(0, 20),
         };
       } catch (error: any) {
@@ -117,10 +119,17 @@ export const aiSettingsRouter = router({
         console.error("[AI Settings] Test connection error:", error);
         return {
           success: false,
-          error: "فشل الاتصال بخوادم OpenAI. تحقق من اتصال الإنترنت.",
+          error: "فشل الاتصال بـ OpenAI. تحقق من المفتاح.",
         };
       }
     }),
+
+  // Manual health check trigger
+  runHealthCheck: protectedProcedure.mutation(async ({ ctx }) => {
+    assertAdmin(ctx.user.role);
+    const { checkOpenAiHealth } = await import("./cron/ai-health-monitor");
+    return await checkOpenAiHealth();
+  }),
 
   // Get usage statistics
   getUsageStats: protectedProcedure

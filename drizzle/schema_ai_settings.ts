@@ -16,6 +16,11 @@ export const aiSettings = mysqlTable("ai_settings", {
   gaPropertyId: varchar("ga_property_id", { length: 50 }),
   gaServiceAccountJson: text("ga_service_account_json"),
   gaEnabled: boolean("ga_enabled").notNull().default(false),
+  // Health Monitoring
+  alertEmail: varchar("alert_email", { length: 320 }),
+  healthStatus: mysqlEnum("health_status", ["ok", "failed"]).notNull().default("ok"),
+  lastHealthCheck: timestamp("last_health_check"),
+  lastAlertSentAt: timestamp("last_alert_sent_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
