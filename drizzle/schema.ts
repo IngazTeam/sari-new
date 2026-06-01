@@ -289,6 +289,8 @@ export const merchants = mysqlTable("merchants", {
 	emergencyPhone: varchar("emergency_phone", { length: 20 }),
 	// Cascading Escalation Chain — JSON array: [{phone, label, order}]
 	escalationPhones: text("escalation_phones"),
+	// Merchant Logo for PDF branding
+	logoUrl: varchar("logo_url", { length: 500 }),
 });
 
 export const messages = mysqlTable("messages", {

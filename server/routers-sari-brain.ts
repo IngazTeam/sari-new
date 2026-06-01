@@ -2213,6 +2213,7 @@ ${fencedContent}`,
       const pdfUrl = await generateQuotationPDF({
         quotationNumber: quotation.quotationNumber,
         merchantName: merchant.businessName,
+        merchantLogo: (merchant as any).logoUrl || (merchant as any).logo_url || defaultTemplate?.headerImageUrl || null,
         merchantPhone: merchant.phone,
         customerName: quotation.customerName,
         customerPhone: input.customerPhone,

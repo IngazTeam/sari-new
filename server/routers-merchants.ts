@@ -86,6 +86,7 @@ export const merchantsRouter = router({
             phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/).optional(), // SEC-R3-03
             autoReplyEnabled: z.boolean().optional(),
             currency: z.enum(['SAR', 'USD']).optional(),
+            logoUrl: z.string().url().max(500).nullable().optional(),
         }))
         .mutation(async ({ input, ctx }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);

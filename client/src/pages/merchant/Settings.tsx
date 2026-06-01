@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, FileText, Upload, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, FileText, Upload, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Image } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -27,6 +27,7 @@ export default function MerchantSettings() {
   const [phone, setPhone] = useState('');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
+  const [logoUrl, setLogoUrl] = useState('');
 
   // Knowledge doc state
   const { data: knowledgeDoc, refetch: refetchKnowledgeDoc } = trpc.knowledgeDocs.getCurrent.useQuery();
@@ -113,6 +114,7 @@ export default function MerchantSettings() {
       // @ts-ignore
       setAutoReplyEnabled((merchant as any).autoReplyEnabled != null ? !!(merchant as any).autoReplyEnabled : true);
       setCurrency(merchant.currency || 'SAR');
+      setLogoUrl((merchant as any).logoUrl || (merchant as any).logo_url || '');
     }
   }, [merchant]);
 
@@ -159,6 +161,7 @@ export default function MerchantSettings() {
       phone: phone || undefined,
       autoReplyEnabled,
       currency,
+      logoUrl: logoUrl.trim() || null,
     });
   };
 
@@ -278,6 +281,60 @@ export default function MerchantSettings() {
               <p className="text-xs text-muted-foreground">
                 {t('settingsPage.currencyDesc')}
               </p>
+            </div>
+          </div>
+
+          {/* Logo for PDF Branding */}
+          <div className="space-y-3 pt-2">
+            <Label htmlFor="logo-url" className="flex items-center gap-2">
+              <Image className="w-4 h-4" />
+              شعار المتجر (لعروض الأسعار PDF)
+            </Label>
+            <div className="flex items-start gap-4">
+              {/* Logo Preview */}
+              <div className="flex-shrink-0">
+                {logoUrl ? (
+                  <div className="relative group">
+                    <img
+                      src={logoUrl}
+                      alt="شعار المتجر"
+                      className="w-20 h-20 rounded-xl object-contain border-2 border-primary/20 bg-muted/30 p-1"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        toast.error('رابط الشعار غير صالح');
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrl('')}
+                      className="absolute -top-2 -right-2 bg-destructive text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-20 h-20 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/20">
+                    <Image className="w-8 h-8 text-muted-foreground/40" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 space-y-2">
+                <Input
+                  id="logo-url"
+                  type="url"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                  dir="ltr"
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  💡 ألصق رابط شعار متجرك (PNG أو JPG). يظهر في ملفات PDF لعروض الأسعار.
+                  {' '}يمكنك رفع الشعار في{' '}
+                  <a href="/merchant/media-library" className="text-primary hover:underline">مكتبة الوسائط</a>
+                  {' '}ونسخ الرابط.
+                </p>
+              </div>
             </div>
           </div>
 
