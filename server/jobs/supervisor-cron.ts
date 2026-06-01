@@ -46,8 +46,9 @@ async function runSupervisorCheck(): Promise<void> {
     // ── Auto-migration: ensure supervisor columns/table exist ──
     if (!_migrated) {
       try {
-        await pool.execute(`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS supervisor_intervened_at TIMESTAMP NULL DEFAULT NULL`);
-        await pool.execute(`ALTER TABLE conversations ADD COLUMN IF NOT EXISTS supervisor_reason VARCHAR(50) NULL DEFAULT NULL`);
+        // Use separate try-catch for each column (IF NOT EXISTS not supported in all MySQL versions)
+        try { await pool.execute(`ALTER TABLE conversations ADD COLUMN supervisor_intervened_at TIMESTAMP NULL DEFAULT NULL`); } catch { /* exists */ }
+        try { await pool.execute(`ALTER TABLE conversations ADD COLUMN supervisor_reason VARCHAR(50) NULL DEFAULT NULL`); } catch { /* exists */ }
         await pool.execute(`CREATE TABLE IF NOT EXISTS supervisor_interventions (
           id INT AUTO_INCREMENT PRIMARY KEY,
           merchant_id INT NOT NULL,
@@ -81,30 +82,30 @@ async function runSupervisorCheck(): Promise<void> {
     const [rows] = await pool.execute(`
       SELECT 
         c.id as conversationId,
-        c.merchantId,
-        c.customerPhone,
-        c.customerName,
+        c.merchant_id as merchantId,
+        c.customer_phone as customerPhone,
+        c.customer_name as customerName,
         c.supervisor_intervened_at,
-        (SELECT COUNT(*) FROM messages WHERE conversationId = c.id) as messageCount,
-        (SELECT content FROM messages WHERE conversationId = c.id AND direction = 'incoming' ORDER BY createdAt DESC LIMIT 1) as lastCustomerMessage,
-        (SELECT createdAt FROM messages WHERE conversationId = c.id AND direction = 'incoming' ORDER BY createdAt DESC LIMIT 1) as lastCustomerMessageAt
+        (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as messageCount,
+        (SELECT content FROM messages WHERE conversation_id = c.id AND direction = 'incoming' ORDER BY created_at DESC LIMIT 1) as lastCustomerMessage,
+        (SELECT created_at FROM messages WHERE conversation_id = c.id AND direction = 'incoming' ORDER BY created_at DESC LIMIT 1) as lastCustomerMessageAt
       FROM conversations c
       WHERE c.human_takeover = 0
         AND c.supervisor_intervened_at IS NULL
         AND EXISTS (
           SELECT 1 FROM messages m 
-          WHERE m.conversationId = c.id 
+          WHERE m.conversation_id = c.id 
             AND m.direction = 'incoming'
-            AND m.createdAt < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
-            AND m.createdAt > DATE_SUB(NOW(), INTERVAL 120 MINUTE)
+            AND m.created_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            AND m.created_at > DATE_SUB(NOW(), INTERVAL 120 MINUTE)
         )
         AND NOT EXISTS (
           SELECT 1 FROM messages m2
-          WHERE m2.conversationId = c.id
+          WHERE m2.conversation_id = c.id
             AND m2.direction = 'incoming'
-            AND m2.createdAt > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            AND m2.created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
         )
-      ORDER BY c.updatedAt DESC
+      ORDER BY c.updated_at DESC
       LIMIT ?
     `, [MAX_PER_CYCLE]);
 
@@ -149,8 +150,8 @@ async function processConversation(pool: any, conv: any): Promise<void> {
 
   // Get conversation messages
   const [msgRows] = await pool.execute(
-    `SELECT direction, content, createdAt FROM messages 
-     WHERE conversationId = ? ORDER BY createdAt ASC LIMIT 30`,
+    `SELECT direction, content, created_at FROM messages 
+     WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 30`,
     [conv.conversationId]
   );
 

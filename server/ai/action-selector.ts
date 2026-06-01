@@ -331,11 +331,10 @@ export async function executeAction(params: {
           if (pool) {
             const [rows] = await pool.execute(
               `SELECT id, code, type, value FROM discount_codes 
-               WHERE merchantId = ? AND isActive = 1 
-               AND (expiresAt IS NULL OR expiresAt > NOW())
-               AND (maxUses IS NULL OR usedCount < maxUses)
-               AND is_auto_generated = 0
-               ORDER BY createdAt DESC LIMIT 1`,
+               WHERE merchant_id = ? AND is_active = 1 
+               AND (expires_at IS NULL OR expires_at > NOW())
+               AND (max_uses IS NULL OR used_count < max_uses)
+               ORDER BY created_at DESC LIMIT 1`,
               [merchantId]
             );
             const discounts = rows as any[];
