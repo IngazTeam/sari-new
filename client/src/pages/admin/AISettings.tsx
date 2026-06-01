@@ -197,7 +197,7 @@ export default function AISettings() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => healthCheckMutation.mutate({})}
+              onClick={() => healthCheckMutation.mutate()}
               disabled={healthCheckMutation.isPending}
               className="mr-auto"
             >
