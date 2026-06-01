@@ -89,15 +89,24 @@ export default function StaffManagement() {
       return;
     }
 
+    // Map frontend fields to backend schema:
+    // - specialization → role (backend field name)
+    // - workingHours: send as undefined (optional text field, not JSON record)
+    const payload: any = {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      role: formData.specialization,
+      // workingHours is free text — skip it (backend expects JSON record which we don't collect here)
+    };
+
     if (editingStaff) {
-      // @ts-ignore
       updateMutation.mutate({
         staffId: editingStaff.id,
-        ...formData
+        ...payload,
       });
     } else {
-      // @ts-ignore
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
@@ -107,7 +116,7 @@ export default function StaffManagement() {
       name: staff.name,
       email: staff.email,
       phone: staff.phone,
-      specialization: staff.specialization,
+      specialization: staff.role || staff.specialization || '',
       workingHours: staff.workingHours || ""
     });
     setIsDialogOpen(true);
@@ -305,7 +314,7 @@ export default function StaffManagement() {
                     <TableCell>
                       <Badge variant="outline">
                         <Briefcase className="h-3 w-3 mr-1" />
-                        {staff.specialization}
+                        {staff.role || staff.specialization}
                       </Badge>
                     </TableCell>
                     <TableCell>
