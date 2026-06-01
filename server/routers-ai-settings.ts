@@ -93,8 +93,17 @@ export const aiSettingsRouter = router({
       }
 
       try {
-        const response = await fetch("https://api.openai.com/v1/models", {
-          headers: { authorization: `Bearer ${keyToTest}` },
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${keyToTest}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: "ping" }],
+            max_tokens: 1,
+          }),
         });
 
         if (!response.ok) {
@@ -104,15 +113,9 @@ export const aiSettingsRouter = router({
           };
         }
 
-        const data = await response.json();
-        const models = data.data?.map((m: any) => m.id).filter((id: string) =>
-          id.includes("gpt") || id.includes("whisper")
-        ) || [];
-
         return {
           success: true,
           message: "تم الاتصال بنجاح ✓",
-          availableModels: models.slice(0, 20),
         };
       } catch (error: any) {
         // AI-04 FIX: Don't expose raw error messages

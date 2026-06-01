@@ -26,12 +26,21 @@ export async function checkOpenAiHealth(): Promise<{ ok: boolean; error?: string
       return result;
     }
 
-    // Test the connection
+    // Test the connection using actual chat endpoint (not just /v1/models)
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeout = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch('https://api.openai.com/v1/models', {
-      headers: { authorization: `Bearer ${apiKey}` },
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: 'ping' }],
+        max_tokens: 1,
+      }),
       signal: controller.signal,
     });
     clearTimeout(timeout);
