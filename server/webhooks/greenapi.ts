@@ -899,6 +899,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const isChainMember = await isPhoneInEscalationChain(instance.merchantId, customerPhone);
 
         if (isChainMember) {
+          // ═══ MERCHANT MODE: Chain members NEVER enter customer flow ═══
+          // Route ALL messages from escalation chain to merchant handler
+          console.log(`[MerchantMode] 🏪 Chain member detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId})`);
+
           // Priority 1: #علم_ساري command (check with .includes to work with quoted reply prefix)
           if (incomingText.includes('#علم')) {
             const { handleTeachCommand } = await import('../ai/coaching-engine');
@@ -929,80 +933,26 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             }
           }
 
-          // Priority 3: Escalation reply — quoted alert OR implicit reply with active escalation
-          // FIX: Previously ANY message from a chain member was treated as escalation reply,
-          // which prevented the merchant from being served as a normal customer
+          // Priority 3+: All other messages → Merchant Mode handler
+          // (escalation replies, reports, questions, general chat)
           const quotedText = extractQuotedText(payload);
-          
-          const isReplyToAlert = quotedText.includes('تنبيه من ساري')
-            || quotedText.includes('سؤال عميل')
-            || quotedText.includes('العميل ينتظر')
-            || quotedText.includes('سيوصله للعميل');
+          const { handleMerchantChat } = await import('../ai/merchant-mode');
+          const merchantResult = await handleMerchantChat({
+            merchantId: instance.merchantId,
+            merchantPhone: customerPhone,
+            message: incomingText,
+            quotedText,
+            instanceId: (instance as any).instanceId,
+            token: (instance as any).token,
+            apiUrl: (instance as any).apiUrl || 'https://api.green-api.com',
+          });
 
-          // BUG-3 FIX: Also detect implicit escalation replies (no quote but reply-intent phrases)
-          const replyIntentPhrases = ['قول له', 'قوله', 'جاوبه', 'ابلغه', 'أبلغه', 'بلغه', 'وصله', 'وصل له', 'رد عليه', 'ردي عليه', 'طمنه'];
-          const hasReplyIntent = !isReplyToAlert && replyIntentPhrases.some(p => incomingText.includes(p));
-
-          // Priority 4 (NEW): Auto-detect — chain member sent ANY message while escalation is active
-          // This catches the common case: merchant reads alert, types plain answer without quoting
-          let hasActiveEscalation = false;
-          if (!isReplyToAlert && !hasReplyIntent) {
-            try {
-              const { getActiveEscalationForMerchant } = await import('../db/learning');
-              const activeEsc = await getActiveEscalationForMerchant(instance.merchantId);
-              if (activeEsc) {
-                hasActiveEscalation = true;
-                console.log(`[Escalation] 🎯 Chain member has active escalation #${activeEsc.id} — treating as reply`);
-              }
-            } catch { /* non-blocking */ }
-          }
-          
-          if (isReplyToAlert || hasReplyIntent || hasActiveEscalation) {
-            const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
-
-            // For implicit replies, extract the actual answer (after the intent phrase)
-            let replyText = incomingText;
-            if (hasReplyIntent) {
-              for (const phrase of replyIntentPhrases) {
-                if (incomingText.includes(phrase)) {
-                  const afterPhrase = incomingText.substring(incomingText.indexOf(phrase) + phrase.length).trim();
-                  if (afterPhrase.length > 2) {
-                    replyText = afterPhrase;
-                  }
-                  break;
-                }
-              }
-            }
-
-            const result = await handleMerchantEscalationReply({
-              merchantId: instance.merchantId,
-              merchantPhone: customerPhone,
-              replyText,
-            });
-
-            if (result.handled) {
-              const customerSlice = result.escalation?.customerPhone?.slice(-4) || '****';
-              console.log(`[Escalation] ✅ Chain member reply routed to customer ***${customerSlice}${hasReplyIntent ? ' (implicit)' : hasActiveEscalation ? ' (auto-detected)' : ''}`);
-              
-              // ── UX: Confirm to merchant that their reply was delivered ──
-              try {
-                const { notifyNewMessage } = await import('../_core/notificationService');
-                await notifyNewMessage(
-                  instance.merchantId,
-                  'ساري ✅',
-                  `تم إيصال ردك للعميل ***${customerSlice} بنجاح! ساري سيتابع المحادثة من هنا 🤝`
-                );
-              } catch { /* non-blocking */ }
-              
-              return { success: true, message: 'Escalation reply handled' };
-            }
-          }
-          // No explicit escalation reply AND no active escalation — continue normal customer flow
-          // (merchant is treated as a regular customer)
+          console.log(`[MerchantMode] ✅ Handled: ${merchantResult.action}`);
+          return { success: true, message: `Merchant mode: ${merchantResult.action}` };
         }
       }
     } catch (escErr) {
-      console.warn('[Webhook] Chain member reply check failed:', escErr);
+      console.warn('[Webhook] Merchant mode check failed:', escErr);
     }
 
     // SEC-FIX: Verify merchant has active subscription before processing
