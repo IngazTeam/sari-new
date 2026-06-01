@@ -9752,13 +9752,22 @@ export async function getMerchantSubscriptionStats() {
 }
 
 export async function checkMerchantSubscriptionStatus(merchantId: number): Promise<boolean> {
+  // Check merchant_subscriptions first
   const subscription = await getMerchantCurrentSubscription(merchantId);
-  if (!subscription) return false;
+  if (subscription) {
+    const now = new Date();
+    const endDate = new Date(subscription.endDate);
+    if (now <= endDate) return true;
+  }
 
-  const now = new Date();
-  const endDate = new Date(subscription.endDate);
+  // FIX: Fallback — check merchants.subscriptionStatus (admin manual override)
+  // Admin can set subscriptionStatus='active' directly without creating a subscription record
+  const merchant = await getMerchantById(merchantId);
+  if (merchant?.subscriptionStatus === 'active') {
+    return true;
+  }
 
-  return now <= endDate;
+  return false;
 }
 
 export async function getMerchantDaysRemaining(merchantId: number): Promise<number> {

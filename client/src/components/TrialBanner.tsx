@@ -9,6 +9,7 @@ export function TrialBanner() {
   const { data: trialStatus } = trpc.trial.getStatus.useQuery();
   const { data: expiryData } = trpc.trial.checkExpiry.useQuery();
   const { data: subscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
+  const { data: merchantProfile } = trpc.merchants.getCurrent.useQuery();
   const [timeLeft, setTimeLeft] = useState<string>('');
 
   useEffect(() => {
@@ -46,6 +47,13 @@ export function TrialBanner() {
 
   // If user has an active paid subscription, don't show any banner
   if (subscription?.status === 'active') {
+    return null;
+  }
+
+  // FIX: Also check merchant.subscriptionStatus (set by admin manually)
+  // This covers the case where admin activates subscription directly on the merchants table
+  // but the merchant_subscriptions record has expired/doesn't exist
+  if (merchantProfile?.subscriptionStatus === 'active') {
     return null;
   }
 

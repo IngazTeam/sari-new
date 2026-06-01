@@ -292,6 +292,27 @@ export const merchantSubscriptionRouter = router({
     }
 
     const subscription = await getMerchantCurrentSubscription(merchant.id);
+    
+    // FIX: Admin override — if merchant.subscriptionStatus is 'active' but no subscription record,
+    // synthesize a virtual subscription to prevent "trial expired" banners
+    if (!subscription && merchant.subscriptionStatus === 'active') {
+      return {
+        id: 0,
+        merchantId: merchant.id,
+        planId: null,
+        status: 'active' as const,
+        billingCycle: 'monthly' as const,
+        startDate: merchant.createdAt,
+        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        autoRenew: 0,
+        trialEndsAt: null,
+        createdAt: merchant.createdAt,
+        plan: null,
+        daysRemaining: 365,
+        _adminOverride: true,
+      };
+    }
+
     if (!subscription) {
       return null;
     }
