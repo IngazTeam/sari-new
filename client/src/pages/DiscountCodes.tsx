@@ -23,6 +23,16 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,14 +40,81 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Ticket, Plus, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
+import { Ticket, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Percent, DollarSign, Gift, Calendar, Star, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
+
+// ═══════════════════════════════════════════════════════════════
+// Discount Templates — Pre-built discount presets
+// ═══════════════════════════════════════════════════════════════
+const DISCOUNT_TEMPLATES = [
+  {
+    id: 'percentage_10',
+    icon: Percent,
+    label: 'خصم 10%',
+    description: 'خصم نسبة مئوية على الطلب',
+    gradient: 'from-blue-500/20 to-cyan-500/20',
+    iconColor: 'text-blue-400',
+    preset: { code: 'SAVE10', type: 'percentage' as const, value: '10', minOrderAmount: '100', maxUses: '100', expiresAt: '' },
+  },
+  {
+    id: 'percentage_25',
+    icon: Sparkles,
+    label: 'خصم 25%',
+    description: 'خصم كبير للعروض الخاصة',
+    gradient: 'from-violet-500/20 to-purple-500/20',
+    iconColor: 'text-violet-400',
+    preset: { code: 'MEGA25', type: 'percentage' as const, value: '25', minOrderAmount: '200', maxUses: '50', expiresAt: '' },
+  },
+  {
+    id: 'fixed_50',
+    icon: DollarSign,
+    label: 'خصم 50 ريال',
+    description: 'خصم مبلغ ثابت من الطلب',
+    gradient: 'from-emerald-500/20 to-green-500/20',
+    iconColor: 'text-emerald-400',
+    preset: { code: 'FLAT50', type: 'fixed' as const, value: '50', minOrderAmount: '200', maxUses: '100', expiresAt: '' },
+  },
+  {
+    id: 'welcome',
+    icon: Gift,
+    label: 'عرض ترحيبي',
+    description: 'خصم للعملاء الجدد',
+    gradient: 'from-amber-500/20 to-orange-500/20',
+    iconColor: 'text-amber-400',
+    preset: { code: 'WELCOME', type: 'percentage' as const, value: '15', minOrderAmount: '50', maxUses: '', expiresAt: '' },
+  },
+  {
+    id: 'seasonal',
+    icon: Calendar,
+    label: 'عرض موسمي',
+    description: 'خصم محدود المدة للمواسم',
+    gradient: 'from-rose-500/20 to-pink-500/20',
+    iconColor: 'text-rose-400',
+    preset: { code: 'SEASON30', type: 'percentage' as const, value: '30', minOrderAmount: '150', maxUses: '200', expiresAt: getDateAfterDays(30) },
+  },
+  {
+    id: 'flash',
+    icon: Zap,
+    label: 'فلاش سيل',
+    description: 'خصم سريع لمدة قصيرة',
+    gradient: 'from-yellow-500/20 to-amber-500/20',
+    iconColor: 'text-yellow-400',
+    preset: { code: 'FLASH40', type: 'percentage' as const, value: '40', minOrderAmount: '100', maxUses: '30', expiresAt: getDateAfterDays(3) },
+  },
+];
+
+function getDateAfterDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function DiscountCodes() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [newCode, setNewCode] = useState({
     code: "",
     type: "percentage" as "percentage" | "fixed",
@@ -87,6 +164,7 @@ export default function DiscountCodes() {
     onSuccess: () => {
       toast.success("t('toast.discounts.msg5')}");
       refetch();
+      setDeleteTarget(null);
     },
     onError: (error: any) => {
       toast.error(error.message || "فشل حذف كود الخصم");
@@ -117,10 +195,15 @@ export default function DiscountCodes() {
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("هل أنت متأكد من حذف هذا الكود؟")) {
-      deleteMutation.mutate({ id });
+  const handleDelete = () => {
+    if (deleteTarget !== null) {
+      deleteMutation.mutate({ id: deleteTarget });
     }
+  };
+
+  const applyTemplate = (preset: typeof DISCOUNT_TEMPLATES[0]['preset']) => {
+    setNewCode({ ...preset });
+    setIsCreateDialogOpen(true);
   };
 
   const formatDate = (date: Date | null) => {
@@ -272,6 +355,41 @@ export default function DiscountCodes() {
         </Card>
       </div>
 
+      {/* ═══════════ Discount Templates Section ═══════════ */}
+      <Card className="bg-card/60 backdrop-blur-sm border-white/10">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-600/20">
+              <Sparkles className="h-5 w-5 text-violet-400" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">قوالب سريعة</CardTitle>
+              <CardDescription>اختر قالب جاهز وعدّل عليه بسهولة</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {DISCOUNT_TEMPLATES.map((tmpl) => {
+              const Icon = tmpl.icon;
+              return (
+                <button
+                  key={tmpl.id}
+                  onClick={() => applyTemplate(tmpl.preset)}
+                  className={`group relative p-4 rounded-xl border border-white/10 bg-gradient-to-br ${tmpl.gradient} hover:border-white/20 hover:scale-[1.02] transition-all duration-200 text-center cursor-pointer`}
+                >
+                  <div className={`mx-auto mb-2 p-2 rounded-lg bg-background/30 w-fit`}>
+                    <Icon className={`h-5 w-5 ${tmpl.iconColor}`} />
+                  </div>
+                  <p className="text-sm font-semibold text-white">{tmpl.label}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{tmpl.description}</p>
+                </button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Discount Codes Table */}
       <Card>
         <CardHeader>
@@ -315,7 +433,7 @@ export default function DiscountCodes() {
                     <TableCell>
                       {code.usedCount} / {code.maxUses || "∞"}
                     </TableCell>
-                    // @ts-ignore
+                    {/* @ts-ignore */}
                     <TableCell>{formatDate(code.expiresAt)}</TableCell>
                     <TableCell>
                       {code.isActive ? (
@@ -341,7 +459,7 @@ export default function DiscountCodes() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(code.id)}
+                          onClick={() => setDeleteTarget(code.id)}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
@@ -354,6 +472,27 @@ export default function DiscountCodes() {
           )}
         </CardContent>
       </Card>
+
+      {/* ═══════════ Delete Confirmation AlertDialog ═══════════ */}
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>هل أنت متأكد من حذف هذا الكود؟</AlertDialogTitle>
+            <AlertDialogDescription>
+              سيتم حذف كود الخصم نهائياً ولن تتمكن من استعادته. هل تريد المتابعة؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteMutation.isPending ? "جاري الحذف..." : "حذف الكود"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
