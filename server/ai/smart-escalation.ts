@@ -207,15 +207,44 @@ export async function handleSmartEscalation(params: {
       return HOLD_RESPONSES_BUSINESS_HOURS[0];
     }
 
-    // 2. Alert first contact in the chain (fire-and-forget)
-    notifyEscalationContact({
-      merchantId: params.merchantId,
-      escalationId,
-      customerPhone: params.customerPhone,
-      customerName: params.customerName || 'عميل',
-      question: params.customerQuestion,
-      level: 0, // First contact
-    }).catch(err => console.warn('[Escalation] Merchant notification failed:', err.message));
+    // 2. Alert first contact in the chain (F3+F6: awaited with retry, not fire-and-forget)
+    try {
+      await notifyEscalationContact({
+        merchantId: params.merchantId,
+        escalationId,
+        customerPhone: params.customerPhone,
+        customerName: params.customerName || 'عميل',
+        question: params.customerQuestion,
+        level: 0, // First contact
+      });
+      console.log(`[Escalation] ✅ Merchant notified for escalation #${escalationId}`);
+    } catch (notifyErr: any) {
+      console.error(`[Escalation] ⚠️ First notification attempt failed: ${notifyErr.message} — retrying once...`);
+      // Retry once after 2 seconds
+      try {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await notifyEscalationContact({
+          merchantId: params.merchantId,
+          escalationId,
+          customerPhone: params.customerPhone,
+          customerName: params.customerName || 'عميل',
+          question: params.customerQuestion,
+          level: 0,
+        });
+        console.log(`[Escalation] ✅ Retry succeeded for escalation #${escalationId}`);
+      } catch (retryErr: any) {
+        console.error(`[Escalation] 🔴 BOTH notification attempts failed for escalation #${escalationId}: ${retryErr.message}`);
+        // Final fallback: in-app notification only
+        await sendNotification({
+          merchantId: params.merchantId,
+          type: 'new_message',
+          title: '🔴 تصعيد لم يصل عبر الواتساب',
+          body: `العميل ${params.customerName || ''} يسأل: "${params.customerQuestion.substring(0, 100)}" — تعذر إرسال التنبيه عبر الواتساب`,
+          url: '/merchant/conversations',
+          metadata: { escalationId, failureReason: retryErr.message },
+        }).catch(() => {});
+      }
+    }
 
     // 3. Capture learning signal
     captureSignal({
@@ -480,19 +509,74 @@ export async function handleMerchantEscalationReply(params: {
 }
 
 /**
- * Check if a phone number belongs to a merchant's escalation chain.
- * Used by the webhook to detect if an incoming message is an escalation reply.
+ * Normalize phone number to consistent format for comparison.
+ * Handles: +966, 00966, 966, 05, 5, and with/without spaces/dashes.
+ */
+function normalizePhone(p: string): string {
+  let n = p.replace(/[\s+\-()]/g, '');
+  // Remove leading 00 (international prefix)
+  if (n.startsWith('00')) n = n.slice(2);
+  // Convert Saudi local 05→966
+  if (/^05\d{8}$/.test(n)) n = '966' + n.slice(1);
+  // Convert 5xxxxxxxx (without 0) to 966
+  if (/^5\d{8}$/.test(n)) n = '966' + n;
+  return n;
+}
+
+/**
+ * Check if a phone number belongs to a merchant's escalation chain OR
+ * to the merchant's primary/emergency phone OR to the store owner's phone.
+ * 
+ * F4 FIX: Previously only checked escalation chain → merchant was treated as customer
+ * if their phone wasn't in the chain. Now checks ALL merchant-related phones.
  */
 export async function isPhoneInEscalationChain(merchantId: number, phone: string): Promise<boolean> {
+  const normalizedPhone = normalizePhone(phone);
+  
+  // 1. Check escalation chain (explicit contacts)
   const chain = await getEscalationChain(merchantId);
-  // Normalize: strip symbols + convert Saudi local 05→966
-  const normalize = (p: string) => {
-    let n = p.replace(/[\s+\-()]/g, '');
-    if (/^05\d{8}$/.test(n)) n = '966' + n.slice(1);
-    return n;
-  };
-  const normalizedPhone = normalize(phone);
-  return chain.some(c => normalize(c.phone) === normalizedPhone);
+  if (chain.some(c => normalizePhone(c.phone) === normalizedPhone)) {
+    return true;
+  }
+
+  // 2. Check merchant's primary phone and emergency phone
+  try {
+    const merchant = await getMerchantById(merchantId).catch(() => null);
+    if (merchant) {
+      const merchantPhones = [
+        (merchant as any).phone,
+        (merchant as any).emergencyPhone,
+      ].filter(Boolean);
+      
+      if (merchantPhones.some(p => normalizePhone(p) === normalizedPhone)) {
+        console.log(`[MerchantDetect] ✅ Phone ***${phone.slice(-4)} matches merchant primary/emergency phone`);
+        return true;
+      }
+
+      // 3. Check the store owner's user phone (from users table via userId)
+      const ownerId = (merchant as any).userId;
+      if (ownerId) {
+        try {
+          const { getPool } = await import('../db');
+          const pool = await getPool();
+          if (pool) {
+            const [rows] = await pool.execute(
+              'SELECT phone FROM users WHERE id = ? LIMIT 1',
+              [ownerId]
+            ) as any;
+            if (rows?.[0]?.phone && normalizePhone(rows[0].phone) === normalizedPhone) {
+              console.log(`[MerchantDetect] ✅ Phone ***${phone.slice(-4)} matches owner user phone`);
+              return true;
+            }
+          }
+        } catch { /* non-blocking */ }
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[MerchantDetect] Failed to check merchant phones for ${merchantId}:`, err.message);
+  }
+
+  return false;
 }
 
 /**

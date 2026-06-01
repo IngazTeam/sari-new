@@ -547,15 +547,43 @@ export function sanitizeIdentity(response: string, merchantName?: string, agentN
   const replaceName = agentName || merchantName || '';
   let sanitized = response;
   
-  // Replace identity-revealing phrases
-  // Note: we specifically target self-identification patterns, not general mentions
-  // (e.g. "تنبيه من ساري" in merchant-facing coaching is OK)
+  // ── Phase 1: Specific Arabic self-identification patterns ──
+  // (ordered from most specific to least to avoid double-replacement)
+  sanitized = sanitized.replace(/مساعدك ساري/g, replaceName ? `مساعدك ${replaceName}` : 'مساعدك هنا');
+  sanitized = sanitized.replace(/مساعدتك ساري/g, replaceName ? `مساعدتك ${replaceName}` : 'هنا لمساعدتك');
+  sanitized = sanitized.replace(/هذا ساري/g, replaceName ? `هذا ${replaceName}` : 'أهلاً');
+  sanitized = sanitized.replace(/هذي ساري/g, replaceName ? `هذي ${replaceName}` : 'أهلاً');
   sanitized = sanitized.replace(/أنا ساري/g, replaceName ? `أنا ${replaceName}` : 'أنا هنا');
   sanitized = sanitized.replace(/اسمي ساري/g, replaceName ? `اسمي ${replaceName}` : 'أنا من الفريق');
   sanitized = sanitized.replace(/ساري هنا/g, replaceName ? `${replaceName} هنا` : 'فريقنا هنا');
   sanitized = sanitized.replace(/معك ساري/g, replaceName ? `معك ${replaceName}` : 'معك أحد الفريق');
+  sanitized = sanitized.replace(/معاك ساري/g, replaceName ? `معاك ${replaceName}` : 'معاك أحد الفريق');
+  sanitized = sanitized.replace(/ساري يساعدك/g, replaceName ? `${replaceName} يساعدك` : 'فريقنا يساعدك');
+  sanitized = sanitized.replace(/ساري في خدمتك/g, replaceName ? `${replaceName} في خدمتك` : 'فريقنا في خدمتك');
+  sanitized = sanitized.replace(/ساري معك/g, replaceName ? `${replaceName} معك` : 'أحد الفريق معك');
+  sanitized = sanitized.replace(/ساري معاك/g, replaceName ? `${replaceName} معاك` : 'أحد الفريق معاك');
+  sanitized = sanitized.replace(/يا ساري/g, '');
+  sanitized = sanitized.replace(/من ساري/g, replaceName ? `من ${replaceName}` : 'من الفريق');
+  sanitized = sanitized.replace(/عبر ساري/g, replaceName ? `عبر ${replaceName}` : '');
+
+  // ── Phase 2: English patterns ──
   sanitized = sanitized.replace(/I'?m Sari/gi, replaceName ? `I'm ${replaceName}` : "I'm here to help");
+  sanitized = sanitized.replace(/my name is Sari/gi, replaceName ? `my name is ${replaceName}` : "I'm here to help");
+  sanitized = sanitized.replace(/this is Sari/gi, replaceName ? `this is ${replaceName}` : 'hello');
   sanitized = sanitized.replace(/Sari here/gi, replaceName ? `${replaceName} here` : 'we are here');
+  sanitized = sanitized.replace(/Sari at your service/gi, replaceName ? `${replaceName} at your service` : 'at your service');
+
+  // ── Phase 3: NUCLEAR SWEEP — catch ANY remaining standalone "ساري" ──
+  // This catches patterns we didn't anticipate above.
+  // Uses word boundary: only standalone "ساري" not part of a longer word.
+  // Exception: "ساري المفعول" (valid Arabic) is preserved.
+  sanitized = sanitized.replace(/(?<!ساري )ساري(?! المفعول)/g, (match) => {
+    // Already replaced in Phase 1/2? This is a leftover.
+    return replaceName || 'فريقنا';
+  });
+
+  // ── Phase 4: Catch standalone "Sari" in English (case-insensitive) ──
+  sanitized = sanitized.replace(/\bSari\b/gi, replaceName || 'our team');
   
   return sanitized;
 }

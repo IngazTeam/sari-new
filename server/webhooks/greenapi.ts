@@ -901,7 +901,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         if (isChainMember) {
           // ═══ MERCHANT MODE: Chain members NEVER enter customer flow ═══
           // Route ALL messages from escalation chain to merchant handler
-          console.log(`[MerchantMode] 🏪 Chain member detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId})`);
+          console.log(`[Classify] 🏪 MERCHANT detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId})`);
 
           // Priority 1: #علم_ساري command (check with .includes to work with quoted reply prefix)
           if (incomingText.includes('#علم')) {
@@ -949,6 +949,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
           console.log(`[MerchantMode] ✅ Handled: ${merchantResult.action}`);
           return { success: true, message: `Merchant mode: ${merchantResult.action}` };
+        } else {
+          // F5 AUDIT: Explicitly log that this phone was classified as CUSTOMER
+          console.log(`[Classify] 👤 CUSTOMER detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId}) — entering customer flow`);
         }
       }
     } catch (escErr) {

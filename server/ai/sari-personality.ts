@@ -748,6 +748,20 @@ async function buildEnhancedContextPrompt(context: {
     }
   }
 
+  // === F2 FIX: Knowledge failure safety net ===
+  // If we reach here with no knowledge injected at all, log it and add defensive prompt
+  const hasAnyKnowledge = contextPrompt.includes('معلومات عن النشاط التجاري')
+    || contextPrompt.includes('ملف التعريف')
+    || contextPrompt.includes('محتوى الموقع')
+    || contextPrompt.includes('محتوى صفحات')
+    || contextPrompt.includes('مصنفة بالذكاء الاصطناعي')
+    || contextPrompt.includes('إرشادات البيع');
+  
+  if (!hasAnyKnowledge && context.merchantId) {
+    console.error(`[chatWithSari] ⚠️ KNOWLEDGE FAILURE: merchant ${context.merchantId} — NO knowledge sources loaded! RAG=${usingRAG}`);
+    contextPrompt += `\n## ⚠️ تحذير داخلي:\nلا تتوفر لديك حالياً معلومات تفصيلية عن هذا النشاط التجاري. لا تخترع أو تتخيل معلومات. إذا سألك العميل عن تفاصيل لا تعرفها (أسعار، خدمات، مواقع)، اعتذر بلطف واطلب منه الانتظار لحظات حتى تتحقق.\n`;
+  }
+
   // === Inject merchant profile data (phone, email, address, etc.) ===
   // Cache merchant lookup to avoid duplicate DB calls
   let cachedMerchant: any = null;
