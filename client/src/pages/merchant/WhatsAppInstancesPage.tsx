@@ -263,7 +263,7 @@ export default function WhatsAppInstancesPage() {
       {usage && (
         <Card className="border-primary/20">
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
               <div className="flex items-center gap-2">
                 <Shield className="w-5 h-5 text-primary" />
                 <span className="font-semibold">{t('whatsappManagement.planUsage', 'استخدام الباقة')}</span>
@@ -341,13 +341,13 @@ export default function WhatsAppInstancesPage() {
           <CardContent>
             <div className="space-y-3">
               {activeInstances.map((instance: any) => (
-                <div key={instance.id} className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${instance.isPrimary ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent/50'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${instance.isPrimary ? 'bg-primary/10' : 'bg-green-100'}`}>
+                <div key={instance.id} className={`flex flex-col gap-3 p-4 rounded-lg border transition-colors ${instance.isPrimary ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent/50'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${instance.isPrimary ? 'bg-primary/10' : 'bg-green-100'}`}>
                       <Phone className={`w-5 h-5 ${instance.isPrimary ? 'text-primary' : 'text-green-600'}`} />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold" dir="ltr">{instance.phoneNumber || t('whatsappManagement.noPhone', 'رقم غير محدد')}</span>
                         {instance.isPrimary && (
                           <Badge className="bg-primary/10 text-primary border-primary/20 gap-1 text-xs">
@@ -362,7 +362,7 @@ export default function WhatsAppInstancesPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -424,13 +424,13 @@ export default function WhatsAppInstancesPage() {
           <CardContent>
             <div className="space-y-3">
               {inactiveInstances.map((instance: any) => (
-                <div key={instance.id} className="flex items-center justify-between p-4 rounded-lg border border-dashed border-gray-300 bg-gray-50/50 dark:bg-gray-900/50">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
+                <div key={instance.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg border border-dashed border-gray-300 bg-gray-50/50 dark:bg-gray-900/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 shrink-0 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
                       <Phone className="w-5 h-5 text-gray-400" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-muted-foreground" dir="ltr">{instance.phoneNumber || t('whatsappManagement.noPhone', 'رقم غير محدد')}</span>
                         <Badge variant="secondary" className="text-xs">{t('whatsappManagement.status.inactive', 'متوقف')}</Badge>
                       </div>
@@ -441,7 +441,7 @@ export default function WhatsAppInstancesPage() {
                     size="sm"
                     onClick={() => setConfirmAction({ type: 'activate', instanceId: instance.id, phoneNumber: instance.phoneNumber })}
                     disabled={!canAddMore}
-                    className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50 w-full sm:w-auto"
                   >
                     <Power className="w-4 h-4" />
                     {t('whatsappManagement.activate', 'تفعيل')}
@@ -518,9 +518,9 @@ export default function WhatsAppInstancesPage() {
           <CardContent>
             <div className="space-y-3">
               {requests.map((request: any) => (
-                <div key={request.id} className={`flex items-center justify-between p-4 rounded-lg border ${request.status === 'approved' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' : ''}`}>
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                <div key={request.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg border ${request.status === 'approved' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/20' : ''}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center ${
                       request.status === 'pending' ? 'bg-orange-100' :
                       request.status === 'approved' ? 'bg-blue-100' :
                       request.status === 'completed' ? 'bg-green-100' :
@@ -531,8 +531,8 @@ export default function WhatsAppInstancesPage() {
                        request.status === 'completed' ? <CheckCircle2 className="w-5 h-5 text-green-600" /> :
                        <XCircle className="w-5 h-5 text-red-600" />}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium" dir="ltr">{request.phoneNumber || t('whatsappManagement.newNumberRequest', 'طلب رقم جديد')}</span>
                         {getRequestStatusBadge(request.status)}
                       </div>
@@ -551,7 +551,7 @@ export default function WhatsAppInstancesPage() {
                   {request.status === 'approved' && (
                     <Button
                       onClick={() => handleConnectWhatsApp(request.id)}
-                      className="bg-green-600 hover:bg-green-700 gap-2 shrink-0"
+                      className="bg-green-600 hover:bg-green-700 gap-2 shrink-0 w-full sm:w-auto"
                     >
                       <QrCode className="w-4 h-4" />
                       {t('whatsappManagement.connectWhatsApp', 'ربط الواتساب')}
