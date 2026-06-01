@@ -268,7 +268,7 @@ async function migrateByaanStockDefaults(merchantId: number) {
         // Fix: products with stock=0 AND trackInventory=1 (default values from schema)
         // These are Byaan courses that never had stock tracking — set to unlimited
         const [result] = await pool.execute(
-            `UPDATE products SET track_inventory = 0, stock = NULL WHERE stock = 0 AND track_inventory = 1 AND merchant_id = ?`,
+            `UPDATE products SET track_inventory = 0, stock = NULL WHERE stock = 0 AND track_inventory = 1 AND merchantId = ?`,
             [merchantId]
         );
         const affected = (result as any)?.affectedRows || 0;
@@ -280,7 +280,7 @@ async function migrateByaanStockDefaults(merchantId: number) {
         const [dupes] = await pool.execute(
             `DELETE p1 FROM products p1
              INNER JOIN products p2
-             WHERE p1.merchant_id = ? AND p2.merchant_id = ?
+             WHERE p1.merchantId = ? AND p2.merchantId = ?
                AND p1.name = p2.name
                AND p1.id < p2.id`,
             [merchantId, merchantId]

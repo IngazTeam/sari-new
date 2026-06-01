@@ -82,9 +82,9 @@ async function runSupervisorCheck(): Promise<void> {
     const [rows] = await pool.execute(`
       SELECT 
         c.id as conversationId,
-        c.merchant_id as merchantId,
-        c.customer_phone as customerPhone,
-        c.customer_name as customerName,
+        c.merchantId as merchantId,
+        c.customerPhone as customerPhone,
+        c.customerName as customerName,
         c.supervisor_intervened_at,
         (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as messageCount,
         (SELECT content FROM messages WHERE conversation_id = c.id AND direction = 'incoming' ORDER BY created_at DESC LIMIT 1) as lastCustomerMessage,
@@ -105,7 +105,7 @@ async function runSupervisorCheck(): Promise<void> {
             AND m2.direction = 'incoming'
             AND m2.created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
         )
-      ORDER BY c.updated_at DESC
+      ORDER BY c.updatedAt DESC
       LIMIT ?
     `, [MAX_PER_CYCLE]);
 

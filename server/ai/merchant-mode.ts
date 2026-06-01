@@ -298,17 +298,17 @@ async function sendMerchantReport(params: {
     const todayStr = todayStart.toISOString().slice(0, 19).replace('T', ' ');
     
     const [convRows] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM conversations WHERE merchant_id = ? AND updated_at >= ?`,
+      `SELECT COUNT(*) as cnt FROM conversations WHERE merchantId = ? AND updatedAt >= ?`,
       [params.merchantId, todayStr]
     ) as any;
     
     const [msgRows] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM messages m JOIN conversations c ON m.conversation_id = c.id WHERE c.merchant_id = ? AND m.created_at >= ?`,
+      `SELECT COUNT(*) as cnt FROM messages m JOIN conversations c ON m.conversation_id = c.id WHERE c.merchantId = ? AND m.created_at >= ?`,
       [params.merchantId, todayStr]
     ) as any;
 
     const [orderRows] = await pool.execute(
-      `SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as total FROM orders WHERE merchant_id = ? AND created_at >= ?`,
+      `SELECT COUNT(*) as cnt, COALESCE(SUM(totalAmount), 0) as total FROM orders WHERE merchantId = ? AND createdAt >= ?`,
       [params.merchantId, todayStr]
     ) as any;
 
