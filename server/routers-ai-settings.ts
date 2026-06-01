@@ -134,6 +134,14 @@ export const aiSettingsRouter = router({
     return await checkOpenAiHealth();
   }),
 
+  // Send test daily report email
+  sendTestReport: protectedProcedure.mutation(async ({ ctx }) => {
+    assertAdmin(ctx.user.role);
+    const { sendDailyAiReport } = await import("./cron/ai-daily-report");
+    await sendDailyAiReport();
+    return { success: true };
+  }),
+
   // Get usage statistics
   getUsageStats: protectedProcedure
     .input(z.object({

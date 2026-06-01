@@ -79,6 +79,13 @@ export default function AISettings() {
     onError: (err) => toast.error(err.message),
   });
 
+  const testReportMutation = trpc.aiSettings.sendTestReport.useMutation({
+    onSuccess: () => {
+      toast.success("📧 تم إرسال التقرير التجريبي بنجاح");
+    },
+    onError: (err) => toast.error(`فشل الإرسال: ${err.message}`),
+  });
+
   const handleSaveSettings = () => {
     const data: Record<string, any> = { model: selectedModel };
     if (apiKey.trim()) data.openaiApiKey = apiKey.trim();
@@ -90,12 +97,15 @@ export default function AISettings() {
     updateMutation.mutate(data);
   };
 
-  const formatCost = (cost: string | number) => {
-    const num = typeof cost === "string" ? parseFloat(cost) : cost;
+  const formatCost = (cost: any) => {
+    const num = Number(cost) || 0;
     return `$${num.toFixed(4)}`;
   };
 
-  const formatNumber = (n: number) => n?.toLocaleString("ar-SA") || "0";
+  const formatNumber = (n: any) => {
+    const num = Number(n) || 0;
+    return num.toLocaleString("ar-SA");
+  };
 
   // Chart: simple bar visualization
   const maxTokens = dailyUsage ? Math.max(...dailyUsage.map((d: any) => d.tokens || 0), 1) : 1;
@@ -298,6 +308,22 @@ export default function AISettings() {
               <p className="text-[11px] text-muted-foreground">
                 يستقبل تنبيهات فشل الاتصال وتقرير الاستهلاك اليومي الساعة 8 صباحاً
               </p>
+              {alertEmail && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => testReportMutation.mutate()}
+                  disabled={testReportMutation.isPending}
+                  className="mt-1 text-xs h-7"
+                >
+                  {testReportMutation.isPending ? (
+                    <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                  ) : (
+                    <Mail className="h-3 w-3 ml-1" />
+                  )}
+                  إرسال تقرير تجريبي
+                </Button>
+              )}
             </div>
 
             {/* Actions */}
