@@ -68,6 +68,7 @@ export type ValidationRule =
   | 'self_repetition'         // Bot repeated itself from previous message
   | 'contact_leak'            // Bot shared phone/email (Rule #6)
   | 'empty_response'          // Bot gave a non-answer ("أنا هنا لمساعدتك")
+  | 'identity_leak'           // Bot mentioned "ساري"/"Sari" instead of merchant name
   | 'too_long';               // Response exceeds reasonable WhatsApp length
 
 // ═══════════════════════════════════════════════════════════════
@@ -159,6 +160,17 @@ function fastPreCheck(
         description: 'الرد مكرر — نفس رد الرسالة السابقة تقريباً',
       });
     }
+  }
+
+  // 7. Identity leak — bot mentioned "ساري" or "Sari" as its own name
+  // (Critical: merchant's customers must never see the platform name)
+  const identityLeakPattern = /\b(أنا ساري|اسمي ساري|ساري هنا|أنا\s+ساري|Sari\s+here|I'?m\s+Sari)\b/i;
+  if (identityLeakPattern.test(resp)) {
+    violations.push({
+      rule: 'identity_leak',
+      severity: 'critical',
+      description: 'الرد يذكر اسم "ساري" — يجب استخدام اسم النشاط التجاري أو اسم الموظف فقط',
+    });
   }
 
   return violations;
@@ -515,4 +527,35 @@ export function recordValidation(result: ValidationResult): void {
  */
 export function getValidationStats(): typeof _stats {
   return { ..._stats };
+}
+
+/**
+ * IRON WALL: Final response sanitizer — strips any "ساري"/"Sari" identity leak
+ * from the response before it reaches the customer.
+ * 
+ * This is the LAST defense layer. Even if GPT ignores prompt instructions,
+ * this function physically removes the platform name from the output.
+ * 
+ * @param response - The final response text
+ * @param merchantName - Business name to replace "ساري" with (if applicable)
+ * @param agentName - Virtual agent name (if active)
+ * @returns Sanitized response
+ */
+export function sanitizeIdentity(response: string, merchantName?: string, agentName?: string): string {
+  if (!response) return response;
+  
+  const replaceName = agentName || merchantName || '';
+  let sanitized = response;
+  
+  // Replace identity-revealing phrases
+  // Note: we specifically target self-identification patterns, not general mentions
+  // (e.g. "تنبيه من ساري" in merchant-facing coaching is OK)
+  sanitized = sanitized.replace(/أنا ساري/g, replaceName ? `أنا ${replaceName}` : 'أنا هنا');
+  sanitized = sanitized.replace(/اسمي ساري/g, replaceName ? `اسمي ${replaceName}` : 'أنا من الفريق');
+  sanitized = sanitized.replace(/ساري هنا/g, replaceName ? `${replaceName} هنا` : 'فريقنا هنا');
+  sanitized = sanitized.replace(/معك ساري/g, replaceName ? `معك ${replaceName}` : 'معك أحد الفريق');
+  sanitized = sanitized.replace(/I'?m Sari/gi, replaceName ? `I'm ${replaceName}` : "I'm here to help");
+  sanitized = sanitized.replace(/Sari here/gi, replaceName ? `${replaceName} here` : 'we are here');
+  
+  return sanitized;
 }

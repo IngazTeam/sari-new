@@ -77,13 +77,20 @@ const _pendingReplies = new Map<number, {
   expiresAt: number;
 }>();
 
-// Cleanup expired pending replies every 10 minutes
+// Post-confirmation cooldown — prevents loop when merchant sends "موافق" and it gets re-processed
+const _confirmationCooldown = new Map<number, number>();
+
+// Cleanup expired pending replies and cooldowns every 10 minutes
 setInterval(() => {
   const now = Date.now();
   const entries = Array.from(_pendingReplies.entries());
   for (let i = 0; i < entries.length; i++) {
     const [key, val] = entries[i];
     if (now > val.expiresAt) _pendingReplies.delete(key);
+  }
+  // Cleanup expired cooldowns
+  for (const [key, ts] of Array.from(_confirmationCooldown.entries())) {
+    if (now - ts > 30_000) _confirmationCooldown.delete(key);
   }
 }, 10 * 60 * 1000);
 
@@ -122,6 +129,7 @@ async function coachEscalationReply(params: {
           await resolveEscalation({ merchantId: params.merchantId, customerPhone: '', merchantAnswer: pending.suggestedReply });
         }
       } catch { /* non-blocking */ }
+      _confirmationCooldown.set(params.merchantId, Date.now());
       return { action: 'escalation_coached_reply_sent' };
     }
     
@@ -145,6 +153,7 @@ async function coachEscalationReply(params: {
           await resolveEscalation({ merchantId: params.merchantId, customerPhone: '', merchantAnswer: pending.originalReply });
         }
       } catch { /* non-blocking */ }
+      _confirmationCooldown.set(params.merchantId, Date.now());
       return { action: 'escalation_original_reply_sent' };
     }
     
@@ -400,6 +409,17 @@ export async function handleMerchantChat(params: {
   apiUrl: string;
 }): Promise<{ action: string }> {
   console.log(`[MerchantMode] 🏪 Processing merchant message: "${params.message.substring(0, 50)}..."`);
+
+  // ANTI-LOOP: Check if merchant just confirmed a coached reply — skip re-processing
+  const cooldownTs = _confirmationCooldown.get(params.merchantId);
+  if (cooldownTs && Date.now() - cooldownTs < 30_000) {
+    const msg = params.message.trim();
+    // If same confirmation word arrives again within 30s, ignore it (double-send)
+    if (['موافق', 'موافقه', 'نعم', '1', 'أرسل', 'ارسل', '2'].includes(msg)) {
+      console.log(`[MerchantMode] ⏭️ Cooldown active — ignoring duplicate confirmation: "${msg}"`);
+      return { action: 'cooldown_skip' };
+    }
+  }
 
   // Detect intent
   let hasActiveEscalation = false;

@@ -60,8 +60,10 @@ import dbZid from '../db_zid';
  * Build dynamic system prompt based on personality settings
  */
 function buildSystemPrompt(settings?: SariPersonalitySetting): string {
-  // Base personality
-  let prompt = `أنت مساعد مبيعات ذكي وودود عبر الواتساب. أنت تمثل النشاط التجاري وتتحدث باسمه. أنت خبير في فهم احتياجات العملاء واقتراح المنتجات المناسبة.
+  // Base personality — NEVER mention "ساري" as bot identity
+  let prompt = `أنت موظف مبيعات محترف في هذا النشاط التجاري عبر الواتساب. تتحدث باسم النشاط التجاري مباشرة. أنت خبير في فهم احتياجات العملاء واقتراح المنتجات المناسبة.
+
+🚫 قاعدة هوية صارمة: لا تذكر اسم "ساري" أو "Sari" أبداً في أي رد. أنت تمثل النشاط التجاري فقط.
 
 ## شخصيتك المميزة:
 `;
@@ -186,7 +188,7 @@ ${sanitizeForPrompt(((settings as any).customFarewell as string).substring(0, 50
   // Continue with the rest of the original prompt
   prompt += `
 ## مهامك الذكية:
-1. **الترحيب المخصص**: في أول رسالة رحّب باسم النشاط التجاري (من السياق أدناه). إذا عرفت اسم العميل اذكره أيضاً. مثال: "أهلاً [اسم العميل]! حيّاك في [اسم النشاط] 😊". لا تقل "أنا ساري" — تحدث كممثل للنشاط مباشرة. رحّب مرة واحدة فقط
+1. **الترحيب المخصص**: في أول رسالة رحّب باسم النشاط التجاري (من السياق أدناه). إذا عرفت اسم العميل اذكره أيضاً. مثال: "أهلاً [اسم العميل]! حيّاك في [اسم النشاط] 😊". لا تقل اسمك الحقيقي أبداً — تحدث كممثل للنشاط مباشرة. رحّب مرة واحدة فقط
 2. **الفهم العميق**: اسأل أسئلة ذكية لفهم الاحتياجات
 3. **البحث الذكي**: اقترح منتجات محددة من القائمة المتوفرة
 4. **البيع الإضافي**: اقترح منتجات مكملة بطريقة طبيعية
@@ -365,8 +367,10 @@ function isKnowledgeGapResponse(botResponse: string, customerMessage: string): b
 
 /**
  * Original system prompt (kept for backward compatibility)
+ * NOTE: "ساري" removed from identity — bot must always use merchant name or agent name
  */
-const SARI_SYSTEM_PROMPT = `أنت ساري، مساعد مبيعات ذكي وودود عبر الواتساب لهذا المتجر/الشركة فقط.
+const SARI_SYSTEM_PROMPT = `أنت موظف مبيعات محترف وودود عبر الواتساب لهذا المتجر/الشركة فقط.
+🚫 قاعدة هوية حرجة: لا تذكر اسم "ساري" أو "Sari" أبداً. عرّف عن نفسك باسم النشاط التجاري أو كموظف فيه فقط.
 
 ## شخصيتك المميزة:
 - سعودي الأصل، تتحدث باللهجة السعودية الطبيعية
@@ -941,9 +945,53 @@ async function _loadPaymentContext(convId: number, merchantId: number): Promise<
 }
 
 /**
- * Enhanced chat with Sari AI Agent
+ * Enhanced chat with Sari AI Agent — IRON WALL identity wrapper
+ * Ensures no response ever contains "ساري" as bot identity.
  */
 export async function chatWithSari(params: {
+  merchantId: number;
+  customerPhone: string;
+  customerName?: string;
+  message: string;
+  imageUrl?: string;
+  conversationId?: number;
+}): Promise<string> {
+  const response = await _chatWithSariCore(params);
+  
+  // IRON WALL: Strip any "ساري" identity leak from response before it reaches customer
+  try {
+    const { sanitizeIdentity } = await import('./response-validator');
+    const merchant = await getMerchantById(params.merchantId).catch(() => null);
+    const merchantName = merchant?.businessName || '';
+    
+    // Check for active virtual agent name
+    let agentName: string | null = null;
+    try {
+      if (params.conversationId) {
+        const { eq } = await import('drizzle-orm');
+        const pool = await getDb();
+        if (pool) {
+          const convs = await getConversationsByMerchantId(params.merchantId);
+          const conv = convs.find((c: any) => c.id === params.conversationId);
+          const agentId = (conv as any)?.currentAgentId;
+          if (agentId) {
+            const agents = await pool.select().from(virtualAgents).where(eq(virtualAgents.id, agentId));
+            if (agents.length > 0) agentName = agents[0].name;
+          }
+        }
+      }
+    } catch { /* non-blocking */ }
+    
+    return sanitizeIdentity(response, merchantName, agentName || undefined);
+  } catch {
+    return response; // If sanitizer itself fails, return original
+  }
+}
+
+/**
+ * Core chat implementation (internal — use chatWithSari wrapper)
+ */
+async function _chatWithSariCore(params: {
   merchantId: number;
   customerPhone: string;
   customerName?: string;
@@ -1877,7 +1925,8 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         }
       }
     } catch (agentError) {
-      console.warn('[VirtualAgent] Agent selection failed, using default Sari:', agentError);
+      // Fall back to merchant business name — NEVER use "ساري" as agent name
+      console.warn('[VirtualAgent] Agent selection failed, using merchant identity:', agentError);
     }
 
     // Append resume context after agent selection (preserved across rebuilds)

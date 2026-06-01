@@ -129,7 +129,30 @@ const escalationChainSchema = z.array(z.object({
 })).max(5);
 
 async function getEscalationChain(merchantId: number): Promise<EscalationContact[]> {
-  const merchant = await getMerchantById(merchantId);
+  let merchant: any = null;
+  
+  // Try Drizzle first, fall back to raw SQL if it fails (e.g. missing column like logo_url)
+  try {
+    merchant = await getMerchantById(merchantId);
+  } catch (drizzleErr: any) {
+    console.warn(`[Escalation] Drizzle getMerchantById failed for ${merchantId}, trying raw SQL:`, drizzleErr.message);
+    try {
+      const { getPool } = await import('../db');
+      const pool = await getPool();
+      if (pool) {
+        const [rows] = await pool.execute(
+          'SELECT phone, emergency_phone, escalation_phones FROM merchants WHERE id = ? LIMIT 1',
+          [merchantId]
+        ) as any;
+        if (rows?.length > 0) {
+          merchant = { phone: rows[0].phone, emergencyPhone: rows[0].emergency_phone, escalationPhones: rows[0].escalation_phones };
+        }
+      }
+    } catch (rawErr: any) {
+      console.error(`[Escalation] Raw SQL fallback also failed for ${merchantId}:`, rawErr.message);
+    }
+  }
+
   if (!merchant) return [];
 
   // Try JSON escalation chain first — with schema validation
