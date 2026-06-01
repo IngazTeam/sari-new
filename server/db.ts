@@ -269,6 +269,12 @@ import {
   TrySariAnalytics,
   InsertTemplateTranslation,
   TemplateTranslation,
+  merchantMembers,
+  MerchantMember,
+  InsertMerchantMember,
+  merchantInvitations,
+  MerchantInvitation,
+  InsertMerchantInvitation,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import mysql from "mysql2/promise";
@@ -616,6 +622,34 @@ export async function getMerchantByUserId(userId: number): Promise<Merchant | un
 
   const result = await db.select().from(merchants).where(eq(merchants.userId, userId)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+/**
+ * Get user's merchant membership (from merchant_members table).
+ * Returns the first active membership found (for multi-merchant support, expand later).
+ */
+export async function getMerchantMemberByUserId(userId: number): Promise<{ merchantId: number; role: string; memberId: number } | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db.select({
+      memberId: merchantMembers.id,
+      merchantId: merchantMembers.merchantId,
+      role: merchantMembers.role,
+    })
+    .from(merchantMembers)
+    .where(and(
+      eq(merchantMembers.userId, userId),
+      eq(merchantMembers.isActive, 1),
+    ))
+    .limit(1);
+
+    return result.length > 0 ? result[0] : null;
+  } catch {
+    // Table may not exist yet
+    return null;
+  }
 }
 
 export async function getAllMerchants() {

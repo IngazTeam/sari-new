@@ -1478,6 +1478,49 @@ export const zidSyncLogs = mysqlTable("zid_sync_logs", {
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 });
 
+// ═══════════════════════════════════════════════════════════════
+// Multi-User RBAC — Team Members & Invitations
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * merchant_members — Links users to merchants with role-based access.
+ * Replaces the 1:1 users→merchants relationship with M:N.
+ * A user can be a member of multiple merchants (e.g., accountant managing 3 stores).
+ */
+export const merchantMembers = mysqlTable("merchant_members", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	role: mysqlEnum(['owner', 'manager', 'sales_supervisor', 'viewer']).notNull().default('viewer'),
+	invitedBy: int("invited_by"),
+	invitedAt: timestamp("invited_at", { mode: 'string' }).defaultNow().notNull(),
+	acceptedAt: timestamp("accepted_at", { mode: 'string' }),
+	isActive: tinyint("is_active").default(1).notNull(),
+}, (table) => [
+	index("idx_member_merchant").on(table.merchantId),
+	index("idx_member_user").on(table.userId),
+]);
+
+/**
+ * merchant_invitations — Pending invitations sent by email.
+ * Token-based: invited user clicks link → registers/logs in → auto-joins merchant.
+ */
+export const merchantInvitations = mysqlTable("merchant_invitations", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	email: varchar({ length: 320 }).notNull(),
+	role: mysqlEnum(['manager', 'sales_supervisor', 'viewer']).notNull().default('viewer'),
+	token: varchar({ length: 64 }).notNull(),
+	invitedBy: int("invited_by").notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	acceptedAt: timestamp("accepted_at", { mode: 'string' }),
+	status: mysqlEnum(['pending', 'accepted', 'expired', 'revoked']).default('pending').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_invitation_merchant").on(table.merchantId),
+	index("idx_invitation_token").on(table.token),
+]);
+
 // Type definitions
 export type User = InferSelectModel<typeof users>;
 export type InsertUser = InferInsertModel<typeof users>;
@@ -1487,6 +1530,10 @@ export type Plan = InferSelectModel<typeof plans>;
 export type InsertPlan = InferInsertModel<typeof plans>;
 export type Subscription = InferSelectModel<typeof subscriptions>;
 export type InsertSubscription = InferInsertModel<typeof subscriptions>;
+export type MerchantMember = InferSelectModel<typeof merchantMembers>;
+export type InsertMerchantMember = InferInsertModel<typeof merchantMembers>;
+export type MerchantInvitation = InferSelectModel<typeof merchantInvitations>;
+export type InsertMerchantInvitation = InferInsertModel<typeof merchantInvitations>;
 export type WhatsAppConnection = InferSelectModel<typeof whatsappConnections>;
 export type InsertWhatsAppConnection = InferInsertModel<typeof whatsappConnections>;
 export type WhatsAppConnectionRequest = InferSelectModel<typeof whatsappConnectionRequests>;

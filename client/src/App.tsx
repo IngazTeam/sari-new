@@ -194,6 +194,7 @@ const SalesPipeline = lazyLoad(() => import("./pages/merchant/SalesPipeline"));
 const AcquisitionReport = lazyLoad(() => import("./pages/merchant/AcquisitionReport"));
 const QuotationTemplates = lazyLoad(() => import("./pages/merchant/QuotationTemplates"));
 const MediaLibrary = lazyLoad(() => import("./pages/merchant/MediaLibrary"));
+const TeamManagement = lazyLoad(() => import("./pages/merchant/TeamManagement"));
 
 // Admin pages - lazy loaded
 const AdminDashboard = lazyLoad(() => import("./pages/admin/Dashboard"));
@@ -709,6 +710,12 @@ function Router() {
       <Route path="/merchant/staff">
         <DashboardLayout>
           <StaffManagement />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/team">
+        <DashboardLayout>
+          <TeamManagement />
         </DashboardLayout>
       </Route>
 

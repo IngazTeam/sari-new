@@ -193,6 +193,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Settings, label: t('sidebar.merchant.settings', 'إعدادات المتجر'), path: "/merchant/settings", group: 'settings' },
   { icon: Crown, label: t('sidebar.merchant.mySubscription', 'باقتي والفواتير'), path: "/merchant/my-subscription", group: 'settings' },
   { icon: Plug, label: t('sidebar.merchant.platformIntegrations', 'التكاملات والربط'), path: "/merchant/platform-integrations", group: 'settings' },
+  { icon: Users, label: t('sidebar.merchant.teamManagement', 'إدارة الفريق'), path: "/merchant/team", group: 'settings' },
   { icon: CalendarClock, label: t('sidebar.merchant.staffManagement', 'مقدمو الخدمات'), path: "/merchant/staff", group: 'settings', secondary: true },
   { icon: Languages, label: t('sidebar.merchant.languageSettings', 'إعدادات اللغة'), path: "/merchant/language-settings", group: 'settings', secondary: true },
   { icon: CreditCard, label: t('sidebar.merchant.merchantPayments', 'مدفوعات التاجر'), path: "/merchant/merchant-payments", group: 'settings', secondary: true },

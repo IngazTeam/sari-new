@@ -62,6 +62,7 @@ import { monitorRouter } from "./routers-monitor";
 import { botSettingsRouter } from "./routers-bot-settings";
 import { adminAiAnalyticsRouter } from "./routers-admin-ai-analytics";
 import { emailTemplatesRouter } from "./routers-email-templates";
+import { teamRouter } from "./routers-team";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -6539,6 +6540,9 @@ export const appRouter = router({
   sheets: sheetsRouter,
 
   loyalty: loyaltyRouter,
+
+  // Team Members RBAC
+  team: teamRouter,
 
   // Platform Integrations
   zid: zidRouter,
