@@ -217,6 +217,7 @@ async function fetchWithTimeout(
 ): Promise<string> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const startTime = Date.now();
 
   try {
     const response = await fetch(`${OPENAI_API_URL}/chat/completions`, {
@@ -246,6 +247,21 @@ async function fetchWithTimeout(
 
     if (!content || content.trim().length === 0) {
       throw new Error('OpenAI returned empty response');
+    }
+
+    // Log usage stats (fire-and-forget — non-blocking)
+    if (data.usage) {
+      import('../db_ai_settings').then(({ logAiUsage, estimateCost }) => {
+        logAiUsage({
+          requestType: 'chat',
+          model,
+          promptTokens: data.usage.prompt_tokens,
+          completionTokens: data.usage.completion_tokens,
+          totalTokens: data.usage.total_tokens,
+          estimatedCost: String(estimateCost(model, data.usage.prompt_tokens, data.usage.completion_tokens)),
+          durationMs: Date.now() - startTime,
+        });
+      }).catch(() => {}); // Never let logging break the response
     }
 
     return content;
