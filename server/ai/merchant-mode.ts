@@ -564,23 +564,54 @@ function buildCustomerBrief(profile: CustomerProfile): string {
 
 /** Extract suggested reply from coaching text — or fall back to original */
 function extractSuggestedReply(coaching: string, originalReply: string): string {
-  // Look for quoted suggested reply in the coaching text
-  // Note: using [\s\S] instead of /s flag for ES2015 compat
-  const patterns = [
-    /الرد المقترح[:\s]*["“”]([\s\S]+?)["“”]/,
-    /أقترح[:\s]*["“”]([\s\S]+?)["“”]/,
-    /الرد الأفضل[:\s]*["“”]([\s\S]+?)["“”]/,
-    /بدلاً من ذلك[:\s]*["“”]([\s\S]+?)["“”]/,
+  // Normalize all fancy Unicode quotes to standard ASCII before matching
+  const c = coaching
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036\u00AB\u00BB]/g, '"')
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+  
+  // --- Pattern 1: Quoted text after "الرد المقترح" (with optional bold/colon/newlines) ---
+  const quotedPatterns = [
+    /\*?الرد المقترح\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
+    /\*?الرد الأفضل\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
+    /\*?أقترح\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
+    /\*?بدلاً من ذلك\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
+    /\*?الاقتراح\*?[:\s]*\n*[\s]*[""]([^""]+)[""]/,
   ];
   
-  for (const p of patterns) {
-    const match = coaching.match(p);
-    if (match?.[1] && match[1].length > 5) {
+  for (const p of quotedPatterns) {
+    const match = c.match(p);
+    if (match?.[1] && match[1].trim().length > 10) {
+      console.log(`[extractSuggestedReply] ✅ Matched quoted pattern, len=${match[1].length}`);
       return match[1].trim();
     }
   }
+
+  // --- Pattern 2: Text block between "الرد المقترح:" and the next section divider ---
+  // Handles cases where GPT doesn't use quotes but has a clear section
+  const sectionMatch = c.match(
+    /\*?الرد المقترح\*?[:\s]*\n+([\s\S]+?)(?:\n\n|━|بهذا الرد|$)/
+  );
+  if (sectionMatch?.[1]) {
+    // Strip leading/trailing quotes and whitespace
+    let extracted = sectionMatch[1].trim()
+      .replace(/^[""""*]+/, '')
+      .replace(/[""""*]+$/, '')
+      .trim();
+    if (extracted.length > 10 && extracted !== originalReply) {
+      console.log(`[extractSuggestedReply] ✅ Matched section pattern, len=${extracted.length}`);
+      return extracted;
+    }
+  }
+
+  // --- Pattern 3: Any long quoted text in the coaching (last resort) ---
+  const anyQuote = c.match(/"([^"]{20,})"/);
+  if (anyQuote?.[1] && anyQuote[1].trim() !== originalReply) {
+    console.log(`[extractSuggestedReply] ✅ Matched any-quote pattern, len=${anyQuote[1].length}`);
+    return anyQuote[1].trim();
+  }
   
   // No explicit suggestion found — the original reply is probably fine
+  console.log(`[extractSuggestedReply] ⚠️ No suggestion extracted, falling back to original`);
   return originalReply;
 }
 
