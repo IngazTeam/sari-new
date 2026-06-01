@@ -6,23 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, User, Mail, Phone, Briefcase, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, User, Phone, Briefcase, Loader2, CalendarClock, UserCheck, Layers } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslation } from 'react-i18next';
 
 interface StaffFormData {
   name: string;
   email: string;
   phone: string;
   specialization: string;
-  workingHours?: string;
 }
 
 export default function StaffManagement() {
-  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<any>(null);
   const [formData, setFormData] = useState<StaffFormData>({
@@ -30,7 +26,6 @@ export default function StaffManagement() {
     email: "",
     phone: "",
     specialization: "",
-    workingHours: ""
   });
 
   const utils = trpc.useUtils();
@@ -38,35 +33,35 @@ export default function StaffManagement() {
   
   const createMutation = trpc.staff.create.useMutation({
     onSuccess: () => {
-      toast.success(t('staffManagementPage.text0'));
+      toast.success("تمت إضافة مقدم الخدمة بنجاح ✅");
       setIsDialogOpen(false);
       resetForm();
       utils.staff.list.invalidate();
     },
     onError: (error: any) => {
-      toast.error(`فشل إضافة الموظف: ${error.message}`);
+      toast.error(`فشل الإضافة: ${error.message}`);
     }
   });
 
   const updateMutation = trpc.staff.update.useMutation({
     onSuccess: () => {
-      toast.success(t('staffManagementPage.text1'));
+      toast.success("تم تحديث البيانات بنجاح ✅");
       setIsDialogOpen(false);
       resetForm();
       utils.staff.list.invalidate();
     },
     onError: (error: any) => {
-      toast.error(`فشل تحديث الموظف: ${error.message}`);
+      toast.error(`فشل التحديث: ${error.message}`);
     }
   });
 
   const deleteMutation = trpc.staff.delete.useMutation({
     onSuccess: () => {
-      toast.success(t('staffManagementPage.text2'));
+      toast.success("تم الحذف بنجاح");
       utils.staff.list.invalidate();
     },
     onError: (error: any) => {
-      toast.error(`فشل حذف الموظف: ${error.message}`);
+      toast.error(`فشل الحذف: ${error.message}`);
     }
   });
 
@@ -76,7 +71,6 @@ export default function StaffManagement() {
       email: "",
       phone: "",
       specialization: "",
-      workingHours: ""
     });
     setEditingStaff(null);
   };
@@ -84,20 +78,16 @@ export default function StaffManagement() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone || !formData.specialization) {
-      toast.error(t('staffManagementPage.text3'));
+    if (!formData.name || !formData.phone || !formData.specialization) {
+      toast.error("يرجى تعبئة الحقول المطلوبة: الاسم، الجوال، والتخصص");
       return;
     }
 
-    // Map frontend fields to backend schema:
-    // - specialization → role (backend field name)
-    // - workingHours: send as undefined (optional text field, not JSON record)
     const payload: any = {
       name: formData.name,
-      email: formData.email,
+      email: formData.email || undefined,
       phone: formData.phone,
       role: formData.specialization,
-      // workingHours is free text — skip it (backend expects JSON record which we don't collect here)
     };
 
     if (editingStaff) {
@@ -114,16 +104,15 @@ export default function StaffManagement() {
     setEditingStaff(staff);
     setFormData({
       name: staff.name,
-      email: staff.email,
-      phone: staff.phone,
-      specialization: staff.role || staff.specialization || '',
-      workingHours: staff.workingHours || ""
+      email: staff.email || '',
+      phone: staff.phone || '',
+      specialization: staff.role || '',
     });
     setIsDialogOpen(true);
   };
 
   const handleDelete = (staffId: number, staffName: string) => {
-    if (confirm(`هل أنت متأكد من حذف الموظف "${staffName}"؟`)) {
+    if (confirm(`هل أنت متأكد من حذف "${staffName}"؟ سيتم إلغاء ربطه بجميع الخدمات.`)) {
       deleteMutation.mutate({ staffId });
     }
   };
@@ -135,53 +124,49 @@ export default function StaffManagement() {
     }
   };
 
+  const staffCount = staffList?.staff?.length || 0;
+  const activeCount = staffList?.staff?.filter((s: any) => s.isActive).length || 0;
+  const specializations = new Set(staffList?.staff?.map((s: any) => s.role).filter(Boolean));
+
   return (
     <div className="container max-w-6xl py-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{t('staffManagementPage.text4')}</h1>
-          <p className="text-muted-foreground">{t('staffManagement.auto_0')}</p>
+          <h1 className="text-3xl font-bold mb-2">مقدّمو الخدمات</h1>
+          <p className="text-muted-foreground">
+            أضف فريقك الذي يقدم الخدمات — سيظهرون كخيارات عند حجز المواعيد عبر الواتساب
+          </p>
         </div>
         
         <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />{t('staffManagement.auto_1')}</Button>
+              <Plus className="h-4 w-4 mr-2" />إضافة مقدم خدمة</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
-                {editingStaff ? "تعديل بيانات الموظف" : "إضافة موظف جديد"}
+                {editingStaff ? "تعديل بيانات مقدم الخدمة" : "إضافة مقدم خدمة جديد"}
               </DialogTitle>
-              <DialogDescription>{t('staffManagement.auto_2')}</DialogDescription>
+              <DialogDescription>
+                الشخص الذي يقدم الخدمة ويتم حجز المواعيد عنده (حلاق، مدرب، طبيب، إلخ)
+              </DialogDescription>
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">{t('staffManagementPage.text5')}</Label>
+                <Label htmlFor="name">الاسم *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder={t('staffManagementPage.text6')}
+                  placeholder="مثال: محمد العتيبي"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">{t('staffManagementPage.text7')}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="ahmed@example.com"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">{t('staffManagementPage.text8')}</Label>
+                <Label htmlFor="phone">رقم الجوال *</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -192,25 +177,28 @@ export default function StaffManagement() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="specialization">{t('staffManagementPage.text9')}</Label>
+                <Label htmlFor="email">البريد الإلكتروني</Label>
                 <Input
-                  id="specialization"
-                  value={formData.specialization}
-                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                  placeholder={t('staffManagementPage.text10')}
-                  required
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="اختياري"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="workingHours">{t('staffManagementPage.text11')}</Label>
-                <Textarea
-                  id="workingHours"
-                  value={formData.workingHours}
-                  onChange={(e) => setFormData({ ...formData, workingHours: e.target.value })}
-                  placeholder={t('staffManagementPage.text12')}
-                  rows={3}
+                <Label htmlFor="specialization">التخصص / نوع الخدمة *</Label>
+                <Input
+                  id="specialization"
+                  value={formData.specialization}
+                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                  placeholder="مثال: حلاق، معالج تجميل، مدرب لياقة"
+                  required
                 />
+                <p className="text-xs text-muted-foreground">
+                  سيظهر للعميل عند اختيار مقدم الخدمة أثناء الحجز
+                </p>
               </div>
 
               <div className="flex justify-end gap-2 pt-4">
@@ -227,7 +215,7 @@ export default function StaffManagement() {
                 >
                   {(createMutation.isPending || updateMutation.isPending) ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />{t('staffManagement.auto_3')}</>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />جاري الحفظ...</>
                   ) : (
                     editingStaff ? "تحديث" : "إضافة"
                   )}
@@ -242,62 +230,79 @@ export default function StaffManagement() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('staffManagement.auto_4')}</CardTitle>
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">إجمالي مقدمي الخدمات</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{staffList?.staff?.length || 0}</div>
+            <div className="text-2xl font-bold">{staffCount}</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('staffManagement.auto_5')}</CardTitle>
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">النشطون حالياً</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {staffList?.staff?.filter((s: any) => s.isActive).length || 0}
+              {activeCount}
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">{t('staffManagement.auto_6')}</CardTitle>
+            <div className="flex items-center gap-2">
+              <Layers className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">التخصصات</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(staffList?.staff?.map((s: any) => s.specialization)).size || 0}
+              {specializations.size}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* جدول الموظفين */}
+      {/* جدول مقدمي الخدمات */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('staffManagementPage.text13')}</CardTitle>
-          <CardDescription>{t('staffManagement.auto_7')}</CardDescription>
+          <CardTitle>قائمة مقدمي الخدمات</CardTitle>
+          <CardDescription>من يقدم خدماتك — يتم ربطهم بالخدمات المتاحة لحجز المواعيد</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : !staffList || (staffList as any)?.staff?.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">{t('staffManagement.auto_8')}</div>
+          ) : staffCount === 0 ? (
+            <div className="text-center py-12">
+              <CalendarClock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
+              <p className="text-muted-foreground mb-2">لا يوجد مقدمو خدمات بعد</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                أضف أول مقدم خدمة ليتمكن العملاء من حجز المواعيد عبر الواتساب
+              </p>
+              <Button variant="outline" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />إضافة مقدم خدمة
+              </Button>
+            </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('staffManagementPage.text14')}</TableHead>
-                  <TableHead>{t('staffManagementPage.text15')}</TableHead>
-                  <TableHead>{t('staffManagementPage.text16')}</TableHead>
-                  <TableHead>{t('staffManagementPage.text17')}</TableHead>
-                  <TableHead className="text-left">{t('staffManagementPage.text18')}</TableHead>
+                  <TableHead>مقدم الخدمة</TableHead>
+                  <TableHead>التخصص</TableHead>
+                  <TableHead>الجوال</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead className="text-left">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                // @ts-ignore
                 {(staffList as any)?.staff?.map((staff) => (
                   <TableRow key={staff.id}>
                     <TableCell>
@@ -307,20 +312,22 @@ export default function StaffManagement() {
                         </div>
                         <div>
                           <div className="font-medium">{staff.name}</div>
-                          <div className="text-sm text-muted-foreground">{staff.email}</div>
+                          {staff.email && (
+                            <div className="text-sm text-muted-foreground">{staff.email}</div>
+                          )}
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
                         <Briefcase className="h-3 w-3 mr-1" />
-                        {staff.role || staff.specialization}
+                        {staff.role || '—'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
                         <Phone className="h-3 w-3 text-muted-foreground" />
-                        {staff.phone}
+                        {staff.phone || '—'}
                       </div>
                     </TableCell>
                     <TableCell>

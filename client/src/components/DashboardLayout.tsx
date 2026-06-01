@@ -103,6 +103,7 @@ import {
   Flame,
   FileText,
   ImageIcon,
+  CalendarClock,
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -192,7 +193,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: Settings, label: t('sidebar.merchant.settings', 'إعدادات المتجر'), path: "/merchant/settings", group: 'settings' },
   { icon: Crown, label: t('sidebar.merchant.mySubscription', 'باقتي والفواتير'), path: "/merchant/my-subscription", group: 'settings' },
   { icon: Plug, label: t('sidebar.merchant.platformIntegrations', 'التكاملات والربط'), path: "/merchant/platform-integrations", group: 'settings' },
-  { icon: Users, label: t('sidebar.merchant.staffManagement', 'فريق العمل'), path: "/merchant/staff", group: 'settings', secondary: true },
+  { icon: CalendarClock, label: t('sidebar.merchant.staffManagement', 'مقدمو الخدمات'), path: "/merchant/staff", group: 'settings', secondary: true },
   { icon: Languages, label: t('sidebar.merchant.languageSettings', 'إعدادات اللغة'), path: "/merchant/language-settings", group: 'settings', secondary: true },
   { icon: CreditCard, label: t('sidebar.merchant.merchantPayments', 'مدفوعات التاجر'), path: "/merchant/merchant-payments", group: 'settings', secondary: true },
   { icon: ImageIcon, label: t('sidebar.merchant.mediaLibrary', 'مكتبة الوسائط'), path: "/merchant/media-library", group: 'settings', secondary: true },
