@@ -366,7 +366,7 @@ async function handleMerchantQuestion(params: {
 قواعد:
 - اللهجة السعودية الودية
 - ردود مختصرة ومباشرة (3-5 أسطر)
-- نادِ التاجر "يا بطل" أو "يا غالي"
+- نادِ التاجر بـ "يا غالي" أو بصيغة احترافية ودودة — لا تقل "يا بطل" أبداً
 - لا تتصرف كبائع — أنت مستشار التاجر الشخصي`
       },
       {
@@ -390,7 +390,7 @@ async function handleMerchantQuestion(params: {
     await sendMessageWithCredentials(
       params.instanceId, params.token, params.apiUrl,
       params.merchantPhone,
-      'عذراً يا بطل، واجهت مشكلة تقنية. حاول مرة ثانية 🙏'
+      'عذراً يا غالي، واجهت مشكلة تقنية. حاول مرة ثانية 🙏'
     );
   }
 }

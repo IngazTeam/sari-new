@@ -584,6 +584,17 @@ export function sanitizeIdentity(response: string, merchantName?: string, agentN
 
   // ── Phase 4: Catch standalone "Sari" in English (case-insensitive) ──
   sanitized = sanitized.replace(/\bSari\b/gi, replaceName || 'our team');
+
+  // ── Phase 5: Strip unprofessional street nicknames ──
+  // These are never appropriate in a professional sales context
+  sanitized = sanitized.replace(/يا بطل/g, 'حياك');
+  sanitized = sanitized.replace(/يا صاحبي/g, '');
+  sanitized = sanitized.replace(/يا حبيبي/g, '');
+  sanitized = sanitized.replace(/يا كبير/g, '');
+  sanitized = sanitized.replace(/يا وحش/g, '');
+  sanitized = sanitized.replace(/يا معلم/g, '');
+  // Clean up double spaces left by removals
+  sanitized = sanitized.replace(/  +/g, ' ').trim();
   
   return sanitized;
 }
