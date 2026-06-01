@@ -570,8 +570,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       const isAPIMessage = payload.typeWebhook === 'outgoingAPIMessageReceived'
         || payload.typeWebhook === 'outgoingAPIMessageWebhook';
       if (outText && (
-        outText.startsWith('⚠️ *تنبيه من ساري:*') || // System reminder from takeover-expiry job
-        isAPIMessage  // Message sent via API (Sari's own responses)
+        outText.startsWith('⚠️ *تنبيه من ساري:*') || // legacy system reminder
+        outText.startsWith('⚠️ *تنبيه:*') || // new format system reminder
+        isAPIMessage  // Message sent via API (bot's own responses)
       )) {
         console.log('[Takeover] Skipping system/API message — not a manual merchant reply');
         return { success: true, message: 'System message ignored' };
@@ -585,7 +586,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       if (outText) {
         const quotedText = extractQuotedText(payload);
         
-        const isReplyToSariAlert = quotedText.includes('تنبيه من ساري') 
+        const isReplyToSariAlert = quotedText.includes('تنبيه من ساري') // legacy
+          || quotedText.includes('تنبيه — سؤال عميل') // new format
+          || quotedText.includes('تصعيد عاجل') // escalation L2
+          || quotedText.includes('تصعيد أخير') // escalation L3
           || quotedText.includes('سؤال عميل')
           || quotedText.includes('العميل ينتظر')
           || quotedText.includes('سيوصله للعميل');
@@ -655,7 +659,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
               const feedbackPrompt = [
                 {
                   role: 'system' as const,
-                  content: `أنت ساري، مستشار خدمة العملاء الذكي. مهمتك تقييم رد التاجر على سؤال العميل وتقديم ملاحظات مختصرة.
+                  content: `أنت مستشار خدمة العملاء الذكي. مهمتك تقييم رد التاجر على سؤال العميل وتقديم ملاحظات مختصرة.
 
 قواعد التقييم:
 1. إذا كان الرد احترافي وواضح → أثنِ عليه بحماس وأكّد أنه ممتاز
@@ -704,7 +708,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
                   (instance as any).token,
                   (instance as any).apiUrl || 'https://api.green-api.com',
                   customerPhone,
-                  `✅ *تم توصيل ردك للعميل بنجاح!*\n\nشكراً لسرعة استجابتك 👏 ساري تعلّم من ردك وسيستخدمه مستقبلاً 🧠`
+                  `✅ *تم توصيل ردك للعميل بنجاح!*\n\nشكراً لسرعة استجابتك 👏 المساعد الذكي تعلّم من ردك وسيستخدمه مستقبلاً 🧠`
                 );
               } catch { /* confirmation is non-blocking */ }
             }
@@ -760,7 +764,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
                 const quickFeedback = await callGPT4([
                   {
                     role: 'system' as const,
-                    content: `أنت ساري. قيّم رد التاجر على سؤال العميل بجملة واحدة فقط باللهجة السعودية. إذا الرد ممتاز أثنِ عليه، وإذا ناقص اقترح إضافة محددة. لا تزيد عن سطر واحد.`
+                    content: `أنت مستشار ذكي. قيّم رد التاجر على سؤال العميل بجملة واحدة فقط باللهجة السعودية. إذا الرد ممتاز أثنِ عليه، وإذا ناقص اقترح إضافة محددة. لا تزيد عن سطر واحد.`
                   },
                   {
                     role: 'user' as const,
@@ -775,8 +779,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           const { notifyNewMessage } = await import('../_core/notificationService');
           await notifyNewMessage(
             instance.merchantId,
-            'ساري ⏸️',
-            `تم إيقاف ساري ${timeoutMin} دقيقة على محادثة ${conv.customerPhone?.slice(-4) || 'عميل'}. أرسل "يسعدنا خدمتكم" للاستئناف${feedbackLine}`
+            'المساعد الذكي ⏸️',
+            `تم إيقاف المساعد الذكي ${timeoutMin} دقيقة على محادثة ${conv.customerPhone?.slice(-4) || 'عميل'}. أرسل "يسعدنا خدمتكم" للاستئناف${feedbackLine}`
           );
           console.log(`[Takeover] 📩 In-app confirmation sent to merchant for conv ${conv.id}`);
         } catch (confirmErr) {
