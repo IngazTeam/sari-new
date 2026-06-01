@@ -18,6 +18,7 @@ import {
   Receipt, Target, TrendingUp, Plus, Copy, CheckCircle2, XCircle,
   Clock, Send, Eye, DollarSign, BarChart3, FileText, Trash2,
 } from 'lucide-react';
+import { Link } from 'wouter';
 
 const STATUS_MAP: Record<string, { label: string; icon: string; color: string }> = {
   sent: { label: 'مُرسل', icon: '📤', color: 'bg-blue-100 text-blue-800 border-blue-200' },
@@ -73,6 +74,24 @@ export default function SalesHub() {
     },
     onError: (e) => toast.error('فشل: ' + e.message),
   });
+
+  const sendPdfMut = trpc.sariBrain.sendQuotationToCustomer.useMutation({
+    onSuccess: () => {
+      toast.success('✅ تم إرسال عرض السعر كـ PDF عبر واتساب');
+      utils.sariBrain.getQuotations.invalidate();
+      utils.sariBrain.getQuotationStats.invalidate();
+    },
+    onError: (e) => toast.error('فشل الإرسال: ' + e.message),
+  });
+
+  const handleSendPdf = (quotation: any) => {
+    const phone = quotation.customerPhone;
+    if (!phone) {
+      toast.error('لا يوجد رقم هاتف للعميل — أضف رقم الجوال أولاً');
+      return;
+    }
+    sendPdfMut.mutate({ quotationId: quotation.id, customerPhone: phone });
+  };
 
   const resetForm = () => {
     setCustomerName('');
@@ -133,7 +152,13 @@ export default function SalesHub() {
             إنشاء وتتبع عروض الأسعار وأهداف المبيعات
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Link href="/merchant/quotation-templates">
+            <Button variant="outline">
+              <FileText className="h-4 w-4 ml-2" />
+              قوالب العروض
+            </Button>
+          </Link>
           <Dialog open={targetOpen} onOpenChange={setTargetOpen}>
             <DialogTrigger asChild>
               <Button variant="outline">
@@ -349,6 +374,14 @@ export default function SalesHub() {
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="نسخ للواتساب" onClick={() => copyWhatsApp(q.id)}>
                         <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm" className="h-8 w-8 p-0 text-primary"
+                        title="إرسال PDF عبر واتساب"
+                        onClick={() => handleSendPdf(q)}
+                        disabled={sendPdfMut.isPending}
+                      >
+                        <Send className="h-4 w-4" />
                       </Button>
                       {q.status === 'sent' && (
                         <>

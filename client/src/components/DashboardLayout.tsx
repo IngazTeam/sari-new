@@ -154,6 +154,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
   { icon: HandCoins, label: t('sidebar.merchant.paymentsPage', 'المدفوعات'), path: "/merchant/payments", group: 'operations', secondary: true },
   { icon: Star, label: t('sidebar.merchant.reviews', 'التقييمات'), path: "/merchant/reviews", group: 'operations', secondary: true },
   { icon: BarChart3, label: t('sidebar.merchant.salesPipeline', 'غرفة قيادة المبيعات'), path: "/merchant/sales-pipeline", group: 'operations' },
+  { icon: Receipt, label: t('sidebar.merchant.salesHub', 'عروض الأسعار'), path: "/merchant/sales-hub", group: 'operations' },
   { icon: FileText, label: t('sidebar.merchant.quotationTemplates', 'قوالب عروض الأسعار'), path: "/merchant/quotation-templates", group: 'operations', secondary: true },
 
   // 3. المساعد الذكي
