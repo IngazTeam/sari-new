@@ -303,7 +303,7 @@ async function sendMerchantReport(params: {
     ) as any;
     
     const [msgRows] = await pool.execute(
-      `SELECT COUNT(*) as cnt FROM messages m JOIN conversations c ON m.conversation_id = c.id WHERE c.merchantId = ? AND m.created_at >= ?`,
+      `SELECT COUNT(*) as cnt FROM messages m JOIN conversations c ON m.conversationId = c.id WHERE c.merchantId = ? AND m.createdAt >= ?`,
       [params.merchantId, todayStr]
     ) as any;
 

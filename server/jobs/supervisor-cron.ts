@@ -86,24 +86,24 @@ async function runSupervisorCheck(): Promise<void> {
         c.customerPhone as customerPhone,
         c.customerName as customerName,
         c.supervisor_intervened_at,
-        (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as messageCount,
-        (SELECT content FROM messages WHERE conversation_id = c.id AND direction = 'incoming' ORDER BY created_at DESC LIMIT 1) as lastCustomerMessage,
-        (SELECT created_at FROM messages WHERE conversation_id = c.id AND direction = 'incoming' ORDER BY created_at DESC LIMIT 1) as lastCustomerMessageAt
+        (SELECT COUNT(*) FROM messages WHERE conversationId = c.id) as messageCount,
+        (SELECT content FROM messages WHERE conversationId = c.id AND direction = 'incoming' ORDER BY createdAt DESC LIMIT 1) as lastCustomerMessage,
+        (SELECT createdAt FROM messages WHERE conversationId = c.id AND direction = 'incoming' ORDER BY createdAt DESC LIMIT 1) as lastCustomerMessageAt
       FROM conversations c
       WHERE c.human_takeover = 0
         AND c.supervisor_intervened_at IS NULL
         AND EXISTS (
           SELECT 1 FROM messages m 
-          WHERE m.conversation_id = c.id 
+          WHERE m.conversationId = c.id 
             AND m.direction = 'incoming'
-            AND m.created_at < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
-            AND m.created_at > DATE_SUB(NOW(), INTERVAL 120 MINUTE)
+            AND m.createdAt < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            AND m.createdAt > DATE_SUB(NOW(), INTERVAL 120 MINUTE)
         )
         AND NOT EXISTS (
           SELECT 1 FROM messages m2
-          WHERE m2.conversation_id = c.id
+          WHERE m2.conversationId = c.id
             AND m2.direction = 'incoming'
-            AND m2.created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+            AND m2.createdAt > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
         )
       ORDER BY c.updatedAt DESC
       LIMIT ?
@@ -150,8 +150,8 @@ async function processConversation(pool: any, conv: any): Promise<void> {
 
   // Get conversation messages
   const [msgRows] = await pool.execute(
-    `SELECT direction, content, created_at FROM messages 
-     WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 30`,
+    `SELECT direction, content, createdAt FROM messages 
+     WHERE conversationId = ? ORDER BY createdAt ASC LIMIT 30`,
     [conv.conversationId]
   );
 
