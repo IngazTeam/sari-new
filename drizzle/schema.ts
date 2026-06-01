@@ -125,6 +125,7 @@ export const conversations = mysqlTable("conversations", {
 	customerPhone: varchar({ length: 20 }).notNull(),
 	customerName: varchar({ length: 255 }),
 	status: mysqlEnum(['active', 'closed', 'archived']).default('active').notNull(),
+	lastMessage: text(),
 	lastMessageAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
