@@ -297,6 +297,127 @@ ${sanitizeForPrompt(((settings as any).customFarewell as string).substring(0, 50
   return prompt;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Off-Topic Guard — Reject questions unrelated to the merchant
+// ═══════════════════════════════════════════════════════════════
+
+/** Off-topic patterns — questions that have NOTHING to do with any business */
+const OFF_TOPIC_PATTERNS = [
+  // Cooking / Recipes
+  /طريق[ةه]\s*(طبخ|عمل|تحضير)/i,
+  /وصف[ةه]\s*(طبخ|أكل|حلى|كيك|طبيخ)/i,
+  /كيف (أطبخ|اطبخ|أسوي|اسوي)\s/i,
+  /مقادير\s/i,
+  // Weather
+  /حال[ةه]\s*الطقس/i, /الجو\s*(اليوم|بكرة|غداً)/i, /درج[ةه]\s*الحرار/i,
+  // Sports
+  /نتيج[ةه]\s*مبارا/i, /الدوري\s*(السعودي|الإنجليزي)/i, /من\s*(فاز|كسب)/i,
+  // News / Politics
+  /آخر\s*الأخبار/i, /أخبار\s*(السعودية|العالم|اليوم)/i,
+  /رأيك\s*(في|ب|عن)\s*(الحكوم|السياس|الرئيس|الملك)/i,
+  // Religion (sensitive)
+  /حكم\s*(شرعي|الصلا|الصيام)/i, /فتو[ىا]\s/i, /هل\s*(يجوز|حرام|حلال)\s/i,
+  // Personal advice / Health
+  /علاج\s/i, /أعراض\s/i, /دواء\s/i, /دكتور\s*(ينصح|يقول)/i,
+  // Math / Homework
+  /كم\s*يساوي\s*\d/i, /حل\s*(المسأل|السؤال|الواجب)/i, /اشرح\s*(لي\s*)?(الدرس|المادة)/i,
+  // Jokes / Entertainment
+  /قول\s*(لي\s*)?(نكت|طرف)/i, /لغز/i, /حزور[ةه]/i,
+  // Programming / Tech (unless the business IS tech)
+  /اكتب\s*(لي\s*)?(كود|برنامج|سكربت)/i,
+  // Translation
+  /ترجم\s*(لي)?\s/i, /معنى\s*كلم[ةه]/i,
+  // General knowledge
+  /من\s*(اخترع|اكتشف|بنى)\s/i, /عاصم[ةه]\s/i, /كم\s*(عدد\s*سكان|مساح[ةه])\s/i,
+];
+
+/** Messages that should NEVER be blocked (greetings, thanks, etc.) */
+const SAFE_MESSAGE_PATTERNS = [
+  /^(سلام|مرحب|هلا|أهل|hi|hello|hey|صباح|مساء|حياك)/i,
+  /^(شكر|مشكور|الله يعطيك|thanks|thank you|ممتاز|تمام)/i,
+  /^(مع السلامة|باي|bye|وداع)/i,
+  /^(أوك|ok|تمام|ان شاء الله|خلاص|طيب)/i,
+  /^(نعم|لا|أي|إي|أيوه|لا شكراً)/i,
+];
+
+/**
+ * Check if a customer message is off-topic (unrelated to ANY business).
+ * Returns true if the message should be rejected with a polite redirect.
+ */
+function isOffTopicQuestion(message: string): boolean {
+  const msg = message.trim();
+  
+  // Very short messages are never off-topic (single word replies, etc.)
+  if (msg.length < 8) return false;
+  
+  // Safe messages (greetings, etc.) are never off-topic
+  if (SAFE_MESSAGE_PATTERNS.some(p => p.test(msg))) return false;
+  
+  // Check against off-topic patterns
+  return OFF_TOPIC_PATTERNS.some(p => p.test(msg));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Escalation Hold — Prevent bot from responding while waiting
+// for merchant reply on an escalated question
+// ═══════════════════════════════════════════════════════════════
+
+const ESCALATION_HOLD_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours max hold
+
+/** In-memory hold state: key = "merchantId:customerPhone" → hold expiry timestamp */
+const _escalationHolds = new Map<string, { expiresAt: number; question: string }>();
+
+/**
+ * Set escalation hold — bot will stop responding to this customer
+ * until the merchant replies or the hold expires.
+ */
+export function setEscalationHold(merchantId: number, customerPhone: string, question: string): void {
+  const key = `${merchantId}:${customerPhone}`;
+  _escalationHolds.set(key, {
+    expiresAt: Date.now() + ESCALATION_HOLD_TTL_MS,
+    question: question.substring(0, 200),
+  });
+  console.log(`[EscalationHold] 🔒 Hold set for ${key} (2h TTL)`);
+}
+
+/**
+ * Check if there's an active escalation hold for this customer.
+ * Returns the pending question if hold is active, null otherwise.
+ */
+export function getEscalationHold(merchantId: number, customerPhone: string): string | null {
+  const key = `${merchantId}:${customerPhone}`;
+  const hold = _escalationHolds.get(key);
+  if (!hold) return null;
+  
+  // Expired?
+  if (Date.now() > hold.expiresAt) {
+    _escalationHolds.delete(key);
+    console.log(`[EscalationHold] ⏰ Hold expired for ${key}`);
+    return null;
+  }
+  
+  return hold.question;
+}
+
+/**
+ * Clear escalation hold — called when merchant replies.
+ */
+export function clearEscalationHold(merchantId: number, customerPhone: string): boolean {
+  const key = `${merchantId}:${customerPhone}`;
+  const had = _escalationHolds.has(key);
+  _escalationHolds.delete(key);
+  if (had) console.log(`[EscalationHold] 🔓 Hold cleared for ${key}`);
+  return had;
+}
+
+// Cleanup expired holds every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, hold] of Array.from(_escalationHolds.entries())) {
+    if (now > hold.expiresAt) _escalationHolds.delete(key);
+  }
+}, 600_000);
+
 // PEN-GAP-03 FIX: In-memory debounce to prevent double-escalation on rapid messages
 const _escalationDebounce = new Map<string, number>();
 function shouldEscalate(merchantId: number, customerPhone: string): boolean {
@@ -1095,6 +1216,25 @@ async function _chatWithSariCore(params: {
       console.warn('[chatWithSari] Bot settings override load failed:', settingsErr);
     }
 
+    // ═══ OFF-TOPIC GUARD — Reject questions unrelated to the business ═══
+    // Runs BEFORE GPT to save API costs and prevent irrelevant responses
+    if (isOffTopicQuestion(params.message)) {
+      const merchantName = merchant.businessName || 'متجرنا';
+      console.log(`[chatWithSari] 🚫 Off-topic question blocked: "${params.message.substring(0, 60)}"`);
+      return `أقدر أساعدك في خدمات ومنتجات *${merchantName}* بس 😊
+
+وش تبي تعرف عن منتجاتنا أو خدماتنا؟ 🛍️`;
+    }
+
+    // ═══ ESCALATION HOLD — Bot silent while waiting for merchant reply ═══
+    const pendingQuestion = getEscalationHold(params.merchantId, params.customerPhone);
+    if (pendingQuestion) {
+      console.log(`[chatWithSari] ⏳ Escalation hold active — bot silent for ${params.customerPhone}`);
+      return `لا زلت بانتظار الرد من الفريق المختص على سؤالك 🔄
+
+سأرد عليك فوراً بمجرد ما أحصل على الإجابة! 🙏`;
+    }
+
     // Check for loyalty commands first
     const messageLower = params.message.toLowerCase().trim();
     
@@ -1614,6 +1754,8 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           customerQuestion: params.message,
           botResponse: response,
         }).catch((err) => console.warn('[Escalation] Post-response escalation failed:', err.message));
+        // Set hold — bot will stop responding until merchant replies
+        setEscalationHold(params.merchantId, params.customerPhone, params.message);
       }
 
       // ═══ Smart Escalation v2 — Proactive triggers (FAST PATH) ═══
@@ -2054,6 +2196,8 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
         customerQuestion: params.message,
         botResponse: response,
       }).catch((err) => console.warn('[Escalation] Post-response escalation failed:', err.message));
+      // Set hold — bot will stop responding until merchant replies
+      setEscalationHold(params.merchantId, params.customerPhone, params.message);
     }
 
     // ═══ Smart Escalation v2 — Proactive triggers (FULL PATH) ═══

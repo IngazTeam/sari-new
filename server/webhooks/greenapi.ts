@@ -604,19 +604,72 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           let targetCustomerPhone = '';
           let deliverySuccess = false;
           
+          // ═══ Clear Escalation Hold — Merchant answered ═══
+          // This MUST happen regardless of delivery success
+          try {
+            const { clearEscalationHold } = await import('../ai/sari-personality');
+            // Try to find the customer phone from escalation record
+            const { getActiveEscalationForMerchant } = await import('../db/learning');
+            const activeEsc = await getActiveEscalationForMerchant(instance.merchantId);
+            const holdCustomerPhone = (activeEsc as any)?.customer_phone || (activeEsc as any)?.customerPhone || '';
+            if (holdCustomerPhone) {
+              clearEscalationHold(instance.merchantId, holdCustomerPhone);
+            }
+          } catch { /* non-blocking */ }
+          
+          // ═══ Response Quality Gate — Improve short/inappropriate merchant replies ═══
+          let merchantReplyText = outText;
+          const isLowQualityReply = outText.trim().length < 15 
+            || /^(اسأل|شوف|ما أدري|ما ادري|مدري|لا أعرف|بعدين|ok|اوكي|تمام)$/i.test(outText.trim());
+          
+          if (isLowQualityReply) {
+            console.log(`[MerchantReply] ⚠️ Low-quality merchant reply detected: "${outText.substring(0, 50)}" — asking AI to improve`);
+            try {
+              const { callGPT4 } = await import('../ai/openai');
+              const improvementResult = await callGPT4([
+                {
+                  role: 'system' as const,
+                  content: `أنت مساعد ذكي. التاجر رد على سؤال عميل برد قصير أو غير مناسب. حوّل رد التاجر إلى رد احترافي ومفيد.
+                  
+قواعد:
+- إذا الرد لا يفيد العميل أصلاً (مثل "اسأل المدام" أو "ما أدري") → اعتذر بلطف وقل أن الفريق سيتواصل مع العميل
+- إذا الرد فيه معلومة لكن مختصر → وسّعه واجعله احترافي
+- رد باللهجة السعودية، مختصر ومفيد
+- لا تزد معلومات من عندك — فقط حسّن الصياغة`
+                },
+                {
+                  role: 'user' as const,
+                  content: `سؤال العميل: "${sanitizeForPrompt((originalQuestion || '').substring(0, 200))}"\nرد التاجر: "${sanitizeForPrompt(outText.substring(0, 300))}"\n\nحسّن الرد:`
+                }
+              ], { model: 'gpt-4o-mini', temperature: 0.5, maxTokens: 200, noRetry: true });
+              
+              if (improvementResult && improvementResult.trim().length > 10) {
+                merchantReplyText = improvementResult.trim();
+                console.log(`[MerchantReply] ✅ Reply improved: "${merchantReplyText.substring(0, 60)}"`);
+              }
+            } catch (improveErr) {
+              console.warn('[MerchantReply] AI improvement failed, using original:', improveErr);
+            }
+          }
+          
           // Try to resolve via escalation system first (most reliable)
           try {
             const { handleMerchantEscalationReply } = await import('../ai/smart-escalation');
             const escResult = await handleMerchantEscalationReply({
               merchantId: instance.merchantId,
               merchantPhone: customerPhone,
-              replyText: outText,
+              replyText: merchantReplyText, // Use improved text
             });
             
             if (escResult.handled) {
               deliverySuccess = true;
               targetCustomerPhone = escResult.escalation?.customerPhone || '';
               console.log(`[MerchantReply] ✅ Escalation reply handled — answer delivered to customer`);
+              // Clear hold for the actual customer
+              try {
+                const { clearEscalationHold } = await import('../ai/sari-personality');
+                if (targetCustomerPhone) clearEscalationHold(instance.merchantId, targetCustomerPhone);
+              } catch { /* non-blocking */ }
             }
           } catch (escErr) {
             console.warn('[MerchantReply] Escalation relay failed, trying direct:', escErr);
@@ -633,7 +686,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             } catch { /* silent */ }
             
             if (targetCustomerPhone) {
-              const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${outText.substring(0, 2000)}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
+              const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${merchantReplyText.substring(0, 2000)}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
               
               try {
                 await sendMessageWithCredentials(
@@ -645,6 +698,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
                 );
                 deliverySuccess = true;
                 console.log(`[MerchantReply] ✅ Reply forwarded to customer ***${targetCustomerPhone.slice(-4)}`);
+                // Clear hold
+                try {
+                  const { clearEscalationHold } = await import('../ai/sari-personality');
+                  clearEscalationHold(instance.merchantId, targetCustomerPhone);
+                } catch { /* non-blocking */ }
               } catch (sendErr) {
                 console.error('[MerchantReply] Failed to forward reply:', sendErr);
               }
@@ -715,6 +773,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             
             return { success: true, message: 'Merchant reply forwarded + AI feedback sent' };
           }
+          
           
           console.warn('[MerchantReply] Could not determine target customer — falling through to takeover');
         }
