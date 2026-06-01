@@ -1183,6 +1183,9 @@ async function _chatWithSariCore(params: {
       }
     }
 
+    // ═══ DIAGNOSTIC LOG — Trace full pipeline for debugging ═══
+    console.log(`[chatWithSari] 📊 DIAGNOSTIC: merchant=${params.merchantId}, conv=${params.conversationId || 'NONE'}, history=${previousMessages.length} msgs, isFirst=${isFirstMessage}, msg="${params.message.substring(0, 50)}"`);
+
     // Get personality settings
     const personalitySettings = await getOrCreatePersonalitySettings(params.merchantId);
 
@@ -1455,6 +1458,7 @@ ${result.orderUrl}
 
     if (existingSession && !needsTopicRebuild) {
       // ⚡ FAST PATH: Use cached session (no RAG, no embedding, no sentiment API)
+      console.log(`[chatWithSari] ⚡ FAST PATH: session found, contextPrompt=${existingSession.contextPrompt.length} chars, ragFacts=${existingSession.ragFacts.length} chars`);
       const intent = earlyIntent; // reuse pre-computed intent
       const fastSentiment = detectSentimentFast(params.message);
       const sentimentSignals = detectSentimentWithSignals(params.message);
@@ -1816,6 +1820,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     // ═══════════════════════════════════════════════════
     // FULL PATH: First message or topic change — full pipeline
     // ═══════════════════════════════════════════════════
+    console.log(`[chatWithSari] 🔄 FULL PATH: Building complete context for merchant ${params.merchantId}${needsTopicRebuild ? ' (topic change rebuild)' : ' (first message)'}`);
     if (needsTopicRebuild) {
       console.log(`[chatWithSari] Topic change detected — rebuilding session`);
     }
