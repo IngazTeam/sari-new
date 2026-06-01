@@ -44,7 +44,7 @@ export default function AISettings() {
   // Mutations
   const updateMutation = trpc.aiSettings.updateSettings.useMutation({
     onSuccess: () => {
-      toast.success("Êã ÍÝÙ ÇáÅÚÏÇÏÇÊ ÈäÌÇÍ ?");
+      toast.success("ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ?");
       refetchSettings();
       setApiKey("");
     },
@@ -54,9 +54,9 @@ export default function AISettings() {
   const testMutation = trpc.aiSettings.testConnection.useMutation({
     onSuccess: (data: any) => {
       if (data.success) {
-        toast.success(data.message || "Êã ÇáÇÊÕÇá ÈäÌÇÍ!");
+        toast.success(data.message || "ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½!");
       } else {
-        toast.error(data.error || "ÝÔá ÇáÇÊÕÇá");
+        toast.error(data.error || "ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½");
       }
     },
     onError: (err) => toast.error(err.message),
@@ -212,7 +212,7 @@ export default function AISettings() {
                 {updateMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
                 ) : null}
-                ÍÝÙ ÇáÅÚÏÇÏÇÊ
+                ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
               </Button>
               <Button
                 variant="outline"
@@ -224,7 +224,7 @@ export default function AISettings() {
                   } else if (settings?.hasKey) {
                     testMutation.mutate({}); // Server uses stored key
                   } else {
-                    toast.error("ÃÏÎá ãÝÊÇÍ API ÃæáÇð");
+                    toast.error("ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ API ï¿½ï¿½ï¿½ï¿½ï¿½");
                   }
                 }}
                 disabled={testMutation.isPending}
@@ -234,7 +234,7 @@ export default function AISettings() {
                 ) : (
                   <RefreshCw className="h-4 w-4 ml-2" />
                 )}
-                ÇÎÊÈÇÑ ÇáÇÊÕÇá
+                ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
               </Button>
             </div>
           </CardContent>
@@ -251,7 +251,7 @@ export default function AISettings() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{t('aISettings.auto_17')}</span>
-                <Badge variant="secondary">{formatNumber(monthStats?.chatRequests || 0)} ØáÈ</Badge>
+                <Badge variant="secondary">{formatNumber(monthStats?.chatRequests || 0)} ï¿½ï¿½ï¿½</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
                 <div
@@ -266,7 +266,7 @@ export default function AISettings() {
 
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">{t('aISettings.auto_18')}</span>
-                <Badge variant="secondary">{formatNumber(monthStats?.whisperRequests || 0)} ØáÈ</Badge>
+                <Badge variant="secondary">{formatNumber(monthStats?.whisperRequests || 0)} ï¿½ï¿½ï¿½</Badge>
               </div>
               <div className="w-full bg-muted rounded-full h-2.5">
                 <div
@@ -294,7 +294,7 @@ export default function AISettings() {
               </div>
               <div className="p-2 rounded bg-muted/50">
                 <p className="text-muted-foreground">{t('aISettings.auto_19')}</p>
-                <p className="font-semibold">{Math.round((monthStats?.totalAudioDuration || 0) / 60)} ÏÞíÞÉ</p>
+                <p className="font-semibold">{Math.round((monthStats?.totalAudioDuration || 0) / 60)} ï¿½ï¿½ï¿½ï¿½ï¿½</p>
               </div>
               <div className="p-2 rounded bg-muted/50">
                 <p className="text-muted-foreground">{t('aISettings.auto_20')}</p>
@@ -329,7 +329,7 @@ export default function AISettings() {
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
                     <div className="bg-popover text-popover-foreground border rounded-lg shadow-lg p-2 text-xs whitespace-nowrap">
                       <p className="font-medium">{day.date}</p>
-                      <p>{formatNumber(day.requests)} ØáÈ</p>
+                      <p>{formatNumber(day.requests)} ï¿½ï¿½ï¿½</p>
                       <p>{formatNumber(day.tokens)} token</p>
                       <p>{formatCost(day.cost)}</p>
                     </div>
