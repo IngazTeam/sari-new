@@ -106,8 +106,8 @@ async function runSupervisorCheck(): Promise<void> {
             AND m2.createdAt > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
         )
       ORDER BY c.updatedAt DESC
-      LIMIT ?
-    `, [MAX_PER_CYCLE]);
+      LIMIT ${MAX_PER_CYCLE}
+    `);
 
     const candidates = rows as any[];
     if (!candidates || candidates.length === 0) {
