@@ -3915,25 +3915,38 @@ export async function shouldBotRespond(merchantId: number): Promise<{
   const dayOfWeek = now.getDay(); // 0=Sunday, 1=Monday, etc.
   const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-  // Check if today is a working day
+  // Parse working days
   const workingDays = settings.workingDays?.split(',').map(d => parseInt(d)) || [];
-  if (!workingDays.includes(dayOfWeek)) {
-    return {
-      shouldRespond: false,
-      reason: 'Outside working days',
-    };
-  }
 
   // Check if current time is within working hours
   const start = settings.workingHoursStart || '09:00';
   const end = settings.workingHoursEnd || '18:00';
 
   // Support overnight shifts (e.g., 22:00 → 02:00)
+  // FIX-6: Also check yesterday for overnight shifts that cross midnight
   let isInWorkingHours: boolean;
   if (start > end) {
-    // Overnight: 22:00→02:00 means (currentTime >= 22:00 OR currentTime < 02:00)
-    isInWorkingHours = currentTime >= start || currentTime < end;
+    // Overnight shift detected (e.g., 22:00 → 02:00)
+    if (currentTime >= start) {
+      // After start (e.g., 23:00) — today must be a working day
+      isInWorkingHours = workingDays.includes(dayOfWeek);
+    } else if (currentTime < end) {
+      // Before end (e.g., 01:00) — yesterday must be a working day
+      // because the shift started yesterday and extends into today
+      const yesterday = (dayOfWeek + 6) % 7; // 0→6, 1→0, 2→1, etc.
+      isInWorkingHours = workingDays.includes(yesterday);
+    } else {
+      // Between end and start (e.g., 15:00 with 22:00→02:00) — not in shift
+      isInWorkingHours = false;
+    }
   } else {
+    // Normal daytime shift (e.g., 09:00 → 18:00)
+    if (!workingDays.includes(dayOfWeek)) {
+      return {
+        shouldRespond: false,
+        reason: 'Outside working days',
+      };
+    }
     isInWorkingHours = currentTime >= start && currentTime < end;
   }
 

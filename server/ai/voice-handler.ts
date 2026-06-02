@@ -22,9 +22,11 @@ export async function processVoiceMessage(params: {
   customerPhone: string;
   customerName?: string;
   audioUrl: string;
+  externalId?: string; // FIX-2: Green API idMessage for dedup
 }): Promise<{
   transcription: string;
   response: string;
+  incomingMsgId?: number;
 }> {
   try {
     console.log('[Voice Handler] Processing voice message:', params.audioUrl);
@@ -40,14 +42,15 @@ export async function processVoiceMessage(params: {
     
     console.log('[Voice Handler] Transcription:', transcription);
 
-    // Save transcription to database
-    await createMessage({
+    // Save transcription to database (isProcessed=0 — updated after WhatsApp send succeeds)
+    const incomingMsg = await createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
       messageType: 'voice',
       content: transcription,
       voiceUrl: params.audioUrl,
       isProcessed: 0,
+      externalId: params.externalId || null,
       aiResponse: null,
     });
 
@@ -63,20 +66,13 @@ export async function processVoiceMessage(params: {
 
     console.log('[Voice Handler] AI Response:', response);
 
-    // Save AI response to database
-    await createMessage({
-      conversationId: params.conversationId,
-      direction: 'outgoing',
-      messageType: 'text',
-      content: response,
-      voiceUrl: null,
-      isProcessed: 1,
-      aiResponse: response,
-    });
+    // NOTE: Outgoing message save + isProcessed update moved to caller
+    // (ensures we don't mark as processed before WhatsApp delivery succeeds)
 
     return {
       transcription,
       response,
+      incomingMsgId: incomingMsg?.id,
     };
   } catch (error: any) {
     console.error('[Voice Handler] Error processing voice message:', error);

@@ -273,7 +273,7 @@ async function processTextMessage(params: {
   messageText: string;
   imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
   externalId?: string; // Green API idMessage — for dedup
-}): Promise<string> {
+}): Promise<{ response: string; incomingMsgId?: number }> {
   try {
     console.log('[Webhook] Processing text message:', params.messageText, params.imageUrl ? `[with image: ${params.imageUrl.substring(0, 60)}...]` : '');
     
@@ -283,7 +283,7 @@ async function processTextMessage(params: {
       throw new Error('MESSAGE_LIMIT_REACHED');
     }
     
-    // Save incoming message
+    // Save incoming message (isProcessed=0 — will be set to 1 after WhatsApp send succeeds)
     const incomingMsg = await createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
@@ -357,37 +357,10 @@ async function processTextMessage(params: {
       console.error('[Webhook] Error applying A/B test:', error);
     }
     
-    // Save outgoing message — BUG-FIX: use finalResponse (was using original `response`)
-    await createMessage({
-      conversationId: params.conversationId,
-      direction: 'outgoing',
-      messageType: 'text',
-      content: finalResponse,
-      voiceUrl: null,
-      isProcessed: 1,
-      // @ts-ignore
-      aiwResponse: finalResponse,
-    });
+    // NOTE: Outgoing message save + isProcessed update moved to AFTER WhatsApp send
+    // (see caller in handleGreenApiWebhook — ensures we don't mark as processed before delivery)
     
-    // Increment message usage (incoming + outgoing = 2 messages)
-    await incrementMessageUsage(params.merchantId);
-    await incrementMessageUsage(params.merchantId);
-
-    // ── FIX: Mark incoming message as processed after successful AI response ──
-    // Prevents takeover-expiry from re-processing already-answered messages
-    if (incomingMsg?.id) {
-      try {
-        const { getPool: getPoolRef } = await import('../db');
-        const pool = await getPoolRef();
-        if (pool) {
-          await pool.execute('UPDATE messages SET isProcessed = 1 WHERE id = ?', [incomingMsg.id]);
-        }
-      } catch (procErr) {
-        console.warn('[Webhook] Failed to mark message as processed (non-blocking):', procErr);
-      }
-    }
-    
-    return finalResponse;
+    return { response: finalResponse, incomingMsgId: incomingMsg?.id };
   } catch (error: any) {
     console.error('[Webhook] Error processing text message:', error);
     throw error;
@@ -403,7 +376,8 @@ async function processVoiceMessageWebhook(params: {
   customerPhone: string;
   customerName?: string;
   audioUrl: string;
-}): Promise<string> {
+  externalId?: string; // FIX-2: Pass idMessage for dedup
+}): Promise<{ response: string; incomingMsgId?: number }> {
   try {
     console.log('[Webhook] Processing voice message:', params.audioUrl);
     
@@ -411,7 +385,7 @@ async function processVoiceMessageWebhook(params: {
     const limitReached = await hasReachedVoiceLimit(params.merchantId);
     if (limitReached) {
       console.warn('[Webhook] Voice message limit reached for merchant:', params.merchantId);
-      return 'عذراً، لقد وصلت لحد الرسائل الصوتية في باقتك. يرجى الترقية للاستمرار أو إرسال رسالة نصية. 🙏';
+      return { response: 'عذراً، لقد وصلت لحد الرسائل الصوتية في باقتك. يرجى الترقية للاستمرار أو إرسال رسالة نصية. 🙏' };
     }
     
     const result = await processVoiceMessage({
@@ -420,6 +394,7 @@ async function processVoiceMessageWebhook(params: {
       customerPhone: params.customerPhone,
       customerName: params.customerName,
       audioUrl: params.audioUrl,
+      externalId: params.externalId,
     });
     
     // Increment usage
@@ -428,10 +403,10 @@ async function processVoiceMessageWebhook(params: {
     console.log('[Webhook] Voice transcription:', result.transcription);
     console.log('[Webhook] Sari response:', result.response);
     
-    return result.response;
+    return { response: result.response, incomingMsgId: result.incomingMsgId };
   } catch (error: any) {
     console.error('[Webhook] Error processing voice message:', error);
-    return 'ما قدرت أسمع الرسالة الصوتية واضح 🎙️ ممكن تعيد إرسالها أو تكتب لي نصياً؟ 😊';
+    return { response: 'ما قدرت أسمع الرسالة الصوتية واضح 🎙️ ممكن تعيد إرسالها أو تكتب لي نصياً؟ 😊' };
   }
 }
 
@@ -1068,19 +1043,43 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       };
     }
     
+    // Get bot settings for response customization
+    const botSettings = await getBotSettings(instance.merchantId);
+    
+    // ── FIX-5: Create conversation + save incoming message BEFORE shouldBotRespond ──
+    // This ensures the customer's message is always visible in the dashboard,
+    // even if the bot doesn't respond (out of hours / auto-reply disabled).
+    const conversationId = await getOrCreateConversation({
+      merchantId: instance.merchantId,
+      customerPhone,
+      customerName,
+    });
+    
+    console.log('[Webhook] Conversation ID:', conversationId);
+
     // Check if bot should respond based on settings
     const { shouldRespond, reason } = await shouldBotRespond(instance.merchantId);
     
     if (!shouldRespond) {
       console.log('[Webhook] Bot should not respond:', reason);
       
+      // FIX-5: Save the incoming message so merchant sees it in dashboard
+      await createMessage({
+        conversationId,
+        direction: 'incoming',
+        messageType: 'text',
+        content: extractMessageText(payload) || '[media]',
+        voiceUrl: null,
+        isProcessed: 0,
+        externalId: payload.idMessage || null,
+      });
+      
       // Send out-of-hours message if configured
       if (reason === 'Outside working hours' || reason === 'Outside working days') {
-        const settings = await getBotSettings(instance.merchantId);
-        if (settings.outOfHoursMessage) {
+        if (botSettings.outOfHoursMessage) {
           await sendResponseWithDelay({
             customerPhone: groupChatId || customerPhone,
-            message: settings.outOfHoursMessage,
+            message: botSettings.outOfHoursMessage,
             delayMs: 1000,
             instanceId: instance.instanceId,
             token: instance.token,
@@ -1095,18 +1094,6 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         message: 'Bot not responding: ' + reason
       };
     }
-    
-    // Get bot settings for response customization
-    const botSettings = await getBotSettings(instance.merchantId);
-    
-    // Get or create conversation
-    const conversationId = await getOrCreateConversation({
-      merchantId: instance.merchantId,
-      customerPhone,
-      customerName,
-    });
-    
-    console.log('[Webhook] Conversation ID:', conversationId);
 
     // ── Human Takeover Check ──
     const allConvs = await getConversationsByMerchantId(instance.merchantId);
@@ -1181,6 +1168,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
     // Process message based on type
     let response: string;
+    let incomingMsgId: number | undefined;
 
     // ── BUG-1 FIX: Send typing indicator IMMEDIATELY while GPT processes ──
     // Fire-and-forget — non-blocking, just starts "typing..." in WhatsApp
@@ -1211,13 +1199,17 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       
       console.log('[Webhook] Voice message download URL found:', audioDownloadUrl.substring(0, 80) + '...');
       
-      response = await processVoiceMessageWebhook({
+      // FIX-2: Pass externalId for dedup
+      const voiceResult = await processVoiceMessageWebhook({
         merchantId: instance.merchantId,
         conversationId,
         customerPhone,
         customerName,
         audioUrl: audioDownloadUrl,
+        externalId: payload.idMessage,
       });
+      response = voiceResult.response;
+      incomingMsgId = voiceResult.incomingMsgId;
     } else if (payload.messageData.typeMessage === 'imageMessage' || payload.messageData.typeMessage === 'videoMessage') {
       // ── Image/Video Message → GPT-4o Vision ──
       const imageDownloadUrl = payload.messageData.downloadUrl
@@ -1255,7 +1247,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       if (!safeImageUrl) {
         // No valid image URL — process caption-only if available
         if (caption) {
-          response = await processTextMessage({
+          const captionResult = await processTextMessage({
             merchantId: instance.merchantId,
             conversationId,
             customerPhone,
@@ -1263,9 +1255,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             messageText: caption,
             externalId: payload.idMessage,
           });
+          response = captionResult.response;
+          incomingMsgId = captionResult.incomingMsgId;
         } else if (imageDownloadUrl) {
           // URL exists but untrusted — still acknowledge the image
-          response = await processTextMessage({
+          const imgAckResult = await processTextMessage({
             merchantId: instance.merchantId,
             conversationId,
             customerPhone,
@@ -1273,6 +1267,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             messageText: '[صورة من العميل]',
             externalId: payload.idMessage,
           });
+          response = imgAckResult.response;
+          incomingMsgId = imgAckResult.incomingMsgId;
         } else {
           logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: 'other', status: 'dropped', failureReason: 'image_no_url', failureDetails: `typeMessage: ${payload.messageData.typeMessage}`, source: 'webhook' });
           return { success: true, message: 'No download URL for image' };
@@ -1283,7 +1279,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         
         console.log(`[Webhook] 🖼️ Image/video message with URL: ${safeImageUrl.substring(0, 80)}...${caption ? ` caption: ${caption.substring(0, 50)}` : ''}`);
         
-        response = await processTextMessage({
+        const imgResult = await processTextMessage({
           merchantId: instance.merchantId,
           conversationId,
           customerPhone,
@@ -1292,6 +1288,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           imageUrl: safeImageUrl,
           externalId: payload.idMessage,
         });
+        response = imgResult.response;
+        incomingMsgId = imgResult.incomingMsgId;
       }
     } else {
       // Text message (and other types)
@@ -1306,7 +1304,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         };
       }
       
-      response = await processTextMessage({
+      const textResult = await processTextMessage({
         merchantId: instance.merchantId,
         conversationId,
         customerPhone,
@@ -1314,9 +1312,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         messageText,
         externalId: payload.idMessage,
       });
+      response = textResult.response;
+      incomingMsgId = textResult.incomingMsgId;
     }
     
-    // Send response with custom delay from settings using merchant's WhatsApp instance
+    // ── FIX-1: Send to WhatsApp FIRST, then save outgoing + mark processed ──
     // GAP-4 FIX: Reply to group chatId when triggered from mention/keyword group modes
     await sendResponseWithDelay({
       customerPhone: groupChatId || customerPhone,
@@ -1326,6 +1326,34 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       token: instance.token,
       apiUrl: instance.apiUrl || undefined,
     });
+    
+    // ── FIX-1: Save outgoing message + mark incoming as processed AFTER successful send ──
+    try {
+      await createMessage({
+        conversationId,
+        direction: 'outgoing',
+        messageType: 'text',
+        content: response,
+        voiceUrl: null,
+        isProcessed: 1,
+        // @ts-ignore
+        aiwResponse: response,
+      });
+      
+      // Increment message usage (incoming + outgoing = 2 messages)
+      await incrementMessageUsage(instance.merchantId);
+      await incrementMessageUsage(instance.merchantId);
+      
+      // Mark incoming message as processed
+      if (incomingMsgId) {
+        const pool = await getPool();
+        if (pool) {
+          await pool.execute('UPDATE messages SET isProcessed = 1 WHERE id = ?', [incomingMsgId]);
+        }
+      }
+    } catch (postSendErr) {
+      console.error('[Webhook] Post-send bookkeeping error (message WAS delivered):', postSendErr);
+    }
     
     console.log('[Webhook] Message processed successfully');
     

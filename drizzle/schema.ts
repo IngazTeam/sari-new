@@ -306,7 +306,10 @@ export const messages = mysqlTable("messages", {
 	aiResponse: text(),
 	externalId: varchar({ length: 255 }),
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-});
+},
+	(table) => [
+		index("idx_messages_external_id").on(table.externalId),
+	]);
 
 export const notificationTemplates = mysqlTable("notification_templates", {
 	id: int().autoincrement().primaryKey(),

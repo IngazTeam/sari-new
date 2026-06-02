@@ -2171,22 +2171,34 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
         }
 
-        // Get merchant WhatsApp credentials
-        const waRequest = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
-        if (!waRequest || !waRequest.instanceId || !waRequest.apiToken) {
-          throw new TRPCError({
-            code: 'PRECONDITION_FAILED',
-            message: 'يجب ربط حساب WhatsApp أولاً',
-          });
+        // FIX-3: Fallback chain — try new whatsapp_instances first, then legacy connection_requests
+        const waInstance = await getPrimaryWhatsAppInstance(merchant.id);
+        let waInstanceId: string, waToken: string, waApiUrl: string;
+
+        if (waInstance && waInstance.status === 'active' && waInstance.instanceId && waInstance.token) {
+          waInstanceId = waInstance.instanceId;
+          waToken = waInstance.token;
+          waApiUrl = (waInstance as any).apiUrl || 'https://api.green-api.com';
+        } else {
+          // Fallback to legacy connection_requests
+          const waRequest = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
+          if (!waRequest || !waRequest.instanceId || !waRequest.apiToken) {
+            throw new TRPCError({
+              code: 'PRECONDITION_FAILED',
+              message: 'يجب ربط حساب WhatsApp أولاً',
+            });
+          }
+          waInstanceId = waRequest.instanceId;
+          waToken = waRequest.apiToken;
+          waApiUrl = waRequest.apiUrl || 'https://api.green-api.com';
         }
 
         // Send via WhatsApp
         const { sendMessageWithCredentials } = await import('./whatsapp');
-        const apiUrl = waRequest.apiUrl || 'https://api.green-api.com';
         const result = await sendMessageWithCredentials(
-          waRequest.instanceId,
-          waRequest.apiToken,
-          apiUrl,
+          waInstanceId,
+          waToken,
+          waApiUrl,
           conversation.customerPhone,
           input.message,
         );
