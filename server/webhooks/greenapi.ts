@@ -418,6 +418,9 @@ async function processVoiceMessageWebhook(params: {
     
     return { response: result.response, incomingMsgId: result.incomingMsgId };
   } catch (error: any) {
+    // FIX-VOICE-RACE: Let DuplicateMessageError propagate to main handler (no AI, no send)
+    if (error instanceof DuplicateMessageError) throw error;
+    
     console.error('[Webhook] Error processing voice message:', error);
     // FIX-C2: voice-handler.ts already saved the incoming message with isProcessed=0.
     // Instead of INSERT (which would hit uniqueIndex), UPDATE the existing row to mark it processed.
