@@ -1793,8 +1793,8 @@ ${sanitizeForPrompt(agentHistory.resumeContext)}
               .where(eq(virtualAgents.id, agentId));
             if (agentRows.length > 0 && agentRows[0].isActive) {
               const agent = agentRows[0];
-              // Preserve Mission Block — agent gets sales intelligence too
-              systemPrompt = missionPrompt + `أنت ${sanitizeForPrompt(agent.name)}، ${sanitizeForPrompt(agent.role)} عبر الواتساب.${agent.department ? ` تعمل في قسم ${sanitizeForPrompt(agent.department)}.` : ''}
+              // Preserve Mission Block + Sacred Wall — agent gets sales intelligence too
+              systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings).split('---')[0] + '---\n' + `أنت ${sanitizeForPrompt(agent.name)}، ${sanitizeForPrompt(agent.role)} عبر الواتساب.${agent.department ? ` تعمل في قسم ${sanitizeForPrompt(agent.department)}.` : ''}
 
 ## تعليمات الشخصية:
 ${sanitizeForPrompt(agent.personalityPrompt)}
@@ -1804,7 +1804,12 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
             }
           }
         }
-      } catch { /* silent — fallback to Sari personality */ }
+      } catch (fastPathAgentErr) {
+        // Fallback: use business name (NEVER 'ساري')
+        const bizName = merchant?.businessName || 'نشاطنا التجاري';
+        systemPrompt += `\n\n## هوية الرد:\nأنت تمثل "${sanitizeForPrompt(bizName)}" مباشرة. ممنوع تذكر "ساري".\n`;
+        console.warn(`[VirtualAgent] FAST PATH agent failed, using business name "${bizName}":`, fastPathAgentErr);
+      }
 
       // Inject persuasion prompt
       if (persuasion.prompt) {
