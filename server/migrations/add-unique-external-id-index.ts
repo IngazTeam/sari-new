@@ -8,6 +8,7 @@
  * ═══════════════════════════════════════════════════════════
  */
 
+import '../_core/loadEnv'; // Must be first — loads DATABASE_URL from .env
 import { getPool } from '../db';
 
 async function main() {

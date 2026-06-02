@@ -8,6 +8,7 @@
  * ═══════════════════════════════════════════════════════════
  */
 
+import '../_core/loadEnv'; // Must be first — loads DATABASE_URL from .env
 import { getPool } from '../db';
 
 const CLEAN_WELCOME = 'مرحباً! أنا مساعدك الذكي. كيف أقدر أساعدك اليوم؟ 😊';
