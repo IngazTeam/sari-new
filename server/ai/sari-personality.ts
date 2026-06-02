@@ -360,24 +360,36 @@ function isOffTopicQuestion(message: string): boolean {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Escalation Hold — Prevent bot from responding while waiting
-// for merchant reply on an escalated question
+// Escalation Hold — Smart context-aware hold with AI auto-release
 // ═══════════════════════════════════════════════════════════════
 
 const ESCALATION_HOLD_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours max hold
+const MAX_HOLD_RESPONSES = 2; // Max "waiting for team" replies before auto-release
 
-/** In-memory hold state: key = "merchantId:customerPhone" → hold expiry timestamp */
-const _escalationHolds = new Map<string, { expiresAt: number; question: string }>();
+/** Hold state structure */
+interface EscalationHoldState {
+  expiresAt: number;
+  question: string;
+  createdAt: number;
+  holdResponseCount: number;
+  lastCustomerMessageAt: number;
+}
+
+/** In-memory hold state: key = "merchantId:customerPhone" */
+const _escalationHolds = new Map<string, EscalationHoldState>();
 
 /**
  * Set escalation hold — bot will stop responding to this customer
- * until the merchant replies or the hold expires.
+ * until the merchant replies, the hold expires, or smart-release triggers.
  */
 export function setEscalationHold(merchantId: number, customerPhone: string, question: string): void {
   const key = `${merchantId}:${customerPhone}`;
   _escalationHolds.set(key, {
     expiresAt: Date.now() + ESCALATION_HOLD_TTL_MS,
     question: question.substring(0, 200),
+    createdAt: Date.now(),
+    holdResponseCount: 0,
+    lastCustomerMessageAt: Date.now(),
   });
   console.log(`[EscalationHold] 🔒 Hold set for ${key} (2h TTL)`);
 }
@@ -402,7 +414,15 @@ export function getEscalationHold(merchantId: number, customerPhone: string): st
 }
 
 /**
- * Clear escalation hold — called when merchant replies.
+ * Get the raw hold state (for smart release logic).
+ */
+export function getEscalationHoldState(merchantId: number, customerPhone: string): EscalationHoldState | null {
+  const key = `${merchantId}:${customerPhone}`;
+  return _escalationHolds.get(key) || null;
+}
+
+/**
+ * Clear escalation hold — called when merchant replies or smart-release triggers.
  */
 export function clearEscalationHold(merchantId: number, customerPhone: string): boolean {
   const key = `${merchantId}:${customerPhone}`;
@@ -410,6 +430,83 @@ export function clearEscalationHold(merchantId: number, customerPhone: string): 
   _escalationHolds.delete(key);
   if (had) console.log(`[EscalationHold] 🔓 Hold cleared for ${key}`);
   return had;
+}
+
+/**
+ * Increment hold response count. Called each time "waiting for team" is sent.
+ */
+export function incrementHoldResponseCount(merchantId: number, customerPhone: string): void {
+  const key = `${merchantId}:${customerPhone}`;
+  const hold = _escalationHolds.get(key);
+  if (hold) {
+    hold.holdResponseCount++;
+    hold.lastCustomerMessageAt = Date.now();
+  }
+}
+
+/**
+ * SMART RELEASE: AI-based context analysis to decide if hold should auto-release.
+ * Rules:
+ * 1. Max responses — customer heard "waiting" 2+ times → release
+ * 2. AI context — GPT-4o-mini analyzes conversation to detect new topic
+ */
+export async function shouldAutoRelease(
+  hold: EscalationHoldState,
+  customerMessage: string,
+  conversationId?: number,
+): Promise<string | null> {
+  // Rule 1: Max hold responses — customer frustrated after 2 "waiting" messages
+  if (hold.holdResponseCount >= MAX_HOLD_RESPONSES) {
+    return 'max_responses';
+  }
+
+  // Rule 2: AI context analysis — understand if customer changed topic
+  try {
+    let recentHistory = '';
+    if (conversationId) {
+      const msgs = await getMessagesByConversationId(conversationId);
+      const recent = msgs.slice(-8);
+      recentHistory = recent
+        .map(m => `${m.direction === 'incoming' ? 'العميل' : 'ساري'}: ${(m.content || '').substring(0, 150)}`)
+        .join('\n');
+    }
+    const isNew = await isNewTopicAI(customerMessage, hold.question, recentHistory);
+    if (isNew) return 'new_topic';
+  } catch (err) {
+    console.warn('[EscalationHold] AI topic check failed (continuing hold):', (err as Error).message);
+  }
+
+  return null;
+}
+
+/**
+ * AI-based topic detection using GPT-4o-mini.
+ * Costs ~$0.0001 per call (150 input tokens, 5 output tokens).
+ */
+async function isNewTopicAI(
+  newMessage: string,
+  originalQuestion: string,
+  recentHistory: string,
+): Promise<boolean> {
+  const prompt = `أنت محلل محادثات. مهمتك الوحيدة: هل العميل يسأل سؤال جديد مختلف عن السؤال الأصلي، أم يتابع نفس الموضوع؟
+
+السؤال الأصلي الذي تم تصعيده: "${originalQuestion}"
+
+${recentHistory ? `آخر الرسائل في المحادثة:\n${recentHistory}\n` : ''}رسالة العميل الجديدة: "${newMessage}"
+
+هل هذه الرسالة متابعة لنفس الموضوع أم سؤال/موضوع جديد مختلف؟
+ملاحظة: التحيات والاستعجال ("هلا"، "ردو"، "وينكم") تُعتبر متابعة وليست موضوع جديد.
+
+أجب بكلمة واحدة فقط: "متابعة" أو "جديد"`;
+
+  const result = await callGPT4(
+    [{ role: 'user', content: prompt }],
+    { model: 'gpt-4o-mini', temperature: 0.1, maxTokens: 10, noRetry: true }
+  );
+  const answer = result.trim().toLowerCase();
+  const isNew = answer.includes('جديد');
+  console.log(`[EscalationHold] 🤖 AI topic check: "${newMessage.substring(0, 40)}" → ${isNew ? 'NEW TOPIC' : 'follow-up'}`);
+  return isNew;
 }
 
 // Cleanup expired holds every 10 minutes
@@ -1234,13 +1331,24 @@ async function _chatWithSariCore(params: {
 وش تبي تعرف عن منتجاتنا أو خدماتنا؟ 🛍️`;
     }
 
-    // ═══ ESCALATION HOLD — Bot silent while waiting for merchant reply ═══
+    // ═══ ESCALATION HOLD — Smart context-aware hold with AI auto-release ═══
     const pendingQuestion = getEscalationHold(params.merchantId, params.customerPhone);
     if (pendingQuestion) {
-      console.log(`[chatWithSari] ⏳ Escalation hold active — bot silent for ${params.customerPhone}`);
-      return `لا زلت بانتظار الرد من الفريق المختص على سؤالك 🔄
+      const holdState = getEscalationHoldState(params.merchantId, params.customerPhone);
+      if (holdState) {
+        const releaseReason = await shouldAutoRelease(holdState, params.message, params.conversationId);
+        if (releaseReason) {
+          console.log(`[chatWithSari] 🔓 Smart hold release: reason=${releaseReason}, phone=${params.customerPhone}`);
+          clearEscalationHold(params.merchantId, params.customerPhone);
+          // Fall through to normal AI processing ↓
+        } else {
+          incrementHoldResponseCount(params.merchantId, params.customerPhone);
+          console.log(`[chatWithSari] ⏳ Escalation hold active (${holdState.holdResponseCount + 1}/${MAX_HOLD_RESPONSES}) — bot silent for ${params.customerPhone}`);
+          return `لا زلت بانتظار الرد من الفريق المختص على سؤالك 🔄
 
 سأرد عليك فوراً بمجرد ما أحصل على الإجابة! 🙏`;
+        }
+      }
     }
 
     // Check for loyalty commands first
