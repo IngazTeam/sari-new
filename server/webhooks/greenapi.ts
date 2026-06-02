@@ -6,6 +6,7 @@
 import {
   createConversation,
   createMessage,
+  DuplicateMessageError,
   getActiveSubscriptionByMerchantId,
   getBotSettings,
   getConversationsByMerchantId,
@@ -284,6 +285,8 @@ async function processTextMessage(params: {
     }
     
     // Save incoming message (isProcessed=0 — will be set to 1 after WhatsApp send succeeds)
+    // FIX-RACE: If uniqueIndex blocks this insert (concurrent webhook), DuplicateMessageError
+    // is thrown and propagates up — no AI, no send, no duplicate response.
     const incomingMsg = await createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
@@ -1465,6 +1468,12 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       message: 'Message processed and response sent'
     };
   } catch (error: any) {
+    // FIX-RACE: Duplicate webhook — another concurrent request already processed this message
+    if (error instanceof DuplicateMessageError) {
+      console.log(`[Webhook] Duplicate webhook ignored — ${error.message}`);
+      return { success: true, message: 'Duplicate webhook — already processed' };
+    }
+    
     console.error('[Webhook] Error handling webhook:', error);
     
     // Handle limit errors - try to notify customer using merchant's instance

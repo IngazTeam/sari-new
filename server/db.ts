@@ -1220,6 +1220,19 @@ export async function updateConversation(id: number, data: Partial<InsertConvers
 // Message Management
 // ============================================
 
+/**
+ * Thrown when createMessage detects a duplicate externalId (ER_DUP_ENTRY).
+ * Callers should catch this to abort processing (no AI, no send).
+ */
+export class DuplicateMessageError extends Error {
+  public existingMessage?: Message;
+  constructor(externalId: string, existing?: Message) {
+    super(`Duplicate message: externalId=${externalId}`);
+    this.name = 'DuplicateMessageError';
+    this.existingMessage = existing;
+  }
+}
+
 export async function createMessage(message: InsertMessage): Promise<Message | undefined> {
   const db = await getDb();
   if (!db) return undefined;
@@ -1239,22 +1252,25 @@ export async function createMessage(message: InsertMessage): Promise<Message | u
 
     return msg;
   } catch (err: any) {
-    // FIX-3: Graceful dedup — if uniqueIndex on externalId blocks a concurrent insert,
-    // return the existing message instead of throwing an unhandled error.
+    // FIX-3: Atomic dedup — if uniqueIndex on externalId blocks a concurrent insert,
+    // throw DuplicateMessageError so the caller aborts AI + send.
     if (err?.code === 'ER_DUP_ENTRY' && (message as any).externalId) {
-      console.log(`[DB] Duplicate externalId detected (ER_DUP_ENTRY) — returning existing message for: ${(message as any).externalId}`);
-      const pool = await getPool();
-      if (pool) {
-        const [rows] = await pool.execute(
-          'SELECT id FROM messages WHERE externalId = ? LIMIT 1',
-          [(message as any).externalId]
-        );
-        const existing = (rows as any[])[0];
-        if (existing) {
-          return await getMessageById(existing.id);
+      console.log(`[DB] Duplicate externalId detected (ER_DUP_ENTRY) — aborting processing for: ${(message as any).externalId}`);
+      let existing: Message | undefined;
+      try {
+        const pool = await getPool();
+        if (pool) {
+          const [rows] = await pool.execute(
+            'SELECT id FROM messages WHERE externalId = ? LIMIT 1',
+            [(message as any).externalId]
+          );
+          const row = (rows as any[])[0];
+          if (row) {
+            existing = await getMessageById(row.id);
+          }
         }
-      }
-      return undefined;
+      } catch { /* best effort */ }
+      throw new DuplicateMessageError((message as any).externalId, existing);
     }
     throw err;
   }

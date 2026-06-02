@@ -28,6 +28,20 @@ export async function processVoiceMessage(params: {
   response: string;
   incomingMsgId?: number;
 }> {
+  // FIX-VOICE-EARLY: Save placeholder BEFORE download/transcribe.
+  // If download or Whisper fails, the row exists with externalId → dedup protected,
+  // and the catch in greenapi.ts can UPDATE it to isProcessed=1.
+  const placeholderMsg = await createMessage({
+    conversationId: params.conversationId,
+    direction: 'incoming',
+    messageType: 'voice',
+    content: '[رسالة صوتية — جاري المعالجة]',
+    voiceUrl: params.audioUrl,
+    isProcessed: 0,
+    externalId: params.externalId || null,
+    aiResponse: null,
+  });
+
   try {
     console.log('[Voice Handler] Processing voice message:', params.audioUrl);
 
@@ -42,17 +56,17 @@ export async function processVoiceMessage(params: {
     
     console.log('[Voice Handler] Transcription:', transcription);
 
-    // Save transcription to database (isProcessed=0 — updated after WhatsApp send succeeds)
-    const incomingMsg = await createMessage({
-      conversationId: params.conversationId,
-      direction: 'incoming',
-      messageType: 'voice',
-      content: transcription,
-      voiceUrl: params.audioUrl,
-      isProcessed: 0,
-      externalId: params.externalId || null,
-      aiResponse: null,
-    });
+    // UPDATE placeholder with actual transcription
+    if (placeholderMsg?.id) {
+      const { getPool } = await import('../db');
+      const pool = await getPool();
+      if (pool) {
+        await pool.execute(
+          'UPDATE messages SET content = ? WHERE id = ?',
+          [transcription, placeholderMsg.id]
+        );
+      }
+    }
 
     // Generate response using Sari
     console.log('[Voice Handler] Generating AI response...');
@@ -72,7 +86,7 @@ export async function processVoiceMessage(params: {
     return {
       transcription,
       response,
-      incomingMsgId: incomingMsg?.id,
+      incomingMsgId: placeholderMsg?.id,
     };
   } catch (error: any) {
     console.error('[Voice Handler] Error processing voice message:', error);
