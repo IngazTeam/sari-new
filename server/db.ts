@@ -3608,7 +3608,7 @@ export async function cancelOrder(id: number, reason?: string): Promise<void> {
 
   await db.update(orders).set({
     status: 'cancelled',
-    notes: reason || 'ط·ع¾ط¸â€¦ ط·آ¥ط¸â€‍ط·ط›ط·آ§ط·طŒ ط·آ§ط¸â€‍ط·آ·ط¸â€‍ط·آ¨',
+    notes: reason || 'تم إلغاء الطلب',
     updatedAt: formatDateForDB(new Date())
   }).where(eq(orders.id, id));
 }
@@ -3826,8 +3826,8 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
       workingHoursStart: '09:00',
       workingHoursEnd: '18:00',
       workingDays: '1,2,3,4,5', // Monday-Friday
-      welcomeMessage: 'ط¸â€¦ط·آ±ط·آ­ط·آ¨ط·آ§ط¸â€¹! ط·آ£ط¸â€ ط·آ§ ط·آ³ط·آ§ط·آ±ط¸ظ¹ط·إ’ ط¸â€¦ط·آ³ط·آ§ط·آ¹ط·آ¯ط¸ئ’ ط·آ§ط¸â€‍ط·آ°ط¸ئ’ط¸ظ¹. ط¸ئ’ط¸ظ¹ط¸ظ¾ ط·آ£ط¸â€ڑط·آ¯ط·آ± ط·آ£ط·آ³ط·آ§ط·آ¹ط·آ¯ط¸ئ’ ط·آ§ط¸â€‍ط¸ظ¹ط¸ث†ط¸â€¦ط·ع؛ ظ‹ع؛ع©ظ¹',
-      outOfHoursMessage: 'ط·آ´ط¸ئ’ط·آ±ط·آ§ط¸â€¹ ط¸â€‍ط·ع¾ط¸ث†ط·آ§ط·آµط¸â€‍ط¸ئ’! ط¸â€ ط·آ­ط¸â€  ط·آ­ط·آ§ط¸â€‍ط¸ظ¹ط·آ§ط¸â€¹ ط·آ®ط·آ§ط·آ±ط·آ¬ ط·آ£ط¸ث†ط¸â€ڑط·آ§ط·ع¾ ط·آ§ط¸â€‍ط·آ¹ط¸â€¦ط¸â€‍. ط·آ³ط¸â€ ط·آ±ط·آ¯ ط·آ¹ط¸â€‍ط¸ظ¹ط¸ئ’ ط¸ظ¾ط¸ظ¹ ط·آ£ط¸â€ڑط·آ±ط·آ¨ ط¸ث†ط¸â€ڑط·ع¾ ط¸â€¦ط¸â€¦ط¸ئ’ط¸â€ . أ¢عˆآ°',
+      welcomeMessage: 'مرحباً! أنا مساعدك الذكي. كيف أقدر أساعدك اليوم؟ 😊',
+      outOfHoursMessage: 'شكراً لتواصلك! نحن حالياً خارج أوقات العمل. سنرد عليك في أقرب وقت ممكن ⏰',
       responseDelay: 2,
       maxResponseLength: 200,
       tone: 'friendly',
@@ -3928,7 +3928,16 @@ export async function shouldBotRespond(merchantId: number): Promise<{
   const start = settings.workingHoursStart || '09:00';
   const end = settings.workingHoursEnd || '18:00';
 
-  if (currentTime < start || currentTime >= end) {
+  // Support overnight shifts (e.g., 22:00 → 02:00)
+  let isInWorkingHours: boolean;
+  if (start > end) {
+    // Overnight: 22:00→02:00 means (currentTime >= 22:00 OR currentTime < 02:00)
+    isInWorkingHours = currentTime >= start || currentTime < end;
+  } else {
+    isInWorkingHours = currentTime >= start && currentTime < end;
+  }
+
+  if (!isInWorkingHours) {
     return {
       shouldRespond: false,
       reason: 'Outside working hours',

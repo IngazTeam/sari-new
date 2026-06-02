@@ -13,7 +13,6 @@ import {
   getConversationsByMerchantId,
   getMerchantByUserId,
   getOrCreatePersonalitySettings,
-  getWhatsappConnectionByMerchantId,
   shouldBotRespond,
   updateBotSettings,
   updateSariPersonalitySettings,
@@ -97,8 +96,12 @@ export const botSettingsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const connection = await getWhatsappConnectionByMerchantId(merchant.id);
-        if (!connection || connection.status !== 'connected') {
+        // FIX: Use merchant's WhatsApp instance instead of legacy env-based connection
+        const { getWhatsAppInstancesByMerchantId } = await import('./db');
+        const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
+        const activeInstance = instances.find((i: any) => i.status === 'active');
+
+        if (!activeInstance) {
             throw new TRPCError({
                 code: 'PRECONDITION_FAILED',
                 message: 'يجب ربط حساب WhatsApp أولاً'
@@ -110,8 +113,6 @@ export const botSettingsRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Bot settings not found' });
         }
 
-        const { sendTextMessage } = await import('./whatsapp');
-
         if (!merchant.phone) {
             throw new TRPCError({
                 code: 'PRECONDITION_FAILED',
@@ -119,7 +120,12 @@ export const botSettingsRouter = router({
             });
         }
 
-        const result = await sendTextMessage(
+        const { sendMessageWithCredentials } = await import('./whatsapp');
+        const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
+        const result = await sendMessageWithCredentials(
+            activeInstance.instanceId,
+            activeInstance.token,
+            apiUrl,
             merchant.phone,
             settings.welcomeMessage || 'مرحباً! هذه رسالة تجريبية من ساري.'
         );

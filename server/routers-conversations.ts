@@ -12,10 +12,12 @@ import {
   getConversationById,
   getConversationCountByMerchantId,
   getConversationsByMerchantId,
+  getBotSettings,
   getMerchantByUserId,
   getMessagesByConversationId,
   getWhatsAppConnectionRequestByMerchantId,
   createMessage,
+  updateConversation,
 } from './db';
 
 export const conversationsRouter = router({
@@ -179,6 +181,21 @@ export const conversationsRouter = router({
                 content: input.message,
                 externalId: result.messageId || null,
             });
+
+            // ── FIX: Activate humanTakeover so bot stays silent ──
+            // Without this, the bot would reply immediately after the merchant's dashboard reply
+            try {
+                const botSettings = await getBotSettings(merchant.id);
+                const timeoutMin = botSettings.takeoverTimeoutMinutes || 15;
+                await updateConversation(input.conversationId, {
+                    humanTakeover: 1,
+                    humanTakeoverAt: new Date(),
+                    humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
+                } as any);
+                console.log(`[Dashboard] Human takeover activated on conv ${input.conversationId} for ${timeoutMin} min (merchant replied from dashboard)`);
+            } catch (takeoverErr) {
+                console.warn('[Dashboard] Failed to activate takeover:', takeoverErr);
+            }
 
             return { success: true, messageId: result.messageId };
         }),

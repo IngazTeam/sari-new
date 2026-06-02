@@ -272,6 +272,7 @@ async function processTextMessage(params: {
   customerName?: string;
   messageText: string;
   imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
+  externalId?: string; // Green API idMessage — for dedup
 }): Promise<string> {
   try {
     console.log('[Webhook] Processing text message:', params.messageText, params.imageUrl ? `[with image: ${params.imageUrl.substring(0, 60)}...]` : '');
@@ -283,13 +284,14 @@ async function processTextMessage(params: {
     }
     
     // Save incoming message
-    await createMessage({
+    const incomingMsg = await createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
       messageType: params.imageUrl ? 'image' : 'text',
       content: params.messageText,
       voiceUrl: params.imageUrl || null,  // Reuse voiceUrl field for image URL
       isProcessed: 0,
+      externalId: params.externalId || null,
       // @ts-ignore
       aiwResponse: null,
     });
@@ -370,6 +372,20 @@ async function processTextMessage(params: {
     // Increment message usage (incoming + outgoing = 2 messages)
     await incrementMessageUsage(params.merchantId);
     await incrementMessageUsage(params.merchantId);
+
+    // ── FIX: Mark incoming message as processed after successful AI response ──
+    // Prevents takeover-expiry from re-processing already-answered messages
+    if (incomingMsg?.id) {
+      try {
+        const { getPool: getPoolRef } = await import('../db');
+        const pool = await getPoolRef();
+        if (pool) {
+          await pool.execute('UPDATE messages SET isProcessed = 1 WHERE id = ?', [incomingMsg.id]);
+        }
+      } catch (procErr) {
+        console.warn('[Webhook] Failed to mark message as processed (non-blocking):', procErr);
+      }
+    }
     
     return finalResponse;
   } catch (error: any) {
@@ -953,6 +969,26 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     
     console.log('[Webhook] Merchant ID:', instance.merchantId);
 
+    // ── FIX: Webhook dedup — prevent double-processing on Green API retries ──
+    if (payload.idMessage) {
+      try {
+        const { getPool } = await import('../db');
+        const pool = await getPool();
+        if (pool) {
+          const [existing] = await pool.execute(
+            'SELECT id FROM messages WHERE externalId = ? LIMIT 1',
+            [payload.idMessage]
+          );
+          if ((existing as any[])?.length > 0) {
+            console.log(`[Webhook] ⚡ Duplicate webhook ignored — idMessage ${payload.idMessage} already processed`);
+            return { success: true, message: 'Duplicate webhook ignored' };
+          }
+        }
+      } catch (dedupErr) {
+        console.warn('[Webhook] Dedup check failed (non-blocking):', dedupErr);
+      }
+    }
+
     // ── #علم_ساري: Natural WhatsApp Training Command ──
     // Allows merchant to teach Sari directly via WhatsApp hashtag
     try {
@@ -1225,6 +1261,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             customerPhone,
             customerName,
             messageText: caption,
+            externalId: payload.idMessage,
           });
         } else if (imageDownloadUrl) {
           // URL exists but untrusted — still acknowledge the image
@@ -1234,6 +1271,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             customerPhone,
             customerName,
             messageText: '[صورة من العميل]',
+            externalId: payload.idMessage,
           });
         } else {
           logDelivery({ merchantId: instance.merchantId, instanceId, customerPhone, customerName, messageType: 'other', status: 'dropped', failureReason: 'image_no_url', failureDetails: `typeMessage: ${payload.messageData.typeMessage}`, source: 'webhook' });
@@ -1252,6 +1290,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           customerName,
           messageText,
           imageUrl: safeImageUrl,
+          externalId: payload.idMessage,
         });
       }
     } else {
@@ -1273,6 +1312,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         customerPhone,
         customerName,
         messageText,
+        externalId: payload.idMessage,
       });
     }
     
