@@ -2208,6 +2208,21 @@ export const appRouter = router({
           externalId: result.messageId || null,
         });
 
+        // ── FIX: Activate humanTakeover so bot stays silent (parity with modular router) ──
+        try {
+          const { getBotSettings: getBSInline, updateConversation: updateConvInline } = await import('./db');
+          const bsInline = await getBSInline(merchant.id);
+          const timeoutMin = bsInline.takeoverTimeoutMinutes || 15;
+          await updateConvInline(input.conversationId, {
+            humanTakeover: 1,
+            humanTakeoverAt: new Date(),
+            humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
+          } as any);
+          console.log(`[Dashboard-Inline] Human takeover activated on conv ${input.conversationId} for ${timeoutMin} min`);
+        } catch (takeoverErr) {
+          console.warn('[Dashboard-Inline] Failed to activate takeover:', takeoverErr);
+        }
+
         return { success: true, messageId: result.messageId };
       }),
   }),
