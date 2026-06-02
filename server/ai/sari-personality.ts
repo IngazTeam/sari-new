@@ -60,10 +60,21 @@ import dbZid from '../db_zid';
  * Build dynamic system prompt based on personality settings
  */
 function buildSystemPrompt(settings?: SariPersonalitySetting): string {
-  // Base personality — NEVER mention "ساري" as bot identity
-  let prompt = `أنت موظف مبيعات محترف في هذا النشاط التجاري عبر الواتساب. تتحدث باسم النشاط التجاري مباشرة. أنت خبير في فهم احتياجات العملاء واقتراح المنتجات المناسبة.
+  // Sacred Wall — the absolute first thing GPT reads
+  let prompt = `🛑🛑🛑 الجدار المقدس — قواعد لا يمكن كسرها أبداً 🛑🛑🛑
 
-🚫 قاعدة هوية صارمة: لا تذكر اسم "ساري" أو "Sari" أبداً في أي رد. أنت تمثل النشاط التجاري فقط.
+1. ❌ هويتك: اسمك = اسم الموظف المحدد أدناه أو اسم الشركة فقط. ممنوع تذكر "ساري" أو "Sari" أو "أنا مساعدك الذكي" أو "أنا بوت" في أي رد. تصرّف كموظف بشري حقيقي.
+2. ❌ تأليف الأسعار: إذا السعر غير موجود في بيانات المنتجات أدناه → قل "خلني أتأكد من السعر وأرد عليك 📝" — ممنوع تخترع أي رقم.
+3. ❌ تأليف معلومات: إذا المعلومة (تاريخ، عدد ساعات، شهادة، اعتماد) غير موجودة في البيانات → قل "خلني أتأكد من المعلومة وأرد عليك" — ممنوع تخترع.
+4. ❌ ردود عامة: أول سطر = الجواب المباشر من البيانات. ممنوع مقدمات تسويقية أو ديباجات.
+5. ✅ مرجعك الوحيد: قائمة المنتجات والمعلومات أدناه هي مصدر الحقيقة الوحيد. أي سؤال جوابه مو موجود = "خلني أتأكد".
+6. ❌ ممنوع تقول "عندنا دورات مثل..." ثم تسرد من ذاكرتك — فقط اللي موجود في البيانات أدناه.
+
+⚠️ كسر أي قاعدة أعلاه = رفض الرد تلقائياً من النظام.
+
+---
+
+أنت موظف مبيعات محترف في هذا النشاط التجاري عبر الواتساب. تتحدث باسم النشاط التجاري مباشرة. أنت خبير في فهم احتياجات العملاء واقتراح المنتجات المناسبة.
 
 ## شخصيتك المميزة:
 `;
@@ -1738,6 +1749,7 @@ ${result.orderUrl}
 
       // ── Virtual Agent override for FAST PATH ──
       // Without this, message #2+ would lose agent personality and revert to Sari
+      let resumePrompt = '';
       try {
         if (params.conversationId) {
           const { eq } = await import('drizzle-orm');
@@ -1745,6 +1757,37 @@ ${result.orderUrl}
           const convs = await getConversationsByMerchantId(params.merchantId);
           const thisConv = convs.find((c: any) => c.id === params.conversationId);
           const agentId = (thisConv as any)?.currentAgentId;
+          
+          // ── Resume Context Injection (after Human Takeover) ──
+          // When the bot resumes after merchant intervention, inject the full conversation
+          // history so GPT understands what was discussed and doesn't repeat or contradict.
+          const agentHistoryStr = (thisConv as any)?.agentHistory;
+          if (agentHistoryStr) {
+            const agentHistory = JSON.parse(agentHistoryStr);
+            if (agentHistory.resumeContext) {
+              resumePrompt = `\n\n## 📋 ملف المحادثة — استئناف بعد تدخل بشري:
+التاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة في الفترة الأخيرة.
+هذا سجل آخر الرسائل بالترتيب:
+---
+${sanitizeForPrompt(agentHistory.resumeContext)}
+---
+
+⚠️ تعليمات حرجة للاستئناف:
+1. اقرأ السجل أعلاه بعناية — افهم ما سأل العميل وما أجاب التاجر
+2. لا تكرر أي معلومة قالها التاجر — العميل سمعها بالفعل
+3. لا تقل "عدت" أو "أنا هنا مجدداً" أو "مرحباً مرة ثانية" — تصرف كأنك تتابع المحادثة بشكل طبيعي
+4. أجب على الرسالة الحالية فقط مع مراعاة كل السياق أعلاه
+5. إذا التاجر أجاب سؤال العميل بالفعل → لا تعيد الإجابة. انتقل للموضوع التالي أو اسأل "تبي تعرف شي ثاني؟"
+`;
+
+              // Clear the resume context after first use
+              await updateConversation(params.conversationId, {
+                agentHistory: null,
+              } as any);
+              console.log(`[AI] Injected resume context (${agentHistory.resumeContext.length} chars) and cleared agentHistory`);
+            }
+          }
+
           if (agentId) {
             const agentRows = await pool!.select().from(virtualAgents)
               .where(eq(virtualAgents.id, agentId));
@@ -2110,13 +2153,13 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         if (agentHistoryStr) {
           const agentHistory = JSON.parse(agentHistoryStr);
           if (agentHistory.resumeContext) {
-            resumePrompt = `\n\n## سياق مهم — استئناف بعد تدخل بشري:\nالتاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة. الآن عدت أنت للرد. هذا ملخص آخر المحادثة بينهم:\n---\n${sanitizeForPrompt(agentHistory.resumeContext)}\n---\n⚠️ تعليمات: لا تكرر ما قاله التاجر. أكمل المحادثة بسلاسة كأنك تتابع من حيث توقفوا. لا تقل "عدت" أو "أنا هنا مجدداً". فقط أكمل الخدمة بشكل طبيعي.\n`;
+            resumePrompt = `\n\n## 📋 ملف المحادثة — استئناف بعد تدخل بشري:\nالتاجر (صاحب المتجر) كان يتحدث مع العميل مباشرة.  هذا سجل آخر الرسائل بالترتيب:\n---\n${sanitizeForPrompt(agentHistory.resumeContext)}\n---\n⚠️ تعليمات: لا تكرر ما قاله التاجر. لا تقل عدت أو أنا هنا مجدداً. أجب على الرسالة الحالية فقط مع مراعاة السياق. إذا التاجر أجاب بالفعل → انتقل للموضوع التالي. لا تقل "عدت" أو "أنا هنا مجدداً". فقط أكمل الخدمة بشكل طبيعي.\n`;
 
             // Clear the resume context after first use
             await updateConversation(params.conversationId, {
               agentHistory: null,
             } as any);
-            console.log('[AI] Injected resume context and cleared agentHistory');
+            console.log('[AI] FULL PATH: Injected resume context and cleared agentHistory');
           }
         }
       }
@@ -2218,9 +2261,20 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
           console.log(`[VirtualAgent] Selected: ${selectedAgent.name} (${selectedAgent.role})${previousAgentName ? ` [handoff from ${previousAgentName}]` : ''} for conv ${params.conversationId}`);
         }
       }
+      
+      // Fallback: No virtual agents or none selected → use merchant business name
+      if (!activeAgentName) {
+        const bizName = merchant?.businessName || 'نشاطنا التجاري';
+        const identityOverride = `\n\n## هوية الرد:\nأنت تمثل "${sanitizeForPrompt(bizName)}" مباشرة. عرّف نفسك باسم الشركة فقط. مثال: "أهلاً! حياك في ${sanitizeForPrompt(bizName)}". ممنوع تذكر "ساري" أو أي اسم آخر.\n`;
+        systemPrompt += identityOverride;
+        console.log(`[VirtualAgent] No agent selected — using business name: ${bizName}`);
+      }
     } catch (agentError) {
       // Fall back to merchant business name — NEVER use "ساري" as agent name
-      console.warn('[VirtualAgent] Agent selection failed, using merchant identity:', agentError);
+      const bizName = merchant?.businessName || 'نشاطنا التجاري';
+      const identityOverride = `\n\n## هوية الرد:\nأنت تمثل "${sanitizeForPrompt(bizName)}" مباشرة. عرّف نفسك باسم الشركة فقط. ممنوع تذكر "ساري" أو أي اسم آخر.\n`;
+      systemPrompt += identityOverride;
+      console.warn(`[VirtualAgent] Agent selection failed, using business name "${bizName}":`, agentError);
     }
 
     // Append resume context after agent selection (preserved across rebuilds)

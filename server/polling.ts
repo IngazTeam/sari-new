@@ -318,16 +318,33 @@ async function handleIncomingMessage(
         });
         return;
       } else {
-        // Takeover expired — clear and send resume message
-        await updateConversation(conversation.id, { humanTakeover: 0, humanExpiresAt: null } as any);
-        console.log(`[Polling] Takeover expired on conv ${conversation.id} — resuming`);
-        // Send resume message from botSettings
-        try {
-          const { getBotSettings: getBS } = await import('./db');
-          const bs = await getBS(merchantId);
-          const resumeMsg = bs.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
-          await whatsapp.sendMessageWithCredentials(instanceId, apiToken, apiUrl, customerPhone, resumeMsg);
-        } catch { /* non-blocking */ }
+        // Takeover expired + customer sent new message → resume with context
+        console.log(`[Polling] Takeover expired on conv ${conversation.id} — building resume context`);
+        
+        // Build resume context from last 20 messages
+        const allMsgs = await getMessagesByConversationId(conversation.id);
+        const last20 = allMsgs.slice(-20);
+        const resumeLines: string[] = [];
+        for (const msg of last20) {
+          const dir = (msg as any).direction;
+          const content = ((msg as any).content || '').substring(0, 300);
+          const sender = (msg as any).senderType;
+          if (!content || content === '[media]') continue;
+          if (dir === 'incoming') {
+            resumeLines.push(`▸ العميل: "${content}"`);
+          } else if (sender === 'merchant' || sender === 'human') {
+            resumeLines.push(`▸ التاجر (يدوي): "${content}"`);
+          } else {
+            resumeLines.push(`▸ البوت: "${content}"`);
+          }
+        }
+        
+        await updateConversation(conversation.id, {
+          humanTakeover: 0,
+          humanExpiresAt: null,
+          agentHistory: JSON.stringify({ resumeContext: resumeLines.join('\n') }),
+        } as any);
+        // Fall through to normal AI processing (no "عدت لخدمتك" message)
       }
     }
 

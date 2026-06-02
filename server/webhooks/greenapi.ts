@@ -802,13 +802,14 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       const convs = await getConversationsByMerchantId(instance.merchantId);
       const conv = convs.find(c => c.customerPhone === customerPhone);
       if (conv) {
-        const timeoutMin = botSettings.takeoverTimeoutMinutes || 15;
+        // Fixed 1-hour sliding window — every merchant message renews the timer
+        const TAKEOVER_DURATION_MS = 60 * 60 * 1000; // 1 hour
         await updateConversation(conv.id, {
           humanTakeover: 1,
-          humanTakeoverAt: new Date(),
-          humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
+          humanTakeoverAt: new Date(), // Reset on EVERY merchant message (sliding window)
+          humanExpiresAt: new Date(Date.now() + TAKEOVER_DURATION_MS),
         } as any);
-        console.log(`[Takeover] Human took over conv ${conv.id} for ${timeoutMin} min`);
+        console.log(`[Takeover] Human took over conv ${conv.id} for 60 min (sliding window — resets on each merchant msg)`);
 
         // Learning Engine: Capture merchant correction signal
         // When the merchant sends a message, it means the bot's response was inadequate
@@ -859,7 +860,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           await notifyNewMessage(
             instance.merchantId,
             'المساعد الذكي ⏸️',
-            `تم إيقاف المساعد الذكي ${timeoutMin} دقيقة على محادثة ${conv.customerPhone?.slice(-4) || 'عميل'}. أرسل "يسعدنا خدمتكم" للاستئناف${feedbackLine}`
+            `تم إيقاف المساعد الذكي ساعة على محادثة ${conv.customerPhone?.slice(-4) || 'عميل'} (يتجدد مع كل رسالة منك). البوت سيستأنف تلقائياً بعد ساعة من آخر رسالة لك${feedbackLine}`
           );
           console.log(`[Takeover] 📩 In-app confirmation sent to merchant for conv ${conv.id}`);
         } catch (confirmErr) {
@@ -1203,22 +1204,52 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         });
         return { success: true, message: 'Human takeover active — Sari silent' };
       } else {
-        // Takeover expired — resume Sari
+        // Takeover expired + customer sent new message → resume with FULL context
+        console.log(`[Takeover] Expired — building resume context from last 20 messages for conv ${currentConv.id}`);
+        
+        // 1. Read last 20 messages (including merchant's manual replies)
+        const allMessages = await getMessagesByConversationId(currentConv.id);
+        const last20 = allMessages.slice(-20);
+        
+        // 2. Build structured resume context
+        const resumeLines: string[] = [];
+        for (const msg of last20) {
+          const dir = (msg as any).direction;
+          const content = ((msg as any).content || '').substring(0, 300);
+          const sender = (msg as any).senderType;
+          if (!content || content === '[media]') continue;
+          
+          if (dir === 'incoming') {
+            resumeLines.push(`▸ العميل: "${content}"`);
+          } else if (sender === 'merchant' || sender === 'human') {
+            resumeLines.push(`▸ التاجر (يدوي): "${content}"`);
+          } else {
+            resumeLines.push(`▸ البوت: "${content}"`);
+          }
+        }
+        
+        const resumeContext = resumeLines.join('\n');
+        
+        // 3. Save resume context to conversation for AI to read
         await updateConversation(currentConv.id, {
           humanTakeover: 0,
           humanExpiresAt: null,
+          agentHistory: JSON.stringify({ resumeContext }),
         } as any);
-        console.log(`[Takeover] Expired — Sari resuming on conv ${currentConv.id}`);
-        // Send resume message
-        const resumeMsg = botSettings.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
-        await sendResponseWithDelay({
-          customerPhone: groupChatId || customerPhone,
-          message: resumeMsg,
-          delayMs: 500,
-          instanceId: instance.instanceId,
-          token: instance.token,
-          apiUrl: instance.apiUrl || undefined,
-        });
+        
+        // 4. Notify merchant that bot is resuming
+        try {
+          const { notifyNewMessage } = await import('../_core/notificationService');
+          await notifyNewMessage(
+            instance.merchantId,
+            'المساعد الذكي ▶️',
+            `العميل ***${customerPhone.slice(-4)} أرسل رسالة جديدة بعد انتهاء فترة التدخل. البوت يستأنف الرد بناءً على سياق المحادثة الكاملة.`
+          );
+        } catch { /* non-blocking */ }
+        
+        // 5. DON'T send "عدت لخدمتك" — fall through to normal AI processing
+        // The AI will read the resumeContext from agentHistory and respond naturally
+        console.log(`[Takeover] ✅ Resume context built (${resumeLines.length} messages). Falling through to AI processing.`);
       }
     }
     
