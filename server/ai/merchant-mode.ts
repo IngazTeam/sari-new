@@ -781,7 +781,8 @@ async function deliverToCustomer(params: {
 }, customerPhone: string, replyText: string): Promise<void> {
   const { sendMessageWithCredentials } = await import('../whatsapp');
   
-  const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${replyText.substring(0, 2000)}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
+  // Forward merchant's reply transparently — NO bot credit claiming
+  const customerReply = replyText.substring(0, 2000);
   
   await sendMessageWithCredentials(
     params.instanceId, params.token, params.apiUrl,

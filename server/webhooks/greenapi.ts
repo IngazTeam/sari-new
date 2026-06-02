@@ -706,7 +706,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             } catch { /* silent */ }
             
             if (targetCustomerPhone) {
-              const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${merchantReplyText.substring(0, 2000)}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
+              // Direct transparent forwarding — NO bot credit claiming
+              const customerReply = merchantReplyText.substring(0, 2000);
               
               try {
                 await sendMessageWithCredentials(
@@ -729,69 +730,19 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             }
           }
           
-          // ── AI Feedback to Merchant ──
-          // Analyze the merchant's reply and provide constructive feedback
+          // ── Merchant Feedback via IN-APP NOTIFICATION (NOT WhatsApp to customer!) ──
           if (deliverySuccess) {
             try {
-              const { callGPT4 } = await import('../ai/openai');
-              const feedbackPrompt = [
-                {
-                  role: 'system' as const,
-                  content: `أنت مستشار خدمة العملاء الذكي. مهمتك تقييم رد التاجر على سؤال العميل وتقديم ملاحظات مختصرة.
-
-قواعد التقييم:
-1. إذا كان الرد احترافي وواضح → أثنِ عليه بحماس وأكّد أنه ممتاز
-2. إذا كان الرد جيد لكن يمكن تحسينه → أثنِ أولاً ثم اقترح تحسين واحد محدد
-3. إذا كان الرد ضعيف أو ناقص → اقترح رد بديل أفضل بلطف
-
-الرد يجب أن يكون:
-- باللهجة السعودية
-- مختصر (3-5 أسطر كحد أقصى)
-- يبدأ بتأكيد التوصيل ✅
-- يحتوي تقييم صادق لكن لطيف
-- إذا اقترحت تحسين، اكتب الرد المقترح كاملاً ليقدر التاجر ينسخه`
-                },
-                {
-                  role: 'user' as const,
-                  // PEN-MR-02 FIX: Sanitize both inputs to prevent prompt manipulation
-                  content: `سؤال العميل: "${sanitizeForPrompt(originalQuestion.substring(0, 300)) || 'غير متوفر'}"\n\nرد التاجر: "${sanitizeForPrompt(outText.substring(0, 500))}"\n\nقيّم رد التاجر وأعطه ملاحظاتك:`
-                }
-              ];
-              
-              const aiFeedback = await callGPT4(feedbackPrompt, {
-                model: 'gpt-4o-mini',
-                temperature: 0.7,
-                maxTokens: 300,
-                noRetry: true,
-              });
-              
-              // Send AI feedback to merchant
-              const feedbackMessage = `✅ *تم توصيل ردك للعميل بنجاح!*\n\n${aiFeedback.trim()}`;
-              
-              await sendMessageWithCredentials(
-                (instance as any).instanceId,
-                (instance as any).token,
-                (instance as any).apiUrl || 'https://api.green-api.com',
-                customerPhone,
-                feedbackMessage
+              const { notifyNewMessage } = await import('../_core/notificationService');
+              await notifyNewMessage(
+                instance.merchantId,
+                '✅ تم توصيل الرد',
+                `تم توصيل ردك للعميل ***${targetCustomerPhone.slice(-4)} بنجاح.`
               );
-              
-              console.log(`[MerchantReply] 🧠 AI feedback sent to merchant`);
-            } catch (feedbackErr) {
-              // Fallback: simple confirmation without AI analysis
-              console.warn('[MerchantReply] AI feedback failed, sending simple confirmation:', feedbackErr);
-              try {
-                await sendMessageWithCredentials(
-                  (instance as any).instanceId,
-                  (instance as any).token,
-                  (instance as any).apiUrl || 'https://api.green-api.com',
-                  customerPhone,
-                  `✅ *تم توصيل ردك للعميل بنجاح!*\n\nشكراً لسرعة استجابتك 👏 المساعد الذكي تعلّم من ردك وسيستخدمه مستقبلاً 🧠`
-                );
-              } catch { /* confirmation is non-blocking */ }
-            }
+              console.log(`[MerchantReply] ✅ Delivery confirmation sent via in-app notification (NOT to customer)`);
+            } catch { /* non-blocking */ }
             
-            return { success: true, message: 'Merchant reply forwarded + AI feedback sent' };
+            return { success: true, message: 'Merchant reply forwarded to customer' };
           }
           
           

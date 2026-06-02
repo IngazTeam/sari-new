@@ -477,8 +477,8 @@ export async function handleMerchantEscalationReply(params: {
         .replace(/https?:\/\/[^\s]+/g, '[رابط]')      // Strip raw URLs
         .replace(/\[.*?\]\(.*?\)/g, '[رابط]');          // Strip markdown links
 
-      // Build a natural response incorporating the merchant's sanitized answer
-      const customerReply = `أهلاً مجدداً! 😊 حصلت لك الجواب:\n\n${safeReplyText}\n\nهل فيه شي ثاني أقدر أساعدك فيه؟ 🙏`;
+      // Forward merchant's reply transparently — NO bot credit claiming
+      const customerReply = safeReplyText;
 
       await sendMessageWithCredentials(
         (activeInstance as any).instanceId,
