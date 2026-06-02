@@ -308,7 +308,7 @@ export const messages = mysqlTable("messages", {
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 },
 	(table) => [
-		index("idx_messages_external_id").on(table.externalId),
+		uniqueIndex("idx_messages_external_id").on(table.externalId),
 	]);
 
 export const notificationTemplates = mysqlTable("notification_templates", {

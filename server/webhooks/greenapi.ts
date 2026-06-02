@@ -385,6 +385,16 @@ async function processVoiceMessageWebhook(params: {
     const limitReached = await hasReachedVoiceLimit(params.merchantId);
     if (limitReached) {
       console.warn('[Webhook] Voice message limit reached for merchant:', params.merchantId);
+      // FIX-C: Save incoming even on limit — prevents retry duplication
+      await createMessage({
+        conversationId: params.conversationId,
+        direction: 'incoming',
+        messageType: 'voice',
+        content: '[رسالة صوتية — تم الوصول لحد الباقة]',
+        voiceUrl: params.audioUrl,
+        isProcessed: 1,
+        externalId: params.externalId || null,
+      });
       return { response: 'عذراً، لقد وصلت لحد الرسائل الصوتية في باقتك. يرجى الترقية للاستمرار أو إرسال رسالة نصية. 🙏' };
     }
     
@@ -406,6 +416,18 @@ async function processVoiceMessageWebhook(params: {
     return { response: result.response, incomingMsgId: result.incomingMsgId };
   } catch (error: any) {
     console.error('[Webhook] Error processing voice message:', error);
+    // FIX-C: Save incoming on failure too — prevents retry duplication
+    try {
+      await createMessage({
+        conversationId: params.conversationId,
+        direction: 'incoming',
+        messageType: 'voice',
+        content: '[رسالة صوتية — فشل المعالجة]',
+        voiceUrl: params.audioUrl,
+        isProcessed: 1,
+        externalId: params.externalId || null,
+      });
+    } catch { /* non-blocking */ }
     return { response: 'ما قدرت أسمع الرسالة الصوتية واضح 🎙️ ممكن تعيد إرسالها أو تكتب لي نصياً؟ 😊' };
   }
 }
@@ -1064,7 +1086,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       console.log('[Webhook] Bot should not respond:', reason);
       
       // FIX-5: Save the incoming message so merchant sees it in dashboard
-      await createMessage({
+      const oohMsg = await createMessage({
         conversationId,
         direction: 'incoming',
         messageType: 'text',
@@ -1085,6 +1107,16 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             token: instance.token,
             apiUrl: instance.apiUrl || undefined,
           });
+          
+          // FIX-D: Mark as processed after OOH message sent successfully
+          if (oohMsg?.id) {
+            try {
+              const pool = await getPool();
+              if (pool) {
+                await pool.execute('UPDATE messages SET isProcessed = 1 WHERE id = ?', [oohMsg.id]);
+              }
+            } catch { /* non-blocking */ }
+          }
         }
       }
       
@@ -1123,6 +1155,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           content: extractMessageText(payload) || '[media]',
           voiceUrl: null,
           isProcessed: 0,
+          externalId: payload.idMessage || null,
           aiResponse: null,
         });
         return { success: true, message: 'Human takeover active — Sari silent' };
