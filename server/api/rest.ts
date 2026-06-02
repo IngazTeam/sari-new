@@ -988,10 +988,21 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
       if (!p.name) continue;
       try {
         // SEC-3: Sanitize all text fields to prevent stored XSS
-        // FIX: Byaan courses — set trackInventory=0 (Byaan manages enrollment), 
-        // use maxStudents as stock if provided, otherwise null (unlimited)
+        // Byaan courses: save course dates + enrollment for availability checks
         const stockValue = p.maxStudents ? Number(p.maxStudents) : (p.stock ? Number(p.stock) : null);
         const sanitizedName = stripHtml(String(p.name)).substring(0, 255);
+
+        // Course date validation: auto-deactivate expired courses
+        const courseEndDate = p.endDate || p.courseEndDate || null;
+        const courseStartDate = p.startDate || p.courseStartDate || null;
+        const enrolledCount = p.enrolledCount ? Number(p.enrolledCount) : 0;
+        const maxStudents = p.maxStudents ? Number(p.maxStudents) : null;
+        const isExpired = courseEndDate ? new Date(courseEndDate) < new Date() : false;
+        const isFull = maxStudents !== null && enrolledCount >= maxStudents;
+        const registrationOpen = p.registrationOpen !== undefined 
+          ? Boolean(p.registrationOpen) 
+          : (!isExpired && !isFull);
+
         const productData: any = {
           merchantId,
           name: sanitizedName,
@@ -1002,9 +1013,16 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
           category: p.category ? stripHtml(String(p.category)).substring(0, 100) : undefined,
           imageUrl: p.imageUrl ? stripHtml(String(p.imageUrl)).substring(0, 500) : undefined,
           productUrl: p.productUrl ? stripHtml(String(p.productUrl)).substring(0, 500) : undefined,
-          isActive: p.inStock !== undefined ? Boolean(p.inStock) : (p.isActive !== undefined ? Boolean(p.isActive) : true),
+          // Auto-deactivate expired courses
+          isActive: isExpired ? false : (p.inStock !== undefined ? Boolean(p.inStock) : (p.isActive !== undefined ? Boolean(p.isActive) : true)),
           stock: stockValue,
           trackInventory: stockValue !== null ? 1 : 0,
+          // Course-specific fields
+          courseStartDate: courseStartDate || undefined,
+          courseEndDate: courseEndDate || undefined,
+          maxStudents: maxStudents,
+          enrolledCount: enrolledCount,
+          registrationOpen: registrationOpen ? 1 : 0,
         };
 
         // Upsert: check if product with same name already exists
@@ -1215,14 +1233,43 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     }
 
     // 3. Products (courses) — FULL descriptions for deep understanding
-    const products = await (getProductsByMerchantId as any)(merchantId);
+    // Filter active only + non-expired to prevent stale knowledge
+    const allProducts = await (getProductsByMerchantId as any)(merchantId);
+    const now = new Date();
+    const products = allProducts.filter((p: any) => {
+      if (!p.isActive && p.isActive !== undefined) return false;
+      // Filter out expired courses
+      const endDate = p.courseEndDate || p.course_end_date;
+      if (endDate && new Date(endDate) < now) return false;
+      return true;
+    });
     if (products.length > 0) {
-      parts.push(`\n--- الدورات والمنتجات (${products.length}) ---`);
+      parts.push(`\n--- الدورات والمنتجات المتاحة (${products.length}) ---`);
       for (const p of products) {
-        let line = `\n• ${p.name}`;
+        const name = p.name || p.nameAr || 'بدون اسم';
+        let line = `\n• ${name}`;
         if (p.price) line += `\nالسعر: ${p.price} ر.س`;
         if (p.category) line += `\nالتصنيف: ${p.category}`;
-        if ((p as any).inStock === false) line += `\nالحالة: غير متاح حالياً`;
+        
+        // Course dates
+        const startDate = p.courseStartDate || p.course_start_date;
+        const endDate = p.courseEndDate || p.course_end_date;
+        if (startDate) line += `\nتاريخ البداية: ${new Date(startDate).toLocaleDateString('ar-SA')}`;
+        if (endDate) line += `\nتاريخ النهاية: ${new Date(endDate).toLocaleDateString('ar-SA')}`;
+        
+        // Seats
+        const maxStudents = p.maxStudents || p.max_students;
+        const enrolled = p.enrolledCount || p.enrolled_count || 0;
+        if (maxStudents) {
+          const remaining = Math.max(0, maxStudents - enrolled);
+          line += `\nالمقاعد: ${remaining} متبقي من ${maxStudents}`;
+          if (remaining === 0) line += ` ⛔ مكتملة`;
+        }
+        
+        // Registration
+        const regOpen = p.registrationOpen ?? p.registration_open;
+        if (regOpen === 0 || regOpen === false) line += `\nالتسجيل: مغلق`;
+        
         if (p.description) line += `\nالوصف: ${(p.description as string).substring(0, 2000)}`;
         parts.push(line);
       }

@@ -404,19 +404,23 @@ export async function buildRAGContext(
 // 6. Product-Aware Context — Match products from catalog
 // ═══════════════════════════════════════════════════════════════
 
-/** Patterns that indicate the customer is asking about products */
+/** Patterns that indicate the customer is asking about products/courses */
 const PRODUCT_INQUIRY_PATTERNS = [
   /كم سعر/i, /كم السعر/i, /عندكم/i, /متوفر/i, /أبغى/i, /أبي/i,
   /هل يوجد/i, /فيه/i, /أسعار/i, /how much/i, /price/i, /available/i,
   /منتج/i, /product/i,
+  // Course-specific patterns
+  /دور[ةا]ت?/i, /تدريب/i, /برنامج/i, /كورس/i, /course/i, /training/i,
+  /تسجيل/i, /مقاعد/i, /أماكن/i, /مجان/i, /شهاد/i, /اعتماد/i,
 ];
 
 /**
  * Search merchant's product catalog and build context when the
- * customer is asking about specific products.
+ * customer is asking about specific products/courses.
+ * Filters out expired courses and shows seat availability.
  */
 async function buildProductContext(merchantId: number, question: string): Promise<string> {
-  // Only search products if the question has product-inquiry signals
+  // Only search products if the question has product/course inquiry signals
   if (!PRODUCT_INQUIRY_PATTERNS.some(p => p.test(question))) return '';
 
   const { getPool } = await import('../db');
@@ -435,14 +439,19 @@ async function buildProductContext(merchantId: number, question: string): Promis
   // Escape LIKE wildcards to prevent broad matching attacks
   const escapeLike = (s: string) => s.replace(/[%_\\]/g, '\\$&');
 
-  const likeClauses = keywords.map(() => `(p.name LIKE ? OR p.description LIKE ?)`).join(' OR ');
+  const likeClauses = keywords.map(() => `(COALESCE(p.name, p.nameAr) LIKE ? OR p.description LIKE ?)`).join(' OR ');
   const likeParams = keywords.flatMap(k => { const ek = escapeLike(k); return [`%${ek}%`, `%${ek}%`]; });
 
   try {
     const [rows] = await pool.execute(
-      `SELECT p.name, p.price, p.description, p.category
+      `SELECT 
+         COALESCE(p.name, p.nameAr, 'بدون اسم') AS display_name,
+         p.price, p.description, p.category,
+         p.course_start_date, p.course_end_date,
+         p.max_students, p.enrolled_count, p.registration_open
        FROM products p
        WHERE p.merchantId = ? AND p.isActive = 1
+       AND (p.course_end_date IS NULL OR p.course_end_date > NOW())
        AND (${likeClauses})
        ORDER BY p.createdAt DESC
        LIMIT 15`,
@@ -453,12 +462,40 @@ async function buildProductContext(merchantId: number, question: string): Promis
     if (products.length === 0) return '';
 
     const lines = products.map(p => {
+      const name = p.display_name || 'بدون اسم';
       const price = p.price ? ` — ${p.price} ر.س` : '';
-      const desc = p.description ? ` (${p.description.substring(0, 80)})` : '';
-      return `• ${p.name}${price}${desc}`;
+      const desc = p.description ? ` (${(p.description as string).substring(0, 80)})` : '';
+      
+      // Course availability info
+      let availability = '';
+      if (p.max_students) {
+        const remaining = Math.max(0, p.max_students - (p.enrolled_count || 0));
+        if (remaining === 0) {
+          availability = ' ⛔ مكتملة';
+        } else {
+          availability = ` 🪑 ${remaining} مقعد متبقي`;
+        }
+      }
+
+      // Course date info
+      let dateInfo = '';
+      if (p.course_start_date) {
+        const startDate = new Date(p.course_start_date);
+        const now = new Date();
+        if (startDate > now) {
+          dateInfo = ` 📅 تبدأ ${startDate.toLocaleDateString('ar-SA')}`;
+        } else {
+          dateInfo = ` 🟢 جارية حالياً`;
+        }
+      }
+
+      // Registration status
+      const regStatus = p.registration_open === 0 ? ' 🔒 التسجيل مغلق' : '';
+
+      return `• ${name}${price}${desc}${availability}${dateInfo}${regStatus}`;
     });
 
-    return `\n## 🛍️ منتجات مطابقة من الكتالوج:\n${lines.join('\n')}\n📌 توجيه: اذكر المنتجات أعلاه إذا كانت ذات صلة بسؤال العميل. لا تخترع منتجات غير موجودة.\n`;
+    return `\n## 🛍️ منتجات/دورات مطابقة من الكتالوج:\n${lines.join('\n')}\n📌 توجيه: اذكر المنتجات أعلاه إذا كانت ذات صلة بسؤال العميل. لا تخترع منتجات غير موجودة. إذا كانت دورة مكتملة أو مغلقة التسجيل، أخبر العميل بذلك واعرض عليه التسجيل في قائمة الانتظار.\n`;
   } catch {
     return '';
   }

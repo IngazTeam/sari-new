@@ -506,6 +506,12 @@ export const products = mysqlTable("products", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	sallaProductId: varchar({ length: 100 }),
 	lastSyncedAt: timestamp({ mode: 'string' }),
+	// Course-specific fields (Byaan integration)
+	courseStartDate: timestamp("course_start_date", { mode: 'string' }),
+	courseEndDate: timestamp("course_end_date", { mode: 'string' }),
+	maxStudents: int("max_students"),
+	enrolledCount: int("enrolled_count").default(0),
+	registrationOpen: tinyint("registration_open").default(1),
 });
 
 export const productCategories = mysqlTable("product_categories", {
