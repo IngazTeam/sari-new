@@ -1224,19 +1224,40 @@ export async function createMessage(message: InsertMessage): Promise<Message | u
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.insert(messages).values(message);
-  const insertedId = Number((result[0] as any).insertId);
+  try {
+    const result = await db.insert(messages).values(message);
+    const insertedId = Number((result[0] as any).insertId);
 
-  // Update conversation's lastMessageAt
-  const msg = await getMessageById(insertedId);
-  if (msg) {
-    const conversation = await getConversationById(msg.conversationId);
-    if (conversation) {
-      await updateConversation(conversation.id, { lastMessageAt: formatDateForDB(new Date()) });
+    // Update conversation's lastMessageAt
+    const msg = await getMessageById(insertedId);
+    if (msg) {
+      const conversation = await getConversationById(msg.conversationId);
+      if (conversation) {
+        await updateConversation(conversation.id, { lastMessageAt: formatDateForDB(new Date()) });
+      }
     }
-  }
 
-  return msg;
+    return msg;
+  } catch (err: any) {
+    // FIX-3: Graceful dedup — if uniqueIndex on externalId blocks a concurrent insert,
+    // return the existing message instead of throwing an unhandled error.
+    if (err?.code === 'ER_DUP_ENTRY' && (message as any).externalId) {
+      console.log(`[DB] Duplicate externalId detected (ER_DUP_ENTRY) — returning existing message for: ${(message as any).externalId}`);
+      const pool = await getPool();
+      if (pool) {
+        const [rows] = await pool.execute(
+          'SELECT id FROM messages WHERE externalId = ? LIMIT 1',
+          [(message as any).externalId]
+        );
+        const existing = (rows as any[])[0];
+        if (existing) {
+          return await getMessageById(existing.id);
+        }
+      }
+      return undefined;
+    }
+    throw err;
+  }
 }
 
 export async function getMessageById(id: number): Promise<Message | undefined> {

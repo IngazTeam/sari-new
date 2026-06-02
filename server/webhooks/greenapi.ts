@@ -416,17 +416,18 @@ async function processVoiceMessageWebhook(params: {
     return { response: result.response, incomingMsgId: result.incomingMsgId };
   } catch (error: any) {
     console.error('[Webhook] Error processing voice message:', error);
-    // FIX-C: Save incoming on failure too — prevents retry duplication
+    // FIX-C2: voice-handler.ts already saved the incoming message with isProcessed=0.
+    // Instead of INSERT (which would hit uniqueIndex), UPDATE the existing row to mark it processed.
     try {
-      await createMessage({
-        conversationId: params.conversationId,
-        direction: 'incoming',
-        messageType: 'voice',
-        content: '[رسالة صوتية — فشل المعالجة]',
-        voiceUrl: params.audioUrl,
-        isProcessed: 1,
-        externalId: params.externalId || null,
-      });
+      if (params.externalId) {
+        const pool = await getPool();
+        if (pool) {
+          await pool.execute(
+            'UPDATE messages SET isProcessed = 1, content = CONCAT(content, \' [فشل المعالجة]\') WHERE externalId = ? AND isProcessed = 0',
+            [params.externalId]
+          );
+        }
+      }
     } catch { /* non-blocking */ }
     return { response: 'ما قدرت أسمع الرسالة الصوتية واضح 🎙️ ممكن تعيد إرسالها أو تكتب لي نصياً؟ 😊' };
   }

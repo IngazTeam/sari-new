@@ -33,22 +33,22 @@ async function main() {
 
   const dupeRows = dupes as any[];
   if (dupeRows.length > 0) {
-    console.log(`  Found ${dupeRows.length} duplicate externalIds — deduplicating...`);
+    console.log(`  Found ${dupeRows.length} duplicate externalIds — nullifying duplicates...`);
     for (const dupe of dupeRows) {
-      // Keep the first (oldest) row, delete the rest
+      // Keep the first (oldest) row's externalId, nullify the rest
       const [rows] = await pool.execute(
         'SELECT id FROM messages WHERE externalId = ? ORDER BY id ASC',
         [dupe.externalId]
       );
       const ids = (rows as any[]).map(r => r.id);
       const keepId = ids[0];
-      const deleteIds = ids.slice(1);
+      const nullifyIds = ids.slice(1);
       
-      if (deleteIds.length > 0) {
+      if (nullifyIds.length > 0) {
         await pool.execute(
-          `DELETE FROM messages WHERE id IN (${deleteIds.join(',')})`,
+          `UPDATE messages SET externalId = NULL WHERE id IN (${nullifyIds.join(',')})`,
         );
-        console.log(`  Deduped externalId=${dupe.externalId}: kept id=${keepId}, deleted ${deleteIds.length} duplicates`);
+        console.log(`  Deduped externalId=${dupe.externalId}: kept id=${keepId}, nullified ${nullifyIds.length} duplicates (messages preserved)`);
       }
     }
   } else {
