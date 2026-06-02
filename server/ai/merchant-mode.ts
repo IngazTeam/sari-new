@@ -35,6 +35,14 @@ const TEACH_KEYWORDS = [
   'Q:', 'A:', 'سؤال:', 'جواب:',
 ];
 
+const GREETING_PATTERNS = [
+  /^(مرحبا|مرحبًا|مرحباً|السلام عليكم|السلام|هلا|هلا والله|أهلاً|أهلا|هاي|صباح الخير|مساء الخير|يا هلا|هلو|مساء النور|صباح النور|الو|ألو|حياك|حياكم)/i,
+];
+
+// Track last merchant greeting to avoid spamming (per merchantId)
+const _lastMerchantGreeting = new Map<number, number>();
+const GREETING_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
+
 function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quotedText: string): MerchantIntent {
   // Check for escalation reply first
   const isReplyToAlert = quotedText.includes('تنبيه من ساري')  // legacy format (backward compat)
@@ -48,8 +56,20 @@ function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quo
   const replyIntentPhrases = ['قول له', 'قوله', 'جاوبه', 'ابلغه', 'أبلغه', 'بلغه', 'وصله', 'وصل له', 'رد عليه', 'ردي عليه', 'طمنه', 'اعطي العميل', 'أعطي العميل', 'اعطه', 'أعطه'];
   const hasReplyIntent = replyIntentPhrases.some(p => message.includes(p));
 
-  if (isReplyToAlert || hasReplyIntent || hasActiveEscalation) {
+  if (isReplyToAlert || hasReplyIntent) {
     return 'escalation_reply';
+  }
+  
+  // If there's an active escalation AND the message looks like a short direct answer
+  // (not a question or general chat), treat it as an escalation reply.
+  // This prevents merchant's own questions from being misrouted as customer answers.
+  if (hasActiveEscalation && !quotedText) {
+    const isQuestion = /^(كيف|ليش|ليه|وين|متى|هل|وش|ايش|إيش|ممكن|أبغى|ابغى|أبي|ابي|عندي|عندكم)\b/.test(message.trim());
+    const isGreeting = /^(مرحبا|السلام|هلا|أهلاً|هاي|صباح|مساء)\b/.test(message.trim());
+    const isLongMessage = message.trim().length > 100;
+    if (!isQuestion && !isGreeting && !isLongMessage) {
+      return 'escalation_reply';
+    }
   }
 
   // Check for teach commands
@@ -274,7 +294,7 @@ ${coaching.trim()}
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Merchant Report — Quick stats via WhatsApp
+// Merchant Report — Comprehensive daily stats via WhatsApp
 // ═══════════════════════════════════════════════════════════════
 
 async function sendMerchantReport(params: {
@@ -287,16 +307,15 @@ async function sendMerchantReport(params: {
   const { sendMessageWithCredentials } = await import('../whatsapp');
   
   try {
-    // Get today's stats using raw pool
     const { getPool } = await import('../db');
     const pool = await getPool();
     if (!pool) throw new Error('DB not available');
     
-    // Quick stats query
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayStr = todayStart.toISOString().slice(0, 19).replace('T', ' ');
     
+    // ── 1. Core metrics ──
     const [convRows] = await pool.execute(
       `SELECT COUNT(*) as cnt FROM conversations WHERE merchantId = ? AND updatedAt >= ?`,
       [params.merchantId, todayStr]
@@ -312,19 +331,112 @@ async function sendMerchantReport(params: {
       [params.merchantId, todayStr]
     ) as any;
 
-    const conversations = convRows?.[0]?.cnt || 0;
-    const messages = msgRows?.[0]?.cnt || 0;
-    const orders = orderRows?.[0]?.cnt || 0;
+    const conversations = Number(convRows?.[0]?.cnt || 0);
+    const messages = Number(msgRows?.[0]?.cnt || 0);
+    const orders = Number(orderRows?.[0]?.cnt || 0);
     const revenue = Number(orderRows?.[0]?.total || 0);
+    const conversionRate = conversations > 0 ? ((orders / conversations) * 100).toFixed(1) : '0';
 
-    const report = `📊 *التقرير اليومي*
+    // ── 2. Unique customers today ──
+    let uniqueCustomers = 0;
+    try {
+      const [custRows] = await pool.execute(
+        `SELECT COUNT(DISTINCT customerPhone) as cnt FROM conversations WHERE merchantId = ? AND updatedAt >= ?`,
+        [params.merchantId, todayStr]
+      ) as any;
+      uniqueCustomers = Number(custRows?.[0]?.cnt || 0);
+    } catch { /* non-blocking */ }
 
-💬 المحادثات النشطة: *${conversations}*
+    // ── 3. Top products (by order count, last 7 days) ──
+    let topProductsText = '';
+    try {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace('T', ' ');
+      const [prodRows] = await pool.execute(
+        `SELECT p.name, COUNT(oi.id) as cnt 
+         FROM order_items oi 
+         JOIN products p ON oi.productId = p.id 
+         JOIN orders o ON oi.orderId = o.id
+         WHERE o.merchantId = ? AND o.createdAt >= ?
+         GROUP BY p.id, p.name ORDER BY cnt DESC LIMIT 3`,
+        [params.merchantId, weekAgo]
+      ) as any;
+      if (prodRows?.length > 0) {
+        const medals = ['🥇', '🥈', '🥉'];
+        topProductsText = '\n🏆 *أكثر المنتجات طلباً (آخر 7 أيام):*\n' +
+          prodRows.map((r: any, i: number) => `${medals[i] || '•'} ${r.name} (${r.cnt} طلب)`).join('\n');
+      }
+    } catch { /* table might not exist — non-blocking */ }
+
+    // ── 4. Active escalations ──
+    let escalationText = '';
+    try {
+      const [escRows] = await pool.execute(
+        `SELECT COUNT(*) as pending FROM sari_escalation_queue WHERE merchant_id = ? AND status IN ('pending', 'notified')`,
+        [params.merchantId]
+      ) as any;
+      const pending = Number(escRows?.[0]?.pending || 0);
+      if (pending > 0) {
+        escalationText = `\n⚠️ *تصعيدات معلقة:* ${pending} استفسار بانتظار ردك`;
+      } else {
+        escalationText = '\n✅ لا توجد تصعيدات معلقة';
+      }
+    } catch { /* table might not exist */ }
+
+    // ── 5. Coaching/Learning stats ──
+    let coachingText = '';
+    try {
+      const { getCoachingStats } = await import('../db/coaching');
+      const stats = await getCoachingStats(params.merchantId);
+      if (stats.totalSessions > 0) {
+        const accuracy = (stats.correctRate * 100).toFixed(0);
+        coachingText = `\n🧠 *ذكاء البوت:*\n` +
+          `• جلسات التدريب: ${stats.totalSessions}\n` +
+          `• الردود المراجعة: ${stats.totalReviewed}\n` +
+          `• نسبة الدقة: ${accuracy}%`;
+      }
+    } catch { /* non-blocking */ }
+
+    // ── 6. Knowledge base size ──
+    let knowledgeText = '';
+    try {
+      const [cacheRows] = await pool.execute(
+        `SELECT COUNT(*) as cnt FROM sari_response_cache WHERE merchant_id = ? AND is_valid = 1`,
+        [params.merchantId]
+      ) as any;
+      const [signalRows] = await pool.execute(
+        `SELECT COUNT(*) as cnt FROM sari_learning_signals WHERE merchant_id = ? AND signal_type = 'merchant_correction'`,
+        [params.merchantId]
+      ) as any;
+      const cachedResponses = Number(cacheRows?.[0]?.cnt || 0);
+      const teachCount = Number(signalRows?.[0]?.cnt || 0);
+      if (cachedResponses > 0 || teachCount > 0) {
+        knowledgeText = `\n📚 *قاعدة المعرفة:*\n` +
+          `• ردود محفوظة: ${cachedResponses}\n` +
+          `• تعليمات المدير: ${teachCount}`;
+      }
+    } catch { /* non-blocking */ }
+
+    // ── Build the final report ──
+    const timeStr = new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = new Date().toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const report = `📊 *تقرير مدير النظام — ${dateStr}*
+
+━━━━━━━━━━━━━━━
+📈 *الأداء اليومي:*
+💬 المحادثات: *${conversations}*
+👥 عملاء فريدين: *${uniqueCustomers}*
 📩 الرسائل: *${messages}*
 🛍️ الطلبات: *${orders}*
 💰 الإيرادات: *${revenue.toLocaleString('ar-SA')} ر.س*
+📊 نسبة التحويل: *${conversionRate}%*
+${topProductsText}
+━━━━━━━━━━━━━━━
+📋 *حالة النظام:*${escalationText}${coachingText}${knowledgeText}
 
-⏰ ${new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}`;
+━━━━━━━━━━━━━━━
+⏰ آخر تحديث: ${timeStr}
+💡 _اكتب \"تقرير\" في أي وقت لتقرير جديد_`;
 
     await sendMessageWithCredentials(
       params.instanceId, params.token, params.apiUrl,
@@ -371,9 +483,14 @@ async function handleMerchantQuestion(params: {
     const merchantAssistantPrompt: ChatMessage[] = [
       {
         role: 'system',
-        content: `أنت مساعد ذكي للتاجر صاحب "${merchantName}" (وليس للعملاء). التاجر يتحدث معك مباشرة عبر واتساب.
+        content: `أنت المساعد الذكي الخاص بـ "${merchantName}". الشخص الذي يتحدث معك الآن هو *مدير النظام* (صاحب المتجر) وليس عميل.
 
-أنت تساعد التاجر في:
+🔑 هوية المحادثة:
+- أنت تتحدث مع مدير النظام/صاحب المتجر — وليس عميل
+- خاطبه دائماً كمدير: "يا غالي" أو "يا مدير" — لا تقل "يا بطل" أبداً
+- لا تتصرف كبائع أو موظف خدمة عملاء — أنت مستشاره الشخصي وأداته الذكية
+
+أنت تساعد مدير النظام في:
 - الإجابة على أسئلته عن متجره وأدائه ومنتجاته وخدماته
 - تقديم نصائح لتحسين المبيعات بناءً على بيانات متجره
 - شرح كيفية استخدام ميزات لوحة التحكم
@@ -381,12 +498,12 @@ async function handleMerchantQuestion(params: {
 
 🚫 قاعدة صارمة: لا تذكر اسم "ساري" أو "Sari" أبداً. أنت "المساعد الذكي" فقط.
 🚫 لا تختلق معلومات عن المتجر — استخدم فقط البيانات المرفقة أدناه.
+🚫 لا تعامل مدير النظام كعميل أبداً — لا ترحب به كعميل ولا تعرض عليه المنتجات للشراء.
 
 قواعد:
 - اللهجة السعودية الودية
 - ردود مختصرة ومباشرة (3-5 أسطر)
-- نادِ التاجر بـ "يا غالي" أو بصيغة احترافية ودودة — لا تقل "يا بطل" أبداً
-- لا تتصرف كبائع — أنت مستشار التاجر الشخصي
+- لا تتصرف كبائع — أنت مستشار مدير النظام الشخصي
 
 تنسيق الرسائل:
 - ابدأ بـ *عنوان عريض* يلخص الجواب
@@ -462,6 +579,40 @@ export async function handleMerchantChat(params: {
 
   const intent = detectMerchantIntent(params.message, hasActiveEscalation, params.quotedText);
   console.log(`[MerchantMode] Intent: ${intent} | ActiveEscalation: ${hasActiveEscalation}`);
+
+  // ═══ Admin Greeting — Always welcome merchant as system admin ═══
+  const isGreeting = GREETING_PATTERNS.some(p => p.test(params.message.trim()));
+  const lastGreetingTs = _lastMerchantGreeting.get(params.merchantId) || 0;
+  const shouldGreet = isGreeting && (Date.now() - lastGreetingTs > GREETING_COOLDOWN_MS);
+
+  if (shouldGreet) {
+    _lastMerchantGreeting.set(params.merchantId, Date.now());
+    const { sendMessageWithCredentials } = await import('../whatsapp');
+    const { getMerchantById } = await import('../db');
+    const merchant = await getMerchantById(params.merchantId);
+    const storeName = merchant?.businessName || 'متجرك';
+    
+    const adminGreeting = `👋 *أهلاً بك يا مدير النظام!*
+
+أنا المساعد الذكي لـ *${storeName}* — تحت أمرك.
+
+🎛️ أقدر أساعدك في:
+• 📊 التقارير والإحصائيات — اكتب *"تقرير"*
+• 🧠 تعليمي معلومات جديدة — اكتب مثلاً:
+    _علم: إذا سأل عن الضمان قل له سنتين_
+    _تعلم: الشحن مجاني فوق 200 ريال_
+• 💬 الرد على استفسارات العملاء المصعّدة
+• ❓ أي سؤال عن متجرك ومنتجاتك
+
+كيف أقدر أخدمك اليوم؟ 🙏`;
+    
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone, adminGreeting
+    );
+    console.log(`[MerchantMode] 👋 Admin greeting sent to merchant ${params.merchantId}`);
+    return { action: 'admin_greeting' };
+  }
 
   switch (intent) {
     case 'escalation_reply': {

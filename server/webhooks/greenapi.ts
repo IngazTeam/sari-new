@@ -993,21 +993,54 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       }
     }
 
-    // ── #علم_ساري: Natural WhatsApp Training Command ──
-    // Allows merchant to teach Sari directly via WhatsApp hashtag
+    // ── Merchant vs Customer Classification ──
+    // Layer 0: Fast check using instance's own WID/phoneNumber (zero DB cost)
+    // Layer 1: Full escalation chain + merchant phone + owner phone check
     try {
       const incomingText = extractMessageText(payload);
       if (incomingText) {
-        const { isPhoneInEscalationChain } = await import('../ai/smart-escalation');
-        const isChainMember = await isPhoneInEscalationChain(instance.merchantId, customerPhone);
+        // ═══ LAYER 0: Compare against the bot's own phone (WID) ═══
+        // payload.instanceData.wid = "966XXXXXXXXX@c.us" — the phone the bot runs on
+        // instance.phoneNumber = stored phone from whatsapp_instances table
+        // If the sender IS the bot's own phone, they are ALWAYS the merchant.
+        let isChainMember = false;
+        const instanceWid = payload.instanceData?.wid ? extractPhoneNumber(payload.instanceData.wid) : '';
+        const instancePhone = (instance as any).phoneNumber || '';
+        
+        // Normalize for comparison (strip +, spaces, leading 00)
+        const normalizeQuick = (p: string) => {
+          let n = p.replace(/[\s+\-()]/g, '');
+          if (n.startsWith('00')) n = n.slice(2);
+          if (/^05\d{8}$/.test(n)) n = '966' + n.slice(1);
+          if (/^5\d{8}$/.test(n)) n = '966' + n;
+          return n;
+        };
+        const normalizedCustomer = normalizeQuick(customerPhone);
+        
+        if (instanceWid && normalizeQuick(instanceWid) === normalizedCustomer) {
+          isChainMember = true;
+          console.log(`[Classify] 🏪 MERCHANT detected via WID match: ***${customerPhone.slice(-4)}`);
+        } else if (instancePhone && normalizeQuick(instancePhone) === normalizedCustomer) {
+          isChainMember = true;
+          console.log(`[Classify] 🏪 MERCHANT detected via instance phoneNumber: ***${customerPhone.slice(-4)}`);
+        }
+
+        // ═══ LAYER 1: Full escalation chain + merchant DB check ═══
+        if (!isChainMember) {
+          const { isPhoneInEscalationChain } = await import('../ai/smart-escalation');
+          isChainMember = await isPhoneInEscalationChain(instance.merchantId, customerPhone);
+        }
 
         if (isChainMember) {
           // ═══ MERCHANT MODE: Chain members NEVER enter customer flow ═══
           // Route ALL messages from escalation chain to merchant handler
           console.log(`[Classify] 🏪 MERCHANT detected: ***${customerPhone.slice(-4)} (merchant ${instance.merchantId})`);
 
-          // Priority 1: #علم_ساري command (check with .includes to work with quoted reply prefix)
-          if (incomingText.includes('#علم')) {
+          // Priority 1: Teaching command (expanded natural patterns)
+          const teachTriggers = ['#علم', 'علم:', 'علم ', 'تعلم:', 'تعلم ', 'أضف معلومة', 'اضف معلومة', 'حفظ:', 'حفظ ', 'سجل:', 'سجل ', 'احفظ:', 'احفظ ', 'معلومة:'];
+          const textTrimmed = incomingText.trim();
+          const isTeachAttempt = teachTriggers.some(t => textTrimmed.startsWith(t) || textTrimmed.includes('#علم'));
+          if (isTeachAttempt) {
             const { handleTeachCommand } = await import('../ai/coaching-engine');
             const teachResult = await handleTeachCommand(instance.merchantId, incomingText);
             if (teachResult.handled && teachResult.response) {
@@ -1058,7 +1091,10 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         }
       }
     } catch (escErr) {
-      console.warn('[Webhook] Merchant mode check failed:', escErr);
+      // CRITICAL: Do NOT silently fall through to customer flow on merchant detection failure.
+      // If merchant detection fails, we risk treating the merchant as a customer.
+      console.error('[Webhook] 🔴 CRITICAL: Merchant mode check failed — blocking message to prevent misclassification:', escErr);
+      return { success: false, message: 'Merchant classification failed — message blocked to prevent misrouting' };
     }
 
     // SEC-FIX: Verify merchant has active subscription before processing

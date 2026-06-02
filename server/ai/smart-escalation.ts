@@ -576,6 +576,22 @@ export async function isPhoneInEscalationChain(merchantId: number, phone: string
     console.warn(`[MerchantDetect] Failed to check merchant phones for ${merchantId}:`, err.message);
   }
 
+  // 4. Check the WhatsApp instance's own phone number
+  // This catches the critical case where the merchant's phone IS the bot's phone
+  try {
+    const { getWhatsAppInstancesByMerchantId } = await import('../db');
+    const instances = await getWhatsAppInstancesByMerchantId(merchantId);
+    for (const inst of instances) {
+      const instPhone = (inst as any).phoneNumber;
+      if (instPhone && normalizePhone(instPhone) === normalizedPhone) {
+        console.log(`[MerchantDetect] ✅ Phone ***${phone.slice(-4)} matches WhatsApp instance phone`);
+        return true;
+      }
+    }
+  } catch (err: any) {
+    console.warn(`[MerchantDetect] Failed to check instance phones for ${merchantId}:`, err.message);
+  }
+
   return false;
 }
 
