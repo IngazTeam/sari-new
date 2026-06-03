@@ -1021,6 +1021,50 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             }
           }
 
+          // Priority 2.5: Onboarding interview reply
+          try {
+            const { isOnboardingActive, handleOnboardingReply, handleUpdateCommand } = await import('../automation/onboarding-interview');
+
+            // Check for update commands first (works anytime)
+            if (textTrimmed.startsWith('تحديث ')) {
+              const updateResult = await handleUpdateCommand(instance.merchantId, textTrimmed);
+              if (updateResult.handled) {
+                const instances = await getWhatsAppInstancesByMerchantId(instance.merchantId);
+                const inst = instances.find((i: any) => i.status === 'active');
+                if (inst) {
+                  const { sendMessageWithCredentials } = await import('../whatsapp');
+                  await sendMessageWithCredentials(
+                    (inst as any).instanceId, (inst as any).token,
+                    (inst as any).apiUrl || 'https://api.green-api.com',
+                    customerPhone, updateResult.response
+                  );
+                }
+                return { success: true, message: 'Update command processed' };
+              }
+            }
+
+            // Check if onboarding interview is active
+            if (await isOnboardingActive(instance.merchantId)) {
+              const onboardResult = await handleOnboardingReply(instance.merchantId, textTrimmed);
+              if (onboardResult.handled) {
+                const instances = await getWhatsAppInstancesByMerchantId(instance.merchantId);
+                const inst = instances.find((i: any) => i.status === 'active');
+                if (inst && onboardResult.response) {
+                  const { sendMessageWithCredentials } = await import('../whatsapp');
+                  await sendMessageWithCredentials(
+                    (inst as any).instanceId, (inst as any).token,
+                    (inst as any).apiUrl || 'https://api.green-api.com',
+                    customerPhone, onboardResult.response
+                  );
+                }
+                console.log(`[Onboarding] ✅ Interview reply processed for merchant ${instance.merchantId}`);
+                return { success: true, message: 'Onboarding interview reply processed' };
+              }
+            }
+          } catch (onbErr) {
+            console.warn('[Onboarding] Interview check failed (non-blocking):', onbErr);
+          }
+
           // Priority 3+: All other messages → Merchant Mode handler
           // (escalation replies, reports, questions, general chat)
           const quotedText = extractQuotedText(payload);

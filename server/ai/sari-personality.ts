@@ -912,6 +912,21 @@ export async function buildEnhancedContextPrompt(context: {
     contextPrompt += `هذه أول رسالة من العميل - رحب به بحرارة!\n`;
   }
 
+  // === Onboarding Knowledge Base (highest priority — merchant's own words) ===
+  if (context.merchantId) {
+    try {
+      const { buildOnboardingContext } = await import('../automation/onboarding-interview');
+      const onboardingKB = await buildOnboardingContext(context.merchantId);
+      if (onboardingKB) {
+        contextPrompt += `\n## معلومات النشاط التجاري (من التاجر مباشرة — مصدر موثوق):\n`;
+        contextPrompt += sanitizeForPrompt(onboardingKB) + '\n';
+        contextPrompt += `⚠️ هذه المعلومات من التاجر شخصياً — استخدمها كمرجع أساسي قبل أي مصدر آخر.\n`;
+      }
+    } catch (err) {
+      console.warn('[chatWithSari] Onboarding context failed (non-blocking):', err);
+    }
+  }
+
   // === RAG: Knowledge Sections (primary source — if available) ===
   let usingRAG = false;
   if (context.merchantId && context.customerMessage) {

@@ -1307,7 +1307,7 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
       parts.push(`\n--- إحصائيات ---`);
       if (customerCount > 0) parts.push(`عدد العملاء/المتدربين: ${customerCount}`);
       parts.push(`عدد المنتجات/الدورات: ${products.length}`);
-      if (faqs.length > 0) parts.push(`عدد الأسئلة الشائعة: ${faqs.length}`);
+      if (allFaqs.length > 0) parts.push(`عدد الأسئلة الشائعة: ${allFaqs.length}`);
     }
 
     const fullText = parts.join('\n');
@@ -1342,8 +1342,8 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     const evolve = ingestionResult?.evolveResult;
     const salesIntel = ingestionResult?.salesIntel;
     await logBrainActivity(merchantId, 'knowledge_synced',
-      `بيان → عقل ساري: ${products.length} منتج + ${faqs.length} FAQ → ${evolve?.added || 0} section جديد, ${evolve?.evolved || 0} محدّث | ${salesIntel?.usps?.length || 0} USP, ${salesIntel?.sellingTips?.length || 0} tip`,
-      { products: products.length, faqs: faqs.length, embedded: embeddedCount, source: 'byaan_sync', evolve, salesIntel: { usps: salesIntel?.usps?.length || 0, tips: salesIntel?.sellingTips?.length || 0, opportunities: salesIntel?.opportunities?.length || 0 } }
+      `بيان → عقل ساري: ${products.length} منتج + ${allFaqs.length} FAQ → ${evolve?.added || 0} section جديد, ${evolve?.evolved || 0} محدّث | ${salesIntel?.usps?.length || 0} USP, ${salesIntel?.sellingTips?.length || 0} tip`,
+      { products: products.length, faqs: allFaqs.length, embedded: embeddedCount, source: 'byaan_sync', evolve, salesIntel: { usps: salesIntel?.usps?.length || 0, tips: salesIntel?.sellingTips?.length || 0, opportunities: salesIntel?.opportunities?.length || 0 } }
     );
 
     res.json({

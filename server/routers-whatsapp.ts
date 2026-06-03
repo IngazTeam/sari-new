@@ -412,6 +412,30 @@ export const whatsappRouter = router({
                         status: 'connected',
                         connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                     });
+
+                    // Auto-start onboarding interview (first connection only)
+                    try {
+                      const { needsOnboarding, startOnboardingInterview } = await import('./automation/onboarding-interview');
+                      if (await needsOnboarding(merchant.id)) {
+                        const welcomeMsg = await startOnboardingInterview(merchant.id);
+                        if (welcomeMsg) {
+                          const insts = await getWhatsAppInstancesByMerchantId(merchant.id);
+                          const inst = insts.find((i) => i.status === 'active');
+                          if (inst) {
+                            const { sendMessageWithCredentials } = await import('./whatsapp');
+                            const mPhone = request.fullNumber || request.phoneNumber;
+                            await sendMessageWithCredentials(
+                              inst.instanceId, inst.token,
+                              inst.apiUrl || 'https://api.green-api.com',
+                              mPhone, welcomeMsg
+                            );
+                            console.log(`[Onboarding] Interview started for merchant ${merchant.id}`);
+                          }
+                        }
+                      }
+                    } catch (onbErr) {
+                      console.warn('[Onboarding] Auto-start failed (non-blocking):', onbErr);
+                    }
                 }
                 return {
                     connected: true,
