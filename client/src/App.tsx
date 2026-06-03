@@ -81,6 +81,7 @@ const Salons = lazyLoad(() => import("./pages/landing/Salons"));
 const TrainingCenters = lazyLoad(() => import("./pages/landing/TrainingCenters"));
 const RealEstate = lazyLoad(() => import("./pages/landing/RealEstate"));
 const Consultants = lazyLoad(() => import("./pages/landing/Consultants"));
+const SolutionServicePage = lazyLoad(() => import("./pages/solutions/SolutionServicePage"));
 
 // SEO Knowledge Engine Pages
 const HowSariWorks = lazyLoad(() => import("./pages/landing/HowSariWorks"));
@@ -302,6 +303,7 @@ function Router() {
       <Route path="/solutions/training-centers" component={TrainingCenters} />
       <Route path="/solutions/real-estate" component={RealEstate} />
       <Route path="/solutions/consultants" component={Consultants} />
+      <Route path="/solutions/:sector/:service" component={SolutionServicePage} />
 
       {/* SEO Knowledge Engine Pages */}
       <Route path="/docs/how-sari-works" component={HowSariWorks} />
