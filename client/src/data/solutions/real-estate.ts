@@ -8,7 +8,8 @@ import {
   PhoneCall,
   Search,
   CheckCircle2,
-  FileText
+  FileText,
+  BellRing
 } from 'lucide-react';
 import { SectorData } from './types';
 
