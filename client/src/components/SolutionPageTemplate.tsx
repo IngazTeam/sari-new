@@ -24,7 +24,7 @@ export function SolutionPageTemplate({ sector, service }: SolutionPageTemplatePr
         title={`${service.heroTitle} | ساري`}
         description={service.metaDescription}
         canonicalUrl={`https://sari.ai/solutions/${sector.slug}/${service.slug}`}
-        type="website"
+        ogType="website"
       />
 
       {/* Hero Section */}

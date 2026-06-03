@@ -4,7 +4,7 @@ import { getSectorBySlug, getServiceBySlug } from '../../data/solutions';
 import { SolutionPageTemplate } from '../../components/SolutionPageTemplate';
 
 export default function SolutionServicePage() {
-  const [match, params] = useParams();
+  const params = useParams<{ sector: string; service: string }>();
   const sectorSlug = params?.sector;
   const serviceSlug = params?.service;
   const [, setLocation] = useLocation();

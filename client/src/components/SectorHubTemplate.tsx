@@ -18,7 +18,7 @@ export function SectorHubTemplate({ sector }: SectorHubTemplateProps) {
         title={`${sector.title} | ساري`}
         description={sector.description}
         canonicalUrl={`https://sari.ai/solutions/${sector.slug}`}
-        type="website"
+        ogType="website"
       />
       <Navbar />
 

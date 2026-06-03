@@ -7,7 +7,8 @@ import {
   CheckCircle2,
   Users,
   MessageSquareHeart,
-  Sparkles
+  Sparkles,
+  ShieldCheck
 } from 'lucide-react';
 import { SectorData } from './types';
 
