@@ -9,7 +9,7 @@ export default function Footer() {
   return (
     <footer className="border-t bg-muted/30">
       <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Brand Section */}
           <div className="space-y-4 lg:col-span-1">
             <div className="flex items-center gap-2">
@@ -75,6 +75,43 @@ export default function Footer() {
               <li>
                 <Link href="/solutions/support">
                   <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">{t('footer.auto_2')}</span>
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* القطاعات */}
+          <div>
+            <h3 className="font-semibold mb-4">القطاعات</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/solutions/clinics">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">العيادات والمراكز الطبية</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/solutions/restaurants">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">المطاعم والمقاهي</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/solutions/salons">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">الصالونات والتجميل</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/solutions/training-centers">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">مراكز التدريب</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/solutions/real-estate">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">العقارات والمقاولات</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/solutions/consultants">
+                  <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">الاستشارات والخدمات</span>
                 </Link>
               </li>
             </ul>
