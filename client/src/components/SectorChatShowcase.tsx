@@ -54,7 +54,7 @@ export function SectorChatShowcase({ scenarios, className }: SectorChatShowcaseP
         sender: currentMsg.role === 'bot' ? (currentMsg.isAction ? 'system' : 'sari') : 'customer',
         content: currentMsg.content,
         timestamp: new Date().toISOString(),
-        status: currentMsg.role === 'customer' ? 'read' : undefined
+        status: currentMsg.role === 'user' ? 'read' : undefined
       };
       
       setDisplayedMessages(prev => [...prev, newMessage]);
