@@ -182,6 +182,61 @@ export async function generatePagesSitemap(): Promise<string> {
         { lang: 'en', href: `${BASE_URL}/solutions/consultants?lang=en` },
       ],
     },
+    // ─── SEO Vertical Industry Sub-Pages (Services) ───
+    ...['appointment-booking', 'no-show-reminders', 'patient-inquiries'].map(slug => ({
+      loc: `${BASE_URL}/solutions/clinics/${slug}`,
+      changefreq: 'weekly' as const,
+      priority: 0.8,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/clinics/${slug}` },
+        { lang: 'en', href: `${BASE_URL}/solutions/clinics/${slug}?lang=en` },
+      ],
+    })),
+    ...['whatsapp-ordering', 'digital-menu-payment', 'delivery-repeat-orders'].map(slug => ({
+      loc: `${BASE_URL}/solutions/restaurants/${slug}`,
+      changefreq: 'weekly' as const,
+      priority: 0.8,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/restaurants/${slug}` },
+        { lang: 'en', href: `${BASE_URL}/solutions/restaurants/${slug}?lang=en` },
+      ],
+    })),
+    ...['appointment-booking', 'deposits-service-menu', 'loyalty-campaigns'].map(slug => ({
+      loc: `${BASE_URL}/solutions/salons/${slug}`,
+      changefreq: 'weekly' as const,
+      priority: 0.8,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/salons/${slug}` },
+        { lang: 'en', href: `${BASE_URL}/solutions/salons/${slug}?lang=en` },
+      ],
+    })),
+    ...['course-registration', 'class-reminders-certificates', 'course-marketing'].map(slug => ({
+      loc: `${BASE_URL}/solutions/training-centers/${slug}`,
+      changefreq: 'weekly' as const,
+      priority: 0.8,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/training-centers/${slug}` },
+        { lang: 'en', href: `${BASE_URL}/solutions/training-centers/${slug}?lang=en` },
+      ],
+    })),
+    ...['lead-qualification', 'property-catalog', 'viewing-followup'].map(slug => ({
+      loc: `${BASE_URL}/solutions/real-estate/${slug}`,
+      changefreq: 'weekly' as const,
+      priority: 0.8,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/real-estate/${slug}` },
+        { lang: 'en', href: `${BASE_URL}/solutions/real-estate/${slug}?lang=en` },
+      ],
+    })),
+    ...['consultation-booking', 'advance-payment', 'client-followup'].map(slug => ({
+      loc: `${BASE_URL}/solutions/consultants/${slug}`,
+      changefreq: 'weekly' as const,
+      priority: 0.8,
+      alternates: [
+        { lang: 'ar', href: `${BASE_URL}/solutions/consultants/${slug}` },
+        { lang: 'en', href: `${BASE_URL}/solutions/consultants/${slug}?lang=en` },
+      ],
+    })),
     // ─── Knowledge Engine (Docs) ───
     {
       loc: `${BASE_URL}/docs/how-sari-works`,
