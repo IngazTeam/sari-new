@@ -135,6 +135,21 @@ export async function captureConversationSignals(params: {
     const { merchantId, conversationId, customerMessage, botResponse } = params;
     const msgLower = customerMessage.toLowerCase();
 
+    // P3: Anger Filter — Don't learn from pure-anger messages
+    // (they add noise to DNA, not actionable patterns)
+    const ANGER_PATTERNS = [
+      /محتال/i, /نصاب/i, /حرام[ي]?/i, /لعن/i, /يلعن/i,
+      /كذب/i, /كذاب/i, /سرق/i, /حق[ي]?ر/i, /وقح/i,
+      /غب[ي]?/i, /تاف[هه]/i, /ما يستاهل/i, /أسوأ/i, /اسوأ/i,
+      /حسبي الله/i, /الله يعاملك/i, /الله ياخذك/i,
+      /scam/i, /fraud/i, /worst/i, /hate/i, /terrible/i,
+    ];
+    const isAngryMsg = ANGER_PATTERNS.some(p => p.test(customerMessage));
+    if (isAngryMsg) {
+      console.log(`[Learning] ⚠️ Anger filter: skipping signal from angry message (merchant ${merchantId})`);
+      return; // Don't capture anger as a learning signal
+    }
+
     // Check customer message for signals
     for (const pattern of SIGNAL_PATTERNS) {
       if (pattern.patterns.length === 0) continue;

@@ -106,6 +106,19 @@ export function startCronJobs() {
     }
   });
 
+  // NQ-2: Memory Cleanup — every 30 minutes at minute 15,45
+  cron.schedule("15,45 * * * *", async () => {
+    try {
+      const { runMemoryCleanup } = await import("./cron/memory-cleanup");
+      await runMemoryCleanup();
+      // Also cleanup expired DB sessions
+      const { cleanupExpiredSessions } = await import("./ai/session-store");
+      await cleanupExpiredSessions();
+    } catch (error) {
+      console.error("[Cron] Error running memory cleanup:", error);
+    }
+  });
+
   console.log("[Cron] Cron jobs started successfully");
   console.log("[Cron] - Appointment reminders: Every hour at minute 0");
   console.log("[Cron] - Trial expiry check: Every day at 9:00 AM");
@@ -115,6 +128,7 @@ export function startCronJobs() {
   console.log("[Cron] - Loss Detector: Every hour at minute 30");
   console.log("[Cron] - AI Health Monitor: Every 15 minutes");
   console.log("[Cron] - AI Daily Report: Every day at 8:00 AM (Riyadh)");
+  console.log("[Cron] - Memory Cleanup: Every 30 minutes");
 }
 
 /**

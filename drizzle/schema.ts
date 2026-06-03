@@ -2902,3 +2902,85 @@ export const salesFollowups = mysqlTable("sales_followups", {
 
 export type SalesFollowup = InferSelectModel<typeof salesFollowups>;
 export type InsertSalesFollowup = InferInsertModel<typeof salesFollowups>;
+
+// ═══════════════════════════════════════════════════════════════
+// Byaan Integration — Dedicated tables for Byaan LMS data
+// These tables are populated via /api/v1/platform/sync/* endpoints
+// and displayed in Byaan-only dashboard pages
+// ═══════════════════════════════════════════════════════════════
+
+// --- Byaan Connections (migrated from raw SQL) ---
+export const byaanConnections = mysqlTable("byaan_connections", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	tenantDomain: varchar("tenant_domain", { length: 255 }).notNull(),
+	apiBaseUrl: varchar("api_base_url", { length: 500 }),
+	webhookSecret: varchar("webhook_secret", { length: 128 }),
+	apiKeyHash: varchar("api_key_hash", { length: 64 }),
+	syncStatus: mysqlEnum("sync_status", ['active', 'syncing', 'error', 'paused']).default('active'),
+	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
+	syncErrors: text("sync_errors"),
+	permissions: text(), // JSON
+	isActive: tinyint("is_active").default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("idx_byaan_merchant").on(table.merchantId),
+	index("idx_byaan_domain").on(table.tenantDomain),
+]);
+
+// --- Byaan Trainees — synced from Byaan LMS ---
+export const byaanTrainees = mysqlTable("byaan_trainees", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	externalId: varchar("external_id", { length: 100 }).notNull(),
+	name: varchar({ length: 255 }).notNull(),
+	phone: varchar({ length: 20 }),
+	email: varchar({ length: 320 }),
+	enrolledCourses: text("enrolled_courses"), // JSON array of course names/IDs
+	status: mysqlEnum(['active', 'archived']).default('active'),
+	syncedAt: timestamp("synced_at", { mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_byaan_trainee").on(table.merchantId, table.externalId),
+	index("idx_byaan_trainee_phone").on(table.merchantId, table.phone),
+]);
+
+export type ByaanTrainee = InferSelectModel<typeof byaanTrainees>;
+export type InsertByaanTrainee = InferInsertModel<typeof byaanTrainees>;
+
+// --- Byaan FAQs — synced from Byaan LMS ---
+export const byaanFaqs = mysqlTable("byaan_faqs", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	externalId: varchar("external_id", { length: 100 }),
+	question: text().notNull(),
+	answer: text().notNull(),
+	category: varchar({ length: 100 }).default('عام'),
+	isActive: tinyint("is_active").default(1).notNull(),
+	useInBot: tinyint("use_in_bot").default(1).notNull(),
+	syncedAt: timestamp("synced_at", { mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	index("idx_byaan_faq_merchant").on(table.merchantId),
+]);
+
+export type ByaanFaq = InferSelectModel<typeof byaanFaqs>;
+export type InsertByaanFaq = InferInsertModel<typeof byaanFaqs>;
+
+// --- Byaan Site Content — academy identity pages ---
+export const byaanSiteContent = mysqlTable("byaan_site_content", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	pageType: mysqlEnum("page_type", ['about', 'vision', 'mission', 'policies', 'custom']).notNull(),
+	title: varchar({ length: 500 }),
+	content: text().notNull(),
+	syncedAt: timestamp("synced_at", { mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_byaan_content").on(table.merchantId, table.pageType),
+]);
+
+export type ByaanSiteContent = InferSelectModel<typeof byaanSiteContent>;
+export type InsertByaanSiteContent = InferInsertModel<typeof byaanSiteContent>;

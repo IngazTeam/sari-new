@@ -114,6 +114,13 @@ const circuitBreaker = {
   },
 };
 
+// NQ-5: Export circuit breaker status for /health endpoint
+export function getCircuitBreakerStatus(): string {
+  if (!circuitBreaker.isOpen) return 'closed';
+  if (Date.now() - circuitBreaker.lastFailure > circuitBreaker.cooldownMs) return 'half-open';
+  return 'open';
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Core: callGPT4 with Timeout + Retry + Circuit Breaker
 // ═══════════════════════════════════════════════════════════════
@@ -262,6 +269,15 @@ async function fetchWithTimeout(
           durationMs: Date.now() - startTime,
         });
       }).catch(() => {}); // Never let logging break the response
+
+      // NQ-6: Track tokens for cost ceiling (non-blocking)
+      if (data.usage.total_tokens > 0) {
+        import('./cost-ceiling').then(({ trackMerchantTokens }) => {
+          // merchantId is tracked globally from the last chatWithSari call
+          const mid = (globalThis as any).__sariCurrentMerchantId;
+          if (mid) trackMerchantTokens(mid, data.usage.total_tokens);
+        }).catch(() => {});
+      }
     }
 
     return content;

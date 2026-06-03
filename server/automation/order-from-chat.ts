@@ -169,12 +169,18 @@ export async function createOrderFromChat(
     // Prepare order items
     const items = [];
     let totalAmount = 0;
+    const outOfStockItems: string[] = [];
 
     for (const product of parsedOrder.products) {
       if (!product.productId) continue;
 
       const dbProduct = await getProductById(product.productId);
       if (!dbProduct) continue;
+
+      // P3: Zero Stock Guard
+      const stock = (dbProduct as any).stock ?? (dbProduct as any).quantity ?? null;
+      if (stock !== null && stock <= 0) { outOfStockItems.push(dbProduct.name); continue; }
+      if (stock !== null && product.quantity > stock) { product.quantity = stock; }
 
       items.push({
         sallaProductId: dbProduct.sallaProductId || '',
@@ -188,8 +194,23 @@ export async function createOrderFromChat(
     }
 
     if (items.length === 0) {
+      if (outOfStockItems.length > 0) {
+        throw new Error(`OUT_OF_STOCK:${outOfStockItems.join(',')}`);
+      }
       throw new Error('No valid products found');
     }
+
+    // P3: VAT Guard — apply tax if merchant has it enabled
+    try {
+      const merchantForTax = await getMerchantById(merchantId);
+      const taxEnabled = (merchantForTax as any)?.taxEnabled || (merchantForTax as any)?.vatEnabled;
+      if (taxEnabled) {
+        const taxRate = (merchantForTax as any)?.taxRate || 15;
+        const taxAmount = Math.round(totalAmount * taxRate / 100);
+        totalAmount += taxAmount;
+        console.log(`[OrderFromChat] VAT applied: ${taxRate}% = ${taxAmount} halalas`);
+      }
+    } catch { /* non-blocking */ }
 
     // Check for discount or referral codes
     let discountInfo: DiscountInfo | undefined;

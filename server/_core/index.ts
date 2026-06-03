@@ -95,12 +95,51 @@ async function startServer() {
     next();
   });
 
-  // Health check endpoints for load balancers and orchestrators
-  app.get('/health', (req, res) => {
-    res.json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-    });
+  // NQ-5: Enhanced Health check endpoints for ops visibility
+  app.get('/health', async (req, res) => {
+    try {
+      const memUsage = process.memoryUsage();
+      const uptimeSec = process.uptime();
+
+      // Gather system metrics (all non-blocking)
+      let sessionCount = 0;
+      let circuitBreakerStatus = 'unknown';
+      let costCeilingMerchants = 0;
+
+      try {
+        const { getSessionStats } = await import('../ai/session-context');
+        const stats = getSessionStats();
+        sessionCount = stats.active;
+      } catch { /* silent */ }
+
+      try {
+        const { getCircuitBreakerStatus } = await import('../ai/openai');
+        circuitBreakerStatus = getCircuitBreakerStatus();
+      } catch { circuitBreakerStatus = 'unavailable'; }
+
+      try {
+        const { getAllMerchantUsage } = await import('../ai/cost-ceiling');
+        costCeilingMerchants = getAllMerchantUsage().length;
+      } catch { /* silent */ }
+
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`,
+        memory: {
+          heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+          heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+          rssMB: Math.round(memUsage.rss / 1024 / 1024),
+        },
+        ai: {
+          activeSessions: sessionCount,
+          circuitBreaker: circuitBreakerStatus,
+          activeMerchants: costCeilingMerchants,
+        },
+      });
+    } catch {
+      res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+    }
   });
 
   app.get('/ready', async (req, res) => {
@@ -108,6 +147,7 @@ async function startServer() {
       // Check database connectivity
       const { getDb } = await import('../db');
       const db = getDb();
+      if (!db) throw new Error('DB not connected');
       // Simple query to verify connection
       res.json({
         status: 'ready',
@@ -506,6 +546,11 @@ async function startServer() {
 
     if (isPrimaryWorker) {
       console.log('[Cluster] This is the PRIMARY worker — initializing cron jobs and polling');
+
+      // NQ-4: Validate database schema at startup (non-blocking)
+      import('../cron/schema-validator').then(({ validateDatabaseSchema }) => {
+        validateDatabaseSchema().catch(e => console.warn('[Startup] Schema validation failed:', e));
+      }).catch(() => {});
 
       // Initialize Salla cron jobs
       initializeSallaCronJobs();

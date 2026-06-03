@@ -61,6 +61,18 @@ function clearLoginAttempts(ip: string): void {
     loginAttempts.delete(ip);
 }
 
+// NQ-2: Register memory cleanup for login rate limiter
+import('./cron/memory-cleanup').then(({ registerMemoryCleanup }) => {
+  registerMemoryCleanup('auth-login', () => {
+    const now = Date.now();
+    let evicted = 0;
+    for (const [ip, record] of Array.from(loginAttempts.entries())) {
+      if (now - record.firstAttempt > LOGIN_WINDOW_MS) { loginAttempts.delete(ip); evicted++; }
+    }
+    return evicted;
+  });
+}).catch(() => {});
+
 export const authRouter = router({
     // Get current user
     me: protectedProcedure.query(opts => opts.ctx.user),

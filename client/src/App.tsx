@@ -195,6 +195,7 @@ const AcquisitionReport = lazyLoad(() => import("./pages/merchant/AcquisitionRep
 const QuotationTemplates = lazyLoad(() => import("./pages/merchant/QuotationTemplates"));
 const MediaLibrary = lazyLoad(() => import("./pages/merchant/MediaLibrary"));
 const TeamManagement = lazyLoad(() => import("./pages/merchant/TeamManagement"));
+const ByaanDashboard = lazyLoad(() => import("./pages/ByaanDashboard"));
 
 // Admin pages - lazy loaded
 const AdminDashboard = lazyLoad(() => import("./pages/admin/Dashboard"));
@@ -385,6 +386,12 @@ function Router() {
       <Route path="/merchant/integrations/byaan">
         <DashboardLayout>
           <ByaanIntegration />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/merchant/byaan-dashboard">
+        <DashboardLayout>
+          <ByaanDashboard />
         </DashboardLayout>
       </Route>
 

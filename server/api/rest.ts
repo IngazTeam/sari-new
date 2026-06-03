@@ -1159,33 +1159,18 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
   try {
     const merchantId = merchant.id;
 
-    if (mode === 'replace') {
-      await deleteAllExtractedFaqs(merchantId);
-    }
-
-    let created = 0;
-    for (const f of faqs) {
-      if (!f.question || !f.answer) continue;
-      // SEC-5: Sanitize all text fields to prevent stored XSS
-      await createExtractedFaq({
-        merchantId,
-        question: stripHtml(String(f.question)).substring(0, 500),
-        answer: stripHtml(String(f.answer)).substring(0, 2000),
-        category: f.category ? stripHtml(String(f.category)).substring(0, 100) : 'عام',
-        isActive: true,
-        useInBot: true,
-      });
-      created++;
-    }
+    // Write to dedicated byaan_faqs table (bot reads from here directly)
+    const { syncByaanFaqs } = await import('../integrations/byaan');
+    const result = await syncByaanFaqs(merchantId, faqs, mode);
 
     const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(merchantId, 'faq_created', `Platform Sync: ${created} سؤال شائع (${mode || 'append'})`, { count: created, source: 'platform' });
+    await logBrainActivity(merchantId, 'faq_created', `Platform Sync: ${result.created} سؤال شائع (${mode || 'append'})`, { count: result.created, source: 'platform' });
 
     // Update last_sync_at timestamp
     const { updateByaanSyncStatus } = await import('../integrations/byaan');
     await updateByaanSyncStatus(merchantId, 'active');
 
-    res.json({ success: true, created, mode: mode || 'append' });
+    res.json({ success: true, created: result.created, mode: mode || 'append' });
   } catch (e) {
     console.error('[SariAPI] Platform FAQ sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت المزامنة' });
@@ -1275,11 +1260,18 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
       }
     }
 
-    // 4. FAQs — full content for knowledge enrichment
-    const faqs = await getExtractedFaqsByMerchantId(merchantId);
-    if (faqs.length > 0) {
-      parts.push(`\n--- الأسئلة الشائعة والمعلومات (${faqs.length}) ---`);
-      for (const f of faqs) {
+    // 4. FAQs — read from byaan_faqs (primary for Byaan) + extracted_faqs (fallback)
+    let allFaqs: any[] = [];
+    try {
+      const { getByaanFaqsByMerchant } = await import('../integrations/byaan');
+      allFaqs = await getByaanFaqsByMerchant(merchantId);
+    } catch { /* table may not exist yet */ }
+    if (allFaqs.length === 0) {
+      allFaqs = await getExtractedFaqsByMerchantId(merchantId);
+    }
+    if (allFaqs.length > 0) {
+      parts.push(`\n--- الأسئلة الشائعة والمعلومات (${allFaqs.length}) ---`);
+      for (const f of allFaqs) {
         parts.push(`س: ${f.question}\nج: ${f.answer}`);
       }
     }
@@ -1307,7 +1299,7 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     let customerCount = 0;
     if (pool) {
       try {
-        const [rows] = await pool.execute(`SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`, [merchantId]);
+        const [rows] = await pool.execute(`SELECT COUNT(*) as cnt FROM customer_profiles WHERE merchant_id = ?`, [merchantId]);
         customerCount = (rows as any[])?.[0]?.cnt || 0;
       } catch { /* skip */ }
     }

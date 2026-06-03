@@ -104,6 +104,7 @@ import {
   FileText,
   ImageIcon,
   CalendarClock,
+  GraduationCap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -342,7 +343,12 @@ function DashboardLayoutContent({
       if (item.path === '/merchant/customers') return { ...item, label: term('customers') };
       if (item.path === '/merchant/orders') return { ...item, label: term('orders') };
       return item;
-    });
+    }).concat(
+      // Conditional Byaan dashboard link
+      integrationSource === 'byaan' ? [
+        { icon: GraduationCap, label: 'لوحة بيان 🎓', path: '/merchant/byaan-dashboard', group: 'settings' },
+      ] : []
+    );
   }, [menuItems, isAdmin, integrationSource, term]);
 
   const activeMenuItem = adaptedMenuItems.find(item => item.path === location);

@@ -19,6 +19,46 @@
 import { callGPT4 } from './openai';
 
 // ════════════════════════════════════════════════
+// P3: Cost Guard — Daily critique limit per merchant
+// ════════════════════════════════════════════════
+
+const DAILY_CRITIQUE_LIMIT = 200; // Max critiques per merchant per day
+const _dailyCritiqueCounts = new Map<string, { count: number; date: string }>();
+
+function getDateKey(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+/**
+ * Check if merchant has remaining critique budget.
+ * Returns false if limit exceeded (skip critic).
+ */
+export function hasCritiqueBudget(merchantId: number): boolean {
+  const key = `${merchantId}`;
+  const today = getDateKey();
+  const entry = _dailyCritiqueCounts.get(key);
+
+  if (!entry || entry.date !== today) {
+    _dailyCritiqueCounts.set(key, { count: 0, date: today });
+    return true;
+  }
+
+  return entry.count < DAILY_CRITIQUE_LIMIT;
+}
+
+function incrementCritiqueBudget(merchantId: number): void {
+  const key = `${merchantId}`;
+  const today = getDateKey();
+  const entry = _dailyCritiqueCounts.get(key);
+
+  if (!entry || entry.date !== today) {
+    _dailyCritiqueCounts.set(key, { count: 1, date: today });
+  } else {
+    entry.count++;
+  }
+}
+
+// ════════════════════════════════════════════════
 // Types
 // ════════════════════════════════════════════════
 
@@ -69,8 +109,23 @@ export async function critiqueResponse(params: {
   response: string;
   customerMessage: string;
   conversationHistory: ChatMessage[];
+  merchantId?: number;
 }): Promise<CritiqueResult> {
-  const { response, customerMessage, conversationHistory } = params;
+  const { response, customerMessage, conversationHistory, merchantId } = params;
+
+  // P3 Cost Guard: Skip for trivial messages
+  if (customerMessage.trim().length < 10 || response.trim().length < 20) {
+    return { passed: true, failures: [], suggestions: '', score: 7 };
+  }
+
+  // P3 Cost Guard: Daily limit per merchant
+  if (merchantId && !hasCritiqueBudget(merchantId)) {
+    console.log(`[Critic] Daily limit reached for merchant ${merchantId} (${DAILY_CRITIQUE_LIMIT}/day) — skipping`);
+    return { passed: true, failures: [], suggestions: '', score: 7 };
+  }
+
+  // Track usage
+  if (merchantId) incrementCritiqueBudget(merchantId);
 
   // Build context summary (last 3 messages for brevity)
   const recentHistory = conversationHistory.slice(-6)

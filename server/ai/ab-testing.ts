@@ -105,7 +105,7 @@ export async function analyzeABTest(testId: number): Promise<{
   let confidence = 0;
 
   // يجب أن يكون هناك عدد كافٍ من العينات
-  if (totalSamples < 30) {
+  if (totalSamples < 50 || totalA < 25 || totalB < 25) {
     return { winner: 'no_winner', confidence: 0, stats };
   }
 

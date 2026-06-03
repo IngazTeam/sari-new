@@ -91,8 +91,35 @@ export async function checkScheduledCampaigns() {
         
         console.log(`[Scheduled Campaigns] Sending to ${conversations.length} customers`);
         
-        // إرسال الرسالة لجميع العملاء
-        const recipients = conversations.map(c => c.customerPhone);
+        // P2: Campaign Guard — filter recipients through opt-out + rate limits + quiet hours
+        let recipients = conversations.map(c => c.customerPhone);
+        try {
+          const { filterCampaignRecipients, trackCampaignSend } = await import('../automation/campaign-guard');
+          const guardResult = await filterCampaignRecipients(campaign.merchantId, recipients);
+          
+          if (guardResult.warnings.length > 0) {
+            console.warn(`[Scheduled Campaigns] Guard warnings:`, guardResult.warnings);
+          }
+          if (guardResult.blocked.length > 0) {
+            console.log(`[Scheduled Campaigns] Blocked ${guardResult.blocked.length} recipients (opt-out/rate-limit/quiet-hours)`);
+          }
+          recipients = guardResult.allowed;
+          
+          if (recipients.length === 0) {
+            console.log(`[Scheduled Campaigns] All recipients blocked by campaign guard`);
+            await updateCampaign(campaign.id, { 
+              status: "completed",
+              totalRecipients: conversations.length,
+              sentCount: 0
+            });
+            sent++;
+            continue;
+          }
+        } catch (guardErr) {
+          console.warn('[Scheduled Campaigns] Campaign guard failed (proceeding):', guardErr);
+        }
+
+        // إرسال الرسالة لجميع العملاء المؤهلين
         const results = await sendWhatsAppCampaign(
           recipients,
           campaign.message,
@@ -100,6 +127,13 @@ export async function checkScheduledCampaigns() {
           3, // minDelay
           6  // maxDelay
         );
+        
+        // Track sent count for rate limiting
+        try {
+          const { trackCampaignSend } = await import('../automation/campaign-guard');
+          const successCount = results.filter(r => r.success).length;
+          trackCampaignSend(campaign.merchantId, successCount);
+        } catch { /* silent */ }
         
         const successCount = results.filter(r => r.success).length;
         

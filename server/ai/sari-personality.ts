@@ -2,6 +2,25 @@
 /**
  * Sari AI Agent Personality - Enhanced Version
  * A friendly, professional Saudi sales assistant with improved context awareness
+ * 
+ * ═══════════════════════════════════════════════════════════════
+ * MODULE MAP (2818 lines — DO NOT refactor without updating tests)
+ * ═══════════════════════════════════════════════════════════════
+ * 
+ * Zone 1: System Prompt Builder .................. L62-315
+ * Zone 2: Off-Topic Guard ....................... L316-371
+ * Zone 3: Escalation Hold State ................. L377-547
+ * Zone 4: Knowledge Gap Detection ............... L554-617
+ * Zone 5: Core System Prompt + Few-Shot ......... L623-763
+ * Zone 6: Product Search + Sanitizers ........... L764-872
+ * Zone 7: Context Builder + Deal Stages ......... L874-1290
+ * Zone 8: chatWithSari (FAST + FULL paths) ...... L1293-2790
+ * Zone 9: Helpers (welcome, intent, recommend) .. L2616-2818
+ * 
+ * ⚠️ Pure utility functions (sanitizers, off-topic, product search)
+ *    are ALSO available in ./sari-utils.ts for clean imports.
+ *    DO NOT remove them from this file — pentest tests read it directly.
+ * ═══════════════════════════════════════════════════════════════
  */
 
 import { callGPT4, ChatMessage, TextContent, ImageContent } from './openai';
@@ -1224,7 +1243,38 @@ export async function chatWithSari(params: {
   imageUrl?: string;
   conversationId?: number;
 }): Promise<string> {
-  const response = await _chatWithSariCore(params);
+  // NQ-6: Cost ceiling check — degrade to lightweight mode when daily limit exceeded
+  let costCeilingExceeded = false;
+  try {
+    const { getMerchantCeiling } = await import('./cost-ceiling');
+    const ceiling = getMerchantCeiling(params.merchantId);
+    if (ceiling.exceeded) {
+      costCeilingExceeded = true;
+      console.warn(`[CostCeiling] Merchant ${params.merchantId} exceeded daily limit (${ceiling.used}/${ceiling.limit} tokens). Using lightweight mode.`);
+    }
+  } catch { /* non-blocking — if module fails, proceed normally */ }
+
+  let response: string;
+  if (costCeilingExceeded) {
+    // Stripped-context fallback — same pattern as error handler (L2500+)
+    // Uses gpt-4o-mini with minimal context: no RAG, no full pipeline
+    try {
+      const merchant = await getMerchantById(params.merchantId).catch(() => null);
+      const businessName = merchant?.businessName || 'نشاطنا التجاري';
+      const lightMessages: ChatMessage[] = [
+        {
+          role: 'system',
+          content: `أنت مساعد مبيعات ذكي تعمل في "${sanitizeForPrompt(businessName)}". رد بإيجاز ولطف على رسالة العميل. إذا لم تعرف الإجابة، قل "خلني أتأكد من المعلومة وأرد عليك". لا ترسل أرقام هواتف أو إيميلات أبداً. كن طبيعياً.`,
+        },
+        { role: 'user', content: sanitizeForPrompt(params.message.substring(0, 300)) },
+      ];
+      response = await callGPT4(lightMessages, { model: 'gpt-4o-mini', temperature: 0.7, maxTokens: 300, noRetry: true });
+    } catch {
+      response = await _chatWithSariCore(params); // If lightweight fails, try full pipeline
+    }
+  } else {
+    response = await _chatWithSariCore(params);
+  }
   
   // IRON WALL: Strip any "ساري" identity leak from response before it reaches customer
   try {
@@ -1268,6 +1318,9 @@ async function _chatWithSariCore(params: {
   conversationId?: number;
 }): Promise<string> {
   try {
+    // NQ-6: Set merchant context for cost ceiling tracking in openai.ts
+    (globalThis as any).__sariCurrentMerchantId = params.merchantId;
+
     // Get merchant info
     const merchant = await getMerchantById(params.merchantId);
     if (!merchant) {
@@ -1541,6 +1594,13 @@ ${result.orderUrl}
     }
 
     // --- Session Cache: skip RAG on messages 2+ ---
+    // DB-backed pre-warm: if memory is empty, recover from DB (post-restart)
+    if (convId && !getSession(params.merchantId, convId)) {
+      try {
+        const { getSessionWithFallback } = await import('./session-store');
+        await getSessionWithFallback(params.merchantId, convId);
+      } catch { /* non-blocking — falls through to normal flow */ }
+    }
     let existingSession = convId ? getSession(params.merchantId, convId) : null;
     const needsTopicRebuild = existingSession && detectTopicChange(existingSession, params.message);
 
@@ -2120,6 +2180,15 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
           initialSentiment: sentiment?.sentiment || 'neutral',
           initialIntent: intent,
         });
+        // DB write-through (async, non-blocking)
+        try {
+          const session = getSession(params.merchantId, convId);
+          if (session) {
+            import('./session-store').then(({ updateSessionWithPersist }) => {
+              updateSessionWithPersist(params.merchantId, convId, {});
+            }).catch(() => {});
+          }
+        } catch { /* silent */ }
         // v8: dealStage update handled by updateDealStage() helper before path split
       }
     } catch (arsenalErr) {

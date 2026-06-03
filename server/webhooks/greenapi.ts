@@ -753,8 +753,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       const convs = await getConversationsByMerchantId(instance.merchantId);
       const conv = convs.find(c => c.customerPhone === customerPhone);
       if (conv) {
-        // Fixed 1-hour sliding window — every merchant message renews the timer
-        const TAKEOVER_DURATION_MS = 60 * 60 * 1000; // 1 hour
+        // P2: Use centralized constant for takeover duration
+        const { TAKEOVER_DURATION_MS } = await import('../ai/takeover-constants');
         await updateConversation(conv.id, {
           humanTakeover: 1,
           humanTakeoverAt: new Date(), // Reset on EVERY merchant message (sliding window)
@@ -1131,7 +1131,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
       // BUG FIX: Force-expire takeovers older than 24 hours (prevents permanent silence)
       const takeoverAge = takeoverAt ? Date.now() - new Date(takeoverAt).getTime() : Infinity;
-      const MAX_TAKEOVER_MS = 24 * 60 * 60 * 1000; // 24 hours
+      const { MAX_PERMANENT_TAKEOVER_MS: MAX_TAKEOVER_MS } = await import('../ai/takeover-constants');
 
       if (takeoverAge > MAX_TAKEOVER_MS) {
         // Takeover stuck for 24+ hours — auto-expire

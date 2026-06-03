@@ -31,6 +31,9 @@ interface SallaWebhookEvent {
   created_at: string;
 }
 
+// NQ-3: In-memory dedup guard for webhook retries (10-min TTL)
+const sallaWebhookDedup = new Map<string, number>();
+
 export async function handleSallaWebhook(req: Request, res: Response) {
   try {
     // SECURITY: Verify webhook signature if secret is configured
@@ -65,6 +68,21 @@ export async function handleSallaWebhook(req: Request, res: Response) {
     const event: SallaWebhookEvent = req.body;
     
     console.log(`[Salla Webhook] Received event: ${event.event} from ${event.merchant.domain}`);
+
+    // NQ-3: Webhook idempotency guard — prevent double-processing on retries
+    const dedupKey = `${event.event}:${event.merchant.id}:${event.data?.id || event.created_at}`;
+    if (sallaWebhookDedup.has(dedupKey)) {
+      console.log(`[Salla Webhook] Duplicate ignored: ${dedupKey}`);
+      return res.status(200).json({ received: true, deduplicated: true });
+    }
+    sallaWebhookDedup.set(dedupKey, Date.now());
+    // Cleanup old entries (keep last 10 minutes)
+    if (sallaWebhookDedup.size > 200) {
+      const cutoff = Date.now() - 600_000;
+      for (const [k, ts] of Array.from(sallaWebhookDedup.entries())) {
+        if (ts < cutoff) sallaWebhookDedup.delete(k);
+      }
+    }
 
     // Find merchant by store URL
     const merchantId = await getMerchantIdByStoreUrl(event.merchant.domain);

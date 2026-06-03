@@ -25,6 +25,9 @@ interface ZidWebhookPayload {
 /**
  * Process Zid webhook event
  */
+// NQ-3: In-memory dedup guard for webhook retries (10-min TTL)
+const zidWebhookDedup = new Map<string, number>();
+
 export async function processZidWebhook(
   payload: ZidWebhookPayload,
   merchantId: number,
@@ -32,6 +35,21 @@ export async function processZidWebhook(
   secret?: string
 ): Promise<{ success: boolean; message: string }> {
   console.log('[Zid Webhook] Processing event:', payload.event);
+
+  // NQ-3: Webhook idempotency guard — prevent double-processing on retries
+  const dedupKey = `${payload.event}:${merchantId}:${payload.data?.id || payload.webhook_id || payload.created_at}`;
+  if (zidWebhookDedup.has(dedupKey)) {
+    console.log(`[Zid Webhook] Duplicate ignored: ${dedupKey}`);
+    return { success: true, message: 'Duplicate webhook ignored' };
+  }
+  zidWebhookDedup.set(dedupKey, Date.now());
+  // Cleanup old entries (keep last 10 minutes)
+  if (zidWebhookDedup.size > 200) {
+    const cutoff = Date.now() - 600_000;
+    for (const [k, ts] of Array.from(zidWebhookDedup.entries())) {
+      if (ts < cutoff) zidWebhookDedup.delete(k);
+    }
+  }
 
   try {
     // Verify signature if provided

@@ -88,7 +88,7 @@ async function ensureByaanTables() {
     const dbConn = await getPool();
     if (!dbConn) return;
 
-    // Byaan connections table (mirrors salla_connections pattern)
+    // Byaan connections table
     await (dbConn as any).execute(`
       CREATE TABLE IF NOT EXISTS byaan_connections (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -100,21 +100,66 @@ async function ensureByaanTables() {
         sync_status ENUM('active','syncing','error','paused') DEFAULT 'active',
         last_sync_at TIMESTAMP NULL,
         sync_errors TEXT,
-        permissions JSON DEFAULT NULL,
-        is_active TINYINT(1) DEFAULT 1,
+        permissions TEXT DEFAULT NULL,
+        is_active TINYINT(1) DEFAULT 1 NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE INDEX idx_merchant (merchant_id),
-        INDEX idx_domain (tenant_domain)
+        UNIQUE INDEX idx_byaan_merchant (merchant_id),
+        INDEX idx_byaan_domain (tenant_domain)
       )
     `);
 
-    // Add columns if table already existed before this update
-    try { await (dbConn as any).execute(`ALTER TABLE byaan_connections ADD COLUMN api_base_url VARCHAR(500) DEFAULT NULL AFTER tenant_domain`); } catch(e) {}
-    try { await (dbConn as any).execute(`ALTER TABLE byaan_connections ADD COLUMN webhook_secret VARCHAR(128) DEFAULT NULL AFTER api_base_url`); } catch(e) {}
-    try { await (dbConn as any).execute(`ALTER TABLE byaan_connections ADD COLUMN is_active TINYINT(1) DEFAULT 1 AFTER permissions`); } catch(e) {}
+    // Byaan trainees table
+    await (dbConn as any).execute(`
+      CREATE TABLE IF NOT EXISTS byaan_trainees (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        merchant_id INT NOT NULL,
+        external_id VARCHAR(100) NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        phone VARCHAR(20),
+        email VARCHAR(320),
+        enrolled_courses TEXT,
+        status ENUM('active','archived') DEFAULT 'active',
+        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE INDEX uq_byaan_trainee (merchant_id, external_id),
+        INDEX idx_byaan_trainee_phone (merchant_id, phone)
+      )
+    `);
 
-    // Sari conversions table — tracks enrollments/payments made through the bot
+    // Byaan FAQs table
+    await (dbConn as any).execute(`
+      CREATE TABLE IF NOT EXISTS byaan_faqs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        merchant_id INT NOT NULL,
+        external_id VARCHAR(100),
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        category VARCHAR(100) DEFAULT '\u0639\u0627\u0645',
+        is_active TINYINT(1) DEFAULT 1 NOT NULL,
+        use_in_bot TINYINT(1) DEFAULT 1 NOT NULL,
+        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_byaan_faq_merchant (merchant_id)
+      )
+    `);
+
+    // Byaan site content table
+    await (dbConn as any).execute(`
+      CREATE TABLE IF NOT EXISTS byaan_site_content (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        merchant_id INT NOT NULL,
+        page_type ENUM('about','vision','mission','policies','custom') NOT NULL,
+        title VARCHAR(500),
+        content TEXT NOT NULL,
+        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE INDEX uq_byaan_content (merchant_id, page_type)
+      )
+    `);
+
+    // Sari conversions table
     await (dbConn as any).execute(`
       CREATE TABLE IF NOT EXISTS sari_conversions (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -131,17 +176,6 @@ async function ensureByaanTables() {
         INDEX idx_merchant (merchant_id, created_at DESC)
       )
     `);
-
-    // Add external_id and external_source columns to customers (if not exists)
-    try {
-      await (dbConn as any).execute(`ALTER TABLE customers ADD COLUMN external_id VARCHAR(100) NULL`);
-    } catch (e) { /* column already exists */ }
-    try {
-      await (dbConn as any).execute(`ALTER TABLE customers ADD COLUMN external_source VARCHAR(50) NULL`);
-    } catch (e) { /* column already exists */ }
-    try {
-      await (dbConn as any).execute(`ALTER TABLE customers ADD UNIQUE INDEX idx_ext_source (merchant_id, external_source, external_id)`);
-    } catch (e) { /* index already exists */ }
 
     // Add integration_source to merchants (if not exists)
     try {
@@ -329,56 +363,123 @@ export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[])
   let created = 0, updated = 0, linked = 0;
 
   for (const trainee of trainees) {
-    if (!trainee.name || !trainee.phone) continue;
+    if (!trainee.name) continue;
 
-    // PEN-SYNC-22: Limit externalId length to prevent storage DoS
     const externalId = String(trainee.id).substring(0, 100);
-    const phone = String(trainee.phone).replace(/\D/g, '').substring(0, 20);
+    const safeName = trainee.name.replace(/<[^>]*>/g, '').substring(0, 255);
+    const phone = trainee.phone ? String(trainee.phone).replace(/\D/g, '').substring(0, 20) : null;
+    const safeEmail = trainee.email ? String(trainee.email).replace(/<[^>]*>/g, '').trim().substring(0, 320) : null;
+    const coursesJson = trainee.enrolledCourses ? JSON.stringify(trainee.enrolledCourses) : null;
 
-    // Step 1: Search by external_id + external_source + merchant_id
-    const [existing] = await (dbConn as any).execute(
-      `SELECT id FROM customers WHERE merchant_id = ? AND external_source = 'byaan' AND external_id = ? LIMIT 1`,
-      [merchantId, externalId]
-    );
-
-    if ((existing as any[])?.length > 0) {
-      // PEN-SYNC-10: Strip HTML from names AND emails to prevent stored XSS
-      await (dbConn as any).execute(
-        `UPDATE customers SET name = ?, phone = ?, email = ? WHERE id = ?`,
-        [trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email ? String(trainee.email).replace(/<[^>]*>/g, '').trim().substring(0, 320) : null, (existing as any[])[0].id]
-      );
-      updated++;
-      continue;
-    }
-
-    // Step 3: Search by phone number
-    const [byPhone] = await (dbConn as any).execute(
-      `SELECT id FROM customers WHERE merchant_id = ? AND phone = ? LIMIT 1`,
-      [merchantId, phone]
-    );
-
-    if ((byPhone as any[])?.length > 0) {
-      await (dbConn as any).execute(
-        `UPDATE customers SET external_id = ?, external_source = 'byaan', name = ? WHERE id = ?`,
-        [externalId, trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), (byPhone as any[])[0].id]
-      );
-      linked++;
-      continue;
-    }
-
-    // Step 5: Brand new → INSERT
     try {
+      // Upsert: INSERT or UPDATE on duplicate external_id
       await (dbConn as any).execute(
-        `INSERT INTO customers (merchant_id, name, phone, email, external_id, external_source, created_at) VALUES (?, ?, ?, ?, ?, 'byaan', NOW())`,
-        [merchantId, trainee.name.replace(/<[^>]*>/g, '').substring(0, 255), phone, trainee.email ? String(trainee.email).replace(/<[^>]*>/g, '').trim().substring(0, 320) : null, externalId]
+        `INSERT INTO byaan_trainees (merchant_id, external_id, name, phone, email, enrolled_courses, status, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())
+         ON DUPLICATE KEY UPDATE name = VALUES(name), phone = VALUES(phone), email = VALUES(email),
+         enrolled_courses = VALUES(enrolled_courses), status = 'active', synced_at = NOW()`,
+        [merchantId, externalId, safeName, phone, safeEmail, coursesJson]
       );
-      created++;
+
+      // Check if it was an insert or update
+      const [check] = await (dbConn as any).execute(
+        `SELECT id FROM byaan_trainees WHERE merchant_id = ? AND external_id = ? AND created_at = updated_at LIMIT 1`,
+        [merchantId, externalId]
+      );
+      if ((check as any[])?.length > 0) {
+        created++;
+      } else {
+        updated++;
+      }
     } catch (e) {
-      // Duplicate key — skip
+      console.warn(`[Byaan] Trainee sync skip (${externalId}):`, (e as Error).message?.substring(0, 80));
     }
   }
 
   return { created, updated, linked };
+}
+
+/** Get all trainees for a merchant */
+export async function getByaanTrainees(merchantId: number): Promise<any[]> {
+  const dbConn = await getPool();
+  if (!dbConn) return [];
+  try {
+    const [rows] = await (dbConn as any).execute(
+      `SELECT * FROM byaan_trainees WHERE merchant_id = ? AND status = 'active' ORDER BY name ASC`,
+      [merchantId]
+    );
+    return rows as any[];
+  } catch { return []; }
+}
+
+/** Sync FAQs from Byaan into byaan_faqs table */
+export async function syncByaanFaqs(merchantId: number, faqs: { id?: string; question: string; answer: string; category?: string }[], mode: 'append' | 'replace' = 'append'): Promise<{ created: number }> {
+  await ensureByaanTables();
+  const dbConn = await getPool();
+  if (!dbConn) return { created: 0 };
+
+  if (mode === 'replace') {
+    await (dbConn as any).execute(`DELETE FROM byaan_faqs WHERE merchant_id = ?`, [merchantId]);
+  }
+
+  let created = 0;
+  for (const f of faqs) {
+    if (!f.question || !f.answer) continue;
+    try {
+      const extId = f.id ? String(f.id).substring(0, 100) : null;
+      await (dbConn as any).execute(
+        `INSERT INTO byaan_faqs (merchant_id, external_id, question, answer, category, synced_at)
+         VALUES (?, ?, ?, ?, ?, NOW())`,
+        [merchantId, extId, String(f.question).replace(/<[^>]*>/g, '').substring(0, 2000), String(f.answer).replace(/<[^>]*>/g, '').substring(0, 5000), f.category ? String(f.category).replace(/<[^>]*>/g, '').substring(0, 100) : 'عام']
+      );
+      created++;
+    } catch { /* skip duplicates */ }
+  }
+  return { created };
+}
+
+/** Get all Byaan FAQs for a merchant */
+export async function getByaanFaqsByMerchant(merchantId: number): Promise<any[]> {
+  const dbConn = await getPool();
+  if (!dbConn) return [];
+  try {
+    const [rows] = await (dbConn as any).execute(
+      `SELECT * FROM byaan_faqs WHERE merchant_id = ? AND is_active = 1 ORDER BY category, id`,
+      [merchantId]
+    );
+    return rows as any[];
+  } catch { return []; }
+}
+
+/** Save Byaan site content */
+export async function syncByaanSiteContent(merchantId: number, pageType: string, title: string, content: string): Promise<void> {
+  await ensureByaanTables();
+  const dbConn = await getPool();
+  if (!dbConn) return;
+  await (dbConn as any).execute(
+    `INSERT INTO byaan_site_content (merchant_id, page_type, title, content, synced_at)
+     VALUES (?, ?, ?, ?, NOW())
+     ON DUPLICATE KEY UPDATE title = VALUES(title), content = VALUES(content), synced_at = NOW()`,
+    [merchantId, pageType, title?.substring(0, 500), content?.substring(0, 50000)]
+  );
+}
+
+/** Get sync stats for a merchant */
+export async function getByaanSyncStats(merchantId: number): Promise<{ trainees: number; faqs: number; courses: number; sitePages: number }> {
+  const dbConn = await getPool();
+  if (!dbConn) return { trainees: 0, faqs: 0, courses: 0, sitePages: 0 };
+  try {
+    const [t] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_trainees WHERE merchant_id = ? AND status = 'active'`, [merchantId]);
+    const [f] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_faqs WHERE merchant_id = ? AND is_active = 1`, [merchantId]);
+    const [p] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM products WHERE merchant_id = ?`, [merchantId]);
+    const [s] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_site_content WHERE merchant_id = ?`, [merchantId]);
+    return {
+      trainees: (t as any[])?.[0]?.cnt || 0,
+      faqs: (f as any[])?.[0]?.cnt || 0,
+      courses: (p as any[])?.[0]?.cnt || 0,
+      sitePages: (s as any[])?.[0]?.cnt || 0,
+    };
+  } catch { return { trainees: 0, faqs: 0, courses: 0, sitePages: 0 }; }
 }
 
 // ═══════════════════════════════════════════════════════════════

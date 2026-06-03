@@ -300,7 +300,7 @@ async function handleIncomingMessage(
       const takeoverAge = (conversation as any).humanTakeoverAt
         ? Date.now() - new Date((conversation as any).humanTakeoverAt).getTime()
         : Infinity;
-      const MAX_TAKEOVER_MS = 24 * 60 * 60 * 1000;
+      const { MAX_PERMANENT_TAKEOVER_MS: MAX_TAKEOVER_MS } = await import('./ai/takeover-constants');
 
       if (takeoverAge > MAX_TAKEOVER_MS) {
         // Force-expire stuck takeover

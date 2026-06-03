@@ -25,8 +25,6 @@
  */
 
 import {
-  createMessage,
-  getBotSettings,
   getMerchantById,
   getPool,
   getWhatsAppInstancesByMerchantId,
@@ -140,109 +138,115 @@ async function runTakeoverExpiryCheck(): Promise<void> {
  */
 async function resumeConversation(pool: any, conv: any, reason: string): Promise<void> {
   try {
-    // 1. Clear the takeover
+    // 1. Build resume context BEFORE clearing takeover
+    //    This context will be used when the customer sends a NEW message
+    let resumeContext = '';
+    try {
+      const [allMsgs] = await pool.execute(
+        `SELECT direction, content, senderType FROM messages
+         WHERE conversationId = ? ORDER BY createdAt DESC LIMIT 20`,
+        [conv.id],
+      );
+      const msgs = (allMsgs as any[]) || [];
+      const lines: string[] = [];
+      // Reverse to get chronological order
+      for (const msg of msgs.reverse()) {
+        const content = (msg.content || '').substring(0, 300);
+        if (!content || content === '[media]') continue;
+        if (msg.direction === 'incoming') {
+          lines.push(`▸ العميل: "${content}"`);
+        } else if (msg.senderType === 'merchant' || msg.senderType === 'human') {
+          lines.push(`▸ التاجر (يدوي): "${content}"`);
+        } else {
+          lines.push(`▸ البوت: "${content}"`);
+        }
+      }
+      resumeContext = lines.join('\n');
+    } catch { /* non-blocking */ }
+
+    // 2. Clear the takeover + store resume context for next customer message
     await updateConversation(conv.id, {
       humanTakeover: 0,
       humanExpiresAt: null,
+      agentHistory: resumeContext ? JSON.stringify({ resumeContext }) : null,
     } as any);
 
     console.log(`[TakeoverExpiry] ✅ Auto-cleared takeover on conv ${conv.id} (reason: ${reason}, merchant: ${conv.merchantId})`);
 
-    // 2. Check for unprocessed incoming messages
+    // 3. Check for unprocessed incoming messages
     const unprocessedMsgs = await pool.execute(
       `SELECT id, content, createdAt
        FROM messages
        WHERE conversationId = ?
          AND direction = 'incoming'
          AND isProcessed = 0
-       ORDER BY createdAt DESC
-       LIMIT 1`,
+       ORDER BY createdAt DESC`,
       [conv.id],
     );
 
     const pendingMsgs = (unprocessedMsgs as any)[0] as any[];
-    if (!pendingMsgs || pendingMsgs.length === 0) return;
-
-    const lastMsg = pendingMsgs[0];
-    console.log(`[TakeoverExpiry] 📨 Found unprocessed message on conv ${conv.id}: "${(lastMsg.content || '').substring(0, 50)}..."`);
-
-    // ── VULN-1 FIX: Mark as processed IMMEDIATELY to prevent race condition ──
-    // If the webhook handler processes the same message simultaneously,
-    // it will see is_processed=1 and skip it.
-    await pool.execute(
-      `UPDATE messages SET isProcessed = 1 WHERE id = ?`,
-      [lastMsg.id],
-    );
-
-    // 3. Get merchant's WhatsApp instance
-    const instances = await getWhatsAppInstancesByMerchantId(conv.merchantId);
-    const activeInstance = instances.find((i: any) => i.status === 'active');
-
-    if (!activeInstance) {
-      console.warn(`[TakeoverExpiry] No active WhatsApp instance for merchant ${conv.merchantId}`);
-      return;
-    }
-
-    // 4. Get bot settings
-    const botSettings = await getBotSettings(conv.merchantId);
-    const resumeMsg = botSettings.takeoverResumeMessage || 'مرحباً! عدت لخدمتك 😊';
-
-    // 5. Generate AI response for the pending message
-    try {
-      const { chatWithSari } = await import('../ai/sari-personality');
-      const response = await chatWithSari({
-        merchantId: conv.merchantId,
-        message: lastMsg.content || '',
-        conversationId: conv.id,
-        customerPhone: conv.customerPhone,
-      });
-
-      // 6. Send via WhatsApp
-      const { sendMessageWithCredentials } = await import('../whatsapp');
-      const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
-      await sendMessageWithCredentials(
-        activeInstance.instanceId,
-        activeInstance.token,
-        apiUrl,
-        conv.customerPhone,
-        response,
+    
+    // 4. Mark ALL pending messages as processed (prevent stale re-processing)
+    //    These messages were sent during merchant takeover — merchant likely handled them.
+    //    The bot should NOT respond to them without full context.
+    if (pendingMsgs && pendingMsgs.length > 0) {
+      const pendingIds = pendingMsgs.map((m: any) => m.id);
+      await pool.execute(
+        `UPDATE messages SET isProcessed = 1 WHERE id IN (${pendingIds.map(() => '?').join(',')})`,
+        pendingIds,
       );
+      console.log(`[TakeoverExpiry] 📋 Marked ${pendingIds.length} stale message(s) as processed on conv ${conv.id} (NOT responding — waiting for new customer message)`);
 
-      // 7. Save outgoing message
-      await createMessage({
-        conversationId: conv.id,
-        direction: 'outgoing',
-        messageType: 'text',
-        content: response,
-        voiceUrl: null,
-        isProcessed: 1,
-        aiResponse: null,
-      });
-
-      // 8. Track usage
+      // 5. Notify merchant about pending messages (instead of auto-responding)
       try {
-        // @ts-ignore
-        const { incrementMessageCount } = await import('../usage-tracking');
-        await incrementMessageCount(conv.merchantId);
+        const { notifyNewMessage } = await import('../_core/notificationService');
+        const lastMsg = pendingMsgs[0];
+        const preview = (lastMsg.content || '').substring(0, 80);
+        await notifyNewMessage(
+          conv.merchantId,
+          'ساري ▶️ انتهى التدخل',
+          `انتهت فترة التدخل البشري على محادثة ***${(conv.customerPhone || '').slice(-4)}.\n` +
+          `${pendingMsgs.length > 1 ? `${pendingMsgs.length} رسائل معلقة` : `رسالة معلقة`}: "${preview}"\n` +
+          `ساري سيرد تلقائياً على الرسالة القادمة من العميل مع فهم كامل للسياق.`,
+        );
+        console.log(`[TakeoverExpiry] 📢 Notified merchant ${conv.merchantId} about expired takeover (conv ${conv.id})`);
       } catch { /* non-blocking */ }
 
-      console.log(`[TakeoverExpiry] ✅ Auto-responded to pending message on conv ${conv.id}`);
-    } catch (aiErr: any) {
-      console.error(`[TakeoverExpiry] AI response failed for conv ${conv.id}:`, aiErr.message);
-      // ── VULN-3 FIX: Message already marked processed above, so no re-processing ──
-      // Fallback: send resume message to let customer know Sari is back
+      // 6. Also send WhatsApp reminder to merchant if emergency phone available
       try {
-        const { sendMessageWithCredentials } = await import('../whatsapp');
-        const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
-        await sendMessageWithCredentials(
-          activeInstance.instanceId,
-          activeInstance.token,
-          apiUrl,
-          conv.customerPhone,
-          resumeMsg,
-        );
-      } catch { /* silent */ }
+        const merchant = await getMerchantById(conv.merchantId);
+        const merchantPhone = (merchant as any)?.emergencyPhone || (merchant as any)?.phone;
+        if (merchantPhone) {
+          const normalizedMerchant = merchantPhone.replace(/[^0-9]/g, '');
+          const normalizedCustomer = (conv.customerPhone || '').replace(/[^0-9]/g, '');
+          // VULN-2: Don't send if merchant phone IS customer phone
+          if (normalizedMerchant !== normalizedCustomer) {
+            const instances = await getWhatsAppInstancesByMerchantId(conv.merchantId);
+            const activeInstance = instances.find((i: any) => i.status === 'active');
+            if (activeInstance) {
+              const { sendMessageWithCredentials } = await import('../whatsapp');
+              const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
+              await sendMessageWithCredentials(
+                activeInstance.instanceId,
+                activeInstance.token,
+                apiUrl,
+                merchantPhone,
+                `${SYSTEM_MSG_PREFIX}\n\nانتهت فترة التدخل البشري.\n` +
+                `👤 العميل ***${(conv.customerPhone || '').slice(-4)} لديه ${pendingMsgs.length} ${pendingMsgs.length > 1 ? 'رسائل' : 'رسالة'} معلقة.\n\n` +
+                `📌 ساري سيرد تلقائياً عند الرسالة القادمة مع فهم كامل لسياق المحادثة.\n` +
+                `إذا تبي ترد بنفسك أرسل للعميل مباشرة.`,
+              );
+            }
+          }
+        }
+      } catch { /* non-blocking */ }
     }
+
+    // NOTE: We intentionally do NOT call chatWithSari here.
+    // The bot will respond naturally when the customer sends a NEW message,
+    // using the resumeContext stored in agentHistory (built in step 1).
+    // This prevents stale/context-free responses to old messages.
+
   } catch (convErr: any) {
     console.error(`[TakeoverExpiry] Error processing conv ${conv.id}:`, convErr.message);
   }

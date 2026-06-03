@@ -63,6 +63,7 @@ import { botSettingsRouter } from "./routers-bot-settings";
 import { adminAiAnalyticsRouter } from "./routers-admin-ai-analytics";
 import { emailTemplatesRouter } from "./routers-email-templates";
 import { teamRouter } from "./routers-team";
+import { byaanRouter } from "./routers-byaan";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
@@ -8911,5 +8912,8 @@ export const appRouter = router({
 
   // Email Templates — modularized to routers-email-templates.ts
   emailTemplates: emailTemplatesRouter,
+
+  // Byaan Integration — modularized to routers-byaan.ts
+  byaan: byaanRouter,
 });
 export type AppRouter = typeof appRouter;
