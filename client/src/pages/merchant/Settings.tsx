@@ -77,7 +77,9 @@ export default function MerchantSettings() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'فشل رفع الملف');
-      toast.success('تم رفع الملف بنجاح! ✅ — اذهب لصفحة "عقل ساري" لمراجعة التأثير', {
+      toast.success(data.isUpdate
+        ? `تم تحديث الملف بنجاح! ✅ — المعرفة تطورت ${data.evolveStats ? `(+${data.evolveStats.added} جديد، ↗${data.evolveStats.evolved} تطوير)` : ''}`
+        : 'تم رفع الملف بنجاح! ✅ — اذهب لصفحة "عقل ساري" لمراجعة التأثير', {
         action: {
           label: '🧠 مراجعة',
           onClick: () => window.location.assign('/merchant/sari-brain'),

@@ -256,13 +256,33 @@ export default function SariBrain() {
     onError: (e) => toast.error('فشل: ' + e.message),
   });
 
+  // Smart Intake: ingestion result state
+  const [ingestionResult, setIngestionResult] = useState<any>(null);
+
   const analyzeMutation = trpc.sariBrain.analyzeContent.useMutation({
     onSuccess: (data: any) => {
       setAnalysisResult(data.analysis);
+      setIngestionResult(null); // Reset previous ingestion
       toast.success('تم تحليل المحتوى بنجاح');
       utils.sariBrain.getActivityLog.invalidate();
     },
     onError: (error: any) => toast.error('فشل التحليل: ' + error.message),
+  });
+
+  // Smart Intake: save analyzed content directly to knowledge base
+  const ingestMutation = trpc.sariBrain.ingestAnalyzedContent.useMutation({
+    onSuccess: (data: any) => {
+      setIngestionResult(data);
+      toast.success(`✅ تم حفظ المعرفة — +${data.evolveResult.added} جديد، ↗${data.evolveResult.evolved} تطوير`);
+      // Full cache invalidation
+      utils.sariBrain.getSources.invalidate();
+      utils.sariBrain.getKnowledgeSections.invalidate();
+      utils.sariBrain.getHealthScore.invalidate();
+      utils.sariBrain.getActivityLog.invalidate();
+      utils.sariBrain.getPendingReviews.invalidate();
+      utils.sariBrain.getWebsiteKnowledge.invalidate();
+    },
+    onError: (error: any) => toast.error('فشل حفظ المعرفة: ' + error.message),
   });
 
   const testSariMutation = trpc.sariBrain.testSari.useMutation({
@@ -1694,14 +1714,74 @@ export default function SariBrain() {
                   <p className="text-xs text-muted-foreground mt-0.5">{analysisResult.recommendationReason}</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => { setAnalysisResult(null); setPreviewText(''); }}>
+                  <Button variant="outline" size="sm" onClick={() => { setAnalysisResult(null); setIngestionResult(null); setPreviewText(''); }}>
                     <XCircle className="h-4 w-4 ml-1" /> تجاهل
                   </Button>
-                  <Button size="sm" onClick={() => { setLocation('/merchant/settings'); toast.success('انتقل لصفحة الإعدادات لرفع الملف'); }}>
-                    <CheckCircle2 className="h-4 w-4 ml-1" /> رفع الملف
+                  <Button
+                    size="sm"
+                    disabled={ingestMutation.isPending}
+                    onClick={() => {
+                      ingestMutation.mutate({
+                        content: previewText,
+                        contentType: 'document',
+                        fileName: 'محتوى مفحوص',
+                      });
+                    }}
+                  >
+                    {ingestMutation.isPending ? (
+                      <><Loader2 className="h-4 w-4 ml-1 animate-spin" /> جاري الحفظ...</>
+                    ) : (
+                      <><CheckCircle2 className="h-4 w-4 ml-1" /> اعتماد وإضافة لذاكرة ساري</>
+                    )}
                   </Button>
                 </div>
               </div>
+
+              {/* Ingestion Result */}
+              {ingestionResult && (
+                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    <h4 className="font-bold text-green-800 dark:text-green-200">✅ تم حفظ المعرفة بنجاح</h4>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {ingestionResult.evolveResult.added > 0 && (
+                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-green-200">
+                        <p className="text-lg font-bold text-green-600">+{ingestionResult.evolveResult.added}</p>
+                        <p className="text-[10px] text-muted-foreground">قسم جديد</p>
+                      </div>
+                    )}
+                    {ingestionResult.evolveResult.evolved > 0 && (
+                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-blue-200">
+                        <p className="text-lg font-bold text-blue-600">↗{ingestionResult.evolveResult.evolved}</p>
+                        <p className="text-[10px] text-muted-foreground">قسم مُطوَّر</p>
+                      </div>
+                    )}
+                    {ingestionResult.evolveResult.conflicts > 0 && (
+                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-yellow-200">
+                        <p className="text-lg font-bold text-yellow-600">⚠{ingestionResult.evolveResult.conflicts}</p>
+                        <p className="text-[10px] text-muted-foreground">تعارض يحتاج مراجعة</p>
+                      </div>
+                    )}
+                    {ingestionResult.evolveResult.unchanged > 0 && (
+                      <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-gray-200">
+                        <p className="text-lg font-bold text-gray-500">{ingestionResult.evolveResult.unchanged}</p>
+                        <p className="text-[10px] text-muted-foreground">بدون تغيير</p>
+                      </div>
+                    )}
+                  </div>
+                  {ingestionResult.salesIntel?.hasIntel && (
+                    <p className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1">
+                      <Sparkles className="h-3.5 w-3.5" /> تم استخراج ذكاء مبيعات ({ingestionResult.salesIntel.uspsCount} نقاط قوة، {ingestionResult.salesIntel.tipsCount} إرشادات)
+                    </p>
+                  )}
+                  {!ingestionResult.embeddingsReady && (
+                    <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+                      <AlertTriangle className="h-3.5 w-3.5" /> تم الحفظ لكن فشل بناء الـ embeddings — البوت سيعمل بالبيانات النصية
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </CardContent>
