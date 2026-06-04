@@ -1315,32 +1315,61 @@ ${sanitizedContent}`
         ...(PAGE_TYPE_LABELS[type] || PAGE_TYPE_LABELS.other),
       }));
 
-      // 5. Calculate Knowledge Coverage Score
+      // 5. Load knowledge_sections to include Smart Intake, file uploads, manual edits
+      let knowledgeSectionTypes = new Set<string>();
+      let knowledgeSectionCount = 0;
+      try {
+        const knowledgeDb = await import('./db/knowledge');
+        const sections = await knowledgeDb.getSectionsByMerchantId(merchant.id);
+        knowledgeSectionCount = sections.length;
+        for (const s of sections) {
+          const st = (s as any).section_type || (s as any).sectionType;
+          if (st) knowledgeSectionTypes.add(st);
+        }
+      } catch { /* skip */ }
+
+      // Map knowledge section_types → equivalent page types for unified coverage
+      const sectionToPageTypeMap: Record<string, string> = {
+        identity: 'about', contact: 'contact', faq: 'faq',
+        policies: 'shipping', // policies covers shipping/returns/terms
+        services: 'services', team: 'about',
+      };
+      const hasPageType = (type: string) =>
+        discoveredPages.some((p: any) => p.pageType === type) ||
+        Array.from(knowledgeSectionTypes).some(st => sectionToPageTypeMap[st] === type);
+      const hasSectionType = (type: string) => knowledgeSectionTypes.has(type);
+
+      // 5b. Calculate Knowledge Coverage Score — includes all sources
       const importantTypes = ['about', 'contact', 'faq', 'shipping', 'returns'];
-      const coveredTypes = importantTypes.filter(t => discoveredPages.some((p: any) => p.pageType === t));
+      const coveredTypes = importantTypes.filter(t => hasPageType(t));
       const typeCoverage = coveredTypes.length / importantTypes.length;
       const totalWords = analysis.word_count || 0;
       const wordCoverage = Math.min(totalWords / 2000, 1); // 2000 words = 100%
       const faqCoverage = Math.min(faqs.length / 10, 1); // 10 FAQs = 100%
-      const knowledgeScore = Math.round((typeCoverage * 40 + wordCoverage * 35 + faqCoverage * 25));
+      // Boost from knowledge sections (max 15 points from 10+ sections)
+      const sectionBoost = Math.min(knowledgeSectionCount / 10, 1) * 15;
+      const knowledgeScore = Math.min(100, Math.round(typeCoverage * 35 + wordCoverage * 25 + faqCoverage * 15 + sectionBoost + 10));
 
-      // 6. Identify what Sari can now answer about
+      // 6. Identify what Sari can now answer about — from ALL sources
       const coverageTopics: string[] = [];
-      if (discoveredPages.some((p: any) => p.pageType === 'about')) coverageTopics.push('معلومات عن الشركة والنشاط');
-      if (discoveredPages.some((p: any) => p.pageType === 'contact')) coverageTopics.push('بيانات التواصل والموقع');
-      if (discoveredPages.some((p: any) => p.pageType === 'faq') || faqs.length > 0) coverageTopics.push('الأسئلة الشائعة');
-      if (discoveredPages.some((p: any) => p.pageType === 'shipping')) coverageTopics.push('الشحن والتوصيل');
-      if (discoveredPages.some((p: any) => p.pageType === 'returns')) coverageTopics.push('سياسة الإرجاع');
-      if (discoveredPages.some((p: any) => p.pageType === 'privacy' || p.pageType === 'terms')) coverageTopics.push('السياسات والشروط');
+      if (hasPageType('about') || hasSectionType('identity') || hasSectionType('team')) coverageTopics.push('معلومات عن الشركة والنشاط');
+      if (hasPageType('contact') || hasSectionType('contact')) coverageTopics.push('بيانات التواصل والموقع');
+      if (hasPageType('faq') || hasSectionType('faq') || faqs.length > 0) coverageTopics.push('الأسئلة الشائعة');
+      if (hasPageType('shipping') || hasSectionType('policies')) coverageTopics.push('الشحن والسياسات');
+      if (discoveredPages.some((p: any) => p.pageType === 'returns') || hasSectionType('policies')) coverageTopics.push('سياسة الإرجاع');
+      if (discoveredPages.some((p: any) => p.pageType === 'privacy' || p.pageType === 'terms') || hasSectionType('policies')) coverageTopics.push('السياسات والشروط');
+      if (hasSectionType('services')) coverageTopics.push('الخدمات والمنتجات');
+      if (hasSectionType('achievements')) coverageTopics.push('الإنجازات والشهادات');
+      if (hasSectionType('sales_intel')) coverageTopics.push('ذكاء المبيعات');
       if (discoveredPages.some((p: any) => p.pageType === 'content' || p.pageType === 'other')) coverageTopics.push('محتوى وخدمات عامة');
       // If no discovered pages but we have word count, the analysis itself provides general knowledge
-      if (discoveredPages.length === 0 && totalWords > 50) coverageTopics.push('محتوى الموقع الرئيسي');
+      if (discoveredPages.length === 0 && knowledgeSectionCount === 0 && totalWords > 50) coverageTopics.push('محتوى الموقع الرئيسي');
 
       const missingTopics: string[] = [];
-      if (!discoveredPages.some((p: any) => p.pageType === 'about')) missingTopics.push('من نحن');
-      if (!discoveredPages.some((p: any) => p.pageType === 'contact')) missingTopics.push('تواصل معنا');
-      if (!discoveredPages.some((p: any) => p.pageType === 'faq') && faqs.length === 0) missingTopics.push('أسئلة شائعة');
-      if (!discoveredPages.some((p: any) => p.pageType === 'shipping')) missingTopics.push('الشحن والتوصيل');
+      if (!hasPageType('about') && !hasSectionType('identity')) missingTopics.push('من نحن');
+      if (!hasPageType('contact') && !hasSectionType('contact')) missingTopics.push('تواصل معنا');
+      if (!hasPageType('faq') && !hasSectionType('faq') && faqs.length === 0) missingTopics.push('أسئلة شائعة');
+      if (!hasPageType('shipping') && !hasSectionType('policies')) missingTopics.push('الشحن والتوصيل');
 
       return sanitizeForTRPC({
         analysis: {
