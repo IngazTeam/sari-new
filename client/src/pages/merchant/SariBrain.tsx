@@ -273,8 +273,12 @@ export default function SariBrain() {
   const ingestMutation = trpc.sariBrain.ingestAnalyzedContent.useMutation({
     onSuccess: (data: any) => {
       setIngestionResult(data);
-      toast.success(`✅ تم حفظ المعرفة — +${data.evolveResult.added} جديد، ↗${data.evolveResult.evolved} تطوير`);
-      // Full cache invalidation
+      if (data.success) {
+        toast.success(`✅ تم حفظ المعرفة — +${data.evolveResult.added} جديد، ↗${data.evolveResult.evolved} تطوير`);
+      } else {
+        toast.warning(data.warning || 'لم يتم استخراج أقسام معرفية من هذا المحتوى');
+      }
+      // Full cache invalidation (even on partial success)
       utils.sariBrain.getSources.invalidate();
       utils.sariBrain.getKnowledgeSections.invalidate();
       utils.sariBrain.getHealthScore.invalidate();
@@ -1739,11 +1743,21 @@ export default function SariBrain() {
 
               {/* Ingestion Result */}
               {ingestionResult && (
-                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 space-y-3">
+                <div className={`p-4 rounded-lg border space-y-3 ${ingestionResult.success ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800'}`}>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    <h4 className="font-bold text-green-800 dark:text-green-200">✅ تم حفظ المعرفة بنجاح</h4>
+                    {ingestionResult.success ? (
+                      <>
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <h4 className="font-bold text-green-800 dark:text-green-200">✅ تم حفظ المعرفة بنجاح</h4>
+                      </>
+                    ) : (
+                      <>
+                        <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                        <h4 className="font-bold text-yellow-800 dark:text-yellow-200">⚠️ {ingestionResult.warning || 'لم يتم استخراج أقسام معرفية'}</h4>
+                      </>
+                    )}
                   </div>
+                  {ingestionResult.success && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {ingestionResult.evolveResult.added > 0 && (
                       <div className="text-center p-2 rounded-lg bg-white/70 dark:bg-white/5 border border-green-200">
@@ -1770,12 +1784,13 @@ export default function SariBrain() {
                       </div>
                     )}
                   </div>
+                  )}
                   {ingestionResult.salesIntel?.hasIntel && (
                     <p className="text-xs text-green-700 dark:text-green-300 flex items-center gap-1">
                       <Sparkles className="h-3.5 w-3.5" /> تم استخراج ذكاء مبيعات ({ingestionResult.salesIntel.uspsCount} نقاط قوة، {ingestionResult.salesIntel.tipsCount} إرشادات)
                     </p>
                   )}
-                  {!ingestionResult.embeddingsReady && (
+                  {ingestionResult.success && !ingestionResult.embeddingsReady && (
                     <p className="text-xs text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
                       <AlertTriangle className="h-3.5 w-3.5" /> تم الحفظ لكن فشل بناء الـ embeddings — البوت سيعمل بالبيانات النصية
                     </p>

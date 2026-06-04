@@ -76,6 +76,8 @@ function sanitizeLogText(text: string): string {
 const destructiveRateLimit: Record<number, number> = {};
 // PEN-BRAIN-08 FIX: Separate rate limiter for test endpoint
 const testRateLimit: Record<number, number> = {};
+// Separate rate limiter for ingestion (so analyze → ingest flow doesn't clash)
+const ingestionRateLimit: Record<number, number> = {};
 
 // ─── Async Analysis Status Tracker ─────────────────────────────────────
 // Tracks in-progress website analyses to avoid 504 Nginx timeouts.
@@ -136,6 +138,9 @@ function checkDestructiveRateLimit(merchantId: number, cooldownMs: number = 30_0
 }
 function checkTestRateLimit(merchantId: number, cooldownMs: number = 5_000): void {
   checkRateLimit(testRateLimit, merchantId, cooldownMs);
+}
+function checkIngestionRateLimit(merchantId: number, cooldownMs: number = 10_000): void {
+  checkRateLimit(ingestionRateLimit, merchantId, cooldownMs);
 }
 
 // Activity log helper — logs brain events via raw SQL (table created lazily)
@@ -932,8 +937,8 @@ ${sanitizedContent}`
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      // Rate limit: 20s cooldown
-      checkDestructiveRateLimit(merchant.id, 20_000);
+      // Separate rate limiter — doesn't clash with analyzeContent's destructive limiter
+      checkIngestionRateLimit(merchant.id, 10_000);
 
       try {
         const { ingestContent } = await import('./ai/knowledge-engine');
@@ -961,6 +966,26 @@ ${sanitizedContent}`
           { businessName: merchant.businessName },
         );
 
+        // Detect zero-sections result — GPT classification may have failed silently
+        const totalChanges = evolveResult.added + evolveResult.evolved + evolveResult.conflicts;
+        if (totalChanges === 0 && evolveResult.unchanged === 0) {
+          // Nothing was classified at all — likely GPT parse failure
+          console.warn(`[SariBrain] ⚠️ ingestAnalyzedContent: 0 sections classified for merchant ${merchant.id}`);
+          await logBrainActivity(
+            merchant.id,
+            'content_analyzed',
+            `فشل تصنيف "${input.fileName || 'محتوى جديد'}" — لم يتم استخراج أي أقسام معرفية`,
+            { fileName: input.fileName, contentType: input.contentType, classificationFailed: true }
+          );
+          return {
+            success: false,
+            warning: 'لم يتمكن الذكاء الاصطناعي من استخراج أقسام معرفية من هذا المحتوى. حاول بمحتوى أطول أو أكثر تفصيلاً.',
+            evolveResult,
+            salesIntel: { hasIntel: false, hasOpportunities: false, uspsCount: 0, tipsCount: 0, opportunitiesCount: 0 },
+            embeddingsReady: false,
+          };
+        }
+
         // Build embeddings for new/updated sections
         let embeddingsReady = false;
         try {
@@ -968,6 +993,26 @@ ${sanitizedContent}`
           embeddingsReady = true;
         } catch (embErr: any) {
           console.warn('[SariBrain] Embeddings failed (non-blocking):', embErr.message);
+        }
+
+        // Register as a knowledge source (so it appears in "مصادر المعرفة" and health score)
+        try {
+          const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
+          if (!existingDoc) {
+            // Create a lightweight doc entry for Smart Intake content
+            const { createKnowledgeDoc } = await import('./db');
+            await createKnowledgeDoc({
+              merchantId: merchant.id,
+              fileName: input.fileName || 'محتوى Smart Intake',
+              fileType: 'pdf', // Schema only allows pdf/docx/xlsx — fileName indicates Smart Intake origin
+              fileUrl: null,
+              fileSize: input.content.length,
+              extractionStatus: 'completed',
+              extractedText: sanitizedContent.substring(0, 15000),
+            });
+          }
+        } catch (docErr: any) {
+          console.warn('[SariBrain] Failed to create knowledge doc entry (non-blocking):', docErr.message);
         }
 
         // Invalidate server-side cache
