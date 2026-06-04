@@ -919,6 +919,100 @@ ${sanitizedContent}`
     }),
 
   // ════════════════════════════════════════════════════════════════
+  // Phase 2.5: Ingest Analyzed Content — Save to Knowledge Base
+  // Uses evolveKnowledge() to ADD/EVOLVE/CONFLICT — never blind-delete
+  // ════════════════════════════════════════════════════════════════
+  ingestAnalyzedContent: protectedProcedure
+    .input(z.object({
+      content: z.string().min(10, 'المحتوى قصير جداً').max(50_000, 'المحتوى طويل جداً'),
+      contentType: z.enum(['document', 'products', 'custom']),
+      fileName: z.string().max(255).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      // Rate limit: 20s cooldown
+      checkDestructiveRateLimit(merchant.id, 20_000);
+
+      try {
+        const { ingestContent } = await import('./ai/knowledge-engine');
+        const { embedAllSections } = await import('./ai/rag-engine');
+        const knowledgeDb = await import('./db/knowledge');
+
+        console.log(`[SariBrain] ingestAnalyzedContent: merchant=${merchant.id}, type=${input.contentType}, chars=${input.content.length}`);
+
+        // Sanitize content for prompt injection (same as analyzeContent)
+        const sanitizedContent = input.content
+          .substring(0, 30000)
+          .replace(/ignore\s+(all\s+)?(previous|above|prior)\s+(instructions|prompts|rules)/gi, '[filtered]')
+          .replace(/\b(system|assistant|user)\s*:/gi, '[role]:')
+          .replace(/you\s+are\s+now\s+/gi, '[filtered] ')
+          .replace(/forget\s+(everything|all|your)/gi, '[filtered]')
+          .replace(/new\s+instructions?\s*:/gi, '[filtered]:')
+          .replace(/do\s+not\s+follow/gi, '[filtered]')
+          .replace(/override\s+(system|all|your)/gi, '[filtered]');
+
+        // Run the full evolution pipeline: classify → sales intel → evolve
+        const { evolveResult, salesIntel } = await ingestContent(
+          merchant.id,
+          sanitizedContent,
+          input.contentType === 'document' ? 'document' : 'manual',
+          { businessName: merchant.businessName },
+        );
+
+        // Build embeddings for new/updated sections
+        let embeddingsReady = false;
+        try {
+          await embedAllSections(merchant.id, true);
+          embeddingsReady = true;
+        } catch (embErr: any) {
+          console.warn('[SariBrain] Embeddings failed (non-blocking):', embErr.message);
+        }
+
+        // Invalidate server-side cache
+        await knowledgeDb.invalidateCache(merchant.id);
+
+        // Log activity with detail
+        await logBrainActivity(
+          merchant.id,
+          'knowledge_ingested',
+          `تم اعتماد "${input.fileName || 'محتوى جديد'}" — +${evolveResult.added} جديد، ↗${evolveResult.evolved} تطوير، ⚠${evolveResult.conflicts} تعارض`,
+          {
+            fileName: input.fileName,
+            contentType: input.contentType,
+            ...evolveResult,
+            embeddingsReady,
+            salesIntelUsps: salesIntel.usps.length,
+            salesIntelTips: salesIntel.sellingTips.length,
+          }
+        );
+
+        console.log(`[SariBrain] ✅ ingestAnalyzedContent complete: +${evolveResult.added} added, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
+
+        return {
+          success: true,
+          evolveResult,
+          salesIntel: {
+            hasIntel: salesIntel.usps.length > 0 || salesIntel.sellingTips.length > 0,
+            hasOpportunities: salesIntel.opportunities.length > 0,
+            uspsCount: salesIntel.usps.length,
+            tipsCount: salesIntel.sellingTips.length,
+            opportunitiesCount: salesIntel.opportunities.length,
+          },
+          embeddingsReady,
+        };
+      } catch (error: any) {
+        if (error?.code === 'TOO_MANY_REQUESTS') throw error;
+        console.error('[SariBrain] ingestAnalyzedContent failed:', error);
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'فشل حفظ المحتوى في قاعدة المعرفة. حاول مرة أخرى.',
+        });
+      }
+    }),
+
+  // ════════════════════════════════════════════════════════════════
   // FAQ Management — CRUD for custom Q&A pairs
   // ════════════════════════════════════════════════════════════════
   getFaqs: protectedProcedure.query(async ({ ctx }) => {
