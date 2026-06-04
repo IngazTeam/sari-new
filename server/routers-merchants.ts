@@ -681,7 +681,16 @@ export const merchantsRouter = router({
     updateEscalationPhones: protectedProcedure
         .input(z.object({
             phones: z.array(z.object({
-                phone: z.string().max(30).regex(/^[\d\s+\-().]+$/, 'رقم غير صالح — يجب أن يحتوي أرقام فقط'),
+                phone: z.string().max(30).regex(/^[\d\s+\-().]+$/, 'رقم غير صالح — يجب أن يحتوي أرقام فقط').transform(p => {
+                    // Server-side normalization (defense-in-depth)
+                    return p
+                        .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\u00A0]/g, '')
+                        .replace(/[\u0660-\u0669]/g, (c: string) => String(c.charCodeAt(0) - 0x0660))
+                        .replace(/[\u06F0-\u06F9]/g, (c: string) => String(c.charCodeAt(0) - 0x06F0))
+                        .replace(/[\uFF10-\uFF19]/g, (c: string) => String(c.charCodeAt(0) - 0xFF10))
+                        .replace(/[\s\-().+]/g, '')
+                        .replace(/^00/, '');
+                }),
                 label: z.string().max(50).default(''),
                 order: z.number().int().min(1).max(5),
             })).max(5),
@@ -714,13 +723,23 @@ export const merchantsRouter = router({
 
             // === Normalize phone numbers: ensure country code ===
             const normalizePhone = (phone: string): string => {
-                let p = phone.replace(/[\s\-()]/g, '');
+                let p = phone
+                    // Strip hidden Unicode chars
+                    .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\u00A0]/g, '')
+                    // Convert Arabic-Indic digits (٠-٩)
+                    .replace(/[\u0660-\u0669]/g, (c: string) => String(c.charCodeAt(0) - 0x0660))
+                    // Convert Extended Arabic-Indic (۰-۹)
+                    .replace(/[\u06F0-\u06F9]/g, (c: string) => String(c.charCodeAt(0) - 0x06F0))
+                    // Convert fullwidth digits (０-９)
+                    .replace(/[\uFF10-\uFF19]/g, (c: string) => String(c.charCodeAt(0) - 0xFF10))
+                    // Strip formatting chars
+                    .replace(/[\s\-().+]/g, '')
+                    // Remove leading 00
+                    .replace(/^00/, '');
                 // Saudi local → international: 05xxxxxxxx → 9665xxxxxxxx
-                if (/^05\d{8}$/.test(p)) {
-                    p = '966' + p.slice(1); // drop leading 0
-                }
-                // Ensure no leading +
-                p = p.replace(/^\+/, '');
+                if (/^05\d{8}$/.test(p)) p = '966' + p.slice(1);
+                // 5xxxxxxxx → 9665xxxxxxxx
+                if (/^5\d{8}$/.test(p)) p = '966' + p;
                 return p;
             };
 

@@ -43,10 +43,25 @@ export function EmergencyPhoneButton() {
     { enabled: open && !!merchantData?.id },
   );
 
-  // Normalize phone for comparison
+  // Normalize phone: strip hidden chars, convert Arabic digits, standardize format
   const normalizePhone = (phone: string): string => {
-    let p = phone.replace(/[\s\-()]/g, '').replace(/^\+/, '');
+    let p = phone
+      // Remove RTL/LTR marks, zero-width chars, non-breaking spaces
+      .replace(/[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF\u00A0]/g, '')
+      // Convert Arabic-Indic digits (٠-٩) to ASCII
+      .replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x0660))
+      // Convert Extended Arabic-Indic digits (۰-۹) to ASCII
+      .replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x06F0))
+      // Convert fullwidth digits (０-９) to ASCII
+      .replace(/[\uFF10-\uFF19]/g, (c) => String(c.charCodeAt(0) - 0xFF10))
+      // Strip spaces, dashes, dots, parens, plus
+      .replace(/[\s\-().+]/g, '')
+      // Remove leading 00 (international prefix)
+      .replace(/^00/, '');
+    // Saudi local → international: 05xxxxxxxx → 9665xxxxxxxx
     if (/^05\d{8}$/.test(p)) p = '966' + p.slice(1);
+    // 5xxxxxxxx (no leading 0) → 9665xxxxxxxx
+    if (/^5\d{8}$/.test(p)) p = '966' + p;
     return p;
   };
 
@@ -92,8 +107,13 @@ export function EmergencyPhoneButton() {
 
   const handleSave = () => {
     setErrorMsg(null);
+    // Normalize each phone independently, preserve label
     const cleaned = phones
-      .map(p => ({ ...p, phone: p.phone.replace(/\s/g, '') }))
+      .map((p, i) => ({
+        phone: normalizePhone(p.phone),
+        label: p.label.trim(),
+        order: i + 1,
+      }))
       .filter(p => p.phone.length > 0);
     
     if (cleaned.length === 0) {
@@ -102,6 +122,12 @@ export function EmergencyPhoneButton() {
     }
     if (hasConflict) {
       setErrorMsg('🚫 أزل أرقام الواتساب المربوطة بالبوت أولاً — لا يمكن استخدامها للتصعيد');
+      return;
+    }
+    // Client-side validation: each phone must be digits only after normalization
+    const invalidRow = cleaned.find(p => !/^\d{9,15}$/.test(p.phone));
+    if (invalidRow) {
+      setErrorMsg(`⚠️ الرقم "${invalidRow.phone || '(فارغ)'}" غير صالح — يجب أن يكون أرقام فقط (مثال: 966501234567)`);
       return;
     }
     updateMut.mutate({ phones: cleaned });

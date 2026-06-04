@@ -26,7 +26,7 @@ const CRITICAL_TABLES = [
 
 // Important but non-critical tables
 const IMPORTANT_TABLES = [
-  'bot_sections', 'personality_settings', 'knowledge_docs',
+  'bot_sections', 'personality_settings', 'merchant_knowledge_docs',
   'virtual_agents', 'customer_profiles',
   'salla_connections', 'zid_connections',
   'byaan_connections',
