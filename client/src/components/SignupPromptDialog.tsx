@@ -105,9 +105,9 @@ export default function SignupPromptDialog({ open, onClose, onSignup }: SignupPr
 
         <p className="text-xs text-center text-gray-500">
           بالتسجيل، أنت توافق على{' '}
-          <a href="/terms" className="text-[#00d25e] hover:underline">{t('signupPromptDialog.auto_5')}</a>{' '}
+          <a href="/company/terms" className="text-[#00d25e] hover:underline">{t('signupPromptDialog.auto_5')}</a>{' '}
           و{' '}
-          <a href="/privacy" className="text-[#00d25e] hover:underline">{t('signupPromptDialog.auto_6')}</a>
+          <a href="/company/privacy" className="text-[#00d25e] hover:underline">{t('signupPromptDialog.auto_6')}</a>
         </p>
       </DialogContent>
     </Dialog>

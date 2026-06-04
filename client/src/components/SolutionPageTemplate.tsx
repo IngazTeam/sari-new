@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SolutionService, SectorData } from '../data/solutions/types';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
@@ -14,19 +14,68 @@ import { SeoHead } from './SeoHead';
 import Navbar from './Navbar';
 import Footer from './Footer';
 
+const BASE_URL = 'https://sary.live';
+
 interface SolutionPageTemplateProps {
   sector: SectorData;
   service: SolutionService;
 }
 
 export function SolutionPageTemplate({ sector, service }: SolutionPageTemplateProps) {
+  // P2-5: Generate structured data for rich results (FAQ + Breadcrumb + Service)
+  const structuredData = useMemo(() => {
+    const schemas: any[] = [];
+
+    // BreadcrumbList schema
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'ساري', item: `${BASE_URL}/` },
+        { '@type': 'ListItem', position: 2, name: `حلول ${sector.title}`, item: `${BASE_URL}/solutions/${sector.slug}` },
+        { '@type': 'ListItem', position: 3, name: service.heroTitle, item: `${BASE_URL}/solutions/${sector.slug}/${service.slug}` },
+      ],
+    });
+
+    // FAQPage schema (only if FAQs exist)
+    if (service.faqs.length > 0) {
+      schemas.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: service.faqs.map((faq) => ({
+          '@type': 'Question',
+          name: faq.question,
+          acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+        })),
+      });
+    }
+
+    // Service schema
+    schemas.push({
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: service.heroTitle,
+      description: service.metaDescription,
+      provider: {
+        '@type': 'Organization',
+        name: 'ساري | Sari',
+        url: BASE_URL,
+      },
+      areaServed: { '@type': 'Country', name: 'SA' },
+      serviceType: service.title,
+    });
+
+    return schemas;
+  }, [sector, service]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <SeoHead 
         title={`${service.heroTitle} | ساري`}
         description={service.metaDescription}
-        canonicalUrl={`https://sary.live/solutions/${sector.slug}/${service.slug}`}
+        canonicalUrl={`${BASE_URL}/solutions/${sector.slug}/${service.slug}`}
         ogType="website"
+        structuredData={structuredData}
       />
       <Navbar />
 

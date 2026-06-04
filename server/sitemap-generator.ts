@@ -127,14 +127,14 @@ export async function generatePagesSitemap(): Promise<string> {
         { lang: 'en', href: `${BASE_URL}/conversational-commerce-platform?lang=en` },
       ],
     },
-    // ─── SEO Vertical Industry Pages ───
+    // ─── SEO Vertical Industry Pages — Arabic only ───
     {
       loc: `${BASE_URL}/solutions/clinics`,
       changefreq: 'weekly',
       priority: 0.85,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/clinics` },
-        { lang: 'en', href: `${BASE_URL}/solutions/clinics?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/clinics` },
       ],
     },
     {
@@ -143,7 +143,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.85,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/restaurants` },
-        { lang: 'en', href: `${BASE_URL}/solutions/restaurants?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/restaurants` },
       ],
     },
     {
@@ -152,7 +152,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.85,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/salons` },
-        { lang: 'en', href: `${BASE_URL}/solutions/salons?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/salons` },
       ],
     },
     {
@@ -161,7 +161,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.85,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/training-centers` },
-        { lang: 'en', href: `${BASE_URL}/solutions/training-centers?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/training-centers` },
       ],
     },
     {
@@ -170,7 +170,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.85,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/real-estate` },
-        { lang: 'en', href: `${BASE_URL}/solutions/real-estate?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/real-estate` },
       ],
     },
     {
@@ -179,17 +179,17 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.85,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/consultants` },
-        { lang: 'en', href: `${BASE_URL}/solutions/consultants?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/consultants` },
       ],
     },
-    // ─── SEO Vertical Industry Sub-Pages (Services) ───
+    // ─── SEO Vertical Industry Sub-Pages (Services) — Arabic only ───
     ...['appointment-booking', 'no-show-reminders', 'patient-inquiries'].map(slug => ({
       loc: `${BASE_URL}/solutions/clinics/${slug}`,
       changefreq: 'weekly' as const,
       priority: 0.8,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/clinics/${slug}` },
-        { lang: 'en', href: `${BASE_URL}/solutions/clinics/${slug}?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/clinics/${slug}` },
       ],
     })),
     ...['whatsapp-ordering', 'digital-menu-payment', 'delivery-repeat-orders'].map(slug => ({
@@ -198,7 +198,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.8,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/restaurants/${slug}` },
-        { lang: 'en', href: `${BASE_URL}/solutions/restaurants/${slug}?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/restaurants/${slug}` },
       ],
     })),
     ...['appointment-booking', 'deposits-service-menu', 'loyalty-campaigns'].map(slug => ({
@@ -207,7 +207,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.8,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/salons/${slug}` },
-        { lang: 'en', href: `${BASE_URL}/solutions/salons/${slug}?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/salons/${slug}` },
       ],
     })),
     ...['course-registration', 'class-reminders-certificates', 'course-marketing'].map(slug => ({
@@ -216,7 +216,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.8,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/training-centers/${slug}` },
-        { lang: 'en', href: `${BASE_URL}/solutions/training-centers/${slug}?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/training-centers/${slug}` },
       ],
     })),
     ...['lead-qualification', 'property-catalog', 'viewing-followup'].map(slug => ({
@@ -225,7 +225,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.8,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/real-estate/${slug}` },
-        { lang: 'en', href: `${BASE_URL}/solutions/real-estate/${slug}?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/real-estate/${slug}` },
       ],
     })),
     ...['consultation-booking', 'advance-payment', 'client-followup'].map(slug => ({
@@ -234,7 +234,7 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.8,
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/solutions/consultants/${slug}` },
-        { lang: 'en', href: `${BASE_URL}/solutions/consultants/${slug}?lang=en` },
+        { lang: 'x-default', href: `${BASE_URL}/solutions/consultants/${slug}` },
       ],
     })),
     // ─── Knowledge Engine (Docs) ───

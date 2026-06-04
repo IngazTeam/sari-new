@@ -11,7 +11,7 @@ export interface SitemapEntry {
 }
 
 export function generateSitemap(entries: SitemapEntry[]): string {
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://sari.app";
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://sary.live";
 
   const xmlEntries = entries
     .map((entry) => {
@@ -41,7 +41,7 @@ Disallow: /admin
 Disallow: /api
 Disallow: /private
 
-Sitemap: https://sari.app/sitemap.xml
+Sitemap: https://sary.live/sitemap.xml
 Crawl-delay: 1
 
 User-agent: Googlebot
@@ -66,32 +66,32 @@ export const defaultSitemapEntries: SitemapEntry[] = [
     priority: 0.9,
   },
   {
-    url: "/features",
+    url: "/products",
     changefreq: "monthly",
     priority: 0.9,
   },
   {
-    url: "/about",
+    url: "/company/about",
     changefreq: "monthly",
     priority: 0.7,
   },
   {
-    url: "/contact",
+    url: "/company/contact",
     changefreq: "monthly",
     priority: 0.7,
   },
   {
-    url: "/blog",
+    url: "/resources/blog",
     changefreq: "weekly",
     priority: 0.8,
   },
   {
-    url: "/privacy",
+    url: "/company/privacy",
     changefreq: "yearly",
     priority: 0.5,
   },
   {
-    url: "/terms",
+    url: "/company/terms",
     changefreq: "yearly",
     priority: 0.5,
   },
