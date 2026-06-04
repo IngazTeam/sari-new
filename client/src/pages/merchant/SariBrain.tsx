@@ -1610,7 +1610,8 @@ export default function SariBrain() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Input area */}
+          {/* Input area — collapse after analysis */}
+          {!analysisResult ? (
           <div className="space-y-3">
             <div className="flex gap-2">
               <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".txt,.csv" className="hidden" />
@@ -1635,6 +1636,17 @@ export default function SariBrain() {
               </Button>
             </div>
           </div>
+          ) : (
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                <span>تم تحميل {previewText.length.toLocaleString()} حرف</span>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => { setAnalysisResult(null); setIngestionResult(null); }}>
+                <Upload className="h-3.5 w-3.5 ml-1" /> تغيير المحتوى
+              </Button>
+            </div>
+          )}
 
           {/* Analysis Result */}
           {analysisResult && (
@@ -1891,29 +1903,59 @@ export default function SariBrain() {
       {/* Activity Log */}
       <Card>
         <CardHeader>
-          <CardTitle>📋 مسار ساري</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5 text-primary" />
+            📋 مسار ساري
+          </CardTitle>
           <CardDescription>سجل بكل التغييرات التي أثرت على ذاكرة ساري</CardDescription>
         </CardHeader>
         <CardContent>
           {activityLog && activityLog.length > 0 ? (
             <div className="relative">
               <div className="absolute right-5 top-0 bottom-0 w-px bg-border" />
-              <div className="space-y-4">
-                {activityLog.map((entry: any) => (
-                  <div key={entry.id} className="flex items-start gap-4 relative">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-muted border-2 border-background z-10 text-lg">
+              <div className="space-y-1">
+                {activityLog.map((entry: any) => {
+                  const isIngested = entry.actionType === 'knowledge_ingested';
+                  const isAnalyzed = entry.actionType === 'content_analyzed';
+                  const isDeleted = entry.actionType?.includes('delete') || entry.description?.includes('حذف');
+                  const isWebsite = entry.actionType?.includes('website') || entry.actionType?.includes('scrape');
+                  
+                  return (
+                  <div key={entry.id} className={`flex items-start gap-3 relative p-3 rounded-lg transition-colors hover:bg-muted/50 ${isIngested ? 'bg-green-50/50 dark:bg-green-950/10' : ''}`}>
+                    <div className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-background z-10 text-base shrink-0 ${
+                      isIngested ? 'bg-green-100 dark:bg-green-900/30' :
+                      isDeleted ? 'bg-red-100 dark:bg-red-900/30' :
+                      isWebsite ? 'bg-blue-100 dark:bg-blue-900/30' :
+                      'bg-muted'
+                    }`}>
                       {ACTION_ICONS[entry.actionType] || '📝'}
                     </div>
-                    <div className="flex-1 pt-1.5">
-                      <p className="text-sm font-medium">{entry.description}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {new Date(entry.createdAt).toLocaleDateString('ar-SA', {
-                          year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
-                        })}
-                      </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-sm font-medium leading-snug">{entry.description}</p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          isIngested ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                          isDeleted ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                          isAnalyzed ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' :
+                          isWebsite ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' :
+                          'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                        }`}>
+                          {isIngested ? 'اعتماد' : isDeleted ? 'حذف' : isAnalyzed ? 'فحص' : isWebsite ? 'موقع' : 'تحديث'}
+                        </span>
+                        <span className="text-[11px] text-muted-foreground">
+                          {new Date(entry.createdAt).toLocaleDateString('ar-SA', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                          })} — {new Date(entry.createdAt).toLocaleTimeString('ar-SA', {
+                            hour: '2-digit', minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
