@@ -681,7 +681,7 @@ export const merchantsRouter = router({
     updateEscalationPhones: protectedProcedure
         .input(z.object({
             phones: z.array(z.object({
-                phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/, 'رقم غير صالح'),
+                phone: z.string().max(30).regex(/^[\d\s+\-().]+$/, 'رقم غير صالح — يجب أن يحتوي أرقام فقط'),
                 label: z.string().max(50).default(''),
                 order: z.number().int().min(1).max(5),
             })).max(5),
