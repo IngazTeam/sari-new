@@ -20,3 +20,7 @@ CREATE TABLE IF NOT EXISTS `smtp_settings` (
   UNIQUE KEY `smtp_settings_merchant_id_unique` (`merchant_id`),
   FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add 'text' to merchant_knowledge_docs.file_type enum for Smart Intake content
+ALTER TABLE `merchant_knowledge_docs`
+  MODIFY COLUMN `file_type` ENUM('pdf', 'docx', 'xlsx', 'text') NOT NULL;

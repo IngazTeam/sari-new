@@ -1004,7 +1004,7 @@ ${sanitizedContent}`
             await createKnowledgeDoc({
               merchantId: merchant.id,
               fileName: input.fileName || 'محتوى Smart Intake',
-              fileType: 'pdf', // Schema only allows pdf/docx/xlsx — fileName indicates Smart Intake origin
+              fileType: 'text',
               fileUrl: null,
               fileSize: input.content.length,
               extractionStatus: 'completed',
