@@ -54,7 +54,9 @@ export default function SariBrain() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const { data: sources, isLoading } = trpc.sariBrain.getSources.useQuery();
-  const { data: activityLog } = trpc.sariBrain.getActivityLog.useQuery({ limit: 30 });
+  const [logPage, setLogPage] = useState(1);
+  const [logFilter, setLogFilter] = useState<string>('all');
+  const { data: activityLogData } = trpc.sariBrain.getActivityLog.useQuery({ page: logPage, pageSize: 10, actionType: logFilter === 'all' ? undefined : logFilter });
   const { data: faqs } = trpc.sariBrain.getFaqs.useQuery();
 
   // Knowledge Engine v4 hooks
@@ -1900,29 +1902,71 @@ export default function SariBrain() {
         );
       })()}
 
-      {/* Activity Log */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-primary" />
-            📋 مسار ساري
-          </CardTitle>
-          <CardDescription>سجل بكل التغييرات التي أثرت على ذاكرة ساري</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {activityLog && activityLog.length > 0 ? (
-            <div className="relative">
-              <div className="absolute right-5 top-0 bottom-0 w-px bg-border" />
-              <div className="space-y-1">
-                {activityLog.map((entry: any) => {
+      {/* Activity Log — with filter + pagination */}
+      {(() => {
+        const logItems = activityLogData?.items || [];
+        const logTotal = activityLogData?.total || 0;
+        const logTotalPages = activityLogData?.totalPages || 0;
+        const FILTER_OPTIONS = [
+          { value: 'all', label: 'الكل', icon: '📋' },
+          { value: 'knowledge_ingested', label: 'اعتماد', icon: '✅' },
+          { value: 'content_analyzed', label: 'فحص', icon: '🔬' },
+          { value: 'file_uploaded', label: 'رفع', icon: '📁' },
+          { value: 'website_analyzed', label: 'موقع', icon: '🌐' },
+          { value: 'document_deleted', label: 'حذف', icon: '🗑️' },
+        ];
+
+        return (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  📋 مسار ساري
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  {logTotal > 0 ? `${logTotal} سجل` : 'سجل بكل التغييرات التي أثرت على ذاكرة ساري'}
+                </CardDescription>
+              </div>
+              {logTotal > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  صفحة {logPage} من {logTotalPages}
+                </Badge>
+              )}
+            </div>
+            {/* Filter Tabs */}
+            {logTotal > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3 pt-3 border-t">
+                {FILTER_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setLogFilter(opt.value); setLogPage(1); }}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                      logFilter === opt.value
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted/60 text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <span>{opt.icon}</span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardHeader>
+          <CardContent>
+            {logItems.length > 0 ? (
+              <div className="space-y-0">
+                {logItems.map((entry: any) => {
                   const isIngested = entry.actionType === 'knowledge_ingested';
                   const isAnalyzed = entry.actionType === 'content_analyzed';
                   const isDeleted = entry.actionType?.includes('delete') || entry.description?.includes('حذف');
                   const isWebsite = entry.actionType?.includes('website') || entry.actionType?.includes('scrape');
-                  
+
                   return (
-                  <div key={entry.id} className={`flex items-start gap-3 relative p-3 rounded-lg transition-colors hover:bg-muted/50 ${isIngested ? 'bg-green-50/50 dark:bg-green-950/10' : ''}`}>
-                    <div className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-background z-10 text-base shrink-0 ${
+                  <div key={entry.id} className={`flex items-start gap-3 p-3 rounded-lg transition-colors hover:bg-muted/50 border-b border-border/50 last:border-0 ${isIngested ? 'bg-green-50/50 dark:bg-green-950/10' : ''}`}>
+                    <div className={`flex items-center justify-center w-9 h-9 rounded-full border-2 border-background text-base shrink-0 ${
                       isIngested ? 'bg-green-100 dark:bg-green-900/30' :
                       isDeleted ? 'bg-red-100 dark:bg-red-900/30' :
                       isWebsite ? 'bg-blue-100 dark:bg-blue-900/30' :
@@ -1931,9 +1975,7 @@ export default function SariBrain() {
                       {ACTION_ICONS[entry.actionType] || '📝'}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium leading-snug">{entry.description}</p>
-                      </div>
+                      <p className="text-sm font-medium leading-snug">{entry.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${
                           isIngested ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
@@ -1956,17 +1998,74 @@ export default function SariBrain() {
                   </div>
                   );
                 })}
+
+                {/* Pagination Controls */}
+                {logTotalPages > 1 && (
+                  <div className="flex items-center justify-center gap-1 pt-4 mt-2 border-t">
+                    <button
+                      onClick={() => setLogPage(p => Math.max(1, p - 1))}
+                      disabled={logPage <= 1}
+                      className="px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted"
+                    >
+                      ← السابق
+                    </button>
+                    {Array.from({ length: Math.min(logTotalPages, 7) }, (_, i) => {
+                      let pageNum: number;
+                      if (logTotalPages <= 7) {
+                        pageNum = i + 1;
+                      } else if (logPage <= 4) {
+                        pageNum = i + 1;
+                      } else if (logPage >= logTotalPages - 3) {
+                        pageNum = logTotalPages - 6 + i;
+                      } else {
+                        pageNum = logPage - 3 + i;
+                      }
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setLogPage(pageNum)}
+                          className={`w-8 h-8 rounded-md text-xs font-medium transition-all ${
+                            logPage === pageNum
+                              ? 'bg-primary text-primary-foreground shadow-sm'
+                              : 'hover:bg-muted text-muted-foreground'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => setLogPage(p => Math.min(logTotalPages, p + 1))}
+                      disabled={logPage >= logTotalPages}
+                      className="px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed hover:bg-muted"
+                    >
+                      التالي →
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Clock className="mx-auto h-8 w-8 mb-2 opacity-50" />
-              <p>لا توجد أنشطة مسجلة بعد</p>
-              <p className="text-xs mt-1">ستظهر هنا كل التغييرات على مصادر معرفة ساري</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="mx-auto h-8 w-8 mb-2 opacity-50" />
+                {logFilter !== 'all' ? (
+                  <>
+                    <p>لا توجد أنشطة من نوع "{FILTER_OPTIONS.find(o => o.value === logFilter)?.label}"</p>
+                    <button onClick={() => { setLogFilter('all'); setLogPage(1); }} className="text-xs text-primary hover:underline mt-2">
+                      عرض كل الأنشطة
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p>لا توجد أنشطة مسجلة بعد</p>
+                    <p className="text-xs mt-1">ستظهر هنا كل التغييرات على مصادر معرفة ساري</p>
+                  </>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        );
+      })()}
     </div>
   );
 }

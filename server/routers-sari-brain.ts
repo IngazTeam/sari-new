@@ -610,8 +610,13 @@ export const sariBrainRouter = router({
 
   // Get activity log
   getActivityLog: protectedProcedure
-    // PEN-BRAIN-01 FIX: Clamp limit to 1-200
-    .input(z.object({ limit: z.number().min(1).max(200).default(50) }).optional())
+    // PEN-BRAIN-01 FIX: Clamp limit, add pagination + filter
+    .input(z.object({
+      page: z.number().min(1).max(500).default(1),
+      pageSize: z.number().min(5).max(50).default(15),
+      actionType: z.string().max(50).optional(),
+      limit: z.number().min(1).max(200).default(50).optional(), // backward compat
+    }).optional())
     .query(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
@@ -619,13 +624,33 @@ export const sariBrainRouter = router({
       try {
         await ensureActivityTable();
         const dbConn = await getRawPool();
-        if (!dbConn) return [];
+        if (!dbConn) return { items: [], total: 0, page: 1, pageSize: 15, totalPages: 0 };
 
-        // SEC-FIX: MySQL doesn't support LIMIT ? in prepared statements
-        const safeLimit = Math.min(Math.max(1, Number(input?.limit) || 50), 200);
+        const page = Math.max(1, input?.page || 1);
+        const pageSize = Math.min(Math.max(5, input?.pageSize || 15), 50);
+        const offset = (page - 1) * pageSize;
+        const actionTypeFilter = input?.actionType?.trim() || null;
+
+        // Build WHERE clause
+        let whereClause = 'WHERE merchant_id = ?';
+        const params: any[] = [merchant.id];
+        if (actionTypeFilter && actionTypeFilter !== 'all') {
+          whereClause += ' AND action_type = ?';
+          params.push(actionTypeFilter);
+        }
+
+        // Count total
+        const [countRows] = await (dbConn as any).execute(
+          `SELECT COUNT(*) as cnt FROM sari_activity_log ${whereClause}`,
+          params
+        );
+        const total = (countRows as any[])[0]?.cnt || 0;
+        const totalPages = Math.ceil(total / pageSize);
+
+        // Fetch page
         const [rows] = await (dbConn as any).execute(
-          `SELECT id, action_type, description, details, created_at FROM sari_activity_log WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
-          [merchant.id]
+          `SELECT id, action_type, description, details, created_at FROM sari_activity_log ${whereClause} ORDER BY created_at DESC LIMIT ${pageSize} OFFSET ${offset}`,
+          params
         );
 
         // PEN-BRAIN-06: Cleanup old records (90 days TTL, async non-blocking)
@@ -634,16 +659,18 @@ export const sariBrainRouter = router({
           [merchant.id]
         ).catch(() => {}); // Fire-and-forget cleanup
 
-        return sanitizeForTRPC((rows as any[]).map((row: any) => ({
+        const items = (rows as any[]).map((row: any) => ({
           id: row.id,
           actionType: row.action_type,
           description: row.description,
           details: row.details ? (typeof row.details === 'string' ? JSON.parse(row.details) : row.details) : null,
           createdAt: row.created_at,
-        })));
+        }));
+
+        return sanitizeForTRPC({ items, total, page, pageSize, totalPages });
       } catch (error) {
         console.error('[SariBrain] Failed to get activity log:', error);
-        return [];
+        return { items: [], total: 0, page: 1, pageSize: 15, totalPages: 0 };
       }
     }),
 
