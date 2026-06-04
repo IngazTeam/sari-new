@@ -279,7 +279,7 @@ async function startServer() {
         return res.status(401).json({ error: 'غير مصرح' });
       }
 
-      const { getMerchantByUserId, createKnowledgeDoc, updateKnowledgeDoc, deleteKnowledgeDocsByMerchantId } = await import('../db');
+      const { getMerchantByUserId, createKnowledgeDoc, updateKnowledgeDoc, getKnowledgeDocByMerchantId, deleteKnowledgeDocsByMerchantId } = await import('../db');
       const merchant = await getMerchantByUserId(user.id);
       if (!merchant) {
         return res.status(404).json({ error: 'التاجر غير موجود' });
@@ -304,8 +304,8 @@ async function startServer() {
         .replace(/\.{2,}/g, '.')                       // Prevent ..
         .substring(0, 200);                            // Limit length
 
-      // Delete old docs for this merchant (one doc per merchant)
-      await deleteKnowledgeDocsByMerchantId(merchant.id);
+      // Check for existing doc — UPDATE instead of DELETE to preserve knowledge
+      const existingDoc = await getKnowledgeDocByMerchantId(merchant.id);
 
       // Save to storage — SEC-01 FIX: Use sanitized name in storage key
       let fileUrl: string | null = null;
@@ -318,15 +318,29 @@ async function startServer() {
         console.warn('[KnowledgeDocs] Storage upload failed, proceeding without file URL:', err);
       }
 
-      // Create DB record — SEC-02 FIX: Store sanitized filename
-      const docId = await createKnowledgeDoc({
-        merchantId: merchant.id,
-        fileName: sanitizedName,
-        fileType,
-        fileUrl,
-        fileSize: file.size,
-        extractionStatus: 'processing',
-      });
+      let docId: number;
+      if (existingDoc) {
+        // UPDATE existing doc metadata (knowledge sections evolve via ingestContent below)
+        docId = existingDoc.id;
+        await updateKnowledgeDoc(docId, {
+          fileName: sanitizedName,
+          fileType,
+          fileUrl,
+          fileSize: file.size,
+          extractionStatus: 'processing',
+        });
+        console.log(`[KnowledgeDocs] Updating existing doc ${docId} for merchant ${merchant.id} (evolve, not replace)`);
+      } else {
+        // Create new DB record — SEC-02 FIX: Store sanitized filename
+        docId = await createKnowledgeDoc({
+          merchantId: merchant.id,
+          fileName: sanitizedName,
+          fileType,
+          fileUrl,
+          fileSize: file.size,
+          extractionStatus: 'processing',
+        });
+      }
 
       // Extract text
       try {
@@ -407,22 +421,26 @@ async function startServer() {
         console.log(`[KnowledgeDocs] ✅ Extraction completed: merchant=${merchant.id}, chars=${text.length}, pages=${pageCount || 'N/A'}`);
 
         // === Knowledge Engine v4: Classify document into structured sections ===
+        // Uses evolveKnowledge() — compares with existing, adds new, evolves changed, flags conflicts
+        let evolveStats: any = null;
         try {
           if (finalText.trim().length > 100) {
             const { ingestContent } = await import('../ai/knowledge-engine');
             const { embedAllSections } = await import('../ai/rag-engine');
             const knowledgeDb = await import('../db/knowledge');
             
-            await ingestContent(
+            const { evolveResult, salesIntel } = await ingestContent(
               merchant.id,
               finalText,
               'document',
               { businessName: merchant.businessName },
             );
             
+            evolveStats = { ...evolveResult, salesIntel: { usps: salesIntel.usps.length, tips: salesIntel.sellingTips.length, opportunities: salesIntel.opportunities.length } };
+            
             await embedAllSections(merchant.id, true);
             await knowledgeDb.invalidateCache(merchant.id);
-            console.log(`[KnowledgeDocs] ✅ Knowledge Engine processed uploaded document for merchant ${merchant.id}`);
+            console.log(`[KnowledgeDocs] ✅ Knowledge Engine evolved: +${evolveResult.added} added, ↗${evolveResult.evolved} evolved, ⚠${evolveResult.conflicts} conflicts`);
           }
         } catch (keErr: any) {
           console.warn('[KnowledgeDocs] Knowledge Engine pipeline failed (non-blocking):', keErr.message);
@@ -436,6 +454,8 @@ async function startServer() {
 
         return res.json({
           success: true,
+          isUpdate: !!existingDoc,
+          evolveStats,
           doc: {
             id: docId,
             fileName: sanitizedName,
