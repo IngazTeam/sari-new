@@ -270,7 +270,7 @@ export async function completeSession(sessionId: number, merchantId?: number): P
   }
 }
 
-/** Expire stale sessions (> 2 hours without response) */
+/** Expire stale sessions (> 8 hours without response — matches SESSION_TIMEOUT_HOURS) */
 export async function expireStaleSessions(): Promise<number> {
   await ensureCoachingTables();
   const pool = await getPool();
@@ -280,7 +280,7 @@ export async function expireStaleSessions(): Promise<number> {
     `UPDATE sari_coaching_sessions
      SET status = 'expired'
      WHERE status = 'active'
-     AND started_at < DATE_SUB(NOW(), INTERVAL 2 HOUR)
+     AND started_at < DATE_SUB(NOW(), INTERVAL 8 HOUR)
      LIMIT 50`
   );
   return (result as any).affectedRows || 0;
@@ -321,10 +321,11 @@ export async function getReviewCandidates(
   try {
     // Get recent outgoing messages with customer context (last 72 hours)
     // Exclude already-reviewed conversations
+    // BUG-FIX: Use TRIM + LENGTH to exclude whitespace-only and media-placeholder content
     const [rows] = await pool.execute(
       `SELECT 
-        m_in.content AS customer_question,
-        m_out.content AS bot_response,
+        TRIM(m_in.content) AS customer_question,
+        TRIM(m_out.content) AS bot_response,
         m_out.conversationId AS conversation_id
        FROM messages m_out
        INNER JOIN messages m_in ON m_in.conversationId = m_out.conversationId
@@ -340,9 +341,11 @@ export async function getReviewCandidates(
          AND m_out.direction = 'outgoing'
          AND m_out.createdAt > DATE_SUB(NOW(), INTERVAL 72 HOUR)
          AND m_out.content IS NOT NULL
-         AND LENGTH(m_out.content) > 20
          AND m_in.content IS NOT NULL
-         AND LENGTH(m_in.content) > 5
+         AND LENGTH(TRIM(m_out.content)) > 20
+         AND LENGTH(TRIM(m_in.content)) > 5
+         AND TRIM(m_in.content) NOT IN ('[media]', '[صورة]', '[صوت]', '[فيديو]', '[صورة من العميل]', '[ملف]')
+         AND TRIM(m_out.content) NOT LIKE '[%]'
          AND m_out.conversationId NOT IN (
            SELECT DISTINCT cq.conversation_id
            FROM sari_coaching_questions cq
@@ -395,4 +398,51 @@ export async function getCoachingStats(merchantId: number): Promise<{
       correctRate: totalReviewed > 0 ? totalCorrect / totalReviewed : 0,
     };
   } catch { return { totalSessions: 0, totalReviewed: 0, correctRate: 0 }; }
+}
+
+/**
+ * Get the most recently expired coaching session for a merchant (within last 24h).
+ * Used to gracefully handle late merchant replies to coaching questions.
+ */
+export async function getLastExpiredSession(merchantId: number): Promise<CoachingSession | null> {
+  await ensureCoachingTables();
+  const pool = await getPool();
+  if (!pool) return null;
+
+  try {
+    const [rows] = await pool.execute(
+      `SELECT * FROM sari_coaching_sessions
+       WHERE merchant_id = ? AND status = 'expired'
+       AND created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)
+       ORDER BY created_at DESC LIMIT 1`,
+      [merchantId]
+    );
+
+    return (rows as any[])[0] as CoachingSession || null;
+  } catch (e: any) {
+    console.error('[Coaching] getLastExpiredSession failed:', e.message);
+    return null;
+  }
+}
+
+/**
+ * Re-activate an expired session so it can process late merchant replies.
+ * Sets status back to 'active' temporarily.
+ */
+export async function reactivateSession(sessionId: number, merchantId: number): Promise<boolean> {
+  const pool = await getPool();
+  if (!pool) return false;
+
+  try {
+    const [result] = await pool.execute(
+      `UPDATE sari_coaching_sessions
+       SET status = 'active', started_at = NOW()
+       WHERE id = ? AND merchant_id = ? AND status = 'expired'`,
+      [sessionId, merchantId]
+    );
+    return (result as any).affectedRows > 0;
+  } catch (e: any) {
+    console.error('[Coaching] reactivateSession failed:', e.message);
+    return false;
+  }
 }

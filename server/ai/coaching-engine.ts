@@ -20,6 +20,8 @@ import {
   getReviewCandidates,
   getLastSessionDate,
   expireStaleSessions,
+  getLastExpiredSession,
+  reactivateSession,
   type CoachingSession,
   type CoachingQuestion,
 } from '../db/coaching';
@@ -36,7 +38,7 @@ export { getActiveSession };
 
 const MAX_QUESTIONS_PER_SESSION = 2; // Micro-training — Duolingo style
 const MIN_HOURS_BETWEEN_SESSIONS = 24;
-const SESSION_TIMEOUT_HOURS = 2;
+const SESSION_TIMEOUT_HOURS = 8; // Extended from 2 — merchants often reply hours later
 const MIN_CANDIDATES_TO_TRIGGER = 3; // Need 3+ unreviewed Q&As before triggering
 
 // PEN-COACH-03 FIX: Rate limit for #علم_ساري commands (max 10/day per merchant)
@@ -260,6 +262,19 @@ async function sendCoachingQuestion(
   const q = scrubPII(question.customerQuestion?.substring(0, 200) || '');
   const a = question.botResponse?.substring(0, 200) || '';
 
+  // BUG-FIX: Skip empty Q&A — don't send blank questions to merchant
+  if (q.trim().length === 0 && a.trim().length === 0) {
+    console.warn(`[Coaching] ⚠️ Skipping empty Q&A at index ${questionIndex} (both question and response are blank)`);
+    // Auto-advance to next question
+    const newIndex = await advanceSession(sessionId, 'skipped', merchantId);
+    if (newIndex < totalQuestions) {
+      await sendCoachingQuestion(merchantId, sessionId, newIndex, totalQuestions);
+    } else {
+      await completeSession(sessionId, merchantId);
+    }
+    return;
+  }
+
   const message = `${intro}📝 *سؤال ${questionIndex + 1} من ${totalQuestions}:*\n\n👤 العميل سأل: "${q}"\n🤖 رديت: "${a}"\n\n✅ رد بـ *صح* إذا ردي صحيح\n✏️ أو اكتب *الجواب الأصح*\n⏭ أو *تخطى*`;
 
   try {
@@ -288,7 +303,41 @@ export async function handleCoachingReply(
   replyText: string
 ): Promise<{ handled: boolean; response?: string }> {
   try {
-    const session = await getActiveSession(merchantId);
+    let session = await getActiveSession(merchantId);
+    
+    // BUG-FIX: If no active session, check for recently expired session
+    // Merchant may reply hours after the coaching question was sent
+    if (!session) {
+      const expiredSession = await getLastExpiredSession(merchantId);
+      if (expiredSession) {
+        const textLower = replyText.trim().toLowerCase();
+        // PENTEST-FIX: Strict keyword matching only — don't hijack normal merchant messages
+        // Only reactivate if the reply is clearly a coaching response (confirm/skip keyword)
+        // or a short correction (< 100 chars, not a greeting/report/teach command)
+        const isConfirmOrSkip = 
+          CONFIRM_KEYWORDS.some(k => textLower === k || textLower === k + '!') ||
+          SKIP_KEYWORDS.some(k => textLower === k);
+        
+        // Short corrections: allow short text that isn't a known merchant command
+        const MERCHANT_COMMAND_PATTERNS = [
+          /^(مرحبا|السلام|هلا|أهلاً|هاي|صباح|مساء)/,    // Greetings
+          /^(تقرير|إحصائيات|احصائيات|كم|المبيعات|الأداء)/, // Reports
+          /^(#علم|علم:|تعلم:|أضف|اضف|حفظ:|سجل:|احفظ:|معلومة:)/, // Teaching
+          /^(تحديث\s)/,                                     // Update commands
+        ];
+        const looksLikeMerchantCommand = MERCHANT_COMMAND_PATTERNS.some(p => p.test(textLower));
+        const isShortCorrection = textLower.length > 0 && textLower.length < 100 && !looksLikeMerchantCommand;
+        
+        if (isConfirmOrSkip || isShortCorrection) {
+          const reactivated = await reactivateSession(expiredSession.id, merchantId);
+          if (reactivated) {
+            session = await getActiveSession(merchantId);
+            console.log(`[Coaching] 🔄 Reactivated expired session #${expiredSession.id} for late merchant reply: "${replyText.substring(0, 30)}"`);
+          }
+        }
+      }
+    }
+    
     if (!session) return { handled: false };
 
     const currentQ = await getCurrentQuestion(
@@ -422,6 +471,18 @@ async function sendNextQuestion(
   // PEN-COACH-04 FIX: Scrub PII from customer messages
   const q = scrubPII(question.customerQuestion?.substring(0, 200) || '');
   const a = question.botResponse?.substring(0, 200) || '';
+
+  // BUG-FIX: Skip empty Q&A — don't send blank questions to merchant
+  if (q.trim().length === 0 && a.trim().length === 0) {
+    console.warn(`[Coaching] ⚠️ Skipping empty Q&A at index ${questionIndex} in follow-up (both blank)`);
+    const newIndex = await advanceSession(sessionId, 'skipped', undefined);
+    if (newIndex < totalQuestions) {
+      await sendNextQuestion(merchantId, sessionId, newIndex, totalQuestions, previousFeedback);
+    } else {
+      await completeSession(sessionId, undefined);
+    }
+    return;
+  }
 
   const message = `${previousFeedback}\n\n📝 *سؤال ${questionIndex + 1} من ${totalQuestions}:*\n\n👤 العميل سأل: "${q}"\n🤖 رديت: "${a}"\n\n✅ *صح*  |  ✏️ *اكتب الأصح*  |  ⏭ *تخطى*`;
 

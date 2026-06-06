@@ -1010,15 +1010,14 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             }
           }
 
-          // Priority 2: Coaching session reply
-          const { getActiveSession, handleCoachingReply } = await import('../ai/coaching-engine');
-          const activeCoaching = await getActiveSession(instance.merchantId);
-          if (activeCoaching) {
-            const coachResult = await handleCoachingReply(instance.merchantId, incomingText);
-            if (coachResult.handled) {
-              console.log(`[Coaching] ✅ Training reply processed for merchant ${instance.merchantId}`);
-              return { success: true, message: 'Coaching reply processed' };
-            }
+          // Priority 2: Coaching session reply (active OR recently expired)
+          // BUG-FIX: Always try handleCoachingReply — it now internally recovers expired sessions
+          // so late merchant replies (e.g., "تخطى" sent hours after the question) are handled correctly
+          const { handleCoachingReply } = await import('../ai/coaching-engine');
+          const coachResult = await handleCoachingReply(instance.merchantId, incomingText);
+          if (coachResult.handled) {
+            console.log(`[Coaching] ✅ Training reply processed for merchant ${instance.merchantId}`);
+            return { success: true, message: 'Coaching reply processed' };
           }
 
           // Priority 2.5: Onboarding interview reply
