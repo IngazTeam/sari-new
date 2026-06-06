@@ -349,8 +349,8 @@ export async function getReviewCandidates(
            WHERE cq.merchant_id = ? AND cq.conversation_id IS NOT NULL
          )
        ORDER BY m_out.createdAt DESC
-       LIMIT ?`,
-      [merchantId, merchantId, safeLimit]
+       LIMIT ${safeLimit}`,
+      [merchantId, merchantId]
     );
 
     return (rows as any[]).map(r => ({
