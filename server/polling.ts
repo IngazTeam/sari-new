@@ -517,6 +517,71 @@ async function handleIncomingMessage(
           console.error(`[Polling] Error validating discount code:`, discountErr);
         }
       }
+
+      // FIX-8 (P1): ActionSelector parity with webhook path (fire-and-forget).
+      // Without this, polling customers get no deal stage updates, no discount
+      // offers, no follow-up scheduling — degraded sales experience.
+      try {
+        const { selectAction, executeAction } = await import('./ai/action-selector');
+        const { detectIntent } = await import('./ai/session-context');
+        
+        // Load customer profile (read-only)
+        let actionProfile: any = null;
+        try {
+          const { getPool } = await import('./db');
+          const pool = await getPool();
+          if (pool) {
+            const [rows] = await pool.execute(
+              `SELECT customer_tier, total_conversations, purchase_count, preferences 
+               FROM customer_profiles WHERE merchant_id = ? AND customer_phone = ? LIMIT 1`,
+              [merchantId, customerPhone]
+            );
+            const row = (rows as any[])[0];
+            if (row) {
+              actionProfile = {
+                customerTier: row.customer_tier || 'new',
+                totalConversations: row.total_conversations || 0,
+                purchaseCount: row.purchase_count || 0,
+                preferences: row.preferences ? (typeof row.preferences === 'string' ? JSON.parse(row.preferences) : row.preferences) : {},
+              };
+            }
+          }
+        } catch { /* profile is supplementary */ }
+        
+        const realIntent = detectIntent(
+          messageText,
+          actionProfile?.totalConversations,
+          actionProfile?.preferences?.buyingStage,
+        );
+        
+        selectAction({
+          merchantId,
+          customerMessage: messageText,
+          botResponse: aiResponse.text,
+          intent: realIntent,
+          profile: actionProfile ? {
+            customerTier: actionProfile.customerTier || 'new',
+            totalConversations: actionProfile.totalConversations || 0,
+          } as any : null,
+        }).then(async (action) => {
+          if (action.type !== 'text_only') {
+            console.log(`[Polling/ActionSelector] 🎯 Action: ${action.type} (intent: ${realIntent})`);
+            await executeAction({
+              action,
+              merchantId,
+              customerPhone,
+              customerName: undefined,
+              customerMessage: messageText,
+              conversationId: conversation!.id,
+              sendMessage: async (phone: string, msg: string) => {
+                await whatsapp.sendMessageWithCredentials(
+                  instanceId, apiToken, apiUrl, phone, msg
+                );
+              },
+            });
+          }
+        }).catch(() => {}); // Non-blocking
+      } catch { /* action selector is supplementary */ }
     }
 
   } catch (error) {

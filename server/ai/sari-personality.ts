@@ -815,12 +815,20 @@ async function searchRelevantProducts(
 ): Promise<any[]> {
   if (allProducts.length === 0) return [];
 
-  // BUG-4 FIX: Detect price/catalog intent — return ALL products
-  const priceCatalogKeywords = ['سعر', 'أسعار', 'اسعار', 'كم', 'باقة', 'باقات', 'بكج', 'حق', 'تكلفة',
-    'price', 'pricing', 'cost', 'package', 'plan', 'منتجات', 'دورات', 'كتالوج', 'قائمة',
-    'ايش عندكم', 'وش عندكم', 'ايه الباقات', 'ايش الباقات', 'شو عندكم',
-    'المتوفرة', 'متوفرة', 'المتاحة', 'متاحة', 'حاليا', 'حالياً', 'كورسات',
-    'التسجيل', 'مفتوح', 'courses', 'available', 'catalog', 'عندك', 'فيه'];
+  // FIX-5 (P0): Only trigger full catalog on CLEAR pricing/catalog intent.
+  // Old list had 'كم', 'عندك', 'فيه' — these matched ANY message
+  // ("كم يوم التوصيل؟" → injected ALL products = wrong context + wasted tokens).
+  // Now uses compound phrases that truly signal "show me what you have".
+  const priceCatalogKeywords = [
+    // Explicit price/catalog requests
+    'كم سعر', 'كم السعر', 'أسعار', 'اسعار', 'بكم', 'سعره', 'تكلفة',
+    'price', 'pricing', 'cost', 'how much',
+    // Explicit catalog requests
+    'ايش عندكم', 'وش عندكم', 'شو عندكم', 'ايش المتوفر', 'وش المتوفر',
+    'ايه الباقات', 'ايش الباقات', 'منتجات', 'دورات', 'كتالوج', 'قائمة',
+    'المتوفرة', 'المتاحة', 'كورسات', 'باقة', 'باقات', 'بكج',
+    'package', 'plan', 'courses', 'available', 'catalog',
+  ];
   const msgLower = message.toLowerCase();
   const isPriceQuery = priceCatalogKeywords.some(k => msgLower.includes(k));
   if (isPriceQuery) {
@@ -1573,9 +1581,26 @@ async function _chatWithSariCore(params: {
     }
     
     // Check for quick response match
+    // FIX-7 (P1): Quick responses used to bypass validator — merchant-defined text
+    // could contain stale prices, leaked contacts, or outdated info.
     const quickResponse = await findMatchingQuickResponse(params.merchantId, params.message);
     if (quickResponse) {
-      return quickResponse.response;
+      try {
+        const { validateResponse } = await import('./response-validator');
+        const validation = await validateResponse({
+          response: quickResponse.response,
+          customerMessage: params.message,
+          intent: 'inquiring',
+        });
+        if (validation.passed || !validation.correctedResponse) {
+          return quickResponse.response;
+        }
+        console.log(`[QuickResponse] ⚠️ Validator corrected quick response for merchant ${params.merchantId}`);
+        return validation.correctedResponse;
+      } catch {
+        // If validator fails, still return the quick response (non-blocking)
+        return quickResponse.response;
+      }
     }
 
     // التحقق من طلبات الشراء عبر Zid

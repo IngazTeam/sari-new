@@ -292,31 +292,37 @@ export function detectIntent(
   customerTotalConversations?: number,
   profileBuyingStage?: string | null,
 ): CustomerIntent {
-  const msg = message.toLowerCase();
+  // FIX-6 (P1): Normalize Arabic hamzas before matching.
+  // Without this, 'أبغى أطلب' (hamza-alef) wouldn't match 'ابغى اطلب' (plain alef).
+  const msg = message.toLowerCase()
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/[ؤ]/g, 'و')
+    .replace(/[ئ]/g, 'ي')
+    .replace(/[ة]/g, 'ه');
   
   // Ready to buy — highest priority
-  const buySignals = ['ابغى اطلب', 'أبي أطلب', 'أبي أشتري', 'أبغى أشتري', 'عايز اشتري', 'بدي اشتري',
-    'أريد الشراء', 'كيف اطلب', 'طريقة الطلب', 'أبي آخذ', 'i want to buy',
-    'اطلب', 'أحجز', 'ابغى احجز', 'تمام أطلب', 'أكمل الطلب', 'سجلني', 'كيف أدفع'];
+  const buySignals = ['ابغى اطلب', 'ابي اطلب', 'ابي اشتري', 'ابغى اشتري', 'عايز اشتري', 'بدي اشتري',
+    'اريد الشراء', 'كيف اطلب', 'طريقة الطلب', 'ابي اخذ', 'i want to buy',
+    'اطلب', 'احجز', 'ابغى احجز', 'تمام اطلب', 'اكمل الطلب', 'سجلني', 'كيف ادفع'];
   if (buySignals.some(s => msg.includes(s))) return 'ready_to_buy';
   
   // Hesitating — BEFORE objecting! "بفكر" is hesitation, not objection
-  const hesitationSignals = ['بفكر', 'أفكر', 'بشوف', 'أشوف', 'مو متأكد', 'ما أدري',
-    'محتار', 'أرجع لك', 'بعدين', 'مو الحين', 'الحين مشغول', 'let me think',
-    'not sure', 'بكلمك', 'أرد عليك', 'بتواصل', 'ما أعرفكم', 'مضمون',
-    'موثوق', 'أول مرة أسمع'];
+  const hesitationSignals = ['بفكر', 'افكر', 'بشوف', 'اشوف', 'مو متاكد', 'ما ادري',
+    'محتار', 'ارجع لك', 'بعدين', 'مو الحين', 'الحين مشغول', 'let me think',
+    'not sure', 'بكلمك', 'ارد عليك', 'بتواصل', 'ما اعرفكم', 'مضمون',
+    'موثوق', 'اول مره اسمع'];
   if (hesitationSignals.some(s => msg.includes(s))) return 'hesitating';
 
-  // Comparing — BEFORE objecting! "لقيته أرخص عند غيركم" is comparing, not just objecting
-  const compareSignals = ['أيهم أفضل', 'الفرق بين', 'مقارنة', 'وش الأحسن',
-    'أيش الفرق', 'which is better', 'compare', 'difference',
-    'هذا ولا هذا', 'هذا أو هذا', 'بين هذا وهذا', 'عند غيركم', 'لقيته أرخص'];
+  // Comparing — BEFORE objecting! "لقيته ارخص عند غيركم" is comparing, not just objecting
+  const compareSignals = ['ايهم افضل', 'الفرق بين', 'مقارنه', 'وش الاحسن',
+    'ايش الفرق', 'which is better', 'compare', 'difference',
+    'هذا ولا هذا', 'هذا او هذا', 'بين هذا وهذا', 'عند غيركم', 'لقيته ارخص'];
   if (compareSignals.some(s => msg.includes(s))) return 'comparing';
 
   // Objecting — price/quality/timing complaints
-  const objectionSignals = ['غالي', 'كثير', 'مرتفع', 'سعر عالي', 'أرخص', 'خصم',
+  const objectionSignals = ['غالي', 'كثير', 'مرتفع', 'سعر عالي', 'ارخص', 'خصم',
     'تخفيض', 'expensive', 'cheaper', 'discount', 'مو معقول', 'كثير عليه',
-    'ليش غالي', 'ما عندكم عرض', 'بعيد', 'يأخذ وقت', 'متأخر'];
+    'ليش غالي', 'ما عندكم عرض', 'بعيد', 'ياخذ وقت', 'متاخر'];
   if (objectionSignals.some(s => msg.includes(s))) return 'objecting';
   
   // Post-purchase — ONLY clear "I have an existing order" signals
@@ -339,20 +345,20 @@ export function detectIntent(
   // Inquiring (specific question)
   const inquirySignals = ['كم سعر', 'كم السعر', 'عندكم', 'يوجد', 'متوفر',
     'how much', 'price', 'available', 'do you have', 'وش عندكم من',
-    'أبغى أعرف', 'ابغى اعرف', 'ابغى استفسر'];
+    'ابغى اعرف', 'ابغى استفسر'];
   if (inquirySignals.some(s => msg.includes(s))) return 'inquiring';
   
   // Returning customer — detected by conversation count, not keywords
   // (first message of a new conversation from a known customer)
   if (customerTotalConversations && customerTotalConversations > 1) {
     // Check if this looks like a greeting (start of new convo)
-    const greetSignals = ['السلام', 'مرحبا', 'أهلاً', 'هلا', 'مساء', 'صباح',
+    const greetSignals = ['السلام', 'مرحبا', 'اهلا', 'هلا', 'مساء', 'صباح',
       'hello', 'hi', 'hey'];
     if (greetSignals.some(s => msg.includes(s))) return 'returning';
   }
 
   // Browsing (generic — new customer greeting)
-  const browseSignals = ['السلام', 'مرحبا', 'أهلاً', 'هلا', 'مساء', 'صباح',
+  const browseSignals = ['السلام', 'مرحبا', 'اهلا', 'هلا', 'مساء', 'صباح',
     'hello', 'hi', 'hey', 'وش عندكم', 'ابغى اشوف'];
   if (browseSignals.some(s => msg.includes(s))) return 'browsing';
   
