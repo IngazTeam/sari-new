@@ -319,10 +319,22 @@ export function detectIntent(
     'ليش غالي', 'ما عندكم عرض', 'بعيد', 'يأخذ وقت', 'متأخر'];
   if (objectionSignals.some(s => msg.includes(s))) return 'objecting';
   
-  // Post-purchase
-  const postSignals = ['طلبي', 'وين وصل', 'الشحن', 'التوصيل', 'ما وصل',
-    'tracking', 'my order', 'استرجاع', 'استبدال', 'ضمان'];
+  // Post-purchase — ONLY clear "I have an existing order" signals
+  // FIX-2 (P0): 'الشحن/التوصيل/ضمان' are commonly asked BEFORE buying
+  // ('كم الشحن؟'). Old behavior: classified them as post_purchase → set
+  // deal_stage to 'purchased' → killed all sales actions.
+  const postSignals = ['طلبي', 'وين وصل', 'ما وصل', 'tracking', 'my order'];
   if (postSignals.some(s => msg.includes(s))) return 'post_purchase';
+  
+  // Logistics inquiry (shipping/delivery/warranty) — only post_purchase
+  // if combined with order context; otherwise it's a pre-sale inquiry
+  const logisticsWords = ['الشحن', 'التوصيل', 'استرجاع', 'استبدال', 'ضمان'];
+  const orderContext = ['طلبي', 'طلبت', 'اشتريت', 'وصل', 'ما وصل'];
+  if (logisticsWords.some(s => msg.includes(s))) {
+    if (orderContext.some(s => msg.includes(s))) return 'post_purchase';
+    // Pre-sale logistics → treat as inquiry, not post_purchase
+    return 'inquiring';
+  }
   
   // Inquiring (specific question)
   const inquirySignals = ['كم سعر', 'كم السعر', 'عندكم', 'يوجد', 'متوفر',

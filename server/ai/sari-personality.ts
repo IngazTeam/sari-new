@@ -869,8 +869,11 @@ async function searchRelevantProducts(
     .slice(0, limit)
     .map(item => item.product);
 
-  // If no match found, return first 15 products as fallback (better than nothing)
-  return matched.length > 0 ? matched : allProducts.slice(0, 15);
+  // FIX-1 (P0): Do NOT return random products when no match found.
+  // Old behavior: returned first 15 products → GPT would confidently list
+  // unrelated products + instructions said "don't say you don't know".
+  // New behavior: return empty → GPT can honestly say "this product is not available".
+  return matched;
 }
 
 /**
@@ -1928,7 +1931,8 @@ ${result.orderUrl}
             // BUG-8 FIX: Use conversation context for short follow-up messages
             const enrichedSearchQuery = extractConversationTopicContext(params.message, previousMessages as Array<{ role: string; content: string }>);
             const freshProducts = await searchRelevantProducts(enrichedSearchQuery, allProducts, 20);
-            const productsToInject = freshProducts.length > 0 ? freshProducts : allProducts.slice(0, 15);
+            // FIX-1b (P0): Don't inject random products — use only matched
+            const productsToInject = freshProducts;
             freshInjectedProducts = productsToInject; // BUG-6: Capture for validator
             const merchant = await getMerchantById(params.merchantId);
             const currency = ((merchant as any)?.currency as Currency) || 'SAR';
@@ -2222,9 +2226,8 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       allProducts,
       20
     );
-    const productsToShow = relevantProducts.length > 0 
-      ? relevantProducts 
-      : allProducts.slice(0, 15);
+    // FIX-1b (P0): Don't inject random products — use only matched
+    const productsToShow = relevantProducts;
 
     // === RAG Cache Check ===
     try {

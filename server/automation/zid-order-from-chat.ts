@@ -396,12 +396,16 @@ ${orderUrl}
  * التحقق مما إذا كانت الرسالة طلب شراء
  */
 export async function isZidOrderRequest(message: string): Promise<boolean> {
+  // FIX-3 (P0): Only match EXPLICIT purchase intent.
+  // Old list included 'عندكم', 'كم سعر', 'بكم', 'السعر', 'متوفر' —
+  // these are INQUIRY signals, not buy signals. Triggering order parsing
+  // on price questions wastes GPT tokens + confuses browsing customers.
   const orderKeywords = [
-    'أبي', 'أبغى', 'أريد', 'أطلب', 'اشتري', 'شراء',
-    'عندكم', 'متوفر', 'كم سعر', 'السعر',
-    'أبي أطلب', 'أبغى أشتري', 'ابي اطلب', 'ابغى اشتري',
-    'هدية', 'هدية لـ', 'اريد', 'اطلب',
-    'طلب', 'اشتر', 'بكم', 'سعره'
+    'أبي أطلب', 'أبغى أطلب', 'أبغى أشتري', 'أبي أشتري',
+    'ابي اطلب', 'ابغى اشتري', 'أريد الشراء', 'اريد اشتري',
+    'اطلب', 'اشتري', 'شراء', 'سجلني',
+    'هدية', 'هدية لـ',
+    'كيف أطلب', 'طريقة الطلب', 'أكمل الطلب',
   ];
 
   const lowerMessage = message.toLowerCase();
