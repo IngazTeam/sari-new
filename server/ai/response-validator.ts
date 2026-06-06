@@ -173,6 +173,29 @@ function fastPreCheck(
     });
   }
 
+  // 8. BUG-8: Placeholder detection — bot used a template bracket instead of real data
+  // GPT sometimes copies bracket-notation from system prompt examples (e.g., [أدخل السعر])
+  const placeholderPatterns = [
+    /\[أدخل ال/,           // [أدخل السعر], [أدخل التاريخ], etc.
+    /\[ادخل ال/,           // Without hamza variant
+    /\[السعر\]/,           // [السعر] as template
+    /\[اسم المنتج\]/,      // [اسم المنتج]
+    /\[التاريخ\]/,         // [التاريخ]
+    /\[المدة\]/,           // [المدة]
+    /\[اسم الدورة\]/,      // [اسم الدورة]
+    /\[اسم الخدمة\]/,      // [اسم الخدمة]
+    /\[السعر من/,          // [السعر من بيانات المنتجات]
+    /\[أدخل\s/,            // Any [أدخل ...]
+    /\[ادخل\s/,            // Without hamza
+  ];
+  if (placeholderPatterns.some(p => p.test(resp))) {
+    violations.push({
+      rule: 'unanswered_question',
+      severity: 'critical',
+      description: 'الرد يحتوي على placeholder غير محلول (أقواس مربعة) — يجب استبداله ببيانات حقيقية أو قول "خلني أتأكد"',
+    });
+  }
+
   return violations;
 }
 

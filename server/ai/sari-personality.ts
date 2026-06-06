@@ -235,8 +235,9 @@ ${sanitizeForPrompt(((settings as any).customFarewell as string).substring(0, 50
 - ❌ ممنوع فصحى أبداً: لا تقل "هل تود"، "إذا كنت"، "لدينا"، "أفهم وجهة نظرك"، "يمكنك"
 - ❌ **ممنوع ألقاب غير مهنية**: لا تقل "يا بطل"، "يا صاحبي"، "يا حبيبي"، "يا كبير"، "يا وحش"، "يا معلم" — أنت موظف مبيعات محترف وليس صاحب في مجلس. نادِ العميل باسمه أو قل "حياك" فقط
 - ✅ **أجب على السؤال بالضبط — إذا سأل "متى" أعطه تاريخ، إذا سأل "كم" أعطه سعر**
-- ✅ مثال صحيح: "أيوا عندنا [اسم المنتج]! تبدأ [التاريخ]، والسعر [السعر] ريال. تبي تسجل؟"
-- ✅ مثال صحيح: "حالياً ما عندنا [اسم المنتج]. خلني أتأكد من الفريق إذا بيتوفر وأرد عليك 📝"
+- ✅ مثال صحيح: "أيوا عندنا الدورة! تبدأ 15 يناير، والسعر 600 ريال. تبي تسجل؟"
+- ✅ مثال صحيح: "حالياً ما عندنا هالدورة. خلني أتأكد من الفريق إذا بيتوفر وأرد عليك 📝"
+- 🔴 **ممنوع أقواس مربعة**: لا تكتب أبداً نص مثل [أدخل السعر] أو [اسم المنتج] — إما تكتب القيمة الحقيقية من بيانات المنتجات، أو تقول "خلني أتأكد"
 
 ## 🔴 قاعدة #0.3 — فهم أسئلة "متى" و "وقت":
 - إذا العميل سأل "متى" أو "متى متوفر" أو "وقته" → **أعطه التاريخ/الموعد فقط** من بيانات المنتج
@@ -315,15 +316,15 @@ ${sanitizeForPrompt(((settings as any).customFarewell as string).substring(0, 50
 - آخر سطر = سؤال أو CTA (مثل: "تبي تسجل؟ 🎯")
 
 مثال تنسيق صحيح:
-*✅ أيوا، [اسم المنتج] متوفر!*
+*✅ أيوا، الدورة متوفرة!*
 
-📅 تبدأ: [التاريخ]
-💰 السعر: [السعر من بيانات المنتجات]
-⏰ المدة: [المدة]
+📅 تبدأ: 15 يناير
+💰 السعر: 600 ريال
+⏰ المدة: 3 أيام
 
 تبي تسجل؟ 🎯
 
-🔴🔴 تنبيه حرج: الأمثلة أعلاه قوالب فقط — لا تستخدم أي اسم منتج أو سعر أو تاريخ إلا إذا كان موجوداً في قائمة المنتجات أو المعلومات أدناه. إذا ما لقيت بيانات منتجات في السياق، قل: "خلني أتأكد من الفريق وأرد عليك 📝"
+🔴🔴 تنبيه حرج: الأمثلة أعلاه للتنسيق فقط (الأرقام والتواريخ فيها وهمية) — استخدم الأسماء والأسعار والتواريخ الحقيقية من قائمة المنتجات أدناه فقط. ممنوع وضع أقواس مربعة أو كلمة "أدخل" في ردودك — إما اذكر القيمة الحقيقية أو قل: "خلني أتأكد من الفريق وأرد عليك 📝"
 
 تذكر: أنت تمثل هذا المتجر فقط. لا تخرج عن نطاقه أبداً! هدفك الأول والأخير: تحقيق المبيعات بذكاء — وليس كتابة نصوص تسويقية 🎯`;
 
@@ -847,6 +848,42 @@ async function searchRelevantProducts(
 
   // If no match found, return first 15 products as fallback (better than nothing)
   return matched.length > 0 ? matched : allProducts.slice(0, 15);
+}
+
+/**
+ * BUG-8 FIX: Extract topic context from recent conversation history.
+ * When a customer sends a short follow-up (any short reply — "ايه", "ابغاه", "تمام", etc.),
+ * we need to know WHAT they're referring to.
+ * 
+ * Logic: If the message is short (< 15 chars) and there's conversation history,
+ * use the LAST BOT MESSAGE as search context — because the customer is replying
+ * to whatever the bot last said, regardless of their exact wording.
+ * 
+ * This is context-based, NOT keyword-based — works for ANY short reply.
+ */
+function extractConversationTopicContext(
+  currentMessage: string,
+  previousMessages: Array<{ role: string; content: string | any }>,
+): string {
+  // Only activate for short messages with existing conversation
+  if (currentMessage.length >= 15 || previousMessages.length === 0) {
+    return currentMessage;
+  }
+  
+  // Find the last bot (assistant) message — this is what the customer is responding to
+  const lastBotMessage = [...previousMessages]
+    .reverse()
+    .find(m => m.role === 'assistant' && typeof m.content === 'string' && m.content.length > 10);
+  
+  if (!lastBotMessage || typeof lastBotMessage.content !== 'string') {
+    return currentMessage;
+  }
+  
+  // Use the bot's last message as search context (capped at 200 chars)
+  const botContext = lastBotMessage.content.substring(0, 200);
+  const enrichedSearch = `${currentMessage} ${botContext}`;
+  console.log(`[BUG-8] Short follow-up detected: "${currentMessage}" → using last bot msg as context (${botContext.substring(0, 60)}...)`);
+  return enrichedSearch;
 }
 
 /**
@@ -1804,7 +1841,9 @@ ${result.orderUrl}
         try {
           const allProducts = await (getProductsByMerchantId as any)(params.merchantId);
           if (allProducts.length > 0) {
-            const freshProducts = await searchRelevantProducts(params.message, allProducts, 20);
+            // BUG-8 FIX: Use conversation context for short follow-up messages
+            const enrichedSearchQuery = extractConversationTopicContext(params.message, previousMessages as Array<{ role: string; content: string }>);
+            const freshProducts = await searchRelevantProducts(enrichedSearchQuery, allProducts, 20);
             const productsToInject = freshProducts.length > 0 ? freshProducts : allProducts.slice(0, 15);
             freshInjectedProducts = productsToInject; // BUG-6: Capture for validator
             const merchant = await getMerchantById(params.merchantId);
@@ -2066,9 +2105,12 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     // Get all products
     const allProducts = await (getProductsByMerchantId as any)(params.merchantId);
     
-    // Smart product search based on customer message
+    // BUG-8 FIX: Use conversation context for short follow-up messages
+    const enrichedSearchQueryFull = extractConversationTopicContext(params.message, previousMessages as Array<{ role: string; content: string }>);
+    
+    // Smart product search based on customer message (enriched with conversation context)
     const relevantProducts = await searchRelevantProducts(
-      params.message,
+      enrichedSearchQueryFull,
       allProducts,
       20
     );
