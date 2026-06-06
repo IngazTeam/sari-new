@@ -910,6 +910,67 @@ function extractConversationTopicContext(
 }
 
 /**
+ * Build a sentiment-aware prompt directive for GPT injection.
+ * Converts detected sentiment into actionable behavioral instructions
+ * so the bot adapts its tone to the customer's emotional state.
+ * 
+ * Cost: 0 tokens (uses pre-computed sentiment from fast-sentiment.ts)
+ */
+function buildSentimentPrompt(
+  sentiment: string | null,
+  salesHint?: 'close_to_buying' | 'needs_reassurance' | 'losing_interest' | null,
+): string {
+  if (!sentiment || sentiment === 'neutral') return '';
+
+  const directives: Record<string, string> = {
+    angry: `\n## 🚨 حالة العميل: غاضب/مستاء
+⚠️ **أولوية قصوى — تعاطف أولاً قبل أي شيء:**
+1. اعتذر بصدق: "أعتذر عن أي إزعاج — حقك علينا"
+2. أظهر إنك فاهم المشكلة وتأخذها بجدية
+3. **ممنوع** تعرض منتجات أو تبيع — حل المشكلة أولاً
+4. قل: "خلني أوصّل ملاحظتك للفريق المختص ويتواصلون معك مباشرة"
+5. لا تبرر ولا تدافع — فقط تعاطف وحل`,
+
+    frustrated: `\n## ⚠️ حالة العميل: محبط/متضايق
+**العميل يحتاج حل مو كلام:**
+1. اعترف بمشكلته فوراً — لا تتجاهلها
+2. أعطِ خطوة عملية واضحة
+3. **ممنوع** ردود عامة مثل "نسعد بخدمتك" — يريد حل ملموس
+4. إذا ما تقدر تحل — صعّد بصراحة: "خلني أوصّلك بالمختص الحين"`,
+
+    sad: `\n## 😔 حالة العميل: حزين/مخيب أمله
+**العميل محتاج طمأنة:**
+1. أظهر تفهم واهتمام حقيقي
+2. ركز على الحلول الممكنة
+3. تكلم بلطف زيادة — بدون مبالغة`,
+
+    happy: `\n## 😊 حالة العميل: سعيد/راضي
+**استثمر الرضا:**
+1. اشكره بطبيعية وادعم حماسه
+2. هذا أفضل وقت لعرض منتج مكمل أو إضافي
+3. اسأل: "تبي تشوف شي ثاني يناسبك؟"`,
+
+    positive: `\n## 👍 حالة العميل: إيجابي/مهتم
+**العميل مهتم — استمر بالزخم:**
+1. ادعم اهتمامه بتفاصيل إضافية مفيدة
+2. قرّبه من قرار الشراء بخطوة واضحة`,
+  };
+
+  let prompt = directives[sentiment] || '';
+
+  // Sales hint override (from mixed signal detection)
+  if (salesHint === 'close_to_buying') {
+    prompt += `\n📌 **إشارة: العميل قريب من الشراء!** — ادفع بلطف نحو الإغلاق`;
+  } else if (salesHint === 'needs_reassurance') {
+    prompt += `\n📌 **إشارة: يحتاج طمأنة** — ابدأ بتأكيد اختياره ثم عالج التردد`;
+  } else if (salesHint === 'losing_interest') {
+    prompt += `\n📌 **إشارة: يفقد الاهتمام!** — أثِر فضوله بقيمة غير متوقعة`;
+  }
+
+  return prompt;
+}
+
+/**
  * Generate enhanced context-aware prompt
  * Injects: products, FAQs, store policies, and merchant info into the AI context
  */
@@ -1878,6 +1939,10 @@ ${result.orderUrl}
               if (p.price) productInjection += ` - ${formatCurrency(p.price, currency, 'ar-SA')}`;
               if ((p as any).startDate) productInjection += ` | يبدأ: ${(p as any).startDate}`;
               if (p.category) productInjection += ` [${p.category}]`;
+              // FIX-DESC: Include product description so GPT doesn't guess features
+              if (p.description) {
+                productInjection += `\n   ${p.description.substring(0, 150)}`;
+              }
               productInjection += `\n`;
             }
             productInjection += `\n⚠️ اذكر كل المنتجات أعلاه إذا طلب العميل القائمة الكاملة. لا تقل "ما عندي معلومات".\n`;
@@ -1957,6 +2022,25 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         systemPrompt += persuasion.prompt;
       }
 
+      // FIX-SENTIMENT: Inject sentiment-aware directives into FAST PATH
+      // Previously sentiment was computed but never injected — GPT didn't know the customer's emotional state
+      const sentimentPrompt = buildSentimentPrompt(
+        fastSentiment,
+        sentimentSignals.salesHint,
+      );
+      if (sentimentPrompt) {
+        systemPrompt += sentimentPrompt;
+      }
+
+      // FIX-DNA: Inject behavioral DNA (merchant corrections + learned patterns) into FAST PATH
+      // Previously only available in FULL PATH — messages 2+ were missing learned insights
+      try {
+        const fastDNAPrompt = await buildDNAPrompt(params.merchantId);
+        if (fastDNAPrompt) {
+          systemPrompt += fastDNAPrompt;
+        }
+      } catch { /* DNA is supplementary — never block the response */ }
+
       // Inject customer profile context
       if (customerProfile) {
         systemPrompt += buildProfileContext(customerProfile);
@@ -1971,6 +2055,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
       if (customerStateSummary) {
         systemPrompt += customerStateSummary;
       }
+
 
       // Build user message — multimodal if image is present
       const userContent: string | (TextContent | ImageContent)[] = params.imageUrl
@@ -2046,7 +2131,7 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         responseTimeMs: Date.now() - _startTime,
         wasCacheHit: false,
         ragSectionsUsed: 0,
-        customerSentiment: null,
+        customerSentiment: fastSentiment || null,
       }).catch(() => {});
 
       // ═══ Knowledge Gap Detection — FAST PATH ═══
@@ -2288,6 +2373,13 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
     // Build system prompt: Mission Block FIRST, then personality + all engines
     let systemPrompt = missionPrompt + buildSystemPrompt(personalitySettings) + botSettingsOverridePrompt + contextPrompt + culturalPrompt + directivesPrompt + arsenalPrompt + dnaPrompt;
     let resumePrompt = ''; // Extracted so it survives agent personality rebuild
+
+    // FIX-SENTIMENT: Inject sentiment-aware directives into FULL PATH
+    const fullSentimentPrompt = buildSentimentPrompt(sentiment?.sentiment || null);
+    if (fullSentimentPrompt) {
+      systemPrompt += fullSentimentPrompt;
+    }
+
     if (customerProfile) {
       systemPrompt += buildProfileContext(customerProfile);
     }
