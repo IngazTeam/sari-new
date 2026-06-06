@@ -42,8 +42,12 @@ export function startExpiryRemindersJob() {
   cron.schedule('0 9 * * *', async () => {
     console.log('[Subscription Jobs] Sending expiry reminders...');
     try {
-      // @ts-ignore
-      const result = await sendExpiryReminders();
+      // FIX: sendExpiryReminders requires daysBefore parameter
+      // Send reminders for 7, 3, and 1 day before expiry
+      const r7 = await sendExpiryReminders(7);
+      const r3 = await sendExpiryReminders(3);
+      const r1 = await sendExpiryReminders(1);
+      const result = { sent7: r7, sent3: r3, sent1: r1 };
       console.log('[Subscription Jobs] Expiry reminders sent:', result);
     } catch (error) {
       console.error('[Subscription Jobs] Error sending expiry reminders:', error);

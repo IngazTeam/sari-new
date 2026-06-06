@@ -25,12 +25,14 @@ const CRITICAL_TABLES = [
 ] as const;
 
 // Important but non-critical tables
+// FIX: Use actual Drizzle-generated table names (not intuitive guesses)
 const IMPORTANT_TABLES = [
-  'bot_sections', 'personality_settings', 'merchant_knowledge_docs',
+  'sari_personality_settings', 'merchant_knowledge_docs',
   'virtual_agents', 'customer_profiles',
   'salla_connections', 'zid_connections',
   'byaan_connections',
   'loyalty_programs', 'loyalty_customer_points',
+  'message_delivery_log',
 ] as const;
 
 /**
