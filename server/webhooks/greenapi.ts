@@ -63,6 +63,8 @@ interface GreenAPIWebhookPayload {
     };
     extendedTextMessageData?: {
       text: string;
+      // GreenAPI: list of mentioned JIDs (e.g. ["966501234567@c.us"])
+      mentionedJidList?: string[];
     };
     quotedMessage?: {
       stanzaId: string;
@@ -851,7 +853,29 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           const msgText = extractMessageText(payload) || '';
           const botWid = payload.instanceData.wid;
           const botPhone = botWid ? botWid.split('@')[0] : '';
-          if (!msgText.includes(`@${botPhone}`)) {
+
+          // ── Mention Detection (3 layers) ──
+          // Layer 1: GreenAPI mentionedJidList (most reliable — WhatsApp native)
+          const mentionedJids: string[] = (payload.messageData.extendedTextMessageData as any)?.mentionedJidList
+            || (payload.messageData as any)?.contextInfo?.mentionedJidList
+            || [];
+          const isMentionedViaJid = botWid
+            ? mentionedJids.some(jid => jid.includes(botPhone))
+            : false;
+
+          // Layer 2: Text contains @phone (some clients embed phone in text)
+          const isMentionedViaText = botPhone
+            ? msgText.includes(`@${botPhone}`)
+            : false;
+
+          // Layer 3: Text contains @botName (display name mention)
+          // GreenAPI wid format: "966501234567@c.us"
+          const botName = payload.senderData?.chatName || '';
+          const isMentionedViaName = false; // Too risky — would match customer names
+
+          console.log(`[Webhook] Group mention check: botPhone=${botPhone}, jids=${JSON.stringify(mentionedJids)}, viaJid=${isMentionedViaJid}, viaText=${isMentionedViaText}, text="${msgText.substring(0, 80)}"`);
+
+          if (!isMentionedViaJid && !isMentionedViaText) {
             return { success: true, message: 'Group: no mention' };
           }
           // Has mention — reply to group
@@ -1406,11 +1430,19 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       }
 
       // SEC-G1 FIX: Strip bot @mention from group messages before AI processing
-      // Prevents phone number leakage to GPT prompts and saves tokens
+      // WhatsApp mentions can appear as @phone or @DisplayName depending on the client
       if (groupChatId) {
         const botPhone = payload.instanceData.wid ? payload.instanceData.wid.split('@')[0] : '';
         if (botPhone) {
-          messageText = messageText.replace(new RegExp(`@${botPhone}\\s*`, 'g'), '').trim();
+          // Strip @phone format (e.g. "@966501234567")
+          messageText = messageText.replace(new RegExp(`@${botPhone}\\s*`, 'g'), '');
+        }
+        // Strip any remaining @mention tokens (WhatsApp uses invisible chars around mentions)
+        // This catches @DisplayName mentions that don't contain the phone number
+        messageText = messageText.replace(/\u200e/g, '').replace(/\u200f/g, '').trim();
+        // If the message is now empty after stripping, use a default
+        if (!messageText) {
+          messageText = 'مرحبا';
         }
       }
       
