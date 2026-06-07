@@ -277,6 +277,7 @@ async function processTextMessage(params: {
   imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
   externalId?: string; // Green API idMessage — for dedup
   isGroupMessage?: boolean; // true when reply goes to a group chat
+  senderName?: string; // Display name of the sender (for group multi-party context)
 }): Promise<{ response: string; incomingMsgId?: number }> {
   try {
     console.log('[Webhook] Processing text message:', params.messageText, params.imageUrl ? `[with image: ${params.imageUrl.substring(0, 60)}...]` : '');
@@ -294,7 +295,10 @@ async function processTextMessage(params: {
       conversationId: params.conversationId,
       direction: 'incoming',
       messageType: params.imageUrl ? 'image' : 'text',
-      content: params.messageText,
+      // GROUP: Prefix with sender name so AI understands multi-party discussion
+      content: params.isGroupMessage && params.senderName
+        ? `[${params.senderName}]: ${params.messageText}`
+        : params.messageText,
       voiceUrl: params.imageUrl || null,  // Reuse voiceUrl field for image URL
       isProcessed: 0,
       externalId: params.externalId || null,
@@ -1133,16 +1137,24 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     // Get bot settings for response customization
     const botSettings = await getBotSettings(instance.merchantId);
     
-    // ── FIX-5: Create conversation + save incoming message BEFORE shouldBotRespond ──
-    // This ensures the customer's message is always visible in the dashboard,
-    // even if the bot doesn't respond (out of hours / auto-reply disabled).
+    // ── GROUP CONVERSATION ISOLATION ──
+    // Group messages get their own conversation (by group ID), completely separate
+    // from any private chat. This prevents history leakage between channels.
+    // Private chats continue using the customer's personal phone.
+    const conversationPhone = groupChatId
+      ? `group_${groupChatId.split('@')[0]}`  // e.g. "group_120363043968066561"
+      : customerPhone;
+    const conversationName = groupChatId
+      ? (payload.senderData.chatName || 'جروب واتساب')
+      : customerName;
+    
     const conversationId = await getOrCreateConversation({
       merchantId: instance.merchantId,
-      customerPhone,
-      customerName,
+      customerPhone: conversationPhone,
+      customerName: conversationName,
     });
     
-    console.log('[Webhook] Conversation ID:', conversationId);
+    console.log('[Webhook] Conversation ID:', conversationId, groupChatId ? `(GROUP conv — isolated from private)` : '');
 
     // Check if bot should respond based on settings
     const { shouldRespond, reason } = await shouldBotRespond(instance.merchantId);
@@ -1457,6 +1469,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         messageText,
         externalId: payload.idMessage,
         isGroupMessage: !!groupChatId,
+        senderName: groupChatId ? (payload.senderData.senderName || customerName) : undefined,
       });
       response = textResult.response;
       incomingMsgId = textResult.incomingMsgId;

@@ -1538,16 +1538,20 @@ async function _chatWithSariCore(params: {
       console.warn('[chatWithSari] Bot settings override load failed:', settingsErr);
     }
 
-    // ── GROUP PRIVACY GUARD ──
-    // When replying in a group, prevent AI from mentioning private conversation details
+    // ── GROUP CONTEXT & PRIVACY GUARD ──
+    // When replying in a group, AI must understand multi-party context
     if (params.isGroupMessage) {
-      botSettingsOverridePrompt += `\n## 🔒 تعليمات خصوصية الجروب (إلزامية):\n`;
-      botSettingsOverridePrompt += `أنت ترد الآن في **جروب واتساب** أمام عدة أشخاص.\n`;
-      botSettingsOverridePrompt += `- **ممنوع منعاً باتاً** ذكر أي تفاصيل من محادثات خاصة سابقة مع هذا العميل\n`;
-      botSettingsOverridePrompt += `- لا تذكر أسعار خاصة أو عروض حصرية تم التفاوض عليها سابقاً\n`;
-      botSettingsOverridePrompt += `- لا تذكر تفاصيل طلبات سابقة أو معلومات شخصية\n`;
+      botSettingsOverridePrompt += `\n## 🔒 تعليمات الجروب (إلزامية — أنت ترد في جروب واتساب):\n`;
+      botSettingsOverridePrompt += `أنت الآن في **نقاش جماعي** أمام عدة أشخاص.\n`;
+      botSettingsOverridePrompt += `### فهم السياق:\n`;
+      botSettingsOverridePrompt += `- الرسائل السابقة بصيغة [اسم المرسل]: النص — حلل النقاش الجماعي كاملاً\n`;
+      botSettingsOverridePrompt += `- افهم من يسأل الآن وماذا يريد بناءً على سياق النقاش في الجروب\n`;
+      botSettingsOverridePrompt += `- إذا سأل شخص سؤال عادي (مثل "كيفك" أو "هلا") رد بتحية مناسبة — لا تخلط مع أسئلة أشخاص آخرين\n`;
+      botSettingsOverridePrompt += `### قواعد الخصوصية:\n`;
+      botSettingsOverridePrompt += `- **ممنوع منعاً باتاً** ذكر أي تفاصيل من محادثات خاصة — تاريخ الجروب فقط\n`;
+      botSettingsOverridePrompt += `- لا تذكر أسعار خاصة أو عروض حصرية أو تفاصيل طلبات\n`;
       botSettingsOverridePrompt += `- رد بمعلومات عامة ومتاحة للجميع فقط\n`;
-      botSettingsOverridePrompt += `- كن مختصراً — ردود الجروب يجب أن تكون أقصر من الردود الخاصة\n`;
+      botSettingsOverridePrompt += `- كن مختصراً — ردود الجروب يجب أن تكون أقصر\n`;
       botSettingsOverridePrompt += `- إذا كان السؤال يحتاج تفاصيل خاصة، قل: "راسلني على الخاص وأعطيك التفاصيل كاملة 😊"\n`;
     }
 
