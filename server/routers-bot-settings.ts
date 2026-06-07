@@ -41,8 +41,12 @@ export const botSettingsRouter = router({
             outOfHoursMessage: z.string().optional(),
             responseDelay: z.number().min(1).max(10).optional(),
             maxResponseLength: z.number().min(50).max(500).optional(),
-            // GAP-5 FIX: Accept 'enthusiastic' (from personality settings) but normalize to 'friendly'
-            tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic']).optional(),
+            // TONE-FIX: Accept ANY string, normalize to valid DB enum before save
+            // Legacy data may contain 'enthusiastic', empty strings, or other invalid values
+            tone: z.string().transform(v => {
+                const valid = ['friendly', 'professional', 'casual'] as const;
+                return valid.includes(v as any) ? v as typeof valid[number] : 'friendly';
+            }).optional(),
             language: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
             // Human Takeover settings
             takeoverTimeoutMinutes: z.number().min(5).max(120).optional(),

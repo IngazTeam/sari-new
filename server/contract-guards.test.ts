@@ -35,7 +35,7 @@ describe('CG-01: bot_settings schema ↔ router contract', () => {
   const schema = () => readFile('./drizzle/schema.ts');
   const router = () => readFile('./server/routers-bot-settings.ts');
 
-  it('tone enum in router must accept ALL schema values (superset allowed for normalization)', () => {
+  it('tone must accept any string and normalize to valid DB values', () => {
     const s = schema();
     const r = router();
 
@@ -44,18 +44,16 @@ describe('CG-01: bot_settings schema ↔ router contract', () => {
     expect(schemaMatch).not.toBeNull();
     const schemaValues = schemaMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
 
-    // Extract tone values from router: z.enum(['friendly', 'professional', 'casual', 'enthusiastic'])
-    const routerMatch = r.match(/tone:\s*z\.enum\(\[([^\]]+)\]/);
-    expect(routerMatch).not.toBeNull();
-    const routerValues = routerMatch![1].replace(/'/g, '').split(',').map(v => v.trim());
+    // Router must use z.string().transform() to accept any value
+    expect(r).toContain('tone: z.string().transform(');
 
-    // Router must accept ALL schema values (superset is OK — router normalizes extras before DB write)
+    // Router must list all valid schema values in its normalizer
     for (const val of schemaValues) {
-      expect(routerValues).toContain(val);
+      expect(r).toContain(`'${val}'`);
     }
 
-    // Router must normalize non-schema values — verify normalization guard exists
-    expect(r).toContain("!['friendly', 'professional', 'casual'].includes(normalizedInput.tone)");
+    // Router must default invalid values to 'friendly'
+    expect(r).toContain(": 'friendly'");
   });
 
   it('language enum in schema must match router Zod enum exactly', () => {
