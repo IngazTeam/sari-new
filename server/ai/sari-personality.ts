@@ -1393,6 +1393,7 @@ export async function chatWithSari(params: {
   message: string;
   imageUrl?: string;
   conversationId?: number;
+  isGroupMessage?: boolean;
 }): Promise<string> {
   // NQ-6: Cost ceiling check — degrade to lightweight mode when daily limit exceeded
   let costCeilingExceeded = false;
@@ -1467,6 +1468,7 @@ async function _chatWithSariCore(params: {
   message: string;
   imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
   conversationId?: number;
+  isGroupMessage?: boolean;
 }): Promise<string> {
   try {
     // NQ-6: Set merchant context for cost ceiling tracking in openai.ts
@@ -1534,6 +1536,19 @@ async function _chatWithSariCore(params: {
       }
     } catch (settingsErr) {
       console.warn('[chatWithSari] Bot settings override load failed:', settingsErr);
+    }
+
+    // ── GROUP PRIVACY GUARD ──
+    // When replying in a group, prevent AI from mentioning private conversation details
+    if (params.isGroupMessage) {
+      botSettingsOverridePrompt += `\n## 🔒 تعليمات خصوصية الجروب (إلزامية):\n`;
+      botSettingsOverridePrompt += `أنت ترد الآن في **جروب واتساب** أمام عدة أشخاص.\n`;
+      botSettingsOverridePrompt += `- **ممنوع منعاً باتاً** ذكر أي تفاصيل من محادثات خاصة سابقة مع هذا العميل\n`;
+      botSettingsOverridePrompt += `- لا تذكر أسعار خاصة أو عروض حصرية تم التفاوض عليها سابقاً\n`;
+      botSettingsOverridePrompt += `- لا تذكر تفاصيل طلبات سابقة أو معلومات شخصية\n`;
+      botSettingsOverridePrompt += `- رد بمعلومات عامة ومتاحة للجميع فقط\n`;
+      botSettingsOverridePrompt += `- كن مختصراً — ردود الجروب يجب أن تكون أقصر من الردود الخاصة\n`;
+      botSettingsOverridePrompt += `- إذا كان السؤال يحتاج تفاصيل خاصة، قل: "راسلني على الخاص وأعطيك التفاصيل كاملة 😊"\n`;
     }
 
     // ═══ OFF-TOPIC GUARD — Reject questions unrelated to the business ═══

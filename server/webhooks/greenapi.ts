@@ -276,6 +276,7 @@ async function processTextMessage(params: {
   messageText: string;
   imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
   externalId?: string; // Green API idMessage — for dedup
+  isGroupMessage?: boolean; // true when reply goes to a group chat
 }): Promise<{ response: string; incomingMsgId?: number }> {
   try {
     console.log('[Webhook] Processing text message:', params.messageText, params.imageUrl ? `[with image: ${params.imageUrl.substring(0, 60)}...]` : '');
@@ -335,6 +336,7 @@ async function processTextMessage(params: {
         message: params.messageText,
         imageUrl: params.imageUrl,
         conversationId: params.conversationId,
+        isGroupMessage: params.isGroupMessage,
       });
     }
     
@@ -1454,6 +1456,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         customerName,
         messageText,
         externalId: payload.idMessage,
+        isGroupMessage: !!groupChatId,
       });
       response = textResult.response;
       incomingMsgId = textResult.incomingMsgId;
