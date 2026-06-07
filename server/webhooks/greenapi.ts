@@ -970,11 +970,12 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     }
 
     // ── Merchant vs Customer Classification ──
-    // Layer 0: Fast check using instance's own WID/phoneNumber (zero DB cost)
-    // Layer 1: Full escalation chain + merchant phone + owner phone check
+    // IMPORTANT: Skip for group messages — group members are always treated as customers
+    // in group context, even if they're the merchant. Merchant mode replies privately
+    // which breaks the group reply flow.
     try {
       const incomingText = extractMessageText(payload);
-      if (incomingText) {
+      if (incomingText && !groupChatId) {
         // ═══ LAYER 0: Compare against the bot's own phone (WID) ═══
         // payload.instanceData.wid = "966XXXXXXXXX@c.us" — the phone the bot runs on
         // instance.phoneNumber = stored phone from whatsapp_instances table
