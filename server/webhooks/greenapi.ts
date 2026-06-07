@@ -1394,7 +1394,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       }
     } else {
       // Text message (and other types)
-      const messageText = extractMessageText(payload);
+      let messageText = extractMessageText(payload);
       
       if (!messageText) {
         console.log('[Webhook] No text content in message, ignoring');
@@ -1403,6 +1403,15 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           success: true,
           message: 'No text content in message'
         };
+      }
+
+      // SEC-G1 FIX: Strip bot @mention from group messages before AI processing
+      // Prevents phone number leakage to GPT prompts and saves tokens
+      if (groupChatId) {
+        const botPhone = payload.instanceData.wid ? payload.instanceData.wid.split('@')[0] : '';
+        if (botPhone) {
+          messageText = messageText.replace(new RegExp(`@${botPhone}\\s*`, 'g'), '').trim();
+        }
       }
       
       const textResult = await processTextMessage({

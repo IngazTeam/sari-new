@@ -420,14 +420,17 @@ export async function sendTypingWithCredentials(
   try {
     assertGreenApiUrl(apiUrl);
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
-    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    // BUG-G1 FIX: Support group chatIds (e.g. "120363XXX@g.us")
+    const chatId = phoneNumber.includes('@')
+      ? phoneNumber
+      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
     const endpoint = `${baseURL}/sendTyping/${apiToken}`;
 
-    console.log(`[WhatsApp] ✏️ Sending typing indicator to ***${formattedPhone.slice(-4)} via ${apiUrl}`);
+    console.log(`[WhatsApp] ✏️ Sending typing indicator to ***${chatId.slice(-12)} via ${apiUrl}`);
 
     // Green API v5.44+: SendTyping with typingTime (5s default, max 20s)
     const response = await axios.post(endpoint, {
-      chatId: `${formattedPhone}@c.us`,
+      chatId,
       typingTime: 5000,
     });
 
@@ -704,12 +707,15 @@ export async function sendFileWithCredentials(
     assertGreenApiUrl(apiUrl);
     assertSafeMediaUrl(fileUrl); // PEN-MEDIA-01: Block SSRF via file URLs
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
-    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    // BUG-G2 FIX: Support group chatIds (e.g. "120363XXX@g.us")
+    const chatId = phoneNumber.includes('@')
+      ? phoneNumber
+      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
 
-    console.log(`[WhatsApp] 📎 Sending file "${fileName}" to ***${formattedPhone.slice(-4)}`);
+    console.log(`[WhatsApp] 📎 Sending file "${fileName}" to ***${chatId.slice(-12)}`);
 
     const response = await axios.post(`${baseURL}/sendFileByUrl/${apiToken}`, {
-      chatId: `${formattedPhone}@c.us`,
+      chatId,
       urlFile: fileUrl,
       fileName,
       caption: caption || '',
@@ -753,7 +759,10 @@ export async function sendImageWithCredentials(
     assertGreenApiUrl(apiUrl);
     assertSafeMediaUrl(imageUrl); // PEN-MEDIA-01: Block SSRF via image URLs
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
-    const formattedPhone = phoneNumber.replace(/[^0-9]/g, '');
+    // BUG-G2 FIX: Support group chatIds (e.g. "120363XXX@g.us")
+    const chatId = phoneNumber.includes('@')
+      ? phoneNumber
+      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
 
     // PEN-MEDIA-09: Safely extract file extension, with fallback
     let fileName = 'product.jpg';
@@ -766,10 +775,10 @@ export async function sendImageWithCredentials(
       console.warn('[WhatsApp] Invalid image URL format, using default filename');
     }
 
-    console.log(`[WhatsApp] 🖼️ Sending image to ***${formattedPhone.slice(-4)}`);
+    console.log(`[WhatsApp] 🖼️ Sending image to ***${chatId.slice(-12)}`);
 
     const response = await axios.post(`${baseURL}/sendFileByUrl/${apiToken}`, {
-      chatId: `${formattedPhone}@c.us`,
+      chatId,
       urlFile: imageUrl,
       fileName,
       caption: caption || '',
