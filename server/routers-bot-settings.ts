@@ -41,8 +41,8 @@ export const botSettingsRouter = router({
             outOfHoursMessage: z.string().optional(),
             responseDelay: z.number().min(1).max(10).optional(),
             maxResponseLength: z.number().min(50).max(500).optional(),
-            // GAP-5 FIX: Must match MySQL enum exactly — schema only accepts these 3 values
-            tone: z.enum(['friendly', 'professional', 'casual']).optional(),
+            // GAP-5 FIX: Accept 'enthusiastic' (from personality settings) but normalize to 'friendly'
+            tone: z.enum(['friendly', 'professional', 'casual', 'enthusiastic']).optional(),
             language: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
             // Human Takeover settings
             takeoverTimeoutMinutes: z.number().min(5).max(120).optional(),
@@ -63,8 +63,14 @@ export const botSettingsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
+            // Normalize tone: bot_settings MySQL enum only accepts 3 values
+            const normalizedInput = { ...input };
+            if (normalizedInput.tone && !['friendly', 'professional', 'casual'].includes(normalizedInput.tone)) {
+                normalizedInput.tone = 'friendly';
+            }
+
             // @ts-ignore
-            const result = await updateBotSettings(merchant.id, input);
+            const result = await updateBotSettings(merchant.id, normalizedInput);
 
             // Sync tone to personality settings so AI engine uses it
             if (input.tone) {

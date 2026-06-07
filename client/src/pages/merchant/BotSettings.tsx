@@ -104,7 +104,7 @@ export default function BotSettings() {
         outOfHoursMessage: settings.outOfHoursMessage || '',
         responseDelay: settings.responseDelay ?? 2,
         maxResponseLength: settings.maxResponseLength ?? 200,
-        tone: settings.tone,
+        tone: (['friendly', 'professional', 'casual'].includes(settings.tone) ? settings.tone : 'friendly') as 'friendly' | 'professional' | 'casual',
         // @ts-ignore
         language: settings.language,
         // Auto-Discount
