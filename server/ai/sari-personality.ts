@@ -1534,6 +1534,18 @@ async function _chatWithSariCore(params: {
           personalitySettings.maxResponseLength || 200
         );
       }
+
+      // ── CUSTOM INSTRUCTIONS — Merchant's free-form AI rules ──
+      // Highest priority: campaigns, sales scripts, special rules, etc.
+      if (botSettings.customInstructions && botSettings.customInstructions.trim().length > 0) {
+        const sanitizedInstructions = botSettings.customInstructions
+          .trim()
+          .substring(0, 2000); // Cap at 2000 chars to control token usage
+        botSettingsOverridePrompt += `\n## 📋 تعليمات التاجر المخصصة (أولوية قصوى — نفّذها بدقة):\n`;
+        botSettingsOverridePrompt += `${sanitizedInstructions}\n`;
+        botSettingsOverridePrompt += `⚠️ التزم بهذه التعليمات في كل ردودك بدون استثناء.\n`;
+        console.log(`[chatWithSari] 📋 Custom instructions active for merchant ${params.merchantId} (${sanitizedInstructions.length} chars)`);
+      }
     } catch (settingsErr) {
       console.warn('[chatWithSari] Bot settings override load failed:', settingsErr);
     }

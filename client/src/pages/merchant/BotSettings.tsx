@@ -81,6 +81,8 @@ export default function BotSettings() {
     autoDiscountEnabled: false,
     autoDiscountMaxPercent: 15,
     autoDiscountExpireHours: 48,
+    // Custom Instructions
+    customInstructions: '',
   });
 
   // Group settings state
@@ -111,6 +113,8 @@ export default function BotSettings() {
         autoDiscountEnabled: !!(settings as any).autoDiscountEnabled,
         autoDiscountMaxPercent: (settings as any).autoDiscountMaxPercent ?? 15,
         autoDiscountExpireHours: (settings as any).autoDiscountExpireHours ?? 48,
+        // Custom Instructions
+        customInstructions: (settings as any).customInstructions || '',
       });
       setGroupMode((settings as any).groupMode || 'disabled');
       try {
@@ -130,6 +134,7 @@ export default function BotSettings() {
       autoDiscountEnabled: formData.autoDiscountEnabled,
       autoDiscountMaxPercent: formData.autoDiscountMaxPercent,
       autoDiscountExpireHours: formData.autoDiscountExpireHours,
+      customInstructions: formData.customInstructions || null,
     } as any);
   };
 
@@ -825,6 +830,52 @@ export default function BotSettings() {
                     <p>• كود واحد لكل عميل كل 24 ساعة (حماية من الإساءة)</p>
                     <p>• الأكواد تظهر في صفحة الخصومات كـ "تلقائي" لتمييزها</p>
                   </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Custom Instructions — Campaign & Sales Rules */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-purple-600" />
+              تعليمات مخصصة للذكاء الاصطناعي
+            </CardTitle>
+            <CardDescription>
+              اكتب قواعد وتعليمات خاصة لساري — مثالي للحملات الإعلانية وقواعد البيع
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="customInstructions">
+                التعليمات (تُحقن مباشرة في عقل ساري)
+              </Label>
+              <Textarea
+                id="customInstructions"
+                value={formData.customInstructions}
+                onChange={(e) => setFormData({ ...formData, customInstructions: e.target.value.substring(0, 2000) })}
+                placeholder={`أمثلة على تعليمات فعّالة:\n\n• نحن حالياً في حملة "عرض الصيف" — خصم 30% على كل المنتجات\n• اذكر العرض في كل رد حتى لو ما سأل عنه العميل\n• لا تذكر السعر القديم أبداً — اذكر السعر بعد الخصم فقط\n• إذا سأل "من وين عرفت عنا" قل "نسعد إنك شفت إعلاننا!"\n• اسأل العميل عن المقاس المطلوب قبل ما تذكر السعر\n• لا تعطي خصم إضافي — العرض نهائي`}
+                className="min-h-[180px] text-right"
+                dir="rtl"
+              />
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  هذه التعليمات لها الأولوية القصوى — ساري سيلتزم بها في كل رد
+                </p>
+                <span className={`text-xs ${formData.customInstructions.length > 1800 ? 'text-red-500' : 'text-muted-foreground'}`}>
+                  {formData.customInstructions.length} / 2000
+                </span>
+              </div>
+            </div>
+
+            {formData.customInstructions.trim().length > 0 && (
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                <CheckCircle2 className="h-4 w-4 mt-0.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <div className="text-xs text-purple-700 dark:text-purple-300 space-y-1">
+                  <p>✅ التعليمات المخصصة مفعّلة — ساري سيتبعها في كل محادثة</p>
+                  <p>💡 لتعطيلها مؤقتاً (بعد انتهاء الحملة) امسح النص واحفظ</p>
                 </div>
               </div>
             )}

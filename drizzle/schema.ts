@@ -85,6 +85,9 @@ export const botSettings = mysqlTable("bot_settings", {
 	autoDiscountEnabled: tinyint("auto_discount_enabled").default(0).notNull(),
 	autoDiscountMaxPercent: int("auto_discount_max_percent").default(15),
 	autoDiscountExpireHours: int("auto_discount_expire_hours").default(48),
+	// Custom Instructions — free-form merchant instructions injected directly into AI prompt
+	// Used for campaigns, special rules, sales scripts, etc.
+	customInstructions: text("custom_instructions"),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },

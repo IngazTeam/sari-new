@@ -3835,6 +3835,26 @@ export async function getBotSettings(merchantId: number): Promise<BotSettings> {
       }
       _botSettingsMigrated = true;
     }
+
+    // Lazy Migration #2: custom_instructions column
+    try {
+      const pool = await getPool();
+      if (pool) {
+        const [cols] = await pool.execute(
+          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bot_settings' AND COLUMN_NAME = 'custom_instructions'`
+        );
+        if ((cols as any[]).length === 0) {
+          console.log('[DB] 🔧 Lazy migration: adding custom_instructions to bot_settings...');
+          await pool.execute(`ALTER TABLE bot_settings ADD COLUMN custom_instructions TEXT`);
+          console.log('[DB] ✅ custom_instructions column added');
+        }
+      }
+    } catch (migErr: any) {
+      if (!migErr.message?.includes('Duplicate column')) {
+        console.warn('[DB] custom_instructions migration note:', migErr.message);
+      }
+    }
   }
 
   // Try to get existing settings
