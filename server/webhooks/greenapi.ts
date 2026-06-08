@@ -1166,12 +1166,28 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       console.log('[Webhook] Bot should not respond:', reason);
       
       // FIX-5: Save the incoming message so merchant sees it in dashboard
+      // Extract media URLs for images/documents sent during OOH
+      let oohImageUrl: string | null = null;
+      let oohMediaUrl: string | null = null;
+      let oohMsgType: 'text' | 'image' | 'document' = 'text';
+      if (payload.messageData.typeMessage === 'imageMessage' || payload.messageData.typeMessage === 'videoMessage') {
+        const dlUrl = payload.messageData.downloadUrl || payload.messageData.fileMessageData?.downloadUrl;
+        if (dlUrl) {
+          try { const p = new URL(dlUrl); if (p.protocol === 'https:' && (p.hostname.endsWith('.greenapi.com') || p.hostname.endsWith('.green-api.com') || p.hostname.endsWith('.yandexcloud.net') || p.hostname.endsWith('.whatsapp.net') || p.hostname.endsWith('.wa.me'))) { oohImageUrl = dlUrl; oohMediaUrl = dlUrl; oohMsgType = 'image'; } } catch {}
+        }
+      } else if (payload.messageData.typeMessage === 'documentMessage') {
+        const dlUrl = payload.messageData.downloadUrl || payload.messageData.fileMessageData?.downloadUrl;
+        if (dlUrl) {
+          try { const p = new URL(dlUrl); if (p.protocol === 'https:' && (p.hostname.endsWith('.greenapi.com') || p.hostname.endsWith('.green-api.com') || p.hostname.endsWith('.yandexcloud.net') || p.hostname.endsWith('.whatsapp.net') || p.hostname.endsWith('.wa.me'))) { oohMediaUrl = dlUrl; oohMsgType = 'document'; } } catch {}
+        }
+      }
       const oohMsg = await createMessage({
         conversationId,
         direction: 'incoming',
-        messageType: 'text',
+        messageType: oohMsgType,
         content: extractMessageText(payload) || '[media]',
-        voiceUrl: null,
+        imageUrl: oohImageUrl,
+        mediaUrl: oohMediaUrl,
         isProcessed: 0,
         externalId: payload.idMessage || null,
       });
@@ -1228,12 +1244,28 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
       } else if (!expiresAt || new Date(expiresAt) > new Date()) {
         // Human is still active — Sari stays silent, just save incoming message
         console.log(`[Takeover] Sari silent — human active until ${expiresAt || 'manual #start'} (age: ${Math.round(takeoverAge / 60000)}min)`);
+        // Extract media URLs for images/documents sent during takeover
+        let tkImageUrl: string | null = null;
+        let tkMediaUrl: string | null = null;
+        let tkMsgType: 'text' | 'image' | 'document' = 'text';
+        if (payload.messageData.typeMessage === 'imageMessage' || payload.messageData.typeMessage === 'videoMessage') {
+          const dlUrl = payload.messageData.downloadUrl || payload.messageData.fileMessageData?.downloadUrl;
+          if (dlUrl) {
+            try { const p = new URL(dlUrl); if (p.protocol === 'https:' && (p.hostname.endsWith('.greenapi.com') || p.hostname.endsWith('.green-api.com') || p.hostname.endsWith('.yandexcloud.net') || p.hostname.endsWith('.whatsapp.net') || p.hostname.endsWith('.wa.me'))) { tkImageUrl = dlUrl; tkMediaUrl = dlUrl; tkMsgType = 'image'; } } catch {}
+          }
+        } else if (payload.messageData.typeMessage === 'documentMessage') {
+          const dlUrl = payload.messageData.downloadUrl || payload.messageData.fileMessageData?.downloadUrl;
+          if (dlUrl) {
+            try { const p = new URL(dlUrl); if (p.protocol === 'https:' && (p.hostname.endsWith('.greenapi.com') || p.hostname.endsWith('.green-api.com') || p.hostname.endsWith('.yandexcloud.net') || p.hostname.endsWith('.whatsapp.net') || p.hostname.endsWith('.wa.me'))) { tkMediaUrl = dlUrl; tkMsgType = 'document'; } } catch {}
+          }
+        }
         await createMessage({
           conversationId,
           direction: 'incoming',
-          messageType: 'text',
+          messageType: tkMsgType,
           content: extractMessageText(payload) || '[media]',
-          voiceUrl: null,
+          imageUrl: tkImageUrl,
+          mediaUrl: tkMediaUrl,
           isProcessed: 0,
           externalId: payload.idMessage || null,
           aiResponse: null,
