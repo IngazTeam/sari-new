@@ -815,21 +815,33 @@ async function searchRelevantProducts(
 ): Promise<any[]> {
   if (allProducts.length === 0) return [];
 
+  // ════════════════════════════════════════════════════════════════
+  // CRITICAL FIX: For small catalogs (≤30 products), ALWAYS inject ALL products.
+  // The AI has enough context window to read 30 products with descriptions.
+  // Smart filtering only makes sense for large catalogs (50+ products)
+  // where injecting all would waste tokens.
+  // ════════════════════════════════════════════════════════════════
+  if (allProducts.length <= 30) {
+    return allProducts;
+  }
+
+  // FIX: Strip punctuation from message before keyword extraction
+  const cleanMessage = message.replace(/[؟?!.,،;:()[\]{}""''\"]/g, ' ').trim();
+
   // FIX-5 (P0): Only trigger full catalog on CLEAR pricing/catalog intent.
-  // Old list had 'كم', 'عندك', 'فيه' — these matched ANY message
-  // ("كم يوم التوصيل؟" → injected ALL products = wrong context + wasted tokens).
-  // Now uses compound phrases that truly signal "show me what you have".
   const priceCatalogKeywords = [
     // Explicit price/catalog requests
     'كم سعر', 'كم السعر', 'أسعار', 'اسعار', 'بكم', 'سعره', 'تكلفة',
     'price', 'pricing', 'cost', 'how much',
     // Explicit catalog requests
     'ايش عندكم', 'وش عندكم', 'شو عندكم', 'ايش المتوفر', 'وش المتوفر',
-    'ايه الباقات', 'ايش الباقات', 'منتجات', 'دورات', 'كتالوج', 'قائمة',
-    'المتوفرة', 'المتاحة', 'كورسات', 'باقة', 'باقات', 'بكج',
-    'package', 'plan', 'courses', 'available', 'catalog',
+    'ايه الباقات', 'ايش الباقات', 'منتجات', 'دورات', 'دورة', 'كتالوج', 'قائمة',
+    'المتوفرة', 'المتاحة', 'كورسات', 'كورس', 'باقة', 'باقات', 'بكج',
+    'خدمة', 'خدمات', 'عندكم', 'عندك', 'لديكم', 'لديك',
+    'هل فيه', 'هل يوجد', 'هل عندكم', 'فيه عندكم',
+    'package', 'plan', 'courses', 'course', 'available', 'catalog', 'service',
   ];
-  const msgLower = message.toLowerCase();
+  const msgLower = cleanMessage.toLowerCase();
   const isPriceQuery = priceCatalogKeywords.some(k => msgLower.includes(k));
   if (isPriceQuery) {
     // Return ALL products — customer wants the full catalog
@@ -877,10 +889,13 @@ async function searchRelevantProducts(
     .slice(0, limit)
     .map(item => item.product);
 
-  // FIX-1 (P0): Do NOT return random products when no match found.
-  // Old behavior: returned first 15 products → GPT would confidently list
-  // unrelated products + instructions said "don't say you don't know".
-  // New behavior: return empty → GPT can honestly say "this product is not available".
+  // SAFETY NET: If keyword search found nothing but catalog is medium-sized (≤50),
+  // inject all products anyway — better to give too much context than miss a sale.
+  if (matched.length === 0 && allProducts.length <= 50) {
+    console.log(`[searchProducts] No keyword match for "${message.substring(0, 50)}" — injecting all ${allProducts.length} products as safety net`);
+    return allProducts;
+  }
+
   return matched;
 }
 
