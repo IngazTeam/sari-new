@@ -182,8 +182,9 @@ export async function fixResponse(params: {
   critique: CritiqueResult;
   customerMessage: string;
   conversationHistory: ChatMessage[];
+  productNames?: string[];
 }): Promise<string> {
-  const { originalResponse, critique, customerMessage, conversationHistory } = params;
+  const { originalResponse, critique, customerMessage, conversationHistory, productNames } = params;
 
   const recentHistory = conversationHistory.slice(-4)
     .map(m => `${m.role === 'user' ? 'عميل' : 'بوت'}: ${typeof m.content === 'string' ? m.content.substring(0, 100) : ''}`)
@@ -199,11 +200,16 @@ export async function fixResponse(params: {
 - لا ديباجة تسويقية — ابدأ بالإجابة مباشرة
 - 2-4 أسطر كحد أقصى
 - لا تشارك أي إيميل أو رقم هاتف
+- **🔴 ممنوع تقول "ما عندنا" أو "لا يوجد" إذا المنتج موجود في القائمة أدناه!**
+- **مطابقة ذكية**: "ACLS" = "دعم الحياة القلبية المتقدمة (ACLS)" — ابحث بالاسم العربي والإنجليزي
 
 أرجع الرد المُصلح فقط — بدون تعليقات أو شرح.` },
     { role: 'user', content: `## المحادثة:
 ${recentHistory}
-
+${productNames && productNames.length > 0 ? `
+## المنتجات المتوفرة (القائمة الرسمية):
+${productNames.slice(0, 50).join('، ')}
+` : ''}
 ## رسالة العميل:
 ${customerMessage}
 

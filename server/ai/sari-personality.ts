@@ -2280,7 +2280,11 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         });
         if (!critique.passed) {
           console.log(`[chatWithSari] 🔍 FAST PATH Critic: ${critique.failures.length} issues (score: ${critique.score}/7)`);
-          response = await fixResponse({ originalResponse: response, critique, customerMessage: params.message, conversationHistory: previousMessages });
+          // FIX: Pass product names to FAST PATH critic too
+          const fastCriticProducts = productsToShow?.map((p: any) => 
+            p.price ? `${p.name} (${p.price} ريال)` : p.name
+          ).filter(Boolean) || [];
+          response = await fixResponse({ originalResponse: response, critique, customerMessage: params.message, conversationHistory: previousMessages, productNames: fastCriticProducts });
           recordCritique(critique, true);
         } else {
           recordCritique(critique, false);
@@ -2769,7 +2773,11 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       });
       if (!critiqueFull.passed) {
         console.log(`[chatWithSari] 🔍 FULL PATH Critic: ${critiqueFull.failures.length} issues (score: ${critiqueFull.score}/7)`);
-        response = await fixResponse({ originalResponse: response, critique: critiqueFull, customerMessage: params.message, conversationHistory: previousMessages });
+        // FIX: Pass product names so Critic doesn't say "لا يوجد" for existing products
+        const criticProductNames = productsToShow?.map((p: any) => 
+          p.price ? `${p.name} (${p.price} ريال)` : p.name
+        ).filter(Boolean) || [];
+        response = await fixResponse({ originalResponse: response, critique: critiqueFull, customerMessage: params.message, conversationHistory: previousMessages, productNames: criticProductNames });
         recordCritique(critiqueFull, true);
       } else {
         recordCritique(critiqueFull, false);

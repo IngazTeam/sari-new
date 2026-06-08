@@ -366,7 +366,7 @@ async function gptDeepCheck(params: {
   const { response, customerMessage, intent, productNames } = params;
 
   const productList = productNames && productNames.length > 0
-    ? `\nالمنتجات الحقيقية: ${productNames.slice(0, 20).join('، ')}`
+    ? `\nالمنتجات الحقيقية: ${productNames.slice(0, 50).join('، ')}`
     : '';
 
   const systemPrompt = `أنت مراقب جودة لبوت مبيعات عبر الواتساب. افحص الرد وقل هل يحتوي على أخطاء.
@@ -458,7 +458,7 @@ async function generateCorrectedResponse(params: {
     .join('\n');
 
   const productContext = productNames && productNames.length > 0
-    ? `\nالمنتجات المتوفرة: ${productNames.slice(0, 15).join('، ')}`
+    ? `\nالمنتجات المتوفرة: ${productNames.slice(0, 50).join('، ')}`
     : '';
 
   const systemPrompt = `أنت مصحح ردود لبوت مبيعات عبر الواتساب. أعد كتابة الرد بحيث تصلح المشاكل المذكورة.
