@@ -577,6 +577,8 @@ setInterval(() => {
 // PEN-GAP-03 FIX: In-memory debounce to prevent double-escalation on rapid messages
 const _escalationDebounce = new Map<string, number>();
 function shouldEscalate(merchantId: number, customerPhone: string): boolean {
+  // FIX: Never escalate test conversations — they should never create holds
+  if (customerPhone === 'test-playground') return false;
   const key = `${merchantId}:${customerPhone}`;
   const last = _escalationDebounce.get(key);
   if (last && Date.now() - last < 10_000) return false; // 10 second window
@@ -1702,7 +1704,8 @@ async function _chatWithSariCore(params: {
     }
 
     // ═══ ESCALATION HOLD — Smart context-aware hold with AI auto-release ═══
-    const pendingQuestion = getEscalationHold(params.merchantId, params.customerPhone);
+    // FIX: Skip escalation hold for test-playground — tests should never be silenced
+    const pendingQuestion = params.customerPhone === 'test-playground' ? null : getEscalationHold(params.merchantId, params.customerPhone);
     if (pendingQuestion) {
       const holdState = getEscalationHoldState(params.merchantId, params.customerPhone);
       if (holdState) {
