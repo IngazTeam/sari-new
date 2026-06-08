@@ -843,12 +843,12 @@ async function searchRelevantProducts(
   if (allProducts.length === 0) return [];
 
   // ════════════════════════════════════════════════════════════════
-  // CRITICAL FIX: For small catalogs (≤30 products), ALWAYS inject ALL products.
-  // The AI has enough context window to read 30 products with descriptions.
-  // Smart filtering only makes sense for large catalogs (50+ products)
+  // CRITICAL FIX: For small/medium catalogs (≤50 products), ALWAYS inject ALL.
+  // The AI has enough context window to read 50 products with descriptions.
+  // Smart filtering only makes sense for large catalogs (100+ products)
   // where injecting all would waste tokens.
   // ════════════════════════════════════════════════════════════════
-  if (allProducts.length <= 30) {
+  if (allProducts.length <= 50) {
     return allProducts;
   }
 
@@ -916,9 +916,9 @@ async function searchRelevantProducts(
     .slice(0, limit)
     .map(item => item.product);
 
-  // SAFETY NET: If keyword search found nothing but catalog is medium-sized (≤50),
+  // SAFETY NET: If keyword search found nothing but catalog is medium-sized (≤100),
   // inject all products anyway — better to give too much context than miss a sale.
-  if (matched.length === 0 && allProducts.length <= 50) {
+  if (matched.length === 0 && allProducts.length <= 100) {
     console.log(`[searchProducts] No keyword match for "${message.substring(0, 50)}" — injecting all ${allProducts.length} products as safety net`);
     return allProducts;
   }
