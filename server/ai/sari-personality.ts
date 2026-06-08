@@ -595,8 +595,66 @@ setInterval(() => {
 }, 300_000);
 
 /**
- * Detect if GPT's response indicates a knowledge gap
- * (AI succeeded but didn't actually answer the question)
+ * 🛡️ PRODUCT DENIAL GUARD — Nuclear defense against rewrite hallucination
+ * 
+ * After any rewrite (Critic or Validator), this guard checks if the
+ * rewritten response DENIES a product that exists in the catalog.
+ * 
+ * Example: Original says "عندنا ACLS بـ 750 ريال" but rewrite says
+ * "لا يوجد لدينا ACLS" — the guard REJECTS the rewrite.
+ * 
+ * @returns true if rewrite should be REJECTED (it denies an existing product)
+ */
+function productDenialGuard(
+  rewrittenResponse: string,
+  originalResponse: string,
+  products: any[]
+): boolean {
+  if (!products || products.length === 0) return false;
+  
+  const resp = rewrittenResponse.toLowerCase();
+  
+  // Denial patterns — if the rewrite contains these, it might be denying a product
+  const denialPatterns = [
+    'لا يوجد', 'ما عندنا', 'لا نملك', 'غير متوفر', 'غير موجود',
+    'ما نقدر', 'مو موجود', 'ما لقيت', 'لا يوجد لدينا', 'ليس لدينا',
+    'خلني أتأكد', 'أتحقق من', 'أتأكد من المعلومة',
+  ];
+  
+  const hasDenial = denialPatterns.some(p => resp.includes(p));
+  if (!hasDenial) return false; // No denial → rewrite is OK
+  
+  // Check if a product name appears in the CUSTOMER's context
+  // (meaning the customer asked about a real product)
+  for (const product of products) {
+    if (!product.name) continue;
+    const productName = product.name.toLowerCase();
+    const productWords = productName.split(/[\s\-()\/]+/).filter((w: string) => w.length > 2);
+    
+    // Check if any significant product word appears in the rewrite's denial context
+    for (const word of productWords) {
+      if (resp.includes(word) && hasDenial) {
+        console.log(`[ProductGuard] 🛡️ BLOCKED: Rewrite denies product "${product.name}" (matched word: "${word}")`);
+        return true; // REJECT this rewrite
+      }
+    }
+    
+    // Also check English abbreviations (ACLS, BLS, etc.)
+    const englishMatch = product.name.match(/\b[A-Z]{2,10}\b/g);
+    if (englishMatch) {
+      for (const abbr of englishMatch) {
+        if (resp.includes(abbr.toLowerCase())) {
+          console.log(`[ProductGuard] 🛡️ BLOCKED: Rewrite denies product "${product.name}" (matched abbr: "${abbr}")`);
+          return true;
+        }
+      }
+    }
+  }
+  
+  return false; // No product denial detected → rewrite is OK
+}
+
+/**
  * Returns true if escalation to merchant is needed.
  */
 function isKnowledgeGapResponse(botResponse: string, customerMessage: string): boolean {
@@ -2773,11 +2831,25 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       });
       if (!critiqueFull.passed) {
         console.log(`[chatWithSari] 🔍 FULL PATH Critic: ${critiqueFull.failures.length} issues (score: ${critiqueFull.score}/7)`);
-        // FIX: Pass product names so Critic doesn't say "لا يوجد" for existing products
-        const criticProductNames = productsToShow?.map((p: any) => 
-          p.price ? `${p.name} (${p.price} ريال)` : p.name
-        ).filter(Boolean) || [];
-        response = await fixResponse({ originalResponse: response, critique: critiqueFull, customerMessage: params.message, conversationHistory: previousMessages, productNames: criticProductNames });
+        
+        // ═══ ARCHITECTURAL FIX: Only rewrite for SEVERE issues (score < 3) ═══
+        // Score 3+ means majority of criteria passed — minor issues aren't worth
+        // risking product hallucination from a full rewrite.
+        if (critiqueFull.score < 3) {
+          const criticProductNames = productsToShow?.map((p: any) => 
+            p.price ? `${p.name} (${p.price} ريال)` : p.name
+          ).filter(Boolean) || [];
+          const rewrittenResponse = await fixResponse({ originalResponse: response, critique: critiqueFull, customerMessage: params.message, conversationHistory: previousMessages, productNames: criticProductNames });
+          
+          // ═══ PRODUCT GUARD: Reject rewrite if it denies an existing product ═══
+          if (!productDenialGuard(rewrittenResponse, response, productsToShow || [])) {
+            response = rewrittenResponse;
+          } else {
+            console.log(`[chatWithSari] 🛡️ PRODUCT GUARD: Critic rewrite REJECTED — it denied an existing product. Keeping original.`);
+          }
+        } else {
+          console.log(`[chatWithSari] ⏭️ Critic score ${critiqueFull.score}/7 — minor issues, skipping rewrite to protect product accuracy`);
+        }
         recordCritique(critiqueFull, true);
       } else {
         recordCritique(critiqueFull, false);
@@ -2803,8 +2875,13 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
       });
       recordValidation(validationFull);
       if (!validationFull.passed && validationFull.correctedResponse) {
-        console.log(`[chatWithSari] 🔧 FULL PATH: Response corrected (violations: ${validationFull.violations.map(v => v.rule).join(', ')})`);
-        response = validationFull.correctedResponse;
+        // ═══ PRODUCT GUARD: Reject validator rewrite if it denies an existing product ═══
+        if (!productDenialGuard(validationFull.correctedResponse, response, productsToShow || [])) {
+          console.log(`[chatWithSari] 🔧 FULL PATH: Response corrected (violations: ${validationFull.violations.map(v => v.rule).join(', ')})`);
+          response = validationFull.correctedResponse;
+        } else {
+          console.log(`[chatWithSari] 🛡️ PRODUCT GUARD: Validator rewrite REJECTED — it denied an existing product. Keeping current response.`);
+        }
       }
     } catch (valErrFull) {
       console.warn('[chatWithSari] Validator failed (non-blocking):', (valErrFull as Error).message);
