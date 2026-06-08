@@ -256,6 +256,48 @@ async function handleIncomingMessage(
       }
     } else if (messageType === 'imageMessage') {
       messageText = messageData.imageMessageData?.caption || '[صورة]';
+      // Extract image download URL for display in merchant dashboard
+      const imgDownloadUrl = messageData.downloadUrl
+        || messageData.fileMessageData?.downloadUrl
+        || messageData.imageMessageData?.downloadUrl;
+      if (imgDownloadUrl) {
+        try {
+          const parsed = new URL(imgDownloadUrl);
+          const isTrusted = parsed.protocol === 'https:'
+            && (parsed.hostname.endsWith('.digitaloceanspaces.com')
+              || parsed.hostname.endsWith('.whatsapp.net')
+              || parsed.hostname.endsWith('.green-api.com')
+              || parsed.hostname.endsWith('.greenapi.com')
+              || parsed.hostname.endsWith('.yandexcloud.net')
+              || parsed.hostname.endsWith('.storage.googleapis.com')
+              || parsed.hostname.endsWith('.wa.me'));
+          if (isTrusted) {
+            (messageData as any)._safeImageUrl = imgDownloadUrl;
+          }
+        } catch { /* invalid URL — ignore */ }
+      }
+    } else if (messageType === 'documentMessage') {
+      const docFileName = messageData.fileMessageData?.fileName || 'document';
+      messageText = messageData.fileMessageData?.caption || `[ملف: ${docFileName}]`;
+      const docDownloadUrl = messageData.downloadUrl
+        || messageData.fileMessageData?.downloadUrl;
+      if (docDownloadUrl) {
+        try {
+          const parsed = new URL(docDownloadUrl);
+          const isTrusted = parsed.protocol === 'https:'
+            && (parsed.hostname.endsWith('.digitaloceanspaces.com')
+              || parsed.hostname.endsWith('.whatsapp.net')
+              || parsed.hostname.endsWith('.green-api.com')
+              || parsed.hostname.endsWith('.greenapi.com')
+              || parsed.hostname.endsWith('.yandexcloud.net')
+              || parsed.hostname.endsWith('.storage.googleapis.com')
+              || parsed.hostname.endsWith('.wa.me'));
+          if (isTrusted) {
+            (messageData as any)._safeDocUrl = docDownloadUrl;
+            (messageData as any)._docFileName = docFileName;
+          }
+        } catch { /* invalid URL — ignore */ }
+      }
     } else {
       messageText = `[${messageType}]`;
     }
@@ -403,11 +445,16 @@ async function handleIncomingMessage(
     } catch { /* non-blocking */ }
 
     // Save incoming message
+    const safeImageUrl = (messageData as any)?._safeImageUrl || null;
+    const safeDocUrl = (messageData as any)?._safeDocUrl || null;
+    const msgType = safeDocUrl ? 'document' : safeImageUrl ? 'image' : (messageType === 'imageMessage' ? 'image' : 'text');
     await createMessage({
       conversationId: conversation.id,
       direction: 'incoming',
       content: messageText,
-      messageType: 'text',
+      messageType: msgType as any,
+      imageUrl: safeImageUrl || null,
+      mediaUrl: safeDocUrl || safeImageUrl || null,
       isProcessed: 0,
     });
 

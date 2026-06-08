@@ -275,6 +275,8 @@ async function processTextMessage(params: {
   customerName?: string;
   messageText: string;
   imageUrl?: string; // GPT-4o Vision: URL of image sent by customer
+  mediaUrl?: string; // Download URL for documents/files
+  fileName?: string; // Original filename for documents
   externalId?: string; // Green API idMessage — for dedup
   isGroupMessage?: boolean; // true when reply goes to a group chat
   senderName?: string; // Display name of the sender (for group multi-party context)
@@ -294,12 +296,13 @@ async function processTextMessage(params: {
     const incomingMsg = await createMessage({
       conversationId: params.conversationId,
       direction: 'incoming',
-      messageType: params.imageUrl ? 'image' : 'text',
+      messageType: params.mediaUrl ? 'document' : params.imageUrl ? 'image' : 'text',
       // GROUP: Prefix with sender name so AI understands multi-party discussion
       content: params.isGroupMessage && params.senderName
         ? `[${params.senderName}]: ${params.messageText}`
         : params.messageText,
-      voiceUrl: params.imageUrl || null,  // Reuse voiceUrl field for image URL
+      imageUrl: params.imageUrl || null,
+      mediaUrl: params.mediaUrl || params.imageUrl || null,
       isProcessed: 0,
       externalId: params.externalId || null,
       // @ts-ignore
@@ -1431,6 +1434,53 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         response = imgResult.response;
         incomingMsgId = imgResult.incomingMsgId;
       }
+    } else if (payload.messageData.typeMessage === 'documentMessage') {
+      // ── Document/File Message ──
+      const docDownloadUrl = payload.messageData.downloadUrl
+        || payload.messageData.fileMessageData?.downloadUrl
+        || (payload.messageData as any).fileMessage?.downloadUrl;
+      const docFileName = payload.messageData.fileMessageData?.fileName
+        || (payload.messageData as any).fileName
+        || 'document';
+      const docCaption = payload.messageData.fileMessageData?.caption
+        || payload.messageData.caption
+        || '';
+
+      // Validate URL (same SSRF check as images)
+      let safeDocUrl: string | undefined;
+      if (docDownloadUrl) {
+        try {
+          const parsed = new URL(docDownloadUrl);
+          const isTrustedDomain = parsed.protocol === 'https:'
+            && (parsed.hostname.endsWith('.digitaloceanspaces.com')
+              || parsed.hostname.endsWith('.whatsapp.net')
+              || parsed.hostname.endsWith('.green-api.com')
+              || parsed.hostname.endsWith('.greenapi.com')
+              || parsed.hostname.endsWith('.yandexcloud.net')
+              || parsed.hostname.endsWith('.storage.googleapis.com')
+              || parsed.hostname.endsWith('.wa.me'));
+          if (isTrustedDomain) safeDocUrl = docDownloadUrl;
+          else console.warn(`[Webhook] ⚠️ Untrusted doc URL domain blocked: ${parsed.hostname}`);
+        } catch {
+          console.warn(`[Webhook] ⚠️ Invalid doc URL format: ${String(docDownloadUrl).substring(0, 60)}`);
+        }
+      }
+
+      const messageText = docCaption || `[ملف: ${docFileName}]`;
+      console.log(`[Webhook] 📎 Document message: ${docFileName}${safeDocUrl ? ` URL: ${safeDocUrl.substring(0, 80)}...` : ' (no URL)'}`);
+
+      const docResult = await processTextMessage({
+        merchantId: instance.merchantId,
+        conversationId,
+        customerPhone,
+        customerName,
+        messageText,
+        mediaUrl: safeDocUrl,
+        fileName: docFileName,
+        externalId: payload.idMessage,
+      });
+      response = docResult.response;
+      incomingMsgId = docResult.incomingMsgId;
     } else {
       // Text message (and other types)
       let messageText = extractMessageText(payload);

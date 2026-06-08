@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { MessageSquare, User, Bot, Clock, Search, Send, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { MessageSquare, User, Bot, Clock, Search, Send, Loader2, Image as ImageIcon, FileText, Download, X } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
@@ -28,6 +29,7 @@ export default function Conversations() {
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   // Pipeline filter state (from SalesPipeline deep-links)
   const [stageFilter, setStageFilter] = useState<string | undefined>();
   const [needsHumanFilter, setNeedsHumanFilter] = useState<boolean | undefined>();
@@ -319,7 +321,19 @@ export default function Conversations() {
                 <ScrollArea className="h-[400px] p-4">
                   {messages && messages.length > 0 ? (
                     <div className="space-y-4">
-                      {messages.map((message) => (
+                      {messages.map((message) => {
+                        // Resolve media URLs — check imageUrl, mediaUrl, and legacy voiceUrl fallback
+                        const imgUrl = (message as any).imageUrl || (message as any).mediaUrl || null;
+                        const docUrl = (message as any).mediaUrl || null;
+                        const isImage = message.messageType === 'image' || (imgUrl && /\.(jpg|jpeg|png|gif|webp|bmp|svg)/i.test(imgUrl));
+                        const isDocument = message.messageType === 'document';
+                        const isVoice = message.messageType === 'voice';
+                        // Legacy fallback: old messages stored image URL in voiceUrl
+                        const legacyImgUrl = !imgUrl && !isVoice && (message as any).voiceUrl && message.messageType === 'image'
+                          ? (message as any).voiceUrl : null;
+                        const finalImgUrl = imgUrl || legacyImgUrl;
+
+                        return (
                         <div
                           key={message.id}
                           className={`flex gap-3 ${message.direction === 'incoming' ? 'flex-row' : 'flex-row-reverse'
@@ -344,22 +358,85 @@ export default function Conversations() {
                                   : 'bg-primary text-primary-foreground'
                                 }`}
                             >
-                              {message.messageType === 'voice' && (
+                              {/* Voice Message Badge */}
+                              {isVoice && (
                                 <div className="flex items-center gap-2 mb-1">
                                   <Badge variant="outline" className="text-xs">
                                     {t('conversationsPage.voiceMessage')}
                                   </Badge>
                                 </div>
                               )}
-                              <p className="text-sm whitespace-pre-wrap break-words">
-                                {message.content}
-                              </p>
-                              {message.imageUrl && (
-                                <img
-                                  src={message.imageUrl}
-                                  alt="Media"
-                                  className="mt-2 rounded max-w-full h-auto"
-                                />
+
+                              {/* Image Display */}
+                              {(isImage && finalImgUrl) && (
+                                <div className="mb-2">
+                                  <div
+                                    className="relative group cursor-pointer overflow-hidden rounded-md"
+                                    onClick={() => setLightboxImage(finalImgUrl)}
+                                  >
+                                    <img
+                                      src={finalImgUrl}
+                                      alt="صورة من المحادثة"
+                                      className="rounded-md max-w-full max-h-[250px] object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                      loading="lazy"
+                                      onError={(e) => {
+                                        // Hide broken images
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                      <ImageIcon className="h-6 w-6 text-white opacity-0 group-hover:opacity-80 transition-opacity drop-shadow-lg" />
+                                    </div>
+                                  </div>
+                                  {message.messageType === 'image' && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <ImageIcon className="h-3 w-3 text-muted-foreground" />
+                                      <span className="text-[10px] text-muted-foreground">صورة</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Document Display */}
+                              {isDocument && docUrl && (
+                                <div className="mb-2">
+                                  <a
+                                    href={docUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`flex items-center gap-3 p-2.5 rounded-md border transition-colors ${
+                                      message.direction === 'incoming'
+                                        ? 'border-border/60 bg-background/50 hover:bg-background/80'
+                                        : 'border-primary-foreground/20 bg-primary-foreground/10 hover:bg-primary-foreground/15'
+                                    }`}
+                                  >
+                                    <div className={`p-2 rounded-md ${
+                                      message.direction === 'incoming' ? 'bg-emerald-100 text-emerald-700' : 'bg-primary-foreground/20 text-primary-foreground'
+                                    }`}>
+                                      <FileText className="h-5 w-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">
+                                        {message.content?.includes('[ملف:') 
+                                          ? message.content.replace(/\[ملف:\s*/, '').replace(']', '').trim()
+                                          : 'ملف مرفق'}
+                                      </p>
+                                      <p className={`text-[10px] ${
+                                        message.direction === 'incoming' ? 'text-muted-foreground' : 'text-primary-foreground/70'
+                                      }`}>
+                                        اضغط للتحميل
+                                      </p>
+                                    </div>
+                                    <Download className="h-4 w-4 shrink-0 opacity-60" />
+                                  </a>
+                                </div>
+                              )}
+
+                              {/* Text Content */}
+                              {message.content && !(isDocument && message.content.startsWith('[ملف:')) && (
+                                <p className="text-sm whitespace-pre-wrap break-words">
+                                  {message.content}
+                                </p>
                               )}
                             </div>
                             <div className="flex items-center gap-2 mt-1 px-1">
@@ -377,7 +454,8 @@ export default function Conversations() {
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       <div ref={messagesEndRef} />
                     </div>
                   ) : (
@@ -389,6 +467,27 @@ export default function Conversations() {
                     </div>
                   )}
                 </ScrollArea>
+
+                {/* Image Lightbox Dialog */}
+                <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
+                  <DialogContent className="max-w-4xl max-h-[90vh] p-2 bg-black/90 border-none">
+                    <button
+                      onClick={() => setLightboxImage(null)}
+                      className="absolute top-3 left-3 z-50 p-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors"
+                    >
+                      <X className="h-5 w-5 text-white" />
+                    </button>
+                    {lightboxImage && (
+                      <div className="flex items-center justify-center w-full h-full min-h-[300px]">
+                        <img
+                          src={lightboxImage}
+                          alt="عرض الصورة"
+                          className="max-w-full max-h-[80vh] object-contain rounded"
+                        />
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
               </CardContent>
 
               {/* AI Suggestions */}
