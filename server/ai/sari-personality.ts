@@ -1212,40 +1212,97 @@ export async function buildEnhancedContextPrompt(context: {
 
   if (context.availableProducts && context.availableProducts.length > 0) {
     const productCount = context.availableProducts.length;
-    contextPrompt += `\n## المنتجات/الدورات المتاحة حالياً (${productCount} منتج):\n`;
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 🔴🔴🔴 تنبيه إلزامي — قراءة المنتجات قبل الرد
+    // ═══════════════════════════════════════════════════════════════
+    contextPrompt += `\n## 🔴🔴🔴 تنبيه إلزامي قبل كتابة أي رد:\n`;
+    contextPrompt += `**⛔ توقف هنا واقرأ كامل قائمة المنتجات التالية بكل تفاصيلها قبل أن تكتب حرف واحد!**\n`;
+    contextPrompt += `1. اقرأ اسم كل منتج، وصفه الكامل، سعره، الكمية المتوفرة، تواريخ البداية، وحالة التسجيل\n`;
+    contextPrompt += `2. افهم الفرق بين كل منتج والآخر من خلال الأوصاف\n`;
+    contextPrompt += `3. بعد ما تقرأ كل شي — ارجع لسؤال العميل وأجب بناءً على فهمك الكامل\n`;
+    contextPrompt += `4. **ممنوع ترد بمعلومة ناقصة** — إذا الوصف موجود اذكر التفاصيل المهمة منه\n`;
+    contextPrompt += `5. **ممنوع تتجاهل الكميات** — إذا المنتج نفد (stock=0) أخبر العميل بصراحة\n\n`;
+    
+    contextPrompt += `## المنتجات/الدورات المتاحة حالياً (${productCount} منتج):\n`;
     
     // Reuse cached merchant instead of duplicate DB call
     const currency = (cachedMerchant?.currency as Currency) || 'SAR';
     
-    // Compact format when many products to save tokens
-    const isCompact = productCount > 10;
+    // Description truncation: shorter for very large catalogs, but ALWAYS included
+    const descLimit = productCount > 30 ? 100 : productCount > 15 ? 150 : 300;
     
     for (let index = 0; index < context.availableProducts.length; index++) {
       const product = context.availableProducts[index];
-      contextPrompt += `${index + 1}. **${product.name}**`;
+      contextPrompt += `\n${index + 1}. **${product.name}**`;
       if (product.price) {
-        contextPrompt += ` - ${formatCurrency(product.price, currency, 'ar-SA')}`;
+        contextPrompt += ` — ${formatCurrency(product.price, currency, 'ar-SA')}`;
+        if ((product as any).compareAtPrice && (product as any).compareAtPrice > product.price) {
+          contextPrompt += ` ~~${formatCurrency((product as any).compareAtPrice, currency, 'ar-SA')}~~`;
+        }
       }
-      if (product.stock !== undefined) contextPrompt += ` (متوفر: ${product.stock})`;
-      // Include schedule/date info if available
-      if ((product as any).startDate || (product as any).schedule) {
-        const startDate = (product as any).startDate ? ` | يبدأ: ${(product as any).startDate}` : '';
-        const schedule = (product as any).schedule ? ` | ${(product as any).schedule}` : '';
-        contextPrompt += startDate + schedule;
-      }
-      if (!isCompact && product.description) {
-        contextPrompt += `\n   الوصف: ${product.description.substring(0, 200)}`;
-      }
-      if (product.category) contextPrompt += ` [${product.category}]`;
       contextPrompt += `\n`;
+      
+      // Description — ALWAYS include (critical for AI to understand the product)
+      const desc = product.description || (product as any).descriptionAr;
+      if (desc) {
+        contextPrompt += `   📝 الوصف: ${desc.substring(0, descLimit).replace(/\n/g, ' ').trim()}`;
+        if (desc.length > descLimit) contextPrompt += '...';
+        contextPrompt += `\n`;
+      }
+      
+      // Stock / Availability
+      if (product.stock !== undefined && product.stock !== null) {
+        if (product.stock === 0) {
+          contextPrompt += `   ⚠️ نفد من المخزون\n`;
+        } else {
+          contextPrompt += `   📦 الكمية المتوفرة: ${product.stock}\n`;
+        }
+      }
+      
+      // Course-specific fields
+      if ((product as any).courseStartDate) {
+        contextPrompt += `   📅 تاريخ البداية: ${(product as any).courseStartDate}\n`;
+      }
+      if ((product as any).courseEndDate) {
+        contextPrompt += `   📅 تاريخ النهاية: ${(product as any).courseEndDate}\n`;
+      }
+      if ((product as any).maxStudents) {
+        const enrolled = (product as any).enrolledCount || 0;
+        const remaining = (product as any).maxStudents - enrolled;
+        contextPrompt += `   👥 المقاعد: ${enrolled}/${(product as any).maxStudents}`;
+        if (remaining <= 3 && remaining > 0) contextPrompt += ` (باقي ${remaining} مقاعد فقط!)`;
+        else if (remaining <= 0) contextPrompt += ` (مكتمل!)`;
+        contextPrompt += `\n`;
+      }
+      if ((product as any).registrationOpen === 0) {
+        contextPrompt += `   🔒 التسجيل مغلق حالياً\n`;
+      }
+      
+      // Schedule / legacy date fields
+      if ((product as any).startDate || (product as any).schedule) {
+        if ((product as any).startDate) contextPrompt += `   🗓️ يبدأ: ${(product as any).startDate}\n`;
+        if ((product as any).schedule) contextPrompt += `   ⏰ الجدول: ${(product as any).schedule}\n`;
+      }
+      
+      // Product type
+      if ((product as any).productType && (product as any).productType !== 'physical') {
+        const typeLabels: Record<string, string> = { digital: 'منتج رقمي', service: 'خدمة' };
+        contextPrompt += `   🏷️ النوع: ${typeLabels[(product as any).productType] || (product as any).productType}\n`;
+      }
+      
+      if (product.category) contextPrompt += `   📂 التصنيف: ${product.category}\n`;
     }
     
-    contextPrompt += `\n⚠️ تعليمات صارمة حول المنتجات:\n`;
+    contextPrompt += `\n## 🔴 تعليمات صارمة حول المنتجات:\n`;
     contextPrompt += `- عندك ${productCount} منتج/دورة — إذا سأل العميل "ايش عندكم" أو "ايش المتوفر" اذكرها كلها بدون استثناء.\n`;
-    contextPrompt += `- استخدم الأسماء والأسعار الدقيقة المذكورة أعلاه فقط.\n`;
-    contextPrompt += `- لا تقل "خلني أتأكد" أو "ما عندي معلومات" — كل المنتجات موجودة أعلاه.\n`;
-    contextPrompt += `- إذا سأل عن منتج محدد (مثل BLS أو سحب دم)، ابحث في القائمة أعلاه وأجب بدقة.\n`;
-    contextPrompt += `- كن مستشار مبيعات محترف: اشرح القيمة والفائدة، لا تكتفي بسرد الأسماء والأسعار.\n`;
+    contextPrompt += `- **اقرأ وصف كل منتج** قبل ما ترد — الوصف يحتوي على تفاصيل مهمة (المحتوى، المتطلبات، الشهادات، المدة).\n`;
+    contextPrompt += `- استخدم الأسماء والأسعار والكميات والتواريخ الدقيقة المذكورة أعلاه فقط.\n`;
+    contextPrompt += `- **إذا المنتج نفد** (stock=0 أو مكتمل أو التسجيل مغلق) → أخبر العميل بصراحة واقترح بدائل متوفرة.\n`;
+    contextPrompt += `- لا تقل "خلني أتأكد" أو "ما عندي معلومات" — كل المنتجات بتفاصيلها موجودة أعلاه.\n`;
+    contextPrompt += `- إذا سأل عن منتج محدد، ابحث في القائمة أعلاه وأجب بدقة مع ذكر التفاصيل المهمة من الوصف.\n`;
+    contextPrompt += `- كن مستشار مبيعات محترف: اشرح القيمة والفائدة من الوصف، لا تكتفي بسرد الأسماء والأسعار.\n`;
+    contextPrompt += `- **قاعدة الكمية**: إذا باقي مقاعد قليلة أو كمية محدودة → نبّه العميل بلطف (مثل: "باقي 3 مقاعد بس! 🔥")\n`;
   } else {
     contextPrompt += `\n⚠️ لا توجد قائمة منتجات محددة حالياً. استخدم المعلومات المتاحة أعلاه (أقسام المعرفة، تحليل الموقع، ملف التعريف، بيانات الشركة) للرد بدقة. إذا سأل عن أسعار ولم تجدها في المعلومات، قل "لا توجد لدي الأسعار حالياً، تقدر تتواصل مع الفريق مباشرة" — لا تخترع أرقام ولا تقل "خلني أتأكد".\n`;
   }
