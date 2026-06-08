@@ -2777,7 +2777,10 @@ ${sanitizeForPrompt(selectedAgent.personalityPrompt)}
     // BUG-7 FIX: Validate BEFORE adjustResponseForSentiment so empathy prefix isn't flagged as preamble
     try {
       const lastBotMsgFull = previousMessages.filter(m => m.role === 'assistant').pop();
-      const productNamesFull = productsToShow?.map((p: any) => p.name).filter(Boolean) || [];
+      // FIX: Include prices in product names so validator can fix missing_price violations
+      const productNamesFull = productsToShow?.map((p: any) => 
+        p.price ? `${p.name} (${p.price} ريال)` : p.name
+      ).filter(Boolean) || [];
       const validationFull = await validateResponse({
         response,
         customerMessage: params.message,
