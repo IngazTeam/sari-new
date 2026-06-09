@@ -259,12 +259,13 @@ async function sendCoachingQuestion(
     : '';
 
   // PEN-COACH-04 FIX: Scrub PII from customer messages before showing to merchant
-  const q = scrubPII(question.customerQuestion?.substring(0, 200) || '');
-  const a = question.botResponse?.substring(0, 200) || '';
+  const q = scrubPII(question.customerQuestion?.substring(0, 200) || '').trim();
+  const a = (question.botResponse?.substring(0, 200) || '').trim();
 
-  // BUG-FIX: Skip empty Q&A — don't send blank questions to merchant
-  if (q.trim().length === 0 && a.trim().length === 0) {
-    console.warn(`[Coaching] ⚠️ Skipping empty Q&A at index ${questionIndex} (both question and response are blank)`);
+  // BUG-FIX: Skip empty/near-empty Q&A — don't send blank questions to merchant
+  // Use OR (||) — skip if EITHER field is too short (min 3 chars for meaningful content)
+  if (q.length < 3 || a.length < 3) {
+    console.warn(`[Coaching] ⚠️ Skipping empty/short Q&A at index ${questionIndex} (q=${q.length} chars, a=${a.length} chars)`);
     // Auto-advance to next question
     const newIndex = await advanceSession(sessionId, 'skipped', merchantId);
     if (newIndex < totalQuestions) {
@@ -469,17 +470,18 @@ async function sendNextQuestion(
   if (!inst) return;
 
   // PEN-COACH-04 FIX: Scrub PII from customer messages
-  const q = scrubPII(question.customerQuestion?.substring(0, 200) || '');
-  const a = question.botResponse?.substring(0, 200) || '';
+  const q = scrubPII(question.customerQuestion?.substring(0, 200) || '').trim();
+  const a = (question.botResponse?.substring(0, 200) || '').trim();
 
-  // BUG-FIX: Skip empty Q&A — don't send blank questions to merchant
-  if (q.trim().length === 0 && a.trim().length === 0) {
-    console.warn(`[Coaching] ⚠️ Skipping empty Q&A at index ${questionIndex} in follow-up (both blank)`);
-    const newIndex = await advanceSession(sessionId, 'skipped', undefined);
+  // BUG-FIX: Skip empty/near-empty Q&A — don't send blank questions to merchant
+  // Use OR (||) — skip if EITHER field is too short (min 3 chars for meaningful content)
+  if (q.length < 3 || a.length < 3) {
+    console.warn(`[Coaching] ⚠️ Skipping empty/short Q&A at index ${questionIndex} in follow-up (q=${q.length} chars, a=${a.length} chars)`);
+    const newIndex = await advanceSession(sessionId, 'skipped', merchantId);
     if (newIndex < totalQuestions) {
       await sendNextQuestion(merchantId, sessionId, newIndex, totalQuestions, previousFeedback);
     } else {
-      await completeSession(sessionId, undefined);
+      await completeSession(sessionId, merchantId);
     }
     return;
   }

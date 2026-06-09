@@ -344,8 +344,10 @@ export async function getReviewCandidates(
          AND m_in.content IS NOT NULL
          AND LENGTH(TRIM(m_out.content)) > 20
          AND LENGTH(TRIM(m_in.content)) > 5
-         AND TRIM(m_in.content) NOT IN ('[media]', '[صورة]', '[صوت]', '[فيديو]', '[صورة من العميل]', '[ملف]')
+         AND TRIM(m_in.content) NOT IN ('[media]', '[صورة]', '[صوت]', '[فيديو]', '[صورة من العميل]', '[ملف]', '[audio]', '[image]', '[video]', '[file]', '[sticker]', '[ملصق]', '')
          AND TRIM(m_out.content) NOT LIKE '[%]'
+         AND TRIM(m_in.content) != ''
+         AND TRIM(m_out.content) != ''
          AND m_out.conversationId NOT IN (
            SELECT DISTINCT cq.conversation_id
            FROM sari_coaching_questions cq
