@@ -1780,9 +1780,7 @@ async function _chatWithSariCore(params: {
         } else {
           incrementHoldResponseCount(params.merchantId, params.customerPhone);
           console.log(`[chatWithSari] ⏳ Escalation hold active (${holdState.holdResponseCount + 1}/${MAX_HOLD_RESPONSES}) — bot silent for ${params.customerPhone}`);
-          return `لا زلت بانتظار الرد من الفريق المختص على سؤالك 🔄
-
-سأرد عليك فوراً بمجرد ما أحصل على الإجابة! 🙏`;
+          return `سؤالك وصل للفريق وبيردون عليك بأسرع وقت 🔄`;
         }
       }
     }
