@@ -2338,11 +2338,23 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         });
         if (!critique.passed) {
           console.log(`[chatWithSari] 🔍 FAST PATH Critic: ${critique.failures.length} issues (score: ${critique.score}/7)`);
-          // FIX: Pass product names to FAST PATH critic too
-          const fastCriticProducts = productsToShow?.map((p: any) => 
-            p.price ? `${p.name} (${p.price} ريال)` : p.name
-          ).filter(Boolean) || [];
-          response = await fixResponse({ originalResponse: response, critique, customerMessage: params.message, conversationHistory: previousMessages, productNames: fastCriticProducts });
+          
+          // ═══ FAST PATH: Same score threshold as FULL PATH ═══
+          if (critique.score < 3) {
+            const fastCriticProducts = productsToShow?.map((p: any) => 
+              p.price ? `${p.name} (${p.price} ريال)` : p.name
+            ).filter(Boolean) || [];
+            const rewrittenFast = await fixResponse({ originalResponse: response, critique, customerMessage: params.message, conversationHistory: previousMessages, productNames: fastCriticProducts });
+            
+            // ═══ PRODUCT GUARD — FAST PATH ═══
+            if (!productDenialGuard(rewrittenFast, response, productsToShow || [])) {
+              response = rewrittenFast;
+            } else {
+              console.log(`[chatWithSari] 🛡️ PRODUCT GUARD (FAST): Critic rewrite REJECTED`);
+            }
+          } else {
+            console.log(`[chatWithSari] ⏭️ FAST Critic score ${critique.score}/7 — skipping rewrite`);
+          }
           recordCritique(critique, true);
         } else {
           recordCritique(critique, false);
@@ -2368,8 +2380,13 @@ ${sanitizeForPrompt(agent.personalityPrompt)}
         });
         recordValidation(validation);
         if (!validation.passed && validation.correctedResponse) {
-          console.log(`[chatWithSari] 🔧 FAST PATH: Response corrected (violations: ${validation.violations.map(v => v.rule).join(', ')})`);
-          response = validation.correctedResponse;
+          // ═══ PRODUCT GUARD — FAST PATH Validator ═══
+          if (!productDenialGuard(validation.correctedResponse, response, productsToShow || [])) {
+            console.log(`[chatWithSari] 🔧 FAST PATH: Response corrected (violations: ${validation.violations.map(v => v.rule).join(', ')})`);
+            response = validation.correctedResponse;
+          } else {
+            console.log(`[chatWithSari] 🛡️ PRODUCT GUARD (FAST): Validator rewrite REJECTED`);
+          }
         }
       } catch (valErr) {
         // Non-blocking: validation failure should NEVER block the response
