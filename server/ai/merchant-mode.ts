@@ -67,18 +67,18 @@ const GREETING_PATTERNS = [
 const _lastMerchantGreeting = new Map<number, number>();
 const GREETING_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
-function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quotedText: string): MerchantIntent {
+function detectMerchantIntentFast(message: string, hasActiveEscalation: boolean, quotedText: string): MerchantIntent | null {
   const trimmed = message.trim();
 
-  // ── PRIORITY 0: Merchant Directives (checked FIRST) ──
+  // ── FAST PATH: Exact regex matches (no API cost) ──
   if (STOP_PATTERNS.some(p => p.test(trimmed))) return 'directive_stop';
   if (SEARCH_PATTERNS.some(p => p.test(trimmed))) return 'directive_search';
   if (REPLY_CUSTOMER_PATTERNS.some(p => p.test(trimmed))) return 'directive_reply';
   if (RESUME_PATTERNS.some(p => p.test(trimmed))) return 'directive_resume';
 
-  // ── PRIORITY 1: Escalation reply ──
-  const isReplyToAlert = quotedText.includes('تنبيه من ساري')  // legacy format (backward compat)
-    || quotedText.includes('تنبيه — سؤال عميل')  // new format
+  // ── Escalation reply ──
+  const isReplyToAlert = quotedText.includes('تنبيه من ساري')
+    || quotedText.includes('تنبيه — سؤال عميل')
     || quotedText.includes('تصعيد عاجل')
     || quotedText.includes('تصعيد أخير')
     || quotedText.includes('سؤال عميل')
@@ -93,7 +93,6 @@ function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quo
   }
   
   // If there's an active escalation AND the message looks like a short direct answer
-  // (not a question or general chat), treat it as an escalation reply.
   if (hasActiveEscalation && !quotedText) {
     const isQuestion = /^(كيف|ليش|ليه|وين|متى|هل|وش|ايش|إيش|ممكن|أبغى|ابغى|أبي|ابي|عندي|عندكم)\b/.test(trimmed);
     const isGreeting = /^(مرحبا|السلام|هلا|أهلاً|هاي|صباح|مساء)\b/.test(trimmed);
@@ -113,8 +112,66 @@ function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quo
     return 'report';
   }
 
-  // Default to general chat (merchant assistant mode)
-  return 'chat';
+  // No fast match — return null to trigger AI classification
+  return null;
+}
+
+/**
+ * AI Intent Classifier — understands natural language merchant directives.
+ * Called ONLY when regex fast-path returns null (saves API costs).
+ * 
+ * Examples it handles that regex can't:
+ * - "خلاص لا ترد عليه" → directive_stop
+ * - "ما ابي ترد على هالعميل" → directive_stop
+ * - "دور لي على كريم مرطب" → directive_search
+ * - "وش عندنا للشعر الجاف؟" → directive_search
+ * - "أبي ترسل للعميل إن الطلب جاهز" → directive_reply
+ * - "رجّع البوت يشتغل" → directive_resume
+ */
+async function classifyIntentWithAI(message: string): Promise<MerchantIntent> {
+  try {
+    const response = await callGPT4([
+      {
+        role: 'system',
+        content: `أنت مصنّف نوايا. حلل رسالة التاجر وأرجع نوع واحد فقط من هذه القائمة:
+
+- directive_stop → التاجر يريد إيقاف الرد التلقائي على عميل (مثل: "لا ترد عليه", "خلاص ما ابي ترد", "وقف الردود", "سكّت البوت")
+- directive_search → التاجر يريد بحث في المنتجات أو المعلومات (مثل: "وش عندنا عن كذا", "دور لي على كريم", "شيك على المخزون")
+- directive_reply → التاجر يريد إرسال رسالة محددة للعميل (مثل: "أبي ترسل له إن الطلب جاهز", "بلّغه يتواصل بكرة")
+- directive_resume → التاجر يريد إعادة تشغيل البوت (مثل: "رجّع ساري", "شغّل الردود", "ارجع رد عادي")
+- chat → أي شي ثاني (سؤال عام, دردشة, استفسار عن المتجر)
+
+أرجع الكلمة فقط بدون أي شرح.`
+      },
+      { role: 'user', content: message.substring(0, 200) }
+    ], {
+      model: 'gpt-4o-mini',
+      temperature: 0,
+      maxTokens: 20,
+      noRetry: true,
+    });
+
+    const intent = response.trim().toLowerCase().replace(/[^a-z_]/g, '');
+    const validIntents: MerchantIntent[] = ['directive_stop', 'directive_search', 'directive_reply', 'directive_resume', 'chat'];
+    if (validIntents.includes(intent as MerchantIntent)) {
+      console.log(`[MerchantMode] 🧠 AI classified: "${message.substring(0, 40)}..." → ${intent}`);
+      return intent as MerchantIntent;
+    }
+    return 'chat';
+  } catch (err: any) {
+    console.warn(`[MerchantMode] AI classification failed: ${err.message} — defaulting to chat`);
+    return 'chat';
+  }
+}
+
+/** Combined intent detection: fast regex → AI fallback */
+async function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quotedText: string): Promise<MerchantIntent> {
+  // Layer 1: Fast regex (0ms, no API cost)
+  const fastResult = detectMerchantIntentFast(message, hasActiveEscalation, quotedText);
+  if (fastResult) return fastResult;
+
+  // Layer 2: AI classification (only for unmatched messages, ~200ms)
+  return classifyIntentWithAI(message);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -949,7 +1006,7 @@ export async function handleMerchantChat(params: {
     if (activeEsc) hasActiveEscalation = true;
   } catch { /* non-blocking */ }
 
-  const intent = detectMerchantIntent(params.message, hasActiveEscalation, params.quotedText);
+  const intent = await detectMerchantIntent(params.message, hasActiveEscalation, params.quotedText);
   console.log(`[MerchantMode] Intent: ${intent} | ActiveEscalation: ${hasActiveEscalation}`);
 
   // ═══ Admin Greeting — Always welcome merchant as system admin ═══
