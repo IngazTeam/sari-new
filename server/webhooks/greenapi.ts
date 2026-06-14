@@ -773,6 +773,24 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         } as any);
         console.log(`[Takeover] Human took over conv ${conv.id} for 60 min (sliding window — resets on each merchant msg)`);
 
+        // ── AUTO-RESOLVE ESCALATION: Merchant replied directly → cancel pending escalation ──
+        // Without this, the cascading system sends "تصعيد عاجل" even after the merchant answered.
+        try {
+          const { resolveEscalation } = await import('../db/learning');
+          const { clearEscalationHold } = await import('../ai/sari-personality');
+          const resolved = await resolveEscalation({
+            merchantId: instance.merchantId,
+            customerPhone: conv.customerPhone,
+            merchantAnswer: outText || '[رد مباشر من التاجر]',
+          });
+          if (resolved) {
+            clearEscalationHold(instance.merchantId, conv.customerPhone);
+            console.log(`[Takeover] ✅ Auto-resolved escalation for customer ***${conv.customerPhone.slice(-4)} — merchant replied directly`);
+          }
+        } catch (escErr) {
+          console.warn('[Takeover] Escalation auto-resolve failed (non-blocking):', escErr);
+        }
+
         // Learning Engine: Capture merchant correction signal
         // When the merchant sends a message, it means the bot's response was inadequate
         if (outText) {
@@ -1285,8 +1303,9 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         const allMessages = await getMessagesByConversationId(currentConv.id);
         const last20 = allMessages.slice(-20);
         
-        // 2. Build structured resume context
+        // 2. Build structured resume context with merchant activity summary
         const resumeLines: string[] = [];
+        const merchantActions: string[] = [];
         for (const msg of last20) {
           const dir = (msg as any).direction;
           const content = ((msg as any).content || '').substring(0, 300);
@@ -1297,12 +1316,17 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
             resumeLines.push(`▸ العميل: "${content}"`);
           } else if (sender === 'merchant' || sender === 'human') {
             resumeLines.push(`▸ التاجر (يدوي): "${content}"`);
+            merchantActions.push(content.substring(0, 100));
           } else {
             resumeLines.push(`▸ البوت: "${content}"`);
           }
         }
         
-        const resumeContext = resumeLines.join('\n');
+        // Build AI-aware resume header
+        const merchantSummary = merchantActions.length > 0
+          ? `\n⚠️ ملخص تدخل التاجر: التاجر رد على العميل بـ ${merchantActions.length} رسالة تشمل: "${merchantActions.slice(-3).join('" و "')}".\n🚫 لا تكرر ما قاله التاجر — استأنف المحادثة من حيث توقف التاجر.`
+          : '';
+        const resumeContext = `📋 سياق الاستئناف — التاجر تدخّل يدوياً ثم عاد ساري للرد:${merchantSummary}\n\n${resumeLines.join('\n')}`;
         
         // 3. Save resume context to conversation for AI to read
         await updateConversation(currentConv.id, {
@@ -1323,7 +1347,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         
         // 5. DON'T send "عدت لخدمتك" — fall through to normal AI processing
         // The AI will read the resumeContext from agentHistory and respond naturally
-        console.log(`[Takeover] ✅ Resume context built (${resumeLines.length} messages). Falling through to AI processing.`);
+        console.log(`[Takeover] ✅ Resume context built (${resumeLines.length} messages, ${merchantActions.length} merchant replies). Falling through to AI processing.`);
       }
     }
     

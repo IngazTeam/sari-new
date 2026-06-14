@@ -22,6 +22,10 @@ type MerchantIntent =
   | 'report'                // wants stats/reports
   | 'teach'                 // teaching Sari new info
   | 'question'              // asking about the business
+  | 'directive_stop'        // "لا ترد" — stop responding to a customer
+  | 'directive_search'      // "ابحث عن" — search products/knowledge
+  | 'directive_reply'       // "قول للعميل" — send specific text to customer
+  | 'directive_resume'      // "استأنف" — resume auto-replies
   | 'chat';                 // general conversation
 
 const REPORT_KEYWORDS = [
@@ -35,6 +39,26 @@ const TEACH_KEYWORDS = [
   'Q:', 'A:', 'سؤال:', 'جواب:',
 ];
 
+// ── Merchant Directive Patterns ──
+const STOP_PATTERNS = [
+  /^لا\s*تر[دّ]/i, /^لاترد/i, /^وقف\s*الرد/i, /^أوقف\s*الرد/i, /^اوقف\s*الرد/i,
+  /^سكّت/i, /^سكت/i, /^صامت/i, /^لا\s*ترسل/i, /^لاترسل/i,
+];
+const SEARCH_PATTERNS = [
+  /^ابحث\s+(عن|في)/i, /^بحث\s+(عن|في)/i, /^دور\s+(على|عن)/i,
+  /^ابحث$/i, /^وش\s+عندنا/i, /^شيك\s+(على|عن)/i,
+];
+const REPLY_CUSTOMER_PATTERNS = [
+  /^(قول|قولي|قل)\s+(لل?عميل|له)/i, /^(أرسل|ارسل)\s+(لل?عميل|له)/i,
+  /^(أجب|اجب)\s+(ال?عميل|عليه)/i, /^(رد|ردي)\s+(على\s+ال?عميل|عليه)/i,
+  /^(بلّغ|بلغ)\s+(ال?عميل|ه)/i,
+];
+const RESUME_PATTERNS = [
+  /^استأنف/i, /^استانف/i, /^ارجع\s*ر[دّ]/i, /^ارجع\s*شغّل/i,
+  /^شغّل\s*(ساري|الرد|البوت)/i, /^شغل\s*(ساري|الرد|البوت)/i,
+  /^فعّل\s*(الرد|ساري|البوت)/i, /^فعل\s*(الرد|ساري|البوت)/i,
+];
+
 const GREETING_PATTERNS = [
   /^(مرحبا|مرحبًا|مرحباً|السلام عليكم|السلام|هلا|هلا والله|أهلاً|أهلا|هاي|صباح الخير|مساء الخير|يا هلا|هلو|مساء النور|صباح النور|الو|ألو|حياك|حياكم)/i,
 ];
@@ -44,7 +68,15 @@ const _lastMerchantGreeting = new Map<number, number>();
 const GREETING_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
 function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quotedText: string): MerchantIntent {
-  // Check for escalation reply first
+  const trimmed = message.trim();
+
+  // ── PRIORITY 0: Merchant Directives (checked FIRST) ──
+  if (STOP_PATTERNS.some(p => p.test(trimmed))) return 'directive_stop';
+  if (SEARCH_PATTERNS.some(p => p.test(trimmed))) return 'directive_search';
+  if (REPLY_CUSTOMER_PATTERNS.some(p => p.test(trimmed))) return 'directive_reply';
+  if (RESUME_PATTERNS.some(p => p.test(trimmed))) return 'directive_resume';
+
+  // ── PRIORITY 1: Escalation reply ──
   const isReplyToAlert = quotedText.includes('تنبيه من ساري')  // legacy format (backward compat)
     || quotedText.includes('تنبيه — سؤال عميل')  // new format
     || quotedText.includes('تصعيد عاجل')
@@ -62,11 +94,10 @@ function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quo
   
   // If there's an active escalation AND the message looks like a short direct answer
   // (not a question or general chat), treat it as an escalation reply.
-  // This prevents merchant's own questions from being misrouted as customer answers.
   if (hasActiveEscalation && !quotedText) {
-    const isQuestion = /^(كيف|ليش|ليه|وين|متى|هل|وش|ايش|إيش|ممكن|أبغى|ابغى|أبي|ابي|عندي|عندكم)\b/.test(message.trim());
-    const isGreeting = /^(مرحبا|السلام|هلا|أهلاً|هاي|صباح|مساء)\b/.test(message.trim());
-    const isLongMessage = message.trim().length > 100;
+    const isQuestion = /^(كيف|ليش|ليه|وين|متى|هل|وش|ايش|إيش|ممكن|أبغى|ابغى|أبي|ابي|عندي|عندكم)\b/.test(trimmed);
+    const isGreeting = /^(مرحبا|السلام|هلا|أهلاً|هاي|صباح|مساء)\b/.test(trimmed);
+    const isLongMessage = trimmed.length > 100;
     if (!isQuestion && !isGreeting && !isLongMessage) {
       return 'escalation_reply';
     }
@@ -544,6 +575,339 @@ ${tenantContext}`
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Merchant Directives — "لا ترد" / "ابحث" / "قول للعميل" / "استأنف"
+// ═══════════════════════════════════════════════════════════════
+
+// In-memory pending stop confirmations (merchant must confirm before silencing)
+const _pendingStopConfirmations = new Map<number, {
+  customerPhone: string;
+  customerName: string;
+  expiresAt: number;
+}>();
+
+// Cleanup expired confirmations every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of Array.from(_pendingStopConfirmations.entries())) {
+    if (now > val.expiresAt) _pendingStopConfirmations.delete(key);
+  }
+}, 10 * 60 * 1000);
+
+/** Directive: "لا ترد" — Stop responding to the most recent customer */
+async function handleDirectiveStop(params: {
+  merchantId: number;
+  merchantPhone: string;
+  message: string;
+  instanceId: string;
+  token: string;
+  apiUrl: string;
+}): Promise<{ action: string }> {
+  const { sendMessageWithCredentials } = await import('../whatsapp');
+
+  // Check if merchant is confirming a pending stop
+  const pending = _pendingStopConfirmations.get(params.merchantId);
+  if (pending && Date.now() < pending.expiresAt) {
+    const trimmed = params.message.trim();
+    if (['نعم', 'اي', 'أي', 'ايوه', 'أيوه', 'تمام', 'اكيد', 'أكيد', 'موافق', '1'].includes(trimmed)) {
+      _pendingStopConfirmations.delete(params.merchantId);
+
+      // Activate permanent takeover on this customer's conversation
+      try {
+        const { getConversationsByMerchantId, updateConversation } = await import('../db');
+        const convs = await getConversationsByMerchantId(params.merchantId);
+        const conv = convs.find(c => c.customerPhone === pending.customerPhone);
+        if (conv) {
+          await updateConversation(conv.id, {
+            humanTakeover: 1,
+            humanTakeoverAt: new Date(),
+            humanExpiresAt: null, // permanent until "استأنف"
+          } as any);
+        }
+      } catch { /* non-blocking */ }
+
+      await sendMessageWithCredentials(
+        params.instanceId, params.token, params.apiUrl,
+        params.merchantPhone,
+        `✅ تم إيقاف الرد التلقائي على العميل *${pending.customerName}* (***${pending.customerPhone.slice(-4)})\n\n💡 لإعادة التفعيل، أرسل: *استأنف*`
+      );
+      console.log(`[Directive] 🛑 Stop confirmed — Sari silenced for customer ***${pending.customerPhone.slice(-4)}`);
+      return { action: 'directive_stop_confirmed' };
+    } else {
+      _pendingStopConfirmations.delete(params.merchantId);
+      await sendMessageWithCredentials(
+        params.instanceId, params.token, params.apiUrl,
+        params.merchantPhone,
+        `❌ تم إلغاء طلب إيقاف الرد. ساري مستمر بالرد عادي.`
+      );
+      return { action: 'directive_stop_cancelled' };
+    }
+  }
+
+  // Find the most recent active conversation
+  try {
+    const { getConversationsByMerchantId } = await import('../db');
+    const convs = await getConversationsByMerchantId(params.merchantId, { limit: 1 });
+    const lastConv = convs[0];
+    if (lastConv) {
+      _pendingStopConfirmations.set(params.merchantId, {
+        customerPhone: lastConv.customerPhone,
+        customerName: lastConv.customerName || 'عميل',
+        expiresAt: Date.now() + 5 * 60 * 1000, // 5 min to confirm
+      });
+
+      await sendMessageWithCredentials(
+        params.instanceId, params.token, params.apiUrl,
+        params.merchantPhone,
+        `⚠️ *تأكيد إيقاف الرد*\n\nهل تبي أوقف الرد التلقائي على العميل:\n👤 *${lastConv.customerName || 'عميل'}* (***${lastConv.customerPhone.slice(-4)})\n\n✅ أرسل *"نعم"* للتأكيد\n❌ أو أي رسالة ثانية للإلغاء`
+      );
+      return { action: 'directive_stop_pending' };
+    }
+  } catch { /* fallback */ }
+
+  await sendMessageWithCredentials(
+    params.instanceId, params.token, params.apiUrl,
+    params.merchantPhone,
+    '⚠️ ما لقيت محادثة نشطة لإيقاف الرد عليها.'
+  );
+  return { action: 'directive_stop_no_conv' };
+}
+
+/** Directive: "ابحث عن X" — Search products and knowledge base */
+async function handleDirectiveSearch(params: {
+  merchantId: number;
+  merchantPhone: string;
+  message: string;
+  instanceId: string;
+  token: string;
+  apiUrl: string;
+}): Promise<{ action: string }> {
+  const { sendMessageWithCredentials } = await import('../whatsapp');
+
+  // Extract search query from message
+  const searchQuery = params.message.trim()
+    .replace(/^(ابحث|بحث|دور|شيك)\s*(عن|في|على)?\s*/i, '')
+    .replace(/^وش\s+عندنا\s*/i, '')
+    .trim();
+
+  if (!searchQuery || searchQuery.length < 2) {
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone,
+      '❓ اكتب "ابحث عن [المنتج أو المعلومة]"\n\nمثلاً:\n• ابحث عن كريم مرطب\n• ابحث في المنتجات عن شنطة\n• ابحث عن سياسة الاسترجاع'
+    );
+    return { action: 'directive_search_empty' };
+  }
+
+  try {
+    // Search products
+    const { getPool } = await import('../db');
+    const pool = await getPool();
+    let productResults = '';
+    if (pool) {
+      const [products] = await pool.execute(
+        `SELECT name, price, stock, description FROM products 
+         WHERE merchantId = ? AND isActive = 1 
+         AND (name LIKE ? OR description LIKE ? OR nameAr LIKE ?)
+         LIMIT 5`,
+        [params.merchantId, `%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`]
+      ) as any;
+      if (products?.length > 0) {
+        productResults = '\n🛍️ *المنتجات:*\n' + products.map((p: any, i: number) =>
+          `${i + 1}. *${p.name}* — ${p.price} ر.س${p.stock != null ? ` (المخزون: ${p.stock})` : ''}`
+        ).join('\n');
+      }
+    }
+
+    // Search RAG/knowledge base
+    let ragResults = '';
+    try {
+      if (pool) {
+        const [cachedRows] = await pool.execute(
+          `SELECT question, answer FROM sari_response_cache 
+           WHERE merchant_id = ? AND is_valid = 1 
+           AND (question LIKE ? OR answer LIKE ?)
+           ORDER BY hit_count DESC LIMIT 3`,
+          [params.merchantId, `%${searchQuery}%`, `%${searchQuery}%`]
+        ) as any;
+        if (cachedRows?.length > 0) {
+          ragResults = '\n\n📚 *قاعدة المعرفة:*\n' + cachedRows.map((c: any, i: number) =>
+            `${i + 1}. ❓ ${(c.question || '').substring(0, 80)}\n   💡 ${(c.answer || '').substring(0, 120)}`
+          ).join('\n\n');
+        }
+      }
+    } catch { /* RAG is optional */ }
+
+    const response = productResults || ragResults
+      ? `🔍 *نتائج البحث عن "${searchQuery}":*${productResults}${ragResults}\n\n💡 هذه النتائج لك فقط — ما تُرسل للعميل.`
+      : `🔍 ما لقيت نتائج لـ "${searchQuery}".\n\n💡 جرب كلمات مختلفة أو أضف المعلومة بـ: علم: ${searchQuery}`;
+
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone, response
+    );
+    return { action: 'directive_search_done' };
+  } catch (err: any) {
+    console.error('[Directive] Search failed:', err.message);
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone,
+      '⚠️ تعذر البحث حالياً. حاول مرة ثانية.'
+    );
+    return { action: 'directive_search_error' };
+  }
+}
+
+/** Directive: "قول للعميل X" — Send specific text to the most recent customer */
+async function handleDirectiveReply(params: {
+  merchantId: number;
+  merchantPhone: string;
+  message: string;
+  instanceId: string;
+  token: string;
+  apiUrl: string;
+}): Promise<{ action: string }> {
+  const { sendMessageWithCredentials } = await import('../whatsapp');
+
+  // Extract the reply text
+  const replyText = params.message.trim()
+    .replace(/^(قول|قولي|قل|أرسل|ارسل|أجب|اجب|رد|ردي|بلّغ|بلغ)\s+(لل?عميل|له|ال?عميل|عليه|ه)\s*/i, '')
+    .replace(/^(على\s+ال?عميل|عليه)\s*/i, '')
+    .trim();
+
+  if (!replyText || replyText.length < 2) {
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone,
+      '❓ اكتب النص اللي تبي أرسله:\n\nمثلاً: *قول للعميل الطلب جاهز ويوصلك خلال ساعة*'
+    );
+    return { action: 'directive_reply_empty' };
+  }
+
+  try {
+    // Find the most recent active conversation
+    const { getConversationsByMerchantId, updateConversation, createMessage } = await import('../db');
+    const convs = await getConversationsByMerchantId(params.merchantId, { limit: 1 });
+    const lastConv = convs[0];
+
+    if (!lastConv) {
+      await sendMessageWithCredentials(
+        params.instanceId, params.token, params.apiUrl,
+        params.merchantPhone,
+        '⚠️ ما لقيت محادثة نشطة لإرسال الرد.'
+      );
+      return { action: 'directive_reply_no_conv' };
+    }
+
+    // Send to customer
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      lastConv.customerPhone, replyText
+    );
+
+    // Save message in DB
+    await createMessage({
+      conversationId: lastConv.id,
+      direction: 'outgoing',
+      messageType: 'text',
+      content: replyText,
+      externalId: null,
+    });
+
+    // Activate takeover so bot doesn't reply on top
+    const { TAKEOVER_DURATION_MS } = await import('./takeover-constants');
+    await updateConversation(lastConv.id, {
+      humanTakeover: 1,
+      humanTakeoverAt: new Date(),
+      humanExpiresAt: new Date(Date.now() + TAKEOVER_DURATION_MS),
+    } as any);
+
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone,
+      `✅ تم إرسال ردك للعميل *${lastConv.customerName || 'عميل'}* (***${lastConv.customerPhone.slice(-4)})`
+    );
+
+    console.log(`[Directive] 📤 Reply sent to customer ***${lastConv.customerPhone.slice(-4)} via merchant directive`);
+    return { action: 'directive_reply_sent' };
+  } catch (err: any) {
+    console.error('[Directive] Reply failed:', err.message);
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone,
+      '⚠️ تعذر إرسال الرد للعميل. حاول مرة ثانية.'
+    );
+    return { action: 'directive_reply_error' };
+  }
+}
+
+/** Directive: "استأنف" — Resume auto-replies */
+async function handleDirectiveResume(params: {
+  merchantId: number;
+  merchantPhone: string;
+  message: string;
+  instanceId: string;
+  token: string;
+  apiUrl: string;
+}): Promise<{ action: string }> {
+  const { sendMessageWithCredentials } = await import('../whatsapp');
+
+  try {
+    const { getConversationsByMerchantId, updateConversation, getMessagesByConversationId } = await import('../db');
+    const convs = await getConversationsByMerchantId(params.merchantId);
+    
+    // Resume ALL conversations that have humanTakeover active
+    let resumedCount = 0;
+    for (const conv of convs) {
+      if ((conv as any).humanTakeover) {
+        // Build resume context for AI
+        const messages = await getMessagesByConversationId(conv.id);
+        const recentMsgs = messages.slice(-6);
+        const contextSummary = recentMsgs.map(m => {
+          const role = m.direction === 'incoming' ? 'العميل' : 'التاجر';
+          const safeContent = (m.content || '[media]').substring(0, 300);
+          return `${role}: ${safeContent}`;
+        }).join('\n');
+
+        await updateConversation(conv.id, {
+          humanTakeover: 0,
+          humanExpiresAt: null,
+          agentHistory: JSON.stringify({
+            resumeContext: contextSummary.substring(0, 2000),
+            resumedAt: new Date().toISOString(),
+            resumedBy: 'merchant_directive',
+          }),
+        } as any);
+        resumedCount++;
+      }
+    }
+
+    if (resumedCount > 0) {
+      await sendMessageWithCredentials(
+        params.instanceId, params.token, params.apiUrl,
+        params.merchantPhone,
+        `✅ تم تفعيل الرد التلقائي على *${resumedCount}* محادثة.\n\nساري يستأنف من حيث توقفت 🚀`
+      );
+      console.log(`[Directive] ▶️ Resumed ${resumedCount} conversation(s) for merchant ${params.merchantId}`);
+    } else {
+      await sendMessageWithCredentials(
+        params.instanceId, params.token, params.apiUrl,
+        params.merchantPhone,
+        '✅ الرد التلقائي مفعّل أصلاً على كل المحادثات. كل شي تمام! 👍'
+      );
+    }
+    return { action: 'directive_resume_done' };
+  } catch (err: any) {
+    console.error('[Directive] Resume failed:', err.message);
+    await sendMessageWithCredentials(
+      params.instanceId, params.token, params.apiUrl,
+      params.merchantPhone,
+      '⚠️ تعذر تفعيل الرد التلقائي. حاول مرة ثانية.'
+    );
+    return { action: 'directive_resume_error' };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Main Handler — Entry point from webhook
 // ═══════════════════════════════════════════════════════════════
 
@@ -567,6 +931,14 @@ export async function handleMerchantChat(params: {
       console.log(`[MerchantMode] ⏭️ Cooldown active — ignoring duplicate confirmation: "${msg}"`);
       return { action: 'cooldown_skip' };
     }
+  }
+
+  // ── Check for pending "لا ترد" confirmation BEFORE intent detection ──
+  // Merchant said "لا ترد" earlier → now responding with "نعم"/"لا" which wouldn't match STOP_PATTERNS
+  const pendingStop = _pendingStopConfirmations.get(params.merchantId);
+  if (pendingStop && Date.now() < pendingStop.expiresAt) {
+    console.log(`[MerchantMode] 📋 Pending stop confirmation — routing to handleDirectiveStop`);
+    return await handleDirectiveStop(params);
   }
 
   // Detect intent
@@ -604,6 +976,12 @@ export async function handleMerchantChat(params: {
 • 💬 الرد على استفسارات العملاء المصعّدة
 • ❓ أي سؤال عن متجرك ومنتجاتك
 
+🎯 *توجيهات سريعة:*
+• 🛑 *"لا ترد"* — أوقف ردودي على عميل محدد
+• 🔍 *"ابحث عن [X]"* — بحث في المنتجات وقاعدة المعرفة
+• 📤 *"قول للعميل [نص]"* — أرسل رسالة للعميل من خلالي
+• ▶️ *"استأنف"* — أعد تفعيل ردودي التلقائية
+
 كيف أقدر أخدمك اليوم؟ 🙏`;
     
     await sendMessageWithCredentials(
@@ -615,6 +993,22 @@ export async function handleMerchantChat(params: {
   }
 
   switch (intent) {
+    case 'directive_stop': {
+      return await handleDirectiveStop(params);
+    }
+
+    case 'directive_search': {
+      return await handleDirectiveSearch(params);
+    }
+
+    case 'directive_reply': {
+      return await handleDirectiveReply(params);
+    }
+
+    case 'directive_resume': {
+      return await handleDirectiveResume(params);
+    }
+
     case 'escalation_reply': {
       const result = await coachEscalationReply(params);
       return result;
