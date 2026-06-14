@@ -1144,12 +1144,18 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
     // Group messages get their own conversation (by group ID), completely separate
     // from any private chat. This prevents history leakage between channels.
     // Private chats continue using the customer's personal phone.
-    const conversationPhone = groupChatId
+    let conversationPhone = groupChatId
       ? `group_${groupChatId.split('@')[0]}`  // e.g. "group_120363043968066561"
       : customerPhone;
     const conversationName = groupChatId
       ? (payload.senderData.chatName || 'جروب واتساب')
       : customerName;
+    
+    // GUARD: Prevent ER_DATA_TOO_LONG — customerPhone column is varchar(50)
+    if (conversationPhone.length > 50) {
+      console.warn(`[Webhook] ⚠️ conversationPhone too long (${conversationPhone.length} chars): "${conversationPhone}" — truncating to 50`);
+      conversationPhone = conversationPhone.substring(0, 50);
+    }
     
     const conversationId = await getOrCreateConversation({
       merchantId: instance.merchantId,
