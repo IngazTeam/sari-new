@@ -58,6 +58,8 @@ export default function Conversations() {
     pageSize: 50,
     stage: stageFilter,
     needsHuman: needsHumanFilter,
+  }, {
+    refetchInterval: 10_000, // تحديث قائمة المحادثات كل 10 ثواني
   });
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
@@ -65,7 +67,10 @@ export default function Conversations() {
 
   const { data: messages } = trpc.conversations.getMessages.useQuery(
     { conversationId: selectedConversationId! },
-    { enabled: selectedConversationId !== null }
+    {
+      enabled: selectedConversationId !== null,
+      refetchInterval: 5_000, // تحديث الرسائل كل 5 ثواني — يضمن التحديث اللحظي
+    }
   );
 
   // Auto-scroll to bottom when messages change
@@ -252,7 +257,7 @@ export default function Conversations() {
                           <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
                             <Clock className="h-3 w-3" />
                             <span>
-                              {formatDistanceToNow(new Date(conversation.lastMessageAt), {
+                              {formatDistanceToNow(new Date(conversation.lastMessageAt?.endsWith('Z') ? conversation.lastMessageAt : conversation.lastMessageAt + 'Z'), {
                                 addSuffix: true,
                                 locale: ar,
                               })}
@@ -441,9 +446,10 @@ export default function Conversations() {
                             </div>
                             <div className="flex items-center gap-2 mt-1 px-1">
                               <span className="text-xs text-muted-foreground">
-                                {new Date(message.createdAt).toLocaleTimeString('ar-SA', {
+                                {new Date(message.createdAt?.endsWith('Z') ? message.createdAt : message.createdAt + 'Z').toLocaleTimeString('ar-SA', {
                                   hour: '2-digit',
                                   minute: '2-digit',
+                                  timeZone: 'Asia/Riyadh',
                                 })}
                               </span>
                               {message.direction === 'outgoing' && (
