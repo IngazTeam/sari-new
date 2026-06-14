@@ -298,6 +298,7 @@ export default function MerchantSettings() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* الخليج والشرق الأوسط */}
                   <SelectItem value="Asia/Riyadh">🇸🇦 السعودية (UTC+3)</SelectItem>
                   <SelectItem value="Asia/Dubai">🇦🇪 الإمارات (UTC+4)</SelectItem>
                   <SelectItem value="Asia/Kuwait">🇰🇼 الكويت (UTC+3)</SelectItem>
@@ -305,15 +306,34 @@ export default function MerchantSettings() {
                   <SelectItem value="Asia/Bahrain">🇧🇭 البحرين (UTC+3)</SelectItem>
                   <SelectItem value="Asia/Muscat">🇴🇲 عُمان (UTC+4)</SelectItem>
                   <SelectItem value="Asia/Amman">🇯🇴 الأردن (UTC+3)</SelectItem>
+                  <SelectItem value="Asia/Baghdad">🇮🇶 العراق (UTC+3)</SelectItem>
+                  <SelectItem value="Asia/Beirut">🇱🇧 لبنان (UTC+2)</SelectItem>
+                  {/* أفريقيا */}
                   <SelectItem value="Africa/Cairo">🇪🇬 مصر (UTC+2)</SelectItem>
                   <SelectItem value="Africa/Casablanca">🇲🇦 المغرب (UTC+1)</SelectItem>
-                  <SelectItem value="Asia/Baghdad">🇮🇶 العراق (UTC+3)</SelectItem>
+                  <SelectItem value="Africa/Lagos">🇳🇬 نيجيريا (UTC+1)</SelectItem>
+                  <SelectItem value="Africa/Nairobi">🇰🇪 كينيا (UTC+3)</SelectItem>
+                  <SelectItem value="Africa/Johannesburg">🇿🇦 جنوب أفريقيا (UTC+2)</SelectItem>
+                  {/* أوروبا */}
                   <SelectItem value="Europe/London">🇬🇧 لندن (UTC+0)</SelectItem>
                   <SelectItem value="Europe/Paris">🇫🇷 باريس (UTC+1)</SelectItem>
+                  <SelectItem value="Europe/Berlin">🇩🇪 برلين (UTC+1)</SelectItem>
                   <SelectItem value="Europe/Istanbul">🇹🇷 تركيا (UTC+3)</SelectItem>
+                  <SelectItem value="Europe/Moscow">🇷🇺 موسكو (UTC+3)</SelectItem>
+                  {/* الأمريكتين */}
                   <SelectItem value="America/New_York">🇺🇸 نيويورك (UTC-5)</SelectItem>
+                  <SelectItem value="America/Chicago">🇺🇸 شيكاغو (UTC-6)</SelectItem>
                   <SelectItem value="America/Los_Angeles">🇺🇸 لوس أنجلوس (UTC-8)</SelectItem>
+                  <SelectItem value="America/Sao_Paulo">🇧🇷 ساو باولو (UTC-3)</SelectItem>
+                  <SelectItem value="America/Argentina/Buenos_Aires">🇦🇷 الأرجنتين (UTC-3)</SelectItem>
+                  <SelectItem value="America/Bogota">🇨🇴 كولومبيا (UTC-5)</SelectItem>
+                  {/* آسيا */}
                   <SelectItem value="Asia/Karachi">🇵🇰 باكستان (UTC+5)</SelectItem>
+                  <SelectItem value="Asia/Kolkata">🇮🇳 الهند (UTC+5:30)</SelectItem>
+                  <SelectItem value="Asia/Jakarta">🇮🇩 إندونيسيا (UTC+7)</SelectItem>
+                  <SelectItem value="Asia/Kuala_Lumpur">🇲🇾 ماليزيا (UTC+8)</SelectItem>
+                  <SelectItem value="Asia/Tokyo">🇯🇵 اليابان (UTC+9)</SelectItem>
+                  <SelectItem value="Australia/Sydney">🇦🇺 أستراليا (UTC+10)</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
