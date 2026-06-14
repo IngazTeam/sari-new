@@ -163,12 +163,12 @@ export function trackCampaignSend(merchantId: number, count: number): void {
 
 /**
  * Check if current time is within quiet hours.
- * Default: 22:00-08:00 KSA (UTC+3)
+ * Default: 22:00-08:00 in merchant's timezone (fallback: Asia/Riyadh)
  */
-export function isQuietHours(quietStart: number = 22, quietEnd: number = 8): boolean {
-  // Get current hour in KSA timezone
-  const ksaTime = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Riyadh' }));
-  const hour = ksaTime.getHours();
+export function isQuietHours(quietStart: number = 22, quietEnd: number = 8, merchantTimezone: string = 'Asia/Riyadh'): boolean {
+  // Get current hour in merchant's configured timezone
+  const localTime = new Date(new Date().toLocaleString('en-US', { timeZone: merchantTimezone }));
+  const hour = localTime.getHours();
 
   // Quiet hours span midnight: 22:00 → 08:00
   if (quietStart > quietEnd) {
@@ -200,8 +200,16 @@ export async function filterCampaignRecipients(
   const blocked: { phone: string; reason: string }[] = [];
   const warnings: string[] = [];
 
+  // Resolve merchant timezone for quiet hours
+  let merchantTz = 'Asia/Riyadh';
+  try {
+    const { getMerchantById } = await import('../db');
+    const merchant = await getMerchantById(merchantId);
+    if ((merchant as any)?.timezone) merchantTz = (merchant as any).timezone;
+  } catch { /* fallback to default */ }
+
   // 1. Quiet hours check
-  if (!options?.skipQuietHours && isQuietHours()) {
+  if (!options?.skipQuietHours && isQuietHours(22, 8, merchantTz)) {
     return {
       allowed: [],
       blocked: phones.map(p => ({ phone: p, reason: 'quiet_hours' })),

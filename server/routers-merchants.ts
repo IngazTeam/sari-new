@@ -86,6 +86,9 @@ export const merchantsRouter = router({
             phone: z.string().max(20).regex(/^[0-9+\-\s()]*$/).optional(), // SEC-R3-03
             autoReplyEnabled: z.boolean().optional(),
             currency: z.enum(['SAR', 'USD']).optional(),
+            timezone: z.string().max(50).refine((tz) => {
+                try { Intl.DateTimeFormat(undefined, { timeZone: tz }); return true; } catch { return false; }
+            }, { message: 'منطقة زمنية غير صالحة' }).optional(),
             logoUrl: z.string().url().max(500).nullable().optional(),
         }))
         .mutation(async ({ input, ctx }) => {

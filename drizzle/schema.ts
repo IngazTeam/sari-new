@@ -268,6 +268,7 @@ export const merchants = mysqlTable("merchants", {
 	onboardingStep: int().default(0).notNull(),
 	onboardingCompletedAt: timestamp({ mode: 'string' }),
 	currency: mysqlEnum(['SAR', 'USD']).default('SAR').notNull(),
+	timezone: varchar({ length: 50 }).default('Asia/Riyadh').notNull(),
 	// Setup Wizard fields
 	businessType: mysqlEnum(['store', 'services', 'both']),
 	setupCompleted: tinyint().default(0).notNull(),

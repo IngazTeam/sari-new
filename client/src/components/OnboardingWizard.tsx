@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import {
   CheckCircle2,
@@ -15,7 +16,8 @@ import {
   ArrowRight,
   ArrowLeft,
   X,
-  HelpCircle
+  HelpCircle,
+  Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +32,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
   const [currentStep, setCurrentStep] = useState(0);
   const [businessName, setBusinessName] = useState('');
   const [phone, setPhone] = useState('');
+  const [timezone, setTimezone] = useState('Asia/Riyadh');
   const [, setLocation] = useLocation();
 
   const { data: merchant } = trpc.merchants.getCurrent.useQuery();
@@ -45,6 +48,7 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
     if (merchant) {
       setBusinessName(merchant.businessName || '');
       setPhone(merchant.phone || '');
+      setTimezone((merchant as any).timezone || 'Asia/Riyadh');
     }
   }, [onboardingStatus, merchant]);
 
@@ -78,7 +82,8 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
         await updateMerchant.mutateAsync({
           businessName: businessName.trim(),
           phone: phone.trim() || undefined,
-        });
+          timezone,
+        } as any);
 
         toast.success(t('compOnboardingWizardPage.text1'));
       } catch (error) {
@@ -261,6 +266,32 @@ export function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) 
                   dir="ltr"
                 />
                 <p className="text-sm text-gray-500">{t('onboardingWizard.auto_3')}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="onb-timezone" className="flex items-center gap-2">
+                  <Globe className="w-4 h-4" />
+                  المنطقة الزمنية
+                </Label>
+                <Select value={timezone} onValueChange={setTimezone}>
+                  <SelectTrigger id="onb-timezone">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Asia/Riyadh">🇸🇦 السعودية (UTC+3)</SelectItem>
+                    <SelectItem value="Asia/Dubai">🇦🇪 الإمارات (UTC+4)</SelectItem>
+                    <SelectItem value="Asia/Kuwait">🇰🇼 الكويت (UTC+3)</SelectItem>
+                    <SelectItem value="Asia/Qatar">🇶🇦 قطر (UTC+3)</SelectItem>
+                    <SelectItem value="Asia/Bahrain">🇧🇭 البحرين (UTC+3)</SelectItem>
+                    <SelectItem value="Asia/Muscat">🇴🇲 عُمان (UTC+4)</SelectItem>
+                    <SelectItem value="Asia/Amman">🇯🇴 الأردن (UTC+3)</SelectItem>
+                    <SelectItem value="Africa/Cairo">🇪🇬 مصر (UTC+2)</SelectItem>
+                    <SelectItem value="Africa/Casablanca">🇲🇦 المغرب (UTC+1)</SelectItem>
+                    <SelectItem value="Asia/Baghdad">🇮🇶 العراق (UTC+3)</SelectItem>
+                    <SelectItem value="Europe/Istanbul">🇹🇷 تركيا (UTC+3)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500">لعرض الأوقات بشكل صحيح في المحادثات وساعات العمل</p>
               </div>
             </div>
           )}

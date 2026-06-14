@@ -61,6 +61,8 @@ export default function Conversations() {
   }, {
     refetchInterval: 10_000, // تحديث قائمة المحادثات كل 10 ثواني
   });
+  const { data: currentMerchant } = trpc.merchants.getCurrent.useQuery();
+  const merchantTimezone = (currentMerchant as any)?.timezone || 'Asia/Riyadh';
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
   const utils = trpc.useUtils();
@@ -449,7 +451,7 @@ export default function Conversations() {
                                 {new Date(message.createdAt?.endsWith('Z') ? message.createdAt : message.createdAt + 'Z').toLocaleTimeString('ar-SA', {
                                   hour: '2-digit',
                                   minute: '2-digit',
-                                  timeZone: 'Asia/Riyadh',
+                                  timeZone: merchantTimezone,
                                 })}
                               </span>
                               {message.direction === 'outgoing' && (

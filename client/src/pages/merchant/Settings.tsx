@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, FileText, Upload, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Image } from 'lucide-react';
+import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, FileText, Upload, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Image, Globe } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -27,6 +27,7 @@ export default function MerchantSettings() {
   const [phone, setPhone] = useState('');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true);
   const [currency, setCurrency] = useState<'SAR' | 'USD'>('SAR');
+  const [timezone, setTimezone] = useState('Asia/Riyadh');
   const [logoUrl, setLogoUrl] = useState('');
 
   // Knowledge doc state
@@ -116,6 +117,7 @@ export default function MerchantSettings() {
       // @ts-ignore
       setAutoReplyEnabled((merchant as any).autoReplyEnabled != null ? !!(merchant as any).autoReplyEnabled : true);
       setCurrency(merchant.currency || 'SAR');
+      setTimezone((merchant as any).timezone || 'Asia/Riyadh');
       setLogoUrl((merchant as any).logoUrl || (merchant as any).logo_url || '');
     }
   }, [merchant]);
@@ -163,6 +165,7 @@ export default function MerchantSettings() {
       phone: phone || undefined,
       autoReplyEnabled,
       currency,
+      timezone,
       logoUrl: logoUrl.trim() || null,
     });
   };
@@ -282,6 +285,39 @@ export default function MerchantSettings() {
               </Select>
               <p className="text-xs text-muted-foreground">
                 {t('settingsPage.currencyDesc')}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="timezone" className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                المنطقة الزمنية
+              </Label>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger id="timezone">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Asia/Riyadh">🇸🇦 السعودية (UTC+3)</SelectItem>
+                  <SelectItem value="Asia/Dubai">🇦🇪 الإمارات (UTC+4)</SelectItem>
+                  <SelectItem value="Asia/Kuwait">🇰🇼 الكويت (UTC+3)</SelectItem>
+                  <SelectItem value="Asia/Qatar">🇶🇦 قطر (UTC+3)</SelectItem>
+                  <SelectItem value="Asia/Bahrain">🇧🇭 البحرين (UTC+3)</SelectItem>
+                  <SelectItem value="Asia/Muscat">🇴🇲 عُمان (UTC+4)</SelectItem>
+                  <SelectItem value="Asia/Amman">🇯🇴 الأردن (UTC+3)</SelectItem>
+                  <SelectItem value="Africa/Cairo">🇪🇬 مصر (UTC+2)</SelectItem>
+                  <SelectItem value="Africa/Casablanca">🇲🇦 المغرب (UTC+1)</SelectItem>
+                  <SelectItem value="Asia/Baghdad">🇮🇶 العراق (UTC+3)</SelectItem>
+                  <SelectItem value="Europe/London">🇬🇧 لندن (UTC+0)</SelectItem>
+                  <SelectItem value="Europe/Paris">🇫🇷 باريس (UTC+1)</SelectItem>
+                  <SelectItem value="Europe/Istanbul">🇹🇷 تركيا (UTC+3)</SelectItem>
+                  <SelectItem value="America/New_York">🇺🇸 نيويورك (UTC-5)</SelectItem>
+                  <SelectItem value="America/Los_Angeles">🇺🇸 لوس أنجلوس (UTC-8)</SelectItem>
+                  <SelectItem value="Asia/Karachi">🇵🇰 باكستان (UTC+5)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                💡 يُستخدم لعرض أوقات الرسائل وساعات العمل بشكل صحيح
               </p>
             </div>
           </div>
