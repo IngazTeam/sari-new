@@ -254,6 +254,9 @@ git pull origin main
 # تثبيت الحزم الجديدة
 pnpm install
 
+# ⚠️ مزامنة قاعدة البيانات (يضيف الأعمدة والجداول الجديدة)
+NODE_ENV=production pnpm db:push
+
 # إعادة بناء التطبيق
 pnpm build
 
