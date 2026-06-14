@@ -421,9 +421,14 @@ export async function sendTypingWithCredentials(
     assertGreenApiUrl(apiUrl);
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
     // BUG-G1 FIX: Support group chatIds (e.g. "120363XXX@g.us")
-    const chatId = phoneNumber.includes('@')
-      ? phoneNumber
-      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    let chatId: string;
+    if (phoneNumber.includes('@')) {
+      chatId = phoneNumber;
+    } else if (phoneNumber.startsWith('group_')) {
+      chatId = phoneNumber.replace('group_', '') + '@g.us';
+    } else {
+      chatId = `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    }
     const endpoint = `${baseURL}/sendTyping/${apiToken}`;
 
     console.log(`[WhatsApp] ✏️ Sending typing indicator to ***${chatId.slice(-12)} via ${apiUrl}`);
@@ -657,11 +662,17 @@ export async function sendMessageWithCredentials(
     assertGreenApiUrl(apiUrl);
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
 
-    // GAP-4 FIX: Support group chatIds (e.g. "120363XXX@g.us") alongside personal phones
+    // GAP-4 FIX: Support group chatIds alongside personal phones
+    // DB stores group conversations as "group_120363XXX" — convert to "120363XXX@g.us"
     // If phoneNumber already contains @, treat as pre-formatted chatId
-    const chatId = phoneNumber.includes('@')
-      ? phoneNumber
-      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    let chatId: string;
+    if (phoneNumber.includes('@')) {
+      chatId = phoneNumber;
+    } else if (phoneNumber.startsWith('group_')) {
+      chatId = phoneNumber.replace('group_', '') + '@g.us';
+    } else {
+      chatId = `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    }
 
     const response = await axios.post(`${baseURL}/sendMessage/${apiToken}`, {
       chatId,
@@ -708,9 +719,14 @@ export async function sendFileWithCredentials(
     assertSafeMediaUrl(fileUrl); // PEN-MEDIA-01: Block SSRF via file URLs
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
     // BUG-G2 FIX: Support group chatIds (e.g. "120363XXX@g.us")
-    const chatId = phoneNumber.includes('@')
-      ? phoneNumber
-      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    let chatId: string;
+    if (phoneNumber.includes('@')) {
+      chatId = phoneNumber;
+    } else if (phoneNumber.startsWith('group_')) {
+      chatId = phoneNumber.replace('group_', '') + '@g.us';
+    } else {
+      chatId = `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    }
 
     console.log(`[WhatsApp] 📎 Sending file "${fileName}" to ***${chatId.slice(-12)}`);
 
@@ -760,9 +776,14 @@ export async function sendImageWithCredentials(
     assertSafeMediaUrl(imageUrl); // PEN-MEDIA-01: Block SSRF via image URLs
     const baseURL = `${apiUrl}/waInstance${instanceId}`;
     // BUG-G2 FIX: Support group chatIds (e.g. "120363XXX@g.us")
-    const chatId = phoneNumber.includes('@')
-      ? phoneNumber
-      : `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    let chatId: string;
+    if (phoneNumber.includes('@')) {
+      chatId = phoneNumber;
+    } else if (phoneNumber.startsWith('group_')) {
+      chatId = phoneNumber.replace('group_', '') + '@g.us';
+    } else {
+      chatId = `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
+    }
 
     // PEN-MEDIA-09: Safely extract file extension, with fallback
     let fileName = 'product.jpg';
