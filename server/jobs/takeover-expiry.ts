@@ -88,7 +88,26 @@ async function runTakeoverExpiryCheck(): Promise<void> {
         const ageMinutes = conv.age_minutes || 0;
 
         // After 24 hours → force-expire and resume Sari
+        // BUT skip if this is a "لا ترد" permanent silence (merchant explicitly chose to silence)
         if (ageMinutes >= 1440) { // 24 * 60 = 1440
+          // Check if this is a permanent silence ("لا ترد") — don't force-expire
+          let isPermanentSilence = false;
+          try {
+            const [convData] = await pool.execute(
+              'SELECT agentHistory FROM conversations WHERE id = ? LIMIT 1', [conv.id]
+            );
+            const ah = (convData as any[])?.[0]?.agentHistory;
+            if (ah) {
+              const parsed = JSON.parse(ah);
+              if (parsed.permanentSilence) isPermanentSilence = true;
+            }
+          } catch { /* non-blocking */ }
+
+          if (isPermanentSilence) {
+            console.log(`[TakeoverExpiry] 🔇 Permanent silence on conv ${conv.id} — NOT force-expiring (merchant used "لا ترد")`);
+            continue; // Skip — respect merchant's explicit request
+          }
+
           console.log(`[TakeoverExpiry] ⚠️ Permanent takeover on conv ${conv.id} exceeded 24h — force-expiring`);
           await resumeConversation(pool, conv, 'force_24h');
           _remindersSent.delete(conv.id); // cleanup

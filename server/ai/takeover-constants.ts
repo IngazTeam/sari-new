@@ -6,7 +6,7 @@
  */
 
 /** Duration of timed takeover (merchant replies to customer) */
-export const TAKEOVER_DURATION_MS = 60 * 60 * 1000; // 1 hour (sliding window)
+export const TAKEOVER_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours (sliding window)
 
 /** Maximum age for permanent takeover before force-expiry */
 export const MAX_PERMANENT_TAKEOVER_MS = 24 * 60 * 60 * 1000; // 24 hours

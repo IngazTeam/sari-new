@@ -358,6 +358,38 @@ async function handleIncomingMessage(
           messageType: 'text',
           isProcessed: 0,
         });
+
+        // ── Notify merchant about new customer message during takeover ──
+        try {
+          const { getMerchantById, getWhatsAppInstancesByMerchantId } = await import('./db');
+          const merchant = await getMerchantById(merchantId);
+          const merchantPhone = (merchant as any)?.emergencyPhone || merchant?.phone;
+          if (merchantPhone) {
+            const normalizedMerchant = merchantPhone.replace(/[^0-9]/g, '');
+            const normalizedCustomer = customerPhone.replace(/[^0-9]/g, '');
+            if (normalizedMerchant !== normalizedCustomer) {
+              const msgPreview = (messageText || '[media]').substring(0, 200);
+              const instances = await getWhatsAppInstancesByMerchantId(merchantId);
+              const activeInst = instances.find((i: any) => i.status === 'active');
+              if (activeInst) {
+                await whatsapp.sendMessageWithCredentials(
+                  (activeInst as any).instanceId,
+                  (activeInst as any).token,
+                  (activeInst as any).apiUrl || 'https://api.green-api.com',
+                  merchantPhone,
+                  `📩 *رسالة جديدة من العميل* ***${customerPhone.slice(-4)}:\n\n"${msgPreview}"\n\n💡 رد على هذه الرسالة بالجواب وسيوصله للعميل\n🛑 أو أرسل "لا ترد" لإيقاف التنبيهات`
+                );
+              }
+            }
+          }
+          const { notifyNewMessage } = await import('./_core/notificationService');
+          await notifyNewMessage(
+            merchantId,
+            '📩 رسالة عميل أثناء التدخل',
+            `العميل ***${customerPhone.slice(-4)} أرسل: "${(messageText || '').substring(0, 80)}"`
+          );
+        } catch { /* non-blocking */ }
+
         return;
       } else {
         // Takeover expired + customer sent new message → resume with context

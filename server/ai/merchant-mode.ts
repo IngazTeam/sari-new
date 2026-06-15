@@ -678,6 +678,7 @@ async function handleDirectiveStop(params: {
             humanTakeover: 1,
             humanTakeoverAt: new Date(),
             humanExpiresAt: null, // permanent until "استأنف"
+            agentHistory: JSON.stringify({ permanentSilence: true }),
           } as any);
         }
       } catch { /* non-blocking */ }

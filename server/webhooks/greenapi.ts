@@ -840,7 +840,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           await notifyNewMessage(
             instance.merchantId,
             'المساعد الذكي ⏸️',
-            `تم إيقاف المساعد الذكي ساعة على محادثة ${conv.customerPhone?.slice(-4) || 'عميل'} (يتجدد مع كل رسالة منك). البوت سيستأنف تلقائياً بعد ساعة من آخر رسالة لك${feedbackLine}`
+            `تم إيقاف المساعد الذكي 24 ساعة على محادثة ${conv.customerPhone?.slice(-4) || 'عميل'} (يتجدد مع كل رسالة منك). البوت سيستأنف تلقائياً بعد 24 ساعة من آخر رسالة لك${feedbackLine}`
           );
           console.log(`[Takeover] 📩 In-app confirmation sent to merchant for conv ${conv.id}`);
         } catch (confirmErr) {
@@ -1294,6 +1294,39 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           externalId: payload.idMessage || null,
           aiResponse: null,
         });
+
+        // ── Notify merchant about new customer message during takeover ──
+        try {
+          const { getMerchantById } = await import('../db');
+          const merchant = await getMerchantById(instance.merchantId);
+          const merchantPhone = (merchant as any)?.emergencyPhone || merchant?.phone;
+          if (merchantPhone) {
+            const normalizedMerchant = merchantPhone.replace(/[^0-9]/g, '');
+            const normalizedCustomer = customerPhone.replace(/[^0-9]/g, '');
+            // Don't notify if merchant IS the customer (loop prevention)
+            if (normalizedMerchant !== normalizedCustomer) {
+              const msgPreview = (extractMessageText(payload) || '[media]').substring(0, 200);
+              const activeInst = (await getWhatsAppInstancesByMerchantId(instance.merchantId)).find((i: any) => i.status === 'active');
+              if (activeInst) {
+                await sendMessageWithCredentials(
+                  (activeInst as any).instanceId,
+                  (activeInst as any).token,
+                  (activeInst as any).apiUrl || 'https://api.green-api.com',
+                  merchantPhone,
+                  `📩 *رسالة جديدة من العميل* ***${customerPhone.slice(-4)}:\n\n"${msgPreview}"\n\n💡 رد على هذه الرسالة بالجواب وسيوصله للعميل\n🛑 أو أرسل "لا ترد" لإيقاف التنبيهات`
+                );
+              }
+            }
+          }
+          // Also send in-app notification
+          const { notifyNewMessage } = await import('../_core/notificationService');
+          await notifyNewMessage(
+            instance.merchantId,
+            '📩 رسالة عميل أثناء التدخل',
+            `العميل ***${customerPhone.slice(-4)} أرسل: "${(extractMessageText(payload) || '').substring(0, 80)}"`
+          );
+        } catch { /* non-blocking */ }
+
         return { success: true, message: 'Human takeover active — Sari silent' };
       } else {
         // Takeover expired + customer sent new message → resume with FULL context
@@ -1324,8 +1357,8 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         
         // Build AI-aware resume header
         const merchantSummary = merchantActions.length > 0
-          ? `\n⚠️ ملخص تدخل التاجر: التاجر رد على العميل بـ ${merchantActions.length} رسالة تشمل: "${merchantActions.slice(-3).join('" و "')}".\n🚫 لا تكرر ما قاله التاجر — استأنف المحادثة من حيث توقف التاجر.`
-          : '';
+          ? `\n\n⚠️ **ملخص تدخل التاجر (صاحب المتجر):**\nالتاجر تدخّل ورد على العميل بـ ${merchantActions.length} رسالة:\n${merchantActions.slice(-5).map((a, i) => `${i+1}. "${a}"`).join('\n')}\n\n🚫 **قاعدة صارمة:** لا تكرر أي شيء قاله التاجر أعلاه. لا تناقض ما قاله. استأنف من حيث توقف.`
+          : '\n\nℹ️ لم يرد التاجر على العميل — أجب على آخر سؤال للعميل.';
         const resumeContext = `📋 سياق الاستئناف — التاجر تدخّل يدوياً ثم عاد ساري للرد:${merchantSummary}\n\n${resumeLines.join('\n')}`;
         
         // 3. Save resume context to conversation for AI to read
