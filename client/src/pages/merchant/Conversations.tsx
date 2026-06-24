@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { MessageSquare, User, Bot, Clock, Search, Send, Loader2, Image as ImageIcon, FileText, Download, X } from 'lucide-react';
+import { MessageSquare, User, Bot, Clock, Search, Send, Loader2, Image as ImageIcon, FileText, Download, X, RefreshCw } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
@@ -65,6 +65,7 @@ export default function Conversations() {
   const merchantTimezone = (currentMerchant as any)?.timezone || 'Asia/Riyadh';
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
+  const syncMutation = trpc.conversations.syncFromWhatsApp.useMutation();
   const utils = trpc.useUtils();
 
   const { data: messages } = trpc.conversations.getMessages.useQuery(
@@ -137,10 +138,33 @@ export default function Conversations() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">{t('conversationsPage.title')}</h1>
-        <p className="text-muted-foreground mt-2">
-          {t('conversationsPage.description')}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{t('conversationsPage.title')}</h1>
+            <p className="text-muted-foreground mt-2">
+              {t('conversationsPage.description')}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 shrink-0"
+            disabled={syncMutation.isPending}
+            onClick={async () => {
+              try {
+                const result = await syncMutation.mutateAsync();
+                toast.success(`تم المزامنة ✅ — ${result.chatsImported} محادثة جديدة، ${result.messagesImported} رسالة`);
+                utils.conversations.list.invalidate();
+                utils.conversations.listRecent.invalidate();
+              } catch (err: any) {
+                toast.error(err.message || 'فشلت المزامنة');
+              }
+            }}
+          >
+            <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+            {syncMutation.isPending ? 'جاري المزامنة...' : 'مزامنة من واتساب'}
+          </Button>
+        </div>
         {hasActiveFilter && (
           <div className="flex items-center gap-2 mt-3">
             <Badge variant="secondary" className="text-sm py-1 px-3">
