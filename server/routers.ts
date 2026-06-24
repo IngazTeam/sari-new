@@ -2411,26 +2411,17 @@ export const appRouter = router({
         const activeInstance = instances.find((i: any) => i.status === 'active' && i.instanceId && i.token);
 
         if (!activeInstance) {
-          return { status: 'no_instance', message: 'لا يوجد اتصال واتساب نشط', fixed: false };
+          return { status: 'no_instance', message: 'لا يوجد اتصال واتساب نشط', fixed: false, details: {} };
         }
 
         const axios = (await import('axios')).default;
         const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
         const baseURL = `${apiUrl}/waInstance${activeInstance.instanceId}`;
 
-        // 1. Check current webhook settings
-        let currentWebhookUrl = '';
-        try {
-          const settingsRes = await axios.get(
-            `${baseURL}/getSettings/${activeInstance.token}`,
-            { timeout: 10000 }
-          );
-          currentWebhookUrl = settingsRes.data?.webhookUrl || '';
-        } catch (err: any) {
-          return { status: 'api_error', message: `فشل الاتصال بـ Green API: ${err.message}`, fixed: false };
-        }
+        const issues: string[] = [];
+        const details: Record<string, any> = {};
 
-        // 2. Check instance state
+        // 1. Check instance state (authorized?)
         let instanceState = 'unknown';
         try {
           const stateRes = await axios.get(
@@ -2438,41 +2429,97 @@ export const appRouter = router({
             { timeout: 10000 }
           );
           instanceState = stateRes.data?.stateInstance || 'unknown';
-        } catch { /* ignore */ }
+          details.instanceState = instanceState;
+
+          if (instanceState !== 'authorized') {
+            issues.push(`حالة الاتصال: ${instanceState} (يجب أن تكون authorized)`);
+          }
+        } catch (err: any) {
+          issues.push(`فشل فحص حالة الاتصال: ${err.message}`);
+        }
+
+        // 2. Check ALL settings from Green API
+        let settings: any = {};
+        try {
+          const settingsRes = await axios.get(
+            `${baseURL}/getSettings/${activeInstance.token}`,
+            { timeout: 10000 }
+          );
+          settings = settingsRes.data || {};
+          details.webhookUrl = settings.webhookUrl || '(فارغ)';
+          details.incomingWebhook = settings.incomingWebhook;
+          details.outgoingWebhook = settings.outgoingWebhook;
+          details.outgoingMessageWebhook = settings.outgoingMessageWebhook;
+          details.outgoingAPIMessageWebhook = settings.outgoingAPIMessageWebhook;
+          details.stateWebhook = settings.stateWebhook;
+        } catch (err: any) {
+          return { status: 'api_error', message: `فشل الاتصال بـ Green API: ${err.message}`, fixed: false, details };
+        }
 
         const expectedWebhookUrl = `https://sary.live/api/webhooks/greenapi`;
-        const isWebhookCorrect = currentWebhookUrl === expectedWebhookUrl;
+        const isWebhookUrlCorrect = settings.webhookUrl === expectedWebhookUrl;
+        const isIncomingEnabled = settings.incomingWebhook === 'yes';
+        const isOutgoingEnabled = settings.outgoingWebhook === 'yes';
 
-        // 3. If webhook is wrong, fix it
+        if (!isWebhookUrlCorrect) {
+          issues.push(`عنوان Webhook غير صحيح: "${settings.webhookUrl || '(فارغ)'}"`);
+        }
+        if (!isIncomingEnabled) {
+          issues.push('استقبال الرسائل (incomingWebhook) مُعطّل');
+        }
+        if (!isOutgoingEnabled) {
+          issues.push('إرسال الرسائل الصادرة (outgoingWebhook) مُعطّل');
+        }
+
+        // 3. Fix all issues at once via setSettings
         let fixed = false;
-        if (!isWebhookCorrect) {
+        if (issues.length > 0) {
           try {
-            const { setWebhookUrl } = await import('./whatsapp');
-            const result = await setWebhookUrl(
-              activeInstance.instanceId,
-              activeInstance.token,
-              expectedWebhookUrl,
-              apiUrl
-            );
-            fixed = result.success;
-            console.log(`[Diagnose] Webhook ${fixed ? 'fixed ✅' : 'fix failed ❌'} for merchant ${merchant.id}`);
+            console.log(`[Diagnose] Fixing ${issues.length} issues for merchant ${merchant.id}:`, issues);
+            const fixRes = await axios.post(`${baseURL}/setSettings/${activeInstance.token}`, {
+              webhookUrl: expectedWebhookUrl,
+              webhookUrlToken: '',
+              delaySendMessagesMilliseconds: 1000,
+              markIncomingMessagesReaded: 'yes',
+              markIncomingMessagesReadedOnReply: 'yes',
+              outgoingWebhook: 'yes',
+              outgoingMessageWebhook: 'yes',
+              outgoingAPIMessageWebhook: 'yes',
+              incomingWebhook: 'yes',
+              deviceWebhook: 'no',
+              statusInstanceWebhook: 'yes',
+              stateWebhook: 'yes',
+              keepOnlineStatus: 'yes',
+            }, { timeout: 15000 });
+
+            fixed = fixRes.status === 200 || fixRes.data?.saveSettings === true;
+            console.log(`[Diagnose] Settings ${fixed ? 'fixed ✅' : 'fix failed ❌'} for merchant ${merchant.id}`);
           } catch (fixErr: any) {
-            console.error('[Diagnose] Failed to fix webhook:', fixErr.message);
+            console.error('[Diagnose] Failed to fix settings:', fixErr.message);
           }
         }
 
+        const allOk = issues.length === 0;
+        const isDisconnected = instanceState !== 'authorized';
+
+        let message = '';
+        if (allOk) {
+          message = 'كل الإعدادات صحيحة ✅';
+        } else if (isDisconnected) {
+          message = `واتساب غير متصل (${instanceState}) ❌ — أعد مسح QR Code`;
+        } else if (fixed) {
+          message = `تم إصلاح ${issues.length} مشكلة ✅ — الرسائل ستبدأ بالوصول`;
+        } else {
+          message = `${issues.length} مشكلة: ${issues[0]}`;
+        }
+
         return {
-          status: isWebhookCorrect ? 'ok' : (fixed ? 'fixed' : 'broken'),
+          status: allOk ? 'ok' : (fixed ? 'fixed' : (isDisconnected ? 'disconnected' : 'broken')),
           instanceState,
-          currentWebhookUrl: currentWebhookUrl || '(فارغ)',
-          expectedWebhookUrl,
-          isWebhookCorrect,
           fixed,
-          message: isWebhookCorrect
-            ? 'الـ Webhook مضبوط بشكل صحيح ✅'
-            : fixed
-              ? 'تم إصلاح الـ Webhook ✅ — الرسائل ستبدأ بالوصول الآن'
-              : 'الـ Webhook غير مضبوط ❌ — يرجى المراجعة يدوياً',
+          issues,
+          details,
+          message,
         };
       }),
   }),

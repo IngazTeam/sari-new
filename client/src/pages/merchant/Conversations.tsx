@@ -150,21 +150,32 @@ export default function Conversations() {
             variant="outline"
             size="sm"
             className="gap-2 shrink-0"
-            disabled={syncMutation.isPending}
+            disabled={syncMutation.isPending || diagnoseMutation.isPending}
             onClick={async () => {
               try {
-                // Step 1: Diagnose & fix webhook
+                // Step 1: Diagnose & fix webhook + settings
                 const diagResult = await diagnoseMutation.mutateAsync();
-                if (diagResult.fixed) {
-                  toast.success('تم إصلاح الـ Webhook ✅ — الرسائل ستبدأ بالوصول الآن');
-                } else if (diagResult.status === 'ok') {
-                  toast.success('الـ Webhook مضبوط ✅');
-                } else if (diagResult.status === 'no_instance') {
+                
+                if (diagResult.status === 'no_instance') {
                   toast.error('لا يوجد اتصال واتساب نشط');
                   return;
-                } else {
-                  toast.error(diagResult.message);
                 }
+                
+                if (diagResult.status === 'disconnected') {
+                  toast.error(diagResult.message, { duration: 8000 });
+                  return;
+                }
+                
+                if (diagResult.fixed) {
+                  toast.success(diagResult.message, { duration: 6000 });
+                } else if (diagResult.status === 'ok') {
+                  toast.success(diagResult.message);
+                } else {
+                  toast.error(diagResult.message, { duration: 6000 });
+                }
+                
+                // Log details to console for debugging
+                console.log('[Diagnose] Full result:', diagResult);
 
                 // Step 2: Sync historical messages
                 const result = await syncMutation.mutateAsync();
