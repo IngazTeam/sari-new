@@ -2398,6 +2398,83 @@ export const appRouter = router({
           errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
         };
       }),
+
+    // ── Diagnose & fix webhook configuration ──
+    diagnoseWebhook: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
+        const activeInstance = instances.find((i: any) => i.status === 'active' && i.instanceId && i.token);
+
+        if (!activeInstance) {
+          return { status: 'no_instance', message: 'لا يوجد اتصال واتساب نشط', fixed: false };
+        }
+
+        const axios = (await import('axios')).default;
+        const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
+        const baseURL = `${apiUrl}/waInstance${activeInstance.instanceId}`;
+
+        // 1. Check current webhook settings
+        let currentWebhookUrl = '';
+        try {
+          const settingsRes = await axios.get(
+            `${baseURL}/getSettings/${activeInstance.token}`,
+            { timeout: 10000 }
+          );
+          currentWebhookUrl = settingsRes.data?.webhookUrl || '';
+        } catch (err: any) {
+          return { status: 'api_error', message: `فشل الاتصال بـ Green API: ${err.message}`, fixed: false };
+        }
+
+        // 2. Check instance state
+        let instanceState = 'unknown';
+        try {
+          const stateRes = await axios.get(
+            `${baseURL}/getStateInstance/${activeInstance.token}`,
+            { timeout: 10000 }
+          );
+          instanceState = stateRes.data?.stateInstance || 'unknown';
+        } catch { /* ignore */ }
+
+        const expectedWebhookUrl = `https://sary.live/api/webhooks/greenapi`;
+        const isWebhookCorrect = currentWebhookUrl === expectedWebhookUrl;
+
+        // 3. If webhook is wrong, fix it
+        let fixed = false;
+        if (!isWebhookCorrect) {
+          try {
+            const { setWebhookUrl } = await import('./whatsapp');
+            const result = await setWebhookUrl(
+              activeInstance.instanceId,
+              activeInstance.token,
+              expectedWebhookUrl,
+              apiUrl
+            );
+            fixed = result.success;
+            console.log(`[Diagnose] Webhook ${fixed ? 'fixed ✅' : 'fix failed ❌'} for merchant ${merchant.id}`);
+          } catch (fixErr: any) {
+            console.error('[Diagnose] Failed to fix webhook:', fixErr.message);
+          }
+        }
+
+        return {
+          status: isWebhookCorrect ? 'ok' : (fixed ? 'fixed' : 'broken'),
+          instanceState,
+          currentWebhookUrl: currentWebhookUrl || '(فارغ)',
+          expectedWebhookUrl,
+          isWebhookCorrect,
+          fixed,
+          message: isWebhookCorrect
+            ? 'الـ Webhook مضبوط بشكل صحيح ✅'
+            : fixed
+              ? 'تم إصلاح الـ Webhook ✅ — الرسائل ستبدأ بالوصول الآن'
+              : 'الـ Webhook غير مضبوط ❌ — يرجى المراجعة يدوياً',
+        };
+      }),
   }),
 
   // Subscription Payments Router

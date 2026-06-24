@@ -66,6 +66,7 @@ export default function Conversations() {
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
   const syncMutation = trpc.conversations.syncFromWhatsApp.useMutation();
+  const diagnoseMutation = trpc.conversations.diagnoseWebhook.useMutation();
   const utils = trpc.useUtils();
 
   const { data: messages } = trpc.conversations.getMessages.useQuery(
@@ -152,8 +153,24 @@ export default function Conversations() {
             disabled={syncMutation.isPending}
             onClick={async () => {
               try {
+                // Step 1: Diagnose & fix webhook
+                const diagResult = await diagnoseMutation.mutateAsync();
+                if (diagResult.fixed) {
+                  toast.success('تم إصلاح الـ Webhook ✅ — الرسائل ستبدأ بالوصول الآن');
+                } else if (diagResult.status === 'ok') {
+                  toast.success('الـ Webhook مضبوط ✅');
+                } else if (diagResult.status === 'no_instance') {
+                  toast.error('لا يوجد اتصال واتساب نشط');
+                  return;
+                } else {
+                  toast.error(diagResult.message);
+                }
+
+                // Step 2: Sync historical messages
                 const result = await syncMutation.mutateAsync();
-                toast.success(`تم المزامنة ✅ — ${result.chatsImported} محادثة جديدة، ${result.messagesImported} رسالة`);
+                if (result.messagesImported > 0 || result.chatsImported > 0) {
+                  toast.success(`تم استيراد ${result.chatsImported} محادثة جديدة و ${result.messagesImported} رسالة`);
+                }
                 utils.conversations.list.invalidate();
                 utils.conversations.listRecent.invalidate();
               } catch (err: any) {
@@ -161,8 +178,8 @@ export default function Conversations() {
               }
             }}
           >
-            <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-            {syncMutation.isPending ? 'جاري المزامنة...' : 'مزامنة من واتساب'}
+            <RefreshCw className={`h-4 w-4 ${(syncMutation.isPending || diagnoseMutation.isPending) ? 'animate-spin' : ''}`} />
+            {(syncMutation.isPending || diagnoseMutation.isPending) ? 'جاري الفحص...' : 'مزامنة من واتساب'}
           </Button>
         </div>
         {hasActiveFilter && (
