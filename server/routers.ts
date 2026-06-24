@@ -2238,6 +2238,166 @@ export const appRouter = router({
 
         return { success: true, messageId: result.messageId };
       }),
+
+    // ── Sync conversations from Green API (recover missed data) ──
+    syncFromWhatsApp: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        console.log(`[Sync] 🔄 Starting WhatsApp sync for merchant ${merchant.id}...`);
+
+        const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
+        const activeInstance = instances.find((i: any) => i.status === 'active' && i.instanceId && i.token);
+
+        if (!activeInstance) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد اتصال واتساب نشط' });
+        }
+
+        const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
+        const baseURL = `${apiUrl}/waInstance${activeInstance.instanceId}`;
+        const axios = (await import('axios')).default;
+        const { getConversationByMerchantAndPhone, createConversation, getPool, updateConversation } = await import('./db');
+
+        let chatsImported = 0;
+        let messagesImported = 0;
+        const errors: string[] = [];
+
+        try {
+          // Fetch all chats from Green API
+          const chatsResponse = await axios.post(
+            `${baseURL}/getChats/${activeInstance.token}`,
+            {},
+            { timeout: 30000 }
+          );
+
+          const chats: any[] = chatsResponse.data || [];
+          console.log(`[Sync] Found ${chats.length} chats from Green API`);
+
+          const personalChats = chats.filter((c: any) => c.id?.endsWith('@c.us'));
+
+          for (const chat of personalChats) {
+            try {
+              const phoneNumber = chat.id.replace('@c.us', '');
+              const customerName = chat.name || chat.contact?.name || phoneNumber;
+
+              let conversation = await getConversationByMerchantAndPhone(merchant.id, phoneNumber);
+
+              if (!conversation) {
+                conversation = await createConversation({
+                  merchantId: merchant.id,
+                  customerPhone: phoneNumber,
+                  customerName: customerName,
+                  status: 'active',
+                  lastMessageAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+                });
+                chatsImported++;
+              }
+
+              if (!conversation) continue;
+
+              // Fetch recent messages
+              try {
+                const historyResponse = await axios.post(
+                  `${baseURL}/getChatHistory/${activeInstance.token}`,
+                  { chatId: chat.id, count: 50 },
+                  { timeout: 15000 }
+                );
+
+                const chatMessages: any[] = historyResponse.data || [];
+                const pool = await getPool();
+                if (!pool) continue;
+
+                for (const msg of chatMessages) {
+                  if (!msg.idMessage) continue;
+
+                  const [existing] = await pool.execute(
+                    'SELECT id FROM messages WHERE externalId = ? LIMIT 1',
+                    [msg.idMessage]
+                  );
+
+                  if ((existing as any[])?.length > 0) continue;
+
+                  let content = '';
+                  let messageType: string = 'text';
+
+                  if (msg.typeMessage === 'textMessage') {
+                    content = msg.textMessage || '';
+                  } else if (msg.typeMessage === 'extendedTextMessage') {
+                    content = msg.extendedTextMessage?.text || msg.textMessage || '';
+                  } else if (msg.typeMessage === 'imageMessage') {
+                    content = msg.caption || '[صورة]';
+                    messageType = 'image';
+                  } else if (msg.typeMessage === 'audioMessage' || msg.typeMessage === 'voiceMessage') {
+                    content = '[رسالة صوتية]';
+                    messageType = 'voice';
+                  } else if (msg.typeMessage === 'documentMessage') {
+                    content = msg.caption || `[ملف: ${msg.fileName || 'مستند'}]`;
+                    messageType = 'document';
+                  } else {
+                    content = `[${msg.typeMessage || 'رسالة'}]`;
+                  }
+
+                  if (!content) continue;
+
+                  const isOutgoing = msg.type === 'outgoing';
+                  const msgTimestamp = msg.timestamp
+                    ? new Date(msg.timestamp * 1000).toISOString().slice(0, 19).replace('T', ' ')
+                    : new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+                  try {
+                    await pool.execute(
+                      `INSERT INTO messages (conversationId, direction, messageType, content, externalId, isProcessed, createdAt)
+                       VALUES (?, ?, ?, ?, ?, 1, ?)`,
+                      [conversation.id, isOutgoing ? 'outgoing' : 'incoming', messageType, content.substring(0, 5000), msg.idMessage, msgTimestamp]
+                    );
+                    messagesImported++;
+                  } catch (insertErr: any) {
+                    if (!insertErr.message?.includes('Duplicate')) {
+                      console.warn(`[Sync] Message insert error:`, insertErr.message);
+                    }
+                  }
+                }
+
+                if (chatMessages.length > 0) {
+                  const latestTimestamp = Math.max(...chatMessages.map((m: any) => m.timestamp || 0));
+                  if (latestTimestamp > 0) {
+                    const latestDate = new Date(latestTimestamp * 1000).toISOString().slice(0, 19).replace('T', ' ');
+                    await updateConversation(conversation.id, {
+                      lastMessageAt: latestDate,
+                      customerName: customerName !== phoneNumber ? customerName : undefined,
+                    } as any);
+                  }
+                }
+              } catch (historyErr: any) {
+                errors.push(`Chat ${phoneNumber}: ${historyErr.message}`);
+              }
+
+              await new Promise(r => setTimeout(r, 200));
+            } catch (chatErr: any) {
+              errors.push(`Chat error: ${chatErr.message}`);
+            }
+          }
+        } catch (apiErr: any) {
+          console.error('[Sync] Green API error:', apiErr.message);
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: `فشل الاتصال بـ Green API: ${apiErr.message}`,
+          });
+        }
+
+        console.log(`[Sync] ✅ Sync complete: ${chatsImported} new chats, ${messagesImported} messages imported`);
+
+        return {
+          success: true,
+          chatsImported,
+          messagesImported,
+          totalChats: chatsImported,
+          errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+        };
+      }),
   }),
 
   // Subscription Payments Router
