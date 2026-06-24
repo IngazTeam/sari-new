@@ -3,7 +3,8 @@
  * 
  * Runs every 5 minutes to verify all active WhatsApp instances are still
  * authorized on Green API. When an instance becomes disconnected (notAuthorized),
- * it creates an in-app notification for the merchant and logs the event.
+ * it sends multi-channel notifications (in-app + email + push) to the merchant
+ * and alerts the platform owner.
  * 
  * This prevents the "invisible disconnect" problem where messages silently stop
  * arriving because the WhatsApp session expired without anyone noticing.
@@ -29,6 +30,8 @@ export async function checkWhatsAppHealth(): Promise<{
       getWhatsAppInstancesByMerchantId,
       createNotification,
     } = await import('../db');
+    const { sendNotification } = await import('../_core/notificationService');
+    const { sendWhatsAppDisconnectEmail } = await import('./whatsapp-disconnect-email');
     const { default: axios } = await import('axios');
 
     const allMerchants = await getAllMerchants();
@@ -72,7 +75,7 @@ export async function checkWhatsAppHealth(): Promise<{
               }
               lastNotifiedAt.set(instance.id, now);
 
-              // Create in-app notification for the merchant
+              // 1. In-app notification
               await createNotification({
                 userId: merchant.userId,
                 type: 'error',
@@ -81,7 +84,32 @@ export async function checkWhatsAppHealth(): Promise<{
                 link: '/merchant/whatsapp-instances',
               });
 
-              // Also notify platform owner for visibility
+              // 2. Email notification (dedicated template)
+              try {
+                const { getDb } = await import('../db');
+                const db = await getDb();
+                if (db) {
+                  const { users } = await import('../../drizzle/schema');
+                  const { eq } = await import('drizzle-orm');
+                  const userResult = await db.select().from(users)
+                    .where(eq(users.id, merchant.userId))
+                    .limit(1);
+                  const user = userResult[0];
+                  if (user?.email) {
+                    await sendWhatsAppDisconnectEmail(
+                      user.email,
+                      merchant.businessName,
+                      instance.phoneNumber || String(instance.instanceId),
+                      state,
+                    );
+                    console.log(`[WhatsApp Health] 📧 Email sent to ${user.email} for merchant ${merchant.id}`);
+                  }
+                }
+              } catch (emailErr: any) {
+                console.error('[WhatsApp Health] Email send failed:', emailErr.message);
+              }
+
+              // 3. Notify platform owner
               try {
                 await notifyOwner({
                   title: `⚠️ واتساب مفصول — ${merchant.businessName}`,
