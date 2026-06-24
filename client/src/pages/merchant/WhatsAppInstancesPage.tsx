@@ -376,6 +376,19 @@ export default function WhatsAppInstancesPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => {
+                        setReconnectInstanceId(instance.id);
+                        setShowReconnectDialog(true);
+                        setIsPollingReconnect(true);
+                      }}
+                      className="gap-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      {t('whatsappManagement.relink', 'إعادة الربط')}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleReconnect(instance.id)}
                       disabled={reconnectMutation.isPending}
                       className="gap-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
