@@ -15,25 +15,46 @@ const queryClient = new QueryClient({
       staleTime: 2 * 60 * 1000,  // PERF-10: 2 min — prevent refetch on every window focus
       gcTime: 5 * 60 * 1000,     // 5 min garbage collection
       refetchOnWindowFocus: false, // Don't spam server on tab switch
-      retry: 1,
+      retry: (failureCount, error) => {
+        // NEVER retry on auth errors — prevents flooding server with expired tokens
+        if (error instanceof TRPCClientError) {
+          const code = error.data?.code;
+          if (code === 'UNAUTHORIZED' || code === 'FORBIDDEN') return false;
+        }
+        return failureCount < 1;
+      },
     },
   },
 });
 
+// Track if redirect is already in progress to prevent multiple redirects
+let isRedirecting = false;
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
+  if (isRedirecting) return;
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
 
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
+  // Check both the error code AND the error message
+  const code = error.data?.code;
+  const isUnauthorized = code === 'UNAUTHORIZED'
+    || error.message === UNAUTHED_ERR_MSG
+    || error.message?.includes('jwt expired')
+    || error.message?.includes('Invalid session token');
 
   if (!isUnauthorized) return;
 
   // Don't redirect if already on login page
   if (window.location.pathname === '/login') return;
 
+  isRedirecting = true;
+
   // SECURITY: Clear all auth data before redirecting
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user-info');
+
+  // Cancel all pending queries to stop refetch intervals from firing
+  queryClient.cancelQueries();
 
   window.location.href = "/login";
 };
@@ -42,7 +63,6 @@ queryClient.getQueryCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.query.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Query Error]", error);
   }
 });
 
@@ -50,7 +70,6 @@ queryClient.getMutationCache().subscribe(event => {
   if (event.type === "updated" && event.action.type === "error") {
     const error = event.mutation.state.error;
     redirectToLoginIfUnauthorized(error);
-    console.error("[API Mutation Error]", error);
   }
 });
 

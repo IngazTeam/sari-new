@@ -89,7 +89,10 @@ export function useAuth(options?: UseAuthOptions) {
     if (typeof window === "undefined") return;
     if (window.location.pathname === redirectPath) return;
 
-    window.location.href = redirectPath
+    // Session expired or user not authenticated — clean up and redirect
+    localStorage.removeItem("auth_token");
+    localStorage.removeItem("user-info");
+    window.location.href = redirectPath;
   }, [
     redirectOnUnauthenticated,
     redirectPath,
