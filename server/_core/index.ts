@@ -665,6 +665,16 @@ async function startServer() {
         }
       });
 
+      // WhatsApp Instance Health Check — detect disconnected instances (every 5 minutes)
+      cron.schedule('*/5 * * * *', async () => {
+        try {
+          const { checkWhatsAppHealth } = await import('../jobs/whatsapp-health-check');
+          await checkWhatsAppHealth();
+        } catch (error) {
+          logError('[Cron] WhatsApp health check failed', error);
+        }
+      });
+
       // Start WhatsApp message polling for all connected merchants
       // This is used for free Green API accounts that don't support webhooks
       setTimeout(async () => {

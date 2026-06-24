@@ -2522,6 +2522,39 @@ export const appRouter = router({
           message,
         };
       }),
+
+    // ── Lightweight connection status check (auto-query on page load) ──
+    connectionStatus: protectedProcedure
+      .query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) return { connected: true, state: 'unknown' };
+
+        const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
+        const activeInstance = instances.find((i: any) => i.status === 'active' && i.instanceId && i.token);
+
+        if (!activeInstance) return { connected: false, state: 'no_instance', message: 'لا يوجد اتصال واتساب' };
+
+        const axios = (await import('axios')).default;
+        const apiUrl = (activeInstance as any).apiUrl || 'https://api.green-api.com';
+
+        try {
+          const stateRes = await axios.get(
+            `${apiUrl}/waInstance${activeInstance.instanceId}/getStateInstance/${activeInstance.token}`,
+            { timeout: 8000 }
+          );
+          const state = stateRes.data?.stateInstance || 'unknown';
+          return {
+            connected: state === 'authorized',
+            state,
+            phoneNumber: activeInstance.phoneNumber,
+            message: state === 'authorized'
+              ? 'متصل ✅'
+              : `واتساب غير متصل (${state}) — أعد الربط من صفحة إدارة الأرقام`,
+          };
+        } catch {
+          return { connected: true, state: 'check_failed' }; // Assume OK if Green API is down
+        }
+      }),
   }),
 
   // Subscription Payments Router

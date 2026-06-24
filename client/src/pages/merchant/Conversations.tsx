@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { MessageSquare, User, Bot, Clock, Search, Send, Loader2, Image as ImageIcon, FileText, Download, X, RefreshCw } from 'lucide-react';
+import { MessageSquare, User, Bot, Clock, Search, Send, Loader2, Image as ImageIcon, FileText, Download, X, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
@@ -67,6 +67,10 @@ export default function Conversations() {
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
   const syncMutation = trpc.conversations.syncFromWhatsApp.useMutation();
   const diagnoseMutation = trpc.conversations.diagnoseWebhook.useMutation();
+  const { data: connectionHealth } = trpc.conversations.connectionStatus.useQuery(undefined, {
+    refetchInterval: 60_000, // Check every 60 seconds
+    staleTime: 30_000,
+  });
   const utils = trpc.useUtils();
 
   const { data: messages } = trpc.conversations.getMessages.useQuery(
@@ -137,6 +141,29 @@ export default function Conversations() {
 
   return (
     <div className="space-y-6">
+      {/* WhatsApp Disconnected Warning Banner */}
+      {connectionHealth && !connectionHealth.connected && connectionHealth.state !== 'no_instance' && (
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
+          <div className="flex-1">
+            <p className="text-red-800 dark:text-red-200 font-medium">
+              ⚠️ واتساب غير متصل — الرسائل لا تصل حالياً
+            </p>
+            <p className="text-red-600 dark:text-red-300 text-sm mt-1">
+              {connectionHealth.message}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 border-red-300 text-red-700 hover:bg-red-100"
+            onClick={() => window.location.href = '/merchant/whatsapp-instances'}
+          >
+            إعادة الربط
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div>
         <div className="flex items-center justify-between">
