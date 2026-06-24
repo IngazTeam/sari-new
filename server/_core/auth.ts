@@ -4,7 +4,7 @@ import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import jwt from "jsonwebtoken";
 import type { User } from "../../drizzle/schema";
-import { getUserById, updateUser } from '../db';
+import { getUserById } from '../db';
 import { ENV } from "./env";
 
 // JWT Secret - uses JWT_SECRET from environment
@@ -121,15 +121,8 @@ export async function authenticateRequest(req: Request): Promise<User> {
     throw ForbiddenError("User not found");
   }
 
-  // Update last signed in (use updateUser instead of upsertUser)
-  try {
-    await updateUser(user.id, {
-      lastSignedIn: new Date().toISOString().slice(0, 19).replace("T", " "),
-    });
-  } catch (updateError) {
-    // Ignore update errors - user is still authenticated
-    console.log('[CustomAuth] Failed to update lastSignedIn:', String(updateError));
-  }
+  // NOTE: lastSignedIn is updated only at login time (routers-auth.ts / auth-routes.ts).
+  // Previously this ran on EVERY request via createContext() → DB pool exhaustion.
 
   return user;
 }

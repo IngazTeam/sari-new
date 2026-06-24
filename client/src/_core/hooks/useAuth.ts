@@ -46,9 +46,10 @@ export function useAuth(options?: UseAuthOptions) {
   }, [logoutMutation, utils]);
 
   const state = useMemo(() => {
-    // Try to get user from query first, then from localStorage
     let user = meQuery.data;
-    if (!user) {
+    // Only use localStorage as fallback during initial loading.
+    // Once the API has responded, trust the API result exclusively.
+    if (!user && meQuery.isLoading) {
       try {
         const stored = localStorage.getItem('user-info');
         if (stored) {
@@ -59,10 +60,14 @@ export function useAuth(options?: UseAuthOptions) {
       }
     }
 
-    localStorage.setItem(
-      "user-info",
-      JSON.stringify(user)
-    );
+    // Only cache valid user data
+    if (user) {
+      localStorage.setItem("user-info", JSON.stringify(user));
+    } else if (!meQuery.isLoading) {
+      // API responded with no user — clear stale cache
+      localStorage.removeItem("user-info");
+    }
+
     return {
       user: user ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,

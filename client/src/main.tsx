@@ -28,13 +28,6 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
 
   if (!isUnauthorized) return;
 
-  // Don't redirect if we have a token in localStorage (user just logged in)
-  const hasToken = localStorage.getItem('auth_token');
-  if (hasToken) {
-    console.log('[Auth] Token exists in localStorage, skipping redirect');
-    return;
-  }
-
   // Don't redirect if already on login page
   if (window.location.pathname === '/login') return;
 
