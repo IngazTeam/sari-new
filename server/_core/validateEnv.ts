@@ -3,6 +3,8 @@
  * Ensures all required environment variables are present before server starts
  */
 
+import { validateZahyPiBaseUrl } from '../ai/zahypi-client';
+
 interface EnvConfig {
     name: string;
     required: boolean;
@@ -17,8 +19,7 @@ const ENV_CONFIGS: EnvConfig[] = [
     { name: 'DATABASE_URL', required: true, description: 'MySQL database connection string' },
     { name: 'JWT_SECRET', required: true, description: 'Secret key for JWT token signing (min 32 chars)' },
 
-    // Important - Core features won't work without these
-    { name: 'OPENAI_API_KEY', required: true, description: 'OpenAI API key for AI features' },
+    // Important - Core features won't work without an approved AI transport.
     { name: 'GREEN_API_INSTANCE_ID', required: false, description: 'Green API instance ID for WhatsApp' },
     { name: 'GREEN_API_TOKEN', required: false, description: 'Green API token for WhatsApp' },
 
@@ -82,6 +83,32 @@ export function validateEnv(): ValidationResult {
                 result.warnings.push(`⚠️  DATABASE_URL should start with 'mysql://' for MySQL`);
             }
         }
+    }
+
+    const zahyPiEnabled = process.env.ZAHYPI_ENABLED?.trim().toLowerCase() === 'true';
+    if (zahyPiEnabled) {
+        const gatewayRequirements = [
+            ['ZAHYPI_BASE_URL', 'HTTPS URL for the ZahyPi gateway'],
+            ['ZAHYPI_API_KEY', 'project-scoped ZahyPi API key'],
+        ] as const;
+        for (const [name, description] of gatewayRequirements) {
+            if (!process.env[name]?.trim()) {
+                result.valid = false;
+                result.errors.push(`❌ Missing required env: ${name} - ${description}`);
+            }
+        }
+        try {
+            validateZahyPiBaseUrl(process.env.ZAHYPI_BASE_URL);
+        } catch (error) {
+            result.valid = false;
+            result.errors.push(`❌ ${(error as Error).message}`);
+        }
+    }
+
+    // Whisper transcription and RAG embeddings still use OpenAI directly.
+    if (!process.env.OPENAI_API_KEY?.trim()) {
+        result.valid = false;
+        result.errors.push('❌ Missing required env: OPENAI_API_KEY - required for Whisper and embeddings');
     }
 
     // Print results

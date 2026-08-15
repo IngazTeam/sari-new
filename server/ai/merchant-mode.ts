@@ -128,7 +128,7 @@ function detectMerchantIntentFast(message: string, hasActiveEscalation: boolean,
  * - "أبي ترسل للعميل إن الطلب جاهز" → directive_reply
  * - "رجّع البوت يشتغل" → directive_resume
  */
-async function classifyIntentWithAI(message: string): Promise<MerchantIntent> {
+async function classifyIntentWithAI(message: string, merchantId: number): Promise<MerchantIntent> {
   try {
     const response = await callGPT4([
       {
@@ -145,6 +145,8 @@ async function classifyIntentWithAI(message: string): Promise<MerchantIntent> {
       },
       { role: 'user', content: message.substring(0, 200) }
     ], {
+      merchantId,
+      taskType: 'sari.merchant.intent',
       model: 'gpt-4o-mini',
       temperature: 0,
       maxTokens: 20,
@@ -165,13 +167,13 @@ async function classifyIntentWithAI(message: string): Promise<MerchantIntent> {
 }
 
 /** Combined intent detection: fast regex → AI fallback */
-async function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quotedText: string): Promise<MerchantIntent> {
+async function detectMerchantIntent(message: string, hasActiveEscalation: boolean, quotedText: string, merchantId: number): Promise<MerchantIntent> {
   // Layer 1: Fast regex (0ms, no API cost)
   const fastResult = detectMerchantIntentFast(message, hasActiveEscalation, quotedText);
   if (fastResult) return fastResult;
 
   // Layer 2: AI classification (only for unmatched messages, ~200ms)
-  return classifyIntentWithAI(message);
+  return classifyIntentWithAI(message, merchantId);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -329,6 +331,8 @@ ${profileContext || 'عميل جديد — لا توجد بيانات سابقة
     ];
 
     const coaching = await callGPT4(coachPrompt, {
+      merchantId: params.merchantId,
+      taskType: 'sari.merchant.reply_coaching',
       model: 'gpt-4o-mini',
       temperature: 0.7,
       maxTokens: 400,
@@ -608,6 +612,8 @@ ${tenantContext}`
     ];
 
     const response = await callGPT4(merchantAssistantPrompt, {
+      merchantId: params.merchantId,
+      taskType: 'sari.merchant.assistant',
       model: 'gpt-4o-mini',
       temperature: 0.7,
       maxTokens: 300,
@@ -1007,7 +1013,12 @@ export async function handleMerchantChat(params: {
     if (activeEsc) hasActiveEscalation = true;
   } catch { /* non-blocking */ }
 
-  const intent = await detectMerchantIntent(params.message, hasActiveEscalation, params.quotedText);
+  const intent = await detectMerchantIntent(
+    params.message,
+    hasActiveEscalation,
+    params.quotedText,
+    params.merchantId,
+  );
   console.log(`[MerchantMode] Intent: ${intent} | ActiveEscalation: ${hasActiveEscalation}`);
 
   // ═══ Admin Greeting — Always welcome merchant as system admin ═══

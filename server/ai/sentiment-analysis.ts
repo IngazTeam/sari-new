@@ -18,7 +18,10 @@ export interface SentimentResult {
 /**
  * Analyze sentiment of customer message
  */
-export async function analyzeSentiment(message: string): Promise<SentimentResult> {
+export async function analyzeSentiment(
+  message: string,
+  context?: { merchantId: number; taskType?: string },
+): Promise<SentimentResult> {
   try {
     const prompt = `حلل المشاعر في هذه الرسالة من العميل:
 
@@ -52,6 +55,10 @@ export async function analyzeSentiment(message: string): Promise<SentimentResult
       { role: 'system', content: 'أنت خبير في تحليل المشاعر والعواطف في النصوص العربية. أجب بصيغة JSON فقط.' },
       { role: 'user', content: prompt },
     ], {
+      ...(context ? {
+        merchantId: context.merchantId,
+        taskType: context.taskType || 'sari.sentiment',
+      } : {}),
       temperature: 0.3,
       maxTokens: 300,
     });

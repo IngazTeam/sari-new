@@ -153,6 +153,8 @@ export async function selectAction(params: {
     ];
 
     const response = await callGPT4(messages, {
+      merchantId: params.merchantId,
+      taskType: 'sari.action.selection',
       model: 'gpt-4o-mini',
       temperature: 0.2,
       maxTokens: 200,
@@ -706,4 +708,3 @@ export async function executeAction(params: {
     console.warn(`[ActionSelector] Action execution failed: ${err.message}`);
   }
 }
-

@@ -58,6 +58,7 @@ export interface EvolveResult {
  * into hierarchical knowledge sections using GPT-4o.
  */
 export async function classifyContent(
+  merchantId: number,
   rawText: string,
   merchantContext: { businessName?: string; industry?: string }
 ): Promise<ClassifiedSection[]> {
@@ -110,6 +111,8 @@ ${content}
   try {
     console.log(`[KnowledgeEngine] classifyContent: sending ${content.length} chars to GPT-4o...`);
     const response = await callGPT4(messages, {
+      merchantId,
+      taskType: 'sari.knowledge.classify',
       model: 'gpt-4o',
       temperature: 0.3,  // Low temp for consistency
       maxTokens: 4000,
@@ -160,6 +163,7 @@ ${content}
  * - Opportunities (inject_as: 'none') — suggestions for the merchant only
  */
 export async function analyzeSalesIntelligence(
+  merchantId: number,
   sections: ClassifiedSection[],
   merchantContext: { businessName?: string; industry?: string }
 ): Promise<SalesIntelligence> {
@@ -199,6 +203,8 @@ ${sectionsText}
 
   try {
     const response = await callGPT4(messages, {
+      merchantId,
+      taskType: 'sari.knowledge.sales_intelligence',
       model: 'gpt-4o',
       temperature: 0.4,
       maxTokens: 1500,
@@ -303,7 +309,7 @@ export async function evolveKnowledge(
       result.unchanged++;
     } else {
       // Compare content to decide: EVOLVE or CONFLICT
-      const decision = await decideEvolution(match, newSection);
+      const decision = await decideEvolution(merchantId, match, newSection);
 
       if (decision === 'unchanged') {
         result.unchanged++;
@@ -413,6 +419,7 @@ function findBestMatch(
 // ═══════════════════════════════════════════════════════════════
 
 async function decideEvolution(
+  merchantId: number,
   existing: KnowledgeSection,
   newSection: ClassifiedSection
 ): Promise<'unchanged' | 'evolve' | 'conflict'> {
@@ -441,7 +448,13 @@ async function decideEvolution(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      { model: 'gpt-4o', temperature: 0.1, maxTokens: 10 }
+      {
+        merchantId,
+        taskType: 'sari.knowledge.evolution',
+        model: 'gpt-4o',
+        temperature: 0.1,
+        maxTokens: 10,
+      }
     );
 
     const decision = response.trim().toLowerCase();
@@ -495,7 +508,7 @@ export async function ingestContent(
 
   // Step 1: Classify content
   console.log(`[KnowledgeEngine] Raw content preview (first 500 chars): ${rawContent.substring(0, 500)}`);
-  const classifiedSections = await classifyContent(rawContent, merchantContext);
+  const classifiedSections = await classifyContent(merchantId, rawContent, merchantContext);
   console.log(`[KnowledgeEngine] Classified ${classifiedSections.length} sections`);
   if (classifiedSections.length === 0) {
     console.error(`[KnowledgeEngine] ⚠️ ZERO SECTIONS — GPT may have failed to parse or classify the content. Content length was ${rawContent.length} chars.`);
@@ -509,7 +522,7 @@ export async function ingestContent(
   }
 
   // Step 2: Analyze sales intelligence
-  const salesIntel = await analyzeSalesIntelligence(classifiedSections, merchantContext);
+  const salesIntel = await analyzeSalesIntelligence(merchantId, classifiedSections, merchantContext);
   console.log(`[KnowledgeEngine] Sales intel: ${salesIntel.usps.length} USPs, ${salesIntel.sellingTips.length} tips, ${salesIntel.opportunities.length} opportunities`);
 
   // Step 3: Evolve knowledge (merge with existing)

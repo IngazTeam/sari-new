@@ -330,6 +330,8 @@ ${formatSignalsForPrompt(signalGroups)}
     ];
 
     const response = await callGPT4(messages, {
+      merchantId,
+      taskType: 'sari.learning.pattern_analysis',
       model: ANALYSIS_MODEL,
       temperature: 0.3,
       maxTokens: 2000,

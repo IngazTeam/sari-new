@@ -92,7 +92,7 @@ export const websiteAnalysisRouter = router({
           // Phase 1: Analyze website (120s timeout — increased for up to 30-page crawl)
           console.log(`[WebsiteAnalysis] Phase 1 START: scrape + analyze ${input.url}`);
           try {
-            const analyzePromise = analyzer.analyzeWebsite(input.url);
+            const analyzePromise = analyzer.analyzeWebsite(input.url, merchant.id);
             const analyzeTimeout = new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error('Analysis phase timeout (120s)')), 120000)
             );
@@ -241,7 +241,7 @@ export const websiteAnalysisRouter = router({
 
             // Extract products/courses/services with timeout — pass ALL text (main + sub-pages)
             const allText = scrapedText + '\n\n' + enrichedText;
-            const extractPromise = analyzer.extractProducts(input.url, scrapedHtml, allText);
+            const extractPromise = analyzer.extractProducts(input.url, scrapedHtml, allText, merchant.id);
             const extractTimeout = new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error('Product extraction timeout (30s)')), 30000)
             );
@@ -353,7 +353,7 @@ export const websiteAnalysisRouter = router({
                 overallScore: analysis.overallScore,
               };
 
-              const insightsPromise = analyzer.generateInsights(insightsData);
+              const insightsPromise = analyzer.generateInsights(insightsData, merchant.id);
               const timeoutPromise = new Promise<never>((_, reject) =>
                 setTimeout(() => reject(new Error('Insights generation timeout (10s)')), 10000)
               );
@@ -590,7 +590,7 @@ export const websiteAnalysisRouter = router({
         (async () => {
           try {
             // Analyze competitor website
-            const result = await analyzer.analyzeWebsite(input.url);
+            const result = await analyzer.analyzeWebsite(input.url, merchant.id);
 
             // Update competitor with results
             await updateCompetitorAnalysis(competitorId, {
@@ -604,7 +604,7 @@ export const websiteAnalysisRouter = router({
 
             // Extract competitor products
             const { html, text } = await analyzer.scrapeWebsite(input.url);
-            const products = await analyzer.extractProducts(input.url, html, text);
+            const products = await analyzer.extractProducts(input.url, html, text, merchant.id);
 
             let totalPrice = 0;
             let minPrice = Infinity;
@@ -801,7 +801,8 @@ export const websiteAnalysisRouter = router({
       // Compare
       const comparison = await analyzer.compareWithCompetitors(
         merchantAnalysis,
-        competitorAnalyses
+        competitorAnalyses,
+        merchant.id,
       );
 
       return comparison;

@@ -688,6 +688,7 @@ ${conversationHistory.map(m => `${m.role === 'user' ? 'العميل' : 'ساري
 }`;
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         { role: 'system', content: 'أنت مساعد ذكي لاستخراج تفاصيل الحجز. أرجع JSON فقط.' },
         { role: 'user', content: prompt }
@@ -754,6 +755,7 @@ ${servicesList}
 أرجع رقم ID الخدمة الأنسب فقط (رقم فقط)، أو null إذا لم تجد مطابقة مناسبة.`;
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         { role: 'system', content: 'أنت مساعد لمطابقة طلبات العملاء مع الخدمات المتاحة.' },
         { role: 'user', content: prompt }

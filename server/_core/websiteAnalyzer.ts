@@ -1129,7 +1129,7 @@ async function crawlAndExtract(pages: DiscoveredPage[], existingContactInfo: Con
 /**
  * تحليل شامل للموقع — مع multi-page crawling
  */
-export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult & { _scrapedHtml: string; _scrapedText: string; _enrichedText: string; _crawledPages: CrawledPageData[] }> {
+export async function analyzeWebsite(url: string, merchantId: number): Promise<WebsiteAnalysisResult & { _scrapedHtml: string; _scrapedText: string; _enrichedText: string; _crawledPages: CrawledPageData[] }> {
   try {
     console.log('[WebsiteAnalyzer] Analyzing website:', url);
 
@@ -1279,7 +1279,7 @@ export async function analyzeWebsite(url: string): Promise<WebsiteAnalysisResult
     // Detect industry using AI (non-blocking with timeout)
     let industry = 'غير محدد';
     try {
-      const industryPromise = detectIndustry(title, description, text);
+      const industryPromise = detectIndustry(title, description, text, merchantId);
       const timeoutPromise = new Promise<string>((_, reject) => setTimeout(() => reject(new Error('Industry detection timeout')), 10000));
       industry = await Promise.race([industryPromise, timeoutPromise]);
     } catch (err) {
@@ -1467,7 +1467,7 @@ async function discoverZidStoreId(url: string): Promise<string | null> {
  * If early strategies return sparse data (no description/images),
  * we merge with AI enrichment.
  */
-export async function extractProducts(url: string, html: string, text: string): Promise<ExtractedProduct[]> {
+export async function extractProducts(url: string, html: string, text: string, merchantId: number): Promise<ExtractedProduct[]> {
   try {
     console.log('[WebsiteAnalyzer] Extracting products from:', url);
     console.log(`[WebsiteAnalyzer] HTML length: ${html.length}, Text length: ${text.length}`);
@@ -1529,7 +1529,7 @@ export async function extractProducts(url: string, html: string, text: string): 
       const needsEnrichment = htmlProducts.filter(p => !p.description).length > htmlProducts.length * 0.5;
       if (needsEnrichment && text.length >= 200) {
         console.log('[WebsiteAnalyzer] HTML products lack descriptions, attempting AI enrichment...');
-        const aiProducts = await extractWithAI(text, url);
+        const aiProducts = await extractWithAI(text, url, merchantId);
         if (aiProducts.length > 0) {
           return mergeProducts(htmlProducts, aiProducts);
         }
@@ -1543,7 +1543,7 @@ export async function extractProducts(url: string, html: string, text: string): 
       return [];
     }
 
-    return await extractWithAI(text, url);
+    return await extractWithAI(text, url, merchantId);
   } catch (error) {
     console.error('[WebsiteAnalyzer] Error extracting products:', error);
     return [];
@@ -1579,9 +1579,10 @@ function mergeProducts(primary: ExtractedProduct[], secondary: ExtractedProduct[
 /**
  * AI-based product extraction with image URL support
  */
-async function extractWithAI(text: string, url: string): Promise<ExtractedProduct[]> {
+async function extractWithAI(text: string, url: string, merchantId: number): Promise<ExtractedProduct[]> {
   try {
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: 'system',
@@ -2459,11 +2460,12 @@ async function tryProductsAPI(url: string, zidStoreId?: string | null): Promise<
 /**
  * توليد رؤى ذكية باستخدام AI
  */
-export async function generateInsights(analysis: WebsiteAnalysisResult): Promise<WebsiteInsight[]> {
+export async function generateInsights(analysis: WebsiteAnalysisResult, merchantId: number): Promise<WebsiteInsight[]> {
   try {
     console.log('[WebsiteAnalyzer] Generating insights');
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: 'system',
@@ -2564,9 +2566,10 @@ export async function generateInsights(analysis: WebsiteAnalysisResult): Promise
 /**
  * اكتشاف الصناعة باستخدام AI
  */
-async function detectIndustry(title: string, description: string, text: string): Promise<string> {
+async function detectIndustry(title: string, description: string, text: string, merchantId: number): Promise<string> {
   try {
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: 'system',
@@ -2597,7 +2600,8 @@ async function detectIndustry(title: string, description: string, text: string):
  */
 export async function compareWithCompetitors(
   merchantAnalysis: WebsiteAnalysisResult,
-  competitorAnalyses: WebsiteAnalysisResult[]
+  competitorAnalyses: WebsiteAnalysisResult[],
+  merchantId: number,
 ): Promise<{
   strengths: string[];
   weaknesses: string[];
@@ -2615,6 +2619,7 @@ export async function compareWithCompetitors(
     }));
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: 'system',
@@ -2767,7 +2772,7 @@ export async function smartCrawl(baseUrl: string, homeDom: JSDOM, maxPages: numb
 /**
  * استخراج شامل بالـ AI — يستخرج كل أنواع المحتوى من النص المجمّع
  */
-export async function extractAllWithAI(allText: string, url: string, siteType: SiteType): Promise<{
+export async function extractAllWithAI(allText: string, url: string, siteType: SiteType, merchantId: number): Promise<{
   products: ExtractedProduct[];
   faqs: ExtractedFAQ[];
   companyInfo: { name: string; description: string; industry: string };
@@ -2786,6 +2791,7 @@ export async function extractAllWithAI(allText: string, url: string, siteType: S
     };
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: 'system',
