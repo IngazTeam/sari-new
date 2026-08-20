@@ -76,6 +76,7 @@ export const keywordsRouter = router({
             }));
 
             const suggestions = await suggestQuickResponses(frequentQuestions, {
+                merchantId: merchant.id,
                 businessName: merchant.businessName,
             });
 

@@ -78,7 +78,10 @@ export async function generateWeeklySentimentReport(
 
       // تحليل المشاعر
       const conversationText = customerMessages.map(m => m.content).join(' ');
-      const sentiment = await analyzeSentiment(conversationText);
+      const sentiment = await analyzeSentiment(conversationText, {
+        merchantId,
+        taskType: 'sari.sentiment.weekly',
+      });
 
       if (sentiment.sentiment === 'positive' || sentiment.sentiment === 'happy') positiveCount++;
       else if (sentiment.sentiment === 'negative' || sentiment.sentiment === 'angry' || sentiment.sentiment === 'sad' || sentiment.sentiment === 'frustrated') negativeCount++;

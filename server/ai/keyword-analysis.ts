@@ -188,7 +188,8 @@ export async function suggestQuickResponses(
     frequency: number;
     category: string;
   }>,
-  merchantContext?: {
+  merchantContext: {
+    merchantId: number;
     businessName: string;
     products?: string[];
   }
@@ -212,6 +213,8 @@ export async function suggestQuickResponses(
       : '';
 
     const response = await invokeLLM({
+      merchantId: merchantContext.merchantId,
+      taskType: 'sari.keyword.quick_responses',
       messages: [
         {
           role: "system",

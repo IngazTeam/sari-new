@@ -7,6 +7,11 @@
  */
 
 import { ENV } from '../_core/env';
+import {
+  getOptionalZahyPiRequestContext,
+  requestZahyPiChat,
+  zahyPiEnabled,
+} from './zahypi-client';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
 
@@ -141,13 +146,36 @@ export async function callGPT4(
     temperature?: number;
     maxTokens?: number;
     noRetry?: boolean; // PEN-RES-03 FIX: Skip internal retry (used when caller already handles retry)
+    merchantId?: number;
+    userId?: number | string;
+    taskType?: string;
   }
 ): Promise<string> {
   const primaryModel = options?.model || 'gpt-4o';
   const temperature = options?.temperature ?? 0.7;
   const maxTokens = options?.maxTokens || 1000;
 
-  // Circuit Breaker check
+  if (zahyPiEnabled()) {
+    const inheritedContext = getOptionalZahyPiRequestContext();
+    const explicitContext = options?.merchantId === undefined ? undefined : {
+      merchantId: options.merchantId,
+      userId: options.userId,
+      taskType: options.taskType || 'sari.reply',
+    };
+    const result = await requestZahyPiChat(
+      messages,
+      {
+        maxTokens,
+        temperature,
+        timeoutMs: 25_000,
+        maxAttempts: options?.noRetry ? 1 : 3,
+      },
+      explicitContext ?? inheritedContext,
+    );
+    return result.content;
+  }
+
+  // OpenAI and ZahyPi keep independent circuit-breaker state.
   if (!circuitBreaker.canAttempt()) {
     throw new Error('OpenAI circuit breaker is OPEN — too many recent failures. Cooling down.');
   }
@@ -273,9 +301,9 @@ async function fetchWithTimeout(
       // NQ-6: Track tokens for cost ceiling (non-blocking)
       if (data.usage.total_tokens > 0) {
         import('./cost-ceiling').then(({ trackMerchantTokens }) => {
-          // merchantId is tracked globally from the last chatWithSari call
-          const mid = (globalThis as any).__sariCurrentMerchantId;
-          if (mid) trackMerchantTokens(mid, data.usage.total_tokens);
+          // Async request context keeps accounting isolated per merchant.
+          const mid = getOptionalZahyPiRequestContext()?.merchantId;
+          if (typeof mid === 'number') trackMerchantTokens(mid, data.usage.total_tokens);
         }).catch(() => {});
       }
     }
@@ -369,9 +397,12 @@ export async function transcribeAudio(
  */
 export async function testOpenAIConnection(): Promise<boolean> {
   try {
-    const response = await callGPT4([
+    const { getOpenAiApiKey } = await import('../db_ai_settings');
+    const apiKey = await getOpenAiApiKey() || ENV.openaiApiKey;
+    if (!apiKey) return false;
+    const response = await fetchWithTimeout(apiKey, [
       { role: 'user', content: 'Hello, respond with "OK" if you can read this.' }
-    ], { maxTokens: 10 });
+    ], 'gpt-4o-mini', 0, 10, 15_000);
     
     return response.toLowerCase().includes('ok');
   } catch (error) {

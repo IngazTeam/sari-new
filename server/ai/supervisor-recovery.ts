@@ -98,6 +98,7 @@ function isGoodbyeMessage(msg: string): boolean {
  * Analyze a conversation to determine if supervisor should intervene
  */
 export async function evaluateConversationForRecovery(params: {
+  merchantId: number;
   messages: ChatMessage[];
   merchantBusinessName?: string;
 }): Promise<SupervisorAnalysis> {
@@ -122,6 +123,8 @@ export async function evaluateConversationForRecovery(params: {
 
   try {
     const raw = await callGPT4(analysisMessages, {
+      merchantId: params.merchantId,
+      taskType: 'sari.supervisor.recovery',
       temperature: 0.2,
       maxTokens: 500,
       model: 'gpt-4o-mini', // Fast + cheap for analysis

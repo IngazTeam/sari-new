@@ -24,6 +24,7 @@
  */
 
 import { callGPT4, ChatMessage, TextContent, ImageContent } from './openai';
+import { runWithZahyPiContext } from './zahypi-client';
 import {
   createMessage,
   findMatchingQuickResponse,
@@ -1575,7 +1576,7 @@ async function _loadPaymentContext(convId: number, merchantId: number): Promise<
  * Enhanced chat with Sari AI Agent — IRON WALL identity wrapper
  * Ensures no response ever contains "ساري" as bot identity.
  */
-export async function chatWithSari(params: {
+type ChatWithSariParams = {
   merchantId: number;
   customerPhone: string;
   customerName?: string;
@@ -1583,7 +1584,16 @@ export async function chatWithSari(params: {
   imageUrl?: string;
   conversationId?: number;
   isGroupMessage?: boolean;
-}): Promise<string> {
+};
+
+export function chatWithSari(params: ChatWithSariParams): Promise<string> {
+  return runWithZahyPiContext(
+    { merchantId: params.merchantId, taskType: 'sari.reply' },
+    () => chatWithSariScoped(params),
+  );
+}
+
+async function chatWithSariScoped(params: ChatWithSariParams): Promise<string> {
   // NQ-6: Cost ceiling check — degrade to lightweight mode when daily limit exceeded
   let costCeilingExceeded = false;
   try {
@@ -1660,9 +1670,6 @@ async function _chatWithSariCore(params: {
   isGroupMessage?: boolean;
 }): Promise<string> {
   try {
-    // NQ-6: Set merchant context for cost ceiling tracking in openai.ts
-    (globalThis as any).__sariCurrentMerchantId = params.merchantId;
-
     // Get merchant info
     const merchant = await getMerchantById(params.merchantId);
     if (!merchant) {
@@ -3138,6 +3145,8 @@ export async function generateWelcomeMessage(params: {
       { role: 'system', content: SARI_SYSTEM_PROMPT + contextPrompt },
       { role: 'user', content: 'أرسل رسالة ترحيب' },
     ], {
+      merchantId: params.merchantId,
+      taskType: 'sari.welcome',
       temperature: 0.8,
       maxTokens: 100,
     });

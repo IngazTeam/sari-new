@@ -57,6 +57,7 @@ export async function parseZidOrderMessage(
     ).join('\n');
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: 'system',

@@ -70,6 +70,7 @@ export async function parseOrderMessage(message: string, merchantId: number): Pr
     const productList = products.map(p => `- ${p.name} (${p.price} ريال)`).join('\n');
 
     const response = await invokeLLM({
+      merchantId,
       messages: [
         {
           role: 'system',

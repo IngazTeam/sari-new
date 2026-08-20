@@ -5816,6 +5816,7 @@ export const appRouter = router({
 
         // Get suggestions
         const suggestions = await suggestQuickResponses(frequentQuestions, {
+          merchantId: merchant.id,
           businessName: merchant.businessName,
         });
 

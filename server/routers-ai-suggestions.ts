@@ -87,6 +87,7 @@ ${conversationContext}
 
       try {
         const response = await invokeLLM({
+          merchantId: merchant.id,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -185,6 +186,7 @@ ${conversationContext}
 
       try {
         const response = await invokeLLM({
+          merchantId: merchant.id,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -212,7 +214,12 @@ ${conversationContext}
       originalReply: z.string(),
       improvement: z.enum(['more_friendly', 'more_professional', 'shorter', 'longer', 'add_emoji']),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      }
+
       const improvementInstructions: Record<string, string> = {
         more_friendly: 'اجعل الرد أكثر ودية وحميمية',
         more_professional: 'اجعل الرد أكثر رسمية واحترافية',
@@ -232,6 +239,7 @@ ${conversationContext}
 
       try {
         const response = await invokeLLM({
+          merchantId: merchant.id,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
