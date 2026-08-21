@@ -56,7 +56,17 @@ export function decryptSecret<T extends string | null | undefined>(value: T): T 
   }
 
   try {
-    const payload = Buffer.from(value.slice(ENCRYPTED_PREFIX.length), 'base64url');
+    const encodedPayload = value.slice(ENCRYPTED_PREFIX.length);
+    if (!/^[A-Za-z0-9_-]+$/.test(encodedPayload)) {
+      throw new Error('invalid payload encoding');
+    }
+
+    const payload = Buffer.from(encodedPayload, 'base64url');
+    // Node's decoder accepts non-canonical trailing pad bits. Reject alternate
+    // textual representations so any mutation of a stored credential fails.
+    if (payload.toString('base64url') !== encodedPayload) {
+      throw new Error('non-canonical payload encoding');
+    }
     if (payload.length <= IV_BYTES + TAG_BYTES) throw new Error('invalid payload length');
 
     const iv = payload.subarray(0, IV_BYTES);

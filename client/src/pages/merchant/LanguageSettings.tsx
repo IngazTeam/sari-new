@@ -6,6 +6,7 @@ import { Check, Globe, Loader2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
+import { changeAppLanguage } from '@/lib/i18n';
 
 interface Language {
   code: string;
@@ -90,10 +91,7 @@ export default function LanguageSettings() {
       });
 
       // Update i18n language
-      i18n.changeLanguage(lang.code);
-      document.documentElement.dir = lang.dir;
-      document.documentElement.lang = lang.code;
-      localStorage.setItem('i18nextLng', lang.code);
+      await changeAppLanguage(lang.code);
 
       toast.success(t('languageSettingsPage.text0'));
     } catch (error) {

@@ -63,9 +63,6 @@ export default defineConfig({
          * 3. تجربة مستخدم أفضل - التطبيق يظهر بسرعة
          */
         manualChunks: {
-          // مكتبات React الأساسية
-          'vendor-react': ['react', 'react-dom'],
-
           // مكتبات UI من Radix
           'vendor-ui': [
             '@radix-ui/react-dialog',
@@ -77,9 +74,6 @@ export default defineConfig({
 
           // مكتبة الرسوم البيانية
           'vendor-charts': ['recharts'],
-
-          // مكتبات النماذج
-          'vendor-forms': ['react-hook-form', 'zod'],
 
           // مكتبة التواريخ
           'vendor-date': ['date-fns'],

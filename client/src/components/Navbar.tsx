@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Menu, X, Globe, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { changeAppLanguage } from '@/lib/i18n';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +32,7 @@ export default function Navbar() {
   }, [currentLang, isRTL]);
 
   const changeLanguage = (lang: string) => {
-    i18n.changeLanguage(lang);
+    void changeAppLanguage(lang);
   };
 
   const solutionsMenu = [

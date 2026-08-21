@@ -9,11 +9,6 @@ import { IntegrationProvider } from "./hooks/useIntegration";
 import { lazy, Suspense } from "react";
 import TrackingScripts from "./components/TrackingScripts";
 
-// Essential pages - loaded immediately (fast initial load)
-import Home from "./pages/Home";
-import Login from "./pages/Login";
-import SignUp from "./pages/SignUp";
-
 // Loading component for lazy-loaded pages
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
@@ -42,6 +37,9 @@ const lazyLoad = (importFn: () => Promise<{ default: React.ComponentType<any> }>
 };
 
 // Public pages - lazy loaded
+const Home = lazyLoad(() => import("./pages/Home"));
+const Login = lazyLoad(() => import("./pages/Login"));
+const SignUp = lazyLoad(() => import("./pages/SignUp"));
 const ForgotPassword = lazyLoad(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazyLoad(() => import("./pages/ResetPassword"));
 const ProductsPage = lazyLoad(() => import("./pages/Products"));

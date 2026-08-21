@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Globe, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { changeAppLanguage } from '@/lib/i18n';
 
 interface Language {
   code: string;
@@ -45,10 +46,7 @@ export function LanguageSwitcher({ variant = 'default', className }: LanguageSwi
     const selectedLang = languages.find(lang => lang.code === langCode);
     if (selectedLang) {
       // تغيير اللغة - i18n.ts يتولى تحديث dir و lang تلقائياً عبر حدث languageChanged
-      await i18n.changeLanguage(langCode);
-
-      // حفظ اللغة في localStorage
-      localStorage.setItem('i18nextLng', langCode);
+      await changeAppLanguage(langCode);
     }
     setIsOpen(false);
   };

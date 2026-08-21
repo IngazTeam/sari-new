@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
 import "./index.css";
-import "./lib/i18n";
+import { initializeI18n } from "./lib/i18n";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 
 const queryClient = new QueryClient({
@@ -96,15 +96,29 @@ const trpcClient = trpc.createClient({
   ],
 });
 
-createRoot(document.getElementById("root")!).render(
-  <trpc.Provider client={trpcClient} queryClient={queryClient}>
-    <QueryClientProvider client={queryClient}>
-      <CurrencyProvider>
-        <App />
-      </CurrencyProvider>
-    </QueryClientProvider>
-  </trpc.Provider>
-);
+async function bootstrapApplication() {
+  await initializeI18n();
+
+  createRoot(document.getElementById("root")!).render(
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <CurrencyProvider>
+          <App />
+        </CurrencyProvider>
+      </QueryClientProvider>
+    </trpc.Provider>
+  );
+}
+
+void bootstrapApplication().catch((error) => {
+  console.error("[BOOT] Application initialization failed", error);
+  const root = document.getElementById("root");
+  if (root) {
+    root.textContent = "تعذر تحميل التطبيق. يرجى تحديث الصفحة والمحاولة مرة أخرى.";
+    root.setAttribute("role", "alert");
+    root.setAttribute("dir", "rtl");
+  }
+});
 
 // Inject Umami analytics script dynamically (Vite replaces import.meta.env at build time)
 const analyticsEndpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT;
