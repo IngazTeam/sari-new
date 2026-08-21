@@ -57,7 +57,8 @@ export const integrationsRouter = router({
 
         return {
             source,
-            isConnected: source === 'byaan' && !!connection,
+            isConnected: source === 'byaan' && Boolean(connection?.is_active && connection?.verified_at),
+            verificationPending: Boolean(connection && !connection.verified_at),
             terminology,
             byaan: connection ? {
                 tenantDomain: connection.tenant_domain,
@@ -94,8 +95,10 @@ export const integrationsRouter = router({
             const { createByaanConnection } = await import('./integrations/byaan');
             const connection = await createByaanConnection(merchant.id, input.tenantDomain);
 
+            const connected = Boolean((connection as any)?.is_active && (connection as any)?.verified_at);
             return {
-                success: true,
+                success: connected,
+                pendingVerification: !connected,
                 tenantDomain: input.tenantDomain,
                 connection,
             };
@@ -113,14 +116,26 @@ export const integrationsRouter = router({
             return { success: false, message: 'لا يوجد ربط مع بيان لهذا الحساب', status: 'not_connected' as const };
         }
 
-        // Try to reach the Byaan tenant
+        if (!connection.is_active || !connection.verified_at) {
+            return {
+                success: false,
+                message: 'النطاق مسجل لكنه غير موثق. يجب أن يجيب تيننت بيان عن تحدي إثبات الملكية الموقع.',
+                status: 'pending_verification' as const,
+            };
+        }
+
+        // Reachability is only a health signal. It can never activate an unverified domain.
         try {
+            const { createPinnedByaanHttpsAgent, normalizeByaanTenantDomain } = await import('./integrations/byaan-security');
             const axios = (await import('axios')).default;
-            const testUrl = `https://${connection.tenant_domain}`;
+            const domain = normalizeByaanTenantDomain(connection.tenant_domain);
+            const testUrl = `https://${domain}/api/sari/health`;
+            const httpsAgent = await createPinnedByaanHttpsAgent(testUrl);
             const response = await axios.get(testUrl, {
                 timeout: 10000,
                 validateStatus: () => true,
-                maxRedirects: 3,
+                maxRedirects: 0,
+                httpsAgent,
             });
 
             const isReachable = response.status >= 200 && response.status < 500;

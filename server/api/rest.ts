@@ -38,6 +38,8 @@ import {
   updateWhatsAppInstance,
 } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import { decryptSecret, encryptSecret } from '../security/secrets';
+import { verifyByaanSignedRequest } from '../integrations/byaan-security';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -51,6 +53,8 @@ interface AuthenticatedRequest extends Request {
 interface PlatformRequest extends Request {
   platform?: string;
   tenantDomain?: string;
+  tenantMerchant?: any;
+  rawBody?: Buffer;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -220,7 +224,7 @@ async function loadPlatformKeysFromDb() {
       `SELECT platform, key_value FROM sari_platform_keys WHERE is_active = 1`
     );
     for (const row of rows as any[]) {
-      PLATFORM_KEYS[row.platform] = row.key_value;
+      PLATFORM_KEYS[row.platform] = decryptSecret(row.key_value);
     }
   } catch (e) { /* table may not exist yet */ }
 }
@@ -239,7 +243,7 @@ export async function setPlatformKey(platform: string, keyValue: string, label: 
     await pool.execute(
       `INSERT INTO sari_platform_keys (platform, key_value, label, is_active) VALUES (?, ?, ?, 1)
        ON DUPLICATE KEY UPDATE key_value = ?, label = ?, is_active = 1, updated_at = NOW()`,
-      [platform, keyValue, label, keyValue, label]
+      [platform, encryptSecret(keyValue), label, encryptSecret(keyValue), label]
     );
   } catch (e: any) {
     console.error('[SariAPI] setPlatformKey failed:', e?.message || e);
@@ -261,7 +265,7 @@ export async function getPlatformKeys(): Promise<Array<{ platform: string; keyPr
   // PEN-SYNC-24: Reduce key exposure — show only platform prefix, not secret chars
   return (rows as any[]).map(r => ({
     platform: r.platform,
-    keyPrefix: r.key_value.substring(0, 12) + '••••••••••••',
+    keyPrefix: decryptSecret(r.key_value).substring(0, 12) + '••••••••••••',
     label: r.label || '',
     createdAt: r.created_at,
   }));
@@ -368,6 +372,78 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
 export const sariApiRouter = express.Router();
 export const sariPlatformRouter = express.Router();
 
+async function byaanTenantSignatureMiddleware(req: PlatformRequest, res: Response, next: NextFunction) {
+  // Provisioning and connection lookup are authenticated by the rotated platform
+  // key. Every tenant-scoped read/write additionally requires its per-tenant HMAC.
+  if (req.path === '/provision' || req.path === '/verify') return next();
+  if (req.platform !== 'byaan' || !req.tenantDomain) {
+    return res.status(401).json({ error: 'Tenant authentication required', errorAr: 'مصادقة التيننت مطلوبة' });
+  }
+
+  try {
+    const pool = await getPool();
+    if (!pool) return res.status(503).json({ error: 'Database unavailable' });
+    const [rows] = await pool.execute(
+      `SELECT m.*, bc.webhook_secret
+       FROM merchants m INNER JOIN byaan_connections bc ON bc.merchant_id = m.id
+       WHERE bc.tenant_domain = ? AND bc.is_active = 1 AND bc.verified_at IS NOT NULL LIMIT 1`,
+      [String(req.tenantDomain).trim().toLowerCase().replace(/\.$/, '')]
+    );
+    const tenant = (rows as any[])?.[0];
+    if (!tenant) return res.status(404).json({ error: 'Verified tenant not found', errorAr: 'التيننت الموثق غير موجود' });
+
+    const rawBody = req.rawBody || (req.method === 'GET' ? Buffer.alloc(0) : null);
+    if (!rawBody) return res.status(500).json({ error: 'Raw request body unavailable' });
+    const verification = verifyByaanSignedRequest({
+      headers: {
+        timestamp: req.headers['x-sari-timestamp'] as string | undefined,
+        deliveryId: req.headers['x-sari-delivery-id'] as string | undefined,
+        signature: req.headers['x-sari-signature'] as string | undefined,
+      },
+      method: req.method,
+      path: req.originalUrl,
+      tenantDomain: String(req.tenantDomain),
+      rawBody,
+      secret: decryptSecret(tenant.webhook_secret) || '',
+    });
+    if (!verification.ok) {
+      return res.status(401).json({ error: `Invalid tenant signature: ${verification.code}`, errorAr: 'توقيع التيننت غير صالح' });
+    }
+
+    try {
+      await pool.execute(
+        `INSERT INTO byaan_webhook_receipts (merchant_id, delivery_id, request_path, payload_hash)
+         VALUES (?, ?, ?, ?)`,
+        [tenant.id, verification.deliveryId, req.path.slice(0, 255), verification.payloadHash]
+      );
+    } catch (error: any) {
+      if (error?.code === 'ER_DUP_ENTRY') {
+        // A replay is not proof that the original business operation completed.
+        // Report the conflict explicitly instead of returning a false success.
+        return res.status(409).json({ error: 'Duplicate delivery', duplicate: true });
+      }
+      throw error;
+    }
+
+    // Validation/client errors are deterministic and keep their receipt. A 5xx
+    // means the operation was not acknowledged, so release the claim after the
+    // response and allow the sender to retry the same delivery ID safely.
+    res.once('finish', () => {
+      if (res.statusCode < 500) return;
+      void pool.execute(
+        `DELETE FROM byaan_webhook_receipts WHERE merchant_id = ? AND delivery_id = ? AND payload_hash = ?`,
+        [tenant.id, verification.deliveryId, verification.payloadHash]
+      ).catch(() => console.error('[SariAPI] Failed to release unsuccessful tenant delivery receipt'));
+    });
+
+    req.tenantMerchant = tenant;
+    next();
+  } catch (error) {
+    console.error('[SariAPI] Tenant signature verification failed');
+    return res.status(500).json({ error: 'Tenant authentication failed', errorAr: 'فشلت مصادقة التيننت' });
+  }
+}
+
 // PEN-SYNC-13: Body size limit on platform sync endpoints (prevents OOM via oversized payloads)
 sariPlatformRouter.use(express.json({ limit: '2mb' }));
 
@@ -376,6 +452,7 @@ sariApiRouter.use(authMiddleware);
 
 // Apply platform auth to platform routes
 sariPlatformRouter.use(platformAuthMiddleware);
+sariPlatformRouter.use(byaanTenantSignatureMiddleware);
 
 // ── GET /api/v1/me — Merchant info ──────────────────────────
 sariApiRouter.get('/me', (req: AuthenticatedRequest, res: Response) => {
@@ -874,7 +951,7 @@ async function resolveMerchantByDomain(tenantDomain: string | undefined): Promis
     const [rows] = await pool.execute(
       `SELECT m.* FROM merchants m
        INNER JOIN byaan_connections bc ON bc.merchant_id = m.id
-       WHERE bc.tenant_domain = ? AND bc.is_active = 1 LIMIT 1`,
+       WHERE bc.tenant_domain = ? AND bc.is_active = 1 AND bc.verified_at IS NOT NULL LIMIT 1`,
       [cleanDomain]
     );
 
@@ -1441,7 +1518,7 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
   if (!merchant) return merchantNotFound(res);
 
   try {
-    const { getByaanConnection, updateByaanSyncStatus } = await import('../integrations/byaan');
+    const { getByaanConnection, requestByaanResync, updateByaanSyncStatus } = await import('../integrations/byaan');
     const connection = await getByaanConnection(merchant.id);
 
     if (!connection || !connection.api_base_url) {
@@ -1454,99 +1531,23 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
     // Mark sync status as 'syncing'
     await updateByaanSyncStatus(merchant.id, 'syncing');
 
-    // Try to call Byaan's resync endpoint
-    try {
-      const axios = (await import('axios')).default;
-      const timestamp = Math.floor(Date.now() / 1000);
-      const body = JSON.stringify({ merchant_id: merchant.id, timestamp });
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'X-Sari-Timestamp': String(timestamp),
-      };
-
-      // Sign with webhook_secret if available
-      if (connection.webhook_secret) {
-        const signature = crypto.createHmac('sha256', connection.webhook_secret)
-          .update(`${timestamp}.${body}`)
-          .digest('hex');
-        headers['X-Sari-Signature'] = `sha256=${signature}`;
-      }
-
-      // PEN-SYNC-01: SSRF Protection — validate URL is safe before making outbound request
-      const resyncUrl = `${connection.api_base_url}/request-resync`;
-      try {
-        const parsedUrl = new URL(resyncUrl);
-        // Block non-HTTPS, internal IPs, and metadata endpoints
-        if (parsedUrl.protocol !== 'https:') {
-          return res.status(400).json({ error: 'api_base_url must use HTTPS', errorAr: 'يجب أن يستخدم رابط API بروتوكول HTTPS' });
-        }
-        const hostname = parsedUrl.hostname;
-        // PEN-SYNC-12: Extended SSRF blocklist including IPv6
-        // PEN-SYNC-25: Fixed 172.x range — only block private 172.16-31, not all 172.x (e.g. Cloudflare 172.67)
-        if (
-          hostname === 'localhost' ||
-          hostname === '127.0.0.1' ||
-          hostname === '::1' || hostname === '[::1]' ||
-          hostname === '0.0.0.0' || hostname === '[::]' ||
-          hostname.startsWith('10.') ||
-          hostname.startsWith('192.168.') ||
-          /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
-          hostname.startsWith('169.254.') ||
-          hostname.startsWith('fe80:') ||
-          hostname.startsWith('fc00:') || hostname.startsWith('fd') ||
-          hostname.includes('::ffff:127.') ||
-          hostname.endsWith('.internal') ||
-          hostname.endsWith('.local')
-        ) {
-          console.warn(`[SariAPI] PEN-SYNC-01 SSRF blocked: ${hostname}`);
-          return res.status(400).json({ error: 'Internal URLs are not allowed', errorAr: 'روابط الشبكة الداخلية غير مسموحة' });
-        }
-      } catch (urlErr) {
-        return res.status(400).json({ error: 'Invalid api_base_url format', errorAr: 'تنسيق رابط API غير صالح' });
-      }
-
-      const response = await axios.post(resyncUrl, JSON.parse(body), {
-        headers,
-        timeout: 15000,
-        validateStatus: () => true,
-      });
-
-      if (response.status >= 200 && response.status < 300) {
-        await updateByaanSyncStatus(merchant.id, 'active');
-
-        const { logBrainActivity } = await import('../routers-sari-brain');
-        await logBrainActivity(merchant.id, 'settings_changed',
-          'طلب إعادة مزامنة من بيان — تم بنجاح',
-          { source: 'platform', status: response.status }
-        );
-
-        return res.json({
-          success: true,
-          message: 'Resync request sent to Byaan successfully',
-          messageAr: 'تم إرسال طلب إعادة المزامنة لبيان بنجاح',
-          byaanStatus: response.status,
-        });
-      } else {
-        await updateByaanSyncStatus(merchant.id, 'error', `Byaan returned ${response.status}`);
-        return res.json({
-          success: false,
-          message: `Byaan responded with status ${response.status}`,
-          messageAr: `بيان أرجع حالة ${response.status} — تأكد من إعداد endpoint إعادة المزامنة في بيان`,
-          byaanStatus: response.status,
-        });
-      }
-    } catch (callErr: any) {
-      await updateByaanSyncStatus(merchant.id, 'error', callErr?.message || 'Connection failed');
-      console.error('[SariAPI] Resync call to Byaan failed:', callErr?.message);
-      // PEN-SYNC-20: Don't leak internal error details (IPs, paths, DNS)
-      return res.json({
+    const result = await requestByaanResync(merchant.id);
+    if (!result.success) {
+      await updateByaanSyncStatus(merchant.id, 'error', result.error || 'Connection failed');
+      return res.status(502).json({
         success: false,
-        message: 'Failed to reach Byaan API',
-        messageAr: 'فشل الاتصال بـ API بيان — تأكد من صحة api_base_url',
+        message: 'Failed to reach the verified Byaan API',
+        messageAr: 'فشل الاتصال الآمن بـ API بيان الموثق',
       });
     }
+    await updateByaanSyncStatus(merchant.id, 'active');
+    const { logBrainActivity } = await import('../routers-sari-brain');
+    await logBrainActivity(merchant.id, 'settings_changed', 'طلب إعادة مزامنة موقع من بيان — تم بنجاح', { source: 'platform' });
+    return res.json({
+      success: true,
+      message: 'Signed resync request sent to Byaan successfully',
+      messageAr: 'تم إرسال طلب إعادة المزامنة الموقع لبيان بنجاح',
+    });
   } catch (e) {
     console.error('[SariAPI] Request resync failed:', e);
     res.status(500).json({ error: 'Resync request failed', errorAr: 'فشل طلب إعادة المزامنة' });
@@ -1949,7 +1950,14 @@ sariApiRouter.post('/connect/byaan', async (req: AuthenticatedRequest, res: Resp
     const { logBrainActivity } = await import('../routers-sari-brain');
     await logBrainActivity(req.merchant.id, 'settings_changed', `تم ربط بيان: ${cleanDomain}`, { tenantDomain: cleanDomain });
 
-    res.json({ success: true, connection });
+    const connected = Boolean((connection as any)?.is_active && (connection as any)?.verified_at);
+    res.status(connected ? 200 : 202).json({
+      success: connected,
+      pendingVerification: !connected,
+      message: connected ? 'Byaan tenant connected' : 'Domain ownership verification is required',
+      messageAr: connected ? 'تم ربط تيننت بيان' : 'يلزم التحقق من ملكية نطاق بيان قبل تفعيل الربط',
+      connection,
+    });
   } catch (e) {
     console.error('[SariAPI] Byaan connect failed:', e);
     res.status(500).json({ error: 'Connection failed', errorAr: 'فشل الربط' });

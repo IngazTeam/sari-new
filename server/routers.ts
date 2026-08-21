@@ -72,6 +72,7 @@ import { eq } from 'drizzle-orm';
 import { notificationPreferences } from '../drizzle/schema';
 import { containsUnverifiedActionClaim } from './ai/transactional-truth';
 import { decodeValidatedAudio } from './utils/audio';
+import { completeMetaEmbeddedSignup as completeMetaEmbeddedSignupService } from './channels/whatsapp/meta-embedded-signup';
 import {
   approveWhatsAppConnectionRequest,
   approveWhatsAppRequest,
@@ -257,6 +258,7 @@ import {
   getWeeklySentimentReports,
   getWhatsAppConnectionRequestById,
   getWhatsAppConnectionRequestByMerchantId,
+  getActiveInstanceByPhoneNumber,
   getWhatsAppInstanceById,
   getWhatsAppInstanceByInstanceId,
   getWhatsAppInstancesByMerchantId,
@@ -3829,6 +3831,7 @@ export const appRouter = router({
         return instances.map((i: any) => ({
           id: i.id,
           merchantId: i.merchantId,
+          provider: i.provider || 'green_api',
           phoneNumber: i.phoneNumber,
           status: i.status,
           isPrimary: i.isPrimary,
@@ -3837,6 +3840,18 @@ export const appRouter = router({
           expiresAt: i.expiresAt,
         }));
       }),
+
+    completeMetaEmbeddedSignup: protectedProcedure
+      .input(z.object({
+        merchantId: z.number().int().positive(),
+        code: z.string().min(20).max(2048),
+        wabaId: z.string().regex(/^\d{5,30}$/),
+        phoneNumberId: z.string().regex(/^\d{5,30}$/),
+      }))
+      .mutation(async ({ input, ctx }) => completeMetaEmbeddedSignupService({
+        userId: ctx.user.id,
+        ...input,
+      })),
 
     // Toggle instance status (activate / deactivate)
     toggleStatus: protectedProcedure
@@ -3856,16 +3871,41 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
         }
 
-        // If activating, check subscription limit
-        if (input.newStatus === 'active' && instance.status !== 'active') {
-          const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
-          try {
-            await checkWhatsAppNumberLimit(input.merchantId);
-          } catch (err) {
-            throw new TRPCError({
-              code: 'FORBIDDEN',
-              message: 'لقد وصلت للحد الأقصى من الأرقام النشطة في باقتك. أوقف رقماً آخر أو قم بالترقية.',
-            });
+        // Activation is fail-closed: enforce the plan, provider health, and
+        // tenant ownership before changing any local state.
+        if (input.newStatus === 'active') {
+          if (instance.status !== 'active') {
+            const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
+            try {
+              await checkWhatsAppNumberLimit(input.merchantId);
+            } catch (err) {
+              throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'لقد وصلت للحد الأقصى من الأرقام النشطة في باقتك. أوقف رقماً آخر أو قم بالترقية.',
+              });
+            }
+          }
+
+          const { getWhatsAppProvider } = await import('./channels/whatsapp/providers');
+          const providerName = (instance.provider || 'green_api') as 'green_api' | 'meta_cloud' | 'mock';
+          const provider = getWhatsAppProvider(providerName);
+          const health = await provider.health({
+            provider: providerName,
+            instanceId: instance.instanceId,
+            token: instance.token,
+            apiUrl: instance.apiUrl,
+            phoneNumberId: instance.phoneNumberId,
+            providerAccountId: instance.providerAccountId,
+          });
+          if (!health.healthy) {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر تفعيل الرقم قبل نجاح فحص المزود' });
+          }
+
+          if (instance.phoneNumber) {
+            const conflicting = await getActiveInstanceByPhoneNumber(instance.phoneNumber, input.merchantId);
+            if (conflicting) {
+              throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
+            }
           }
         }
 
@@ -3890,7 +3930,6 @@ export const appRouter = router({
         if (!merchant || merchant.userId !== ctx.user.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
-
         const subscription = await getMerchantCurrentSubscription(input.merchantId);
         if (!subscription || !subscription.planId) {
           return { current: 0, total: 0, max: 1, remaining: 1, percentage: 0, planName: '' };
@@ -3942,6 +3981,9 @@ export const appRouter = router({
         if (!merchant || merchant.userId !== ctx.user.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+        if ((instance.provider || 'green_api') !== 'green_api') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'إعادة الربط عبر QR متاحة لاتصال Green API القديم فقط' });
+        }
 
         const baseUrl = instance.apiUrl || 'https://api.green-api.com';
 
@@ -3950,7 +3992,7 @@ export const appRouter = router({
           const parsed = new URL(baseUrl);
           const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
           const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-          if (!isAllowed) throw new Error('blocked');
+          if (!isAllowed || parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error('blocked');
         } catch {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
         }
@@ -3986,6 +4028,9 @@ export const appRouter = router({
         if (!merchant || merchant.userId !== ctx.user.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+        if ((instance.provider || 'green_api') !== 'green_api') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'QR متاح لاتصال Green API القديم فقط' });
+        }
 
         const baseUrl = instance.apiUrl || 'https://api.green-api.com';
 
@@ -3993,7 +4038,7 @@ export const appRouter = router({
         try {
           const parsed = new URL(baseUrl);
           const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) throw new Error();
+          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`)) || parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error();
         } catch {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
         }
@@ -4028,6 +4073,9 @@ export const appRouter = router({
         if (!merchant || merchant.userId !== ctx.user.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+        if ((instance.provider || 'green_api') !== 'green_api') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تأكيد QR متاح لاتصال Green API القديم فقط' });
+        }
 
         const baseUrl = instance.apiUrl || 'https://api.green-api.com';
 
@@ -4035,7 +4083,7 @@ export const appRouter = router({
         try {
           const parsed = new URL(baseUrl);
           const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) throw new Error();
+          if (!allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`)) || parsed.protocol !== 'https:' || parsed.username || parsed.password) throw new Error();
         } catch {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid API URL' });
         }
@@ -4063,23 +4111,35 @@ export const appRouter = router({
             console.error('[confirmReconnect] Failed to get phone:', e);
           }
 
-          // Update instance with new phone number and reactivate
+          if (!phoneNumber) {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر التحقق من رقم واتساب المتصل' });
+          }
+
+          const conflicting = await getActiveInstanceByPhoneNumber(phoneNumber, instance.merchantId);
+          if (conflicting && conflicting.id !== instance.id) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
+          }
+
+          if (instance.status !== 'active') {
+            const { checkWhatsAppNumberLimit } = await import('./helpers/subscriptionGuard');
+            await checkWhatsAppNumberLimit(instance.merchantId);
+          }
+
+          // Register the authenticated webhook before exposing the connection as active.
+          const { setWebhookUrl } = await import('./whatsapp');
+          const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
+          const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
+          const webhookResult = await setWebhookUrl(instance.instanceId, instance.token, webhookUrl, baseUrl);
+          if (!webhookResult.success) {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر تسجيل webhook موثّق للرقم' });
+          }
+
           await updateWhatsAppInstance(instance.id, {
             status: 'active',
-            phoneNumber: phoneNumber || null,
+            phoneNumber,
+            webhookUrl,
             connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
           });
-
-          // Re-register webhook
-          try {
-            const { setWebhookUrl } = await import('./whatsapp');
-            const appUrl = process.env.VITE_APP_URL || 'https://sary.live';
-            const webhookUrl = `${appUrl}/api/webhooks/greenapi`;
-            const result = await setWebhookUrl(instance.instanceId, instance.token, webhookUrl, baseUrl);
-            console.log(`[confirmReconnect] Webhook: ${result.success ? 'OK' : result.error}`);
-          } catch (e) {
-            console.error('[confirmReconnect] Webhook error:', e);
-          }
 
           return {
             connected: true,
@@ -4104,6 +4164,9 @@ export const appRouter = router({
         if (!merchant || merchant.userId !== ctx.user.id) {
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
+        if ((instance.provider || 'green_api') !== 'green_api') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تحديث الاتصال اليدوي متاح لاتصال Green API القديم فقط' });
+        }
 
         // Rate limit: max 5 refreshes per 10 minutes per merchant
         const { checkRateLimit } = await import('./_core/rateLimiter');
@@ -4119,7 +4182,7 @@ export const appRouter = router({
           const parsed = new URL(baseUrl);
           const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
           const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-          if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+          if (!isAllowed || parsed.protocol !== 'https:' || parsed.username || parsed.password) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only Green API URLs are allowed' });
           }
         } catch (e) {
@@ -4410,7 +4473,7 @@ export const appRouter = router({
           active: activeCount,
           inactive: inactiveCount,
           expired: expiredCount,
-          primary: primary || null,
+          primary: primary ? toPublicWhatsAppInstance(primary) : null,
         };
       }),
 
@@ -4432,10 +4495,10 @@ export const appRouter = router({
         const merchantExpired = expired.filter(i => i.merchantId === input.merchantId);
 
         return {
-          expiring7Days: merchantExpiring7Days,
-          expiring3Days: merchantExpiring3Days,
-          expiring1Day: merchantExpiring1Day,
-          expired: merchantExpired,
+          expiring7Days: merchantExpiring7Days.map(toPublicWhatsAppInstance),
+          expiring3Days: merchantExpiring3Days.map(toPublicWhatsAppInstance),
+          expiring1Day: merchantExpiring1Day.map(toPublicWhatsAppInstance),
+          expired: merchantExpired.map(toPublicWhatsAppInstance),
         };
       }),
   }),

@@ -7,10 +7,10 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, router } from "./_core/trpc";
+import { completeMetaEmbeddedSignup as completeMetaEmbeddedSignupService } from './channels/whatsapp/meta-embedded-signup';
 import {
   createWhatsAppInstance,
-  deactivateInstancesByPhoneNumber,
   deleteWhatsAppInstance,
   getActiveInstanceByPhoneNumber,
   getActiveWhatsAppInstancesCount,
@@ -27,8 +27,18 @@ import {
   updateWhatsAppInstance,
 } from './db';
 
+function toPublicInstance(instance: any) {
+    if (!instance) return instance;
+    const { token: _token, webhookTokenHash: _webhookTokenHash, metadata: _metadata, ...safe } = instance;
+    return {
+        ...safe,
+        hasCredential: Boolean(_token),
+        webhookAuthenticated: Boolean(_webhookTokenHash) || instance.provider === 'green_api',
+    };
+}
+
 export const whatsappInstancesRouter = router({
-    // List all instances for merchant (INTERNAL — used by system, returns full data including tokens)
+    // Tokens are server-only; no protected tRPC response may expose them.
     list: protectedProcedure
         .input(z.object({ merchantId: z.number() }))
         .query(async ({ input, ctx }) => {
@@ -37,7 +47,7 @@ export const whatsappInstancesRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await getWhatsAppInstancesByMerchantId(input.merchantId);
+            return (await getWhatsAppInstancesByMerchantId(input.merchantId)).map(toPublicInstance);
         }),
 
     // List instances for merchant dashboard (SAFE — no tokens, no API keys)
@@ -54,6 +64,7 @@ export const whatsappInstancesRouter = router({
             return instances.map((i: any) => ({
                 id: i.id,
                 merchantId: i.merchantId,
+                provider: i.provider || 'green_api',
                 phoneNumber: i.phoneNumber,
                 status: i.status,
                 isPrimary: i.isPrimary,
@@ -96,12 +107,25 @@ export const whatsappInstancesRouter = router({
                     }
                 }
 
-                // Phone conflict: if this number is active for another merchant, deactivate it there
+                const { getWhatsAppProvider } = await import('./channels/whatsapp/providers');
+                const provider = getWhatsAppProvider((instance.provider || 'green_api') as 'green_api' | 'meta_cloud' | 'mock');
+                const health = await provider.health({
+                    provider: (instance.provider || 'green_api') as 'green_api' | 'meta_cloud' | 'mock',
+                    instanceId: instance.instanceId,
+                    token: instance.token,
+                    apiUrl: instance.apiUrl,
+                    phoneNumberId: instance.phoneNumberId,
+                    providerAccountId: instance.providerAccountId,
+                });
+                if (!health.healthy) {
+                    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر تفعيل الرقم قبل نجاح فحص المزود' });
+                }
+
+                // A tenant can never transfer another tenant's number by toggling its own record.
                 if (instance.phoneNumber) {
                     const conflicting = await getActiveInstanceByPhoneNumber(instance.phoneNumber, input.merchantId);
                     if (conflicting) {
-                        console.log(`[WhatsApp] Phone ${instance.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
-                        await deactivateInstancesByPhoneNumber(instance.phoneNumber, input.merchantId);
+                        throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
                     }
                 }
             }
@@ -163,27 +187,44 @@ export const whatsappInstancesRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            return await getPrimaryWhatsAppInstance(input.merchantId);
+            return toPublicInstance(await getPrimaryWhatsAppInstance(input.merchantId));
         }),
 
     // Create new instance
-    create: protectedProcedure
+    create: adminProcedure
         .input(
             z.object({
                 merchantId: z.number(),
+                provider: z.enum(['green_api', 'meta_cloud', 'mock']).default('green_api'),
                 instanceId: z.string().min(1),
                 token: z.string().min(1),
                 apiUrl: z.string().url().optional(),
+                providerAccountId: z.string().max(255).optional(),
+                phoneNumberId: z.string().regex(/^\d{5,30}$/).optional(),
                 phoneNumber: z.string().optional(),
                 webhookUrl: z.string().url().optional(),
                 isPrimary: z.boolean().optional(),
                 expiresAt: z.string().optional(),
             })
         )
-        .mutation(async ({ input, ctx }) => {
+        .mutation(async ({ input }) => {
             const merchant = await getMerchantById(input.merchantId);
-            if (!merchant || merchant.userId !== ctx.user.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+            if (input.provider === 'mock' && process.env.NODE_ENV !== 'test') {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Mock provider is disabled outside tests' });
+            }
+            if (input.provider === 'meta_cloud' && (!input.phoneNumberId || input.instanceId !== input.phoneNumberId || !input.providerAccountId)) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Meta WABA ID and matching phone number ID are required' });
+            }
+            let providerApiUrl = input.provider === 'meta_cloud' ? 'https://graph.facebook.com' : (input.apiUrl || 'https://api.green-api.com');
+            if (input.provider === 'green_api') {
+                const parsed = new URL(providerApiUrl);
+                const allowed = ['api.green-api.com', 'api.greenapi.com'].some(host => parsed.hostname === host || parsed.hostname.endsWith(`.${host}`));
+                if (parsed.protocol !== 'https:' || parsed.username || parsed.password || !allowed) {
+                    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only HTTPS Green API endpoints are allowed' });
+                }
+                providerApiUrl = parsed.origin;
             }
 
             // Check: instanceId must be unique
@@ -191,8 +232,7 @@ export const whatsappInstancesRouter = router({
             if (existingById) {
                 // If same instanceId exists for ANOTHER merchant, deactivate it
                 if (existingById.merchantId !== input.merchantId) {
-                    console.log(`[WhatsApp] Instance ${input.instanceId} was used by merchant ${existingById.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
-                    await updateWhatsAppInstance(existingById.id, { status: 'inactive', isPrimary: 0 });
+                    throw new TRPCError({ code: 'CONFLICT', message: 'هوية مزود واتساب مرتبطة بحساب آخر وتتطلب نقلًا إداريًا موثقًا' });
                 } else {
                     throw new TRPCError({ code: 'BAD_REQUEST', message: 'هذا الرقم مسجل بالفعل في حسابك' });
                 }
@@ -202,8 +242,7 @@ export const whatsappInstancesRouter = router({
             if (input.phoneNumber) {
                 const conflicting = await getActiveInstanceByPhoneNumber(input.phoneNumber, input.merchantId);
                 if (conflicting) {
-                    console.log(`[WhatsApp] Phone ${input.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${input.merchantId}`);
-                    await deactivateInstancesByPhoneNumber(input.phoneNumber, input.merchantId);
+                    throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
                 }
             }
 
@@ -212,9 +251,12 @@ export const whatsappInstancesRouter = router({
 
             const instance = await createWhatsAppInstance({
                 merchantId: input.merchantId,
+                provider: input.provider,
                 instanceId: input.instanceId,
                 token: input.token,
-                apiUrl: input.apiUrl || 'https://api.green-api.com',
+                apiUrl: providerApiUrl,
+                providerAccountId: input.providerAccountId || null,
+                phoneNumberId: input.phoneNumberId || null,
                 phoneNumber: input.phoneNumber || null,
                 webhookUrl: input.webhookUrl || null,
                 status: 'pending',
@@ -227,11 +269,25 @@ export const whatsappInstancesRouter = router({
                 await setWhatsAppInstanceAsPrimary(instance.id, input.merchantId);
             }
 
-            return instance;
+            return toPublicInstance(instance);
         }),
 
+    // Official Meta Embedded Signup completion. The browser only supplies the
+    // one-time code and IDs; the app secret and resulting access token stay server-side.
+    completeMetaEmbeddedSignup: protectedProcedure
+        .input(z.object({
+            merchantId: z.number().int().positive(),
+            code: z.string().min(20).max(2048),
+            wabaId: z.string().regex(/^\d{5,30}$/),
+            phoneNumberId: z.string().regex(/^\d{5,30}$/),
+        }))
+        .mutation(async ({ input, ctx }) => completeMetaEmbeddedSignupService({
+            userId: ctx.user.id,
+            ...input,
+        })),
+
     // Update instance
-    update: protectedProcedure
+    update: adminProcedure
         .input(
             z.object({
                 id: z.number(),
@@ -245,11 +301,9 @@ export const whatsappInstancesRouter = router({
                 expiresAt: z.string().optional(),
             })
         )
-        .mutation(async ({ input, ctx }) => {
+        .mutation(async ({ input }) => {
             const merchant = await getMerchantById(input.merchantId);
-            if (!merchant || merchant.userId !== ctx.user.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-            }
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const instance = await getWhatsAppInstanceById(input.id);
             if (!instance || instance.merchantId !== input.merchantId) {
@@ -266,7 +320,7 @@ export const whatsappInstancesRouter = router({
                 expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
             });
 
-            return await getWhatsAppInstanceById(input.id);
+            return toPublicInstance(await getWhatsAppInstanceById(input.id));
         }),
 
     // Set as primary
@@ -293,18 +347,16 @@ export const whatsappInstancesRouter = router({
         }),
 
     // Delete instance
-    delete: protectedProcedure
+    delete: adminProcedure
         .input(
             z.object({
                 id: z.number(),
                 merchantId: z.number(),
             })
         )
-        .mutation(async ({ input, ctx }) => {
+        .mutation(async ({ input }) => {
             const merchant = await getMerchantById(input.merchantId);
-            if (!merchant || merchant.userId !== ctx.user.id) {
-                throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
-            }
+            if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
             const instance = await getWhatsAppInstanceById(input.id);
             if (!instance || instance.merchantId !== input.merchantId) {
@@ -326,9 +378,12 @@ export const whatsappInstancesRouter = router({
     testConnection: protectedProcedure
         .input(
             z.object({
+                provider: z.enum(['green_api', 'meta_cloud']).default('green_api'),
                 instanceId: z.string(),
                 token: z.string(),
                 apiUrl: z.string().url().optional(),
+                phoneNumberId: z.string().regex(/^\d{5,30}$/).optional(),
+                providerAccountId: z.string().max(255).optional(),
             })
         )
         .mutation(async ({ input, ctx }) => {
@@ -339,51 +394,26 @@ export const whatsappInstancesRouter = router({
             }
 
             try {
-                const baseUrl = input.apiUrl || 'https://api.green-api.com';
-
-                // SEC-P2-001: SSRF guard — only allow Green API domains
-                try {
-                    const parsed = new URL(baseUrl);
-                    const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
-                    const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-                    if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
-                        return {
-                            success: false,
-                            status: 'error',
-                            message: 'Only Green API URLs are allowed',
-                        };
-                    }
-                } catch {
-                    return {
-                        success: false,
-                        status: 'error',
-                        message: 'Invalid API URL format',
-                    };
-                }
-
-                const url = `${baseUrl}/waInstance${input.instanceId}/getStateInstance/${input.token}`;
-
-                const response = await fetch(url);
-                const data = await response.json();
-
-                if (response.ok && data.stateInstance) {
-                    return {
-                        success: true,
-                        status: data.stateInstance,
-                        message: 'Connection successful',
-                    };
-                } else {
-                    return {
-                        success: false,
-                        status: 'error',
-                        message: 'Failed to connect to instance',
-                    };
-                }
-            } catch (error) {
+                const { getWhatsAppProvider } = await import('./channels/whatsapp/providers');
+                const provider = getWhatsAppProvider(input.provider);
+                const health = await provider.health({
+                    provider: input.provider,
+                    instanceId: input.instanceId,
+                    token: input.token,
+                    apiUrl: input.provider === 'meta_cloud' ? 'https://graph.facebook.com' : (input.apiUrl || 'https://api.green-api.com'),
+                    phoneNumberId: input.phoneNumberId,
+                    providerAccountId: input.providerAccountId,
+                });
+                return {
+                    success: health.healthy,
+                    status: health.healthy ? 'connected' : 'error',
+                    message: health.healthy ? 'Connection successful' : 'Provider rejected the connection',
+                };
+            } catch {
                 return {
                     success: false,
                     status: 'error',
-                    message: error instanceof Error ? error.message : 'Unknown error',
+                    message: 'Connection test failed',
                 };
             }
         }),
@@ -408,7 +438,7 @@ export const whatsappInstancesRouter = router({
                 active: activeCount,
                 inactive: inactiveCount,
                 expired: expiredCount,
-                primary: primary || null,
+                primary: primary ? toPublicInstance(primary) : null,
             };
         }),
 
@@ -424,10 +454,10 @@ export const whatsappInstancesRouter = router({
             const { expiring7Days, expiring3Days, expiring1Day, expired } = await getExpiringWhatsAppInstances();
 
             return {
-                expiring7Days: expiring7Days.filter(i => i.merchantId === input.merchantId),
-                expiring3Days: expiring3Days.filter(i => i.merchantId === input.merchantId),
-                expiring1Day: expiring1Day.filter(i => i.merchantId === input.merchantId),
-                expired: expired.filter(i => i.merchantId === input.merchantId),
+                expiring7Days: expiring7Days.filter(i => i.merchantId === input.merchantId).map(toPublicInstance),
+                expiring3Days: expiring3Days.filter(i => i.merchantId === input.merchantId).map(toPublicInstance),
+                expiring1Day: expiring1Day.filter(i => i.merchantId === input.merchantId).map(toPublicInstance),
+                expired: expired.filter(i => i.merchantId === input.merchantId).map(toPublicInstance),
             };
         }),
 });

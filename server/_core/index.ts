@@ -37,6 +37,7 @@ import { validateEnv } from "./validateEnv";
 import { applySecurityMiddleware, securityLogger } from "./security";
 import { logError } from "./logger";
 import { installProductionConsoleRedaction } from "../security/log-redaction";
+import { startByaanOutboxWorker } from "../integrations/byaan-outbox";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -75,6 +76,13 @@ async function startServer() {
 
   // Voice transcription accepts up to 24 MB of base64 data. Keep a small margin
   // for the JSON envelope, while preventing the former 50 MB allocation on every route.
+  const retainSignedRawBody = (req: any, _res: any, buffer: Buffer) => {
+    // Signature verification must use the exact octets sent by the provider,
+    // never JSON.stringify(req.body). Retain raw bytes only for signed ingress.
+    req.rawBody = Buffer.from(buffer);
+  };
+  app.use('/api/webhooks', express.json({ limit: '2mb', verify: retainSignedRawBody }));
+  app.use('/api/v1/platform', express.json({ limit: '2mb', verify: retainSignedRawBody }));
   app.use(express.json({ limit: "26mb" }));
   app.use(express.urlencoded({ limit: "1mb", extended: true }));
   // Body-aware security checks must run after parsers.
@@ -593,6 +601,9 @@ async function startServer() {
 
       // Initialize Subscription Management cron jobs
       startSubscriptionJobs();
+
+      // Durable, signed Byaan lifecycle delivery with retry/backoff.
+      startByaanOutboxWorker();
 
       // Initialize Escalation Cascade job (runs every 60s — cascading phone alerts)
       startEscalationCascadeJob();

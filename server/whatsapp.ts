@@ -1,16 +1,61 @@
 import axios from 'axios';
+import crypto from 'node:crypto';
+import { deriveGreenWebhookToken } from './channels/whatsapp/green-webhook-token';
 
 /**
  * SSRF Guard — validates that a URL points to a legitimate Green API domain.
  * Prevents internal network access if DB is compromised.
  */
-function assertGreenApiUrl(url: string): void {
+function assertGreenApiUrl(url: string): string {
   const parsed = new URL(url);
   const allowedHosts = ['api.green-api.com', 'api.greenapi.com'];
   const isAllowed = allowedHosts.some(h => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`));
-  if (!isAllowed || !['https:', 'http:'].includes(parsed.protocol)) {
+  if (!isAllowed || parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.port) {
     throw new Error(`SSRF blocked: ${parsed.hostname} is not a Green API domain`);
   }
+  return parsed.origin;
+}
+
+function isMetaCloudApiUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && parsed.hostname === 'graph.facebook.com'
+      && !parsed.username && !parsed.password && !parsed.port
+      && (parsed.pathname === '/' || parsed.pathname === '');
+  } catch {
+    return false;
+  }
+}
+
+async function sendTrackedStoredWhatsApp(
+  providerInstanceId: string,
+  accessToken: string,
+  apiUrl: string,
+  request: {
+    to: string;
+    kind: 'text' | 'image' | 'audio' | 'document';
+    text?: string;
+    mediaUrl?: string;
+    fileName?: string;
+  }
+): Promise<{ success: boolean; messageId?: string; error?: string } | null> {
+  const { getWhatsAppInstanceByInstanceId } = await import('./db');
+  const instance = await getWhatsAppInstanceByInstanceId(providerInstanceId);
+  if (!instance) return null;
+  const expectedProvider = isMetaCloudApiUrl(apiUrl) ? 'meta_cloud' : 'green_api';
+  if (instance.status !== 'active' || (instance.provider || 'green_api') !== expectedProvider || instance.token !== accessToken) {
+    return { success: false, error: 'WhatsApp connection is unavailable or credentials changed' };
+  }
+  const { sendMerchantWhatsApp } = await import('./channels/whatsapp/service');
+  const result = await sendMerchantWhatsApp({
+    merchantId: instance.merchantId,
+    instanceRecordId: instance.id,
+    idempotencyKey: `legacy:${crypto.randomUUID()}`,
+    ...request,
+  });
+  return result.accepted && result.providerMessageId
+    ? { success: true, messageId: result.providerMessageId }
+    : { success: false, error: result.errorCode || 'Meta rejected message' };
 }
 
 /**
@@ -418,8 +463,8 @@ export async function sendTypingWithCredentials(
   phoneNumber: string
 ): Promise<void> {
   try {
-    assertGreenApiUrl(apiUrl);
-    const baseURL = `${apiUrl}/waInstance${instanceId}`;
+    const greenApiUrl = assertGreenApiUrl(apiUrl);
+    const baseURL = `${greenApiUrl}/waInstance${instanceId}`;
     // BUG-G1 FIX: Support group chatIds (e.g. "120363XXX@g.us")
     let chatId: string;
     if (phoneNumber.includes('@')) {
@@ -504,16 +549,19 @@ export async function setWebhookUrl(
   instanceId: string,
   apiToken: string,
   webhookUrl: string,
-  apiUrl: string = 'https://api.green-api.com'
+  apiUrl: string = 'https://api.green-api.com',
+  webhookAuthorizationToken?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    assertGreenApiUrl(apiUrl);
-    const baseURL = `${apiUrl}/waInstance${instanceId}`;
+    const greenApiUrl = assertGreenApiUrl(apiUrl);
+    const baseURL = `${greenApiUrl}/waInstance${instanceId}`;
+    const webhookToken = webhookAuthorizationToken || deriveGreenWebhookToken(instanceId, apiToken);
+    if (webhookToken.length < 32) throw new Error('Webhook authorization token is too short');
     
     // Use the correct Green API endpoint: /setSettings/{apiToken}
     const response = await axios.post(`${baseURL}/setSettings/${apiToken}`, {
       webhookUrl: webhookUrl,
-      webhookUrlToken: '',
+      webhookUrlToken: `Bearer ${webhookToken}`,
       delaySendMessagesMilliseconds: 1000,
       markIncomingMessagesReaded: 'yes',
       markIncomingMessagesReadedOnReply: 'yes',
@@ -659,8 +707,24 @@ export async function sendMessageWithCredentials(
   message: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    assertGreenApiUrl(apiUrl);
-    const baseURL = `${apiUrl}/waInstance${instanceId}`;
+    if (isMetaCloudApiUrl(apiUrl)) {
+      const to = phoneNumber.replace(/\D/g, '');
+      if (to.length < 8 || to.length > 15) return { success: false, error: 'Invalid WhatsApp destination' };
+      const tracked = await sendTrackedStoredWhatsApp(instanceId, apiToken, apiUrl, {
+        to,
+        kind: 'text',
+        text: message.slice(0, 4096),
+      });
+      return tracked || { success: false, error: 'Meta connection is not registered' };
+    }
+    const tracked = await sendTrackedStoredWhatsApp(instanceId, apiToken, apiUrl, {
+      to: phoneNumber,
+      kind: 'text',
+      text: message.slice(0, 4096),
+    });
+    if (tracked) return tracked;
+    const greenApiUrl = assertGreenApiUrl(apiUrl);
+    const baseURL = `${greenApiUrl}/waInstance${instanceId}`;
 
     // GAP-4 FIX: Support group chatIds alongside personal phones
     // DB stores group conversations as "group_120363XXX" — convert to "120363XXX@g.us"
@@ -715,9 +779,38 @@ export async function sendFileWithCredentials(
   caption?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    assertGreenApiUrl(apiUrl);
+    if (isMetaCloudApiUrl(apiUrl)) {
+      assertSafeMediaUrl(fileUrl);
+      const to = phoneNumber.replace(/\D/g, '');
+      if (to.length < 8 || to.length > 15) return { success: false, error: 'Invalid WhatsApp destination' };
+      const lowerName = fileName.toLowerCase();
+      const type = /\.(?:jpe?g|png|gif|webp)$/.test(lowerName) ? 'image'
+        : /\.(?:ogg|opus|mp3|m4a|aac|wav)$/.test(lowerName) ? 'audio'
+        : 'document';
+      const tracked = await sendTrackedStoredWhatsApp(instanceId, apiToken, apiUrl, {
+        to,
+        kind: type,
+        mediaUrl: fileUrl,
+        text: caption && type !== 'audio' ? caption.slice(0, 1024) : undefined,
+        fileName: type === 'document' ? fileName.slice(0, 240) : undefined,
+      });
+      return tracked || { success: false, error: 'Meta connection is not registered' };
+    }
+    const lowerName = fileName.toLowerCase();
+    const trackedType = /\.(?:jpe?g|png|gif|webp)$/.test(lowerName) ? 'image'
+      : /\.(?:ogg|opus|mp3|m4a|aac|wav)$/.test(lowerName) ? 'audio'
+      : 'document';
+    const tracked = await sendTrackedStoredWhatsApp(instanceId, apiToken, apiUrl, {
+      to: phoneNumber,
+      kind: trackedType,
+      mediaUrl: fileUrl,
+      text: caption,
+      fileName,
+    });
+    if (tracked) return tracked;
+    const greenApiUrl = assertGreenApiUrl(apiUrl);
     assertSafeMediaUrl(fileUrl); // PEN-MEDIA-01: Block SSRF via file URLs
-    const baseURL = `${apiUrl}/waInstance${instanceId}`;
+    const baseURL = `${greenApiUrl}/waInstance${instanceId}`;
     // BUG-G2 FIX: Support group chatIds (e.g. "120363XXX@g.us")
     let chatId: string;
     if (phoneNumber.includes('@')) {
@@ -771,59 +864,14 @@ export async function sendImageWithCredentials(
   imageUrl: string,
   caption?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  let fileName = 'product.jpg';
   try {
-    assertGreenApiUrl(apiUrl);
-    assertSafeMediaUrl(imageUrl); // PEN-MEDIA-01: Block SSRF via image URLs
-    const baseURL = `${apiUrl}/waInstance${instanceId}`;
-    // BUG-G2 FIX: Support group chatIds (e.g. "120363XXX@g.us")
-    let chatId: string;
-    if (phoneNumber.includes('@')) {
-      chatId = phoneNumber;
-    } else if (phoneNumber.startsWith('group_')) {
-      chatId = phoneNumber.replace('group_', '') + '@g.us';
-    } else {
-      chatId = `${phoneNumber.replace(/[^0-9]/g, '')}@c.us`;
-    }
-
-    // PEN-MEDIA-09: Safely extract file extension, with fallback
-    let fileName = 'product.jpg';
-    try {
-      const urlPath = new URL(imageUrl).pathname;
-      const ext = urlPath.split('.').pop()?.toLowerCase() || 'jpg';
-      const validExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-      fileName = `product.${validExts.includes(ext) ? ext : 'jpg'}`;
-    } catch {
-      console.warn('[WhatsApp] Invalid image URL format, using default filename');
-    }
-
-    console.log(`[WhatsApp] 🖼️ Sending image to ***${chatId.slice(-12)}`);
-
-    const response = await axios.post(`${baseURL}/sendFileByUrl/${apiToken}`, {
-      chatId,
-      urlFile: imageUrl,
-      fileName,
-      caption: caption || '',
-    });
-
-    if (response.data && response.data.idMessage) {
-      console.log(`[WhatsApp] ✅ Image sent successfully: ${response.data.idMessage}`);
-      return {
-        success: true,
-        messageId: response.data.idMessage,
-      };
-    }
-
-    return {
-      success: false,
-      error: 'Failed to send image',
-    };
-  } catch (error: any) {
-    console.error('[WhatsApp] ❌ Error sending image:', error.response?.data || error.message);
-    return {
-      success: false,
-      error: error.response?.data?.message || error.message,
-    };
+    const ext = new URL(imageUrl).pathname.split('.').pop()?.toLowerCase() || 'jpg';
+    fileName = `product.${['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg'}`;
+  } catch {
+    // sendFileWithCredentials performs the authoritative URL validation.
   }
+  return sendFileWithCredentials(instanceId, apiToken, apiUrl, phoneNumber, imageUrl, fileName, caption);
 }
 
 

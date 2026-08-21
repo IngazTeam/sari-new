@@ -94,8 +94,10 @@ export const byaanRouter = router({
 
     const stats = await getByaanSyncStats(merchant.id);
 
+    const connected = Boolean(connection.is_active && connection.verified_at);
     return sanitizeForTRPC({
-      connected: true,
+      connected,
+      verificationPending: !connected,
       integrationSource: 'byaan',
       connection: {
         tenantDomain: connection.tenant_domain,
@@ -228,42 +230,23 @@ export const byaanRouter = router({
     if (!checkResyncLimit(merchant.id)) {
       throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'انتظر قليلاً قبل إعادة المزامنة (الحد: 3 كل 5 دقائق)' });
     }
-    const { getByaanConnection, updateByaanSyncStatus } = await import('./integrations/byaan');
+    const { getByaanConnection, requestByaanResync, updateByaanSyncStatus } = await import('./integrations/byaan');
     const connection = await getByaanConnection(merchant.id);
 
     if (!connection) {
       throw new TRPCError({ code: 'NOT_FOUND', message: 'لا يوجد ربط مع بيان' });
     }
 
-    await updateByaanSyncStatus(merchant.id, 'syncing');
-
-    // PEN-BYAAN-05: SSRF protection — validate tenant_domain before HTTP call
-    const domain = connection.tenant_domain;
-    if (
-      !domain || domain === 'localhost' || domain.startsWith('127.') ||
-      domain.startsWith('10.') || domain.startsWith('192.168.') ||
-      domain.startsWith('169.254.') || domain.endsWith('.local') ||
-      domain === '::1' || domain === '[::1]' ||
-      domain.startsWith('fe80:') || domain.startsWith('fc00:') ||
-      domain.includes('::ffff:127.') || domain.includes('0.0.0.0') ||
-      !/^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(domain)
-    ) {
-      console.warn(`[Byaan] SSRF blocked in triggerResync: ${domain}`);
-      return { success: false, message: 'الدومين غير صالح' };
+    if (!connection.is_active || !connection.verified_at) {
+      throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يلزم توثيق ملكية نطاق بيان قبل المزامنة' });
     }
 
-    // Notify Byaan to push data
-    try {
-      const axios = (await import('axios')).default;
-      await axios.post(`https://${domain}/api/sari/request-resync`, {
-        merchant_id: merchant.id,
-      }, {
-        timeout: 10000,
-        maxRedirects: 0,
-        validateStatus: () => true,
-      });
-    } catch { /* non-blocking */ }
-
-    return { success: true, message: 'تم طلب إعادة المزامنة من بيان' };
+    await updateByaanSyncStatus(merchant.id, 'syncing');
+    const result = await requestByaanResync(merchant.id);
+    if (!result.success) {
+      await updateByaanSyncStatus(merchant.id, 'error', result.error);
+      throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر طلب المزامنة من بيان' });
+    }
+    return { success: true, message: 'تم طلب إعادة المزامنة من بيان عبر طلب موقع' };
   }),
 });

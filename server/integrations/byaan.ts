@@ -10,9 +10,18 @@
  * Live API: ساري يطلب عمليات حية (تسجيل، دفع، نتائج)
  */
 
-import { getPool, getMerchantByUserId, getProductsByMerchantId } from '../db';
+import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import crypto from 'crypto';
+import { decryptSecret, encryptSecret } from '../security/secrets';
+import {
+  buildByaanCanonicalRequest,
+  createPinnedByaanHttpsAgent,
+  normalizeByaanApiBaseUrl,
+  normalizeByaanTenantDomain,
+  signByaanRequest,
+} from './byaan-security';
+import { enqueueByaanLifecycleEvent } from './byaan-outbox';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -83,10 +92,12 @@ export const PLATFORM_TERMINOLOGY: Record<string, Record<string, string>> = {
 
 async function ensureByaanTables() {
   await assertRuntimeSchema('Byaan integration', [
-    { table: 'byaan_connections' },
+    { table: 'byaan_connections', columns: ['verified_at', 'verification_token_hash', 'webhook_secret'] },
     { table: 'byaan_trainees' },
     { table: 'byaan_faqs' },
     { table: 'byaan_site_content' },
+    { table: 'byaan_outbox' },
+    { table: 'byaan_webhook_receipts' },
     { table: 'sari_conversions' },
     { table: 'merchants', columns: ['integration_source'] },
   ]);
@@ -104,63 +115,47 @@ async function ensureByaanTables() {
  * - subscription.activated → Byaan adds sari_starter to tenant_services
  * - subscription.deactivated → Byaan removes sari_* from tenant_services
  */
-async function notifyByaanPlatform(
-  tenantDomain: string,
-  event: 'subscription.activated' | 'subscription.deactivated',
-  merchantId: number,
-  plan: string = 'sari_starter'
-): Promise<void> {
-  try {
-    // Build webhook URL from tenant domain
-    const webhookUrl = `https://${tenantDomain}/api/sari/webhook`;
-
-    // PEN-SYNC-01 + PEN-SYNC-12: Validate hostname is not internal (IPv4 + IPv6)
-    if (
-      tenantDomain === 'localhost' || tenantDomain.startsWith('127.') ||
-      tenantDomain.startsWith('10.') || tenantDomain.startsWith('192.168.') ||
-      tenantDomain.startsWith('169.254.') || tenantDomain.endsWith('.local') ||
-      tenantDomain === '::1' || tenantDomain === '[::1]' ||
-      tenantDomain.startsWith('fe80:') || tenantDomain.startsWith('fc00:') ||
-      tenantDomain.includes('::ffff:127.')
-    ) {
-      console.warn(`[Byaan Webhook] SSRF blocked: ${tenantDomain}`);
-      return;
-    }
-    
-    const body = JSON.stringify({
-      event,
-      merchant_id: String(merchantId),
-      data: {
-        tenant_domain: tenantDomain,
-        plan,
-        activated_at: new Date().toISOString(),
-      },
-    });
-
-    // Sign with platform key (same key Byaan verifies against)
-    const platformKey = process.env.BYAAN_PLATFORM_KEY || '';
-    let headers: Record<string, string> = {
+async function verifyByaanDomainOwnership(input: {
+  merchantId: number;
+  tenantDomain: string;
+  challenge: string;
+  signingSecret: string;
+}): Promise<boolean> {
+  const path = '/api/sari/verify-ownership';
+  const tenantDomain = normalizeByaanTenantDomain(input.tenantDomain);
+  const url = `https://${tenantDomain}${path}`;
+  const rawBody = Buffer.from(JSON.stringify({
+    merchant_id: String(input.merchantId),
+    challenge: input.challenge,
+  }), 'utf8');
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const deliveryId = crypto.randomUUID();
+  const canonical = buildByaanCanonicalRequest({
+    timestamp,
+    deliveryId,
+    method: 'POST',
+    path,
+    tenantDomain,
+    rawBody,
+  });
+  const httpsAgent = await createPinnedByaanHttpsAgent(url);
+  const axios = (await import('axios')).default;
+  const response = await axios.post(url, rawBody, {
+    headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-
-    if (platformKey) {
-      const signature = crypto.createHmac('sha256', platformKey).update(body).digest('hex');
-      headers['X-Sari-Signature'] = signature;
-    }
-
-    const axios = (await import('axios')).default;
-    const response = await axios.post(webhookUrl, body, {
-      headers,
-      timeout: 10000,
-      validateStatus: () => true, // Don't throw on non-2xx
-    });
-
-    console.log(`[Byaan Webhook] ${event} → ${tenantDomain} (${response.status})`);
-  } catch (e: any) {
-    // Non-blocking — connection still works even if webhook fails
-    console.warn(`[Byaan Webhook] ${event} failed for ${tenantDomain}:`, e?.message || e);
-  }
+      'X-Sari-Timestamp': timestamp,
+      'X-Sari-Delivery-Id': deliveryId,
+      'X-Sari-Signature': signByaanRequest(canonical, input.signingSecret),
+    },
+    timeout: 8_000,
+    maxRedirects: 0,
+    httpsAgent,
+    validateStatus: () => true,
+  });
+  const echoedChallenge = String(response.data?.challenge || '');
+  const actual = Buffer.from(echoedChallenge, 'utf8');
+  const expected = Buffer.from(input.challenge, 'utf8');
+  return response.status >= 200 && response.status < 300 && actual.length === expected.length && crypto.timingSafeEqual(actual, expected);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -176,7 +171,19 @@ export async function getByaanConnection(merchantId: number) {
     `SELECT * FROM byaan_connections WHERE merchant_id = ? LIMIT 1`,
     [merchantId]
   );
-  return (rows as any[])?.[0] || null;
+  const connection = (rows as any[])?.[0] || null;
+  return connection ? { ...connection, webhook_secret: decryptSecret(connection.webhook_secret) } : null;
+}
+
+function toPublicByaanConnection(connection: any) {
+  if (!connection) return null;
+  const {
+    webhook_secret: webhookSecret,
+    verification_token_hash: _verificationTokenHash,
+    api_key_hash: _apiKeyHash,
+    ...safe
+  } = connection;
+  return { ...safe, has_signing_secret: Boolean(webhookSecret) };
 }
 
 export async function createByaanConnection(
@@ -190,28 +197,104 @@ export async function createByaanConnection(
   const dbConn = await getPool();
   if (!dbConn) return null;
 
-  // Derive api_base_url from tenant domain if not provided
-  const baseUrl = apiBaseUrl || `https://${tenantDomain}/api/sari`;
+  const normalizedDomain = normalizeByaanTenantDomain(tenantDomain);
+  const baseUrl = normalizeByaanApiBaseUrl(normalizedDomain, apiBaseUrl);
+  const secret = webhookSecret?.trim() || '';
+  if (secret && secret.length < 32) throw new Error('Byaan webhook secret must contain at least 32 characters');
+  const challenge = crypto.randomBytes(32).toString('base64url');
+  const challengeHash = crypto.createHash('sha256').update(challenge).digest('hex');
+  const verificationExpiresAt = new Date(Date.now() + 15 * 60_000).toISOString().slice(0, 19).replace('T', ' ');
 
-  await (dbConn as any).execute(
-    `INSERT INTO byaan_connections (merchant_id, tenant_domain, api_base_url, webhook_secret, permissions, is_active) 
-     VALUES (?, ?, ?, ?, ?, 1)
-     ON DUPLICATE KEY UPDATE tenant_domain = VALUES(tenant_domain), api_base_url = VALUES(api_base_url), 
-     webhook_secret = COALESCE(VALUES(webhook_secret), webhook_secret), permissions = VALUES(permissions), 
-     sync_status = 'active', is_active = 1`,
-    [merchantId, tenantDomain, baseUrl, webhookSecret || null, permissions ? JSON.stringify(permissions) : null]
-  );
+  try {
+    const [domainOwners] = await (dbConn as any).execute(
+      `SELECT merchant_id FROM byaan_connections WHERE tenant_domain = ? LIMIT 1`,
+      [normalizedDomain]
+    );
+    const ownerId = Number((domainOwners as any[])?.[0]?.merchant_id || 0);
+    if (ownerId && ownerId !== merchantId) throw new Error('Byaan tenant domain is already linked to another merchant');
 
-  // Set merchant integration_source = 'byaan'
-  await (dbConn as any).execute(
-    `UPDATE merchants SET integration_source = 'byaan' WHERE id = ?`,
-    [merchantId]
-  );
+    const [merchantConnections] = await (dbConn as any).execute(
+      `SELECT id FROM byaan_connections WHERE merchant_id = ? LIMIT 1`,
+      [merchantId]
+    );
+    const values = [
+      normalizedDomain,
+      baseUrl,
+      secret ? encryptSecret(secret) : null,
+      permissions ? JSON.stringify(permissions) : null,
+      challengeHash,
+      verificationExpiresAt,
+    ];
+    if ((merchantConnections as any[])?.length) {
+      await (dbConn as any).execute(
+        `UPDATE byaan_connections
+         SET tenant_domain = ?, api_base_url = ?, webhook_secret = COALESCE(?, webhook_secret), permissions = ?,
+             sync_status = 'pending_verification', verification_token_hash = ?, verification_expires_at = ?,
+             verified_at = NULL, is_active = 0
+         WHERE merchant_id = ?`,
+        [...values, merchantId]
+      );
+    } else {
+      await (dbConn as any).execute(
+        `INSERT INTO byaan_connections
+          (tenant_domain, api_base_url, webhook_secret, permissions, verification_token_hash,
+           verification_expires_at, merchant_id, sync_status, verified_at, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'pending_verification', NULL, 0)`,
+        [...values, merchantId]
+      );
+    }
+  } catch (error: any) {
+    if (error?.message === 'Byaan tenant domain is already linked to another merchant') throw error;
+    if (error?.code === 'ER_DUP_ENTRY') throw new Error('Byaan tenant domain is already linked to another merchant');
+    throw error;
+  }
 
-  // Notify Byaan to activate sari feature for this tenant (non-blocking)
-  notifyByaanPlatform(tenantDomain, 'subscription.activated', merchantId);
+  if (!secret) return toPublicByaanConnection(await getByaanConnection(merchantId));
 
-  return getByaanConnection(merchantId);
+  let verified = false;
+  try {
+    verified = await verifyByaanDomainOwnership({
+      merchantId,
+      tenantDomain: normalizedDomain,
+      challenge,
+      signingSecret: secret,
+    });
+  } catch (error: any) {
+    console.warn(`[Byaan] ownership verification failed for merchant ${merchantId}:`, String(error?.message || 'verification failed').slice(0, 160));
+  }
+  if (!verified) return toPublicByaanConnection(await getByaanConnection(merchantId));
+
+  // Make the verified state, merchant source, and durable lifecycle event one
+  // transaction. No connection may become active without an outbox record.
+  const activationTx = await (dbConn as any).getConnection();
+  try {
+    await activationTx.beginTransaction();
+    const [activation] = await activationTx.execute(
+      `UPDATE byaan_connections
+       SET sync_status = 'active', verified_at = NOW(), is_active = 1, verification_token_hash = NULL,
+           verification_expires_at = NULL, sync_errors = NULL
+       WHERE merchant_id = ? AND tenant_domain = ? AND verification_token_hash = ?`,
+      [merchantId, normalizedDomain, challengeHash]
+    );
+    if (Number((activation as any)?.affectedRows || 0) !== 1) {
+      throw new Error('Byaan verification challenge is no longer valid');
+    }
+    await activationTx.execute(`UPDATE merchants SET integration_source = 'byaan' WHERE id = ?`, [merchantId]);
+    await enqueueByaanLifecycleEvent({
+      merchantId,
+      tenantDomain: normalizedDomain,
+      event: 'subscription.activated',
+      signingSecret: secret,
+      executor: activationTx,
+    });
+    await activationTx.commit();
+  } catch (error) {
+    await activationTx.rollback();
+    throw error;
+  } finally {
+    activationTx.release();
+  }
+  return toPublicByaanConnection(await getByaanConnection(merchantId));
 }
 
 export async function deleteByaanConnection(merchantId: number) {
@@ -223,21 +306,33 @@ export async function deleteByaanConnection(merchantId: number) {
   const connection = await getByaanConnection(merchantId);
   const tenantDomain = connection?.tenant_domain;
 
-  await (dbConn as any).execute(
-    `DELETE FROM byaan_connections WHERE merchant_id = ?`,
-    [merchantId]
-  );
+  const deleteTx = await (dbConn as any).getConnection();
+  try {
+    await deleteTx.beginTransaction();
+    // Persist deactivation atomically with disconnect. The outbox owns an
+    // encrypted key copy, so deleting the connection cannot lose the event.
+    if (tenantDomain && connection?.is_active && connection?.verified_at) {
+      const secret = String(connection.webhook_secret || '');
+      if (secret.length < 32) throw new Error('Cannot disconnect a verified Byaan tenant without a valid signing secret');
+      await enqueueByaanLifecycleEvent({
+        merchantId,
+        tenantDomain,
+        event: 'subscription.deactivated',
+        signingSecret: secret,
+        executor: deleteTx,
+      });
+    }
 
-  // Reset integration_source
-  await (dbConn as any).execute(
-    `UPDATE merchants SET integration_source = 'none' WHERE id = ?`,
-    [merchantId]
-  );
-
-  // Notify Byaan to deactivate sari feature (non-blocking)
-  if (tenantDomain) {
-    notifyByaanPlatform(tenantDomain, 'subscription.deactivated', merchantId);
+    await deleteTx.execute(`DELETE FROM byaan_connections WHERE merchant_id = ?`, [merchantId]);
+    await deleteTx.execute(`UPDATE merchants SET integration_source = 'none' WHERE id = ?`, [merchantId]);
+    await deleteTx.commit();
+  } catch (error) {
+    await deleteTx.rollback();
+    throw error;
+  } finally {
+    deleteTx.release();
   }
+
 }
 
 export async function updateByaanSyncStatus(merchantId: number, status: string, errors?: string) {
@@ -245,7 +340,7 @@ export async function updateByaanSyncStatus(merchantId: number, status: string, 
   if (!dbConn) return;
 
   // PEN-SYNC-14: Validate status enum to prevent invalid ENUM values
-  const validStatuses = ['active', 'syncing', 'error', 'paused'];
+  const validStatuses = ['pending_verification', 'active', 'syncing', 'error', 'paused'];
   const safeStatus = validStatuses.includes(status) ? status : 'error';
 
   await (dbConn as any).execute(
@@ -509,13 +604,6 @@ export function getTerminology(source: string): Record<string, string> {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Sign a request body with HMAC-SHA256 for webhook security
- */
-function signPayload(body: string, secret: string): string {
-  return crypto.createHmac('sha256', secret).update(body).digest('hex');
-}
-
-/**
  * Make an authenticated call to Byaan's Live API
  * Uses the connection's api_base_url + webhook_secret for HMAC signing
  */
@@ -529,38 +617,27 @@ async function callByaanApi(
   if (!connection || !connection.api_base_url) {
     return { success: false, error: 'Byaan connection not configured or missing api_base_url' };
   }
-  if (!connection.is_active) {
-    return { success: false, error: 'Byaan connection is inactive' };
+  if (!connection.is_active || !connection.verified_at) {
+    return { success: false, error: 'Byaan connection ownership is not verified' };
   }
 
-  const url = `${connection.api_base_url}${endpoint}`;
-
-  // PEN-SYNC-01: SSRF Protection — block internal/dangerous URLs
+  if (!endpoint.startsWith('/') || endpoint.includes('..') || endpoint.includes('?') || endpoint.includes('#')) {
+    return { success: false, error: 'Invalid Byaan API endpoint' };
+  }
+  let tenantDomain: string;
+  let apiBaseUrl: string;
   try {
-    const parsedUrl = new URL(url);
-    if (parsedUrl.protocol !== 'https:') {
-      return { success: false, error: 'api_base_url must use HTTPS' };
-    }
-    const hostname = parsedUrl.hostname;
-    // PEN-SYNC-25: Fixed 172.x range — only block private 172.16-31, not all 172.x
-    if (
-      hostname === 'localhost' || hostname === '127.0.0.1' ||
-      hostname === '::1' || hostname === '[::1]' || hostname === '[::]' ||
-      hostname.startsWith('10.') || hostname.startsWith('192.168.') ||
-      /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
-      hostname.startsWith('169.254.') ||
-      hostname === '0.0.0.0' || hostname.endsWith('.internal') || hostname.endsWith('.local') ||
-      hostname.startsWith('fe80:') || hostname.startsWith('fc00:') || hostname.startsWith('fd') ||
-      hostname.includes('::ffff:127.')
-    ) {
-      console.warn(`[Byaan Live] PEN-SYNC-01 SSRF blocked: ${hostname}`);
-      return { success: false, error: 'Internal URLs are not allowed' };
-    }
+    tenantDomain = normalizeByaanTenantDomain(connection.tenant_domain);
+    apiBaseUrl = normalizeByaanApiBaseUrl(tenantDomain, connection.api_base_url);
   } catch {
-    return { success: false, error: 'Invalid api_base_url format' };
+    return { success: false, error: 'Invalid or unverified Byaan API base URL' };
   }
+  const url = `${apiBaseUrl}${endpoint}`;
+  const secret = String(connection.webhook_secret || '');
+  if (secret.length < 32) return { success: false, error: 'Byaan request signing is not configured' };
 
-  const bodyStr = data ? JSON.stringify(data) : '';
+  const bodyStr = method === 'POST' && data ? JSON.stringify(data) : '';
+  const rawBody = Buffer.from(bodyStr, 'utf8');
   const timestamp = Math.floor(Date.now() / 1000);
   const deliveryId = crypto.randomUUID();
 
@@ -571,21 +648,29 @@ async function callByaanApi(
     'X-Sari-Delivery-Id': deliveryId,
   };
 
-  // Sign with HMAC if webhook_secret is configured
-  if (connection.webhook_secret) {
-    const signature = signPayload(`${timestamp}.${bodyStr}`, connection.webhook_secret);
-    headers['X-Sari-Signature'] = `sha256=${signature}`;
-  }
+  const canonical = buildByaanCanonicalRequest({
+    timestamp: String(timestamp),
+    deliveryId,
+    method,
+    path: `/api/sari${endpoint}`,
+    tenantDomain,
+    rawBody,
+  });
+  headers['X-Sari-Signature'] = signByaanRequest(canonical, secret);
 
   try {
+    const httpsAgent = await createPinnedByaanHttpsAgent(url);
     const axios = (await import('axios')).default;
     const response = await axios({
       method,
       url,
-      data: method === 'POST' ? data : undefined,
-      params: method === 'GET' ? data : undefined,
+      // Send the exact bytes covered by the HMAC. Current GET operations encode
+      // their identifier in the validated path and carry no unsigned query data.
+      data: method === 'POST' ? rawBody : undefined,
       headers,
       timeout: 15000, // 15s timeout for live operations
+      maxRedirects: 0,
+      httpsAgent,
     });
 
     return { success: true, data: response.data };
@@ -672,6 +757,13 @@ export async function createPaymentLink(
   };
 }
 
+export async function requestByaanResync(merchantId: number): Promise<{ success: boolean; error?: string }> {
+  const result = await callByaanApi(merchantId, 'POST', '/request-resync', {
+    merchant_id: String(merchantId),
+  });
+  return { success: result.success, error: result.error };
+}
+
 /**
  * Get trainee results/grades from Byaan (live — not cached)
  */
@@ -679,7 +771,7 @@ export async function getTraineeResults(
   merchantId: number,
   traineeId: string | number
 ): Promise<{ success: boolean; results?: any[]; error?: string }> {
-  const result = await callByaanApi(merchantId, 'GET', `/trainee/${traineeId}/results`);
+  const result = await callByaanApi(merchantId, 'GET', `/trainee/${encodeURIComponent(String(traineeId))}/results`);
   return {
     success: result.success,
     results: result.data?.results || result.data,
@@ -694,7 +786,7 @@ export async function getTraineeCertificates(
   merchantId: number,
   traineeId: string | number
 ): Promise<{ success: boolean; certificates?: any[]; error?: string }> {
-  const result = await callByaanApi(merchantId, 'GET', `/trainee/${traineeId}/certificates`);
+  const result = await callByaanApi(merchantId, 'GET', `/trainee/${encodeURIComponent(String(traineeId))}/certificates`);
   return {
     success: result.success,
     certificates: result.data?.certificates || result.data,
@@ -709,7 +801,7 @@ export async function getTraineeAttendance(
   merchantId: number,
   traineeId: string | number
 ): Promise<{ success: boolean; attendance?: any[]; error?: string }> {
-  const result = await callByaanApi(merchantId, 'GET', `/trainee/${traineeId}/attendance`);
+  const result = await callByaanApi(merchantId, 'GET', `/trainee/${encodeURIComponent(String(traineeId))}/attendance`);
   return {
     success: result.success,
     attendance: result.data?.attendance || result.data,

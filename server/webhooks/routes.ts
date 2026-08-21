@@ -3,6 +3,9 @@ import crypto from 'node:crypto';
 import { handleTapWebhook, verifyTapSignature } from './tap';
 import { handlePayPalWebhook, verifyPayPalSignature } from './paypal';
 import { handleGreenAPIWebhook } from './greenapi';
+import { handleMetaCloudWebhook, handleMetaWebhookVerification } from './meta-cloud';
+import { verifyGreenWebhookAuthorization } from './greenapi-auth';
+import { updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
 import { handleSallaWebhook } from './salla';
 import { handleZidWebhook } from '../integrations/zid';
 import { handleCalendlyWebhook } from '../integrations/calendly';
@@ -121,9 +124,36 @@ router.post('/paypal', async (req: Request, res: Response) => {
  */
 router.post('/greenapi', async (req: Request, res: Response) => {
   try {
-    // NOTE: Green API does NOT send any auth headers with webhooks.
-    // Security is ensured by instanceId validation inside handleGreenAPIWebhook()
-    // which matches the incoming instanceId against our database records.
+    const instanceId = String(req.body?.instanceData?.idInstance || '');
+    if (!instanceId) return res.status(400).json({ error: 'Missing instance ID' });
+    const authorization = Array.isArray(req.headers.authorization)
+      ? req.headers.authorization[0]
+      : req.headers.authorization;
+    const authResult = await verifyGreenWebhookAuthorization({ instanceId, authorization });
+    if (authResult === 'not_configured') {
+      return res.status(503).json({ error: 'Webhook authorization migration required' });
+    }
+    if (authResult !== 'valid') {
+      return res.status(401).json({ error: 'Invalid webhook authorization' });
+    }
+
+    if (req.body?.typeWebhook === 'outgoingMessageStatus') {
+      const providerMessageId = String(req.body?.idMessage || '');
+      const rawStatus = String(req.body?.status || '');
+      const status = ['sent', 'delivered', 'read'].includes(rawStatus)
+        ? rawStatus as 'sent' | 'delivered' | 'read'
+        : ['failed', 'noAccount', 'notInGroup', 'suspended', 'yellowCard'].includes(rawStatus)
+          ? 'failed' as const
+          : null;
+      if (!providerMessageId || !status) return res.status(400).json({ error: 'Invalid outgoing status payload' });
+      const result = await updateWhatsAppDeliveryStatus({
+        provider: 'green_api',
+        providerMessageId,
+        status,
+        errorCode: status === 'failed' ? rawStatus : undefined,
+      });
+      return res.status(200).json({ received: true, result });
+    }
 
     console.log('[Green API Webhook] Received webhook event');
 
@@ -138,6 +168,17 @@ router.post('/greenapi', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[Green API Webhook] Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/** Meta Cloud API verification and signed event delivery. */
+router.get('/meta', handleMetaWebhookVerification);
+router.post('/meta', async (req: Request, res: Response) => {
+  try {
+    await handleMetaCloudWebhook(req, res);
+  } catch (error) {
+    console.error('[Meta Webhook] Processing failed:', error instanceof Error ? error.message : 'unknown error');
+    if (!res.headersSent) return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

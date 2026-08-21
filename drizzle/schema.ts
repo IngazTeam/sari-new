@@ -997,9 +997,13 @@ export const whatsappConnectionRequests = mysqlTable("whatsapp_connection_reques
 export const whatsappInstances = mysqlTable("whatsapp_instances", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	provider: mysqlEnum(['green_api', 'meta_cloud', 'mock']).default('green_api').notNull(),
 	instanceId: varchar("instance_id", { length: 255 }).notNull(),
 	token: text().notNull(),
 	apiUrl: varchar("api_url", { length: 255 }).default('https://api.green-api.com'),
+	providerAccountId: varchar("provider_account_id", { length: 255 }),
+	phoneNumberId: varchar("phone_number_id", { length: 255 }),
+	webhookTokenHash: varchar("webhook_token_hash", { length: 64 }),
 	phoneNumber: varchar("phone_number", { length: 20 }),
 	webhookUrl: text("webhook_url"),
 	status: mysqlEnum(['active', 'inactive', 'pending', 'expired']).default('pending').notNull(),
@@ -1010,7 +1014,10 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 	metadata: text(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+	uniqueIndex("uq_whatsapp_instance_id").on(table.instanceId),
+	index("idx_whatsapp_provider_phone_id").on(table.provider, table.phoneNumberId),
+]);
 
 export const whatsappRequests = mysqlTable("whatsapp_requests", {
 	id: int().autoincrement().primaryKey(),
@@ -2985,18 +2992,54 @@ export const byaanConnections = mysqlTable("byaan_connections", {
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	tenantDomain: varchar("tenant_domain", { length: 255 }).notNull(),
 	apiBaseUrl: varchar("api_base_url", { length: 500 }),
-	webhookSecret: varchar("webhook_secret", { length: 128 }),
+	webhookSecret: text("webhook_secret"),
 	apiKeyHash: varchar("api_key_hash", { length: 64 }),
-	syncStatus: mysqlEnum("sync_status", ['active', 'syncing', 'error', 'paused']).default('active'),
+	syncStatus: mysqlEnum("sync_status", ['pending_verification', 'active', 'syncing', 'error', 'paused']).default('pending_verification'),
+	verificationTokenHash: varchar("verification_token_hash", { length: 64 }),
+	verificationExpiresAt: timestamp("verification_expires_at", { mode: 'string' }),
+	verifiedAt: timestamp("verified_at", { mode: 'string' }),
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
 	syncErrors: text("sync_errors"),
 	permissions: text(), // JSON
-	isActive: tinyint("is_active").default(1).notNull(),
+	isActive: tinyint("is_active").default(0).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, (table) => [
 	uniqueIndex("idx_byaan_merchant").on(table.merchantId),
-	index("idx_byaan_domain").on(table.tenantDomain),
+	uniqueIndex("uq_byaan_domain").on(table.tenantDomain),
+]);
+
+export const byaanWebhookReceipts = mysqlTable("byaan_webhook_receipts", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	deliveryId: varchar("delivery_id", { length: 36 }).notNull(),
+	requestPath: varchar("request_path", { length: 255 }).notNull(),
+	payloadHash: varchar("payload_hash", { length: 64 }).notNull(),
+	receivedAt: timestamp("received_at", { mode: 'string' }).defaultNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_byaan_delivery_id").on(table.deliveryId),
+	index("idx_byaan_receipt_merchant_date").on(table.merchantId, table.receivedAt),
+]);
+
+export const byaanOutbox = mysqlTable("byaan_outbox", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	eventKey: varchar("event_key", { length: 36 }).notNull(),
+	eventType: mysqlEnum("event_type", ['subscription.activated', 'subscription.deactivated']).notNull(),
+	tenantDomain: varchar("tenant_domain", { length: 255 }).notNull(),
+	payload: text().notNull(),
+	signingSecret: text("signing_secret").notNull(),
+	status: mysqlEnum(['pending', 'processing', 'delivered', 'failed']).default('pending').notNull(),
+	attempts: int().default(0).notNull(),
+	availableAt: timestamp("available_at", { mode: 'string' }).defaultNow().notNull(),
+	lastAttemptAt: timestamp("last_attempt_at", { mode: 'string' }),
+	deliveredAt: timestamp("delivered_at", { mode: 'string' }),
+	lastError: varchar("last_error", { length: 500 }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_byaan_outbox_event").on(table.eventKey),
+	index("idx_byaan_outbox_dispatch").on(table.status, table.availableAt),
 ]);
 
 // --- Byaan Trainees — synced from Byaan LMS ---
@@ -3075,12 +3118,33 @@ export const sariApiKeys = mysqlTable("sari_api_keys", {
 export const sariPlatformKeys = mysqlTable("sari_platform_keys", {
 	id: int().autoincrement().primaryKey(),
 	platform: varchar({ length: 50 }).notNull().unique(),
-	keyValue: varchar("key_value", { length: 255 }).notNull(),
+	keyValue: text("key_value").notNull(),
 	label: varchar({ length: 100 }).default(''),
 	isActive: tinyint("is_active").default(1).notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 });
+
+export const whatsappMessageDeliveries = mysqlTable("whatsapp_message_deliveries", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	messageId: int("message_id").references(() => messages.id, { onDelete: "set null" }),
+	instanceId: int("instance_id").references(() => whatsappInstances.id, { onDelete: "set null" }),
+	provider: mysqlEnum(['green_api', 'meta_cloud', 'mock']).notNull(),
+	providerMessageId: varchar("provider_message_id", { length: 255 }),
+	idempotencyKey: varchar("idempotency_key", { length: 100 }).notNull(),
+	direction: mysqlEnum(['incoming', 'outgoing']).notNull(),
+	status: mysqlEnum(['received', 'queued', 'sent', 'delivered', 'read', 'failed']).notNull(),
+	errorCode: varchar("error_code", { length: 100 }),
+	errorDetails: text("error_details"),
+	statusUpdatedAt: timestamp("status_updated_at", { mode: 'string' }).defaultNow().notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+	uniqueIndex("uq_whatsapp_delivery_idempotency").on(table.idempotencyKey),
+	uniqueIndex("uq_whatsapp_provider_message").on(table.provider, table.providerMessageId),
+	index("idx_whatsapp_delivery_merchant_status").on(table.merchantId, table.status, table.createdAt),
+]);
 
 export const campaignOptouts = mysqlTable("campaign_optouts", {
 	id: int().autoincrement().primaryKey(),

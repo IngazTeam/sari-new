@@ -103,7 +103,7 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
   try {
     const { getByaanConnection } = await import('./byaan');
     const byaanConnection = await getByaanConnection(merchantId);
-    if (byaanConnection && byaanConnection.sync_status === 'active') {
+    if (byaanConnection && byaanConnection.sync_status === 'active' && byaanConnection.is_active && byaanConnection.verified_at) {
       existingPlatforms.push({
         platform: 'byaan',
         name: 'بيان',

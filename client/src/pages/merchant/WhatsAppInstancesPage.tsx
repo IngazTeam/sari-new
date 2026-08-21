@@ -16,6 +16,7 @@ import {
   ArrowUpRight, Shield, QrCode, RefreshCcw
 } from "lucide-react";
 import { useTranslation } from 'react-i18next';
+import { launchMetaEmbeddedSignup } from '@/lib/meta-embedded-signup';
 
 export default function WhatsAppInstancesPage() {
   const { t } = useTranslation();
@@ -34,6 +35,7 @@ export default function WhatsAppInstancesPage() {
   const [reconnectInstanceId, setReconnectInstanceId] = useState<number | null>(null);
   const [showReconnectDialog, setShowReconnectDialog] = useState(false);
   const [isPollingReconnect, setIsPollingReconnect] = useState(false);
+  const [isMetaConnecting, setIsMetaConnecting] = useState(false);
 
   // Get current merchant
   const { data: merchant } = trpc.merchants.getCurrent.useQuery(
@@ -139,6 +141,14 @@ export default function WhatsAppInstancesPage() {
     },
   });
 
+  const completeMetaSignupMutation = trpc.whatsappInstances.completeMetaEmbeddedSignup.useMutation({
+    onSuccess: () => {
+      toast.success('تم ربط رقم Meta Cloud الرسمي والتحقق من اشتراك webhook');
+      refetchAll();
+    },
+    onError: (error: any) => toast.error(error.message || 'فشل إكمال ربط Meta'),
+  });
+
   const refreshInstanceMutation = trpc.whatsappInstances.refreshInstance.useMutation({
     onSuccess: (data: any) => {
       const msg = data.phoneNumber
@@ -199,6 +209,19 @@ export default function WhatsAppInstancesPage() {
     });
   };
 
+  const handleMetaEmbeddedSignup = async () => {
+    if (!merchant || isMetaConnecting) return;
+    setIsMetaConnecting(true);
+    try {
+      const result = await launchMetaEmbeddedSignup();
+      await completeMetaSignupMutation.mutateAsync({ merchantId: merchant.id, ...result });
+    } catch (error: any) {
+      toast.error(error?.message || 'لم يكتمل ربط Meta');
+    } finally {
+      setIsMetaConnecting(false);
+    }
+  };
+
   const handleConfirmAction = () => {
     if (!confirmAction || !merchant) return;
     if (confirmAction.type === 'activate') {
@@ -236,6 +259,7 @@ export default function WhatsAppInstancesPage() {
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+
     );
   }
 
@@ -249,15 +273,36 @@ export default function WhatsAppInstancesPage() {
             {t('whatsappManagement.subtitle', 'أضف أرقام واتساب جديدة وتحكّم في أرقامك النشطة')}
           </p>
         </div>
-        <Button
-          onClick={() => setShowRequestDialog(true)}
-          disabled={hasPendingRequest || !canAddMore}
-          className="shrink-0"
-        >
-          <Plus className="w-4 h-4 ml-2" />
-          {t('whatsappManagement.addNumber', 'طلب ربط رقم جديد')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={handleMetaEmbeddedSignup} disabled={!canAddMore || isMetaConnecting} className="shrink-0">
+            {isMetaConnecting ? <Loader2 className="w-4 h-4 ml-2 animate-spin" /> : <Shield className="w-4 h-4 ml-2" />}
+            ربط Meta الرسمي
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowRequestDialog(true)}
+            disabled={hasPendingRequest || !canAddMore}
+            className="shrink-0"
+          >
+            <Plus className="w-4 h-4 ml-2" />
+            {t('whatsappManagement.addNumber', 'طلب ربط QR تجريبي')}
+          </Button>
+        </div>
       </div>
+
+      <Card className="border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20">
+        <CardContent className="pt-5 text-sm leading-6">
+          <div className="flex items-start gap-3">
+            <Shield className="mt-1 h-5 w-5 shrink-0 text-blue-600" />
+            <div>
+              <p className="font-semibold">قناة Meta Cloud الرسمية هي مسار الإطلاق الموصى به</p>
+              <p className="text-muted-foreground">
+                الربط عبر QR يعمل كمسار Green API قديم للبيتا وقد يتأثر بسياسات واتساب أو انقطاع الجلسة. تظهر القناة المستخدمة بجانب كل رقم، ولا يعني نجاح QR أن الرقم معتمد من Meta.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Plan Usage Bar */}
       {usage && (
@@ -356,6 +401,9 @@ export default function WhatsAppInstancesPage() {
                           </Badge>
                         )}
                         <Badge className="bg-green-500 text-xs">{t('whatsappManagement.status.active', 'نشط')}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {instance.provider === 'meta_cloud' ? 'Meta Cloud رسمي' : 'Green API (QR)'}
+                        </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {t('whatsappManagement.connectedSince', 'متصل منذ')} {(instance.connectedAt || instance.createdAt) ? new Date(instance.connectedAt || instance.createdAt).toLocaleDateString('ar-SA') : '-'}
@@ -363,7 +411,7 @@ export default function WhatsAppInstancesPage() {
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button
+                    {instance.provider !== 'meta_cloud' && <Button
                       variant="outline"
                       size="sm"
                       onClick={() => refreshInstanceMutation.mutate({ instanceId: instance.id })}
@@ -372,8 +420,8 @@ export default function WhatsAppInstancesPage() {
                     >
                       {refreshInstanceMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
                       {t('whatsappManagement.refresh', 'تحديث البيانات')}
-                    </Button>
-                    <Button
+                    </Button>}
+                    {instance.provider !== 'meta_cloud' && <Button
                       variant="outline"
                       size="sm"
                       onClick={() => {
@@ -385,8 +433,8 @@ export default function WhatsAppInstancesPage() {
                     >
                       <QrCode className="w-4 h-4" />
                       {t('whatsappManagement.relink', 'إعادة الربط')}
-                    </Button>
-                    <Button
+                    </Button>}
+                    {instance.provider !== 'meta_cloud' && <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleReconnect(instance.id)}
@@ -395,7 +443,7 @@ export default function WhatsAppInstancesPage() {
                     >
                       {reconnectMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <QrCode className="w-4 h-4" />}
                       {t('whatsappManagement.changeNumber', 'تغيير الرقم')}
-                    </Button>
+                    </Button>}
                     {!instance.isPrimary && (
                       <Button
                         variant="outline"
@@ -446,6 +494,9 @@ export default function WhatsAppInstancesPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-muted-foreground" dir="ltr">{instance.phoneNumber || t('whatsappManagement.noPhone', 'رقم غير محدد')}</span>
                         <Badge variant="secondary" className="text-xs">{t('whatsappManagement.status.inactive', 'متوقف')}</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {instance.provider === 'meta_cloud' ? 'Meta Cloud رسمي' : 'Green API (QR)'}
+                        </Badge>
                       </div>
                     </div>
                   </div>
