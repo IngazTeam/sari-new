@@ -5,7 +5,6 @@ import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
-import PublicLayout from "./components/PublicLayout";
 import { IntegrationProvider } from "./hooks/useIntegration";
 import { lazy, Suspense } from "react";
 import TrackingScripts from "./components/TrackingScripts";
@@ -48,13 +47,6 @@ const ResetPassword = lazyLoad(() => import("./pages/ResetPassword"));
 const ProductsPage = lazyLoad(() => import("./pages/Products"));
 const PricingPage = lazyLoad(() => import("./pages/Pricing"));
 const SupportPage = lazyLoad(() => import("./pages/Support"));
-const SolutionsSales = lazyLoad(() => import("./pages/SolutionsSales"));
-const SolutionsMarketing = lazyLoad(() => import("./pages/SolutionsMarketing"));
-const SolutionsSupport = lazyLoad(() => import("./pages/SolutionsSupport"));
-const ProductAI = lazyLoad(() => import("./pages/ProductAI"));
-const ProductChatbot = lazyLoad(() => import("./pages/ProductChatbot"));
-const ProductWhatsApp = lazyLoad(() => import("./pages/ProductWhatsApp"));
-const ProductBroadcasts = lazyLoad(() => import("./pages/ProductBroadcasts"));
 const CompanyAbout = lazyLoad(() => import("./pages/CompanyAbout"));
 const Blog = lazyLoad(() => import("./pages/resources/Blog"));
 const HelpCenter = lazyLoad(() => import("./pages/resources/HelpCenter"));
@@ -75,7 +67,6 @@ const AISalesAgent = lazyLoad(() => import("./pages/landing/AISalesAgent"));
 const WhatsAppOrdering = lazyLoad(() => import("./pages/landing/WhatsAppOrdering"));
 const WhatsAppBooking = lazyLoad(() => import("./pages/landing/WhatsAppBooking"));
 const AICustomerService = lazyLoad(() => import("./pages/landing/AICustomerService"));
-const ConversationalCommerce = lazyLoad(() => import("./pages/landing/ConversationalCommerce"));
 
 // SEO Vertical Industry Pages
 const Clinics = lazyLoad(() => import("./pages/landing/Clinics"));
@@ -89,7 +80,6 @@ const SolutionServicePage = lazyLoad(() => import("./pages/solutions/SolutionSer
 // SEO Knowledge Engine Pages
 const HowSariWorks = lazyLoad(() => import("./pages/landing/HowSariWorks"));
 const WhatsAppPaymentGuide = lazyLoad(() => import("./pages/landing/WhatsAppPaymentGuide"));
-const AISalesGuide = lazyLoad(() => import("./pages/landing/AISalesGuide"));
 
 // Merchant pages - lazy loaded
 const MerchantDashboard = lazyLoad(() => import("./pages/merchant/Dashboard"));
@@ -261,25 +251,25 @@ function Router() {
       <Route path="/pay/:linkId" component={PaymentLinkCheckout} />
       <Route path="/support" component={SupportPage} />
       <Route path="/solutions/sales">
-        <PublicLayout><SolutionsSales /></PublicLayout>
+        <Redirect to="/ai-whatsapp-sales-agent" />
       </Route>
       <Route path="/solutions/marketing">
-        <PublicLayout><SolutionsMarketing /></PublicLayout>
+        <Redirect to="/ai-whatsapp-sales-agent" />
       </Route>
       <Route path="/solutions/support">
-        <PublicLayout><SolutionsSupport /></PublicLayout>
+        <Redirect to="/ai-customer-service-whatsapp" />
       </Route>
       <Route path="/product/ai-agent">
-        <PublicLayout><ProductAI /></PublicLayout>
+        <Redirect to="/ai-whatsapp-sales-agent" />
       </Route>
       <Route path="/product/chatbot">
-        <PublicLayout><ProductChatbot /></PublicLayout>
+        <Redirect to="/ai-customer-service-whatsapp" />
       </Route>
       <Route path="/product/whatsapp">
-        <PublicLayout><ProductWhatsApp /></PublicLayout>
+        <Redirect to="/ai-whatsapp-sales-agent" />
       </Route>
       <Route path="/product/broadcasts">
-        <PublicLayout><ProductBroadcasts /></PublicLayout>
+        <Redirect to="/ai-whatsapp-sales-agent" />
       </Route>
       <Route path="/company/about" component={CompanyAbout} />
       <Route path="/resources/blog" component={Blog} />
@@ -298,7 +288,7 @@ function Router() {
       <Route path="/whatsapp-ordering-system" component={WhatsAppOrdering} />
       <Route path="/whatsapp-booking-system" component={WhatsAppBooking} />
       <Route path="/ai-customer-service-whatsapp" component={AICustomerService} />
-      <Route path="/conversational-commerce-platform" component={ConversationalCommerce} />
+      <Route path="/conversational-commerce-platform"><Redirect to="/ai-whatsapp-sales-agent" /></Route>
 
       {/* SEO Vertical Industry Pages */}
       <Route path="/solutions/clinics" component={Clinics} />
@@ -312,7 +302,7 @@ function Router() {
       {/* SEO Knowledge Engine Pages */}
       <Route path="/docs/how-sari-works" component={HowSariWorks} />
       <Route path="/docs/whatsapp-payment-guide" component={WhatsAppPaymentGuide} />
-      <Route path="/docs/ai-sales-guide" component={AISalesGuide} />
+      <Route path="/docs/ai-sales-guide"><Redirect to="/ai-whatsapp-sales-agent" /></Route>
 
       <Route path="/merchant/setup-wizard" component={SetupWizard} />
 

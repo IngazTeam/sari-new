@@ -7,7 +7,7 @@ import { SeoHead } from '@/components/SeoHead';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
-  ShoppingCart, ArrowRight, Star, Sparkles, CreditCard, Package,
+  ShoppingCart, ArrowRight, Sparkles, CreditCard, Package,
   Truck, Bell, Receipt, Clock, Shield, Smartphone, Zap, CheckCircle2,
   MessageSquare, BarChart3,
 } from 'lucide-react';
@@ -24,7 +24,6 @@ const schemaData = {
       "operatingSystem": "Web",
       "url": `${BASE}/whatsapp-ordering-system`,
       "description": "نظام طلبات واتساب متكامل بالذكاء الاصطناعي. يستقبل الطلبات، يرسل الفواتير، يتتبع الشحنات، ويدير المدفوعات تلقائياً.",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "SAR" },
     },
     {
       "@type": "FAQPage",
@@ -33,7 +32,7 @@ const schemaData = {
         { "@type": "Question", "name": "هل يدعم ساري الدفع الإلكتروني؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري يتكامل مع بوابات الدفع الرئيسية مثل Tap وMoyasar. يرسل روابط دفع آمنة للعميل مباشرة في المحادثة." }},
         { "@type": "Question", "name": "هل يمكن ربط نظام الطلبات مع سلة وزد؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري يتكامل مع سلة وزد وووكومرس. الطلبات تُسجّل تلقائياً في متجرك مع تحديث المخزون." }},
         { "@type": "Question", "name": "هل يدعم تتبع الشحنات؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري يرسل تحديثات الشحن للعملاء تلقائياً عبر واتساب مع رقم التتبع وروابط الشحن." }},
-        { "@type": "Question", "name": "كم طلب يمكن معالجته يومياً؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري يعالج آلاف الطلبات يومياً بدون تأخير. لا يوجد حد لعدد الطلبات في الباقات المدفوعة." }},
+        { "@type": "Question", "name": "كم طلب يمكن معالجته يومياً؟", "acceptedAnswer": { "@type": "Answer", "text": "السعة الفعلية تعتمد على الباقة وقناة واتساب وبوابة الدفع وحدود مزودي الخدمة. راجع صفحة التسعير وحدود حسابك الحالية." }},
       ]
     },
     { "@type": "BreadcrumbList", "itemListElement": [
@@ -55,8 +54,8 @@ export default function WhatsAppOrdering() {
     { icon: Package, ar: 'إدارة المخزون الذكية', en: 'Smart Inventory Management', arD: 'تحديث المخزون تلقائياً مع كل طلب', enD: 'Automatic inventory update with each order' },
     { icon: Bell, ar: 'إشعارات الطلبات', en: 'Order Notifications', arD: 'تنبيهات فورية لك ولعميلك في كل مرحلة', enD: 'Instant alerts for you and your customer at every stage' },
     { icon: BarChart3, ar: 'تقارير المبيعات', en: 'Sales Reports', arD: 'تحليل تفصيلي لأفضل المنتجات والأوقات', enD: 'Detailed analysis of best products and peak times' },
-    { icon: Shield, ar: 'حماية بيانات العملاء', en: 'Customer Data Protection', arD: 'تشفير كامل وحماية متقدمة للبيانات', enD: 'Full encryption and advanced data protection' },
-    { icon: Zap, ar: 'سرعة خارقة', en: 'Blazing Speed', arD: 'معالجة الطلب في ثوانٍ بدل ساعات', enD: 'Process orders in seconds instead of hours' },
+    { icon: Shield, ar: 'حماية بيانات العملاء', en: 'Customer Data Protection', arD: 'عزل بيانات المتجر وضوابط وصول على العمليات الحساسة', enD: 'Merchant data isolation and access controls on sensitive operations' },
+    { icon: Zap, ar: 'مسار آلي', en: 'Automated Flow', arD: 'ينفذ خطوات الطلب آلياً عند سلامة القناة والتكاملات', enD: 'Runs order steps automatically when the channel and integrations are healthy' },
   ];
 
   const flow = [
@@ -102,8 +101,14 @@ export default function WhatsAppOrdering() {
               <Link href="/try-sari"><a><Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8">{isAr ? 'شاهد عرض تجريبي' : 'See Demo'}</Button></a></Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 max-w-2xl mx-auto">
-              {[{ v: '40%', ar: 'زيادة المبيعات', en: 'Sales Increase' }, { v: '0', ar: 'أخطاء في الطلبات', en: 'Order Errors' }, { v: '<30s', ar: 'وقت استلام الطلب', en: 'Order Receive Time' }, { v: '24/7', ar: 'استقبال الطلبات', en: 'Order Reception' }].map(s => (<div key={s.v} className="text-center"><div className="text-3xl font-bold text-blue-600">{s.v}</div><div className="text-sm text-muted-foreground">{isAr ? s.ar : s.en}</div></div>))}
+              {[
+                { v: '3', ar: 'عملاء تجريبيون', en: 'Pilot clients' },
+                { v: '≈100', ar: 'عميل نهائي شهرياً لكل تجربة', en: 'Monthly end customers per pilot' },
+                { v: '≈300', ar: 'عميل نهائي شهرياً عبر التجارب', en: 'Monthly end customers across pilots' },
+                { v: isAr ? 'بيتا' : 'Beta', ar: 'مرحلة المنتج', en: 'Product stage' },
+              ].map(s => (<div key={s.v} className="text-center"><div className="text-3xl font-bold text-blue-600">{s.v}</div><div className="text-sm text-muted-foreground">{isAr ? s.ar : s.en}</div></div>))}
             </div>
+            <p className="text-xs text-muted-foreground">{isAr ? 'أرقام الاستخدام بحسب إفادة مالك المنتج عن تجارب أغسطس 2026؛ أثر المبيعات والأخطاء وزمن الطلب قيد القياس.' : 'Usage figures are owner-reported for August 2026 pilots; sales impact, errors and order time are still being measured.'}</p>
           </div>
         </div>
       </section>
@@ -160,15 +165,15 @@ export default function WhatsAppOrdering() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Pilot evidence */}
       <section className="py-20 bg-white dark:bg-background">
-        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'متاجر تثق بساري' : 'Stores Trust Sari'}</h2>
+        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'دليل البيتا الحالي' : 'Current Beta Evidence'}</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              { name: isAr ? 'متجر نوره للعبايات' : 'Noura Abayas Store', role: isAr ? 'متجر إلكتروني — الرياض' : 'Online Store — Riyadh', text: isAr ? 'طلبات الواتساب أصبحت 60% من مبيعاتنا. ساري يتعامل مع كل الطلبات تلقائياً والعملاء يحبون السهولة.' : 'WhatsApp orders became 60% of our sales. Sari handles all orders automatically and customers love the ease.' },
-              { name: isAr ? 'مطعم بيت الشاورما' : 'Shawarma House', role: isAr ? 'مطعم — جدة' : 'Restaurant — Jeddah', text: isAr ? 'أخطاء الطلبات اختفت تماماً. كل شيء مكتوب ومؤكد. الطلبات تصلنا جاهزة للتحضير.' : 'Order errors completely disappeared. Everything is written and confirmed. Orders come ready for preparation.' },
-              { name: isAr ? 'بقالة الحي' : 'Al-Hay Grocery', role: isAr ? 'بقالة توصيل — الدمام' : 'Delivery Grocery — Dammam', text: isAr ? 'ساري يستقبل طلبات التوصيل 24/7. حتى بالليل الطلبات تتسجل ونجهزها الصباح.' : 'Sari receives delivery orders 24/7. Even at night, orders are registered and we prepare them in the morning.' },
-            ].map((t, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div><p className="text-muted-foreground mb-4 text-sm">{t.text}</p><div className="font-semibold">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></CardContent></Card>))}
+              { title: isAr ? 'استخدام فعلي' : 'Live usage', text: isAr ? 'ثلاثة عملاء جرّبوا المنتج بنجاح تشغيلياً.' : 'Three clients have used the product successfully in operation.' },
+              { title: isAr ? 'حجم أولي' : 'Initial volume', text: isAr ? 'نحو 100 عميل نهائي شهرياً لكل تجربة.' : 'About 100 end customers monthly per pilot.' },
+              { title: isAr ? 'قياس مطلوب' : 'Measurement required', text: isAr ? 'نقيس اكتمال الطلب والدفع والأخطاء قبل نشر نسب نتائج.' : 'Order completion, payment and errors are being measured before publishing outcome rates.' },
+            ].map((item, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><CheckCircle2 className="w-6 h-6 text-blue-600 mb-3" aria-hidden="true" /><div className="font-semibold mb-2">{item.title}</div><p className="text-muted-foreground text-sm">{item.text}</p></CardContent></Card>))}
           </div>
         </div>
       </section>

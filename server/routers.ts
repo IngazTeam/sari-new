@@ -267,7 +267,6 @@ import {
   getWhatsappConnectionByMerchantId,
   incrementReferralCount,
   incrementTemplateUsage,
-  incrementTrySariMessageCount,
   markAbandonedCartRecovered,
   markConvertedToSignup,
   markEmailVerificationTokenAsUsed,
@@ -320,6 +319,8 @@ import {
   updateWhatsAppRequest,
   upsertMerchantPaymentSettings,
   upsertTrySariAnalytics,
+  releaseTrySariMessageSlot,
+  reserveTrySariMessageSlot,
   validatePasswordResetToken,
 } from './db';
 import {
@@ -5439,9 +5440,9 @@ export const appRouter = router({
     // Send a message and get AI response (public, no auth)
     chat: publicProcedure
       .input(z.object({
-        message: z.string(),
-        sessionId: z.string(),
-        exampleUsed: z.string().optional(),
+        message: z.string().trim().min(1).max(1000),
+        sessionId: z.string().regex(/^[A-Za-z0-9-]{16,100}$/),
+        exampleUsed: z.string().max(500).optional(),
         ipAddress: z.string().optional(),
         userAgent: z.string().optional(),
       }))
@@ -5460,47 +5461,50 @@ export const appRouter = router({
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'وصلت للحد الأقصى من الرسائل في هذه الجلسة. سجل حساب لتجربة كاملة!' });
         }
 
-        // Use a demo merchant for public testing
-        const demoMerchant = await getMerchantById(1);
+        const demoMerchantId = Number(process.env.PUBLIC_DEMO_MERCHANT_ID || 0);
+        if (!Number.isInteger(demoMerchantId) || demoMerchantId <= 0) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Public demo is not configured' });
+        }
+        const demoMerchant = await getMerchantById(demoMerchantId);
 
         if (!demoMerchant) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Demo merchant not configured' });
         }
 
-        // Track analytics
+        // Create a zero-count session before the external AI call. Failed calls
+        // remain visible operationally but never consume a successful demo turn.
         const session = await getTrySariAnalyticsBySessionId(input.sessionId);
         if (!session) {
-          // Create new session
-          await upsertTrySariAnalytics({
+          const created = await upsertTrySariAnalytics({
             sessionId: input.sessionId,
-            messageCount: 1,
             exampleUsed: input.exampleUsed,
-            ipAddress: input.ipAddress,
-            userAgent: input.userAgent,
+            ipAddress: clientIp.slice(0, 64),
+            userAgent: String((ctx as any).req?.headers?.['user-agent'] || '').slice(0, 500),
           });
-        } else {
-          // Increment message count
-          await incrementTrySariMessageCount(input.sessionId);
-
-          // Update example if provided
-          if (input.exampleUsed && !session.exampleUsed) {
-            await upsertTrySariAnalytics({
-              sessionId: input.sessionId,
-              exampleUsed: input.exampleUsed,
-            });
+          if (!created && !(await getTrySariAnalyticsBySessionId(input.sessionId))) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Public demo analytics unavailable' });
           }
+        } else if (input.exampleUsed && !session.exampleUsed) {
+          await upsertTrySariAnalytics({ sessionId: input.sessionId, exampleUsed: input.exampleUsed });
         }
 
-        const { chatWithSari } = await import('./ai/sari-personality');
+        if (!(await reserveTrySariMessageSlot(input.sessionId, 5))) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'وصلت للحد الأقصى من الرسائل في هذه الجلسة. سجل حساب لتجربة كاملة!' });
+        }
 
-        const response = await chatWithSari({
-          merchantId: demoMerchant.id,
-          customerPhone: input.sessionId,
-          customerName: 'زائر',
-          message: input.message,
-        });
-
-        return { response };
+        try {
+          const { chatWithSari } = await import('./ai/sari-personality');
+          const response = await chatWithSari({
+            merchantId: demoMerchant.id,
+            customerPhone: input.sessionId,
+            customerName: 'زائر',
+            message: input.message,
+          });
+          return { response };
+        } catch (error) {
+          await releaseTrySariMessageSlot(input.sessionId);
+          throw error;
+        }
       }),
 
     // Track signup prompt shown

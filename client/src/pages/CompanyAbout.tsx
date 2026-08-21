@@ -7,7 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { SeoHead, useSeoConfig } from '@/components/SeoHead';
 
 export default function CompanyAbout() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isAr = (i18n.language || 'ar').startsWith('ar');
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       // @ts-ignore
@@ -87,23 +88,23 @@ export default function CompanyAbout() {
       <section className="bg-gradient-to-l from-blue-600 to-blue-800 text-white py-20">
         <div className="container">
           <div className="grid md:grid-cols-4 gap-8 text-center">
-            <div>
-              <div className="text-5xl font-bold mb-2">500+</div>
-              <div className="text-blue-100">{t('companyAboutPage.text8')}</div>
-            </div>
-            <div>
-              <div className="text-5xl font-bold mb-2">100K+</div>
-              <div className="text-blue-100">{t('companyAboutPage.text9')}</div>
-            </div>
-            <div>
-              <div className="text-5xl font-bold mb-2">95%</div>
-              <div className="text-blue-100">{t('companyAboutPage.text10')}</div>
-            </div>
-            <div>
-              <div className="text-5xl font-bold mb-2">24/7</div>
-              <div className="text-blue-100">{t('companyAboutPage.text11')}</div>
-            </div>
+            {[
+              { value: '3', ar: 'عملاء تجريبيون', en: 'Pilot clients' },
+              { value: '≈100', ar: 'عميل نهائي شهرياً لكل تجربة', en: 'Monthly end customers per pilot' },
+              { value: '≈300', ar: 'عميل نهائي شهرياً عبر التجارب', en: 'Monthly end customers across pilots' },
+              { value: isAr ? 'بيتا' : 'Beta', ar: 'مرحلة المنتج', en: 'Product stage' },
+            ].map((stat) => (
+              <div key={stat.value}>
+                <div className="text-5xl font-bold mb-2">{stat.value}</div>
+                <div className="text-blue-100">{isAr ? stat.ar : stat.en}</div>
+              </div>
+            ))}
           </div>
+          <p className="text-center text-sm text-blue-100 mt-8">
+            {isAr
+              ? 'أرقام الاستخدام بحسب إفادة مالك المنتج عن تجارب أغسطس 2026، وتخضع للتحقق من التحليلات ودراسات الحالة.'
+              : 'Usage figures are based on the product owner\'s report for August 2026 pilots and remain subject to analytics and case-study verification.'}
+          </p>
         </div>
       </section>
 

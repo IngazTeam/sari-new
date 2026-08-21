@@ -8,14 +8,14 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
   HeadphonesIcon, ArrowRight, Sparkles, Clock, Shield, Zap, MessageSquare,
-  Brain, Globe, BarChart3, BookOpen, Users, ThumbsUp, Bot,
+  Brain, Globe, BarChart3, BookOpen, Users, ThumbsUp, Bot, CheckCircle2,
 } from 'lucide-react';
 
 const BASE = 'https://sary.live';
 const schemaData = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "SoftwareApplication", "name": "ساري - خدمة عملاء واتساب بالذكاء الاصطناعي", "applicationCategory": "BusinessApplication", "url": `${BASE}/ai-customer-service-whatsapp`, "description": "خدمة عملاء ذكية عبر واتساب تعمل 24/7. ترد على الاستفسارات، تحل المشاكل، وتحول العملاء غير الراضين إلى عملاء مخلصين.", "offers": { "@type": "Offer", "price": "0", "priceCurrency": "SAR" } },
+    { "@type": "SoftwareApplication", "name": "ساري - خدمة عملاء واتساب بالذكاء الاصطناعي", "applicationCategory": "BusinessApplication", "url": `${BASE}/ai-customer-service-whatsapp`, "description": "خدمة عملاء ذكية عبر واتساب تعمل 24/7 وتستخدم قاعدة معرفة المتجر، مع إمكانية التحويل إلى موظف بشري." },
     { "@type": "FAQPage", "mainEntity": [
       { "@type": "Question", "name": "كيف يتعامل ساري مع شكاوى العملاء؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري مدرب على التعامل مع الشكاوى بذكاء عاطفي. يعتذر، يفهم المشكلة، ويقدم حلول عملية. وإذا كانت المشكلة معقدة، يحولها لموظف بشري مع ملخص كامل." }},
       { "@type": "Question", "name": "هل يمكنني تدريب ساري على معلومات شركتي؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، يمكنك إضافة قاعدة معرفية كاملة عن منتجاتك وسياساتك وأسعارك. ساري يستخدمها للرد بدقة على أي سؤال." }},
@@ -42,7 +42,7 @@ export default function AICustomerService() {
     { icon: ThumbsUp, ar: 'تقييم الرضا', en: 'Satisfaction Rating', arD: 'يسأل العميل عن رضاه بعد كل محادثة', enD: 'Asks customer about satisfaction after every conversation' },
     { icon: Shield, ar: 'خصوصية تامة', en: 'Complete Privacy', arD: 'بيانات العملاء محمية ومشفرة بالكامل', enD: 'Customer data fully protected and encrypted' },
     { icon: BarChart3, ar: 'تحليل الاستفسارات', en: 'Inquiry Analysis', arD: 'تقارير عن أكثر الأسئلة شيوعاً وأوقات الذروة', enD: 'Reports on most common questions and peak times' },
-    { icon: Zap, ar: 'حل المشاكل فوراً', en: 'Instant Problem Solving', arD: 'يحل 80% من المشاكل بدون تدخل بشري', enD: 'Solves 80% of issues without human intervention' },
+    { icon: Zap, ar: 'مساعدة تلقائية', en: 'Automated Assistance', arD: 'يجيب ضمن قاعدة المعرفة ويحوّل المحادثة عندما يلزم تدخل بشري', enD: 'Answers within the knowledge base and hands off when human help is needed' },
   ];
 
   return (
@@ -61,8 +61,13 @@ export default function AICustomerService() {
               <Link href="/try-sari"><a><Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8">{isAr ? 'جرّب مجاناً' : 'Try Free'}</Button></a></Link>
             </div>
             <div className="grid grid-cols-3 gap-6 pt-8 max-w-xl mx-auto">
-              {[{ v: '< 5s', ar: 'وقت الرد', en: 'Response Time' }, { v: '80%', ar: 'حل بدون بشري', en: 'Solved Without Human' }, { v: '95%', ar: 'رضا العملاء', en: 'Customer Satisfaction' }].map(s => (<div key={s.v} className="text-center"><div className="text-3xl font-bold text-orange-600">{s.v}</div><div className="text-sm text-muted-foreground">{isAr ? s.ar : s.en}</div></div>))}
+              {[
+                { v: '3', ar: 'عملاء تجريبيون', en: 'Pilot clients' },
+                { v: '≈100', ar: 'عميل نهائي شهرياً لكل تجربة', en: 'Monthly end customers per pilot' },
+                { v: isAr ? 'بيتا' : 'Beta', ar: 'مرحلة المنتج', en: 'Product stage' },
+              ].map(s => (<div key={s.v} className="text-center"><div className="text-3xl font-bold text-orange-600">{s.v}</div><div className="text-sm text-muted-foreground">{isAr ? s.ar : s.en}</div></div>))}
             </div>
+            <p className="text-xs text-muted-foreground">{isAr ? 'أرقام الاستخدام بحسب إفادة مالك المنتج عن تجارب أغسطس 2026، وليست ادعاءً بنتائج رضا أو تحويل.' : 'Usage figures are owner-reported for August 2026 pilots; they are not satisfaction or conversion claims.'}</p>
           </div>
         </div>
       </section>
@@ -94,16 +99,15 @@ export default function AICustomerService() {
           </div>
         </div>
       </section>
-      {/* Testimonials */}
+      {/* Pilot evidence */}
       <section className="py-20 bg-white dark:bg-background">
-        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'شركات تثق بدعم ساري' : 'Companies Trust Sari Support'}</h2>
+        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'دليل البيتا الحالي' : 'Current Beta Evidence'}</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              { name: isAr ? 'متجر إلكتروني' : 'E-commerce Store', role: isAr ? 'تجزئة — الرياض' : 'Retail — Riyadh', text: isAr ? 'ساري يحل 85% من مشاكل العملاء بدون تدخلنا. وقت الرد انخفض من ساعات لثوانٍ.' : 'Sari solves 85% of customer issues without our intervention. Response time dropped from hours to seconds.' },
-              { name: isAr ? 'شركة SaaS' : 'SaaS Company', role: isAr ? 'تقنية — جدة' : 'Technology — Jeddah', text: isAr ? 'العملاء يحصلون على إجابات فورية على أسئلتهم التقنية. الفريق يركز على المشاكل المعقدة فقط.' : 'Customers get instant answers to their technical questions. The team focuses only on complex issues.' },
-              { name: isAr ? 'مركز خدمات' : 'Service Center', role: isAr ? 'خدمات — الدمام' : 'Services — Dammam', text: isAr ? 'رضا العملاء ارتفع 30% بعد تفعيل ساري. الدعم 24/7 كان حلم والآن تحقق.' : 'Customer satisfaction increased 30% after activating Sari. 24/7 support was a dream and now it\'s real.' },
-            // @ts-ignore
-            ].map((t, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div><p className="text-muted-foreground mb-4 text-sm">{t.text}</p><div className="font-semibold">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></CardContent></Card>))}
+              { title: isAr ? 'تشغيل فعلي' : 'Live operation', text: isAr ? 'ثلاثة عملاء جرّبوا المنتج بنجاح في استخدام حقيقي.' : 'Three clients have successfully tried the product in real usage.' },
+              { title: isAr ? 'حجم مبكر' : 'Early volume', text: isAr ? 'نحو 100 عميل نهائي شهرياً لكل تجربة.' : 'About 100 end customers monthly per pilot.' },
+              { title: isAr ? 'قياس قبل الادعاء' : 'Measure before claiming', text: isAr ? 'الرضا والحل دون تدخل والتحويل مؤشرات ستُنشر بعد توثيقها فقط.' : 'Satisfaction, deflection and conversion will only be published after verification.' },
+            ].map((item, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><CheckCircle2 className="w-6 h-6 text-orange-600 mb-3" aria-hidden="true" /><div className="font-semibold mb-2">{item.title}</div><p className="text-muted-foreground text-sm">{item.text}</p></CardContent></Card>))}
           </div>
         </div>
       </section>

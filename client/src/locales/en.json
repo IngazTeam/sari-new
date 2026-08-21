@@ -280,13 +280,13 @@
         "feature3": "Marketing campaigns",
         "feature4": "Google Sheets integration",
         "feature5": "Google Calendar integration",
-        "feature6": "Dedicated 24/7 support",
+        "feature6": "Dedicated support during beta",
         "cta": "Subscribe Now"
       }
     },
     "cta": {
       "title": "Ready to Start?",
-      "subtitle": "Join thousands of merchants using Sari to increase their sales",
+      "subtitle": "Join the beta and help us measure Sari's impact on your store",
       "button": "Start Free Now"
     },
     "stats": {
@@ -294,6 +294,36 @@
       "conversations": "Monthly Conversations",
       "satisfaction": "Customer Satisfaction",
       "support": "24/7 Support"
+    },
+    "pilotEvidence": {
+      "title": "What the beta has proved so far",
+      "subtitle": "Early real-world usage, with a clear line between current evidence and outcomes still being measured",
+      "disclaimer": "Usage figures are based on the product owner's report for current pilots (August 2026) and remain subject to analytics and case-study verification.",
+      "stats": {
+        "pilotClients": "Pilot clients",
+        "monthlyPerPilot": "End customers monthly per pilot",
+        "monthlyTotal": "End customers monthly across pilots",
+        "stageValue": "Beta",
+        "stage": "Product stage"
+      },
+      "cards": {
+        "live": {
+          "title": "Live operation",
+          "description": "Three clients have successfully tried the product in real usage environments."
+        },
+        "volume": {
+          "title": "Early usage volume",
+          "description": "About 100 end customers monthly per pilot, or roughly 300 across the current pilots."
+        },
+        "next": {
+          "title": "Next evidence milestone",
+          "description": "Verify conversion, revenue, retention and response accuracy before publishing claims about them."
+        }
+      },
+      "pricing": {
+        "title": "One source for prices and limits",
+        "description": "The pricing page loads current plans directly from the system so this page cannot show an outdated price or conversation limit."
+      }
     },
     "steps": {
       "title": "How to Start with Sari?",
@@ -312,26 +342,26 @@
       },
       "step4": {
         "title": "Start Selling",
-        "description": "Let Sari handle your customers and increase your sales"
+        "description": "Let Sari handle conversations within your store policies"
       }
     },
     "testimonials": {
-      "title": "What Our Customers Say",
-      "subtitle": "Real experiences from merchants using Sari",
+      "title": "Current beta evidence",
+      "subtitle": "Early usage data, not unattributed testimonials",
       "testimonial1": {
-        "name": "Ahmed Al-Malki",
-        "role": "Electronics Store Owner",
-        "content": "Sari changed the way I deal with customers. Now I can focus on developing the store while Sari handles inquiries."
+        "name": "Live operation",
+        "role": "Product owner report",
+        "content": "Three clients have successfully tried the product in real usage."
       },
       "testimonial2": {
-        "name": "Fatima Al-Otaibi",
-        "role": "Fashion Store Owner",
-        "content": "My sales increased 40% after using Sari. Customers love the fast and professional response."
+        "name": "Early volume",
+        "role": "Product owner report",
+        "content": "About 100 end customers monthly per current pilot."
       },
       "testimonial3": {
-        "name": "Mohammed Al-Qahtani",
-        "role": "Perfume Store Owner",
-        "content": "Best investment I made for my store. Sari speaks natural Saudi dialect and understands customer needs."
+        "name": "Next measurement",
+        "role": "Pending verification",
+        "content": "Conversion, revenue, satisfaction and retention will not be published before verification."
       }
     },
     "faq": {

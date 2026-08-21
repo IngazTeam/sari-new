@@ -5469,6 +5469,42 @@ export async function incrementTrySariMessageCount(sessionId: string): Promise<v
 }
 
 /**
+ * Atomically reserves one public-demo turn. The conditional update makes the
+ * message limit safe against parallel requests using the same session ID.
+ */
+export async function reserveTrySariMessageSlot(sessionId: string, maxMessages: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+
+  const result = await db
+    .update(trySariAnalytics)
+    .set({
+      messageCount: sql`${trySariAnalytics.messageCount} + 1`,
+      updatedAt: formatDateForDB(new Date()),
+    })
+    .where(and(
+      eq(trySariAnalytics.sessionId, sessionId),
+      lt(trySariAnalytics.messageCount, maxMessages),
+    ));
+
+  return Number((result[0] as { affectedRows?: number }).affectedRows || 0) === 1;
+}
+
+/** Release a reserved turn when the upstream AI request fails. */
+export async function releaseTrySariMessageSlot(sessionId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(trySariAnalytics)
+    .set({
+      messageCount: sql`GREATEST(${trySariAnalytics.messageCount} - 1, 0)`,
+      updatedAt: formatDateForDB(new Date()),
+    })
+    .where(eq(trySariAnalytics.sessionId, sessionId));
+}
+
+/**
  * Mark session as shown signup prompt
  */
 export async function markSignupPromptShown(sessionId: string): Promise<void> {

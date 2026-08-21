@@ -8,7 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
   Bot, MessageSquare, Zap, TrendingUp, Clock, Shield, CheckCircle2,
-  ArrowRight, Star, ShoppingCart, Sparkles, BarChart3, Users, Phone,
+  ArrowRight, ShoppingCart, Sparkles, BarChart3, Users, Phone,
   Target, Repeat, DollarSign, HeadphonesIcon, Globe, Mic,
 } from 'lucide-react';
 
@@ -25,15 +25,13 @@ const schemaData = {
       "operatingSystem": "Web",
       "url": `${BASE}/ai-whatsapp-sales-agent`,
       "description": "موظف مبيعات ذكي يعمل على واتساب بالذكاء الاصطناعي. يرد على العملاء، يعالج الطلبات، ويحول المحادثات إلى مبيعات 24/7.",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "SAR" },
-      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "ratingCount": "850" },
     },
     {
       "@type": "FAQPage",
       "mainEntity": [
         { "@type": "Question", "name": "ما هو موظف المبيعات الذكي من ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري هو وكيل مبيعات يعمل بالذكاء الاصطناعي على واتساب. يرد على العملاء بلغة طبيعية، يفهم احتياجاتهم، يعرض المنتجات المناسبة، ويكمل عملية البيع تلقائياً بدون تدخل بشري." }},
         { "@type": "Question", "name": "هل يدعم ساري اللهجة السعودية؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري مصمم خصيصاً للسوق السعودي ويتحدث باللهجة السعودية بطلاقة. كما يدعم الفصحى والإنجليزية." }},
-        { "@type": "Question", "name": "كم يكلف ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري يقدم باقة مجانية للبدء. الباقات المدفوعة تبدأ من 99 ريال شهرياً وتشمل محادثات غير محدودة وحملات تسويقية." }},
+        { "@type": "Question", "name": "كم يكلف ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "تبدأ الحسابات بفترة تجريبية مدتها 7 أيام، ثم تُعرض الباقات وحدودها وأسعارها الحالية في صفحة التسعير." }},
         { "@type": "Question", "name": "هل يتكامل ساري مع سلة وزد؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري يتكامل مباشرة مع سلة وزد وووكومرس. يسحب منتجاتك تلقائياً ويستخدمها في المحادثات مع العملاء." }},
         { "@type": "Question", "name": "كيف يختلف ساري عن بوتات الواتساب العادية؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري ليس بوت ردود جاهزة. هو موظف مبيعات حقيقي يفهم السياق، يتذكر المحادثات السابقة، يقترح منتجات بناءً على احتياج العميل، ويتعامل مع الاعتراضات بذكاء." }},
         { "@type": "Question", "name": "هل يمكنني تخصيص شخصية ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، يمكنك تخصيص اسم ساري وشخصيته ونبرة الحديث ليتناسب مع هوية متجرك. كما يمكنك إضافة ردود سريعة مخصصة." }},
@@ -73,17 +71,17 @@ export default function AISalesAgent() {
   ];
 
   const stats = [
-    { value: '95%', ar: 'معدل رضا العملاء', en: 'Customer Satisfaction' },
-    { value: '3x', ar: 'زيادة في المبيعات', en: 'Sales Increase' },
-    { value: '< 5s', ar: 'متوسط وقت الرد', en: 'Avg Response Time' },
-    { value: '24/7', ar: 'متاح دائماً', en: 'Always Available' },
+    { value: '3', ar: 'عملاء تجريبيون', en: 'Pilot clients' },
+    { value: '≈100', ar: 'عميل نهائي شهرياً لكل تجربة', en: 'Monthly end customers per pilot' },
+    { value: '≈300', ar: 'عميل نهائي شهرياً عبر التجارب', en: 'Monthly end customers across pilots' },
+    { value: isAr ? 'بيتا' : 'Beta', ar: 'مرحلة المنتج', en: 'Product stage' },
   ];
 
   const comparisons = [
-    { ar: 'الرد على العملاء', en: 'Customer Response', before: isAr ? '15-30 دقيقة' : '15-30 min', after: isAr ? 'أقل من 5 ثوانٍ' : 'Under 5 seconds' },
-    { ar: 'معالجة الطلبات', en: 'Order Processing', before: isAr ? 'يدوي بالكامل' : 'Fully manual', after: isAr ? 'تلقائي 100%' : '100% automated' },
-    { ar: 'التوفر', en: 'Availability', before: isAr ? '8 ساعات/يوم' : '8 hours/day', after: isAr ? '24 ساعة/7 أيام' : '24/7' },
-    { ar: 'التكلفة الشهرية', en: 'Monthly Cost', before: isAr ? '5,000+ ريال (موظف)' : '5,000+ SAR (employee)', after: isAr ? 'من 99 ريال فقط' : 'From 99 SAR only' },
+    { ar: 'الرد على العملاء', en: 'Customer Response', before: isAr ? 'يعتمد على توفر الموظف' : 'Depends on staff availability', after: isAr ? 'رد آلي عند سلامة القناة والخدمة' : 'Automated when channel and service are healthy' },
+    { ar: 'معالجة الطلبات', en: 'Order Processing', before: isAr ? 'خطوات يدوية' : 'Manual steps', after: isAr ? 'أتمتة قابلة للإعداد والمراجعة' : 'Configurable, reviewable automation' },
+    { ar: 'خارج ساعات العمل', en: 'Outside business hours', before: isAr ? 'قد تنتظر الرسالة' : 'Messages may wait', after: isAr ? 'المساعد الآلي يظل متاحاً' : 'The automated assistant remains available' },
+    { ar: 'التكلفة الشهرية', en: 'Monthly Cost', before: isAr ? 'رواتب وأدوات تشغيل' : 'Staff and tooling costs', after: isAr ? 'بحسب الباقة المنشورة' : 'Per the published plan' },
   ];
 
   return (
@@ -105,7 +103,7 @@ export default function AISalesAgent() {
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-sm font-medium">
               <Sparkles className="w-4 h-4" />
-              <span>{isAr ? 'الأول من نوعه في السعودية' : 'First of its Kind in Saudi Arabia'}</span>
+              <span>{isAr ? 'مصمم للسوق السعودي' : 'Built for the Saudi market'}</span>
             </div>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
               <span className="text-emerald-600 dark:text-emerald-400">
@@ -116,8 +114,8 @@ export default function AISalesAgent() {
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
               {isAr
-                ? 'ساري يحول واتساب متجرك إلى آلة مبيعات ذكية. يرد على العملاء، يعرض المنتجات، يعالج الطلبات، ويغلق الصفقات — تلقائياً وبدون تدخل بشري.'
-                : 'Sari transforms your store\'s WhatsApp into a smart sales machine. Responds to customers, showcases products, processes orders, and closes deals — automatically without human intervention.'}
+                ? 'ساري مساعد مبيعات على واتساب: يرد من معرفة متجرك، يعرض المنتجات، يساعد في الطلب والدفع، ويتيح التحويل للبشر عند الحاجة.'
+                : 'Sari is a WhatsApp sales assistant: it answers from your store knowledge, presents products, assists with orders and payments, and supports human handoff.'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/try-sari"><a>
@@ -141,6 +139,7 @@ export default function AISalesAgent() {
                 </div>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground">{isAr ? 'أرقام الاستخدام بحسب إفادة مالك المنتج عن تجارب أغسطس 2026، وتخضع للتوثيق من التحليلات.' : 'Usage figures are owner-reported for August 2026 pilots and remain subject to analytics verification.'}</p>
           </div>
         </div>
       </section>
@@ -183,7 +182,7 @@ export default function AISalesAgent() {
               {isAr ? 'كل ما يفعله موظف المبيعات الذكي' : 'Everything Your AI Sales Agent Does'}
             </h2>
             <p className="text-xl text-muted-foreground">
-              {isAr ? '9 قدرات خارقة في موظف واحد لا ينام' : '9 superpowers in one employee that never sleeps'}
+              {isAr ? 'قدرات عملية قابلة للإعداد بحسب قناة وسياسات متجرك' : 'Practical capabilities configurable to your store channel and policies'}
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -210,7 +209,7 @@ export default function AISalesAgent() {
           </h2>
           <div className="space-y-8">
             {[
-              { n: '1', ar: 'اربط واتسابك', en: 'Connect WhatsApp', arD: 'اربط رقم واتساب بزنس بساري خلال دقيقتين فقط', enD: 'Connect your WhatsApp Business number to Sari in just 2 minutes' },
+              { n: '1', ar: 'اربط واتسابك', en: 'Connect WhatsApp', arD: 'اربط رقم واتساب بزنس وفق خطوات الإعداد والتحقق', enD: 'Connect your WhatsApp Business number through the setup and verification flow' },
               { n: '2', ar: 'أضف منتجاتك', en: 'Add Products', arD: 'ارفع كتالوج منتجاتك يدوياً أو اربط متجرك (سلة/زد/ووكومرس)', enD: 'Upload your product catalog manually or connect your store (Salla/Zid/WooCommerce)' },
               { n: '3', ar: 'خصّص شخصية ساري', en: 'Customize Personality', arD: 'اختر اسم وشخصية ونبرة حديث الوكيل لتتناسب مع علامتك التجارية', enD: 'Choose agent name, personality, and tone to match your brand' },
               { n: '4', ar: 'ساري يبدأ البيع!', en: 'Sari Starts Selling!', arD: 'يستقبل المحادثات ويحولها إلى طلبات ومدفوعات تلقائياً', enD: 'Receives conversations and converts them to orders and payments automatically' },
@@ -229,24 +228,23 @@ export default function AISalesAgent() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Pilot evidence */}
       <section className="py-20 bg-muted/30">
         <div className="container">
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">
-            {isAr ? 'ماذا يقول عملاؤنا؟' : 'What Our Customers Say'}
+            {isAr ? 'دليل البيتا الحالي' : 'Current Beta Evidence'}
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              { name: isAr ? 'أحمد العتيبي' : 'Ahmed Al-Otaibi', role: isAr ? 'صاحب متجر إلكتروني' : 'E-commerce Store Owner', text: isAr ? 'ساري غيّر طريقة تعاملنا مع العملاء بالكامل. المبيعات زادت 3 أضعاف والعملاء أصبحوا أكثر رضاً.' : 'Sari completely changed how we deal with customers. Sales tripled and customers are much more satisfied.' },
-              { name: isAr ? 'نورة الشمري' : 'Noura Al-Shammari', role: isAr ? 'مديرة صالون تجميل' : 'Beauty Salon Manager', text: isAr ? 'الحجوزات عبر الواتساب أصبحت تلقائية بالكامل. وفّرنا وقت الموظفات وقللنا الأخطاء.' : 'WhatsApp bookings are now fully automated. We saved staff time and reduced errors.' },
-              { name: isAr ? 'د. فهد القحطاني' : 'Dr. Fahad Al-Qahtani', role: isAr ? 'طبيب أسنان' : 'Dentist', text: isAr ? 'المرضى يحجزون مواعيدهم عبر الواتساب بسهولة. ساري يتعامل معهم باحترافية عالية.' : 'Patients book their appointments via WhatsApp easily. Sari handles them with high professionalism.' },
-            ].map((t, i) => (
+              { title: isAr ? 'تشغيل فعلي' : 'Live operation', text: isAr ? 'ثلاثة عملاء جرّبوا المنتج بنجاح في استخدام حقيقي.' : 'Three clients have successfully tried the product in real usage.' },
+              { title: isAr ? 'حجم مبكر' : 'Early volume', text: isAr ? 'نحو 100 عميل نهائي شهرياً لكل تجربة.' : 'About 100 end customers monthly per pilot.' },
+              { title: isAr ? 'النتائج قيد القياس' : 'Outcomes under measurement', text: isAr ? 'لن ننشر نسب مبيعات أو رضا أو تحويل قبل توثيقها.' : 'We will not publish sales, satisfaction or conversion rates before verification.' },
+            ].map((item, i) => (
               <Card key={i} className="border-2">
                 <CardContent className="p-6">
-                  <div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div>
-                  <p className="text-muted-foreground mb-4 text-sm">{t.text}</p>
-                  <div className="font-semibold">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 mb-3" aria-hidden="true" />
+                  <div className="font-semibold mb-2">{item.title}</div>
+                  <p className="text-muted-foreground text-sm">{item.text}</p>
                 </CardContent>
               </Card>
             ))}

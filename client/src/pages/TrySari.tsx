@@ -38,7 +38,7 @@ export default function TrySari() {
     },
   ]);
   const [inputMessage, setInputMessage] = useState('');
-  const [sessionId] = useState(() => `demo-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  const [sessionId, setSessionId] = useState(() => `demo-${crypto.randomUUID()}`);
   const [messageCount, setMessageCount] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
   const [showAdvancedExamples, setShowAdvancedExamples] = useState(false);
@@ -68,18 +68,12 @@ export default function TrySari() {
     setMessages((prev) => [...prev, userMessage]);
     setInputMessage('');
 
-    // Increment message count
-    const newCount = messageCount + 1;
-    setMessageCount(newCount);
-
     try {
       // Get AI response with analytics tracking
       const response = await chatMutation.mutateAsync({
         message: messageToSend,
         sessionId,
         exampleUsed,
-        ipAddress: undefined,
-        userAgent: navigator.userAgent,
       });
 
       // Add assistant message
@@ -89,6 +83,9 @@ export default function TrySari() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      const newCount = messageCount + 1;
+      setMessageCount(newCount);
 
       // Show limit CTA after the AI reply on the final message
       if (newCount >= MAX_MESSAGES) {
@@ -115,6 +112,7 @@ export default function TrySari() {
   };
 
   const handleReset = () => {
+    setSessionId(`demo-${crypto.randomUUID()}`);
     setMessages([
       {
         role: 'assistant',
@@ -276,11 +274,14 @@ export default function TrySari() {
                         placeholder={t('trySariPage.text3')}
                         className="flex-1 text-right"
                         disabled={chatMutation.isPending}
+                        maxLength={1000}
+                        aria-label="اكتب رسالتك لتجربة ساري"
                       />
                       <Button
                         type="submit"
                         disabled={!inputMessage.trim() || chatMutation.isPending}
                         className="bg-blue-600 hover:bg-blue-700"
+                        aria-label="إرسال الرسالة"
                       >
                         <Send className="w-4 h-4" />
                       </Button>

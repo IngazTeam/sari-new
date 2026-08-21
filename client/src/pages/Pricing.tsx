@@ -4,7 +4,7 @@ import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
-import { CheckCircle2, ArrowRight, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { useTranslation } from 'react-i18next';
 
@@ -90,29 +90,14 @@ export default function Pricing() {
           {!isLoading && !error && plans && plans.length > 0 && (
             <>
               <div className="grid md:grid-cols-3 gap-8">
-                {plans.map((plan, index) => {
+                {plans.map((plan) => {
                   const features = parseFeatures(plan.features);
-                  // Mark the middle plan as popular if there are 3 plans
-                  const isPopular = plans.length === 3 && index === 1;
 
                   return (
                     <Card
                       key={plan.id}
-                      className={`relative border-2 ${
-                        isPopular
-                          ? 'border-primary shadow-xl scale-105'
-                          : 'border-border hover:border-primary/30 dark:hover:border-blue-800'
-                      } transition-all`}
+                      className="relative border-2 border-border hover:border-primary/30 dark:hover:border-blue-800 transition-all"
                     >
-                      {isPopular && (
-                        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                          <div className="bg-primary text-white px-4 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-                            <Sparkles className="w-4 h-4" />
-                            الأكثر شعبية
-                          </div>
-                        </div>
-                      )}
-
                       <CardHeader className="text-center space-y-4 pt-8">
                         <div>
                           <h3 className="text-2xl font-bold">{plan.name}</h3>
@@ -150,12 +135,8 @@ export default function Pricing() {
                         <Link href={`/subscribe/${plan.id}`}>
                           <a className="block">
                             <Button
-                              className={`w-full ${
-                                isPopular
-                                  ? 'bg-primary hover:bg-primary/90'
-                                  : ''
-                              }`}
-                              variant={isPopular ? 'default' : 'outline'}
+                              className="w-full"
+                              variant="outline"
                               size="lg"
                             >
                               اشترك الآن

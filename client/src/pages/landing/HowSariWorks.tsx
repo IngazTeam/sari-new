@@ -33,7 +33,7 @@ const schemaData = {
         { "@type": "Question", "name": "كم يستغرق تفعيل ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "أقل من 10 دقائق. سجّل، اربط واتساب، أضف منتجاتك — وساري جاهز للعمل فوراً." }},
         { "@type": "Question", "name": "هل أحتاج خبرة تقنية؟", "acceptedAnswer": { "@type": "Answer", "text": "لا. ساري مصمم ليكون سهل الاستخدام. كل شيء يتم عبر لوحة تحكم بسيطة بدون أي برمجة." }},
         { "@type": "Question", "name": "كيف يتعلم ساري عن منتجاتي؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري يسحب كتالوج منتجاتك تلقائياً من سلة/زد أو من ملف Excel. يفهم الأسماء والأسعار والأوصاف ويستخدمها في المحادثات." }},
-        { "@type": "Question", "name": "هل يمكنني مراقبة محادثات ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم. لوحة التحكم تعرض كل المحادثات في الوقت الحقيقي مع تحليلات مفصلة عن المبيعات ورضا العملاء." }},
+        { "@type": "Question", "name": "هل يمكنني مراقبة محادثات ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم. لوحة التحكم تعرض المحادثات ومقاييس التشغيل المسجلة. مؤشرات الرضا والإيراد لا تُعرض إلا عند توفر بيانات قياس فعلية لها." }},
         { "@type": "Question", "name": "ماذا يحدث إذا لم يعرف ساري الإجابة؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري يحول المحادثة للفريق البشري تلقائياً مع ملخص كامل للمحادثة حتى لا يحتاج العميل لإعادة شرح المشكلة." }},
       ]
     },
@@ -59,7 +59,7 @@ export default function HowSariWorks() {
     { icon: <Bot className="w-6 h-6" />, title: isAr ? 'محادثة طبيعية' : 'Natural Conversation', desc: isAr ? 'يتحدث باللهجة السعودية والعربية الفصحى والإنجليزية بطلاقة' : 'Fluent in Saudi dialect, formal Arabic, and English' },
     { icon: <ShoppingCart className="w-6 h-6" />, title: isAr ? 'عرض المنتجات' : 'Product Display', desc: isAr ? 'يعرض المنتجات مع الصور والأسعار مباشرة في المحادثة' : 'Shows products with images and prices directly in chat' },
     { icon: <Send className="w-6 h-6" />, title: isAr ? 'روابط الدفع' : 'Payment Links', desc: isAr ? 'يرسل رابط دفع إلكتروني ويتابع حتى إتمام عملية الشراء' : 'Sends payment link and follows up until purchase completion' },
-    { icon: <BarChart3 className="w-6 h-6" />, title: isAr ? 'تحليلات ذكية' : 'Smart Analytics', desc: isAr ? 'يتتبع كل محادثة ويوفر تحليلات عن المبيعات ورضا العملاء' : 'Tracks every conversation with sales and satisfaction analytics' },
+    { icon: <BarChart3 className="w-6 h-6" />, title: isAr ? 'تحليلات تشغيلية' : 'Operational Analytics', desc: isAr ? 'يتتبع المحادثات والأحداث المسجلة دون اختلاق مؤشرات رضا أو إيراد' : 'Tracks recorded conversations and events without inventing satisfaction or revenue metrics' },
     { icon: <Zap className="w-6 h-6" />, title: isAr ? 'سرعة الرد' : 'Instant Response', desc: isAr ? 'يرد خلال ثوانٍ 24/7 — لا انتظار ولا إجازات' : 'Responds in seconds 24/7 — no waiting, no holidays' },
     { icon: <Star className="w-6 h-6" />, title: isAr ? 'تخصيص كامل' : 'Full Customization', desc: isAr ? 'خصّص الاسم والشخصية والنبرة ليتناسب مع هوية متجرك' : 'Customize name, personality, and tone to match your brand' },
   ];
@@ -74,7 +74,7 @@ export default function HowSariWorks() {
         <div className="container text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6"><Bot className="w-4 h-4" />{isAr ? 'دليل شامل' : 'Complete Guide'}</div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">{isAr ? 'كيف يعمل ساري؟' : 'How Does Sari Work?'}</h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{isAr ? 'من التسجيل حتى أول عملية بيع — في أقل من 10 دقائق. اكتشف كيف يتحول واتساب إلى قناة مبيعات ذكية تعمل 24/7.' : 'From signup to first sale — in less than 10 minutes. Discover how WhatsApp becomes a smart 24/7 sales channel.'}</p>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{isAr ? 'من التسجيل إلى اختبار أول محادثة عبر خطوات إعداد واضحة؛ المدة تعتمد على تحقق قناة واتساب وتكاملات متجرك.' : 'From signup to testing the first conversation through a clear setup flow; timing depends on WhatsApp verification and store integrations.'}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup"><a><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg h-14 px-8">{isAr ? 'ابدأ مجاناً الآن' : 'Start Free Now'}<ArrowRight className="ms-2 w-5 h-5" /></Button></a></Link>
           </div>
@@ -100,7 +100,7 @@ export default function HowSariWorks() {
       <section className="py-20 bg-muted/30">
         <div className="container">
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-4">{isAr ? 'ماذا يستطيع ساري أن يفعل؟' : 'What Can Sari Do?'}</h2>
-          <p className="text-xl text-muted-foreground text-center mb-16 max-w-2xl mx-auto">{isAr ? 'قدرات متقدمة في موظف واحد يعمل بلا توقف' : 'Advanced capabilities in one tireless employee'}</p>
+          <p className="text-xl text-muted-foreground text-center mb-16 max-w-2xl mx-auto">{isAr ? 'قدرات آلية تعمل ضمن سلامة القناة وحدود الباقة وسياسات متجرك' : 'Automated capabilities governed by channel health, plan limits and store policies'}</p>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {capabilities.map((c, i) => (<Card key={i} className="border hover:shadow-lg transition-shadow"><CardContent className="p-6"><div className="w-12 h-12 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center mb-4">{c.icon}</div><h3 className="font-bold mb-2">{c.title}</h3><p className="text-sm text-muted-foreground">{c.desc}</p></CardContent></Card>))}
           </div>

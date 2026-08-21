@@ -179,10 +179,10 @@ const seoConfigsAr = {
         },
         {
           "@type": "Question",
-          "name": "هل ساري مجاني؟",
+          "name": "هل توجد فترة تجريبية؟",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "نعم! ساري يوفر باقة مجانية للبدء. يمكنك الترقية لباقات مدفوعة للحصول على مزايا إضافية مثل الحملات التسويقية وبرامج الولاء."
+            "text": "نعم، يبدأ الحساب الجديد بفترة تجريبية مدتها 7 أيام. بعد ذلك تظهر الباقات والأسعار والحدود الحالية في صفحة التسعير."
           }
         }
       ]
@@ -190,7 +190,7 @@ const seoConfigsAr = {
   },
   pricing: {
     title: "الأسعار والباقات | ساري - وكيل مبيعات ذكي",
-    description: "اختر الباقة المناسبة لمتجرك. باقات مرنة تبدأ من المجاني حتى المتقدم. أتمتة مبيعات واتساب بأسعار تنافسية.",
+    description: "اختر الباقة المناسبة لمتجرك من الأسعار والحدود الحالية المحمّلة مباشرة من النظام، مع فترة تجريبية مدتها 7 أيام.",
     keywords: "أسعار ساري, باقات واتساب, اشتراك شات بوت, تسعير أتمتة مبيعات",
     canonicalUrl: `${BASE_URL}/pricing`,
   },
@@ -214,7 +214,7 @@ const seoConfigsAr = {
   },
   solutionsSupport: {
     title: "حلول الدعم | ساري - دعم عملاء واتساب 24/7",
-    description: "وفر دعم عملاء على مدار الساعة عبر واتساب بدون تدخل بشري. ردود فورية وذكية على استفسارات العملاء.",
+    description: "وفّر رداً آلياً عبر واتساب من قاعدة معرفة متجرك، مع التحويل إلى موظف بشري عند الحاجة.",
     keywords: "دعم عملاء واتساب, خدمة عملاء ذكية, بوت دعم فني, واتساب دعم 24/7",
     canonicalUrl: `${BASE_URL}/solutions/support`,
   },
@@ -288,8 +288,8 @@ const seoConfigsAr = {
     canonicalUrl: `${BASE_URL}/resources/help-center`,
   },
   resourcesSuccessStories: {
-    title: "قصص النجاح | ساري",
-    description: "اكتشف كيف ساعدت ساري مئات المتاجر في مضاعفة مبيعاتهم.",
+    title: "نتائج البيتا ودراسات الحالة | ساري",
+    description: "اطّلع على دليل الاستخدام الحالي لساري ومنهج توثيق التحويل والرضا والإيراد قبل نشر دراسات الحالة.",
     canonicalUrl: `${BASE_URL}/resources/success-stories`,
   },
 };
@@ -324,10 +324,10 @@ const seoConfigsEn = {
         },
         {
           "@type": "Question",
-          "name": "Is Sari free?",
+          "name": "Is there a free trial?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes! Sari offers a free plan to get started. You can upgrade to paid plans for additional features like marketing campaigns and loyalty programs."
+            "text": "Yes. New accounts start with a 7-day trial. Current plans, prices and limits are then shown on the pricing page."
           }
         }
       ]
@@ -335,7 +335,7 @@ const seoConfigsEn = {
   },
   pricing: {
     title: "Pricing & Plans | Sari - Smart Sales Agent",
-    description: "Choose the right plan for your store. Flexible plans from free to advanced. WhatsApp sales automation at competitive prices.",
+    description: "Choose from current plans and limits loaded directly from the system, with a 7-day trial for new accounts.",
     keywords: "Sari pricing, WhatsApp plans, chatbot subscription, sales automation pricing, WhatsApp bot cost",
     canonicalUrl: `${BASE_URL}/pricing`,
   },
@@ -359,7 +359,7 @@ const seoConfigsEn = {
   },
   solutionsSupport: {
     title: "Support Solutions | Sari - 24/7 WhatsApp Customer Support",
-    description: "Provide 24/7 customer support via WhatsApp without human intervention. Instant and smart responses to customer inquiries.",
+    description: "Provide automated WhatsApp answers from your store knowledge, with human handoff when needed.",
     keywords: "WhatsApp customer support, smart customer service, support bot, WhatsApp 24/7 support, AI support",
     canonicalUrl: `${BASE_URL}/solutions/support`,
   },
@@ -433,8 +433,8 @@ const seoConfigsEn = {
     canonicalUrl: `${BASE_URL}/resources/help-center`,
   },
   resourcesSuccessStories: {
-    title: "Success Stories | Sari",
-    description: "Discover how Sari helped hundreds of stores double their sales.",
+    title: "Beta Evidence and Case Studies | Sari",
+    description: "See Sari's current usage evidence and the method for verifying conversion, satisfaction and revenue before publishing case studies.",
     canonicalUrl: `${BASE_URL}/resources/success-stories`,
   },
 };

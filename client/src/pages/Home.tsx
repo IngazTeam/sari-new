@@ -16,7 +16,6 @@ import {
   Shield,
   CheckCircle2,
   ArrowRight,
-  Star,
   Users,
   BarChart3,
   Sparkles,
@@ -120,81 +119,26 @@ export default function Home() {
     },
   ];
 
-  const testimonials = [
+  const pilotEvidence = [
     {
-      name: t('home.testimonials.testimonial1.name'),
-      role: t('home.testimonials.testimonial1.role'),
-      content: t('home.testimonials.testimonial1.content'),
-      rating: 5,
+      title: t('home.pilotEvidence.cards.live.title'),
+      description: t('home.pilotEvidence.cards.live.description'),
     },
     {
-      name: t('home.testimonials.testimonial2.name'),
-      role: t('home.testimonials.testimonial2.role'),
-      content: t('home.testimonials.testimonial2.content'),
-      rating: 5,
+      title: t('home.pilotEvidence.cards.volume.title'),
+      description: t('home.pilotEvidence.cards.volume.description'),
     },
     {
-      name: t('home.testimonials.testimonial3.name'),
-      role: t('home.testimonials.testimonial3.role'),
-      content: t('home.testimonials.testimonial3.content'),
-      rating: 5,
+      title: t('home.pilotEvidence.cards.next.title'),
+      description: t('home.pilotEvidence.cards.next.description'),
     },
   ];
 
   const stats = [
-    { value: '10,000+', label: t('home.stats.merchants') },
-    { value: '500,000+', label: t('home.stats.conversations') },
-    { value: '95%', label: t('home.stats.satisfaction') },
-    { value: '24/7', label: t('home.stats.support') },
-  ];
-
-  const pricingPlans = [
-    {
-      name: t('home.pricing.free.name'),
-      price: t('home.pricing.free.price'),
-      period: t('home.pricing.free.period'),
-      description: t('home.pricing.free.description'),
-      features: [
-        t('home.pricing.free.feature1'),
-        t('home.pricing.free.feature2'),
-        t('home.pricing.free.feature3'),
-        t('home.pricing.free.feature4'),
-      ],
-      cta: t('home.pricing.free.cta'),
-      popular: false,
-    },
-    {
-      name: t('home.pricing.pro.name'),
-      price: t('home.pricing.pro.price'),
-      period: t('home.pricing.pro.period'),
-      description: t('home.pricing.pro.description'),
-      features: [
-        t('home.pricing.pro.feature1'),
-        t('home.pricing.pro.feature2'),
-        t('home.pricing.pro.feature3'),
-        t('home.pricing.pro.feature4'),
-        t('home.pricing.pro.feature5'),
-        t('home.pricing.pro.feature6'),
-      ],
-      cta: t('home.pricing.pro.cta'),
-      popular: true,
-    },
-    {
-      name: t('home.pricing.advanced.name'),
-      price: t('home.pricing.advanced.price'),
-      period: t('home.pricing.advanced.period'),
-      description: t('home.pricing.advanced.description'),
-      features: [
-        t('home.pricing.advanced.feature1'),
-        t('home.pricing.advanced.feature2'),
-        t('home.pricing.advanced.feature3'),
-        t('home.pricing.advanced.feature4'),
-        t('home.pricing.advanced.feature5'),
-        t('home.pricing.advanced.feature6'),
-      ],
-      cta: t('home.pricing.advanced.cta'),
-      popular: false,
-    },
+    { value: '3', label: t('home.pilotEvidence.stats.pilotClients') },
+    { value: '≈100', label: t('home.pilotEvidence.stats.monthlyPerPilot') },
+    { value: '≈300', label: t('home.pilotEvidence.stats.monthlyTotal') },
+    { value: t('home.pilotEvidence.stats.stageValue'), label: t('home.pilotEvidence.stats.stage') },
   ];
 
   const faqs = [
@@ -287,6 +231,9 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground text-center sm:text-start">
+                {t('home.pilotEvidence.disclaimer')}
+              </p>
             </div>
 
             <div className="relative animate-fade-in-up">
@@ -411,27 +358,22 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Pilot evidence: deliberately avoids unverified testimonials or vanity metrics. */}
       <section className="py-20 bg-white dark:bg-background">
         <div className="container">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">{t('home.testimonials.title')}</h2>
-            <p className="text-xl text-muted-foreground">{t('home.testimonials.subtitle')}</p>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">{t('home.pilotEvidence.title')}</h2>
+            <p className="text-xl text-muted-foreground">{t('home.pilotEvidence.subtitle')}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
+            {pilotEvidence.map((evidence, index) => (
               <Card key={index} className="border-2">
                 <CardContent className="p-6">
-                  <div className="flex gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                    ))}
+                  <div className="w-11 h-11 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+                    <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
                   </div>
-                  <p className="text-muted-foreground mb-4">{testimonial.content}</p>
-                  <div>
-                    <div className="font-semibold">{testimonial.name}</div>
-                    <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                  </div>
+                  <h3 className="font-semibold text-lg mb-2">{evidence.title}</h3>
+                  <p className="text-muted-foreground">{evidence.description}</p>
                 </CardContent>
               </Card>
             ))}
@@ -446,42 +388,14 @@ export default function Home() {
             <h2 className="text-3xl md:text-5xl font-bold mb-4">{t('home.pricing.title')}</h2>
             <p className="text-xl text-muted-foreground">{t('home.pricing.subtitle')}</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {pricingPlans.map((plan, index) => (
-              <Card key={index} className={`relative border-2 ${plan.popular ? 'border-primary shadow-xl scale-105' : ''}`}>
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-sm font-medium">
-                    {t('home.pricing.pro.popular')}
-                  </div>
-                )}
-                <CardContent className="p-8">
-                  <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
-                  <p className="text-muted-foreground mb-4">{plan.description}</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    {plan.price !== '0' && plan.price !== t('home.pricing.advanced.price') && (
-                      <span className="text-muted-foreground"> {plan.period}</span>
-                    )}
-                  </div>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/login">
-                    <a>
-                      <Button className="w-full" variant={plan.popular ? 'default' : 'outline'}>
-                        {plan.cta}
-                      </Button>
-                    </a>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card className="max-w-3xl mx-auto border-2">
+            <CardContent className="p-8 md:p-10 text-center">
+              <Check className="w-10 h-10 text-primary mx-auto mb-4" aria-hidden="true" />
+              <h3 className="text-2xl font-bold mb-3">{t('home.pilotEvidence.pricing.title')}</h3>
+              <p className="text-muted-foreground mb-7">{t('home.pilotEvidence.pricing.description')}</p>
+              <Link href="/pricing"><a><Button size="lg">{t('home.hero.ctaPricing')}<ArrowRight className="ms-2 w-5 h-5" /></Button></a></Link>
+            </CardContent>
+          </Card>
         </div>
       </section>
 

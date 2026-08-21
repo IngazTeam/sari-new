@@ -7,7 +7,7 @@ import { SeoHead } from '@/components/SeoHead';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
-  Calendar, ArrowRight, Star, Sparkles, Clock, Users, Bell,
+  Calendar, ArrowRight, Sparkles, Clock, Users, Bell,
   CheckCircle2, Shield, Smartphone, CreditCard, BarChart3, Repeat, MapPin,
 } from 'lucide-react';
 
@@ -19,7 +19,6 @@ const schemaData = {
       "@type": "SoftwareApplication", "name": "ساري - حجز مواعيد واتساب", "applicationCategory": "BusinessApplication",
       "url": `${BASE}/whatsapp-booking-system`,
       "description": "نظام حجز مواعيد عبر واتساب بالذكاء الاصطناعي. يحجز المواعيد، يرسل التذكيرات، ويدير الجدول تلقائياً.",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "SAR" },
     },
     {
       "@type": "FAQPage", "mainEntity": [
@@ -96,9 +95,9 @@ export default function WhatsAppBooking() {
             {/* Quick stats */}
             <div className="grid grid-cols-3 gap-6 pt-8 max-w-xl mx-auto">
               {[
-                { v: '85%', ar: 'تقليل عدم الحضور', en: 'No-Show Reduction' },
-                { v: '< 10s', ar: 'وقت الحجز', en: 'Booking Time' },
-                { v: '24/7', ar: 'متاح للعملاء', en: 'Available to Clients' },
+                { v: '3', ar: 'عملاء تجريبيون', en: 'Pilot clients' },
+                { v: '≈100', ar: 'عميل نهائي شهرياً لكل تجربة', en: 'Monthly end customers per pilot' },
+                { v: isAr ? 'بيتا' : 'Beta', ar: 'مرحلة المنتج', en: 'Product stage' },
               ].map(s => (
                 <div key={s.v} className="text-center">
                   <div className="text-3xl font-bold text-purple-600">{s.v}</div>
@@ -106,6 +105,7 @@ export default function WhatsAppBooking() {
                 </div>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground">{isAr ? 'أرقام الاستخدام بحسب إفادة مالك المنتج عن تجارب أغسطس 2026؛ خفض عدم الحضور وزمن الحجز قيد القياس.' : 'Usage figures are owner-reported for August 2026 pilots; no-show reduction and booking time are still being measured.'}</p>
           </div>
         </div>
       </section>
@@ -165,15 +165,15 @@ export default function WhatsAppBooking() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Pilot evidence */}
       <section className="py-20 bg-white dark:bg-background">
-        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'عملاؤنا يتحدثون' : 'Our Clients Speak'}</h2>
+        <div className="container"><h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'دليل البيتا الحالي' : 'Current Beta Evidence'}</h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {[
-              { name: isAr ? 'عيادة الأسنان' : 'Dental Clinic', role: isAr ? 'عيادة — الرياض' : 'Clinic — Riyadh', text: isAr ? 'عدم الحضور انخفض 85% بعد تذكيرات ساري التلقائية.' : 'No-shows dropped 85% after Sari\'s automatic reminders.' },
-              { name: isAr ? 'صالون الأناقة' : 'Elegance Salon', role: isAr ? 'صالون تجميل — جدة' : 'Beauty Salon — Jeddah', text: isAr ? 'الحجوزات زادت 3 أضعاف بعد تفعيل الحجز عبر الواتساب.' : 'Bookings tripled after activating WhatsApp booking.' },
-              { name: isAr ? 'مركز تدريب' : 'Training Center', role: isAr ? 'مركز تعليمي — الدمام' : 'Education Center — Dammam', text: isAr ? 'التسجيل أصبح تلقائي والمتدربين يحبون سهولة الحجز.' : 'Registration is now automatic and trainees love the booking ease.' },
-            ].map((t, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><div className="flex gap-1 mb-3">{[...Array(5)].map((_, j) => <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />)}</div><p className="text-muted-foreground mb-4 text-sm">{t.text}</p><div className="font-semibold">{t.name}</div><div className="text-xs text-muted-foreground">{t.role}</div></CardContent></Card>))}
+              { title: isAr ? 'استخدام فعلي' : 'Live usage', text: isAr ? 'ثلاثة عملاء جرّبوا المنتج بنجاح تشغيلياً.' : 'Three clients have used the product successfully in operation.' },
+              { title: isAr ? 'حجم أولي' : 'Initial volume', text: isAr ? 'نحو 100 عميل نهائي شهرياً لكل تجربة.' : 'About 100 end customers monthly per pilot.' },
+              { title: isAr ? 'قياس مطلوب' : 'Measurement required', text: isAr ? 'نقيس اكتمال الحجز وعدم الحضور والوقت قبل نشر نسب نتائج.' : 'Booking completion, no-shows and time are being measured before publishing outcome rates.' },
+            ].map((item, i) => (<Card key={i} className="border-2"><CardContent className="p-6"><CheckCircle2 className="w-6 h-6 text-purple-600 mb-3" aria-hidden="true" /><div className="font-semibold mb-2">{item.title}</div><p className="text-muted-foreground text-sm">{item.text}</p></CardContent></Card>))}
           </div>
         </div>
       </section>

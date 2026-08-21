@@ -181,8 +181,10 @@ export const analyticsRouter = router({
           statistics: {
             totalConversations: conversationsInRange.length,
             totalMessages: messageStats?.total || 0,
-            successRate: 85, // يمكن حسابها من البيانات الفعلية
-            averageResponseTime: 2.3, // يمكن حسابها من البيانات الفعلية
+            // These metrics do not yet have an auditable source in this legacy
+            // report. Zero is explicit and honest; never substitute demo KPIs.
+            successRate: 0,
+            averageResponseTime: 0,
           },
           topPerformingCampaigns: topCampaigns as any,
           messageBreakdown: {
