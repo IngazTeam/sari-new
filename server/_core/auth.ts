@@ -6,6 +6,11 @@ import jwt from "jsonwebtoken";
 import type { User } from "../../drizzle/schema";
 import { getUserById } from '../db';
 import { ENV } from "./env";
+import {
+  deriveSessionCredentialVersion,
+  isSessionCredentialVersion,
+  sessionCredentialVersionMatches,
+} from './session-security';
 
 // JWT Secret - uses JWT_SECRET from environment
 const getJwtSecret = (): string => {
@@ -19,7 +24,19 @@ export type SessionPayload = {
   userId: string;
   email: string;
   name: string;
+  credentialVersion: string;
 };
+
+export function sessionMatchesUserCredential(
+  session: Pick<SessionPayload, 'credentialVersion'>,
+  user: Pick<User, 'id' | 'openId' | 'password'>,
+): boolean {
+  return sessionCredentialVersionMatches(
+    session.credentialVersion,
+    user,
+    getJwtSecret(),
+  );
+}
 
 /**
  * Create a session token using jsonwebtoken
@@ -30,15 +47,29 @@ export async function createSessionToken(
 ): Promise<string> {
   const expiresInMs = options.expiresInMs ?? THIRTY_DAYS_MS;
   const expiresInSeconds = Math.floor(expiresInMs / 1000);
+  const numericUserId = Number(userId);
+
+  if (!Number.isSafeInteger(numericUserId) || numericUserId <= 0) {
+    throw new Error('Cannot create session for an invalid user');
+  }
+
+  const user = await getUserById(numericUserId);
+  if (!user || user.accountStatus !== 'active') {
+    throw new Error('Cannot create session for an unavailable user');
+  }
+
+  const jwtSecret = getJwtSecret();
+  const credentialVersion = deriveSessionCredentialVersion(user, jwtSecret);
 
   const token = jwt.sign(
     {
-      userId: String(userId),
-      email: options.email || "",
-      name: options.name || "",
+      userId: String(user.id),
+      email: options.email ?? user.email ?? "",
+      name: options.name ?? user.name ?? "",
+      credentialVersion,
     },
-    getJwtSecret(),
-    { expiresIn: expiresInSeconds }
+    jwtSecret,
+    { algorithm: 'HS256', expiresIn: expiresInSeconds }
   );
 
   return token;
@@ -59,8 +90,13 @@ export async function verifySession(
     const decoded = jwt.verify(token, getJwtSecret(), { algorithms: ['HS256'] }) as any;
 
     const userId = decoded.userId || decoded.id;
-    if (!userId) {
+    if (!userId || !/^[1-9]\d*$/.test(String(userId))) {
       console.warn("[Auth] Session payload missing userId");
+      return null;
+    }
+
+    if (!isSessionCredentialVersion(decoded.credentialVersion)) {
+      console.warn('[Auth] Session payload missing credential binding');
       return null;
     }
 
@@ -68,6 +104,7 @@ export async function verifySession(
       userId: String(userId),
       email: decoded.email || "",
       name: decoded.name || "",
+      credentialVersion: decoded.credentialVersion,
     };
   } catch (error) {
     console.warn("[Auth] Session verification failed", String(error));
@@ -123,6 +160,10 @@ export async function authenticateRequest(req: Request): Promise<User> {
 
   if (user.accountStatus !== 'active') {
     throw ForbiddenError("Account unavailable");
+  }
+
+  if (!sessionMatchesUserCredential(session, user)) {
+    throw ForbiddenError('Session revoked');
   }
 
   // NOTE: lastSignedIn is updated only at login time (routers-auth.ts / auth-routes.ts).

@@ -8,7 +8,12 @@ import {
   getUserById,
   updateUserLastSignedIn,
 } from './db';
-import { authenticateRequest, createSessionToken, verifySession } from './_core/auth';
+import {
+  authenticateRequest,
+  createSessionToken,
+  sessionMatchesUserCredential,
+  verifySession,
+} from './_core/auth';
 import { THIRTY_DAYS_MS, COOKIE_NAME } from '@shared/const';
 import { getSessionCookieOptions } from './_core/cookies';
 
@@ -182,10 +187,13 @@ router.post('/verify', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    // @ts-ignore
-    const user = await getUserById(session.userId);
+    const user = await getUserById(Number(session.userId));
 
-    if (!user || user.accountStatus !== 'active') {
+    if (
+      !user
+      || user.accountStatus !== 'active'
+      || !sessionMatchesUserCredential(session, user)
+    ) {
       return res.status(401).json({ error: 'User not found' });
     }
 
