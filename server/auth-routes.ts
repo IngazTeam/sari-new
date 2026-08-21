@@ -18,34 +18,54 @@ import {
 } from './_core/auth';
 import { THIRTY_DAYS_MS, COOKIE_NAME } from '@shared/const';
 import { getSessionCookieOptions } from './_core/cookies';
+import {
+  clearSuccessfulLoginAttempts,
+  DUMMY_PASSWORD_HASH,
+  normalizeLoginEmail,
+  reserveLoginAttempt,
+} from './accounts/login-security';
 
 const router = Router();
 
 // Login endpoint
 router.post('/login', async (req, res) => {
-  console.log('🔵 [AUTH ROUTE] Login endpoint called');
-
   // Always set JSON content type
   res.setHeader('Content-Type', 'application/json');
 
   try {
-    const { email, password } = req.body;
+    const email = typeof req.body?.email === 'string'
+      ? normalizeLoginEmail(req.body.email)
+      : '';
+    const password = typeof req.body?.password === 'string'
+      ? req.body.password
+      : '';
 
-    if (!email || !password) {
+    if (!email || email.length > 320 || !/^\S+@\S+\.\S+$/.test(email)
+      || !password || password.length > 128) {
       return res.status(400).json({
         error: 'Email and password are required',
         errorAr: 'البريد الإلكتروني وكلمة المرور مطلوبان'
       });
     }
 
-    console.log('🔵 [AUTH] Login attempt:', email);
+    const clientIp = String(req.ip || req.socket.remoteAddress || 'unknown').slice(0, 45);
+    const reservation = await reserveLoginAttempt({ email, ipAddress: clientIp });
+    if (!reservation.allowed) {
+      if (reservation.retryAfterSeconds) {
+        res.setHeader('Retry-After', String(reservation.retryAfterSeconds));
+      }
+      return res.status(429).json({
+        error: 'Too many login attempts. Please try again later.',
+        errorAr: 'محاولات كثيرة. حاول لاحقاً.',
+      });
+    }
 
     // Check if database is available
     let user;
     try {
       user = await getUserByEmail(email);
     } catch (dbError: any) {
-      console.error('🔴 [AUTH] Database error:', dbError);
+      console.error('[Auth] Login database lookup failed');
       return res.status(503).json({
         error: 'Database connection error. Please try again later.',
         errorAr: 'خطأ في الاتصال بقاعدة البيانات. يرجى المحاولة لاحقاً.',
@@ -53,20 +73,11 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    console.log('🔵 [AUTH] User found:', user?.email || 'NOT FOUND');
-
-    if (!user || !user.password || user.accountStatus !== 'active') {
-      return res.status(401).json({
-        error: 'Invalid email or password',
-        errorAr: 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-      });
-    }
-
     let isValidPassword = false;
     try {
-      isValidPassword = await bcrypt.compare(password, user.password);
+      isValidPassword = await bcrypt.compare(password, user?.password || DUMMY_PASSWORD_HASH);
     } catch (bcryptError: any) {
-      console.error('🔴 [AUTH] bcrypt error:', bcryptError);
+      console.error('[Auth] Password verification failed unexpectedly');
       return res.status(500).json({
         error: 'Password verification failed',
         errorAr: 'فشل التحقق من كلمة المرور',
@@ -74,7 +85,11 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    if (!isValidPassword) {
+    if (!user || !user.password || user.accountStatus !== 'active' || !isValidPassword) {
+      console.warn('[Auth] Login rejected', {
+        reason: 'invalid_credentials',
+        requestId: req.headers['x-request-id'],
+      });
       return res.status(401).json({
         error: 'Invalid email or password',
         errorAr: 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
@@ -108,9 +123,8 @@ router.post('/login', async (req, res) => {
 
     // Set cookie
     const cookieOptions = getSessionCookieOptions(req);
+    await clearSuccessfulLoginAttempts(email);
     res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
-
-    console.log('🟢 [AUTH] Login successful for:', user.email);
 
     // Byaan auto-link: if domain + platform=byaan, create byaan_connections for existing merchant
     const { domain, platform } = req.body;
@@ -154,7 +168,6 @@ router.post('/login', async (req, res) => {
 
     return res.json({
       success: true,
-      token: sessionToken,
       user: {
         id: user.id,
         name: user.name,

@@ -71,6 +71,13 @@
       "when": 1787350439190,
       "tag": "0009_cynical_sprite",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787351367306,
+      "tag": "0010_natural_obadiah_stane",
+      "breakpoints": true
     }
   ]
 }

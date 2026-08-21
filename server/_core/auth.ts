@@ -199,7 +199,7 @@ export async function authenticateSessionRequest(req: Request): Promise<Authenti
     throw ForbiddenError('Session revoked');
   }
 
-  // NOTE: lastSignedIn is updated only at login time (routers-auth.ts / auth-routes.ts).
+  // NOTE: lastSignedIn is updated only by the active tRPC/REST login routes.
   // Previously this ran on EVERY request via createContext() → DB pool exhaustion.
 
   return { user, session };

@@ -89,3 +89,4 @@ jobs:
           server/auth.ratelimit.test.ts
           server/auth.passwordReset.test.ts
           server/auth.sessionRegistry.test.ts
+          server/auth.loginRateLimit.test.ts

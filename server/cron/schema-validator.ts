@@ -16,6 +16,7 @@ import { inspectSchemaRequirements, type SchemaRequirement } from '../db/schema-
 export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'users', columns: ['account_status', 'deletion_requested_at'] },
   { table: 'auth_sessions', columns: ['token_id_hash', 'expires_at', 'revoked_at'] },
+  { table: 'auth_login_attempts', columns: ['email_hash', 'ip_hash', 'attempted_at'] },
   { table: 'consent_receipts', columns: ['subject_reference_hash', 'document_version', 'ip_hash', 'user_agent_hash'] },
   { table: 'data_subject_requests', columns: ['request_type', 'status', 'due_at', 'processing_scheduled_at'] },
   { table: 'legal_retention_records', columns: ['subject_reference_hash', 'encrypted_payload', 'retain_until'] },

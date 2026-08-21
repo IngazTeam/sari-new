@@ -82,11 +82,6 @@ export default function Login() {
       // تأكد من عدم حفظ كلمة المرور أبداً
       localStorage.removeItem('sari_remember_password');
 
-      // Store token
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-      }
-
       // Store user info
       if (data.user) {
         localStorage.setItem('user-info', JSON.stringify(data.user));

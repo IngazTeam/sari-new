@@ -412,27 +412,47 @@ export const appRouter = router({
     // Login with email and password
     login: publicProcedure
       .input(z.object({
-        email: z.string().email(),
-        password: z.string().min(6),
+        email: z.string().trim().email().max(320).transform(value => value.toLowerCase()),
+        password: z.string().min(1).max(128),
       }))
       .mutation(async ({ input, ctx }) => {
         // SECURITY: Rate limit login attempts (5 per 15 min per IP)
         const { checkRateLimit } = await import('./_core/rateLimiter');
-        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const clientIp = String(
+          (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown',
+        ).slice(0, 45);
         const loginCheck = checkRateLimit(`login_ip:${clientIp}`, 5, 15 * 60 * 1000);
         if (!loginCheck.allowed) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'محاولات كثيرة. حاول بعد 15 دقيقة.' });
         }
 
-        const user = await getUserByEmail(input.email);
-
-        if (!user || !user.password || user.accountStatus !== 'active') {
-          throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
+        const {
+          clearSuccessfulLoginAttempts,
+          DUMMY_PASSWORD_HASH,
+          reserveLoginAttempt,
+        } = await import('./accounts/login-security');
+        const reservation = await reserveLoginAttempt({
+          email: input.email,
+          ipAddress: clientIp,
+        });
+        if (!reservation.allowed) {
+          throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'محاولات كثيرة. حاول بعد 15 دقيقة.',
+          });
         }
 
-        const isValidPassword = await bcrypt.compare(input.password, user.password);
+        const user = await getUserByEmail(input.email);
+        const isValidPassword = await bcrypt.compare(
+          input.password,
+          user?.password || DUMMY_PASSWORD_HASH,
+        );
 
-        if (!isValidPassword) {
+        if (!user || !user.password || user.accountStatus !== 'active' || !isValidPassword) {
+          console.warn('[Auth] Login rejected', {
+            reason: 'invalid_credentials',
+            requestId: ctx.req.headers['x-request-id'],
+          });
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
         }
 
@@ -448,24 +468,11 @@ export const appRouter = router({
 
         const cookieOptions = getSessionCookieOptions(ctx.req);
 
-        // Set cookie using both methods to ensure it works
+        await clearSuccessfulLoginAttempts(input.email);
+        // HttpOnly cookie is the only browser credential surface.
         ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
-
-        // Also set via header as backup
-        const securePart = cookieOptions.secure ? '; Secure' : '';
-        const cookieString = `${COOKIE_NAME}=${sessionToken}; Path=${cookieOptions.path}; HttpOnly; SameSite=${cookieOptions.sameSite}${securePart}; Max-Age=${Math.floor(THIRTY_DAYS_MS / 1000)}`;
-        const existingCookies = ctx.res.getHeader('Set-Cookie');
-        if (existingCookies) {
-          const cookieArray = Array.isArray(existingCookies) ? existingCookies : [String(existingCookies)];
-          ctx.res.setHeader('Set-Cookie', [...cookieArray, cookieString] as string[]);
-        } else {
-          ctx.res.setHeader('Set-Cookie', cookieString);
-        }
-
-        console.log('🟢 [AUTH] Login successful for:', user.email);
         return {
           success: true,
-          token: sessionToken,
           user: {
             id: user.id,
             name: user.name,

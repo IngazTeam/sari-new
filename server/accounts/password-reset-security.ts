@@ -24,7 +24,7 @@ function mysqlTimestamp(date: Date): string {
 }
 
 function passwordResetLockName(kind: 'email' | 'ip', value: string): string {
-  const digest = createHash('sha256').update(value).digest('hex').slice(0, 52);
+  const digest = createHash('sha256').update(value).digest('hex').slice(0, 48);
   return `pwreset:${kind}:${digest}`;
 }
 

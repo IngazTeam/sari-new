@@ -30,6 +30,14 @@ const queryClient = new QueryClient({
 // Track if redirect is already in progress to prevent multiple redirects
 let isRedirecting = false;
 
+// Browser authentication is cookie-only. Remove tokens written by legacy builds
+// so an XSS cannot recover a still-live bearer credential from localStorage.
+try {
+  localStorage.removeItem('auth_token');
+} catch {
+  // Storage can be unavailable in hardened/private browser contexts.
+}
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (isRedirecting) return;
   if (!(error instanceof TRPCClientError)) return;
@@ -79,17 +87,9 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       fetch(input, init) {
-        const token = localStorage.getItem('auth_token');
-        const headers = new Headers(init?.headers || {});
-
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-
         return globalThis.fetch(input, {
           ...(init ?? {}),
           credentials: "include",
-          headers,
         });
       },
     }),

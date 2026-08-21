@@ -16,16 +16,30 @@ export const googleAuthRouter = router({
   googleLogin: publicProcedure
     .input(
       z.object({
-        token: z.string().min(1, "Google token مطلوب"),
+        token: z.string().min(1, "Google token مطلوب").max(8192),
       })
     )
     .mutation(async ({ input, ctx }) => {
       try {
         // SEC-W5: Rate limit Google login attempts
         const { checkRateLimit } = await import('./_core/rateLimiter');
-        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const clientIp = String(
+          (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown',
+        ).slice(0, 45);
         const check = checkRateLimit(`google_login:${clientIp}`, 10, 900000); // 10 per 15 min
         if (!check.allowed) {
+          throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من المحاولات. حاول لاحقاً.' });
+        }
+        const {
+          clearSuccessfulLoginAttempts,
+          reserveLoginAttempt,
+        } = await import('./accounts/login-security');
+        const limiterIdentity = `google-login:${clientIp}`;
+        const reservation = await reserveLoginAttempt({
+          email: limiterIdentity,
+          ipAddress: clientIp,
+        });
+        if (!reservation.allowed) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من المحاولات. حاول لاحقاً.' });
         }
 
@@ -42,7 +56,7 @@ export const googleAuthRouter = router({
           });
         }
 
-        // SEC-02 FIX: Create proper session token (matching routers-auth.ts login)
+        // Create a credential-bound, server-registered session token.
         await updateUserLastSignedIn(user.id);
 
         const sessionToken = await createSessionToken(String(user.id), {
@@ -52,11 +66,11 @@ export const googleAuthRouter = router({
         });
 
         const cookieOptions = getSessionCookieOptions((ctx as any).req);
+        await clearSuccessfulLoginAttempts(limiterIdentity);
         (ctx as any).res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: THIRTY_DAYS_MS });
 
         return {
           success: true,
-          token: sessionToken,
           user: {
             id: user.id,
             email: user.email,
@@ -66,7 +80,7 @@ export const googleAuthRouter = router({
           message: "تم تسجيل الدخول بنجاح عبر Google",
         };
       } catch (error) {
-        console.error("خطأ في تسجيل الدخول عبر Google:", error);
+        console.error('[Auth] Google login failed');
 
         if (error instanceof TRPCError) {
           throw error;
