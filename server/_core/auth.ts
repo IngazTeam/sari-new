@@ -121,6 +121,10 @@ export async function authenticateRequest(req: Request): Promise<User> {
     throw ForbiddenError("User not found");
   }
 
+  if (user.accountStatus !== 'active') {
+    throw ForbiddenError("Account unavailable");
+  }
+
   // NOTE: lastSignedIn is updated only at login time (routers-auth.ts / auth-routes.ts).
   // Previously this ran on EVERY request via createContext() → DB pool exhaustion.
 

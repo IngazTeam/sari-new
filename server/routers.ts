@@ -24,6 +24,7 @@ import {
   adminSubscriptionsRouter,
 } from "./routers/subscriptions";
 import { subscriptionSignupRouter } from "./routers/subscription-signup";
+import { accountDataRouter } from './routers-account-data';
 import { notificationsRouter } from "./routers-notifications";
 import { notificationManagementRouter } from "./routers-notification-management";
 import { smartNotificationsRouter } from "./routers-smart-notifications";
@@ -72,7 +73,6 @@ import { notificationPreferences } from '../drizzle/schema';
 import { containsUnverifiedActionClaim } from './ai/transactional-truth';
 import { decodeValidatedAudio } from './utils/audio';
 import {
-  activateUserTrial,
   approveWhatsAppConnectionRequest,
   approveWhatsAppRequest,
   canRequestReset,
@@ -93,7 +93,6 @@ import {
   createDiscountCoupon,
   createEmailVerificationToken,
   createGoogleIntegration,
-  createMerchant,
   createMessage,
   createNotification,
   createOccasionCampaign,
@@ -115,7 +114,6 @@ import {
   createSubscription,
   createTemplateTranslation,
   createTestConversation,
-  createUser,
   createWhatsAppConnectionRequest,
   createWhatsAppInstance,
   createWhatsAppRequest,
@@ -324,8 +322,8 @@ import {
 } from './db';
 import {
   processCanonicalSubscriptionCharge,
-  startCanonicalTrial,
 } from './subscriptions/canonical-state';
+import { registerMerchantAccount } from './accounts/lifecycle';
 import * as seoDb from './seo-functions';
 import bcrypt from 'bcryptjs';
 import { createSessionToken } from './_core/auth';
@@ -373,6 +371,7 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
 });
 
 export const appRouter = router({
+  accountData: accountDataRouter,
   // User Notifications — modularized to routers-user-notifications.ts
   notifications: userNotificationsRouter,
   system: systemRouter,
@@ -409,7 +408,7 @@ export const appRouter = router({
 
         const user = await getUserByEmail(input.email);
 
-        if (!user || !user.password) {
+        if (!user || !user.password || user.accountStatus !== 'active') {
           throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
         }
 
@@ -517,11 +516,16 @@ export const appRouter = router({
     // Sign up with email and password
     signup: publicProcedure
       .input(z.object({
-        name: z.string().min(2),
-        email: z.string().email(),
-        password: z.string().min(6),
-        businessName: z.string().min(2),
-        phone: z.string().optional(),
+        name: z.string().trim().min(2).max(120),
+        email: z.string().trim().email().max(320).transform(value => value.toLowerCase()),
+        password: z.string().min(8).max(128)
+          .regex(/[A-Z]/, 'Password must contain an uppercase letter')
+          .regex(/[0-9]/, 'Password must contain a number'),
+        businessName: z.string().trim().min(2).max(255),
+        phone: z.string().trim().min(9).max(20).regex(/^\+?[0-9]+$/, 'Invalid phone number'),
+        acceptedTerms: z.literal(true),
+        acceptedPrivacy: z.literal(true),
+        marketingConsent: z.boolean().default(false),
       }))
       .mutation(async ({ input, ctx }) => {
         // SECURITY: Rate limit signup attempts (3 per hour per IP)
@@ -532,49 +536,30 @@ export const appRouter = router({
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من محاولات التسجيل. حاول لاحقاً.' });
         }
 
-        // Check if email already exists
-        const existingUser = await getUserByEmail(input.email);
-        if (existingUser) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Email already registered' });
-        }
-
-        // Hash password
         const hashedPassword = await bcrypt.hash(input.password, 10);
-
-        // Generate unique openId for the user
-        const crypto = await import('node:crypto');
-        const openId = `local_${crypto.randomBytes(16).toString('hex')}`;
-
-        // Create user
-        const user = await createUser({
-          openId,
-          name: input.name,
-          email: input.email,
-          password: hashedPassword,
-          loginMethod: 'email',
-          role: 'user',
-        });
-
-        if (!user) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create user' });
+        let registration;
+        try {
+          registration = await registerMerchantAccount({
+            name: input.name,
+            email: input.email,
+            passwordHash: hashedPassword,
+            businessName: input.businessName,
+            phone: input.phone,
+            acceptedTerms: input.acceptedTerms,
+            acceptedPrivacy: input.acceptedPrivacy,
+            marketingConsent: input.marketingConsent,
+            ipAddress: clientIp,
+            userAgent: typeof ctx.req.headers['user-agent'] === 'string'
+              ? ctx.req.headers['user-agent']
+              : null,
+          });
+        } catch (error) {
+          if (error instanceof Error && error.message === 'EMAIL_ALREADY_REGISTERED') {
+            throw new TRPCError({ code: 'CONFLICT', message: 'تعذر إنشاء الحساب بهذه البيانات' });
+          }
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إنشاء الحساب' });
         }
-
-        // Activate trial period (7 days)
-        await activateUserTrial(user.id);
-
-        // Create merchant profile automatically
-        const merchant = await createMerchant({
-          userId: user.id,
-          businessName: input.businessName,
-          phone: input.phone || null,
-          status: 'pending',
-          subscriptionStatus: 'trial',
-        });
-        if (!merchant) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create merchant' });
-        }
-
-        const trial = await startCanonicalTrial(merchant.id);
+        const { user, trialEndsAt } = registration;
 
         // Send welcome email with trial information
         try {
@@ -582,7 +567,7 @@ export const appRouter = router({
           await sendWelcomeEmail({
             name: input.name,
             email: input.email,
-            trialEndDate: trial.trialEndsAt.toLocaleDateString('ar-SA', {
+            trialEndDate: trialEndsAt.toLocaleDateString('ar-SA', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'

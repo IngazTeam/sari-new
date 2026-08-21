@@ -839,6 +839,9 @@ export const users = mysqlTable("users", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	lastSignedIn: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	password: varchar({ length: 255 }),
+	accountStatus: mysqlEnum("account_status", ['active', 'deletion_pending', 'anonymized']).default('active').notNull(),
+	deletionRequestedAt: timestamp("deletion_requested_at", { mode: 'string' }),
+	deletedAt: timestamp("deleted_at", { mode: 'string' }),
 	// Trial period fields
 	trialStartDate: timestamp('trial_start_date', { mode: 'string' }),
 	trialEndDate: timestamp('trial_end_date', { mode: 'string' }),
@@ -846,8 +849,68 @@ export const users = mysqlTable("users", {
 	whatsappConnected: tinyint('whatsapp_connected').default(0).notNull(),
 },
 	(table) => [
-		index("users_openId_unique").on(table.openId),
+		uniqueIndex("users_open_id_unique").on(table.openId),
+		uniqueIndex("users_email_unique").on(table.email),
 	]);
+
+export const consentReceipts = mysqlTable("consent_receipts", {
+	id: int().autoincrement().primaryKey(),
+	userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
+	subjectReferenceHash: varchar("subject_reference_hash", { length: 64 }).notNull(),
+	consentType: mysqlEnum("consent_type", ['terms', 'privacy', 'marketing']).notNull(),
+	granted: tinyint().notNull(),
+	documentVersion: varchar("document_version", { length: 32 }).notNull(),
+	documentUrl: varchar("document_url", { length: 255 }).notNull(),
+	source: varchar({ length: 50 }).default('signup').notNull(),
+	ipHash: varchar("ip_hash", { length: 64 }),
+	userAgentHash: varchar("user_agent_hash", { length: 64 }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	withdrawnAt: timestamp("withdrawn_at", { mode: 'string' }),
+}, table => [
+	index("consent_receipts_user_type_idx").on(table.userId, table.consentType),
+	index("consent_receipts_subject_idx").on(table.subjectReferenceHash),
+]);
+
+export const dataSubjectRequests = mysqlTable("data_subject_requests", {
+	id: int().autoincrement().primaryKey(),
+	userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
+	subjectReferenceHash: varchar("subject_reference_hash", { length: 64 }).notNull(),
+	requestType: mysqlEnum("request_type", ['access', 'export', 'correction', 'deletion', 'withdraw_consent', 'objection']).notNull(),
+	status: mysqlEnum(['pending', 'processing', 'completed', 'rejected', 'requires_review', 'failed']).default('pending').notNull(),
+	requestedAt: timestamp("requested_at", { mode: 'string' }).defaultNow().notNull(),
+	dueAt: timestamp("due_at", { mode: 'string' }).notNull(),
+	processingScheduledAt: timestamp("processing_scheduled_at", { mode: 'string' }),
+	completedAt: timestamp("completed_at", { mode: 'string' }),
+	rejectionReason: text("rejection_reason"),
+	resolutionNotes: text("resolution_notes"),
+	handledByUserId: int("handled_by_user_id").references(() => users.id, { onDelete: "set null" }),
+	requestMetadata: text("request_metadata"),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	index("data_subject_requests_user_idx").on(table.userId),
+	index("data_subject_requests_status_due_idx").on(table.status, table.dueAt),
+	index("data_subject_requests_processing_idx").on(table.status, table.processingScheduledAt),
+	index("data_subject_requests_subject_idx").on(table.subjectReferenceHash),
+]);
+
+export const legalRetentionRecords = mysqlTable("legal_retention_records", {
+	id: int().autoincrement().primaryKey(),
+	subjectReferenceHash: varchar("subject_reference_hash", { length: 64 }).notNull(),
+	recordType: mysqlEnum("record_type", ['invoice', 'payment', 'legacy_payment']).notNull(),
+	sourceRecordId: int("source_record_id").notNull(),
+	recordDate: timestamp("record_date", { mode: 'string' }).notNull(),
+	amount: decimal({ precision: 12, scale: 2 }),
+	currency: varchar({ length: 10 }),
+	status: varchar({ length: 32 }),
+	encryptedPayload: text("encrypted_payload").notNull(),
+	retainUntil: timestamp("retain_until", { mode: 'string' }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	uniqueIndex("legal_retention_source_unique").on(table.recordType, table.sourceRecordId),
+	index("legal_retention_subject_idx").on(table.subjectReferenceHash),
+	index("legal_retention_until_idx").on(table.retainUntil),
+]);
 
 
 export const virtualAgents = mysqlTable("virtual_agents", {

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, CheckCircle2, ArrowRight, Sparkles } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { useToast } from '@/hooks/use-toast';
@@ -12,6 +13,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'wouter';
 
 export default function SubscribePage() {
   const { t } = useTranslation();
@@ -29,8 +31,12 @@ export default function SubscribePage() {
   // Form states
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [phone, setPhone] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch plans
@@ -71,7 +77,8 @@ export default function SubscribePage() {
   };
 
   // Mutations
-  const registerMutation = trpc.subscriptionSignup.registerUser.useMutation();
+  const signupMutation = trpc.auth.signup.useMutation();
+  const loginMutation = trpc.auth.login.useMutation();
   const createSubscriptionMutation = trpc.subscriptionSignup.createSubscriptionWithPayment.useMutation();
 
   // Handle authentication and subscription creation
@@ -94,10 +101,28 @@ export default function SubscribePage() {
       return;
     }
 
-    if (isNewUser && (!businessName || !phone)) {
+    if (isNewUser && (!name || !businessName || !phone)) {
       toast({
         title: 'خطأ',
         description: 'الرجاء إدخال جميع البيانات المطلوبة',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isNewUser && (!acceptedTerms || !acceptedPrivacy)) {
+      toast({
+        title: 'الموافقة مطلوبة',
+        description: 'يجب قراءة الشروط وسياسة الخصوصية والموافقة عليهما',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isNewUser && (password.length < 8 || !/[A-Z]/.test(password) || !/[0-9]/.test(password))) {
+      toast({
+        title: 'كلمة المرور غير كافية',
+        description: 'استخدم 8 أحرف على الأقل، تتضمن حرفاً إنجليزياً كبيراً ورقماً',
         variant: 'destructive',
       });
       return;
@@ -107,32 +132,25 @@ export default function SubscribePage() {
 
     try {
       // Step 1: Register or Login
-      let userId: number;
-
       if (isNewUser) {
-        // Register new user
-        const registerResult = await registerMutation.mutateAsync({
+        await signupMutation.mutateAsync({
+          name,
           email,
           password,
           businessName,
           phone,
+          acceptedTerms: true,
+          acceptedPrivacy: true,
+          marketingConsent,
         });
-        // @ts-ignore
-        userId = registerResult.userId;
       } else {
-        // For existing users, we need to login first
-        // Since we're using Manus OAuth, redirect to login
-        const loginUrl = `${process.env.VITE_OAUTH_PORTAL_URL || ''}/login?redirect=${encodeURIComponent(window.location.href)}`;
-        window.location.href = loginUrl;
-        return;
+        await loginMutation.mutateAsync({ email, password });
       }
 
       // Step 2: Create subscription with payment
       const subscriptionResult = await createSubscriptionMutation.mutateAsync({
         planId: selectedPlanId,
         billingCycle,
-        // @ts-ignore
-        userId: userId as any,
       });
 
       // Step 3: Redirect to Tap Payment
@@ -293,6 +311,20 @@ export default function SubscribePage() {
                 </div>
 
                 {/* Email */}
+                {isNewUser && (
+                  <div className="space-y-2">
+                    <Label htmlFor="subscriberName">الاسم</Label>
+                    <Input
+                      id="subscriberName"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      autoComplete="name"
+                      maxLength={120}
+                      required
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="email">{t('subscribePagePage.text6')}</Label>
                   <Input
@@ -302,6 +334,9 @@ export default function SubscribePage() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="example@domain.com"
                     dir="ltr"
+                    autoComplete="email"
+                    maxLength={320}
+                    required
                   />
                 </div>
 
@@ -315,6 +350,10 @@ export default function SubscribePage() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     dir="ltr"
+                    autoComplete={isNewUser ? 'new-password' : 'current-password'}
+                    minLength={8}
+                    maxLength={128}
+                    required
                   />
                 </div>
 
@@ -328,6 +367,9 @@ export default function SubscribePage() {
                         value={businessName}
                         onChange={(e) => setBusinessName(e.target.value)}
                         placeholder={t('subscribePagePage.text9')}
+                        autoComplete="organization"
+                        maxLength={255}
+                        required
                       />
                     </div>
 
@@ -338,6 +380,41 @@ export default function SubscribePage() {
                         onChange={setPhone}
                         required
                       />
+                    </div>
+
+                    <div className="space-y-3 rounded-lg border p-4 text-sm">
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="subscribeTerms"
+                          checked={acceptedTerms}
+                          onCheckedChange={(value) => setAcceptedTerms(value === true)}
+                          aria-required="true"
+                        />
+                        <Label htmlFor="subscribeTerms" className="font-normal leading-5">
+                          أوافق على <Link href="/company/terms" target="_blank" className="text-primary underline">شروط الاستخدام</Link>
+                        </Label>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="subscribePrivacy"
+                          checked={acceptedPrivacy}
+                          onCheckedChange={(value) => setAcceptedPrivacy(value === true)}
+                          aria-required="true"
+                        />
+                        <Label htmlFor="subscribePrivacy" className="font-normal leading-5">
+                          قرأت وأوافق على <Link href="/company/privacy" target="_blank" className="text-primary underline">سياسة الخصوصية</Link>
+                        </Label>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Checkbox
+                          id="subscribeMarketing"
+                          checked={marketingConsent}
+                          onCheckedChange={(value) => setMarketingConsent(value === true)}
+                        />
+                        <Label htmlFor="subscribeMarketing" className="font-normal leading-5">
+                          أرغب في استلام تحديثات وعروض تسويقية (اختياري ويمكن سحبه لاحقاً)
+                        </Label>
+                      </div>
                     </div>
                   </>
                 )}
@@ -391,7 +468,7 @@ export default function SubscribePage() {
                   <Button
                     onClick={handleSubscribe}
                     className="flex-1"
-                    disabled={isProcessing}
+                    disabled={isProcessing || (isNewUser && (!acceptedTerms || !acceptedPrivacy))}
                   >
                     {isProcessing ? (
                       <>

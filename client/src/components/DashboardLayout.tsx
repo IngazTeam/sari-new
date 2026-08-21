@@ -192,6 +192,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
 
   // 6. الإعدادات والربط
   { icon: Settings, label: t('sidebar.merchant.settings', 'إعدادات المتجر'), path: "/merchant/settings", group: 'settings' },
+  { icon: ShieldCheck, label: t('sidebar.merchant.privacyCenter', 'مركز الخصوصية'), path: "/merchant/privacy-center", group: 'settings' },
   { icon: Crown, label: t('sidebar.merchant.mySubscription', 'باقتي والفواتير'), path: "/merchant/my-subscription", group: 'settings' },
   { icon: Plug, label: t('sidebar.merchant.platformIntegrations', 'التكاملات والربط'), path: "/merchant/platform-integrations", group: 'settings' },
   { icon: Users, label: t('sidebar.merchant.teamManagement', 'إدارة الفريق'), path: "/merchant/team", group: 'settings' },
@@ -204,6 +205,7 @@ const getMerchantMenuItems = (t: any): MenuItem[] => [
 const getAdminMenuItems = (t: any): MenuItem[] => [
   { icon: LayoutGrid, label: t('sidebar.admin.dashboard'), path: "/admin/dashboard" },
   { icon: Activity, label: t('sidebar.admin.monitor', 'مركز المراقبة'), path: "/admin/monitor" },
+  { icon: ShieldCheck, label: t('sidebar.admin.privacyRequests', 'طلبات الخصوصية'), path: "/admin/privacy-requests" },
   { icon: Users, label: t('sidebar.admin.merchants'), path: "/admin/merchants" },
   { icon: Megaphone, label: t('sidebar.admin.campaigns'), path: "/admin/campaigns" },
   { icon: Smartphone, label: t('sidebar.admin.whatsappRequests'), path: "/admin/whatsapp-requests" },

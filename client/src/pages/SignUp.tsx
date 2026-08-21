@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Store, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Link } from 'wouter';
@@ -35,6 +36,9 @@ export default function SignUp() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (data: any) => {
@@ -81,14 +85,20 @@ export default function SignUp() {
       return;
     }
 
+    if (!acceptedTerms || !acceptedPrivacy) {
+      setError('يجب قراءة شروط الاستخدام وسياسة الخصوصية والموافقة عليهما');
+      return;
+    }
+
     signupMutation.mutate({
       name: formData.name,
       email: formData.email,
       password: formData.password,
       businessName: formData.businessName,
       phone: formData.phone,
-      // Byaan auto-link params
-      ...(byaanDomain && byaanPlatform ? { domain: byaanDomain, platform: byaanPlatform } : {}),
+      acceptedTerms: true,
+      acceptedPrivacy: true,
+      marketingConsent,
     });
   };
 
@@ -116,7 +126,7 @@ export default function SignUp() {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               {error && (
-                <Alert variant="destructive">
+                <Alert variant="destructive" role="alert">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
@@ -141,6 +151,8 @@ export default function SignUp() {
                     value={formData.name}
                     onChange={handleChange}
                     required
+                    autoComplete="name"
+                    maxLength={120}
                     className="pr-10"
                     disabled={signupMutation.isPending}
                   />
@@ -159,6 +171,8 @@ export default function SignUp() {
                     value={formData.email}
                     onChange={handleChange}
                     required
+                    autoComplete="email"
+                    maxLength={320}
                     className="pr-10"
                     disabled={signupMutation.isPending}
                   />
@@ -177,6 +191,8 @@ export default function SignUp() {
                     value={formData.businessName}
                     onChange={handleChange}
                     required
+                    autoComplete="organization"
+                    maxLength={255}
                     className="pr-10"
                     disabled={signupMutation.isPending}
                   />
@@ -206,6 +222,8 @@ export default function SignUp() {
                     onChange={handleChange}
                     required
                     minLength={8}
+                    maxLength={128}
+                    autoComplete="new-password"
                     className="pr-10 pl-10"
                     disabled={signupMutation.isPending}
                   />
@@ -213,7 +231,7 @@ export default function SignUp() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    tabIndex={-1}
+                    aria-label={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -246,6 +264,8 @@ export default function SignUp() {
                     onChange={handleChange}
                     required
                     minLength={8}
+                    maxLength={128}
+                    autoComplete="new-password"
                     className="pr-10 pl-10"
                     disabled={signupMutation.isPending}
                   />
@@ -253,10 +273,45 @@ export default function SignUp() {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    tabIndex={-1}
+                    aria-label={showConfirmPassword ? 'إخفاء تأكيد كلمة المرور' : 'إظهار تأكيد كلمة المرور'}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                </div>
+              </div>
+
+              <div className="space-y-3 rounded-lg border p-4 text-sm">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="acceptedTerms"
+                    checked={acceptedTerms}
+                    onCheckedChange={(value) => setAcceptedTerms(value === true)}
+                    aria-required="true"
+                  />
+                  <Label htmlFor="acceptedTerms" className="font-normal leading-5">
+                    أوافق على <Link href="/company/terms" target="_blank" className="text-primary underline">شروط الاستخدام</Link>
+                  </Label>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="acceptedPrivacy"
+                    checked={acceptedPrivacy}
+                    onCheckedChange={(value) => setAcceptedPrivacy(value === true)}
+                    aria-required="true"
+                  />
+                  <Label htmlFor="acceptedPrivacy" className="font-normal leading-5">
+                    قرأت وأوافق على <Link href="/company/privacy" target="_blank" className="text-primary underline">سياسة الخصوصية</Link>
+                  </Label>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id="marketingConsent"
+                    checked={marketingConsent}
+                    onCheckedChange={(value) => setMarketingConsent(value === true)}
+                  />
+                  <Label htmlFor="marketingConsent" className="font-normal leading-5">
+                    أرغب في استلام تحديثات وعروض تسويقية (اختياري ويمكن سحبه في أي وقت)
+                  </Label>
                 </div>
               </div>
             </CardContent>
@@ -264,7 +319,7 @@ export default function SignUp() {
               <Button
                 type="submit"
                 className="w-full bg-primary hover:bg-primary/90"
-                disabled={signupMutation.isPending}
+                disabled={signupMutation.isPending || !acceptedTerms || !acceptedPrivacy}
               >
                 {signupMutation.isPending ? (
                   <>

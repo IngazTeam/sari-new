@@ -8,7 +8,7 @@ import {
   getUserById,
   updateUserLastSignedIn,
 } from './db';
-import { createSessionToken, verifySession } from './_core/auth';
+import { authenticateRequest, createSessionToken, verifySession } from './_core/auth';
 import { THIRTY_DAYS_MS, COOKIE_NAME } from '@shared/const';
 import { getSessionCookieOptions } from './_core/cookies';
 
@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
 
     console.log('🔵 [AUTH] User found:', user?.email || 'NOT FOUND');
 
-    if (!user || !user.password) {
+    if (!user || !user.password || user.accountStatus !== 'active') {
       return res.status(401).json({
         error: 'Invalid email or password',
         errorAr: 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
@@ -185,7 +185,7 @@ router.post('/verify', async (req, res) => {
     // @ts-ignore
     const user = await getUserById(session.userId);
 
-    if (!user) {
+    if (!user || user.accountStatus !== 'active') {
       return res.status(401).json({ error: 'User not found' });
     }
 
@@ -221,13 +221,9 @@ router.get('/oauth/google/calendar/callback', async (req, res) => {
 
   // SECURITY: Verify the requesting user owns this merchant
   try {
-    const sessionToken = req.cookies?.[COOKIE_NAME];
-    const session = await verifySession(sessionToken);
-    if (!session) {
-      return res.status(401).send('Authentication required');
-    }
+    const user = await authenticateRequest(req);
     const merchant = await getMerchantById(merchantId);
-    if (!merchant || merchant.userId !== Number(session.userId)) {
+    if (!merchant || merchant.userId !== user.id) {
       return res.status(403).send('Access denied');
     }
   } catch {
@@ -264,13 +260,9 @@ router.get('/oauth/google/sheets/callback', async (req, res) => {
 
   // SECURITY: Verify the requesting user owns this merchant
   try {
-    const sessionToken = (req as any).cookies?.[COOKIE_NAME];
-    const session = await verifySession(sessionToken);
-    if (!session) {
-      return res.status(401).send('Authentication required');
-    }
+    const user = await authenticateRequest(req);
     const merchant = await getMerchantById(merchantId);
-    if (!merchant || merchant.userId !== Number(session.userId)) {
+    if (!merchant || merchant.userId !== user.id) {
       return res.status(403).send('Access denied');
     }
   } catch {

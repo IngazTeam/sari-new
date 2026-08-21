@@ -134,6 +134,10 @@ class SDKServer {
       throw ForbiddenError("User not found");
     }
 
+    if (user.accountStatus !== 'active') {
+      throw ForbiddenError("Account unavailable");
+    }
+
     // @ts-ignore
     await upsertUser({
       id: user.id,

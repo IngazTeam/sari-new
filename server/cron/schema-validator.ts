@@ -14,7 +14,11 @@ import { inspectSchemaRequirements, type SchemaRequirement } from '../db/schema-
 
 // These names are the deployed Drizzle names, including legacy camelCase tables.
 export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
-  { table: 'users' }, { table: 'merchants', columns: ['timezone', 'integration_source', 'escalation_phones', 'emergency_phone'] },
+  { table: 'users', columns: ['account_status', 'deletion_requested_at'] },
+  { table: 'consent_receipts', columns: ['subject_reference_hash', 'document_version', 'ip_hash', 'user_agent_hash'] },
+  { table: 'data_subject_requests', columns: ['request_type', 'status', 'due_at', 'processing_scheduled_at'] },
+  { table: 'legal_retention_records', columns: ['subject_reference_hash', 'encrypted_payload', 'retain_until'] },
+  { table: 'merchants', columns: ['timezone', 'integration_source', 'escalation_phones', 'emergency_phone'] },
   { table: 'products' }, { table: 'conversations', columns: ['deal_stage', 'loss_reason', 'stalled_since', 'payment_link_sent_at', 'supervisor_intervened_at', 'supervisor_reason'] },
   { table: 'messages' }, { table: 'orders' }, { table: 'discount_codes' },
   { table: 'bot_settings', columns: ['auto_discount_enabled', 'auto_discount_max_percent', 'auto_discount_expire_hours', 'custom_instructions'] },

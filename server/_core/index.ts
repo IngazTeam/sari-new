@@ -651,6 +651,23 @@ async function startServer() {
         }
       });
 
+      // Account deletion lifecycle (daily at 02:30). Failed requests are retained for manual review.
+      cron.schedule('30 2 * * *', async () => {
+        try {
+          const { processDueAccountDeletions, purgeExpiredLegalRetentionRecords } = await import('../accounts/lifecycle');
+          const result = await processDueAccountDeletions(25);
+          const purgedRetentionRecords = await purgeExpiredLegalRetentionRecords(250);
+          if (result.processed > 0 || result.review > 0) {
+            console.log('[Cron] Account deletion processing complete', result);
+          }
+          if (purgedRetentionRecords > 0) {
+            console.log('[Cron] Expired legal retention records purged', { count: purgedRetentionRecords });
+          }
+        } catch (error) {
+          logError('[Cron] Account deletion processing failed', error);
+        }
+      });
+
       // WhatsApp Instance Health Check — detect disconnected instances (every 5 minutes)
       cron.schedule('*/5 * * * *', async () => {
         try {

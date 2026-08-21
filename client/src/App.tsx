@@ -107,6 +107,7 @@ const ChatOrders = lazyLoad(() => import("./pages/ChatOrders"));
 const DiscountCodes = lazyLoad(() => import("./pages/DiscountCodes"));
 const Referrals = lazyLoad(() => import("./pages/merchant/Referrals"));
 const MerchantSettings = lazyLoad(() => import("./pages/merchant/Settings"));
+const PrivacyCenter = lazyLoad(() => import("./pages/merchant/PrivacyCenter"));
 const LanguageSettings = lazyLoad(() => import("./pages/merchant/LanguageSettings"));
 const Reports = lazyLoad(() => import("./pages/Reports"));
 const Usage = lazyLoad(() => import("./pages/merchant/Usage"));
@@ -231,6 +232,7 @@ const TemplateTranslations = lazyLoad(() => import("./pages/admin/TemplateTransl
 const SubscriptionReports = lazyLoad(() => import("./pages/admin/SubscriptionReports"));
 const AdminInvoices = lazyLoad(() => import("./pages/admin/Invoices"));
 const AdminMonitor = lazyLoad(() => import("./pages/admin/Monitor"));
+const PrivacyRequests = lazyLoad(() => import("./pages/admin/PrivacyRequests"));
 const AdminAiAnalytics = lazyLoad(() => import("./pages/admin/AiAnalytics"));
 
 function Router() {
@@ -694,6 +696,12 @@ function Router() {
         </DashboardLayout>
       </Route>
 
+      <Route path="/merchant/privacy-center">
+        <DashboardLayout>
+          <PrivacyCenter />
+        </DashboardLayout>
+      </Route>
+
       <Route path="/merchant/notifications">
         <DashboardLayout>
           <NotificationsPage />
@@ -984,6 +992,12 @@ function Router() {
       <Route path="/admin/dashboard">
         <DashboardLayout>
           <AdminDashboard />
+        </DashboardLayout>
+      </Route>
+
+      <Route path="/admin/privacy-requests">
+        <DashboardLayout>
+          <PrivacyRequests />
         </DashboardLayout>
       </Route>
 
