@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./_core/trpc";
-import { verifyGoogleToken, findOrCreateGoogleUser } from "./google-auth";
+import { verifyGoogleToken, resolveExistingGoogleUser } from "./google-auth";
 import { TRPCError } from "@trpc/server";
 import { createSessionToken } from "./_core/auth";
 import { getSessionCookieOptions } from "./_core/cookies";
@@ -47,7 +47,7 @@ export const googleAuthRouter = router({
         const googleData = await verifyGoogleToken(input.token);
 
         // البحث عن المستخدم أو إنشاء واحد جديد
-        const user = await findOrCreateGoogleUser(googleData);
+        const user = await resolveExistingGoogleUser(googleData);
 
         if (!user) {
           throw new TRPCError({
@@ -84,6 +84,12 @@ export const googleAuthRouter = router({
 
         if (error instanceof TRPCError) {
           throw error;
+        }
+        if (error instanceof Error && error.message === 'GOOGLE_ACCOUNT_REGISTRATION_REQUIRED') {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'أكمل إنشاء المتجر والموافقة على الشروط أولاً، ثم اربط حساب Google.',
+          });
         }
 
         // SEC-11 FIX: Don't expose internal error details

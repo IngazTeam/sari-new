@@ -85,6 +85,13 @@
       "when": 1787352176975,
       "tag": "0011_classy_next_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1787353063824,
+      "tag": "0012_outstanding_grandmaster",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { verifyGoogleToken, findOrCreateGoogleUser, validateGoogleConfig } from "./google-auth";
+import { verifyGoogleToken, resolveExistingGoogleUser, validateGoogleConfig } from "./google-auth";
 import * as db from "./db";
 import * as verification from './accounts/email-verification-security';
 
@@ -41,7 +41,7 @@ describe("Google Auth Functions", () => {
 
   });
 
-  describe("findOrCreateGoogleUser", () => {
+  describe("resolveExistingGoogleUser", () => {
     it("should return existing user if found", async () => {
       const mockUser = {
         id: 1,
@@ -52,7 +52,7 @@ describe("Google Auth Functions", () => {
 
       vi.mocked(db.getUserByEmail).mockResolvedValueOnce(mockUser as any);
 
-      const result = await findOrCreateGoogleUser({
+      const result = await resolveExistingGoogleUser({
         email: "test@example.com",
         name: "Test User",
         picture: "https://example.com/pic.jpg",
@@ -64,34 +64,17 @@ describe("Google Auth Functions", () => {
       expect(verification.markVerifiedIdentityProviderEmail).toHaveBeenCalledWith(1, 'test@example.com');
     });
 
-    it("should create new user if not found", async () => {
-      const newUser = {
-        id: 2,
-        email: "newuser@example.com",
-        name: "New User",
-        role: "user",
-      };
-
+    it("should require canonical signup if no account exists", async () => {
       vi.mocked(db.getUserByEmail).mockResolvedValueOnce(null);
-      vi.mocked(db.createUser).mockResolvedValueOnce(newUser as any);
 
-      const result = await findOrCreateGoogleUser({
-        email: "newuser@example.com",
-        name: "New User",
-        picture: "https://example.com/pic.jpg",
-        googleId: "google-456",
-      });
-
-      expect(result).toEqual(newUser);
-      expect(db.getUserByEmail).toHaveBeenCalledWith("newuser@example.com");
-      expect(db.createUser).toHaveBeenCalledWith({
-        openId: 'google_google-456',
-        email: "newuser@example.com",
-        name: "New User",
-        loginMethod: 'google',
-        role: "user",
-      });
-      expect(verification.markVerifiedIdentityProviderEmail).toHaveBeenCalledWith(2, 'newuser@example.com');
+      await expect(resolveExistingGoogleUser({
+        email: 'newuser@example.com',
+        name: 'New User',
+        picture: 'https://example.com/pic.jpg',
+        googleId: 'google-456',
+      })).rejects.toThrow('GOOGLE_ACCOUNT_REGISTRATION_REQUIRED');
+      expect(db.createUser).not.toHaveBeenCalled();
+      expect(verification.markVerifiedIdentityProviderEmail).not.toHaveBeenCalled();
     });
 
     it("should handle errors gracefully", async () => {
@@ -100,13 +83,13 @@ describe("Google Auth Functions", () => {
       );
 
       await expect(
-        findOrCreateGoogleUser({
+        resolveExistingGoogleUser({
           email: "test@example.com",
           name: "Test User",
           picture: "https://example.com/pic.jpg",
           googleId: "google-123",
         })
-      ).rejects.toThrow("فشل في البحث أو إنشاء مستخدم Google");
+      ).rejects.toThrow('تعذر ربط حساب Google');
     });
   });
 });

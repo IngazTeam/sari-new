@@ -1,6 +1,6 @@
 import { OAuth2Client } from "google-auth-library";
 import { ENV } from "./_core/env";
-import { createUser, getUserByEmail } from './db';
+import { getUserByEmail } from './db';
 import { markVerifiedIdentityProviderEmail } from './accounts/email-verification-security';
 
 /**
@@ -36,9 +36,11 @@ export async function verifyGoogleToken(token: string) {
 }
 
 /**
- * البحث عن مستخدم Google أو إنشاء واحد جديد
+ * Resolve an existing account after Google proves ownership of its email.
+ * New merchants must use the canonical signup flow so merchant, membership,
+ * trial, and legal receipts are created atomically.
  */
-export async function findOrCreateGoogleUser(googleData: {
+export async function resolveExistingGoogleUser(googleData: {
   email: string;
   name: string;
   picture: string;
@@ -48,28 +50,15 @@ export async function findOrCreateGoogleUser(googleData: {
     // البحث عن مستخدم بنفس البريد الإلكتروني
     const existingUser = await getUserByEmail(googleData.email);
 
-    if (existingUser) {
-      await markVerifiedIdentityProviderEmail(existingUser.id, googleData.email);
-      return existingUser;
+    if (!existingUser) throw new Error('GOOGLE_ACCOUNT_REGISTRATION_REQUIRED');
+    await markVerifiedIdentityProviderEmail(existingUser.id, googleData.email);
+    return existingUser;
+  } catch (error) {
+    if (error instanceof Error && error.message === 'GOOGLE_ACCOUNT_REGISTRATION_REQUIRED') {
+      throw error;
     }
-
-    // إنشاء مستخدم جديد
-    const newUser = await createUser({
-      openId: `google_${googleData.googleId}`,
-      email: googleData.email,
-      name: googleData.name,
-      loginMethod: 'google',
-      role: "user",
-    });
-
-    if (newUser) {
-      await markVerifiedIdentityProviderEmail(newUser.id, googleData.email);
-    }
-
-    return newUser;
-  } catch {
     console.error('[Auth] Google user resolution failed');
-    throw new Error("فشل في البحث أو إنشاء مستخدم Google");
+    throw new Error('تعذر ربط حساب Google');
   }
 }
 

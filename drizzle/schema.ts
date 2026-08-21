@@ -296,9 +296,18 @@ export const merchants = mysqlTable("merchants", {
 	// Cascading Escalation Chain — JSON array: [{phone, label, order}]
 	escalationPhones: text("escalation_phones"),
 	integrationSource: varchar("integration_source", { length: 20 }).default('none'),
+	// Opaque HMACs make platform provisioning exactly-once without storing the
+	// caller's idempotency key or registration payload in recoverable form.
+	provisionIdempotencyHash: varchar("provision_idempotency_hash", { length: 64 }),
+	provisionPayloadHash: varchar("provision_payload_hash", { length: 64 }),
 	// Merchant Logo for PDF branding
 	logoUrl: varchar("logo_url", { length: 500 }),
-});
+}, table => [
+	uniqueIndex("merchants_platform_provision_unique").on(
+		table.integrationSource,
+		table.provisionIdempotencyHash,
+	),
+]);
 
 export const messages = mysqlTable("messages", {
 	id: int().autoincrement().primaryKey(),

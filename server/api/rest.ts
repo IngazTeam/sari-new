@@ -39,7 +39,15 @@ import {
 } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { decryptSecret, encryptSecret } from '../security/secrets';
-import { verifyByaanSignedRequest } from '../integrations/byaan-security';
+import {
+  normalizeByaanApiBaseUrl,
+  normalizeByaanTenantDomain,
+  verifyByaanSignedRequest,
+} from '../integrations/byaan-security';
+import { registerMerchantAccount } from '../accounts/lifecycle';
+import { privacyHashExact } from '../accounts/privacy-hash';
+import { deliverEmailVerification } from '../accounts/email-verification-delivery';
+import { buildPublicUrl } from '../utils/public-url';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -310,9 +318,9 @@ function platformAuthMiddleware(req: PlatformRequest, res: Response, next: NextF
     });
   }
 
-  // Rate limit by platform key prefix
-  const keyPrefix = platformKey.substring(0, 20);
-  if (!checkApiRateLimit(`platform_${keyPrefix}`, 30, 60_000)) {
+  // Fingerprint the entire case-sensitive credential. Platform-key prefixes are
+  // shared and would let one tenant exhaust another tenant's limiter bucket.
+  if (!checkApiRateLimit(`platform_${privacyHashExact(platformKey)}`, 30, 60_000)) {
     return res.status(429).json({ error: 'Platform rate limit exceeded', errorAr: 'تجاوزت حد طلبات المنصة' });
   }
 
@@ -764,123 +772,289 @@ sariApiRouter.get('/stats', async (req: AuthenticatedRequest, res: Response) => 
 
 // ── POST /api/v1/platform/provision — Auto-create merchant account ──
 sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response) => {
-  // PEN-BYAAN-01: Separate rate limit for provision
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkProvisionLimit(keyPrefix)) {
+  // Platform credentials are fingerprinted in limiter keys; prefixes can collide.
+  const platformKey = String(req.headers['x-platform-key'] || 'unknown');
+  if (!checkProvisionLimit(privacyHashExact(platformKey))) {
     return res.status(429).json({ error: 'Provision rate limit exceeded (5/hour)', errorAr: 'تجاوزت حد إنشاء الحسابات (5/ساعة)' });
   }
 
-  const { name, email, password, businessName, phone, tenantDomain, callbackUrl, webhookSecret } = req.body;
-  const source = req.platform || 'external';
+  const {
+    name,
+    email,
+    password,
+    businessName,
+    phone,
+    tenantDomain,
+    callbackUrl,
+    webhookSecret,
+    acceptedTerms,
+    acceptedPrivacy,
+    marketingConsent = false,
+  } = req.body;
+  const source = String(req.platform || '').trim().toLowerCase();
+  const idempotencyKey = String(req.headers['idempotency-key'] || '').trim();
 
-  if (!email || !password || !businessName || !phone) {
+  if (!/^[a-z0-9_-]{2,20}$/.test(source)) {
+    return res.status(403).json({ error: 'Unsupported platform identity', errorAr: 'هوية المنصة غير مدعومة' });
+  }
+
+  if (!/^[A-Za-z0-9._:-]{16,128}$/.test(idempotencyKey)) {
     return res.status(400).json({
-      error: 'email, password, businessName, and phone are required',
-      errorAr: 'الإيميل وكلمة المرور واسم النشاط ورقم الجوال مطلوبة',
+      error: 'A valid Idempotency-Key header (16-128 characters) is required',
+      errorAr: 'ترويسة Idempotency-Key صالحة بطول 16-128 حرفاً مطلوبة',
     });
   }
 
-  // PEN-BYAAN-03: Email validation
-  if (!isValidEmail(String(email))) {
+  if (!email || !password || !businessName || !phone || !name) {
+    return res.status(400).json({
+      error: 'name, email, password, businessName, and phone are required',
+      errorAr: 'الاسم والإيميل وكلمة المرور واسم النشاط ورقم الجوال مطلوبة',
+    });
+  }
+  if (acceptedTerms !== true || acceptedPrivacy !== true) {
+    return res.status(400).json({
+      error: 'Explicit terms and privacy acceptance is required',
+      errorAr: 'الموافقة الصريحة على الشروط وسياسة الخصوصية مطلوبة',
+    });
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  if (normalizedEmail.length > 320 || !isValidEmail(normalizedEmail)) {
     return res.status(400).json({ error: 'Invalid email format', errorAr: 'تنسيق الإيميل غير صالح' });
   }
 
-  if (typeof password !== 'string' || password.length < 6) {
-    return res.status(400).json({ error: 'Password must be at least 6 characters', errorAr: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' });
+  if (
+    typeof password !== 'string' ||
+    password.length < 8 ||
+    password.length > 128 ||
+    !/[A-Z]/.test(password) ||
+    !/[0-9]/.test(password)
+  ) {
+    return res.status(400).json({
+      error: 'Password must be 8-128 characters and include an uppercase letter and a number',
+      errorAr: 'كلمة المرور يجب أن تكون 8-128 حرفاً وتحتوي حرفاً كبيراً ورقماً',
+    });
   }
 
-  // Validate tenantDomain if provided
+  const safeName = stripHtml(String(name)).slice(0, 120);
+  const safeBusinessName = stripHtml(String(businessName)).slice(0, 255);
+  const safePhone = stripHtml(String(phone)).replace(/[^0-9+]/g, '').slice(0, 20);
+  if (safeName.length < 2 || safeBusinessName.length < 2 || !/^\+?[0-9]{9,20}$/.test(safePhone)) {
+    return res.status(400).json({ error: 'Invalid account profile', errorAr: 'بيانات الحساب غير صالحة' });
+  }
+
+  if (source === 'byaan' && (!tenantDomain || !webhookSecret)) {
+    return res.status(400).json({
+      error: 'tenantDomain and a signing secret are required for Byaan',
+      errorAr: 'نطاق بيان وسر توقيع مطلوبان لإكمال الربط',
+    });
+  }
   if (tenantDomain && !isValidDomain(stripHtml(String(tenantDomain)))) {
     return res.status(400).json({ error: 'Invalid tenantDomain format', errorAr: 'تنسيق نطاق التيننت غير صالح' });
   }
 
+  let cleanDomain: string | undefined;
+  let apiBaseUrl: string | undefined;
+  const signingSecret = webhookSecret ? String(webhookSecret).trim() : undefined;
   try {
-    const pool = await getPool();
-    if (!pool) throw new Error('DB unavailable');
+    if (tenantDomain) {
+      cleanDomain = normalizeByaanTenantDomain(stripHtml(String(tenantDomain)));
+      apiBaseUrl = normalizeByaanApiBaseUrl(
+        cleanDomain,
+        callbackUrl ? stripHtml(String(callbackUrl)) : undefined,
+      );
+    }
+    if (source === 'byaan' && (!signingSecret || signingSecret.length < 32)) {
+      throw new Error('invalid signing secret');
+    }
+  } catch {
+    return res.status(400).json({
+      error: 'Invalid Byaan connection settings',
+      errorAr: 'إعدادات اتصال بيان غير صالحة',
+    });
+  }
 
-    // Check if email already exists
-    const [existingUsers] = await pool.execute(
-      `SELECT id FROM users WHERE email = ? LIMIT 1`,
-      [String(email).toLowerCase().trim()]
+  const provisionIdempotencyHash = privacyHashExact(`${source}\0${idempotencyKey}`);
+  const provisionPayloadHash = privacyHashExact(JSON.stringify({
+    source,
+    name: safeName,
+    email: normalizedEmail,
+    password,
+    businessName: safeBusinessName,
+    phone: safePhone,
+    tenantDomain: cleanDomain || null,
+    callbackUrl: apiBaseUrl || null,
+    webhookSecret: signingSecret || null,
+    acceptedTerms: true,
+    acceptedPrivacy: true,
+    marketingConsent: marketingConsent === true,
+  }));
+
+  let provisionLockConnection: any = null;
+  let provisionLockAcquired = false;
+  const provisionLockName = `sari:provision:${provisionIdempotencyHash.slice(0, 48)}`;
+  try {
+    const lockPool = await getPool();
+    if (!lockPool) throw new Error('DB unavailable');
+    provisionLockConnection = await lockPool.getConnection();
+    const [lockRows] = await provisionLockConnection.execute(
+      'SELECT GET_LOCK(?, 5) AS acquired',
+      [provisionLockName],
     );
-
-    if ((existingUsers as any[])?.length > 0) {
-      // PEN-BYAAN-02 + PEN-R2-05 + PEN-SYNC-28: Fully uniform response (same loginUrl to prevent enumeration)
-      return res.json({
-        success: true,
-        created: true,
-        email: String(email).toLowerCase().trim(),
-        loginUrl: 'https://sary.live/login',
-        dashboardUrl: 'https://sary.live/merchant/whatsapp-setup',
-        message: 'Account provisioned successfully',
-        messageAr: 'تم تجهيز الحساب بنجاح',
+    provisionLockAcquired = Number((lockRows as any[])?.[0]?.acquired) === 1;
+    if (!provisionLockAcquired) {
+      return res.status(409).json({
+        error: 'Provisioning with this idempotency key is already in progress',
+        errorAr: 'تجهيز الحساب بهذا المفتاح قيد التنفيذ حالياً',
       });
     }
 
-    // Create new user
     const bcrypt = await import('bcryptjs');
-    const hashedPassword = await bcrypt.hash(password, 12);
-    const openId = `provision_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const requestIp = String(req.ip || req.socket.remoteAddress || 'unknown').slice(0, 45);
+    let merchantId: number;
+    let userId: number;
+    let accountCreated = true;
+    try {
+      const registration = await registerMerchantAccount({
+        name: safeName,
+        email: normalizedEmail,
+        passwordHash: hashedPassword,
+        businessName: safeBusinessName,
+        phone: safePhone,
+        acceptedTerms: true,
+        acceptedPrivacy: true,
+        marketingConsent: marketingConsent === true,
+        ipAddress: requestIp,
+        userAgent: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : null,
+        registrationSource: source === 'byaan' ? 'byaan_provision' : 'platform_provision',
+        merchantStatus: 'active',
+        platformType: source === 'byaan' ? 'byaan' : 'custom',
+        integrationSource: source,
+        provisionIdempotencyHash,
+        provisionPayloadHash,
+        provisionTenantDomain: cleanDomain || null,
+      });
+      merchantId = registration.merchantId;
+      userId = registration.user.id;
+    } catch (error: any) {
+      if (!['EMAIL_ALREADY_REGISTERED', 'PROVISION_IDEMPOTENCY_CONFLICT'].includes(error?.message)) {
+        throw error;
+      }
+      const pool = await getPool();
+      if (!pool) throw new Error('DB unavailable');
+      const [rows] = await pool.execute(
+        `SELECT u.id AS userId, m.id AS merchantId
+           FROM users u
+           INNER JOIN merchants m ON m.userId = u.id AND m.integration_source = ?
+             AND m.provision_idempotency_hash = ? AND m.provision_payload_hash = ?
+           INNER JOIN merchant_members mm ON mm.user_id = u.id AND mm.merchant_id = m.id
+             AND mm.role = 'owner' AND mm.is_active = 1
+           INNER JOIN merchant_subscriptions ms ON ms.merchant_id = m.id
+          WHERE u.email = ? AND u.account_status = 'active'
+            AND (? IS NULL OR EXISTS (
+              SELECT 1 FROM byaan_connections bc
+               WHERE bc.merchant_id = m.id AND bc.tenant_domain = ?
+            ))
+          LIMIT 1`,
+        [
+          source,
+          provisionIdempotencyHash,
+          provisionPayloadHash,
+          normalizedEmail,
+          cleanDomain || null,
+          cleanDomain || null,
+        ],
+      );
+      const canonicalAccount = (rows as any[])?.[0];
+      if (!canonicalAccount) throw error;
+      merchantId = Number(canonicalAccount.merchantId);
+      userId = Number(canonicalAccount.userId);
+      accountCreated = false;
+    }
 
-    // PEN-R3-02: Sanitize name to prevent stored XSS
-    const safeName = stripHtml(String(name || businessName)).substring(0, 100);
-    const safeBusinessName = stripHtml(String(businessName)).substring(0, 255);
-    const safePhone = phone ? stripHtml(String(phone)).replace(/[^0-9+\-\s()]/g, '').substring(0, 20) : null;
-
-    const [userResult] = await pool.execute(
-      `INSERT INTO users (openId, name, email, password, loginMethod, role, createdAt, updatedAt, lastSignedIn) VALUES (?, ?, ?, ?, 'credentials', 'user', NOW(), NOW(), NOW())`,
-      [openId, safeName, String(email).toLowerCase().trim(), hashedPassword]
-    );
-
-    const userId = (userResult as any).insertId;
-
-    // Create merchant with platform source
-    const [merchantResult] = await pool.execute(
-      `INSERT INTO merchants (userId, businessName, phone, status, platform_type, createdAt, updatedAt) VALUES (?, ?, ?, 'active', ?, NOW(), NOW())`,
-      [userId, safeBusinessName, safePhone, source === 'byaan' ? 'byaan' : null]
-    );
-
-    const merchantId = (merchantResult as any).insertId;
-
-    // Generate API key
-    const apiKeyResult = await generateApiKey(merchantId, `${source} auto-key`);
-
-    // Auto-connect if Byaan with tenantDomain
-    if (source === 'byaan' && tenantDomain) {
-      try {
-        const cleanDomain = stripHtml(String(tenantDomain));
-        const apiBaseUrl = callbackUrl ? stripHtml(String(callbackUrl)) : undefined;
-        const secret = webhookSecret ? String(webhookSecret) : undefined;
+    let connectionStatus: 'not_applicable' | 'pending_verification' | 'active' = 'not_applicable';
+    if (source === 'byaan' && cleanDomain && signingSecret) {
+      const pool = await getPool();
+      if (!pool) throw new Error('DB unavailable');
+      const [existingConnections] = await pool.execute(
+        `SELECT is_active, verified_at FROM byaan_connections
+          WHERE merchant_id = ? AND tenant_domain = ? LIMIT 1`,
+        [merchantId, cleanDomain],
+      );
+      const existingConnection = (existingConnections as any[])?.[0];
+      if (!accountCreated && existingConnection?.is_active && existingConnection?.verified_at) {
+        connectionStatus = 'active';
+      } else {
         const { createByaanConnection } = await import('../integrations/byaan');
-        await createByaanConnection(merchantId, cleanDomain, {}, apiBaseUrl, secret);
-        console.log(`[SariAPI] Byaan auto-connected: merchant=${merchantId}, tenant=${cleanDomain}, api=${apiBaseUrl || 'auto'}`);
-      } catch (e) {
-        console.error('[SariAPI] Byaan auto-connect failed (non-blocking):', e);
+        const connection = await createByaanConnection(merchantId, cleanDomain, {}, apiBaseUrl, signingSecret);
+        if (!connection) throw new Error('BYAAN_CONNECTION_CREATE_FAILED');
+        connectionStatus = connection.is_active && connection.verified_at ? 'active' : 'pending_verification';
       }
     }
 
-    // Log activity
+    let verificationEmailSent = false;
+    try {
+      verificationEmailSent = (await deliverEmailVerification({
+        userId,
+        email: normalizedEmail,
+        ipAddress: requestIp,
+      })).delivered;
+    } catch {
+      console.error('[SariAPI] Provision verification email failed', { source });
+    }
+
     try {
       const { logBrainActivity } = await import('../routers-sari-brain');
-      await logBrainActivity(merchantId, 'settings_changed', `حساب جديد عبر ${source} — ${email}`, { source, email, tenantDomain });
-    } catch (e) { /* skip */ }
+      await logBrainActivity(merchantId, 'settings_changed', `حساب جديد عبر ${source}`, { source });
+    } catch { /* audit activity is non-critical */ }
 
-    // PEN-SYNC-09: Log apiKey securely, but don't return merchantId/apiKey in response
-    // to match the existing-account response shape and prevent email enumeration
-    console.log(`[SariAPI] Provision success: merchant=${merchantId}, key_prefix=${apiKeyResult.prefix}`);
-    res.json({
+    console.log('[SariAPI] Provision completed', { merchantId, source, connectionStatus });
+    res.status(connectionStatus === 'pending_verification' ? 202 : 201).json({
       success: true,
-      created: true,
-      email: String(email).toLowerCase().trim(),
-      loginUrl: 'https://sary.live/login',
-      dashboardUrl: 'https://sary.live/merchant/whatsapp-setup',
+      created: accountCreated,
+      email: normalizedEmail,
+      loginUrl: buildPublicUrl('/login'),
+      dashboardUrl: buildPublicUrl('/merchant/whatsapp-setup'),
       message: 'Account provisioned successfully',
       messageAr: 'تم تجهيز الحساب بنجاح',
       platform: source,
+      connectionStatus,
+      verificationEmailSent,
     });
-  } catch (e: any) {
-    console.error('[SariAPI] Provision failed:', e);
-    res.status(500).json({ error: 'Provision failed', errorAr: 'فشل إنشاء الحساب' });
+  } catch (error: any) {
+    if (error?.message === 'EMAIL_ALREADY_REGISTERED') {
+      return res.status(409).json({
+        error: 'Account cannot be provisioned with these credentials',
+        errorAr: 'تعذر تجهيز الحساب بهذه البيانات',
+      });
+    }
+    if (error?.message === 'PROVISION_IDEMPOTENCY_CONFLICT') {
+      return res.status(409).json({
+        error: 'Idempotency key conflicts with a different provisioning request',
+        errorAr: 'مفتاح التكرار مستخدم لطلب تجهيز مختلف',
+      });
+    }
+    if (
+      error?.message === 'PROVISION_TENANT_ALREADY_LINKED' ||
+      error?.message === 'Byaan tenant domain is already linked to another merchant'
+    ) {
+      return res.status(409).json({ error: 'Tenant is already linked', errorAr: 'نطاق بيان مرتبط مسبقاً' });
+    }
+    console.error('[SariAPI] Provision failed', { source });
+    return res.status(500).json({ error: 'Provision failed', errorAr: 'فشل إنشاء الحساب' });
+  } finally {
+    if (provisionLockConnection) {
+      try {
+        if (provisionLockAcquired) {
+          await provisionLockConnection.execute('SELECT RELEASE_LOCK(?)', [provisionLockName]);
+        }
+      } catch {
+        console.error('[SariAPI] Provision lock release failed', { source });
+      } finally {
+        provisionLockConnection.release();
+      }
+    }
   }
 });
 

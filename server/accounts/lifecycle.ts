@@ -56,6 +56,12 @@ function mysqlErrorCode(error: unknown): string | undefined {
     : undefined;
 }
 
+function mysqlDuplicateKey(error: unknown): string {
+  if (typeof error !== 'object' || error === null) return '';
+  const candidate = error as { sqlMessage?: unknown; message?: unknown };
+  return String(candidate.sqlMessage || candidate.message || '');
+}
+
 async function insertConsentReceipt(
   connection: PoolConnection,
   input: {
@@ -117,9 +123,34 @@ export async function registerMerchantAccount(input: {
   marketingConsent: boolean;
   ipAddress?: string | null;
   userAgent?: string | null;
+  registrationSource?: 'signup' | 'byaan_provision' | 'platform_provision';
+  merchantStatus?: 'pending' | 'active';
+  platformType?: 'byaan' | 'custom' | null;
+  integrationSource?: string;
+  provisionIdempotencyHash?: string | null;
+  provisionPayloadHash?: string | null;
+  provisionTenantDomain?: string | null;
 }): Promise<{ user: Omit<UserRow, 'password'>; merchantId: number; trialEndsAt: Date }> {
   if (input.acceptedTerms !== true || input.acceptedPrivacy !== true) {
     throw new Error('LEGAL_CONSENT_REQUIRED');
+  }
+  const provisionIdempotencyHash = input.provisionIdempotencyHash || null;
+  const provisionPayloadHash = input.provisionPayloadHash || null;
+  const provisionTenantDomain = input.provisionTenantDomain || null;
+  if (
+    Boolean(provisionIdempotencyHash) !== Boolean(provisionPayloadHash) ||
+    (provisionIdempotencyHash && !/^[a-f0-9]{64}$/.test(provisionIdempotencyHash)) ||
+    (provisionPayloadHash && !/^[a-f0-9]{64}$/.test(provisionPayloadHash))
+  ) {
+    throw new Error('INVALID_PROVISIONING_IDEMPOTENCY');
+  }
+  if (
+    provisionTenantDomain &&
+    (input.platformType !== 'byaan' ||
+      provisionTenantDomain.length > 253 ||
+      !/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(provisionTenantDomain))
+  ) {
+    throw new Error('INVALID_PROVISIONING_TENANT');
   }
   const pool = await getPool();
   if (!pool) throw new Error('Database not available');
@@ -128,6 +159,10 @@ export async function registerMerchantAccount(input: {
   const subjectReferenceHash = privacyHash(email);
   const ipHash = input.ipAddress ? privacyHash(input.ipAddress) : null;
   const userAgentHash = input.userAgent ? privacyHash(input.userAgent) : null;
+  const registrationSource = input.registrationSource || 'signup';
+  const merchantStatus = input.merchantStatus || 'pending';
+  const platformType = input.platformType || null;
+  const integrationSource = (input.integrationSource || 'none').trim().slice(0, 20);
 
   try {
     await connection.beginTransaction();
@@ -164,12 +199,36 @@ export async function registerMerchantAccount(input: {
       `INSERT INTO merchants
         (userId, businessName, phone, status, subscription_status, max_customers_allowed,
          autoReplyEnabled, onboardingCompleted, onboardingStep, setupCompleted, currency, timezone,
+         platform_type, integration_source, provision_idempotency_hash, provision_payload_hash,
          createdAt, updatedAt)
-       VALUES (?, ?, ?, 'pending', 'trial', 100, 1, 0, 0, 0, 'SAR', 'Asia/Riyadh', ?, ?)`,
-      [userId, input.businessName.trim(), input.phone.trim(), mysqlTimestamp(now), mysqlTimestamp(now)],
+       VALUES (?, ?, ?, ?, 'trial', 100, 1, 0, 0, 0, 'SAR', 'Asia/Riyadh', ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        input.businessName.trim(),
+        input.phone.trim(),
+        merchantStatus,
+        platformType,
+        integrationSource,
+        provisionIdempotencyHash,
+        provisionPayloadHash,
+        mysqlTimestamp(now),
+        mysqlTimestamp(now),
+      ],
     );
     const merchantId = Number((merchantResult as { insertId: number }).insertId);
     if (!Number.isSafeInteger(merchantId) || merchantId <= 0) throw new Error('MERCHANT_CREATE_FAILED');
+
+    // Reserve the Byaan tenant in the same transaction as the account graph.
+    // uq_byaan_domain makes concurrent provisioning exactly-one-winner and the
+    // losing user/merchant inserts are rolled back with the transaction.
+    if (provisionTenantDomain) {
+      await connection.execute(
+        `INSERT INTO byaan_connections
+          (merchant_id, tenant_domain, sync_status, is_active)
+         VALUES (?, ?, 'pending_verification', 0)`,
+        [merchantId, provisionTenantDomain],
+      );
+    }
 
     await connection.execute(
       `INSERT INTO merchant_members
@@ -210,7 +269,7 @@ export async function registerMerchantAccount(input: {
         subjectReferenceHash,
         consentType,
         granted,
-        source: 'signup',
+        source: registrationSource,
         ipHash,
         userAgentHash,
       });
@@ -228,7 +287,14 @@ export async function registerMerchantAccount(input: {
     return { user: safeUser, merchantId, trialEndsAt };
   } catch (error) {
     await connection.rollback();
-    if (mysqlErrorCode(error) === 'ER_DUP_ENTRY') throw new Error('EMAIL_ALREADY_REGISTERED');
+    if (mysqlErrorCode(error) === 'ER_DUP_ENTRY') {
+      const duplicateKey = mysqlDuplicateKey(error);
+      if (duplicateKey.includes('uq_byaan_domain')) throw new Error('PROVISION_TENANT_ALREADY_LINKED');
+      if (duplicateKey.includes('merchants_platform_provision_unique')) {
+        throw new Error('PROVISION_IDEMPOTENCY_CONFLICT');
+      }
+      throw new Error('EMAIL_ALREADY_REGISTERED');
+    }
     throw error;
   } finally {
     connection.release();

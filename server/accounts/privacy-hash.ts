@@ -12,8 +12,16 @@ function privacyKey(): string {
 }
 
 export function privacyHash(value: string): string {
+  return privacyHashExact(value.trim().toLowerCase());
+}
+
+/**
+ * HMAC a case-sensitive secret or structured payload without normalizing it.
+ * Use this for credentials and idempotency material, never for email matching.
+ */
+export function privacyHashExact(value: string): string {
   return crypto
     .createHmac('sha256', privacyKey())
-    .update(value.trim().toLowerCase(), 'utf8')
+    .update(value, 'utf8')
     .digest('hex');
 }
