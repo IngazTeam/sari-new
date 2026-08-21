@@ -617,11 +617,22 @@ export const appRouter = router({
         };
       }),
 
-    logout: publicProcedure.mutation(({ ctx }) => {
+    logout: publicProcedure.mutation(async ({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+      if (!ctx.user || !ctx.session) {
+        return {
+          success: true,
+          sessionRevoked: false,
+        } as const;
+      }
+
+      const { revokeAuthSession } = await import('./db');
+      await revokeAuthSession(ctx.user.id, ctx.session.sessionId);
       return {
         success: true,
+        sessionRevoked: true,
       } as const;
     }),
 

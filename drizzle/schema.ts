@@ -853,6 +853,19 @@ export const users = mysqlTable("users", {
 		uniqueIndex("users_email_unique").on(table.email),
 	]);
 
+export const authSessions = mysqlTable("auth_sessions", {
+	id: int().autoincrement().primaryKey(),
+	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+	tokenIdHash: varchar("token_id_hash", { length: 64 }).notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	revokedAt: timestamp("revoked_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	uniqueIndex("auth_sessions_token_hash_unique").on(table.tokenIdHash),
+	index("auth_sessions_user_active_idx").on(table.userId, table.revokedAt, table.expiresAt),
+	index("auth_sessions_expiry_idx").on(table.expiresAt),
+]);
+
 export const consentReceipts = mysqlTable("consent_receipts", {
 	id: int().autoincrement().primaryKey(),
 	userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
@@ -2950,6 +2963,7 @@ export type InsertSignupPromptTestResult = InferInsertModel<typeof signupPromptT
 
 export type PasswordResetToken = InferSelectModel<typeof passwordResetTokens>;
 export type PasswordResetAttempt = InferSelectModel<typeof passwordResetAttempts>;
+export type AuthSession = InferSelectModel<typeof authSessions>;
 
 export type TrySariAnalytics = InferSelectModel<typeof trySariAnalytics>;
 

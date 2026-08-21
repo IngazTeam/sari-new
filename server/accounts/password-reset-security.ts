@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
-import { and, eq, gt } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { RowDataPacket } from 'mysql2/promise';
-import { passwordResetTokens, users } from '../../drizzle/schema';
+import { authSessions, passwordResetTokens, users } from '../../drizzle/schema';
 import { getDb, getPool } from '../db';
 import { privacyHash } from './privacy-hash';
 
@@ -148,6 +148,14 @@ export async function consumePasswordResetTokenAndUpdatePassword(
       .update(users)
       .set({ password: hashedPassword })
       .where(eq(users.id, resetToken.userId));
+
+    await tx
+      .update(authSessions)
+      .set({ revokedAt: now })
+      .where(and(
+        eq(authSessions.userId, resetToken.userId),
+        isNull(authSessions.revokedAt),
+      ));
 
     await tx
       .update(passwordResetTokens)

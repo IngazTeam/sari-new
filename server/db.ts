@@ -1,6 +1,7 @@
 import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
+import { hashSessionId } from './_core/session-security';
 
 // Helper function to format Date for MySQL timestamp comparison
 function formatDateForDB(date: Date): string {
@@ -12,6 +13,7 @@ import * as schema from "../drizzle/schema";
 import {
   InsertUser,
   users,
+  authSessions,
   merchants,
   InsertMerchant,
   Merchant,
@@ -590,6 +592,81 @@ export async function updateUserLastSignedIn(id: number): Promise<void> {
   if (!db) return;
 
   await db.update(users).set({ lastSignedIn: formatDateForDB(new Date()) }).where(eq(users.id, id));
+}
+
+export async function createAuthSession(
+  userId: number,
+  sessionId: string,
+  expiresAt: Date,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+
+  await db.insert(authSessions).values({
+    userId,
+    tokenIdHash: hashSessionId(sessionId),
+    expiresAt: formatDateForDB(expiresAt),
+  });
+}
+
+export async function isAuthSessionActive(
+  userId: number,
+  sessionId: string,
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+
+  const [session] = await db
+    .select({ id: authSessions.id })
+    .from(authSessions)
+    .where(and(
+      eq(authSessions.userId, userId),
+      eq(authSessions.tokenIdHash, hashSessionId(sessionId)),
+      isNull(authSessions.revokedAt),
+      gt(authSessions.expiresAt, formatDateForDB(new Date())),
+    ))
+    .limit(1);
+
+  return Boolean(session);
+}
+
+export async function getUserByActiveSession(
+  userId: number,
+  sessionId: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+
+  const [row] = await db
+    .select({ user: users })
+    .from(users)
+    .innerJoin(authSessions, and(
+      eq(authSessions.userId, users.id),
+      eq(authSessions.tokenIdHash, hashSessionId(sessionId)),
+      isNull(authSessions.revokedAt),
+      gt(authSessions.expiresAt, formatDateForDB(new Date())),
+    ))
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  return row?.user;
+}
+
+export async function revokeAuthSession(
+  userId: number,
+  sessionId: string,
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error('Database not initialized');
+
+  await db
+    .update(authSessions)
+    .set({ revokedAt: formatDateForDB(new Date()) })
+    .where(and(
+      eq(authSessions.userId, userId),
+      eq(authSessions.tokenIdHash, hashSessionId(sessionId)),
+      isNull(authSessions.revokedAt),
+    ));
 }
 
 export async function createUser(data: InsertUser) {

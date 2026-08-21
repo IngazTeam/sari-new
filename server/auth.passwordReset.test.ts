@@ -3,6 +3,7 @@ import * as db from './db';
 import bcrypt from 'bcryptjs';
 import { createHash, randomBytes } from 'node:crypto';
 import { consumePasswordResetTokenAndUpdatePassword } from './accounts/password-reset-security';
+import { createSessionId } from './_core/session-security';
 
 describe.skipIf(!process.env.DATABASE_URL)('Password Reset System (database integration)', () => {
   let testUserId: number;
@@ -134,6 +135,9 @@ describe.skipIf(!process.env.DATABASE_URL)('Password Reset System (database inte
       token: concurrentToken,
       expiresAt,
     });
+    const activeSessionId = createSessionId();
+    await db.createAuthSession(testUserId, activeSessionId, expiresAt);
+    expect(await db.isAuthSessionActive(testUserId, activeSessionId)).toBe(true);
     await db.createPasswordResetToken({
       userId: testUserId,
       email: testUserEmail,
@@ -157,6 +161,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Password Reset System (database inte
 
     const user = await db.getUserById(testUserId);
     expect(await bcrypt.compare('ConcurrentReset9', user!.password!)).toBe(true);
+    expect(await db.isAuthSessionActive(testUserId, activeSessionId)).toBe(false);
   });
 
   it('should delete all reset tokens for a user', async () => {

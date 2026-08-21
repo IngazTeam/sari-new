@@ -1,10 +1,24 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { User } from '../../drizzle/schema';
 
 export type SessionCredentialSubject = Pick<User, 'id' | 'openId' | 'password'>;
 
 const SESSION_CREDENTIAL_DOMAIN = 'sari/session-credential/v1';
 const SESSION_CREDENTIAL_VERSION_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+const SESSION_ID_PATTERN = /^[a-f0-9]{64}$/;
+
+export function createSessionId(): string {
+  return randomBytes(32).toString('hex');
+}
+
+export function isSessionId(value: unknown): value is string {
+  return typeof value === 'string' && SESSION_ID_PATTERN.test(value);
+}
+
+export function hashSessionId(sessionId: string): string {
+  if (!isSessionId(sessionId)) throw new Error('Invalid session id');
+  return createHash('sha256').update(sessionId, 'utf8').digest('hex');
+}
 
 /**
  * Derive a one-way session version from the credential that currently owns the

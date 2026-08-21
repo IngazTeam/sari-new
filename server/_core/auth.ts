@@ -4,11 +4,13 @@ import { parse as parseCookieHeader } from "cookie";
 import type { Request } from "express";
 import jwt from "jsonwebtoken";
 import type { User } from "../../drizzle/schema";
-import { getUserById } from '../db';
+import { createAuthSession, getUserByActiveSession, getUserById } from '../db';
 import { ENV } from "./env";
 import {
   deriveSessionCredentialVersion,
   isSessionCredentialVersion,
+  createSessionId,
+  isSessionId,
   sessionCredentialVersionMatches,
 } from './session-security';
 
@@ -25,6 +27,7 @@ export type SessionPayload = {
   email: string;
   name: string;
   credentialVersion: string;
+  sessionId: string;
 };
 
 export function sessionMatchesUserCredential(
@@ -49,6 +52,10 @@ export async function createSessionToken(
   const expiresInSeconds = Math.floor(expiresInMs / 1000);
   const numericUserId = Number(userId);
 
+  if (!Number.isSafeInteger(expiresInSeconds) || expiresInSeconds <= 0) {
+    throw new Error('Cannot create session with an invalid expiry');
+  }
+
   if (!Number.isSafeInteger(numericUserId) || numericUserId <= 0) {
     throw new Error('Cannot create session for an invalid user');
   }
@@ -60,6 +67,7 @@ export async function createSessionToken(
 
   const jwtSecret = getJwtSecret();
   const credentialVersion = deriveSessionCredentialVersion(user, jwtSecret);
+  const sessionId = createSessionId();
 
   const token = jwt.sign(
     {
@@ -67,9 +75,16 @@ export async function createSessionToken(
       email: options.email ?? user.email ?? "",
       name: options.name ?? user.name ?? "",
       credentialVersion,
+      sessionId,
     },
     jwtSecret,
     { algorithm: 'HS256', expiresIn: expiresInSeconds }
+  );
+
+  await createAuthSession(
+    user.id,
+    sessionId,
+    new Date(Date.now() + expiresInSeconds * 1000),
   );
 
   return token;
@@ -100,11 +115,17 @@ export async function verifySession(
       return null;
     }
 
+    if (!isSessionId(decoded.sessionId)) {
+      console.warn('[Auth] Session payload missing server-side session id');
+      return null;
+    }
+
     return {
       userId: String(userId),
       email: decoded.email || "",
       name: decoded.name || "",
       credentialVersion: decoded.credentialVersion,
+      sessionId: decoded.sessionId,
     };
   } catch (error) {
     console.warn("[Auth] Session verification failed", String(error));
@@ -123,10 +144,7 @@ function parseCookies(cookieHeader: string | undefined): Map<string, string> {
   return new Map(Object.entries(parsed));
 }
 
-/**
- * Authenticate request and return user
- */
-export async function authenticateRequest(req: Request): Promise<User> {
+function getRequestSessionToken(req: Request): string | undefined {
   // Try multiple sources for the session token
   let sessionToken = (req as any).cookies?.[COOKIE_NAME];
 
@@ -144,6 +162,21 @@ export async function authenticateRequest(req: Request): Promise<User> {
     sessionToken = cookies.get(COOKIE_NAME);
   }
 
+  return typeof sessionToken === 'string' ? sessionToken : undefined;
+}
+
+export type AuthenticatedSession = {
+  user: User;
+  session: SessionPayload;
+};
+
+/**
+ * Authenticate a request and retain the server-side session identity for
+ * revocation-sensitive operations such as logout.
+ */
+export async function authenticateSessionRequest(req: Request): Promise<AuthenticatedSession> {
+  const sessionToken = getRequestSessionToken(req);
+
   // Verify the token
   const session = await verifySession(sessionToken);
 
@@ -152,7 +185,7 @@ export async function authenticateRequest(req: Request): Promise<User> {
   }
 
   // Get user from database (convert userId to number)
-  const user = await getUserById(Number(session.userId));
+  const user = await getUserByActiveSession(Number(session.userId), session.sessionId);
 
   if (!user) {
     throw ForbiddenError("User not found");
@@ -169,7 +202,14 @@ export async function authenticateRequest(req: Request): Promise<User> {
   // NOTE: lastSignedIn is updated only at login time (routers-auth.ts / auth-routes.ts).
   // Previously this ran on EVERY request via createContext() → DB pool exhaustion.
 
-  return user;
+  return { user, session };
+}
+
+/**
+ * Authenticate request and return user
+ */
+export async function authenticateRequest(req: Request): Promise<User> {
+  return (await authenticateSessionRequest(req)).user;
 }
 
 /**
@@ -188,6 +228,7 @@ export async function resolveUser(req: Request): Promise<User | null> {
 export const customAuth = {
   createSessionToken,
   verifySession,
+  authenticateSessionRequest,
   authenticateRequest,
   resolveUser,
 };

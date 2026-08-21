@@ -88,3 +88,4 @@ jobs:
           server/tests/dashboard-analytics.test.ts
           server/auth.ratelimit.test.ts
           server/auth.passwordReset.test.ts
+          server/auth.sessionRegistry.test.ts

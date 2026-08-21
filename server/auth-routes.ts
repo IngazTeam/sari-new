@@ -4,12 +4,14 @@ import {
   getMerchantById,
   getMerchantByUserId,
   getPool,
+  getUserByActiveSession,
   getUserByEmail,
-  getUserById,
+  revokeAuthSession,
   updateUserLastSignedIn,
 } from './db';
 import {
   authenticateRequest,
+  authenticateSessionRequest,
   createSessionToken,
   sessionMatchesUserCredential,
   verifySession,
@@ -174,7 +176,10 @@ router.post('/login', async (req, res) => {
 // Verify token endpoint
 router.post('/verify', async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authorization = req.headers.authorization;
+    const token = authorization?.startsWith('Bearer ')
+      ? authorization.slice('Bearer '.length).trim()
+      : undefined;
 
     if (!token) {
       return res.status(401).json({ error: 'No token provided' });
@@ -187,7 +192,7 @@ router.post('/verify', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    const user = await getUserById(Number(session.userId));
+    const user = await getUserByActiveSession(Number(session.userId), session.sessionId);
 
     if (
       !user
@@ -289,5 +294,18 @@ router.get('/oauth/google/sheets/callback', async (req, res) => {
   } catch (error: any) {
     console.error('[OAuth Callback] Error:', error);
     res.redirect(`/merchant/sheets/settings?error=${encodeURIComponent('حدث خطأ')}`);
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  const cookieOptions = getSessionCookieOptions(req);
+  res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+  try {
+    const { user, session } = await authenticateSessionRequest(req);
+    await revokeAuthSession(user.id, session.sessionId);
+    return res.json({ success: true, sessionRevoked: true });
+  } catch {
+    return res.status(401).json({ success: false, sessionRevoked: false });
   }
 });
