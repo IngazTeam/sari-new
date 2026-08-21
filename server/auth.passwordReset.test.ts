@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as db from './db';
 import bcrypt from 'bcryptjs';
+import { createHash, randomBytes } from 'node:crypto';
+import { consumePasswordResetTokenAndUpdatePassword } from './accounts/password-reset-security';
 
-describe('Password Reset System', () => {
+describe.skipIf(!process.env.DATABASE_URL)('Password Reset System (database integration)', () => {
   let testUserId: number;
   let testUserEmail: string;
   let resetToken: string;
@@ -38,9 +40,10 @@ describe('Password Reset System', () => {
 
     expect(token).toBeDefined();
     expect(token?.userId).toBe(testUserId);
-    expect(token?.email).toBe(testUserEmail);
-    expect(token?.token).toBe(resetToken);
-    expect(token?.used).toBe(false);
+    expect(token?.email).not.toBe(testUserEmail);
+    expect(token?.email).toMatch(/^[a-f0-9]{64}$/);
+    expect(token?.token).toBe(createHash('sha256').update(resetToken).digest('hex'));
+    expect(Boolean(token?.used)).toBe(false);
   });
 
   it('should retrieve reset token by token string', async () => {
@@ -48,7 +51,7 @@ describe('Password Reset System', () => {
 
     expect(token).toBeDefined();
     expect(token?.userId).toBe(testUserId);
-    expect(token?.email).toBe(testUserEmail);
+    expect(token?.email).not.toBe(testUserEmail);
   });
 
   it('should validate a valid reset token', async () => {
@@ -119,6 +122,41 @@ describe('Password Reset System', () => {
     // Verify old password doesn't work
     const isOldValid = await bcrypt.compare('oldpassword123', user!.password!);
     expect(isOldValid).toBe(false);
+  });
+
+  it('should allow only one concurrent token consumer and invalidate sibling tokens', async () => {
+    const concurrentToken = randomBytes(32).toString('hex');
+    const siblingToken = randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await db.createPasswordResetToken({
+      userId: testUserId,
+      email: testUserEmail,
+      token: concurrentToken,
+      expiresAt,
+    });
+    await db.createPasswordResetToken({
+      userId: testUserId,
+      email: testUserEmail,
+      token: siblingToken,
+      expiresAt,
+    });
+
+    const passwordHash = await bcrypt.hash('ConcurrentReset9', 10);
+    const results = await Promise.allSettled([
+      consumePasswordResetTokenAndUpdatePassword(concurrentToken, passwordHash),
+      consumePasswordResetTokenAndUpdatePassword(concurrentToken, passwordHash),
+    ]);
+    const successfulClaims = results.filter(
+      (result): result is PromiseFulfilledResult<boolean> => result.status === 'fulfilled' && result.value,
+    );
+    expect(successfulClaims).toHaveLength(1);
+
+    const siblingValidation = await db.validatePasswordResetToken(siblingToken);
+    expect(siblingValidation.valid).toBe(false);
+    expect(siblingValidation.reason).toBe('token_already_used');
+
+    const user = await db.getUserById(testUserId);
+    expect(await bcrypt.compare('ConcurrentReset9', user!.password!)).toBe(true);
   });
 
   it('should delete all reset tokens for a user', async () => {

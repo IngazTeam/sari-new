@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import * as db from './db';
-import { sql } from 'drizzle-orm';
 import { passwordResetAttempts } from '../drizzle/schema';
 
-describe('Password Reset Rate Limiting', () => {
+describe.skipIf(!process.env.DATABASE_URL)('Password Reset Rate Limiting (database integration)', () => {
   const testEmail = 'ratelimit-test@example.com';
 
   // Clean up ALL attempts before running tests
@@ -27,8 +26,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // Track first attempt
@@ -44,8 +42,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // Track 2 attempts
@@ -62,8 +59,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // Track 3 attempts
@@ -83,8 +79,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // Track 3 attempts
@@ -107,8 +102,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // Track 2 attempts
@@ -118,15 +112,15 @@ describe('Password Reset Rate Limiting', () => {
     const attempts = await db.getResetAttempts(testEmail, 10);
     
     expect(attempts).toHaveLength(2);
-    expect(attempts[0].email).toBe(testEmail);
+    expect(attempts[0].email).not.toBe(testEmail);
+    expect(attempts[0].email).toMatch(/^[a-f0-9]{64}$/);
   });
 
   it('should only count attempts within time window', async () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // This test verifies that old attempts are not counted
@@ -148,8 +142,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // Track an attempt
@@ -174,8 +167,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} IN (${email1}, ${email2})`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     // Track 3 attempts for email1
@@ -202,8 +194,7 @@ describe('Password Reset Rate Limiting', () => {
     // Clean up first
     const dbInstance = await db.getDb();
     if (dbInstance) {
-      await dbInstance.delete(passwordResetAttempts)
-        .where(sql`${passwordResetAttempts.email} = ${testEmail}`);
+      await dbInstance.delete(passwordResetAttempts);
     }
     
     const ipAddress = '192.168.1.100';
@@ -216,6 +207,7 @@ describe('Password Reset Rate Limiting', () => {
     const attempts = await db.getResetAttempts(testEmail, 10);
     
     expect(attempts).toHaveLength(1);
-    expect(attempts[0].ipAddress).toBe(ipAddress);
+    expect(attempts[0].ipAddress).not.toBe(ipAddress);
+    expect(attempts[0].ipAddress).toMatch(/^[a-f0-9]{45}$/);
   });
 });

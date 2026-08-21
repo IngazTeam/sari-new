@@ -206,6 +206,45 @@ describe('Email Notifications System', () => {
 
       const callArgs = vi.mocked(emailSender.sendEmail).mock.calls[0][0];
       expect(callArgs.html).toContain('2025');
+      expect(callArgs.html).not.toMatch(/خلال\s+-\d+/);
+    });
+
+    it('should render expired subscriptions without negative remaining days', async () => {
+      vi.mocked(emailSender.sendEmail).mockResolvedValue(true);
+
+      await sendSubscriptionExpiryEmail(
+        'test@example.com',
+        'متجر الاختبار',
+        'الباقة الاحترافية',
+        new Date(Date.now() - 24 * 60 * 60 * 1000)
+      );
+
+      const callArgs = vi.mocked(emailSender.sendEmail).mock.calls[0][0];
+      expect(callArgs.subject).toContain('انتهى اشتراكك');
+      expect(callArgs.html).not.toMatch(/-\d+\s+أيام/);
+    });
+
+    it('should reject invalid dates and escape merchant-controlled HTML', async () => {
+      vi.mocked(emailSender.sendEmail).mockResolvedValue(true);
+
+      const invalidResult = await sendSubscriptionExpiryEmail(
+        'test@example.com',
+        '<img src=x onerror=alert(1)>',
+        '<script>alert(1)</script>',
+        new Date(Number.NaN)
+      );
+      expect(invalidResult).toBe(false);
+      expect(emailSender.sendEmail).not.toHaveBeenCalled();
+
+      await sendSubscriptionExpiryEmail(
+        'test@example.com',
+        '<img src=x onerror=alert(1)>',
+        '<script>alert(1)</script>',
+        new Date(Date.now() + 24 * 60 * 60 * 1000)
+      );
+      const callArgs = vi.mocked(emailSender.sendEmail).mock.calls[0][0];
+      expect(callArgs.html).not.toContain('<script>alert(1)</script>');
+      expect(callArgs.html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     });
 
     it('should include what happens after expiry', async () => {

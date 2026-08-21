@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation, useRoute } from 'wouter';
+import { useState } from 'react';
+import { Link, useRoute } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export default function ResetPassword() {
   const [validationError, setValidationError] = useState('');
 
   // Validate token on mount
-  const { data: tokenValidation, isLoading: isValidating, error: tokenError } = trpc.auth.verifyResetToken.useQuery(
+  const { isLoading: isValidating, error: tokenError } = trpc.auth.verifyResetToken.useQuery(
     { token },
     { enabled: !!token, retry: false }
   );
@@ -44,8 +44,13 @@ export default function ResetPassword() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setValidationError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      setValidationError('كلمة المرور يجب أن تكون بين 8 و128 حرفاً');
+      return;
+    }
+
+    if (!/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      setValidationError('كلمة المرور يجب أن تحتوي على حرف إنجليزي كبير ورقم');
       return;
     }
 
@@ -178,6 +183,9 @@ export default function ResetPassword() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
+                  minLength={8}
+                  maxLength={128}
+                  autoComplete="new-password"
                   disabled={resetPasswordMutation.isPending}
                   className="pr-10 pl-10 h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
@@ -203,6 +211,9 @@ export default function ResetPassword() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  minLength={8}
+                  maxLength={128}
+                  autoComplete="new-password"
                   disabled={resetPasswordMutation.isPending}
                   className="pr-10 pl-10 h-12 text-base border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />

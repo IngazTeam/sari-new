@@ -277,8 +277,10 @@ import {
   InsertMerchantInvitation,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { createHash } from 'node:crypto';
 import mysql from "mysql2/promise";
 import { decryptSecret, encryptSecret } from './security/secrets';
+import { privacyHash } from './accounts/privacy-hash';
 
 // Type aliases for tables that don't export their own types
 type BotSettings = InferSelectModel<typeof botSettings>;
@@ -5190,14 +5192,17 @@ export async function createPasswordResetToken(data: {
   used?: number;
 }): Promise<PasswordResetToken | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not initialized');
 
   // Format expiresAt to MySQL-compatible TIMESTAMP (YYYY-MM-DD HH:MM:SS)
   const expiresAtDate = data.expiresAt instanceof Date ? data.expiresAt : new Date(data.expiresAt);
   const formattedExpiresAt = expiresAtDate.toISOString().slice(0, 19).replace('T', ' ');
+  const tokenDigest = createHash('sha256').update(data.token).digest('hex');
 
   const [result] = await db.insert(passwordResetTokens).values({
     ...data,
+    email: privacyHash(data.email),
+    token: tokenDigest,
     expiresAt: formattedExpiresAt,
   });
   return await getPasswordResetTokenById(Number((result as any).insertId));
@@ -5208,7 +5213,7 @@ export async function createPasswordResetToken(data: {
  */
 export async function getPasswordResetTokenById(id: number): Promise<PasswordResetToken | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not initialized');
 
   const [token] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.id, id));
   return token;
@@ -5219,9 +5224,10 @@ export async function getPasswordResetTokenById(id: number): Promise<PasswordRes
  */
 export async function getPasswordResetTokenByToken(token: string): Promise<PasswordResetToken | undefined> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) throw new Error('Database not initialized');
 
-  const [resetToken] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+  const tokenDigest = createHash('sha256').update(token).digest('hex');
+  const [resetToken] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, tokenDigest));
   return resetToken;
 }
 
@@ -5256,7 +5262,7 @@ export async function validatePasswordResetToken(token: string): Promise<{
  */
 export async function markPasswordResetTokenAsUsed(tokenId: number): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not initialized');
 
   await db.update(passwordResetTokens)
     .set({ used: 1, usedAt: formatDateForDB(new Date()) })
@@ -5268,7 +5274,7 @@ export async function markPasswordResetTokenAsUsed(tokenId: number): Promise<voi
  */
 export async function deletePasswordResetTokensByUserId(userId: number): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not initialized');
 
   await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
 }
@@ -5278,7 +5284,7 @@ export async function deletePasswordResetTokensByUserId(userId: number): Promise
  */
 export async function deleteExpiredPasswordResetTokens(): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not initialized');
 
   await db.delete(passwordResetTokens).where(lt(passwordResetTokens.expiresAt, formatDateForDB(new Date())));
 }
@@ -5297,11 +5303,11 @@ export async function trackResetAttempt(data: {
   ipAddress?: string;
 }): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not initialized');
 
   await db.insert(passwordResetAttempts).values({
-    email: data.email,
-    ipAddress: data.ipAddress,
+    email: privacyHash(data.email),
+    ipAddress: data.ipAddress ? privacyHash(data.ipAddress).slice(0, 45) : undefined,
   });
 }
 
@@ -5315,16 +5321,17 @@ export async function getResetAttempts(
   minutesAgo: number = 10
 ): Promise<PasswordResetAttempt[]> {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) throw new Error('Database not initialized');
 
   const cutoffTime = new Date(Date.now() - minutesAgo * 60 * 1000);
+  const emailFingerprint = privacyHash(email);
 
   const attempts = await db
     .select()
     .from(passwordResetAttempts)
     .where(
       and(
-        eq(passwordResetAttempts.email, email),
+        eq(passwordResetAttempts.email, emailFingerprint),
         gte(passwordResetAttempts.attemptedAt, formatDateForDB(cutoffTime))
       )
     )
@@ -5371,7 +5378,7 @@ export async function canRequestReset(email: string): Promise<{
  */
 export async function clearOldAttempts(): Promise<void> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) throw new Error('Database not initialized');
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   await db.delete(passwordResetAttempts).where(lt(passwordResetAttempts.attemptedAt, formatDateForDB(oneHourAgo)));

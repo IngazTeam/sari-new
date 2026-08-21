@@ -5,6 +5,16 @@
 
 import { sendEmail } from '../reports/email-sender';
 
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>'"]/g, character => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;',
+  })[character]!);
+}
+
 /**
  * رسالة ترحيب عند تسجيل تاجر جديد
  */
@@ -393,8 +403,26 @@ export async function sendSubscriptionExpiryEmail(
   planName: string,
   expiryDate: Date
 ): Promise<boolean> {
-  const daysLeft = Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-  const subject = `⏰ تنبيه: اشتراكك في ساري ينتهي خلال ${daysLeft} أيام`;
+  const expiryTimestamp = expiryDate.getTime();
+  if (!Number.isFinite(expiryTimestamp)) {
+    console.error('[Subscription Expiry Email] Invalid expiry date');
+    return false;
+  }
+
+  const isExpired = expiryTimestamp <= Date.now();
+  const daysLeft = Math.max(0, Math.ceil((expiryTimestamp - Date.now()) / (1000 * 60 * 60 * 24)));
+  const subject = isExpired
+    ? '⏰ تنبيه: انتهى اشتراكك في ساري'
+    : `⏰ تنبيه: اشتراكك في ساري ينتهي خلال ${daysLeft} أيام`;
+  const timingText = isExpired ? 'انتهى اشتراكك' : `اشتراكك ينتهي خلال ${daysLeft} أيام`;
+  const escapedBusinessName = escapeHtml(businessName);
+  const escapedPlanName = escapeHtml(planName);
+  const formattedExpiryDate = expiryDate.toLocaleDateString('ar-SA', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   const html = `
     <!DOCTYPE html>
@@ -417,17 +445,19 @@ export async function sendSubscriptionExpiryEmail(
                     <span style="font-size: 50px;">⏰</span>
                   </div>
                   <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 700;">تنبيه انتهاء الاشتراك</h1>
-                  <p style="color: rgba(255,255,255,0.95); margin: 10px 0 0 0; font-size: 15px;">اشتراكك ينتهي خلال ${daysLeft} أيام</p>
+                  <p style="color: rgba(255,255,255,0.95); margin: 10px 0 0 0; font-size: 15px;">${timingText}</p>
                 </td>
               </tr>
               
               <!-- Main Content -->
               <tr>
                 <td style="padding: 40px 30px;">
-                  <h2 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 22px;">عزيزي ${businessName}،</h2>
+                  <h2 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 22px;">عزيزي ${escapedBusinessName}،</h2>
                   
                   <p style="color: #4a4a4a; line-height: 1.8; font-size: 15px; margin: 0 0 30px 0;">
-                    نود تذكيرك بأن اشتراكك في باقة <strong style="color: #00d25e;">${planName}</strong> سينتهي خلال <strong style="color: #ef4444;">${daysLeft} أيام</strong>.
+                    ${isExpired
+                      ? `انتهى اشتراكك في باقة <strong style="color: #00d25e;">${escapedPlanName}</strong>.`
+                      : `نود تذكيرك بأن اشتراكك في باقة <strong style="color: #00d25e;">${escapedPlanName}</strong> سينتهي خلال <strong style="color: #ef4444;">${daysLeft} أيام</strong>.`}
                   </p>
                   
                   <!-- Expiry Info -->
@@ -438,19 +468,14 @@ export async function sendSubscriptionExpiryEmail(
                         <table width="100%" cellpadding="10" cellspacing="0">
                           <tr>
                             <td style="color: #7f1d1d; font-size: 14px; font-weight: 600;">الباقة الحالية:</td>
-                            <td style="text-align: left; color: #1a1a1a; font-size: 15px; font-weight: 600;">${planName}</td>
+                            <td style="text-align: left; color: #1a1a1a; font-size: 15px; font-weight: 600;">${escapedPlanName}</td>
                           </tr>
                           <tr>
                             <td style="color: #7f1d1d; font-size: 14px; font-weight: 600;">تاريخ الانتهاء:</td>
                             <td style="text-align: left;">
-                              <span style="color: #ef4444; font-size: 16px; font-weight: 700;">
-                                ${expiryDate.toLocaleDateString('ar-SA', { 
-                                  weekday: 'long', 
-                                  year: 'numeric', 
-                                  month: 'long', 
-                                  day: 'numeric' 
-                                })}
-                              </span>
+                              <time datetime="${expiryDate.toISOString()}" style="color: #ef4444; font-size: 16px; font-weight: 700;">
+                                ${formattedExpiryDate}
+                              </time>
                             </td>
                           </tr>
                           <tr>
@@ -603,6 +628,7 @@ export async function sendPasswordResetEmail(
   resetLink: string
 ): Promise<boolean> {
   const subject = '🔑 إعادة تعيين كلمة المرور - ساري';
+  const escapedUserName = escapeHtml(userName);
 
   const html = `
     <!DOCTYPE html>
@@ -632,7 +658,7 @@ export async function sendPasswordResetEmail(
               <!-- Main Content -->
               <tr>
                 <td style="padding: 50px 40px;">
-                  <h2 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">مرحباً ${userName}،</h2>
+                  <h2 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 24px; font-weight: 600;">مرحباً ${escapedUserName}،</h2>
                   
                   <p style="color: #4a4a4a; line-height: 1.9; font-size: 16px; margin: 0 0 25px 0;">
                     تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في <strong style="color: #00d25e;">ساري</strong>.

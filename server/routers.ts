@@ -76,7 +76,6 @@ import { completeMetaEmbeddedSignup as completeMetaEmbeddedSignupService } from 
 import {
   approveWhatsAppConnectionRequest,
   approveWhatsAppRequest,
-  canRequestReset,
   cancelAppointment,
   cancelOrder,
   checkAppointmentConflict,
@@ -214,7 +213,6 @@ import {
   getOrderStats,
   getOrdersByMerchantId,
   getOrdersWithFilters,
-  getPasswordResetTokenByToken,
   getPaymentByTransactionId,
   getPeakHours,
   getPendingWhatsAppRequests,
@@ -270,7 +268,6 @@ import {
   markAbandonedCartRecovered,
   markConvertedToSignup,
   markEmailVerificationTokenAsUsed,
-  markPasswordResetTokenAsUsed,
   markSignupPromptShown,
   markTestConversationAsDeal,
   pauseABTest,
@@ -284,7 +281,6 @@ import {
   setWhatsAppInstanceAsPrimary,
   shouldBotRespond,
   toggleScheduledMessage,
-  trackResetAttempt,
   updateBooking,
   updateBotSettings,
   updateCampaign,
@@ -313,7 +309,6 @@ import {
   updateUser,
   updateUserEmailVerified,
   updateUserLastSignedIn,
-  updateUserPassword,
   updateWhatsAppConnectionRequest,
   updateWhatsAppInstance,
   updateWhatsAppRequest,
@@ -327,6 +322,10 @@ import {
   processCanonicalSubscriptionCharge,
 } from './subscriptions/canonical-state';
 import { registerMerchantAccount } from './accounts/lifecycle';
+import {
+  consumePasswordResetTokenAndUpdatePassword,
+  reservePasswordResetAttempt,
+} from './accounts/password-reset-security';
 import * as seoDb from './seo-functions';
 import bcrypt from 'bcryptjs';
 import { createSessionToken } from './_core/auth';
@@ -364,6 +363,22 @@ const setupServiceSchema = z.object({
 function normalizeCatalogName(value: string): string {
   return value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar');
 }
+
+const passwordResetEmailSchema = z.string()
+  .trim()
+  .email()
+  .max(320)
+  .transform(value => value.toLowerCase());
+const passwordResetTokenSchema = z.string().regex(/^[a-f0-9]{64}$/i, 'Invalid reset token');
+const replacementPasswordSchema = z.string()
+  .min(8)
+  .max(128)
+  .regex(/[A-Z]/, 'Password must contain an uppercase letter')
+  .regex(/[0-9]/, 'Password must contain a number');
+const PASSWORD_RESET_RESPONSE = {
+  success: true,
+  message: 'إذا كان البريد الإلكتروني مسجلاً، فستصلك رسالة بالتعليمات.',
+} as const;
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -613,22 +628,47 @@ export const appRouter = router({
     // Request password reset
     requestPasswordReset: publicProcedure
       .input(z.object({
-        email: z.string().email(),
+        email: passwordResetEmailSchema,
       }))
-      .mutation(async ({ input }) => {
-        const user = await getUserByEmail(input.email);
+      .mutation(async ({ input, ctx }) => {
+        const { checkRateLimit } = await import('./_core/rateLimiter');
+        const crypto = await import('node:crypto');
+        const clientIp = String(
+          (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown',
+        ).slice(0, 45);
+        const emailFingerprint = crypto.createHash('sha256').update(input.email).digest('hex');
+        const ipLimit = checkRateLimit(`password_reset_ip:${clientIp}`, 5, 60 * 60 * 1000);
+        const emailLimit = checkRateLimit(`password_reset_email:${emailFingerprint}`, 3, 10 * 60 * 1000);
 
-        if (!user) {
-          // Don't reveal if email exists for security
-          return { success: true, message: 'إذا كان البريد الإلكتروني موجوداً، سيتم إرسال رابط إعادة التعيين' };
+        if (!ipLimit.allowed || !emailLimit.allowed) {
+          const retryAfterSeconds = Math.ceil(Math.max(ipLimit.retryAfterMs, emailLimit.retryAfterMs) / 1000);
+          throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'طلبات كثيرة لإعادة التعيين. حاول لاحقاً.',
+            cause: { remainingTime: retryAfterSeconds },
+          });
         }
 
-        // Generate cryptographically secure token
-        const crypto = await import('node:crypto');
-        const token = crypto.randomBytes(32).toString('hex');
+        const reservation = await reservePasswordResetAttempt({
+          email: input.email,
+          ipAddress: clientIp,
+        });
+        if (!reservation.allowed) {
+          throw new TRPCError({
+            code: 'TOO_MANY_REQUESTS',
+            message: 'طلبات كثيرة لإعادة التعيين. حاول لاحقاً.',
+            cause: { remainingTime: reservation.retryAfterSeconds },
+          });
+        }
 
-        // Token expires in 24 hours
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const user = await getUserByEmail(input.email);
+
+        if (!user || user.accountStatus !== 'active' || !user.email) {
+          return PASSWORD_RESET_RESPONSE;
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
         // Delete any existing tokens for this user
         await deletePasswordResetTokensByUserId(user.id);
@@ -636,77 +676,49 @@ export const appRouter = router({
         // Create new token
         await createPasswordResetToken({
           userId: user.id,
-          email: user.email!,
+          email: user.email,
           token,
-          expiresAt: expiresAt as any,
+          expiresAt,
           used: 0,
         });
 
-        // Send reset email
         try {
           const { sendPasswordResetEmail } = await import('./notifications/email-notifications');
           const resetLink = `${process.env.VITE_APP_URL || 'https://sary.live'}/reset-password/${token}`;
-          await sendPasswordResetEmail(user.email!, user.name || 'المستخدم', resetLink);
+          const sent = await sendPasswordResetEmail(user.email, user.name || 'المستخدم', resetLink);
+          if (!sent) console.error('[Password Reset] Email provider did not accept the message');
         } catch (error) {
           console.error('[Password Reset] Failed to send email:', error);
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'فشل إرسال البريد الإلكتروني' });
         }
 
-        return { success: true, message: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني' };
+        return PASSWORD_RESET_RESPONSE;
       }),
 
     // Verify reset token
     verifyResetToken: publicProcedure
       .input(z.object({
-        token: z.string(),
+        token: passwordResetTokenSchema,
       }))
       .query(async ({ input }) => {
-        const resetToken = await getPasswordResetTokenByToken(input.token);
-
-        if (!resetToken) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'الرمز غير صحيح' });
+        const validation = await validatePasswordResetToken(input.token);
+        if (!validation.valid) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'الرابط غير صالح أو منتهي الصلاحية' });
         }
-
-        if (resetToken.used) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم استخدام هذا الرمز بالفعل' });
-        }
-
-        if (new Date(resetToken.expiresAt) < new Date()) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'انتهت صلاحية الرمز' });
-        }
-
-        return { valid: true, email: resetToken.email };
+        return { valid: true };
       }),
 
     // Reset password
     resetPassword: publicProcedure
       .input(z.object({
-        token: z.string(),
-        newPassword: z.string().min(6),
+        token: passwordResetTokenSchema,
+        newPassword: replacementPasswordSchema,
       }))
       .mutation(async ({ input }) => {
-        const resetToken = await getPasswordResetTokenByToken(input.token);
-
-        if (!resetToken) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'الرمز غير صحيح' });
-        }
-
-        if (resetToken.used) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'تم استخدام هذا الرمز بالفعل' });
-        }
-
-        if (new Date(resetToken.expiresAt) < new Date()) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'انتهت صلاحية الرمز' });
-        }
-
-        // Hash new password
         const hashedPassword = await bcrypt.hash(input.newPassword, 10);
-
-        // Update user password
-        await updateUserPassword(resetToken.userId, hashedPassword);
-
-        // Mark token as used
-        await markPasswordResetTokenAsUsed(resetToken.id);
+        const consumed = await consumePasswordResetTokenAndUpdatePassword(input.token, hashedPassword);
+        if (!consumed) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'الرابط غير صالح أو منتهي الصلاحية' });
+        }
 
         return { success: true, message: 'تم تغيير كلمة المرور بنجاح' };
       }),
@@ -721,104 +733,6 @@ export const appRouter = router({
         await updateUser(ctx.user.id, input);
         return { success: true };
       }),
-
-    // Check rate limiting first for password reset
-    checkResetRateLimit: publicProcedure
-      .input(z.object({
-        email: z.string().email(),
-      }))
-      .query(async ({ input }) => {
-        const rateLimitCheck = await canRequestReset(input.email);
-
-        if (!rateLimitCheck.allowed) {
-          const minutes = Math.floor(rateLimitCheck.remainingTime! / 60);
-          const seconds = rateLimitCheck.remainingTime! % 60;
-          const timeString = minutes > 0
-            ? `${minutes} دقيقة و ${seconds} ثانية`
-            : `${seconds} ثانية`;
-
-          throw new TRPCError({
-            code: 'TOO_MANY_REQUESTS',
-            message: `لقد تجاوزت الحد الأقصى للمحاولات (3 محاولات). يرجى الانتظار ${timeString} قبل المحاولة مرة أخرى.`,
-            cause: {
-              remainingTime: rateLimitCheck.remainingTime,
-              attemptsCount: rateLimitCheck.attemptsCount,
-            }
-          });
-        }
-
-        // Track this attempt
-        await trackResetAttempt({ email: input.email });
-
-        const user = await getUserByEmail(input.email);
-
-        // Don't reveal if user exists or not (security best practice)
-        if (!user) {
-          return { success: true, message: 'If an account exists with this email, a password reset link has been sent.' };
-        }
-
-        // Generate cryptographically secure token
-        const crypto = await import('node:crypto');
-        const token = crypto.randomBytes(32).toString('hex');
-
-        // Token expires in 1 hour
-        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-
-        // Create reset token in database
-        await createPasswordResetToken({
-          userId: user.id,
-          email: user.email!,
-          token,
-          expiresAt: expiresAt as any,
-        });
-
-        // Send email with reset link
-        try {
-          const { sendEmail } = await import('./reports/email-sender');
-          const { getPasswordResetEmailTemplate } = await import('./email/templates/passwordReset');
-
-          const resetLink = `${process.env.VITE_APP_URL || 'https://sary.live'}/reset-password/${token}`;
-
-          const emailTemplate = getPasswordResetEmailTemplate({
-            userName: user.name || 'المستخدم',
-            resetLink,
-            expiryHours: 1,
-          });
-
-          await sendEmail({
-            to: user.email!,
-            subject: emailTemplate.subject,
-            html: emailTemplate.html,
-          });
-        } catch (error) {
-          console.error('[Password Reset] Failed to send email:', error);
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to send reset email' });
-        }
-
-        return { success: true, message: 'If an account exists with this email, a password reset link has been sent.' };
-      }),
-
-    // Validate reset token
-    validateResetToken: publicProcedure
-      .input(z.object({
-        token: z.string(),
-      }))
-      .query(async ({ input }) => {
-        const validation = await validatePasswordResetToken(input.token);
-
-        if (!validation.valid) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: validation.reason === 'invalid_token' ? 'Invalid reset token' :
-              validation.reason === 'token_already_used' ? 'This reset link has already been used' :
-                validation.reason === 'token_expired' ? 'This reset link has expired' :
-                  'Invalid reset token'
-          });
-        }
-
-        return { valid: true };
-      }),
-
 
   }),
 

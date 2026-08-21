@@ -80,9 +80,11 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Apply migrations to a disposable database
         run: pnpm db:migrate
-      - name: Run analytics database contracts
+      - name: Run database integration contracts
         run: >-
           pnpm vitest run
           server/analytics.test.ts
           server/tests/analytics.test.ts
           server/tests/dashboard-analytics.test.ts
+          server/auth.ratelimit.test.ts
+          server/auth.passwordReset.test.ts
