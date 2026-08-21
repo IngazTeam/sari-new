@@ -16,6 +16,7 @@ import {
 } from '../db';
 import type { CustomerProfile, CustomerTier } from '../db/customer-intelligence';
 import type { CustomerIntent, ConversationSession } from './session-context';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // SEC-V6-01 FIX: Shared prompt sanitizer for all user-controlled data
@@ -508,8 +509,6 @@ export function buildCrossSellSuggestions(
 
 import * as dbPool from '../db';
 
-let _metricsTableCreated = false;
-
 // SEC-V6-06 FIX: Strategy whitelist
 const VALID_STRATEGIES = new Set([
   'cart_recovery', 'empathy_resolve', 'loyalty_reward', 'scarcity',
@@ -518,23 +517,7 @@ const VALID_STRATEGIES = new Set([
 ]);
 
 async function ensureMetricsTable(): Promise<void> {
-  if (_metricsTableCreated) return;
-  const pool = await dbPool.getPool();
-  if (!pool) return;
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS sari_strategy_metrics (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      merchant_id INT NOT NULL,
-      strategy VARCHAR(50) NOT NULL,
-      was_used TINYINT(1) DEFAULT 1,
-      led_to_purchase TINYINT(1) DEFAULT 0,
-      conversation_id INT DEFAULT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_merchant_strategy (merchant_id, strategy),
-      INDEX idx_created (created_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-  _metricsTableCreated = true;
+  await assertRuntimeSchema('sales strategy metrics', [{ table: 'sari_strategy_metrics' }]);
 }
 
 /**

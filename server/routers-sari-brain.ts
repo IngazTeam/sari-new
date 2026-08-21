@@ -28,10 +28,9 @@ import {
   updateExtractedFaq,
   updateWebsiteAnalysis,
 } from './db';
+import { assertRuntimeSchema } from './db/schema-readiness';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
-let _activityTableCreated = false;
-
 /**
  * Get the raw mysql2 pool for direct SQL execution.
  * CRITICAL: getDb() returns Drizzle ORM whose .execute() does NOT support
@@ -42,25 +41,7 @@ async function getRawPool() {
 }
 
 async function ensureActivityTable() {
-  if (_activityTableCreated) return;
-  try {
-    const pool = await getRawPool();
-    if (!pool) return;
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_activity_log (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        action_type VARCHAR(100) NOT NULL,
-        description TEXT NOT NULL,
-        details JSON,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant_date (merchant_id, created_at DESC)
-      )
-    `);
-    _activityTableCreated = true;
-  } catch (e) {
-    console.error('[SariBrain] Failed to create activity table:', e);
-  }
+  await assertRuntimeSchema('Sari Brain activity log', [{ table: 'sari_activity_log' }]);
 }
 
 // ─── PEN-BRAIN-04 FIX: Sanitize description ───────────────────────────────

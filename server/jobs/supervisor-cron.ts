@@ -23,9 +23,9 @@ import {
   isEligibleForSupervisor,
   recordSupervisorAction,
 } from '../ai/supervisor-recovery';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 let _isRunning = false;
-let _migrated = false;
 const MAX_PER_CYCLE = 20;
 
 // ════════════════════════════════════════════════
@@ -43,31 +43,10 @@ async function runSupervisorCheck(): Promise<void> {
       return;
     }
 
-    // ── Auto-migration: ensure supervisor columns/table exist ──
-    if (!_migrated) {
-      try {
-        // Use separate try-catch for each column (IF NOT EXISTS not supported in all MySQL versions)
-        try { await pool.execute(`ALTER TABLE conversations ADD COLUMN supervisor_intervened_at TIMESTAMP NULL DEFAULT NULL`); } catch { /* exists */ }
-        try { await pool.execute(`ALTER TABLE conversations ADD COLUMN supervisor_reason VARCHAR(50) NULL DEFAULT NULL`); } catch { /* exists */ }
-        await pool.execute(`CREATE TABLE IF NOT EXISTS supervisor_interventions (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          merchant_id INT NOT NULL,
-          conversation_id INT NOT NULL,
-          reason VARCHAR(50) NOT NULL,
-          recovery_message TEXT,
-          customer_responded TINYINT(1) DEFAULT 0,
-          led_to_conversion TINYINT(1) DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          INDEX idx_merchant (merchant_id),
-          INDEX idx_created (created_at)
-        )`);
-        _migrated = true;
-        console.log('[Supervisor] ✅ DB migration complete');
-      } catch (migErr) {
-        // Non-blocking — columns/table may already exist
-        _migrated = true;
-      }
-    }
+    await assertRuntimeSchema('supervisor recovery', [
+      { table: 'conversations', columns: ['supervisor_intervened_at', 'supervisor_reason'] },
+      { table: 'supervisor_interventions' },
+    ]);
 
     // Business hours check
     const currentHour = new Date().getHours();

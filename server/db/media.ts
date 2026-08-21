@@ -6,6 +6,7 @@
  */
 
 import { getPool } from '../db';
+import { assertRuntimeSchema } from './schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -35,30 +36,8 @@ export interface MediaStats {
 // Table Auto-Creation
 // ═══════════════════════════════════════════════════════════════
 
-let tableEnsured = false;
-
 export async function ensureMediaTables(): Promise<void> {
-  if (tableEnsured) return;
-  const pool = await getPool();
-  if (!pool) return;
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS media_library (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      merchant_id INT NOT NULL,
-      file_name VARCHAR(500) NOT NULL,
-      original_name VARCHAR(500) NOT NULL,
-      mime_type VARCHAR(100) NOT NULL,
-      file_size INT NOT NULL DEFAULT 0,
-      url TEXT NOT NULL,
-      category ENUM('product', 'promotion', 'template', 'general') NOT NULL DEFAULT 'general',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      INDEX idx_merchant (merchant_id),
-      INDEX idx_category (merchant_id, category)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-
-  tableEnsured = true;
+  await assertRuntimeSchema('media library', [{ table: 'media_library' }]);
 }
 
 // ═══════════════════════════════════════════════════════════════

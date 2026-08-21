@@ -22,6 +22,20 @@
       "when": 1779237688885,
       "tag": "0002_quiet_exiles",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787332872187,
+      "tag": "0003_runtime_schema_consolidation",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787333086313,
+      "tag": "0004_delivery_log_schema",
+      "breakpoints": true
     }
   ]
 }

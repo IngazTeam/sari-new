@@ -37,6 +37,7 @@ import {
   updateProduct,
   updateWhatsAppInstance,
 } from '../db';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -56,33 +57,8 @@ interface PlatformRequest extends Request {
 // API Key Management (DB-backed)
 // ═══════════════════════════════════════════════════════════════
 
-let _apiKeysTableCreated = false;
-
 async function ensureApiKeysTable() {
-  if (_apiKeysTableCreated) return;
-  try {
-    const pool = await getPool();
-    if (!pool) return;
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_api_keys (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        key_hash VARCHAR(64) NOT NULL UNIQUE,
-        key_prefix VARCHAR(12) NOT NULL,
-        label VARCHAR(100) DEFAULT 'Default Key',
-        permissions JSON DEFAULT NULL,
-        is_active TINYINT(1) DEFAULT 1,
-        last_used_at TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        expires_at TIMESTAMP NULL,
-        INDEX idx_key_hash (key_hash),
-        INDEX idx_merchant (merchant_id)
-      )
-    `);
-    _apiKeysTableCreated = true;
-  } catch (e) {
-    console.error('[SariAPI] Failed to create api_keys table:', e);
-  }
+  await assertRuntimeSchema('public API keys', [{ table: 'sari_api_keys' }]);
 }
 
 /** Generate a new API key for a merchant */
@@ -231,30 +207,9 @@ if (process.env.BYAAN_PLATFORM_KEY) {
   PLATFORM_KEYS['byaan'] = process.env.BYAAN_PLATFORM_KEY;
 }
 
-let _platformKeysTableCreated = false;
-
 async function ensurePlatformKeysTable() {
-  if (_platformKeysTableCreated) return;
-  try {
-    const pool = await getPool();
-    if (!pool) return;
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_platform_keys (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        platform VARCHAR(50) NOT NULL UNIQUE,
-        key_value VARCHAR(255) NOT NULL,
-        label VARCHAR(100) DEFAULT '',
-        is_active TINYINT(1) DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      )
-    `);
-    _platformKeysTableCreated = true;
-    // Load DB keys into memory
-    await loadPlatformKeysFromDb();
-  } catch (e) {
-    console.error('[SariAPI] Failed to create platform_keys table:', e);
-  }
+  await assertRuntimeSchema('platform API keys', [{ table: 'sari_platform_keys' }]);
+  await loadPlatformKeysFromDb();
 }
 
 async function loadPlatformKeysFromDb() {

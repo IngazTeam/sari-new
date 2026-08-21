@@ -17,27 +17,10 @@
 // Opt-Out Management
 // ═══════════════════════════════════════════════════════════════
 
-let optoutTableChecked = false;
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 async function ensureOptoutTable(): Promise<void> {
-  if (optoutTableChecked) return;
-  try {
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) return;
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS campaign_optouts (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        customer_phone VARCHAR(20) NOT NULL,
-        opted_out_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        reason VARCHAR(100) DEFAULT 'customer_request',
-        UNIQUE KEY idx_merchant_phone (merchant_id, customer_phone),
-        INDEX idx_merchant (merchant_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-    optoutTableChecked = true;
-  } catch { /* silent */ }
+  await assertRuntimeSchema('campaign opt-outs', [{ table: 'campaign_optouts' }]);
 }
 
 /**

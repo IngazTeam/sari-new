@@ -8,6 +8,7 @@
  */
 
 import { getPool } from '../db';
+import { assertRuntimeSchema } from './schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -61,60 +62,11 @@ export interface QualityDashboard {
 // Lazy Table Creation
 // ═══════════════════════════════════════════════════════════════
 
-let _tablesCreated = false;
-
 export async function ensureQualityTables(): Promise<void> {
-  if (_tablesCreated) return;
-  
-  const pool = await getPool();
-  if (!pool) return;
-
-  try {
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_quality_metrics (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        conversation_id INT DEFAULT NULL,
-        question_text TEXT NOT NULL,
-        response_text TEXT NOT NULL,
-        response_time_ms INT DEFAULT 0,
-        was_cache_hit TINYINT(1) DEFAULT 0,
-        rag_sections_used INT DEFAULT 0,
-        customer_sentiment VARCHAR(20) DEFAULT NULL,
-        feedback_rating TINYINT DEFAULT NULL,
-        was_empty TINYINT(1) DEFAULT 0,
-        was_escalated TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant_date (merchant_id, created_at DESC),
-        INDEX idx_merchant_empty (merchant_id, was_empty),
-        INDEX idx_merchant_sentiment (merchant_id, customer_sentiment)
-      )
-    `);
-
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_weekly_reports (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        week_start DATE NOT NULL,
-        week_end DATE NOT NULL,
-        total_messages INT DEFAULT 0,
-        total_responses INT DEFAULT 0,
-        avg_response_time_ms INT DEFAULT 0,
-        cache_hit_rate DECIMAL(5,2) DEFAULT 0,
-        empty_response_rate DECIMAL(5,2) DEFAULT 0,
-        avg_sentiment_score DECIMAL(3,2) DEFAULT 0,
-        top_questions JSON DEFAULT NULL,
-        escalation_rate DECIMAL(5,2) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE INDEX idx_merchant_week (merchant_id, week_start)
-      )
-    `);
-
-    _tablesCreated = true;
-    console.log('[QualityMetrics] ✅ Tables initialized');
-  } catch (e) {
-    console.error('[QualityMetrics] Failed to create tables:', e);
-  }
+  await assertRuntimeSchema('quality metrics', [
+    { table: 'sari_quality_metrics' },
+    { table: 'sari_weekly_reports' },
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════

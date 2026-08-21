@@ -113,17 +113,22 @@ async function startServer() {
       const pool = await getPool();
       if (!pool) throw new Error('DB not connected');
       await pool.query('SELECT 1');
+      const { validateDatabaseSchema } = await import('../cron/schema-validator');
+      const schema = await validateDatabaseSchema({ log: false });
+      if (!schema.allCritical) throw new Error('DB schema is outdated');
       res.json({
         status: 'ready',
         checks: {
           database: 'connected',
+          schema: 'current',
         },
       });
     } catch (error) {
       res.status(503).json({
         status: 'not_ready',
         checks: {
-          database: 'disconnected',
+          database: 'unavailable_or_schema_outdated',
+          schema: 'not_ready',
         },
       });
     }
@@ -548,7 +553,7 @@ async function startServer() {
     if (isPrimaryWorker) {
       console.log('[Cluster] This is the PRIMARY worker — initializing cron jobs and polling');
 
-      // NQ-4: Validate database schema at startup (non-blocking)
+      // Validate schema at startup for ops visibility; /ready remains the fail-closed gate.
       import('../cron/schema-validator').then(({ validateDatabaseSchema }) => {
         validateDatabaseSchema().catch(e => console.warn('[Startup] Schema validation failed:', e));
       }).catch(() => {});

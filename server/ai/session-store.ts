@@ -15,6 +15,7 @@
  */
 
 import { getSession, createSession, updateSession, type ConversationSession, type CustomerIntent } from './session-context';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Configuration
@@ -27,35 +28,9 @@ const SESSION_TABLE = 'session_contexts';
 // Lazy Table Creation
 // ═══════════════════════════════════════════════════════════════
 
-let tableChecked = false;
-
 async function ensureTable(): Promise<void> {
-  if (tableChecked || !DB_ENABLED) return;
-  try {
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) return;
-
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS ${SESSION_TABLE} (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        conversation_id INT NOT NULL,
-        session_key VARCHAR(50) NOT NULL,
-        context_json MEDIUMTEXT NOT NULL,
-        expires_at DATETIME NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY idx_session_key (session_key),
-        INDEX idx_merchant (merchant_id),
-        INDEX idx_expires (expires_at)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-    tableChecked = true;
-    console.log('[SessionStore] ✅ DB table verified');
-  } catch (e) {
-    console.warn('[SessionStore] Table creation failed (non-fatal):', (e as Error).message);
-  }
+  if (!DB_ENABLED) return;
+  await assertRuntimeSchema('database session store', [{ table: SESSION_TABLE }]);
 }
 
 // ═══════════════════════════════════════════════════════════════

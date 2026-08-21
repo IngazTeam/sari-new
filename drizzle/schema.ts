@@ -148,6 +148,8 @@ export const conversations = mysqlTable("conversations", {
 	lossReason: varchar("loss_reason", { length: 30 }),
 	stalledSince: timestamp("stalled_since", { mode: 'string' }),
 	paymentLinkSentAt: timestamp("payment_link_sent_at", { mode: 'string' }),
+	supervisorIntervenedAt: timestamp("supervisor_intervened_at", { mode: 'string' }),
+	supervisorReason: varchar("supervisor_reason", { length: 50 }),
 });
 
 export const customerReviews = mysqlTable("customer_reviews", {
@@ -293,6 +295,7 @@ export const merchants = mysqlTable("merchants", {
 	emergencyPhone: varchar("emergency_phone", { length: 20 }),
 	// Cascading Escalation Chain — JSON array: [{phone, label, order}]
 	escalationPhones: text("escalation_phones"),
+	integrationSource: varchar("integration_source", { length: 20 }).default('none'),
 	// Merchant Logo for PDF branding
 	logoUrl: varchar("logo_url", { length: 500 }),
 });
@@ -2596,11 +2599,11 @@ export * from "./schema_push";
 export * from "./schema_notifications";
 export * from "./schema_subscriptions";
 export * from "./schema_coupons";
+export * from "./schema_monitor";
 
 // ============================================
-// Dynamic Tables (previously runtime-only CREATE TABLE IF NOT EXISTS)
-// Registered here for schema visibility, type-safety, and migration tracking.
-// The ensureTable() fallback in each module is kept as safety net.
+// Tables that were previously created at runtime.
+// They are registered here for schema visibility, type-safety, and tracked migrations.
 // ============================================
 
 // --- AI Directives (Training Center) ---
@@ -2988,3 +2991,215 @@ export const byaanSiteContent = mysqlTable("byaan_site_content", {
 
 export type ByaanSiteContent = InferSelectModel<typeof byaanSiteContent>;
 export type InsertByaanSiteContent = InferInsertModel<typeof byaanSiteContent>;
+
+// --- Runtime schema consolidation (tracked migration 0003) ---
+export const sariApiKeys = mysqlTable("sari_api_keys", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
+	keyPrefix: varchar("key_prefix", { length: 12 }).notNull(),
+	label: varchar({ length: 100 }).default('Default Key'),
+	permissions: text(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	lastUsedAt: timestamp("last_used_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }),
+}, table => [
+	index("idx_sari_api_key_hash").on(table.keyHash),
+	index("idx_sari_api_key_merchant").on(table.merchantId),
+]);
+
+export const sariPlatformKeys = mysqlTable("sari_platform_keys", {
+	id: int().autoincrement().primaryKey(),
+	platform: varchar({ length: 50 }).notNull().unique(),
+	keyValue: varchar("key_value", { length: 255 }).notNull(),
+	label: varchar({ length: 100 }).default(''),
+	isActive: tinyint("is_active").default(1).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+});
+
+export const campaignOptouts = mysqlTable("campaign_optouts", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }).notNull(),
+	optedOutAt: timestamp("opted_out_at", { mode: 'string' }).defaultNow().notNull(),
+	reason: varchar({ length: 100 }).default('customer_request'),
+}, table => [
+	uniqueIndex("uq_campaign_optout_merchant_phone").on(table.merchantId, table.customerPhone),
+	index("idx_campaign_optout_merchant").on(table.merchantId),
+]);
+
+export const merchantOnboardingAnswers = mysqlTable("merchant_onboarding_answers", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	fieldKey: varchar("field_key", { length: 50 }).notNull(),
+	questionText: text("question_text").notNull(),
+	answerText: text("answer_text").notNull(),
+	phase: int().default(1).notNull(),
+	answeredAt: timestamp("answered_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("uq_onboarding_answer_merchant_field").on(table.merchantId, table.fieldKey),
+	index("idx_onboarding_answer_merchant").on(table.merchantId),
+]);
+
+export const sessionContexts = mysqlTable("session_contexts", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	sessionKey: varchar("session_key", { length: 50 }).notNull().unique(),
+	contextJson: text("context_json").notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	index("idx_session_context_merchant").on(table.merchantId),
+	index("idx_session_context_expires").on(table.expiresAt),
+]);
+
+export const sariCoachingSessions = mysqlTable("sari_coaching_sessions", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	status: varchar({ length: 20 }).default('pending'),
+	totalQuestions: int("total_questions").default(0),
+	correctCount: int("correct_count").default(0),
+	correctedCount: int("corrected_count").default(0),
+	skippedCount: int("skipped_count").default(0),
+	currentQuestionIndex: int("current_question_index").default(0),
+	startedAt: timestamp("started_at", { mode: 'string' }),
+	completedAt: timestamp("completed_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	index("idx_coaching_session_merchant_status").on(table.merchantId, table.status),
+	index("idx_coaching_session_merchant_date").on(table.merchantId, table.createdAt),
+]);
+
+export const sariCoachingQuestions = mysqlTable("sari_coaching_questions", {
+	id: int().autoincrement().primaryKey(),
+	sessionId: int("session_id").notNull().references(() => sariCoachingSessions.id, { onDelete: "cascade" }),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+	customerQuestion: text("customer_question").notNull(),
+	botResponse: text("bot_response").notNull(),
+	merchantVerdict: varchar("merchant_verdict", { length: 20 }),
+	merchantCorrection: text("merchant_correction"),
+	questionOrder: int("question_order").default(0),
+	reviewedAt: timestamp("reviewed_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	index("idx_coaching_question_session_order").on(table.sessionId, table.questionOrder),
+	index("idx_coaching_question_merchant").on(table.merchantId),
+]);
+
+export const sariLearningSignals = mysqlTable("sari_learning_signals", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	signalType: varchar("signal_type", { length: 30 }).notNull(),
+	signalWeight: decimal("signal_weight", { precision: 3, scale: 2 }).default('1.00'),
+	botMessage: text("bot_message"),
+	customerMessage: text("customer_message"),
+	merchantCorrection: text("merchant_correction"),
+	contextSummary: text("context_summary"),
+	analyzed: tinyint().default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	index("idx_learning_signal_merchant_type").on(table.merchantId, table.signalType),
+	index("idx_learning_signal_merchant_date").on(table.merchantId, table.createdAt),
+	index("idx_learning_signal_unanalyzed").on(table.merchantId, table.analyzed),
+]);
+
+export const sariBehavioralDna = mysqlTable("sari_behavioral_dna", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	generation: int().default(1),
+	dimension: varchar({ length: 30 }).notNull(),
+	insight: text().notNull(),
+	evidenceCount: int("evidence_count").default(1),
+	confidence: decimal({ precision: 3, scale: 2 }).default('0.50'),
+	isActive: tinyint("is_active").default(1).notNull(),
+	autoApplied: tinyint("auto_applied").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("uq_behavioral_dna_merchant_dimension").on(table.merchantId, table.dimension),
+	index("idx_behavioral_dna_active").on(table.merchantId, table.isActive),
+]);
+
+export const sariEscalationQueue = mysqlTable("sari_escalation_queue", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 30 }).notNull(),
+	customerName: varchar("customer_name", { length: 100 }),
+	question: text().notNull(),
+	botResponse: text("bot_response"),
+	status: varchar({ length: 20 }).default('pending'),
+	merchantAnswer: text("merchant_answer"),
+	priority: varchar({ length: 10 }).default('standard'),
+	merchantNotifiedAt: timestamp("merchant_notified_at", { mode: 'string' }),
+	merchantAnsweredAt: timestamp("merchant_answered_at", { mode: 'string' }),
+	followedUp: tinyint("followed_up").default(0).notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string' }),
+	currentEscalationLevel: int("current_escalation_level").default(0),
+	lastEscalatedAt: timestamp("last_escalated_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	index("idx_escalation_merchant_status").on(table.merchantId, table.status),
+	index("idx_escalation_merchant_date").on(table.merchantId, table.createdAt),
+	index("idx_escalation_customer").on(table.merchantId, table.customerPhone, table.status),
+	index("idx_escalation_cascade").on(table.status, table.lastEscalatedAt),
+]);
+
+export const mediaLibrary = mysqlTable("media_library", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	fileName: varchar("file_name", { length: 500 }).notNull(),
+	originalName: varchar("original_name", { length: 500 }).notNull(),
+	mimeType: varchar("mime_type", { length: 100 }).notNull(),
+	fileSize: int("file_size").default(0).notNull(),
+	url: text().notNull(),
+	category: mysqlEnum(['product', 'promotion', 'template', 'general']).default('general').notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	index("idx_media_merchant").on(table.merchantId),
+	index("idx_media_category").on(table.merchantId, table.category),
+]);
+
+export const sariConversions = mysqlTable("sari_conversions", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	customerPhone: varchar("customer_phone", { length: 20 }),
+	customerName: varchar("customer_name", { length: 255 }),
+	actionType: mysqlEnum("action_type", ['enrollment', 'payment', 'inquiry']).notNull(),
+	productName: varchar("product_name", { length: 255 }),
+	amount: decimal({ precision: 10, scale: 2 }),
+	externalRef: varchar("external_ref", { length: 100 }),
+	source: varchar({ length: 50 }).default('whatsapp'),
+	status: mysqlEnum(['pending', 'completed', 'cancelled']).default('completed'),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [index("idx_sari_conversion_merchant_date").on(table.merchantId, table.createdAt)]);
+
+export const supervisorInterventions = mysqlTable("supervisor_interventions", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	conversationId: int("conversation_id").notNull().references(() => conversations.id, { onDelete: "cascade" }),
+	reason: varchar({ length: 50 }).notNull(),
+	recoveryMessage: text("recovery_message"),
+	customerResponded: tinyint("customer_responded").default(0).notNull(),
+	ledToConversion: tinyint("led_to_conversion").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [
+	index("idx_supervisor_merchant").on(table.merchantId),
+	index("idx_supervisor_created").on(table.createdAt),
+]);
+
+export const sariActivityLog = mysqlTable("sari_activity_log", {
+	id: int().autoincrement().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	actionType: varchar("action_type", { length: 100 }).notNull(),
+	description: text().notNull(),
+	details: text(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+}, table => [index("idx_sari_activity_merchant_date").on(table.merchantId, table.createdAt)]);

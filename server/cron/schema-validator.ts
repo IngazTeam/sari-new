@@ -10,29 +10,35 @@
  * - Called once from server startup after DB connection is established
  */
 
-// Critical tables that MUST exist for core functionality
-const CRITICAL_TABLES = [
-  // Core business
-  'users', 'merchants', 'products', 'conversations', 'messages',
-  // AI pipeline
-  'ai_settings', 'ai_usage_logs',
-  // WhatsApp
-  'whatsapp_connections',
-  // Webhooks
-  'webhook_events',
-  // Commerce
-  'orders', 'discount_codes',
+import { inspectSchemaRequirements, type SchemaRequirement } from '../db/schema-readiness';
+
+// These names are the deployed Drizzle names, including legacy camelCase tables.
+export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
+  { table: 'users' }, { table: 'merchants', columns: ['timezone', 'integration_source', 'escalation_phones', 'emergency_phone'] },
+  { table: 'products' }, { table: 'conversations', columns: ['deal_stage', 'loss_reason', 'stalled_since', 'payment_link_sent_at', 'supervisor_intervened_at', 'supervisor_reason'] },
+  { table: 'messages' }, { table: 'orders' }, { table: 'discount_codes' },
+  { table: 'bot_settings', columns: ['auto_discount_enabled', 'auto_discount_max_percent', 'auto_discount_expire_hours', 'custom_instructions'] },
+  { table: 'whatsappConnections', columns: ['apiToken'] },
+  { table: 'whatsapp_connection_requests', columns: ['apiToken'] },
+  { table: 'whatsapp_instances' }, { table: 'payment_gateways' },
+  { table: 'sales_followups', columns: ['processing_token'] },
+  { table: 'sari_api_keys' }, { table: 'sari_platform_keys' },
+  { table: 'campaign_optouts' }, { table: 'merchant_onboarding_answers' },
+  { table: 'session_contexts' }, { table: 'sari_coaching_sessions' }, { table: 'sari_coaching_questions' },
+  { table: 'sari_learning_signals' }, { table: 'sari_behavioral_dna' }, { table: 'sari_escalation_queue' },
+  { table: 'knowledge_sections' }, { table: 'knowledge_changelog' }, { table: 'sari_response_cache' },
+  { table: 'sales_quotations' }, { table: 'sales_targets' }, { table: 'quotation_templates' },
+  { table: 'sari_ai_directives' }, { table: 'sari_strategy_metrics' },
+  { table: 'sari_quality_metrics' }, { table: 'sari_weekly_reports' },
+  { table: 'media_library' }, { table: 'sari_activity_log' }, { table: 'supervisor_interventions' },
+  { table: 'byaan_connections' }, { table: 'byaan_trainees' }, { table: 'byaan_faqs' },
+  { table: 'byaan_site_content' }, { table: 'sari_conversions' },
+  { table: 'message_delivery_log' }, { table: 'sari_personality_settings' },
 ] as const;
 
-// Important but non-critical tables
-// FIX: Use actual Drizzle-generated table names (not intuitive guesses)
-const IMPORTANT_TABLES = [
-  'sari_personality_settings', 'merchant_knowledge_docs',
-  'virtual_agents', 'customer_profiles',
-  'salla_connections', 'zid_connections',
-  'byaan_connections',
-  'loyalty_programs', 'loyalty_customer_points',
-  'message_delivery_log',
+const IMPORTANT_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
+  { table: 'merchant_knowledge_docs' }, { table: 'virtual_agents' },
+  { table: 'customer_profiles' }, { table: 'salla_connections' },
 ] as const;
 
 /**
@@ -41,7 +47,7 @@ const IMPORTANT_TABLES = [
  * 
  * @returns Object with validation results
  */
-export async function validateDatabaseSchema(): Promise<{
+export async function validateDatabaseSchema(options: { log?: boolean } = {}): Promise<{
   allCritical: boolean;
   missing: string[];
   warnings: string[];
@@ -50,44 +56,22 @@ export async function validateDatabaseSchema(): Promise<{
   const warnings: string[] = [];
 
   try {
-    const { getPool } = await import('../db');
-    const pool = await getPool();
-    if (!pool) {
-      console.error('[SchemaValidator] ❌ Cannot validate — no DB connection');
-      return { allCritical: false, missing: ['(no connection)'], warnings: [] };
-    }
-
-    // Check critical tables
-    for (const table of CRITICAL_TABLES) {
-      try {
-        await pool.execute(`SELECT 1 FROM \`${table}\` LIMIT 0`);
-      } catch {
-        missing.push(table);
-      }
-    }
-
-    // Check important (non-critical) tables
-    for (const table of IMPORTANT_TABLES) {
-      try {
-        await pool.execute(`SELECT 1 FROM \`${table}\` LIMIT 0`);
-      } catch {
-        warnings.push(table);
-      }
-    }
+    missing.push(...await inspectSchemaRequirements(CRITICAL_SCHEMA_REQUIREMENTS));
+    warnings.push(...await inspectSchemaRequirements(IMPORTANT_SCHEMA_REQUIREMENTS));
 
     // Log results
-    if (missing.length > 0) {
+    if (options.log !== false && missing.length > 0) {
       console.error(`[SchemaValidator] ❌ CRITICAL tables missing: ${missing.join(', ')}`);
       console.error('[SchemaValidator] Run: npm run db:push to sync schema');
     }
 
-    if (warnings.length > 0) {
+    if (options.log !== false && warnings.length > 0) {
       console.warn(`[SchemaValidator] ⚠️ Optional tables missing: ${warnings.join(', ')}`);
     }
 
-    if (missing.length === 0 && warnings.length === 0) {
+    if (options.log !== false && missing.length === 0 && warnings.length === 0) {
       console.log('[SchemaValidator] ✅ All tables verified');
-    } else if (missing.length === 0) {
+    } else if (options.log !== false && missing.length === 0) {
       console.log(`[SchemaValidator] ✅ All critical tables OK (${warnings.length} optional missing)`);
     }
 

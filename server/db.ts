@@ -382,7 +382,7 @@ function requireDb(): NonNullable<SariDb> {
 
 /**
  * Get the raw mysql2 pool for direct SQL execution
- * Use for DDL (CREATE TABLE) or raw queries not supported by Drizzle
+ * Use for controlled raw queries not supported by Drizzle. Schema changes belong in migrations.
  */
 export async function getPool(): Promise<mysql.Pool | null> {
   await getDb(); // ensure pool is initialized
@@ -3883,62 +3883,12 @@ export async function getMerchantTestDeals(merchantId: number) {
 // Bot Settings Functions
 // ============================================================
 
-// Lazy migration flag — runs once per process
-let _botSettingsMigrated = false;
 /**
  * Get bot settings for a merchant (create default if not exists)
  */
 export async function getBotSettings(merchantId: number): Promise<BotSettings> {
   const db = await getDb();
   if (!db) throw new Error('Database not available');
-
-  // ── Lazy Migration: ensure auto_discount columns exist ──
-  if (!_botSettingsMigrated) {
-    try {
-      const pool = await getPool();
-      if (pool) {
-        const [cols] = await pool.execute(
-          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bot_settings' AND COLUMN_NAME = 'auto_discount_enabled'`
-        );
-        if ((cols as any[]).length === 0) {
-          console.log('[DB] 🔧 Lazy migration: adding auto_discount columns to bot_settings...');
-          await pool.execute(`ALTER TABLE bot_settings 
-            ADD COLUMN auto_discount_enabled TINYINT NOT NULL DEFAULT 0,
-            ADD COLUMN auto_discount_max_percent INT DEFAULT 15,
-            ADD COLUMN auto_discount_expire_hours INT DEFAULT 48`);
-          console.log('[DB] ✅ auto_discount columns added');
-        }
-      }
-      _botSettingsMigrated = true;
-    } catch (migErr: any) {
-      // Already exists or other non-fatal error
-      if (!migErr.message?.includes('Duplicate column')) {
-        console.warn('[DB] Auto-discount migration note:', migErr.message);
-      }
-      _botSettingsMigrated = true;
-    }
-
-    // Lazy Migration #2: custom_instructions column
-    try {
-      const pool = await getPool();
-      if (pool) {
-        const [cols] = await pool.execute(
-          `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-           WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'bot_settings' AND COLUMN_NAME = 'custom_instructions'`
-        );
-        if ((cols as any[]).length === 0) {
-          console.log('[DB] 🔧 Lazy migration: adding custom_instructions to bot_settings...');
-          await pool.execute(`ALTER TABLE bot_settings ADD COLUMN custom_instructions TEXT`);
-          console.log('[DB] ✅ custom_instructions column added');
-        }
-      }
-    } catch (migErr: any) {
-      if (!migErr.message?.includes('Duplicate column')) {
-        console.warn('[DB] custom_instructions migration note:', migErr.message);
-      }
-    }
-  }
 
   // Try to get existing settings
   const existing = await db

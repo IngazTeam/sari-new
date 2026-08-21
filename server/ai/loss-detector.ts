@@ -22,6 +22,7 @@
 
 import { getPool } from '../db';
 import { captureSignal } from '../db/learning';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -97,19 +98,10 @@ export async function detectLostDeals(): Promise<LossDetectionResult[]> {
     const pool = await getPool();
     if (!pool) return results;
 
-    // ── Auto-add columns if missing (emergency migration pattern) ──
-    try {
-      await pool.execute(`ALTER TABLE conversations ADD COLUMN loss_reason VARCHAR(30) DEFAULT NULL`);
-      console.log('[LossDetector] ✅ Added loss_reason column');
-    } catch { /* column already exists */ }
-    try {
-      await pool.execute(`ALTER TABLE conversations ADD COLUMN stalled_since TIMESTAMP NULL`);
-      console.log('[LossDetector] ✅ Added stalled_since column');
-    } catch { /* column already exists */ }
-    try {
-      await pool.execute(`ALTER TABLE conversations ADD COLUMN payment_link_sent_at TIMESTAMP NULL`);
-      console.log('[LossDetector] ✅ Added payment_link_sent_at column');
-    } catch { /* column already exists */ }
+    await assertRuntimeSchema('loss detector', [{
+      table: 'conversations',
+      columns: ['deal_stage', 'loss_reason', 'stalled_since', 'payment_link_sent_at'],
+    }]);
 
     // ── 1. Payment link sent but no payment (24h+) ──
     const [paymentAbandoned] = await pool.execute(

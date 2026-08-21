@@ -13,6 +13,7 @@
  */
 
 import { getPool, getMerchantById } from '../db';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -127,26 +128,7 @@ const BUSINESS_TYPE_MAP: Record<string, BusinessType> = {
 // ═══════════════════════════════════════════════════════════════
 
 async function ensureTable(): Promise<void> {
-  try {
-    const pool = await getPool();
-    if (!pool) return;
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS merchant_onboarding_answers (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        field_key VARCHAR(50) NOT NULL,
-        question_text TEXT NOT NULL,
-        answer_text TEXT NOT NULL,
-        phase INT NOT NULL DEFAULT 1,
-        answered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY uq_merchant_field (merchant_id, field_key),
-        INDEX idx_merchant (merchant_id)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-  } catch (err) {
-    console.warn('[Onboarding] Table creation failed (non-blocking):', err);
-  }
+  await assertRuntimeSchema('WhatsApp onboarding interview', [{ table: 'merchant_onboarding_answers' }]);
 }
 
 // Ensure table exists on first import

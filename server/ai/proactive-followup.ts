@@ -20,6 +20,7 @@
  */
 
 import { getPool, getWhatsAppInstancesByMerchantId } from '../db';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 import { sendMessageWithCredentials } from '../whatsapp';
 
 // ═══════════════════════════════════════════════════════════════
@@ -137,46 +138,11 @@ function getNextAllowedSendTime(): Date {
 // DB Table Auto-Create
 // ═══════════════════════════════════════════════════════════════
 
-let _tableCreated = false;
-
 async function ensureTable(): Promise<void> {
-  if (_tableCreated) return;
-  const pool = await getPool();
-  if (!pool) return;
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS sales_followups (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      merchant_id INT NOT NULL,
-      conversation_id INT NOT NULL,
-      customer_phone VARCHAR(20) NOT NULL,
-      follow_up_type VARCHAR(30) NOT NULL,
-      scheduled_at TIMESTAMP NOT NULL,
-      sent_at TIMESTAMP NULL,
-      cancelled_at TIMESTAMP NULL,
-      cancel_reason VARCHAR(50) NULL,
-      message_text TEXT NOT NULL,
-      customer_name VARCHAR(255) NULL,
-      source VARCHAR(30) DEFAULT 'proactive' NOT NULL,
-      processing_token VARCHAR(60) NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-      INDEX idx_followup_merchant_phone (merchant_id, customer_phone),
-      INDEX idx_followup_scheduled (scheduled_at),
-      INDEX idx_followup_pending (merchant_id, sent_at, cancelled_at),
-      INDEX idx_followup_processing (processing_token)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-  // Auto-add columns if missing (emergency migration pattern)
-  const autoColumns = [
-    `ALTER TABLE conversations ADD COLUMN deal_stage VARCHAR(30) DEFAULT 'new'`,
-    `ALTER TABLE conversations ADD COLUMN loss_reason VARCHAR(30) DEFAULT NULL`,
-    `ALTER TABLE conversations ADD COLUMN stalled_since TIMESTAMP NULL`,
-    `ALTER TABLE conversations ADD COLUMN payment_link_sent_at TIMESTAMP NULL`,
-    `ALTER TABLE sales_followups ADD COLUMN processing_token VARCHAR(60) NULL`,
-  ];
-  for (const ddl of autoColumns) {
-    try { await pool.execute(ddl); } catch { /* column already exists */ }
-  }
-  _tableCreated = true;
+  await assertRuntimeSchema('proactive follow-ups', [
+    { table: 'sales_followups', columns: ['processing_token'] },
+    { table: 'conversations', columns: ['deal_stage', 'loss_reason', 'stalled_since', 'payment_link_sent_at'] },
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════

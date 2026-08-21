@@ -4,10 +4,11 @@
  * Manages knowledge_sections, knowledge_changelog, sari_response_cache,
  * sales_quotations, sales_targets, and quotation_templates tables.
  * 
- * Pattern: Lazy table creation (same as integrations/byaan.ts)
+ * Schema is provisioned by tracked migrations and verified by a read-only readiness gate.
  */
 
 import { getPool } from '../db';
+import { assertRuntimeSchema } from './schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -90,149 +91,15 @@ export interface CachedResponse {
 // Lazy Table Creation
 // ═══════════════════════════════════════════════════════════════
 
-let _tablesCreated = false;
-
 export async function ensureKnowledgeTables(): Promise<void> {
-  if (_tablesCreated) return;
-  
-  const pool = await getPool();
-  if (!pool) return;
-
-  try {
-    // 1. knowledge_sections — hierarchical content
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS knowledge_sections (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        parent_id INT DEFAULT NULL,
-        section_type ENUM(
-          'identity','services','policies','faq','contact',
-          'team','achievements','sales_intel','opportunities','custom'
-        ) NOT NULL,
-        title VARCHAR(500) NOT NULL,
-        content TEXT NOT NULL,
-        summary VARCHAR(1000) DEFAULT NULL,
-        source ENUM('website','document','manual','ai_evolved','byaan_sync') NOT NULL,
-        source_url VARCHAR(2000) DEFAULT NULL,
-        confidence DECIMAL(3,2) DEFAULT 0.90,
-        status ENUM('auto_approved','approved','pending_review') DEFAULT 'auto_approved',
-        use_in_bot TINYINT(1) DEFAULT 1,
-        inject_as ENUM('fact','behavior','none') DEFAULT 'fact',
-        sort_order INT DEFAULT 0,
-        merchant_edited TINYINT(1) DEFAULT 0,
-        embedding BLOB DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_merchant_type (merchant_id, section_type),
-        INDEX idx_parent (parent_id),
-        INDEX idx_merchant_status (merchant_id, status),
-        INDEX idx_merchant_bot (merchant_id, use_in_bot, inject_as)
-      )
-    `);
-
-    // Add FK separately (safe if already exists)
-    try {
-      await pool.execute(`
-        ALTER TABLE knowledge_sections 
-        ADD CONSTRAINT fk_ks_parent 
-        FOREIGN KEY (parent_id) REFERENCES knowledge_sections(id) ON DELETE CASCADE
-      `);
-    } catch { /* FK already exists */ }
-
-    // 2. knowledge_changelog — evolution history
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS knowledge_changelog (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        section_id INT DEFAULT NULL,
-        action ENUM('add','merge','evolve','conflict','delete','manual_edit') NOT NULL,
-        reason TEXT DEFAULT NULL,
-        old_content TEXT DEFAULT NULL,
-        new_content TEXT DEFAULT NULL,
-        source VARCHAR(50) DEFAULT NULL,
-        resolved TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant (merchant_id, created_at DESC),
-        INDEX idx_unresolved (merchant_id, resolved, action)
-      )
-    `);
-
-    // 3. sari_response_cache — smart response caching
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_response_cache (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        question_text TEXT NOT NULL,
-        question_embedding BLOB DEFAULT NULL,
-        response_text TEXT NOT NULL,
-        hit_count INT DEFAULT 0,
-        is_valid TINYINT(1) DEFAULT 1,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant_valid (merchant_id, is_valid)
-      )
-    `);
-
-    // 4. sales_quotations
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sales_quotations (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        customer_phone VARCHAR(20) DEFAULT NULL,
-        customer_name VARCHAR(255) DEFAULT NULL,
-        quotation_number VARCHAR(50) NOT NULL,
-        items JSON NOT NULL,
-        subtotal DECIMAL(10,2) NOT NULL,
-        tax_amount DECIMAL(10,2) DEFAULT 0,
-        total DECIMAL(10,2) NOT NULL,
-        currency VARCHAR(3) DEFAULT 'SAR',
-        status ENUM('sent','viewed','accepted','rejected','expired') DEFAULT 'sent',
-        valid_until DATE DEFAULT NULL,
-        pdf_url VARCHAR(500) DEFAULT NULL,
-        conversation_id INT DEFAULT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant (merchant_id, created_at DESC),
-        INDEX idx_status (merchant_id, status)
-      )
-    `);
-
-    // 5. sales_targets
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sales_targets (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        period_type ENUM('monthly','quarterly','yearly') DEFAULT 'monthly',
-        period_start DATE NOT NULL,
-        period_end DATE NOT NULL,
-        target_amount DECIMAL(12,2) NOT NULL,
-        achieved_amount DECIMAL(12,2) DEFAULT 0,
-        quotations_sent INT DEFAULT 0,
-        quotations_won INT DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE INDEX idx_merchant_period (merchant_id, period_type, period_start)
-      )
-    `);
-
-    // 6. quotation_templates
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS quotation_templates (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        header_image_url VARCHAR(500) DEFAULT NULL,
-        footer_text TEXT DEFAULT NULL,
-        terms_text TEXT DEFAULT NULL,
-        is_default TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant (merchant_id)
-      )
-    `);
-
-    _tablesCreated = true;
-    console.log('[KnowledgeEngine] ✅ All tables initialized (6 tables)');
-  } catch (e) {
-    console.error('[KnowledgeEngine] Failed to create tables:', e);
-  }
+  await assertRuntimeSchema('knowledge engine', [
+    { table: 'knowledge_sections' },
+    { table: 'knowledge_changelog' },
+    { table: 'sari_response_cache' },
+    { table: 'sales_quotations' },
+    { table: 'sales_targets' },
+    { table: 'quotation_templates' },
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════

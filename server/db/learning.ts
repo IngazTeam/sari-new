@@ -7,6 +7,7 @@
  */
 
 import { getPool } from '../db';
+import { assertRuntimeSchema } from './schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -66,89 +67,13 @@ export interface BehavioralDNA {
 // Table Creation
 // ═══════════════════════════════════════════════════════════════
 
-let _tablesCreated = false;
-
 export async function ensureLearningTables(): Promise<void> {
-  if (_tablesCreated) return;
-
-  const pool = await getPool();
-  if (!pool) return;
-
-  try {
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_learning_signals (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        conversation_id INT NOT NULL,
-        signal_type VARCHAR(30) NOT NULL,
-        signal_weight DECIMAL(3,2) DEFAULT 1.00,
-        bot_message TEXT DEFAULT NULL,
-        customer_message TEXT DEFAULT NULL,
-        merchant_correction TEXT DEFAULT NULL,
-        context_summary TEXT DEFAULT NULL,
-        analyzed TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant_type (merchant_id, signal_type),
-        INDEX idx_merchant_date (merchant_id, created_at DESC),
-        INDEX idx_merchant_unanalyzed (merchant_id, analyzed)
-      )
-    `);
-
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_behavioral_dna (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        generation INT DEFAULT 1,
-        dimension VARCHAR(30) NOT NULL,
-        insight TEXT NOT NULL,
-        evidence_count INT DEFAULT 1,
-        confidence DECIMAL(3,2) DEFAULT 0.50,
-        is_active TINYINT(1) DEFAULT 1,
-        auto_applied TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE INDEX idx_merchant_dimension (merchant_id, dimension),
-        INDEX idx_active (merchant_id, is_active)
-      )
-    `);
-
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_escalation_queue (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        conversation_id INT NOT NULL,
-        customer_phone VARCHAR(30) NOT NULL,
-        customer_name VARCHAR(100) DEFAULT NULL,
-        question TEXT NOT NULL,
-        bot_response TEXT DEFAULT NULL,
-        status VARCHAR(20) DEFAULT 'pending',
-        merchant_answer TEXT DEFAULT NULL,
-        priority VARCHAR(10) DEFAULT 'standard',
-        merchant_notified_at TIMESTAMP NULL,
-        merchant_answered_at TIMESTAMP NULL,
-        followed_up TINYINT(1) DEFAULT 0,
-        expires_at TIMESTAMP NULL,
-        current_escalation_level INT DEFAULT 0,
-        last_escalated_at TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant_status (merchant_id, status),
-        INDEX idx_merchant_date (merchant_id, created_at DESC),
-        INDEX idx_customer (merchant_id, customer_phone, status),
-        INDEX idx_cascade (status, last_escalated_at)
-      )
-    `);
-
-    // Additional merchant columns for escalation chain (auto-migration)
-    try {
-      await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS escalation_phones TEXT DEFAULT NULL`);
-      await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
-    } catch { /* columns already exist */ }
-
-    _tablesCreated = true;
-    console.log('[Learning] ✅ Tables initialized');
-  } catch (e: any) {
-    console.error('[Learning] Failed to create tables:', e.message);
-  }
+  await assertRuntimeSchema('adaptive learning', [
+    { table: 'sari_learning_signals' },
+    { table: 'sari_behavioral_dna' },
+    { table: 'sari_escalation_queue' },
+    { table: 'merchants', columns: ['escalation_phones', 'emergency_phone'] },
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════

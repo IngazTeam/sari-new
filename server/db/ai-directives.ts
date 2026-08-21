@@ -8,6 +8,7 @@
  */
 
 import { getPool } from '../db';
+import { assertRuntimeSchema } from './schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -30,27 +31,8 @@ export interface AIDirective {
 // Table Management
 // ═══════════════════════════════════════════════════════════════
 
-let _tableCreated = false;
-
 async function ensureTable(): Promise<void> {
-  if (_tableCreated) return;
-  const pool = await getPool();
-  if (!pool) return;
-
-  await pool.execute(`
-    CREATE TABLE IF NOT EXISTS sari_ai_directives (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      category ENUM('sales', 'culture', 'persuasion', 'examples', 'limits') NOT NULL,
-      title VARCHAR(200) NOT NULL,
-      content TEXT NOT NULL,
-      is_active TINYINT(1) DEFAULT 1,
-      priority INT DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      INDEX idx_active (is_active, category, priority)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-  `);
-  _tableCreated = true;
+  await assertRuntimeSchema('AI directives', [{ table: 'sari_ai_directives' }]);
 }
 
 // ═══════════════════════════════════════════════════════════════

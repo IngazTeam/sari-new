@@ -10,6 +10,7 @@
  */
 
 import { getPool } from '../db';
+import { assertRuntimeSchema } from './schema-readiness';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -50,56 +51,11 @@ export interface CoachingQuestion {
 // Table Creation
 // ═══════════════════════════════════════════════════════════════
 
-let _tablesCreated = false;
-
 export async function ensureCoachingTables(): Promise<void> {
-  if (_tablesCreated) return;
-
-  const pool = await getPool();
-  if (!pool) return;
-
-  try {
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_coaching_sessions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        status VARCHAR(20) DEFAULT 'pending',
-        total_questions INT DEFAULT 0,
-        correct_count INT DEFAULT 0,
-        corrected_count INT DEFAULT 0,
-        skipped_count INT DEFAULT 0,
-        current_question_index INT DEFAULT 0,
-        started_at TIMESTAMP NULL,
-        completed_at TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant_status (merchant_id, status),
-        INDEX idx_merchant_date (merchant_id, created_at DESC)
-      )
-    `);
-
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS sari_coaching_questions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        session_id INT NOT NULL,
-        merchant_id INT NOT NULL,
-        conversation_id INT NULL,
-        customer_question TEXT NOT NULL,
-        bot_response TEXT NOT NULL,
-        merchant_verdict VARCHAR(20) NULL,
-        merchant_correction TEXT NULL,
-        question_order INT DEFAULT 0,
-        reviewed_at TIMESTAMP NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_session_order (session_id, question_order),
-        INDEX idx_merchant (merchant_id)
-      )
-    `);
-
-    _tablesCreated = true;
-    console.log('[Coaching] ✅ Tables initialized');
-  } catch (e: any) {
-    console.error('[Coaching] Failed to create tables:', e.message);
-  }
+  await assertRuntimeSchema('merchant coaching', [
+    { table: 'sari_coaching_sessions' },
+    { table: 'sari_coaching_questions' },
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════

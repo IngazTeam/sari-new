@@ -11,6 +11,7 @@
  */
 
 import { getPool, getMerchantByUserId, getProductsByMerchantId } from '../db';
+import { assertRuntimeSchema } from '../db/schema-readiness';
 import crypto from 'crypto';
 
 // ═══════════════════════════════════════════════════════════════
@@ -77,116 +78,18 @@ export const PLATFORM_TERMINOLOGY: Record<string, Record<string, string>> = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-// Byaan Connection Management (lazy table creation)
+// Byaan Connection Management (migration-backed schema)
 // ═══════════════════════════════════════════════════════════════
 
-let _byaanTableCreated = false;
-
 async function ensureByaanTables() {
-  if (_byaanTableCreated) return;
-  try {
-    const dbConn = await getPool();
-    if (!dbConn) return;
-
-    // Byaan connections table
-    await (dbConn as any).execute(`
-      CREATE TABLE IF NOT EXISTS byaan_connections (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        tenant_domain VARCHAR(255) NOT NULL,
-        api_base_url VARCHAR(500) DEFAULT NULL,
-        webhook_secret VARCHAR(128) DEFAULT NULL,
-        api_key_hash VARCHAR(64),
-        sync_status ENUM('active','syncing','error','paused') DEFAULT 'active',
-        last_sync_at TIMESTAMP NULL,
-        sync_errors TEXT,
-        permissions TEXT DEFAULT NULL,
-        is_active TINYINT(1) DEFAULT 1 NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE INDEX idx_byaan_merchant (merchant_id),
-        INDEX idx_byaan_domain (tenant_domain)
-      )
-    `);
-
-    // Byaan trainees table
-    await (dbConn as any).execute(`
-      CREATE TABLE IF NOT EXISTS byaan_trainees (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        external_id VARCHAR(100) NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        phone VARCHAR(20),
-        email VARCHAR(320),
-        enrolled_courses TEXT,
-        status ENUM('active','archived') DEFAULT 'active',
-        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE INDEX uq_byaan_trainee (merchant_id, external_id),
-        INDEX idx_byaan_trainee_phone (merchant_id, phone)
-      )
-    `);
-
-    // Byaan FAQs table
-    await (dbConn as any).execute(`
-      CREATE TABLE IF NOT EXISTS byaan_faqs (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        external_id VARCHAR(100),
-        question TEXT NOT NULL,
-        answer TEXT NOT NULL,
-        category VARCHAR(100) DEFAULT '\u0639\u0627\u0645',
-        is_active TINYINT(1) DEFAULT 1 NOT NULL,
-        use_in_bot TINYINT(1) DEFAULT 1 NOT NULL,
-        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_byaan_faq_merchant (merchant_id)
-      )
-    `);
-
-    // Byaan site content table
-    await (dbConn as any).execute(`
-      CREATE TABLE IF NOT EXISTS byaan_site_content (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        page_type ENUM('about','vision','mission','policies','custom') NOT NULL,
-        title VARCHAR(500),
-        content TEXT NOT NULL,
-        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE INDEX uq_byaan_content (merchant_id, page_type)
-      )
-    `);
-
-    // Sari conversions table
-    await (dbConn as any).execute(`
-      CREATE TABLE IF NOT EXISTS sari_conversions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        merchant_id INT NOT NULL,
-        customer_phone VARCHAR(20),
-        customer_name VARCHAR(255),
-        action_type ENUM('enrollment','payment','inquiry') NOT NULL,
-        product_name VARCHAR(255),
-        amount DECIMAL(10,2),
-        external_ref VARCHAR(100),
-        source VARCHAR(50) DEFAULT 'whatsapp',
-        status ENUM('pending','completed','cancelled') DEFAULT 'completed',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_merchant (merchant_id, created_at DESC)
-      )
-    `);
-
-    // Add integration_source to merchants (if not exists)
-    try {
-      await (dbConn as any).execute(`ALTER TABLE merchants ADD COLUMN integration_source VARCHAR(20) DEFAULT 'none'`);
-    } catch (e) { /* column already exists */ }
-
-    _byaanTableCreated = true;
-    console.log('[Byaan] ✅ Tables initialized');
-  } catch (e) {
-    console.error('[Byaan] Failed to create tables:', e);
-  }
+  await assertRuntimeSchema('Byaan integration', [
+    { table: 'byaan_connections' },
+    { table: 'byaan_trainees' },
+    { table: 'byaan_faqs' },
+    { table: 'byaan_site_content' },
+    { table: 'sari_conversions' },
+    { table: 'merchants', columns: ['integration_source'] },
+  ]);
 }
 
 // ═══════════════════════════════════════════════════════════════

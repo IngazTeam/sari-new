@@ -715,14 +715,7 @@ export const merchantsRouter = router({
             }
             _escalationPhoneRateLimit[merchant.id] = now;
 
-            // Ensure columns exist (auto-migration)
             const pool = await getPool();
-            if (pool) {
-                try {
-                    await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS escalation_phones TEXT DEFAULT NULL`);
-                    await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
-                } catch { /* columns already exist */ }
-            }
 
             // === Normalize phone numbers: ensure country code ===
             const normalizePhone = (phone: string): string => {
@@ -814,11 +807,6 @@ export const merchantsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
             const pool = await getPool();
-            if (pool) {
-                try {
-                    await pool.execute(`ALTER TABLE merchants ADD COLUMN IF NOT EXISTS emergency_phone VARCHAR(20) DEFAULT NULL`);
-                } catch { /* column already exists */ }
-            }
             await updateMerchant(merchant.id, { emergencyPhone: input.emergencyPhone } as any);
             return { success: true };
         }),
