@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 2.7 — محدّث بتوحيد إنشاء الحسابات وidempotency المنصات\
+**الإصدار:** 2.8 — محدّث بحماية هوية الإدارة ودعوات الفريق\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -45,6 +45,7 @@
 22. أُغلق محليًا brute-force متعدد instances وtiming enumeration المباشر وتخزين JWT في localStorage؛ المتصفح أصبح cookie-only.
 23. أُغلق محليًا مسار التحقق من البريد غير المكتمل: token digest واستهلاك ذري وحدود موزعة وربط بالبريد الحالي وصفحة إتمام حقيقية، مع منع تغيير البريد المباشر واشتراط `email_verified` من Google.
 24. أُغلق محليًا إنشاء الحسابات الجزئي عبر المنصات وGoogle: lifecycle ذري واحد، موافقات وعضوية وتجربة، idempotency موزع، حجز Byaan tenant داخل المعاملة، ونتائج وروابط صادقة دون PII في السجلات.
+25. أُغلقت محليًا مسارات امتلاك الإدارة لاعتماد العميل ودعوات الفريق غير المرتبطة بالهوية: reset مملوك للمستخدم، token digest وrecipient HMAC، بريد موثّق، وقبول ذري أحادي العضوية.
 
 **قرار الخطة:**
 
@@ -53,7 +54,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 2.7
+### حالة تنفيذ الجولة 2.8
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -82,8 +83,9 @@
 | حماية login وcredential المتصفح | مكتمل محليًا/migration معلق | MySQL locks للبريد/IP، HMAC دون PII، dummy bcrypt، cookie-only، حذف router مكرر؛ 132/132 بوابة إصدار |
 | هوية البريد والتحقق | مكتمل محليًا/migration معلق | token SHA-256 وIP HMAC، حد موزع user/IP، claim ذري، رابط fragment وصفحة فعلية، منع direct email replacement وGoogle verified-email؛ 142/142 بوابة إصدار |
 | إنشاء الحسابات والمنصات | مكتمل محليًا/migration وMySQL معلقان | graph ذري كامل، HMAC idempotency، named lock موزع، حجز Byaan tenant ذري، منع Google orphan؛ 154/154 بوابة إصدار |
+| هوية الإدارة ودعوات الفريق | مكتمل محليًا/migration وMySQL/SMTP معلقان | منع admin password/email takeover، reset مملوك للمستخدم، token digest وrecipient HMAC وقبول transaction؛ 167/167 بوابة إصدار |
 
-**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0012` على staging، ضبط مفاتيح التشفير وMeta/Green من secret manager، تدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR. يلزم كذلك اختبار إرسال/استهلاك بريد فعلي عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
+**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0013` على staging، ضبط مفاتيح التشفير وMeta/Green من secret manager، تدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
 
 ### سجل الكوميتات المنفذة
 
@@ -108,6 +110,7 @@
 | `6d2a53a` | سجل جلسات خادمي وlogout فعلي وإبطال متكامل مع reset |
 | `da58ec0` | rate limit موزع للدخول وdummy bcrypt واعتماد cookie-only للمتصفح |
 | `6ee8efa` | هوية البريد المثبتة وtoken أحادي الاستخدام ومسار تحقق فعلي |
+| `709f964` | توحيد إنشاء الحسابات والمنصات وGoogle مع idempotency وحجز tenant ذري |
 
 ---
 
@@ -940,6 +943,7 @@ WhatsAppChannel
 | AUTH-004 | P0 | حماية login وcookie-only | Backend/QA | limits موزعة، timing موحد، وصفر session JWT في تخزين JavaScript |
 | AUTH-005 | P0 | هوية البريد والتحقق | Backend/QA | token digest أحادي الاستخدام، limits موزعة، ownership ثابت، وتسليم SMTP مثبت |
 | AUTH-006 | P0 | توحيد إنشاء الحسابات عبر المنصات وGoogle | Backend/QA | graph ذري، idempotency موزع، tenant واحد، وصفر orphan users |
+| AUTH-007 | P0 | حماية هوية الإدارة ودعوات الفريق | Backend/QA | لا اعتماد ينشئه admin، والمتلقي الموثق وحده يقبل token مهضومًا مرة واحدة |
 | TEN-001 | P0 | عزل المستأجرين | Backend/QA | جميع اختبارات IDOR ناجحة |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
@@ -1001,6 +1005,7 @@ WhatsAppChannel
 - [x] login موزع وcookie-only محليًا؛ 132/132 بوابة إصدار وDrizzle check ناجحان، وتطبيق `0010` واختبار MySQL التزامني معلقان.
 - [x] تحقق البريد محصن محليًا؛ 142/142 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0011` واختبار MySQL/SMTP المنشور معلقان.
 - [x] provision وGoogle موحدان محليًا؛ 154/154 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0012` واختبارات MySQL/Byaan replay المنشورة معلقة.
+- [x] هوية الإدارة ودعوات الفريق محصنتان محليًا؛ 167/167 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0013` واختبارات MySQL/SMTP/الرحلة المنشورة معلقة.
 - [ ] migrations موحدة للمسارات المستخدمة.
 - [ ] قناة Meta الرسمية جاهزة أو خطة انتقال معتمدة بزمن محدد.
 - [ ] الموافقة وإلغاء الاشتراك يعملان.

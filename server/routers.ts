@@ -96,7 +96,6 @@ import {
   createNotification,
   createOccasionCampaign,
   createOrUpdatePaymentGateway,
-  createPasswordResetToken,
   createPlan,
   createPlanChangeLog,
   createProduct,
@@ -123,7 +122,6 @@ import {
   deleteDiscountCode,
   deleteGoogleIntegration,
   deleteKeywordAnalysis,
-  deletePasswordResetTokensByUserId,
   deleteQuickResponse,
   deleteSallaConnection,
   deleteScheduledMessage,
@@ -703,29 +701,13 @@ export const appRouter = router({
           return PASSWORD_RESET_RESPONSE;
         }
 
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-
-        // Delete any existing tokens for this user
-        await deletePasswordResetTokensByUserId(user.id);
-
-        // Create new token
-        await createPasswordResetToken({
-          userId: user.id,
+        const { deliverPasswordResetForUser } = await import('./accounts/password-reset-delivery');
+        const delivered = await deliverPasswordResetForUser({
+          id: user.id,
           email: user.email,
-          token,
-          expiresAt,
-          used: 0,
+          name: user.name,
         });
-
-        try {
-          const { sendPasswordResetEmail } = await import('./notifications/email-notifications');
-          const resetLink = `${process.env.VITE_APP_URL || 'https://sary.live'}/reset-password/${token}`;
-          const sent = await sendPasswordResetEmail(user.email, user.name || 'المستخدم', resetLink);
-          if (!sent) console.error('[Password Reset] Email provider did not accept the message');
-        } catch (error) {
-          console.error('[Password Reset] Failed to send email:', error);
-        }
+        if (!delivered) console.error('[Password Reset] Email delivery failed');
 
         return PASSWORD_RESET_RESPONSE;
       }),

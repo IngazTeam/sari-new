@@ -64,8 +64,6 @@ export default function MerchantDetails() {
   const [editBusinessName, setEditBusinessName] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
 
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getById.useQuery(
     { merchantId },
@@ -101,11 +99,9 @@ export default function MerchantDetails() {
 
   const adminResetPasswordMutation = trpc.merchants.adminResetPassword.useMutation({
     onSuccess: () => {
-      toast.success('تم تغيير كلمة المرور بنجاح');
-      setShowPasswordReset(false);
-      setNewPassword('');
+      toast.success('تم إرسال رابط إعادة تعيين آمن إلى بريد التاجر');
     },
-    onError: (error: any) => toast.error(error.message || 'فشل تغيير كلمة المرور'),
+    onError: (error: any) => toast.error(error.message || 'فشل إرسال رابط إعادة التعيين'),
   });
 
   const startEditing = () => {
@@ -122,7 +118,6 @@ export default function MerchantDetails() {
       merchantId,
       businessName: editBusinessName || undefined,
       name: editName || undefined,
-      email: editEmail || undefined,
       phone: editPhone || undefined,
     });
   };
@@ -273,7 +268,8 @@ export default function MerchantDetails() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm text-muted-foreground flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> الإيميل</label>
-                  <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="البريد الإلكتروني" dir="ltr" />
+                  <Input value={editEmail} readOnly disabled placeholder="البريد الإلكتروني" dir="ltr" />
+                  <p className="text-xs text-muted-foreground">تغيير البريد يتطلب تحققًا من البريد القديم والجديد.</p>
                 </div>
                 <div className="space-y-1">
                   <label className="text-sm text-muted-foreground flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> رقم الهاتف</label>
@@ -330,22 +326,20 @@ export default function MerchantDetails() {
 
             {/* Password Reset */}
             <div className="border-t pt-3 mt-3">
-              {!showPasswordReset ? (
-                <Button size="sm" variant="outline" onClick={() => setShowPasswordReset(true)} className="gap-1 w-full">
-                  <KeyRound className="h-4 w-4" /> تغيير كلمة المرور
-                </Button>
-              ) : (
-                <div className="space-y-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                  <label className="text-sm font-medium flex items-center gap-1"><KeyRound className="h-3.5 w-3.5" /> كلمة المرور الجديدة</label>
-                  <Input type="text" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="أدخل كلمة المرور الجديدة" dir="ltr" />
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => { if (newPassword.length < 6) { toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return; } adminResetPasswordMutation.mutate({ merchantId, newPassword }); }} disabled={adminResetPasswordMutation.isPending}>
-                      {adminResetPasswordMutation.isPending ? 'جاري التغيير...' : 'تأكيد التغيير'}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setShowPasswordReset(false); setNewPassword(''); }}>إلغاء</Button>
-                  </div>
-                </div>
-              )}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  if (confirm('إرسال رابط إعادة تعيين إلى البريد الموثق للتاجر؟')) {
+                    adminResetPasswordMutation.mutate({ merchantId });
+                  }
+                }}
+                disabled={adminResetPasswordMutation.isPending}
+                className="gap-1 w-full"
+              >
+                <KeyRound className="h-4 w-4" />
+                {adminResetPasswordMutation.isPending ? 'جاري الإرسال...' : 'إرسال رابط إعادة تعيين'}
+              </Button>
             </div>
           </CardContent>
         </Card>

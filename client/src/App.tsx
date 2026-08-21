@@ -185,6 +185,7 @@ const AcquisitionReport = lazyLoad(() => import("./pages/merchant/AcquisitionRep
 const QuotationTemplates = lazyLoad(() => import("./pages/merchant/QuotationTemplates"));
 const MediaLibrary = lazyLoad(() => import("./pages/merchant/MediaLibrary"));
 const TeamManagement = lazyLoad(() => import("./pages/merchant/TeamManagement"));
+const AcceptInvite = lazyLoad(() => import("./pages/AcceptInvite"));
 const ByaanDashboard = lazyLoad(() => import("./pages/ByaanDashboard"));
 
 // Admin pages - lazy loaded
@@ -239,8 +240,10 @@ function Router() {
         }}
       </Route>
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       <Route path="/reset-password/:token" component={ResetPassword} />
       <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/accept-invite" component={AcceptInvite} />
       <Route path="/products" component={ProductsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/subscribe" component={SubscribePage} />

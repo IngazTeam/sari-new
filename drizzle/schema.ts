@@ -1624,6 +1624,7 @@ export const merchantMembers = mysqlTable("merchant_members", {
 }, (table) => [
 	index("idx_member_merchant").on(table.merchantId),
 	index("idx_member_user").on(table.userId),
+	uniqueIndex("merchant_members_identity_unique").on(table.merchantId, table.userId),
 ]);
 
 /**
@@ -1636,14 +1637,17 @@ export const merchantInvitations = mysqlTable("merchant_invitations", {
 	email: varchar({ length: 320 }).notNull(),
 	role: mysqlEnum(['manager', 'sales_supervisor', 'viewer']).notNull().default('viewer'),
 	token: varchar({ length: 64 }).notNull(),
+	recipientHash: varchar("recipient_hash", { length: 64 }),
 	invitedBy: int("invited_by").notNull(),
+	acceptedByUserId: int("accepted_by_user_id").references(() => users.id, { onDelete: "set null" }),
 	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
 	acceptedAt: timestamp("accepted_at", { mode: 'string' }),
 	status: mysqlEnum(['pending', 'accepted', 'expired', 'revoked']).default('pending').notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
 	index("idx_invitation_merchant").on(table.merchantId),
-	index("idx_invitation_token").on(table.token),
+	uniqueIndex("merchant_invitations_token_unique").on(table.token),
+	uniqueIndex("merchant_invitations_pending_recipient_unique").on(table.merchantId, table.recipientHash),
 ]);
 
 // Type definitions

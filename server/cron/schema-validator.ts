@@ -21,6 +21,8 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'consent_receipts', columns: ['subject_reference_hash', 'document_version', 'ip_hash', 'user_agent_hash'] },
   { table: 'data_subject_requests', columns: ['request_type', 'status', 'due_at', 'processing_scheduled_at'] },
   { table: 'legal_retention_records', columns: ['subject_reference_hash', 'encrypted_payload', 'retain_until'] },
+  { table: 'merchant_members', columns: ['merchant_id', 'user_id', 'role', 'is_active'] },
+  { table: 'merchant_invitations', columns: ['token', 'recipient_hash', 'accepted_by_user_id', 'status', 'expires_at'] },
   { table: 'merchants', columns: [
     'timezone', 'integration_source', 'provision_idempotency_hash', 'provision_payload_hash',
     'escalation_phones', 'emergency_phone',

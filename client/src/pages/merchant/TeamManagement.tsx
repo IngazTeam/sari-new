@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, User, Mail, Shield, Loader2, UserPlus, Copy, Crown, Eye, Briefcase, Clock } from "lucide-react";
+import { Plus, Trash2, User, Mail, Shield, Loader2, UserPlus, Crown, Eye, Briefcase, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 const ROLE_OPTIONS = [
@@ -48,12 +48,6 @@ export default function TeamManagement() {
       setInviteRole('viewer');
       utils.team.list.invalidate();
 
-      // Copy invite link
-      if (result.inviteLink) {
-        navigator.clipboard.writeText(result.inviteLink).then(() => {
-          toast.info("تم نسخ رابط الدعوة 📋");
-        }).catch(() => {});
-      }
     },
     onError: (error) => {
       toast.error(error.message);

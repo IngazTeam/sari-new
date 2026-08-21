@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useRoute } from 'wouter';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,8 @@ import { useTranslation } from 'react-i18next';
 export default function ResetPassword() {
   const { t } = useTranslation();
   const [, params] = useRoute('/reset-password/:token');
-  const token = params?.token || '';
+  const [token, setToken] = useState('');
+  const [tokenLoaded, setTokenLoaded] = useState(false);
   
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,10 +24,18 @@ export default function ResetPassword() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [validationError, setValidationError] = useState('');
 
+  useEffect(() => {
+    const fragmentToken = new URLSearchParams(window.location.hash.slice(1)).get('token') || '';
+    const resolvedToken = fragmentToken || params?.token || '';
+    window.history.replaceState(null, '', '/reset-password');
+    setToken(resolvedToken);
+    setTokenLoaded(true);
+  }, [params?.token]);
+
   // Validate token on mount
   const { isLoading: isValidating, error: tokenError } = trpc.auth.verifyResetToken.useQuery(
     { token },
-    { enabled: !!token, retry: false }
+    { enabled: tokenLoaded && /^[a-f0-9]{64}$/i.test(token), retry: false }
   );
 
   const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
@@ -95,7 +104,7 @@ export default function ResetPassword() {
   }
 
   // Loading or error states
-  if (isValidating) {
+  if (!tokenLoaded || isValidating) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
@@ -112,7 +121,7 @@ export default function ResetPassword() {
     );
   }
 
-  if (tokenError || !token) {
+  if (tokenError || !/^[a-f0-9]{64}$/i.test(token)) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
