@@ -85,11 +85,23 @@ async function seedPlans() {
   for (const plan of PLANS) {
     try {
       const [result] = await connection.execute(
-        'INSERT INTO plans (name, nameAr, priceMonthly, conversationLimit, voiceMessageLimit, features) VALUES (?, ?, ?, ?, ?, ?)',
-        [plan.name, plan.nameAr, plan.priceMonthly, plan.conversationLimit, plan.voiceMessageLimit, plan.features]
+        `INSERT INTO subscription_plans
+          (name, name_en, monthly_price, yearly_price, currency, max_customers, max_whatsapp_numbers,
+           conversation_limit, message_limit, voice_message_limit, features, is_active, sort_order)
+         SELECT ?, ?, ?, ?, 'SAR', ?, 1, ?, -1, ?, ?, 1, ?
+         WHERE NOT EXISTS (SELECT 1 FROM subscription_plans WHERE name_en = ?)`,
+        [
+          plan.nameAr, plan.name, plan.priceMonthly, plan.priceMonthly * 10,
+          plan.conversationLimit, plan.conversationLimit, plan.voiceMessageLimit,
+          JSON.stringify(plan.features.split(',')), PLANS.indexOf(plan), plan.name,
+        ]
       );
       const insertId = (result as any).insertId;
-      console.log(`✅ ${plan.nameAr} (${plan.name}) — ${plan.priceMonthly} ر.س/شهر — ID: ${insertId}`);
+      if ((result as any).affectedRows === 0) {
+        console.log(`⚠️  ${plan.nameAr} (${plan.name}) — موجودة مسبقاً`);
+      } else {
+        console.log(`✅ ${plan.nameAr} (${plan.name}) — ${plan.priceMonthly} ر.س/شهر — ID: ${insertId}`);
+      }
     } catch (error: any) {
       if (error.code === 'ER_DUP_ENTRY') {
         console.log(`⚠️  ${plan.nameAr} (${plan.name}) — موجودة مسبقاً`);

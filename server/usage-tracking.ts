@@ -7,6 +7,7 @@ import {
   getActiveSubscriptionByMerchantId,
   getAllMerchants,
   getPlanById,
+  incrementSubscriptionUsage,
   updateSubscription,
 } from './db';
 
@@ -26,7 +27,15 @@ async function getActiveSubscription(merchantId: number) {
 /**
  * Get plan limits
  */
-async function getPlanLimits(planId: number) {
+export const TRIAL_USAGE_LIMITS = {
+  maxConversations: 100,
+  maxMessages: -1,
+  maxVoiceMessages: 20,
+} as const;
+
+async function getPlanLimits(planId: number | null | undefined, status: string) {
+  if (!planId && status === 'trial') return TRIAL_USAGE_LIMITS;
+  if (!planId) throw new Error('Subscription plan missing');
   const plan = await getPlanById(planId);
   
   if (!plan) {
@@ -35,7 +44,7 @@ async function getPlanLimits(planId: number) {
   
   return {
     maxConversations: plan.conversationLimit,
-    maxMessages: -1, // No message limit in current schema, unlimited
+    maxMessages: (plan as typeof plan & { messageLimit?: number }).messageLimit ?? -1,
     maxVoiceMessages: plan.voiceMessageLimit,
   };
 }
@@ -52,7 +61,7 @@ export async function hasReachedConversationLimit(merchantId: number): Promise<b
       return true; // Block if no subscription
     }
     
-    const limits = await getPlanLimits(subscription.planId);
+    const limits = await getPlanLimits(subscription.planId, subscription.status);
     
     // Unlimited plan
     if (limits.maxConversations === -1) {
@@ -68,7 +77,7 @@ export async function hasReachedConversationLimit(merchantId: number): Promise<b
     return reached;
   } catch (error: any) {
     console.error('[Usage] Error checking conversation limit:', error);
-    return false; // Don't block on error
+    return true; // Billing/quota checks fail closed when their source of truth is unavailable.
   }
 }
 
@@ -84,7 +93,7 @@ export async function hasReachedMessageLimit(merchantId: number): Promise<boolea
       return true;
     }
     
-    const limits = await getPlanLimits(subscription.planId);
+    const limits = await getPlanLimits(subscription.planId, subscription.status);
     
     // Unlimited plan
     if (limits.maxMessages === -1) {
@@ -100,7 +109,7 @@ export async function hasReachedMessageLimit(merchantId: number): Promise<boolea
     return reached;
   } catch (error: any) {
     console.error('[Usage] Error checking message limit:', error);
-    return false;
+    return true;
   }
 }
 
@@ -116,7 +125,7 @@ export async function hasReachedVoiceMessageLimit(merchantId: number): Promise<b
       return true;
     }
     
-    const limits = await getPlanLimits(subscription.planId);
+    const limits = await getPlanLimits(subscription.planId, subscription.status);
     
     // Unlimited plan
     if (limits.maxVoiceMessages === -1) {
@@ -132,7 +141,7 @@ export async function hasReachedVoiceMessageLimit(merchantId: number): Promise<b
     return reached;
   } catch (error: any) {
     console.error('[Usage] Error checking voice message limit:', error);
-    return false;
+    return true;
   }
 }
 
@@ -148,12 +157,8 @@ export async function incrementConversationUsage(merchantId: number): Promise<vo
       return;
     }
     
-    const newCount = (subscription.conversationsUsed || 0) + 1;
-    await updateSubscription(subscription.id, {
-      conversationsUsed: newCount,
-    });
-    
-    console.log(`[Usage] Incremented conversations for merchant ${merchantId}: ${newCount}`);
+    await incrementSubscriptionUsage(subscription.id, 1, 0, 0);
+    console.log(`[Usage] Incremented conversations for merchant ${merchantId}`);
   } catch (error: any) {
     console.error('[Usage] Error incrementing conversation usage:', error);
   }
@@ -171,12 +176,8 @@ export async function incrementMessageUsage(merchantId: number): Promise<void> {
       return;
     }
     
-    const newCount = (subscription.messagesUsed || 0) + 1;
-    await updateSubscription(subscription.id, {
-      messagesUsed: newCount,
-    });
-    
-    console.log(`[Usage] Incremented messages for merchant ${merchantId}: ${newCount}`);
+    await incrementSubscriptionUsage(subscription.id, 0, 0, 1);
+    console.log(`[Usage] Incremented messages for merchant ${merchantId}`);
   } catch (error: any) {
     console.error('[Usage] Error incrementing message usage:', error);
   }
@@ -194,12 +195,8 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
       return;
     }
     
-    const newCount = (subscription.voiceMessagesUsed || 0) + 1;
-    await updateSubscription(subscription.id, {
-      voiceMessagesUsed: newCount,
-    });
-    
-    console.log(`[Usage] Incremented voice messages for merchant ${merchantId}: ${newCount}`);
+    await incrementSubscriptionUsage(subscription.id, 0, 1, 0);
+    console.log(`[Usage] Incremented voice messages for merchant ${merchantId}`);
   } catch (error: any) {
     console.error('[Usage] Error incrementing voice message usage:', error);
   }
@@ -216,7 +213,7 @@ export async function getUsageStats(merchantId: number) {
       return null;
     }
     
-    const limits = await getPlanLimits(subscription.planId);
+    const limits = await getPlanLimits(subscription.planId, subscription.status);
     
     return {
       conversations: {
@@ -249,7 +246,7 @@ export async function getUsageStats(merchantId: number) {
 /**
  * Calculate next reset date (monthly)
  */
-function getNextResetDate(lastResetAt: Date): Date {
+function getNextResetDate(lastResetAt: string | Date): Date {
   const next = new Date(lastResetAt);
   next.setMonth(next.getMonth() + 1);
   return next;

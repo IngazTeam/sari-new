@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, index, foreignKey } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, varchar, text, timestamp, tinyint, decimal, index, uniqueIndex, foreignKey } from "drizzle-orm/mysql-core"
 import { InferSelectModel, InferInsertModel } from "drizzle-orm"
 import { merchants } from "./schema"
 
@@ -20,6 +20,9 @@ export const subscriptionPlans = mysqlTable("subscription_plans", {
 	// Features
 	maxCustomers: int("max_customers").notNull(), // الحد الأقصى للعملاء (الميزة الرئيسية)
 	maxWhatsAppNumbers: int("max_whatsapp_numbers").default(1).notNull(), // عدد أرقام الواتساب المسموح بها
+	conversationLimit: int("conversation_limit").default(1000).notNull(),
+	messageLimit: int("message_limit").default(-1).notNull(),
+	voiceMessageLimit: int("voice_message_limit").default(100).notNull(),
 	features: text(), // ميزات إضافية (JSON array)
 
 	// Status & Display
@@ -73,7 +76,7 @@ export const merchantSubscriptions = mysqlTable("merchant_subscriptions", {
 	planId: int("plan_id").references(() => subscriptionPlans.id, { onDelete: "set null" }),
 
 	// Status
-	status: mysqlEnum(['trial', 'active', 'expired', 'cancelled']).notNull(),
+	status: mysqlEnum(['pending', 'trial', 'active', 'expired', 'cancelled']).notNull(),
 	billingCycle: mysqlEnum("billing_cycle", ['monthly', 'yearly']).notNull(),
 
 	// Dates
@@ -83,6 +86,12 @@ export const merchantSubscriptions = mysqlTable("merchant_subscriptions", {
 
 	// Auto Renewal
 	autoRenew: tinyint("auto_renew").default(0).notNull(), // التجديد التلقائي
+
+	// Usage — canonical counters used by every runtime quota check.
+	conversationsUsed: int("conversations_used").default(0).notNull(),
+	messagesUsed: int("messages_used").default(0).notNull(),
+	voiceMessagesUsed: int("voice_messages_used").default(0).notNull(),
+	lastResetAt: timestamp("last_reset_at", { mode: 'string' }).defaultNow().notNull(),
 
 	// Cancellation
 	cancelledAt: timestamp("cancelled_at", { mode: 'string' }),
@@ -167,7 +176,7 @@ export const paymentTransactions = mysqlTable("payment_transactions", {
 		index("payment_transactions_merchant_id_idx").on(table.merchantId),
 		index("payment_transactions_subscription_id_idx").on(table.subscriptionId),
 		index("payment_transactions_status_idx").on(table.status),
-		index("payment_transactions_tap_charge_id_idx").on(table.tapChargeId),
+		uniqueIndex("payment_transactions_tap_charge_id_unique").on(table.tapChargeId),
 		index("payment_transactions_type_idx").on(table.type),
 		foreignKey({
 			name: "pt_sub_id_fk",

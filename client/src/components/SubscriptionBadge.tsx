@@ -9,14 +9,9 @@ export function SubscriptionBadge() {
   const [, setLocation] = useLocation();
   const { data: subscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
   const { data: daysData } = trpc.merchantSubscription.getDaysRemaining.useQuery();
-  const { data: merchantProfile } = trpc.merchants.getCurrent.useQuery();
   const daysRemaining = daysData?.daysRemaining;
 
-  // FIX: If admin manually activated the subscription (merchants.subscriptionStatus = 'active'),
-  // don't show the expired badge even if merchant_subscriptions record is expired
-  const isAdminOverrideActive = merchantProfile?.subscriptionStatus === 'active';
-
-  if ((!subscription || subscription.status === 'expired') && !isAdminOverrideActive) {
+  if (!subscription || subscription.status === 'expired') {
     return (
       <Badge 
         variant="destructive" 

@@ -4,12 +4,11 @@
  */
 
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import {
   activateUserTrial,
   createMerchant,
-  createMerchantSubscription,
   createPaymentTransaction,
   createUser,
   getMerchantByUserId,
@@ -17,33 +16,41 @@ import {
   getTapSettings,
   getUserByEmail,
   getUserById,
-  updateMerchantCustomerLimit,
   updatePaymentTransaction,
 } from '../db';
 import { createCharge } from "../_core/tap";
+import { publicPaymentUrls } from '../utils/public-url';
+import { startCanonicalTrial } from '../subscriptions/canonical-state';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
+
+function normalizeBillableAmount(amount: number, currency: string): { amount: number; currency: string } {
+  const normalizedCurrency = currency.trim().toUpperCase();
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid billable amount' });
+  }
+  if (!['SAR', 'USD'].includes(normalizedCurrency)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unsupported billing currency' });
+  }
+  return { amount: Math.round(amount * 100) / 100, currency: normalizedCurrency };
+}
 
 export const subscriptionSignupRouter = router({
   /**
    * Create subscription with payment
    * This endpoint is called after user registration/login
    */
-  createSubscriptionWithPayment: publicProcedure
+  createSubscriptionWithPayment: protectedProcedure
     .input(z.object({
       planId: z.number(),
       billingCycle: z.enum(['monthly', 'yearly']),
       // PEN-02 FIX: Removed userId from input — use ctx.user.id only
     }))
     .mutation(async ({ input, ctx }) => {
+      let transactionId: number | null = null;
       try {
         // PEN-02 FIX: Only use authenticated user ID, never accept from input
-        const userId = ctx.user?.id;
-        if (!userId) {
-          throw new TRPCError({
-            code: 'UNAUTHORIZED',
-            message: 'User not authenticated'
-          });
-        }
+        const userId = ctx.user.id;
 
         // Get user details
         const user = await getUserById(userId);
@@ -65,7 +72,7 @@ export const subscriptionSignupRouter = router({
 
         // Get plan details
         const plan = await getSubscriptionPlanById(input.planId);
-        if (!plan) {
+        if (!plan || plan.isActive !== 1) {
           throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Plan not found'
@@ -73,17 +80,18 @@ export const subscriptionSignupRouter = router({
         }
 
         // Calculate amount based on billing cycle
-        const amount = input.billingCycle === 'monthly'
+        const selectedAmount = input.billingCycle === 'monthly'
           ? parseFloat(plan.monthlyPrice)
           : parseFloat(plan.yearlyPrice);
+        const { amount, currency } = normalizeBillableAmount(selectedAmount, plan.currency || 'SAR');
 
         // Create payment transaction
-        const transactionId = await createPaymentTransaction({
+        const createdTransactionId = await createPaymentTransaction({
           merchantId: merchant.id,
           subscriptionId: null,
           type: 'subscription',
-          amount: amount.toString(),
-          currency: plan.currency || 'SAR',
+          amount: amount.toFixed(2),
+          currency,
           status: 'pending',
           paymentMethod: 'tap',
           metadata: JSON.stringify({
@@ -91,6 +99,7 @@ export const subscriptionSignupRouter = router({
             billingCycle: input.billingCycle,
           }),
         });
+        transactionId = createdTransactionId;
 
         // Get Tap settings
         const tapSettings = await getTapSettings();
@@ -104,7 +113,7 @@ export const subscriptionSignupRouter = router({
         // Create Tap charge
         const charge = await createCharge({
           amount,
-          currency: plan.currency || 'SAR',
+          currency,
           customer: {
             first_name: merchant.businessName,
             // @ts-ignore
@@ -116,12 +125,13 @@ export const subscriptionSignupRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
+            url: publicPaymentUrls.callback(),
           },
+          post: { url: publicPaymentUrls.webhook() },
           description: `Subscription: ${plan.name} (${input.billingCycle})`,
           metadata: {
             merchantId: merchant.id,
-            transactionId,
+            transactionId: createdTransactionId,
             type: 'subscription',
             planId: input.planId,
             billingCycle: input.billingCycle,
@@ -129,18 +139,21 @@ export const subscriptionSignupRouter = router({
         });
 
         // Update transaction with Tap charge ID
-        await updatePaymentTransaction(transactionId, {
+        await updatePaymentTransaction(createdTransactionId, {
           tapChargeId: charge.id,
           tapResponse: JSON.stringify(charge),
         });
 
         return {
           success: true,
-          transactionId,
+          transactionId: createdTransactionId,
           paymentUrl: charge.transaction?.url,
           chargeId: charge.id,
         };
       } catch (error: any) {
+        if (transactionId) {
+          await updatePaymentTransaction(transactionId, { status: 'failed' }).catch(() => undefined);
+        }
         console.error('[Subscription Signup] Error:', error);
 
         if (error instanceof TRPCError) {
@@ -179,49 +192,34 @@ export const subscriptionSignupRouter = router({
         const passwordHash = await bcrypt.hash(input.password, 10);
 
         // Create user
-        const userId = await createUser({
+        const user = await createUser({
+          openId: `local_${crypto.randomUUID().replaceAll('-', '')}`,
           email: input.email,
-          passwordHash,
-          // @ts-ignore
-          role: 'merchant',
+          password: passwordHash,
+          loginMethod: 'email',
+          role: 'user',
         });
+        if (!user) throw new Error('USER_CREATE_FAILED');
 
         // Create merchant
-        const merchantId = await createMerchant({
-          // @ts-ignore
-          userId,
+        const merchant = await createMerchant({
+          userId: user.id,
           businessName: input.businessName,
           phone: input.phone,
           subscriptionStatus: 'trial',
         });
+        if (!merchant) throw new Error('MERCHANT_CREATE_FAILED');
 
         // Auto-start 7-day trial
-        const now = new Date();
-        const trialEndDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-        await createMerchantSubscription({
-          // @ts-ignore
-          merchantId,
-          status: 'trial',
-          billingCycle: 'monthly',
-          startDate: now.toISOString(),
-          endDate: trialEndDate.toISOString(),
-          trialEndsAt: trialEndDate.toISOString(),
-          autoRenew: 0,
-        });
+        await startCanonicalTrial(merchant.id);
 
         // Activate trial on user record
-        // @ts-ignore
-        await activateUserTrial(userId);
-
-        // Set trial customer limit
-        // @ts-ignore
-        await updateMerchantCustomerLimit(merchantId, 100);
+        await activateUserTrial(user.id);
 
         return {
           success: true,
-          userId,
-          merchantId,
+          userId: user.id,
+          merchantId: merchant.id,
         };
       } catch (error: any) {
         console.error('[Register User] Error:', error);

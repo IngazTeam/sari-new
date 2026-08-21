@@ -13,7 +13,6 @@ import {
   cancelMerchantSubscription,
   checkMerchantSubscriptionStatus,
   createMerchantAddon,
-  createMerchantSubscription,
   createPaymentTransaction,
   createSubscriptionAddon,
   createSubscriptionPlan,
@@ -40,10 +39,6 @@ import {
   getTapSettings,
   getUserById,
   reorderSubscriptionPlans,
-  updateMerchantCurrentSubscriptionId,
-  updateMerchantCustomerLimit,
-  updateMerchantSubscription,
-  updateMerchantSubscriptionStatus,
   updatePaymentTransaction,
   updateSubscriptionAddon,
   updateSubscriptionPlan,
@@ -51,6 +46,23 @@ import {
 } from '../db';
 import { createCharge, retrieveCharge, refundCharge, testConnection } from "../_core/tap";
 import { calculateProration } from "../_core/subscriptionManager";
+import {
+  completeImmediateCanonicalPlanChange,
+  processCanonicalSubscriptionCharge,
+  startCanonicalTrial,
+} from '../subscriptions/canonical-state';
+import { publicPaymentUrls } from '../utils/public-url';
+
+function assertBillableAmount(amount: number, currency: string): { amount: number; currency: string } {
+  const normalizedCurrency = currency.trim().toUpperCase();
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid billable amount' });
+  }
+  if (!['SAR', 'USD'].includes(normalizedCurrency)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unsupported billing currency' });
+  }
+  return { amount: Math.round(amount * 100) / 100, currency: normalizedCurrency };
+}
 
 // ============================================
 // Subscription Plans Router
@@ -293,26 +305,6 @@ export const merchantSubscriptionRouter = router({
 
     const subscription = await getMerchantCurrentSubscription(merchant.id);
     
-    // FIX: Admin override — if merchant.subscriptionStatus is 'active' but no subscription record,
-    // synthesize a virtual subscription to prevent "trial expired" banners
-    if (!subscription && merchant.subscriptionStatus === 'active') {
-      return {
-        id: 0,
-        merchantId: merchant.id,
-        planId: null,
-        status: 'active' as const,
-        billingCycle: 'monthly' as const,
-        startDate: merchant.createdAt,
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-        autoRenew: 0,
-        trialEndsAt: null,
-        createdAt: merchant.createdAt,
-        plan: null,
-        daysRemaining: 365,
-        _adminOverride: true,
-      };
-    }
-
     if (!subscription) {
       return null;
     }
@@ -337,39 +329,21 @@ export const merchantSubscriptionRouter = router({
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    // Check if already has a subscription
-    const existingSubscription = await getMerchantCurrentSubscription(merchant.id);
-    if (existingSubscription) {
-      throw new TRPCError({ code: 'BAD_REQUEST', message: 'You already have an active subscription' });
+    try {
+      const trial = await startCanonicalTrial(merchant.id);
+      return { success: true, ...trial };
+    } catch (error) {
+      if (error instanceof Error && error.message === 'TRIAL_ALREADY_USED_OR_SUBSCRIBED') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Trial already used or subscription active' });
+      }
+      throw error;
     }
-
-    // Create trial subscription (7 days)
-    const now = new Date();
-    const trialEndDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    const subscriptionId = await createMerchantSubscription({
-      merchantId: merchant.id,
-      status: 'trial',
-      billingCycle: 'monthly',
-      startDate: now.toISOString(),
-      endDate: trialEndDate.toISOString(),
-      trialEndsAt: trialEndDate.toISOString(),
-      autoRenew: 0,
-    });
-
-    // Update merchant status
-    await updateMerchantSubscriptionStatus(merchant.id, 'trial');
-    await updateMerchantCustomerLimit(merchant.id, 100); // Trial limit
-    // PEN-13 FIX: Keep currentSubscriptionId in sync
-    await updateMerchantCurrentSubscriptionId(merchant.id, subscriptionId);
-
-    return { success: true, subscriptionId, trialEndsAt: trialEndDate };
   }),
 
   // Subscribe to a plan
   subscribe: protectedProcedure
     .input(z.object({
-      planId: z.number(),
+      planId: z.number().int().positive(),
       billingCycle: z.enum(['monthly', 'yearly']),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -380,22 +354,23 @@ export const merchantSubscriptionRouter = router({
 
       // Get plan details
       const plan = await getSubscriptionPlanById(input.planId);
-      if (!plan) {
+      if (!plan || plan.isActive !== 1) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
       }
 
       // Calculate amount
-      const amount = input.billingCycle === 'monthly'
+      const selectedAmount = input.billingCycle === 'monthly'
         ? parseFloat(plan.monthlyPrice)
         : parseFloat(plan.yearlyPrice);
+      const { amount, currency } = assertBillableAmount(selectedAmount, plan.currency);
 
       // Create payment transaction
       const transactionId = await createPaymentTransaction({
         merchantId: merchant.id,
         subscriptionId: null,
         type: 'subscription',
-        amount: amount.toString(),
-        currency: plan.currency,
+        amount: amount.toFixed(2),
+        currency,
         status: 'pending',
         paymentMethod: 'tap',
         metadata: JSON.stringify({
@@ -408,7 +383,7 @@ export const merchantSubscriptionRouter = router({
       try {
         const charge = await createCharge({
           amount,
-          currency: plan.currency,
+          currency,
           customer: {
             first_name: merchant.businessName,
             // @ts-ignore
@@ -420,8 +395,9 @@ export const merchantSubscriptionRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
+            url: publicPaymentUrls.callback(),
           },
+          post: { url: publicPaymentUrls.webhook() },
           description: `Subscription to ${plan.name} (${input.billingCycle})`,
           metadata: {
             merchantId: merchant.id,
@@ -459,7 +435,7 @@ export const merchantSubscriptionRouter = router({
   // Upgrade plan
   upgradePlan: protectedProcedure
     .input(z.object({
-      newPlanId: z.number(),
+      newPlanId: z.number().int().positive(),
       newBillingCycle: z.enum(['monthly', 'yearly']),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -474,69 +450,66 @@ export const merchantSubscriptionRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'No active subscription found' });
       }
 
+      const newPlan = await getSubscriptionPlanById(input.newPlanId);
+      if (!newPlan || newPlan.isActive !== 1) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
+      }
+
       // Calculate proration
-      const proration = await calculateProration(
-        currentSubscription.id,
-        input.newPlanId,
-        input.newBillingCycle
-      );
+      const selectedPrice = input.newBillingCycle === 'monthly'
+        ? Number(newPlan.monthlyPrice)
+        : Number(newPlan.yearlyPrice);
+      const proration = currentSubscription.planId
+        ? await calculateProration(currentSubscription.id, input.newPlanId, input.newBillingCycle)
+        : {
+            proratedAmount: selectedPrice,
+            daysUsed: 0,
+            daysRemaining: 0,
+            oldPlanDailyRate: 0,
+            newPlanDailyRate: selectedPrice / (input.newBillingCycle === 'monthly' ? 30 : 365),
+            creditAmount: 0,
+            chargeAmount: selectedPrice,
+          };
+      const currency = newPlan.currency.trim().toUpperCase();
+      if (!['SAR', 'USD'].includes(currency)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unsupported billing currency' });
+      }
+      const payable = proration.chargeAmount > 0
+        ? assertBillableAmount(proration.chargeAmount, currency)
+        : { amount: 0, currency };
 
       // Create payment transaction for upgrade
       const transactionId = await createPaymentTransaction({
         merchantId: merchant.id,
         subscriptionId: currentSubscription.id,
-        type: 'upgrade',
-        amount: proration.chargeAmount.toString(),
-        currency: 'SAR',
+        type: payable.amount === 0 ? 'downgrade' : 'upgrade',
+        amount: payable.amount.toFixed(2),
+        currency: payable.currency,
         status: 'pending',
         paymentMethod: 'tap',
         metadata: JSON.stringify({
           newPlanId: input.newPlanId,
           newBillingCycle: input.newBillingCycle,
           proration,
+          previousPlanId: currentSubscription.planId,
+          previousBillingCycle: currentSubscription.billingCycle,
+          previousStartDate: currentSubscription.startDate,
+          previousEndDate: currentSubscription.endDate,
+          previousStatus: currentSubscription.status,
         }),
       });
 
       // If charge amount is 0 or negative, upgrade immediately
-      if (proration.chargeAmount <= 0) {
-        // Update subscription
-        const now = new Date();
-        const endDate = new Date(
-          now.getTime() + (input.newBillingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
-        );
-
-        await updateMerchantSubscription(currentSubscription.id, {
-          planId: input.newPlanId,
-          billingCycle: input.newBillingCycle,
-          startDate: now.toISOString(),
-          endDate: endDate.toISOString(),
-        });
-
-        // Update merchant customer limit
-        const newPlan = await getSubscriptionPlanById(input.newPlanId);
-        if (newPlan) {
-          await updateMerchantCustomerLimit(merchant.id, newPlan.maxCustomers);
-        }
-
-        // Mark transaction as completed
-        await updatePaymentTransaction(transactionId, {
-          status: 'completed',
-          paidAt: now.toISOString(),
-        });
-
+      if (payable.amount === 0) {
+        await completeImmediateCanonicalPlanChange(transactionId, merchant.id);
         return { success: true, immediate: true };
       }
 
       // Create Tap charge for the difference
-      const newPlan = await getSubscriptionPlanById(input.newPlanId);
-      if (!newPlan) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
-      }
-
       try {
         const charge = await createCharge({
-          amount: proration.chargeAmount,
-          currency: 'SAR',
+          amount: payable.amount,
+          currency: payable.currency,
           customer: {
             first_name: merchant.businessName,
             // @ts-ignore
@@ -548,8 +521,9 @@ export const merchantSubscriptionRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
+            url: publicPaymentUrls.callback(),
           },
+          post: { url: publicPaymentUrls.webhook() },
           description: `Upgrade to ${newPlan.name} (${input.newBillingCycle})`,
           metadata: {
             merchantId: merchant.id,
@@ -571,7 +545,7 @@ export const merchantSubscriptionRouter = router({
           transactionId,
           paymentUrl: charge.transaction?.url,
           chargeId: charge.id,
-          proratedAmount: proration.chargeAmount,
+          proratedAmount: payable.amount,
         };
       } catch (error) {
         await updatePaymentTransaction(transactionId, { status: 'failed' });
@@ -621,26 +595,14 @@ export const merchantSubscriptionRouter = router({
       throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
     }
 
-    // Check if user has active trial
-    const user = await getUserById(ctx.user.id);
-    if (user && user.isTrialActive === 1 && user.trialEndDate) {
-      const now = new Date();
-      const trialEnd = new Date(user.trialEndDate);
-      if (now <= trialEnd) {
-        return {
-          isActive: true,
-          reason: 'الفترة التجريبية نشطة',
-          isTrial: true
-        };
-      }
-    }
-
-    // Check regular subscription
-    const isActive = await checkMerchantSubscriptionStatus(merchant.id);
+    const subscription = await getMerchantCurrentSubscription(merchant.id);
+    const isActive = Boolean(subscription);
     return {
       isActive,
-      reason: isActive ? 'اشتراك نشط' : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
-      isTrial: false
+      reason: isActive
+        ? subscription?.status === 'trial' ? 'الفترة التجريبية نشطة' : 'اشتراك نشط'
+        : 'لا يوجد اشتراك نشط. يرجى الاشتراك في باقة للوصول إلى هذه الميزة.',
+      isTrial: subscription?.status === 'trial',
     };
   }),
 });
@@ -676,8 +638,8 @@ export const merchantAddonsRouter = router({
   // Purchase addon
   purchaseAddon: protectedProcedure
     .input(z.object({
-      addonId: z.number(),
-      quantity: z.number().default(1),
+      addonId: z.number().int().positive(),
+      quantity: z.number().int().min(1).max(100).default(1),
       billingCycle: z.enum(['monthly', 'yearly']),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -688,7 +650,7 @@ export const merchantAddonsRouter = router({
 
       // Get addon details
       const addon = await getSubscriptionAddonById(input.addonId);
-      if (!addon) {
+      if (!addon || addon.isActive !== 1) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Addon not found' });
       }
 
@@ -697,17 +659,21 @@ export const merchantAddonsRouter = router({
         ? parseFloat(addon.monthlyPrice)
         : parseFloat(addon.yearlyPrice);
       const totalAmount = unitPrice * input.quantity;
+      const billable = assertBillableAmount(totalAmount, addon.currency);
 
       // Get current subscription
       const subscription = await getMerchantCurrentSubscription(merchant.id);
+      if (!subscription) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Active subscription required' });
+      }
 
       // Create payment transaction
       const transactionId = await createPaymentTransaction({
         merchantId: merchant.id,
         subscriptionId: subscription?.id || null,
         type: 'addon',
-        amount: totalAmount.toString(),
-        currency: addon.currency,
+        amount: billable.amount.toFixed(2),
+        currency: billable.currency,
         status: 'pending',
         paymentMethod: 'tap',
         metadata: JSON.stringify({
@@ -720,8 +686,8 @@ export const merchantAddonsRouter = router({
       // Create Tap charge
       try {
         const charge = await createCharge({
-          amount: totalAmount,
-          currency: addon.currency,
+          amount: billable.amount,
+          currency: billable.currency,
           customer: {
             first_name: merchant.businessName,
             // @ts-ignore
@@ -733,8 +699,9 @@ export const merchantAddonsRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
+            url: publicPaymentUrls.callback(),
           },
+          post: { url: publicPaymentUrls.webhook() },
           description: `Purchase ${addon.name} x${input.quantity}`,
           metadata: {
             merchantId: merchant.id,
@@ -799,129 +766,8 @@ export const paymentRouter = router({
     }))
     .mutation(async ({ input }) => {
       try {
-        // Retrieve charge from Tap
         const charge = await retrieveCharge(input.tap_id);
-
-        // Get transaction by Tap charge ID
-        const transaction = await getPaymentTransactionByTapChargeId(input.tap_id);
-        if (!transaction) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Transaction not found' });
-        }
-
-        // SEC-04 FIX: Idempotency Guard — reject already-processed transactions
-        if (transaction.status !== 'pending') {
-          console.warn(`[Payment] Duplicate callback rejected: tap_id=${input.tap_id}, current_status=${transaction.status}`);
-          return { success: true, status: transaction.status, message: 'Transaction already processed' };
-        }
-
-        // PEN-12 FIX: Normalize timestamps to MySQL format
-        const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
-        const now = new Date();
-        const nowMySQL = toMySQL(now.toISOString());
-
-        // Update transaction status
-        if (charge.status === 'CAPTURED') {
-          // PEN-14 FIX: Atomic update — prevents race condition with concurrent webhooks
-          await updatePaymentTransaction(transaction.id, {
-            status: 'completed',
-            paidAt: nowMySQL,
-            tapResponse: JSON.stringify(charge),
-          });
-
-          // Process subscription/addon based on transaction type
-          const metadata = transaction.metadata ? JSON.parse(transaction.metadata) : {};
-
-          if (transaction.type === 'subscription') {
-            // PEN-15 FIX: Validate metadata before creating subscription
-            if (!metadata.planId || !metadata.billingCycle) {
-              console.error(`[Payment] Invalid metadata for subscription: tap_id=${input.tap_id}`, metadata);
-              return { success: false, status: 'error', message: 'Invalid subscription metadata' };
-            }
-
-            // Create subscription
-            const endDate = new Date(
-              now.getTime() + (metadata.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
-            );
-
-            const subscriptionId = await createMerchantSubscription({
-              merchantId: transaction.merchantId,
-              planId: metadata.planId,
-              status: 'active',
-              billingCycle: metadata.billingCycle,
-              startDate: now.toISOString(),
-              endDate: endDate.toISOString(),
-              autoRenew: 0,
-            });
-
-            // Update merchant status
-            await updateMerchantSubscriptionStatus(transaction.merchantId, 'active');
-            // PEN-13 FIX: Keep currentSubscriptionId in sync
-            await updateMerchantCurrentSubscriptionId(transaction.merchantId, subscriptionId);
-
-            // Update merchant customer limit
-            const plan = await getSubscriptionPlanById(metadata.planId);
-            if (plan) {
-              await updateMerchantCustomerLimit(transaction.merchantId, plan.maxCustomers);
-            }
-
-            // Update transaction with subscription ID
-            await updatePaymentTransaction(transaction.id, {
-              subscriptionId,
-            });
-          } else if (transaction.type === 'addon') {
-            // PEN-15 FIX: Validate addon metadata
-            if (!metadata.addonId) {
-              console.error(`[Payment] Invalid metadata for addon: tap_id=${input.tap_id}`, metadata);
-              return { success: false, status: 'error', message: 'Invalid addon metadata' };
-            }
-
-            // Create merchant addon
-            const endDate = new Date(
-              now.getTime() + (metadata.billingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
-            );
-
-            await createMerchantAddon({
-              merchantId: transaction.merchantId,
-              addonId: metadata.addonId,
-              subscriptionId: transaction.subscriptionId || null,
-              quantity: metadata.quantity || 1,
-              startDate: now.toISOString(),
-              endDate: endDate.toISOString(),
-              isActive: 1,
-            });
-          } else if (transaction.type === 'upgrade') {
-            // Update subscription
-            const endDate = new Date(
-              now.getTime() + (metadata.newBillingCycle === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000
-            );
-
-            if (transaction.subscriptionId) {
-              await updateMerchantSubscription(transaction.subscriptionId, {
-                planId: metadata.newPlanId,
-                billingCycle: metadata.newBillingCycle,
-                startDate: now.toISOString(),
-                endDate: endDate.toISOString(),
-              });
-
-              // Update merchant customer limit
-              const newPlan = await getSubscriptionPlanById(metadata.newPlanId);
-              if (newPlan) {
-                await updateMerchantCustomerLimit(transaction.merchantId, newPlan.maxCustomers);
-              }
-            }
-          }
-
-          return { success: true, status: 'completed' };
-        } else if (charge.status === 'FAILED' || charge.status === 'CANCELLED') {
-          await updatePaymentTransaction(transaction.id, {
-            status: 'failed',
-            tapResponse: JSON.stringify(charge),
-          });
-
-          return { success: false, status: 'failed' };
-        }
-
-        return { success: true, status: charge.status };
+        return await processCanonicalSubscriptionCharge(charge);
       } catch (error) {
         console.error('[Payment] Callback error:', error);
         throw new TRPCError({

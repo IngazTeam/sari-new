@@ -834,11 +834,61 @@ export async function deleteKnowledgeDocsByMerchantId(merchantId: number): Promi
 // Plan Management
 // ============================================
 
+function canonicalPlanToLegacyPlan(plan: SubscriptionPlan): Plan {
+  return {
+    id: plan.id,
+    name: plan.nameEn,
+    nameAr: plan.name,
+    priceMonthly: Number(plan.monthlyPrice),
+    conversationLimit: plan.conversationLimit,
+    messageLimit: plan.messageLimit,
+    voiceMessageLimit: plan.voiceMessageLimit,
+    features: plan.features,
+    isActive: plan.isActive,
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt,
+  } as Plan & { messageLimit: number };
+}
+
+function canonicalSubscriptionToLegacySubscription(subscription: MerchantSubscription): Subscription {
+  return {
+    id: subscription.id,
+    merchantId: subscription.merchantId,
+    // Keep nullable trial plan IDs at runtime; coercing null to 0 made quota checks
+    // query a nonexistent plan and blocked otherwise valid trial accounts.
+    planId: subscription.planId as unknown as number,
+    status: subscription.status,
+    conversationsUsed: subscription.conversationsUsed,
+    voiceMessagesUsed: subscription.voiceMessagesUsed,
+    startDate: subscription.startDate,
+    endDate: subscription.endDate,
+    autoRenew: subscription.autoRenew,
+    createdAt: subscription.createdAt,
+    updatedAt: subscription.updatedAt,
+    messagesUsed: subscription.messagesUsed,
+    lastResetAt: subscription.lastResetAt,
+  } as Subscription;
+}
+
 export async function createPlan(plan: InsertPlan): Promise<Plan | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.insert(plans).values(plan);
+  const monthlyPrice = Number(plan.priceMonthly);
+  const result = await db.insert(subscriptionPlans).values({
+    name: plan.nameAr,
+    nameEn: plan.name,
+    monthlyPrice: monthlyPrice.toFixed(2),
+    yearlyPrice: (monthlyPrice * 10).toFixed(2),
+    currency: 'SAR',
+    maxCustomers: plan.conversationLimit === -1 ? 999999 : plan.conversationLimit,
+    maxWhatsAppNumbers: 1,
+    conversationLimit: plan.conversationLimit,
+    messageLimit: -1,
+    voiceMessageLimit: plan.voiceMessageLimit,
+    features: plan.features,
+    isActive: plan.isActive ?? 1,
+  });
   const insertedId = Number((result[0] as any).insertId);
 
   return getPlanById(insertedId);
@@ -848,22 +898,38 @@ export async function getPlanById(id: number): Promise<Plan | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.select().from(plans).where(eq(plans.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  const result = await db.select().from(subscriptionPlans).where(eq(subscriptionPlans.id, id)).limit(1);
+  return result[0] ? canonicalPlanToLegacyPlan(result[0]) : undefined;
 }
 
 export async function getAllPlans(): Promise<Plan[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(plans).where(eq(plans.isActive, 1)).orderBy(plans.priceMonthly);
+  const result = await db.select().from(subscriptionPlans)
+    .where(eq(subscriptionPlans.isActive, 1))
+    .orderBy(subscriptionPlans.monthlyPrice);
+  return result.map(canonicalPlanToLegacyPlan);
 }
 
 export async function updatePlan(id: number, data: Partial<InsertPlan>): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  await db.update(plans).set(data).where(eq(plans.id, id));
+  const mapped: Partial<NewSubscriptionPlan> = {};
+  if (data.name !== undefined) mapped.nameEn = data.name;
+  if (data.nameAr !== undefined) mapped.name = data.nameAr;
+  if (data.priceMonthly !== undefined) mapped.monthlyPrice = Number(data.priceMonthly).toFixed(2);
+  if (data.conversationLimit !== undefined) {
+    mapped.conversationLimit = data.conversationLimit;
+    mapped.maxCustomers = data.conversationLimit === -1 ? 999999 : data.conversationLimit;
+  }
+  if (data.voiceMessageLimit !== undefined) mapped.voiceMessageLimit = data.voiceMessageLimit;
+  if (data.features !== undefined) mapped.features = data.features;
+  if (data.isActive !== undefined) mapped.isActive = data.isActive;
+  if (Object.keys(mapped).length > 0) {
+    await db.update(subscriptionPlans).set(mapped).where(eq(subscriptionPlans.id, id));
+  }
 }
 
 // ============================================
@@ -871,25 +937,20 @@ export async function updatePlan(id: number, data: Partial<InsertPlan>): Promise
 // ============================================
 
 export async function createSubscription(subscription: InsertSubscription): Promise<Subscription | undefined> {
-  await getDb();
-  if (!_pool) return undefined;
-
-  // FIX: Use raw SQL to avoid Drizzle's broken `default` keyword in prepared statements
-  const toMySQL = (d: string) => d.includes('T') ? d.slice(0, 19).replace('T', ' ') : d;
-  const now = toMySQL(new Date().toISOString());
-
-  const [result] = await _pool.execute(
-    `INSERT INTO subscriptions (merchantId, planId, status, startDate, endDate, autoRenew, createdAt, updatedAt, lastResetAt)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      subscription.merchantId, subscription.planId,
-      subscription.status || 'pending',
-      toMySQL(subscription.startDate), toMySQL(subscription.endDate),
-      subscription.autoRenew ?? 1, now, now, now
-    ]
-  );
-  const insertedId = Number((result as any).insertId);
-
+  const timestamp = (value: unknown) => value instanceof Date ? value.toISOString() : String(value);
+  const insertedId = await createMerchantSubscription({
+    merchantId: subscription.merchantId,
+    planId: subscription.planId,
+    status: subscription.status || 'pending',
+    billingCycle: 'monthly',
+    startDate: timestamp(subscription.startDate),
+    endDate: timestamp(subscription.endDate),
+    autoRenew: subscription.autoRenew ?? 1,
+    conversationsUsed: subscription.conversationsUsed ?? 0,
+    messagesUsed: subscription.messagesUsed ?? 0,
+    voiceMessagesUsed: subscription.voiceMessagesUsed ?? 0,
+    lastResetAt: subscription.lastResetAt ? timestamp(subscription.lastResetAt) : undefined,
+  });
   return getSubscriptionById(insertedId);
 }
 
@@ -897,58 +958,13 @@ export async function getSubscriptionById(id: number): Promise<Subscription | un
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  const result = await db.select().from(merchantSubscriptions).where(eq(merchantSubscriptions.id, id)).limit(1);
+  return result[0] ? canonicalSubscriptionToLegacySubscription(result[0]) : undefined;
 }
 
 export async function getActiveSubscriptionByMerchantId(merchantId: number): Promise<any> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const now = new Date();
-  const nowStr = formatDateForDB(now);
-
-  // Check NEW merchant_subscriptions table first
-  const newResult = await db.select().from(merchantSubscriptions)
-    .where(and(
-      eq(merchantSubscriptions.merchantId, merchantId),
-      or(
-        eq(merchantSubscriptions.status, 'active'),
-        eq(merchantSubscriptions.status, 'trial')
-      )
-    ))
-    .orderBy(desc(merchantSubscriptions.createdAt))
-    .limit(1);
-
-  if (newResult.length > 0) {
-    const sub = newResult[0];
-    // SEC-FIX: Validate endDate أ¢â‚¬â€‌ auto-expire if past due
-    if (sub.endDate && new Date(sub.endDate) < now) {
-      console.warn(`[Subscription] Auto-expiring subscription ${sub.id} for merchant ${merchantId} (endDate: ${sub.endDate})`);
-      await db.update(merchantSubscriptions)
-        .set({ status: 'expired' })
-        .where(eq(merchantSubscriptions.id, sub.id));
-      return undefined; // Expired أ¢â‚¬â€‌ treat as no subscription
-    }
-    // SEC-FIX: For trial, also check trialEndsAt
-    if (sub.status === 'trial' && sub.trialEndsAt && new Date(sub.trialEndsAt) < now) {
-      console.warn(`[Subscription] Auto-expiring trial ${sub.id} for merchant ${merchantId} (trialEndsAt: ${sub.trialEndsAt})`);
-      await db.update(merchantSubscriptions)
-        .set({ status: 'expired' })
-        .where(eq(merchantSubscriptions.id, sub.id));
-      return undefined;
-    }
-    return sub;
-  }
-
-  // Fallback: legacy subscriptions table
-  const result = await db
-    .select()
-    .from(subscriptions)
-    .where(and(eq(subscriptions.merchantId, merchantId), eq(subscriptions.status, "active")))
-    .limit(1);
-
-  return result.length > 0 ? result[0] : undefined;
+  const subscription = await getMerchantCurrentSubscription(merchantId);
+  return subscription ? canonicalSubscriptionToLegacySubscription(subscription) : undefined;
 }
 
 export async function updateSubscription(id: number, data: Partial<InsertSubscription>): Promise<void> {
@@ -965,24 +981,26 @@ export async function updateSubscription(id: number, data: Partial<InsertSubscri
       cleanData[key] = value;
     }
   }
-  await db.update(subscriptions).set(cleanData).where(eq(subscriptions.id, id));
+  await db.update(merchantSubscriptions).set(cleanData).where(eq(merchantSubscriptions.id, id));
 }
 
 export async function incrementSubscriptionUsage(
   subscriptionId: number,
   conversationIncrement: number = 0,
-  voiceMessageIncrement: number = 0
+  voiceMessageIncrement: number = 0,
+  messageIncrement: number = 0,
 ): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
   await db
-    .update(subscriptions)
+    .update(merchantSubscriptions)
     .set({
-      conversationsUsed: sql`${subscriptions.conversationsUsed} + ${conversationIncrement}`,
-      voiceMessagesUsed: sql`${subscriptions.voiceMessagesUsed} + ${voiceMessageIncrement}`,
+      conversationsUsed: sql`${merchantSubscriptions.conversationsUsed} + ${conversationIncrement}`,
+      voiceMessagesUsed: sql`${merchantSubscriptions.voiceMessagesUsed} + ${voiceMessageIncrement}`,
+      messagesUsed: sql`${merchantSubscriptions.messagesUsed} + ${messageIncrement}`,
     })
-    .where(eq(subscriptions.id, subscriptionId));
+    .where(eq(merchantSubscriptions.id, subscriptionId));
 }
 
 // ============================================
@@ -9713,6 +9731,9 @@ export async function getMerchantCurrentSubscription(merchantId: number) {
     await db.update(merchantSubscriptions)
       .set({ status: 'expired' })
       .where(eq(merchantSubscriptions.id, sub.id));
+    await db.update(merchants)
+      .set({ currentSubscriptionId: null, subscriptionStatus: 'expired', maxCustomersAllowed: 0 })
+      .where(and(eq(merchants.id, merchantId), eq(merchants.currentSubscriptionId, sub.id)));
     return undefined;
   }
 
@@ -9722,6 +9743,9 @@ export async function getMerchantCurrentSubscription(merchantId: number) {
     await db.update(merchantSubscriptions)
       .set({ status: 'expired' })
       .where(eq(merchantSubscriptions.id, sub.id));
+    await db.update(merchants)
+      .set({ currentSubscriptionId: null, subscriptionStatus: 'expired', maxCustomersAllowed: 0 })
+      .where(and(eq(merchants.id, merchantId), eq(merchants.currentSubscriptionId, sub.id)));
     return undefined;
   }
 
@@ -9754,22 +9778,18 @@ export async function createMerchantSubscription(data: NewMerchantSubscription) 
   const now = toMySQL(new Date().toISOString());
   const startDate = toMySQL(data.startDate);
   const endDate = toMySQL(data.endDate);
-
-  if (data.trialEndsAt) {
-    const [result] = await _pool.execute(
-      // @ts-ignore
-      `INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, trial_ends_at, auto_renew, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [data.merchantId, data.planId, data.status, data.billingCycle, startDate, endDate, toMySQL(data.trialEndsAt), data.autoRenew, now, now]
-    );
-    return (result as any).insertId;
-  }
-
+  const trialEndsAt = data.trialEndsAt ? toMySQL(data.trialEndsAt) : null;
+  const lastResetAt = data.lastResetAt ? toMySQL(data.lastResetAt) : now;
   const [result] = await _pool.execute(
-    // @ts-ignore
-    `INSERT INTO merchant_subscriptions (merchant_id, plan_id, status, billing_cycle, start_date, end_date, auto_renew, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [data.merchantId, data.planId, data.status, data.billingCycle, startDate, endDate, data.autoRenew, now, now]
+    `INSERT INTO merchant_subscriptions
+      (merchant_id, plan_id, status, billing_cycle, start_date, end_date, trial_ends_at, auto_renew,
+       conversations_used, messages_used, voice_messages_used, last_reset_at, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.merchantId, data.planId ?? null, data.status, data.billingCycle, startDate, endDate,
+      trialEndsAt, data.autoRenew ?? 0, data.conversationsUsed ?? 0, data.messagesUsed ?? 0,
+      data.voiceMessagesUsed ?? 0, lastResetAt, now, now,
+    ]
   );
   return (result as any).insertId;
 }
@@ -9814,6 +9834,9 @@ export async function cancelMerchantSubscription(id: number, reason?: string) {
   if (!db) throw new Error("Database not available");
   // FIX: Normalize ISO timestamp to MySQL format
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const subscription = await getMerchantSubscriptionById(id);
+  if (!subscription) throw new Error('Subscription not found');
+
   await requireDb().update(merchantSubscriptions)
     .set({
       status: 'cancelled',
@@ -9821,6 +9844,12 @@ export async function cancelMerchantSubscription(id: number, reason?: string) {
       cancellationReason: reason,
     })
     .where(eq(merchantSubscriptions.id, id));
+  await requireDb().update(merchants)
+    .set({ currentSubscriptionId: null, subscriptionStatus: 'expired', maxCustomersAllowed: 0 })
+    .where(and(
+      eq(merchants.id, subscription.merchantId),
+      eq(merchants.currentSubscriptionId, subscription.id),
+    ));
 }
 
 export async function extendMerchantSubscription(id: number, days: number) {
@@ -9912,19 +9941,11 @@ export async function getMerchantSubscriptionStats() {
 }
 
 export async function checkMerchantSubscriptionStatus(merchantId: number): Promise<boolean> {
-  // Check merchant_subscriptions first
   const subscription = await getMerchantCurrentSubscription(merchantId);
   if (subscription) {
     const now = new Date();
     const endDate = new Date(subscription.endDate);
     if (now <= endDate) return true;
-  }
-
-  // FIX: Fallback — check merchants.subscriptionStatus (admin manual override)
-  // Admin can set subscriptionStatus='active' directly without creating a subscription record
-  const merchant = await getMerchantById(merchantId);
-  if (merchant?.subscriptionStatus === 'active') {
-    return true;
   }
 
   return false;
@@ -10637,25 +10658,25 @@ export async function getSubscriptionOverview() {
   // Total subscriptions
   const totalSubs = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schema.subscriptions);
+    .from(schema.merchantSubscriptions);
 
   // Active subscriptions
   const activeSubs = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.status, 'active'));
+    .from(schema.merchantSubscriptions)
+    .where(eq(schema.merchantSubscriptions.status, 'active'));
 
   // Trial subscriptions
   const trialSubs = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.status, 'trial'));
+    .from(schema.merchantSubscriptions)
+    .where(eq(schema.merchantSubscriptions.status, 'trial'));
 
   // Expired subscriptions
   const expiredSubs = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.status, 'expired'));
+    .from(schema.merchantSubscriptions)
+    .where(eq(schema.merchantSubscriptions.status, 'expired'));
 
   // Total revenue (from payment transactions)
   const revenue = await db
@@ -10681,26 +10702,26 @@ export async function getSubscriptionConversionRate() {
 
   // Count merchants who started with trial
   const trialMerchants = await db
-    .select({ merchantId: schema.subscriptions.merchantId })
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.status, 'trial'))
-    .groupBy(schema.subscriptions.merchantId);
+    .select({ merchantId: schema.merchantSubscriptions.merchantId })
+    .from(schema.merchantSubscriptions)
+    .where(sql`${schema.merchantSubscriptions.trialEndsAt} IS NOT NULL`)
+    .groupBy(schema.merchantSubscriptions.merchantId);
 
   // Count merchants who converted to paid
   const convertedMerchants = await db
-    .select({ merchantId: schema.subscriptions.merchantId })
-    .from(schema.subscriptions)
+    .select({ merchantId: schema.merchantSubscriptions.merchantId })
+    .from(schema.merchantSubscriptions)
     .where(
       and(
-        eq(schema.subscriptions.status, 'active'),
+        eq(schema.merchantSubscriptions.status, 'active'),
         sql`EXISTS (
-          SELECT 1 FROM ${schema.subscriptions} s2 
-          WHERE s2.merchantId = ${schema.subscriptions.merchantId} 
-          AND s2.status = 'trial'
+          SELECT 1 FROM ${schema.merchantSubscriptions} s2
+          WHERE s2.merchant_id = ${schema.merchantSubscriptions.merchantId}
+          AND s2.trial_ends_at IS NOT NULL
         )`
       )
     )
-    .groupBy(schema.subscriptions.merchantId);
+    .groupBy(schema.merchantSubscriptions.merchantId);
 
   const trialCount = trialMerchants.length;
   const convertedCount = convertedMerchants.length;
@@ -10731,8 +10752,8 @@ export async function getCancellationStats() {
   // Total cancelled
   const total = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.status, 'cancelled'));
+    .from(schema.merchantSubscriptions)
+    .where(eq(schema.merchantSubscriptions.status, 'cancelled'));
 
   // This month cancelled
   const startOfMonth = new Date();
@@ -10741,11 +10762,11 @@ export async function getCancellationStats() {
 
   const thisMonth = await db
     .select({ count: sql<number>`count(*)` })
-    .from(schema.subscriptions)
+    .from(schema.merchantSubscriptions)
     .where(
       and(
-        eq(schema.subscriptions.status, 'cancelled'),
-        gte(schema.subscriptions.updatedAt, startOfMonth.toISOString())
+        eq(schema.merchantSubscriptions.status, 'cancelled'),
+        gte(schema.merchantSubscriptions.updatedAt, startOfMonth.toISOString())
       )
     );
 
@@ -10799,16 +10820,17 @@ export async function getSubscriptionDistributionByPlan() {
 
   const distribution = await db
     .select({
-      planId: schema.subscriptions.planId,
+      planId: schema.merchantSubscriptions.planId,
       count: sql<number>`count(*)`,
     })
-    .from(schema.subscriptions)
-    .where(eq(schema.subscriptions.status, 'active'))
-    .groupBy(schema.subscriptions.planId);
+    .from(schema.merchantSubscriptions)
+    .where(eq(schema.merchantSubscriptions.status, 'active'))
+    .groupBy(schema.merchantSubscriptions.planId);
 
   // Get plan names
   const result = [];
   for (const item of distribution) {
+    if (!item.planId) continue;
     const plan = await getSubscriptionPlanById(item.planId);
     if (plan) {
       result.push({

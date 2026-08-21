@@ -109,7 +109,6 @@ const Referrals = lazyLoad(() => import("./pages/merchant/Referrals"));
 const MerchantSettings = lazyLoad(() => import("./pages/merchant/Settings"));
 const LanguageSettings = lazyLoad(() => import("./pages/merchant/LanguageSettings"));
 const Reports = lazyLoad(() => import("./pages/Reports"));
-const Subscriptions = lazyLoad(() => import("./pages/merchant/Subscriptions"));
 const Usage = lazyLoad(() => import("./pages/merchant/Usage"));
 const Checkout = lazyLoad(() => import("./pages/merchant/Checkout"));
 const PaymentSuccess = lazyLoad(() => import("./pages/merchant/PaymentSuccess"));
@@ -865,7 +864,7 @@ function Router() {
 
       <Route path="/merchant/subscriptions">
         <DashboardLayout>
-          <Subscriptions />
+          <MySubscription />
         </DashboardLayout>
       </Route>
 

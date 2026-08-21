@@ -7,12 +7,13 @@ import { handleSallaWebhook } from './salla';
 import { handleZidWebhook } from '../integrations/zid';
 import { handleCalendlyWebhook } from '../integrations/calendly';
 import { getIntegrationByType } from '../db';
-import { getPaymentGatewayByName } from '../db';
+import { getPaymentGatewayByName, getPaymentTransactionByTapChargeId, getTapSettings } from '../db';
 import { ENV } from '../_core/env';
 import { getMerchantPaymentSettings } from '../db';
 import * as dbPayments from '../db_payments';
 import { readPaymentLinkId } from '../payment/payment-link-policy';
 import { processTapWebhook as processOrderPaymentWebhook } from './tap-webhook';
+import { processCanonicalSubscriptionCharge } from '../subscriptions/canonical-state';
 
 const router = Router();
 
@@ -28,6 +29,9 @@ router.post('/tap', async (req: Request, res: Response) => {
     const orderPayment = charge?.id
       ? await dbPayments.getOrderPaymentByTapChargeId(String(charge.id))
       : null;
+    const subscriptionPayment = charge?.id && !orderPayment
+      ? await getPaymentTransactionByTapChargeId(String(charge.id))
+      : null;
 
     // Payment links use each merchant's verified Tap key. Platform subscription
     // charges continue to use the platform key. Select the verifier from a local,
@@ -36,6 +40,9 @@ router.post('/tap', async (req: Request, res: Response) => {
     if (orderPayment && readPaymentLinkId(orderPayment.metadata)) {
       const settings = await getMerchantPaymentSettings(orderPayment.merchantId);
       verificationSecret = settings?.tapSecretKey || '';
+    } else if (subscriptionPayment) {
+      const settings = await getTapSettings();
+      verificationSecret = settings?.secretKey || '';
     }
     if (!verificationSecret) {
       return res.status(503).json({ error: 'Tap gateway not configured' });
@@ -53,11 +60,12 @@ router.post('/tap', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    // Order/booking/payment-link charges live in order_payments. Subscription
-    // charges use the legacy payments table. Route to the matching idempotent handler.
+    // Route using a locally persisted charge ID, never untrusted webhook metadata.
     const result = orderPayment
       ? await processOrderPaymentWebhook(req.body?.data?.object ? req.body : { data: { object: charge } })
-      : await handleTapWebhook(req.body);
+      : subscriptionPayment
+        ? await processCanonicalSubscriptionCharge(charge)
+        : await handleTapWebhook(req.body);
 
     if (result.success) {
       return res.status(200).json({ message: result.message });

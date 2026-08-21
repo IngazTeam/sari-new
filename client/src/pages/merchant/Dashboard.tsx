@@ -45,7 +45,6 @@ export default function MerchantDashboard() {
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getCurrent.useQuery(undefined as any);
   const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery(undefined as any);
   const completeOnboarding = trpc.merchants.completeOnboarding.useMutation();
-  const { data: subscription, isLoading: subscriptionLoading } = trpc.subscriptions.getCurrent.useQuery(undefined as any);
   // Performance: load only 5 recent conversations instead of ALL
   const { data: recentConversations, isLoading: conversationsLoading } = trpc.conversations.listRecent.useQuery({ limit: 5 });
   const { data: conversationCount } = trpc.conversations.count.useQuery(undefined as any);
@@ -82,7 +81,7 @@ export default function MerchantDashboard() {
     retry: false,
   });
 
-  const isLoading = merchantLoading || subscriptionLoading || conversationsLoading || campaignsLoading || summaryLoading;
+  const isLoading = merchantLoading || conversationsLoading || campaignsLoading || summaryLoading;
 
   // Show onboarding wizard for new merchants
   useEffect(() => {
@@ -90,9 +89,6 @@ export default function MerchantDashboard() {
       setShowOnboarding(true);
     }
   }, [onboardingStatus]);
-
-  // Show trial banner if trial is active
-  const { data: trialStatus } = trpc.trial.getStatus.useQuery(undefined as any);
 
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);

@@ -14,16 +14,13 @@ export default function ComparePlans() {
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
   // Fetch all plans
-  // @ts-ignore
-  const { data: plans, isLoading: plansLoading } = trpc.subscriptionPlans.list.useQuery();
+  const { data: plans, isLoading: plansLoading } = trpc.subscriptionPlans.listPlans.useQuery();
 
   // Fetch current subscription
-  // @ts-ignore
-  const { data: currentSubscription } = trpc.subscriptions.getCurrentSubscription.useQuery();
+  const { data: currentSubscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
 
   // Upgrade/downgrade mutation
-  // @ts-ignore
-  const upgradeMutation = trpc.subscriptions.upgradeSubscription.useMutation({
+  const upgradeMutation = trpc.merchantSubscription.upgradePlan.useMutation({
     onSuccess: () => {
       toast.success(t('comparePlansPage.text0'));
       setLocation('/merchant/subscription');
@@ -45,7 +42,10 @@ export default function ComparePlans() {
     }
 
     setSelectedPlanId(planId);
-    upgradeMutation.mutate({ newPlanId: planId });
+    upgradeMutation.mutate({
+      newPlanId: planId,
+      newBillingCycle: currentSubscription.billingCycle,
+    });
   };
 
   if (plansLoading) {
@@ -69,32 +69,14 @@ export default function ComparePlans() {
   }
 
   // Sort plans by price
-  const sortedPlans = [...plans].sort((a, b) => a.price - b.price);
+  const sortedPlans = [...plans].sort((a, b) => Number(a.monthlyPrice) - Number(b.monthlyPrice));
 
   // Define features to compare
   const features = [
     { key: 'maxCustomers', label: 'عدد العملاء', format: (val: number) => val === 999999 ? 'غير محدود' : val.toLocaleString() },
     { key: 'maxWhatsAppNumbers', label: 'أرقام الواتساب', format: (val: number) => val === 999999 ? 'غير محدود' : val.toLocaleString() },
-    { key: 'maxProducts', label: 'عدد المنتجات', format: (val: number) => val === 999999 ? 'غير محدود' : val.toLocaleString() },
-    { key: 'maxCampaignsPerMonth', label: 'الحملات الشهرية', format: (val: number) => val === 999999 ? 'غير محدود' : val.toLocaleString() },
-    { key: 'aiMessagesPerMonth', label: 'رسائل AI شهرياً', format: (val: number) => val === 999999 ? 'غير محدود' : val.toLocaleString() },
-    { key: 'supportLevel', label: 'مستوى الدعم', format: (val: string) => {
-      const levels: Record<string, string> = {
-        email: 'بريد إلكتروني',
-        chat: 'محادثة مباشرة',
-        priority: 'دعم أولوية',
-        dedicated: 'دعم مخصص 24/7',
-      };
-      return levels[val] || val;
-    }},
-    { key: 'hasAnalytics', label: 'التحليلات والتقارير', format: (val: boolean) => val },
-    { key: 'hasAutomation', label: 'الأتمتة', format: (val: boolean) => val },
-    { key: 'hasCalendarIntegration', label: 'تكامل التقويم', format: (val: boolean) => val },
-    { key: 'hasSheetsIntegration', label: 'تكامل Sheets', format: (val: boolean) => val },
-    { key: 'hasLoyaltyProgram', label: 'برنامج الولاء', format: (val: boolean) => val },
-    { key: 'hasABTesting', label: 'اختبار A/B', format: (val: boolean) => val },
-    { key: 'hasCustomBranding', label: 'علامة تجارية مخصصة', format: (val: boolean) => val },
-    { key: 'hasApiAccess', label: 'الوصول لـ API', format: (val: boolean) => val },
+    { key: 'conversationLimit', label: 'المحادثات الشهرية', format: (val: number) => val === -1 ? 'غير محدود' : val.toLocaleString() },
+    { key: 'voiceMessageLimit', label: 'الرسائل الصوتية', format: (val: number) => val === -1 ? 'غير محدود' : val.toLocaleString() },
   ];
 
   return (
@@ -120,7 +102,7 @@ export default function ComparePlans() {
           <thead>
             <tr className="border-b-2">
               <th className="p-4 text-right font-semibold bg-muted/50 sticky right-0 z-10">{t('comparePlans.auto_1')}</th>
-              {sortedPlans.map((plan) => (
+              {sortedPlans.map((plan, planIndex) => (
                 <th key={plan.id} className="p-4 text-center min-w-[200px]">
                   <Card className={`${
                     currentSubscription?.planId === plan.id 
@@ -129,7 +111,7 @@ export default function ComparePlans() {
                   }`}>
                     <CardHeader>
                       <div className="flex items-center justify-center gap-2 mb-2">
-                        {plan.isPopular && (
+                        {sortedPlans.length === 3 && planIndex === 1 && (
                           <Badge variant="default" className="gap-1">
                             <Sparkles className="h-3 w-3" />{t('comparePlans.auto_2')}</Badge>
                         )}
@@ -143,12 +125,10 @@ export default function ComparePlans() {
                       </CardDescription>
                       <div className="mt-4">
                         <div className="text-3xl font-bold">
-                          {plan.price === 0 ? 'مجاناً' : `${plan.price.toLocaleString()} ر.س`}
+                          {Number(plan.monthlyPrice) === 0 ? 'مجاناً' : `${Number(plan.monthlyPrice).toLocaleString()} ${plan.currency}`}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {plan.billingCycle === 'monthly' ? 'شهرياً' : 
-                           plan.billingCycle === 'yearly' ? 'سنوياً' : 
-                           'لمرة واحدة'}
+                          شهرياً
                         </div>
                       </div>
                     </CardHeader>

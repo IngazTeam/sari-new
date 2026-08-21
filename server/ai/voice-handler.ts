@@ -10,8 +10,9 @@ import {
   getActiveSubscriptionByMerchantId,
   getMerchantById,
   getPlanById,
-  updateSubscription,
+  incrementSubscriptionUsage,
 } from '../db';
+import { TRIAL_USAGE_LIMITS } from '../usage-tracking';
 
 /**
  * Process voice message from customer
@@ -125,24 +126,24 @@ export async function isVoiceProcessingEnabled(merchantId: number): Promise<bool
     }
 
     const subscription = await getActiveSubscriptionByMerchantId(merchantId);
-    if (!subscription || subscription.status !== 'active') {
+    if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
       return false;
     }
 
     // Check plan limits
-    const plan = await getPlanById(subscription.planId);
-    if (!plan) {
-      return false;
-    }
+    const limit = !subscription.planId && subscription.status === 'trial'
+      ? TRIAL_USAGE_LIMITS.maxVoiceMessages
+      : (await getPlanById(subscription.planId))?.voiceMessageLimit;
+    if (limit == null) return false;
 
     // Check if voice message limit is available
-    if (plan.voiceMessageLimit === 0) {
+    if (limit === 0) {
       return false;
     }
 
     // Check current usage (assuming we track this)
     // For now, return true if plan allows voice messages
-    return plan.voiceMessageLimit > 0;
+    return limit === -1 || limit > 0;
   } catch (error) {
     console.error('Error checking voice processing status:', error);
     return false;
@@ -159,15 +160,8 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
       return;
     }
 
-    // Get current usage
-    const currentUsage = subscription.voiceMessagesUsed || 0;
-    
-    // Update usage
-    await updateSubscription(subscription.id, {
-      voiceMessagesUsed: currentUsage + 1,
-    });
-
-    console.log(`[Voice Handler] Incremented voice usage for merchant ${merchantId}: ${currentUsage + 1}`);
+    await incrementSubscriptionUsage(subscription.id, 0, 1, 0);
+    console.log(`[Voice Handler] Incremented voice usage for merchant ${merchantId}`);
   } catch (error) {
     console.error('Error incrementing voice usage:', error);
   }
@@ -179,19 +173,19 @@ export async function incrementVoiceMessageUsage(merchantId: number): Promise<vo
 export async function hasReachedVoiceLimit(merchantId: number): Promise<boolean> {
   try {
     const subscription = await getActiveSubscriptionByMerchantId(merchantId);
-    if (!subscription || subscription.status !== 'active') {
+    if (!subscription || (subscription.status !== 'active' && subscription.status !== 'trial')) {
       return true; // No active subscription = limit reached
     }
 
-    const plan = await getPlanById(subscription.planId);
-    if (!plan) {
-      return true;
-    }
+    const limit = !subscription.planId && subscription.status === 'trial'
+      ? TRIAL_USAGE_LIMITS.maxVoiceMessages
+      : (await getPlanById(subscription.planId))?.voiceMessageLimit;
+    if (limit == null) return true;
 
     const currentUsage = subscription.voiceMessagesUsed || 0;
     
     // Check if limit reached
-    return currentUsage >= plan.voiceMessageLimit;
+    return limit !== -1 && currentUsage >= limit;
   } catch (error) {
     console.error('Error checking voice limit:', error);
     return true; // Fail safe: assume limit reached on error

@@ -13,8 +13,9 @@ export default function Checkout() {
   const planIdStr = params.get('planId');
   const planId = parseInt(planIdStr || '0', 10);
 
-  const { data: plan, isLoading: planLoading } = trpc.plans.getById.useQuery({ id: planId });
-  const createSessionMutation = trpc.subscriptionPayments.createSession.useMutation({
+  const { data: plans, isLoading: planLoading } = trpc.subscriptionPlans.listPlans.useQuery();
+  const plan = plans?.find(item => item.id === planId);
+  const createSessionMutation = trpc.merchantSubscription.subscribe.useMutation({
     onSuccess: (data: any) => {
       if (data.paymentUrl) {
         // Redirect to payment gateway
@@ -29,7 +30,7 @@ export default function Checkout() {
   // The legacy plan price is the final VAT-inclusive amount. The server reads
   // the same persisted value when creating the Tap charge; no amount is sent
   // from the browser.
-  const basePrice = plan?.priceMonthly || 0;
+  const basePrice = Number(plan?.monthlyPrice || 0);
   const includedVat = basePrice * 15 / 115;
   const totalPrice = basePrice;
 
@@ -59,7 +60,7 @@ export default function Checkout() {
   const handlePayment = async () => {
     await createSessionMutation.mutateAsync({
       planId: plan.id,
-      gateway: 'tap',
+      billingCycle: 'monthly',
     });
   };
 
@@ -81,8 +82,8 @@ export default function Checkout() {
           <CardContent className="space-y-4">
             <div>
               <div className="flex justify-between items-center mb-2">
-                <span className="font-medium">{plan.nameAr}</span>
-                <Badge variant="default">{plan.name}</Badge>
+                <span className="font-medium">{plan.name}</span>
+                <Badge variant="default">{plan.nameEn}</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
                 {t('checkoutPage.text28')}

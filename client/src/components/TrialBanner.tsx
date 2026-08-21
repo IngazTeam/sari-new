@@ -6,19 +6,16 @@ import { useTranslation } from 'react-i18next';
 
 export function TrialBanner() {
   const { t } = useTranslation();
-  const { data: trialStatus } = trpc.trial.getStatus.useQuery();
-  const { data: expiryData } = trpc.trial.checkExpiry.useQuery();
   const { data: subscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
-  const { data: merchantProfile } = trpc.merchants.getCurrent.useQuery();
   const [timeLeft, setTimeLeft] = useState<string>('');
 
   useEffect(() => {
-    if (!trialStatus?.trialEndDate) return;
+    const trialEndDate = subscription?.trialEndsAt || subscription?.endDate;
+    if (subscription?.status !== 'trial' || !trialEndDate) return;
 
     const updateTimeLeft = () => {
       const now = new Date();
-      // @ts-ignore
-      const endDate = new Date(trialStatus.trialEndDate);
+      const endDate = new Date(trialEndDate);
       const diff = endDate.getTime() - now.getTime();
 
       if (diff <= 0) {
@@ -43,26 +40,15 @@ export function TrialBanner() {
     const interval = setInterval(updateTimeLeft, 60000);
 
     return () => clearInterval(interval);
-  }, [trialStatus]);
+  }, [subscription?.status, subscription?.trialEndsAt, subscription?.endDate]);
 
   // If user has an active paid subscription, don't show any banner
   if (subscription?.status === 'active') {
     return null;
   }
 
-  // FIX: Also check merchant.subscriptionStatus (set by admin manually)
-  // This covers the case where admin activates subscription directly on the merchants table
-  // but the merchant_subscriptions record has expired/doesn't exist
-  if (merchantProfile?.subscriptionStatus === 'active') {
-    return null;
-  }
-
-  // Check if trial is expired (subscription status = expired OR trial ended)
-  const isTrialExpired = subscription?.status === 'expired' ||
-    (trialStatus?.trialEndDate && !trialStatus?.isTrialActive);
-
-  // Check if trial is active
-  const isTrialActive = trialStatus?.isTrialActive;
+  const isTrialExpired = subscription?.status === 'expired';
+  const isTrialActive = subscription?.status === 'trial';
 
   // Don't show banner if no trial info at all
   if (!isTrialActive && !isTrialExpired) {
@@ -93,7 +79,7 @@ export function TrialBanner() {
   }
 
   // ===== ACTIVE TRIAL STATE =====
-  const daysRemaining = expiryData?.daysRemaining || 0;
+  const daysRemaining = subscription?.daysRemaining || 0;
   const isUrgent = daysRemaining <= 1;
   const isWarning = daysRemaining <= 3 && daysRemaining > 1;
 

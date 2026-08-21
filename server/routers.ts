@@ -322,6 +322,10 @@ import {
   upsertTrySariAnalytics,
   validatePasswordResetToken,
 } from './db';
+import {
+  processCanonicalSubscriptionCharge,
+  startCanonicalTrial,
+} from './subscriptions/canonical-state';
 import * as seoDb from './seo-functions';
 import bcrypt from 'bcryptjs';
 import { createSessionToken } from './_core/auth';
@@ -559,22 +563,26 @@ export const appRouter = router({
         await activateUserTrial(user.id);
 
         // Create merchant profile automatically
-        await createMerchant({
+        const merchant = await createMerchant({
           userId: user.id,
           businessName: input.businessName,
           phone: input.phone || null,
           status: 'pending',
+          subscriptionStatus: 'trial',
         });
+        if (!merchant) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create merchant' });
+        }
+
+        const trial = await startCanonicalTrial(merchant.id);
 
         // Send welcome email with trial information
         try {
           const { sendWelcomeEmail } = await import('./_core/email');
-          const trialEndDate = new Date();
-          trialEndDate.setDate(trialEndDate.getDate() + 7);
           await sendWelcomeEmail({
             name: input.name,
             email: input.email,
-            trialEndDate: trialEndDate.toLocaleDateString('ar-SA', {
+            trialEndDate: trial.trialEndsAt.toLocaleDateString('ar-SA', {
               year: 'numeric',
               month: 'long',
               day: 'numeric'
@@ -2680,93 +2688,16 @@ export const appRouter = router({
         planId: z.number().int().positive(),
         gateway: z.enum(['tap', 'paypal']),
       }))
-      .mutation(async ({ ctx, input }) => {
-        // Get merchant
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-
-        // Get plan
-        const plan = await getPlanById(input.planId);
-        if (!plan || !plan.isActive) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
-        }
-
-        // Create subscription first
-        const startDate = new Date();
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 30); // 30 days subscription
-
-        const subscription = await createSubscription({
-          merchantId: merchant.id,
-          planId: plan.id,
-          status: 'pending',
-          startDate: startDate as any,
-          endDate: endDate as any,
-          autoRenew: 1,
+      .mutation(async () => {
+        // New writes must use merchantSubscription.subscribe so entitlement and
+        // payment state are committed by the canonical Tap processor.
+        throw new TRPCError({
+          code: 'METHOD_NOT_SUPPORTED',
+          message: 'Legacy checkout is closed; use the current subscription checkout',
         });
-
-        if (!subscription) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create subscription' });
-        }
-
-        // Prepare payment parameters
-        const { buildPublicUrl } = await import('./utils/public-url');
-        const returnUrl = buildPublicUrl(`/merchant/payment/success?subscriptionId=${subscription.id}`);
-        const cancelUrl = buildPublicUrl(`/merchant/payment/cancel?subscriptionId=${subscription.id}`);
-
-        // Create payment session based on gateway
-        if (input.gateway === 'tap') {
-          const { createTapCharge } = await import('./payment/tap');
-          const result = await createTapCharge({
-            amount: plan.priceMonthly,
-            currency: 'SAR',
-            merchantId: merchant.id,
-            subscriptionId: subscription.id,
-            planId: plan.id,
-            customerEmail: ctx.user.email || '',
-            customerPhone: merchant.phone || '',
-            returnUrl,
-          });
-
-          if (!result.success) {
-            await updateSubscription(subscription.id, { status: 'cancelled' });
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to create payment' });
-          }
-
-          return {
-            success: true,
-            paymentUrl: result.paymentUrl,
-            subscriptionId: subscription.id,
-          };
-        } else if (input.gateway === 'paypal') {
-          const { createPayPalOrder } = await import('./payment/paypal');
-          const result = await createPayPalOrder({
-            amount: plan.priceMonthly,
-            currency: 'USD', // PayPal typically uses USD
-            merchantId: merchant.id,
-            subscriptionId: subscription.id,
-            planId: plan.id,
-            returnUrl,
-            cancelUrl,
-          });
-
-          if (!result.success) {
-            await updateSubscription(subscription.id, { status: 'cancelled' });
-            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to create payment' });
-          }
-
-          return {
-            success: true,
-            paymentUrl: result.paymentUrl,
-            subscriptionId: subscription.id,
-          };
-        }
-
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid payment gateway' });
       }),
 
+    // Drain-only verification for payment sessions issued before canonical cutover.
     verifyPayment: protectedProcedure
       .input(z.object({
         subscriptionId: z.number(),
@@ -2786,22 +2717,9 @@ export const appRouter = router({
 
         // Verify based on gateway
         if (payment.paymentMethod === 'tap') {
-          const { verifyTapPayment } = await import('./payment/tap');
-          const result = await verifyTapPayment(input.transactionId);
-
-          if (
-            result.success
-            && result.status === 'CAPTURED'
-            && Number(result.amount) === Number(payment.amount)
-            && result.currency === payment.currency
-          ) {
-            // Update subscription status
-            await updateSubscription(input.subscriptionId, { status: 'active' });
-            // Update merchant subscription
-            await updateMerchant(merchant.id, { subscriptionId: input.subscriptionId });
-          }
-
-          return result;
+          const { retrieveCharge } = await import('./_core/tap');
+          const charge = await retrieveCharge(input.transactionId);
+          return processCanonicalSubscriptionCharge(charge);
         } else if (payment.paymentMethod === 'paypal') {
           const { capturePayPalOrder } = await import('./payment/paypal');
           const result = await capturePayPalOrder(input.transactionId);
