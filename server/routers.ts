@@ -222,6 +222,7 @@ import {
   getPlanById,
   getPlanChangeLogs,
   getPrimaryWhatsAppInstance,
+  getProductsByMerchantId,
   getQuickResponseById,
   getQuickResponses,
   getReferralCodeByCode,
@@ -326,6 +327,36 @@ import bcrypt from 'bcryptjs';
 import { createSessionToken } from './_core/auth';
 import { THIRTY_DAYS_MS } from '@shared/const';
 import { z } from 'zod';
+
+const optionalWebUrl = z.string().trim().max(500).refine((value) => {
+  if (!value) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}, 'Invalid web URL');
+
+const setupProductSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  description: z.string().trim().max(5000).optional().default(''),
+  price: z.number().int().nonnegative().max(100_000_000),
+  currency: z.enum(['SAR', 'USD']).optional().default('SAR'),
+  imageUrl: optionalWebUrl.optional().default(''),
+  productUrl: optionalWebUrl.optional().default(''),
+  category: z.string().trim().max(100).optional().default(''),
+});
+
+const setupServiceSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  description: z.string().trim().max(5000).optional().default(''),
+  price: z.number().nonnegative().max(1_000_000),
+});
+
+function normalizeCatalogName(value: string): string {
+  return value.normalize('NFKC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('ar');
+}
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -6455,15 +6486,17 @@ export const appRouter = router({
     completeSetup: protectedProcedure
       .input(z.object({
         businessType: z.enum(['store', 'services', 'both']).optional().default('store'),
-        businessName: z.string().optional().default(''),
-        phone: z.string().optional().default(''),
-        address: z.string().optional(),
-        description: z.string().optional(),
+        businessName: z.string().trim().min(2).max(255),
+        phone: z.string().trim().min(7).max(30).regex(/^[+0-9][0-9\s()\-]+$/),
+        address: z.string().trim().max(500).optional(),
+        description: z.string().trim().max(10_000).optional(),
         workingHoursType: z.enum(['24_7', 'weekdays', 'custom']).optional().default('24_7'),
         workingHours: z.record(z.string(), z.any()).optional(),
         botTone: z.enum(['friendly', 'professional', 'casual']).optional(),
         botLanguage: z.enum(['ar', 'en', 'fr', 'tr', 'es', 'it', 'both']).optional(),
-        welcomeMessage: z.string().optional(),
+        welcomeMessage: z.string().trim().max(2000).optional(),
+        products: z.array(setupProductSchema).max(100).optional().default([]),
+        services: z.array(setupServiceSchema).max(100).optional().default([]),
       }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
@@ -6489,10 +6522,72 @@ export const appRouter = router({
           });
         }
 
+        // Persist catalog idempotently. Completion is marked only after every
+        // requested item is either present already or created successfully.
+        const existingProducts = await getProductsByMerchantId(merchant.id);
+        const productNames = new Set(existingProducts.map(product => normalizeCatalogName(product.name)));
+        let productsCreated = 0;
+        let productsSkipped = 0;
+        for (const product of input.products) {
+          const normalizedName = normalizeCatalogName(product.name);
+          if (productNames.has(normalizedName)) {
+            productsSkipped += 1;
+            continue;
+          }
+
+          const created = await createProduct({
+            merchantId: merchant.id,
+            name: product.name,
+            description: product.description || null,
+            price: product.price,
+            currency: product.currency,
+            imageUrl: product.imageUrl || null,
+            productUrl: product.productUrl || null,
+            category: product.category || null,
+            isActive: 1,
+            status: 'active',
+          });
+          if (!created) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to save product: ${product.name}` });
+          }
+          productNames.add(normalizedName);
+          productsCreated += 1;
+        }
+
+        const existingServices = await getServicesByMerchant(merchant.id);
+        const serviceNames = new Set(existingServices.map(service => normalizeCatalogName(service.name)));
+        let servicesCreated = 0;
+        let servicesSkipped = 0;
+        for (const service of input.services) {
+          const normalizedName = normalizeCatalogName(service.name);
+          if (serviceNames.has(normalizedName)) {
+            servicesSkipped += 1;
+            continue;
+          }
+
+          const serviceId = await createService({
+            merchantId: merchant.id,
+            name: service.name,
+            description: service.description || null,
+            basePrice: Math.round(service.price * 100),
+            priceType: 'fixed',
+            durationMinutes: 30,
+            isActive: 1,
+          });
+          if (!serviceId) {
+            throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to save service: ${service.name}` });
+          }
+          serviceNames.add(normalizedName);
+          servicesCreated += 1;
+        }
+
         // Mark setup as completed
         await completeSetupWizard(merchant.id);
 
-        return { success: true };
+        return {
+          success: true,
+          catalog: { productsCreated, productsSkipped, servicesCreated, servicesSkipped },
+        };
       }),
 
     // Get templates

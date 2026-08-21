@@ -5888,7 +5888,7 @@ export async function createService(service: InsertService) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const result = await db.insert(services).values(service);
-  return (result as any).insertId;
+  return Number((result[0] as { insertId?: number | bigint }).insertId || 0);
 }
 
 export async function getServicesByMerchant(merchantId: number) {

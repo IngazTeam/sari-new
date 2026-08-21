@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -115,11 +114,8 @@ export default function ProductsServicesStep({
   const hasFilledItems = filledProducts.length > 0 || filledServices.length > 0;
   const hasAnyItems = products.length > 0 || services.length > 0;
 
-  // @ts-ignore
-  const saveProductsMutation = trpc.setupWizard.saveProducts.useMutation();
-
-  const handleNext = async () => {
-    const data: any = {};
+  const handleNext = () => {
+    const data: Record<string, Item[]> = {};
 
     if (isStore) {
       data.products = filledProducts;
@@ -130,27 +126,8 @@ export default function ProductsServicesStep({
     }
 
     updateWizardData(data);
-
-    // Save products to DB immediately so the test chat can access them
-    if (filledProducts.length > 0) {
-      try {
-        const result = await saveProductsMutation.mutateAsync({
-          products: filledProducts.map(p => ({
-            name: p.name,
-            description: p.description || '',
-            price: p.price || '0',
-            currency: p.currency || 'SAR',
-            imageUrl: p.imageUrl || '',
-            productUrl: p.productUrl || '',
-            category: p.category || '',
-          })),
-        });
-        console.log('[ProductsStep] Saved products to DB:', result);
-      } catch (err: any) {
-        console.error('[ProductsStep] Failed to save products:', err);
-      }
-    }
-
+    // Catalog persistence happens once in completeSetup. The wizard draft is
+    // autosaved between steps, avoiding duplicate products on back/next retries.
     goToNextStep();
   };
 

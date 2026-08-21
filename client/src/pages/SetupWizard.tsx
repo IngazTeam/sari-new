@@ -22,6 +22,28 @@ import { useTranslation } from 'react-i18next';
 
 const TOTAL_STEPS = 10;
 
+function parseJsonArray(value: string | null | undefined): number[] {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed)
+      ? parsed.filter((step): step is number => Number.isInteger(step) && step >= 1 && step <= TOTAL_STEPS)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseWizardData(value: string | null | undefined): Record<string, any> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 const STEP_TITLES = [
   'مرحباً بك!',
   'نوع نشاطك',
@@ -45,6 +67,8 @@ export default function SetupWizard() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const wizardDataRef = useRef<Record<string, any>>({});
+  const utils = trpc.useUtils();
 
   // Load progress
   const { data: progress, isLoading: loadingProgress } = trpc.setupWizard.getProgress.useQuery();
@@ -54,9 +78,11 @@ export default function SetupWizard() {
   // Load saved progress
   useEffect(() => {
     if (progress && !progress.isCompleted) {
-      setCurrentStep(progress.currentStep || 1);
-      setCompletedSteps(progress.completedSteps ? JSON.parse(progress.completedSteps) : []);
-      setWizardData(progress.wizardData ? JSON.parse(progress.wizardData) : {});
+      const restoredData = parseWizardData(progress.wizardData);
+      setCurrentStep(Math.min(TOTAL_STEPS, Math.max(1, progress.currentStep || 1)));
+      setCompletedSteps(parseJsonArray(progress.completedSteps));
+      setWizardData(restoredData);
+      wizardDataRef.current = restoredData;
     } else if (progress?.isCompleted) {
       // Already completed, redirect to dashboard
       setLocation('/merchant/dashboard');
@@ -70,7 +96,7 @@ export default function SetupWizard() {
       await saveProgressMutation.mutateAsync({
         currentStep: data?.step ?? currentStep,
         completedSteps: data?.completed ?? completedSteps,
-        wizardData: data?.wData ?? wizardData,
+        wizardData: data?.wData ?? wizardDataRef.current,
       });
       setLastSaved(new Date());
     } catch (error) {
@@ -78,7 +104,7 @@ export default function SetupWizard() {
     } finally {
       setIsSaving(false);
     }
-  }, [currentStep, completedSteps, wizardData]);
+  }, [currentStep, completedSteps, saveProgressMutation]);
 
   // Debounced auto-save: save 2 seconds after any data change
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -115,24 +141,13 @@ export default function SetupWizard() {
     }
   }, [progress, loadingProgress]);
 
-  // Save before page unload (refresh/close)
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Use sendBeacon for reliable save on page close
-      const payload = JSON.stringify({
-        currentStep,
-        completedSteps,
-        wizardData,
-      });
-      navigator.sendBeacon?.('/api/trpc/setupWizard.saveProgress', payload);
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [currentStep, completedSteps, wizardData]);
-
   // Update wizard data
   const updateWizardData = (stepData: Record<string, any>) => {
-    setWizardData(prev => ({ ...prev, ...stepData }));
+    setWizardData(prev => {
+      const next = { ...prev, ...stepData };
+      wizardDataRef.current = next;
+      return next;
+    });
   };
 
   // Navigate to next step
@@ -192,34 +207,42 @@ export default function SetupWizard() {
   const completeSetup = async () => {
     setIsLoading(true);
     try {
+      const latestWizardData = wizardDataRef.current;
+      const products = Array.isArray(latestWizardData.products) ? latestWizardData.products : [];
+      const services = Array.isArray(latestWizardData.services) ? latestWizardData.services : [];
       await completeSetupMutation.mutateAsync({
-        businessType: wizardData.businessType || 'store',
-        businessName: wizardData.businessName || '',
-        phone: wizardData.phone || '',
-        address: wizardData.address || '',
-        description: wizardData.description || '',
-        workingHoursType: wizardData.workingHoursType || '24_7',
-        workingHours: wizardData.workingHours,
-        botTone: wizardData.botTone || 'friendly',
-        botLanguage: wizardData.botLanguage || 'ar',
-        welcomeMessage: wizardData.welcomeMessage || '',
-        // @ts-ignore
-        products: ((wizardData as any).products || []).filter((p: any) => p.name?.trim()).map((p: any) => ({
+        businessType: latestWizardData.businessType || 'store',
+        businessName: latestWizardData.businessName || '',
+        phone: latestWizardData.phone || '',
+        address: latestWizardData.address || '',
+        description: latestWizardData.description || '',
+        workingHoursType: latestWizardData.workingHoursType || '24_7',
+        workingHours: latestWizardData.workingHours,
+        botTone: latestWizardData.botTone || 'friendly',
+        botLanguage: latestWizardData.botLanguage || 'ar',
+        welcomeMessage: latestWizardData.welcomeMessage || '',
+        products: products.filter((p: any) => p?.name?.trim()).map((p: any) => ({
           name: p.name,
           description: p.description || '',
-          price: p.price || '0',
+          price: Number(p.price || 0),
           currency: p.currency || 'SAR',
           imageUrl: p.imageUrl || '',
           productUrl: p.productUrl || '',
           category: p.category || '',
         })),
-        services: (wizardData.services || []).filter((s: any) => s.name?.trim()).map((s: any) => ({
+        services: services.filter((s: any) => s?.name?.trim()).map((s: any) => ({
           name: s.name,
           description: s.description || '',
-          price: s.price || '0',
+          price: Number(s.price || 0),
         })),
       });
 
+      await Promise.all([
+        utils.merchants.getCurrent.invalidate(),
+        utils.merchants.getOnboardingStatus.invalidate(),
+        utils.products.list.invalidate(),
+        utils.services.list.invalidate(),
+      ]);
       toast.success(t('setupWizardPage.text0'));
 
       setLocation('/merchant/dashboard');
