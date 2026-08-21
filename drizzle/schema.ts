@@ -1520,12 +1520,18 @@ export const platformIntegrations = mysqlTable("platform_integrations", {
 	storeUrl: varchar("store_url", { length: 500 }),
 	accessToken: text("access_token"), // encrypted
 	refreshToken: text("refresh_token"), // encrypted
+	webhookEndpointId: varchar("webhook_endpoint_id", { length: 48 }),
+	webhookAuthHash: varchar("webhook_auth_hash", { length: 64 }),
 	isActive: tinyint("is_active").default(1).notNull(),
 	settings: text(), // JSON settings
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-});
+},
+	(table) => [
+		uniqueIndex("platform_integrations_webhook_endpoint_unique").on(table.webhookEndpointId),
+		uniqueIndex("platform_integrations_merchant_type_unique").on(table.merchantId, table.platformType),
+	]);
 
 export const googleIntegrations = mysqlTable("google_integrations", {
 	id: int().autoincrement().notNull().primaryKey(),
@@ -2451,10 +2457,13 @@ export const zidWebhooks = mysqlTable("zid_webhooks", {
 	eventType: varchar("event_type", { length: 100 }).notNull(), // order.created, product.updated, etc.
 
 	// Payload
-	payload: text().notNull(), // Full JSON payload
+	payload: text().notNull(), // Legacy payloads; new receipts store only a minimized envelope
+	payloadHash: varchar("payload_hash", { length: 64 }),
 
 	// Processing
 	status: mysqlEnum(['pending', 'processed', 'failed']).default('pending').notNull(),
+	attemptCount: int("attempt_count").default(0).notNull(),
+	claimedAt: timestamp("claimed_at", { mode: 'string' }),
 	processedAt: timestamp("processed_at", { mode: 'string' }),
 	errorMessage: text("error_message"),
 
@@ -2468,6 +2477,7 @@ export const zidWebhooks = mysqlTable("zid_webhooks", {
 		index("zid_webhooks_merchant_id_idx").on(table.merchantId),
 		index("zid_webhooks_event_type_idx").on(table.eventType),
 		index("zid_webhooks_status_idx").on(table.status),
+		uniqueIndex("zid_webhooks_merchant_payload_unique").on(table.merchantId, table.payloadHash),
 	]);
 
 // Type exports for Zid tables

@@ -81,7 +81,8 @@ async function startServer() {
     // never JSON.stringify(req.body). Retain raw bytes only for signed ingress.
     req.rawBody = Buffer.from(buffer);
   };
-  app.use('/api/webhooks', express.json({ limit: '2mb', verify: retainSignedRawBody }));
+  // Reject abusive sources before allocating/parsing up to 2 MB per delivery.
+  app.use('/api/webhooks', webhookLimiter, express.json({ limit: '2mb', verify: retainSignedRawBody }));
   app.use('/api/v1/platform', express.json({ limit: '2mb', verify: retainSignedRawBody }));
   app.use(express.json({ limit: "26mb" }));
   app.use(express.urlencoded({ limit: "1mb", extended: true }));
@@ -145,8 +146,8 @@ async function startServer() {
   // Auth endpoints (rate limited: 5 attempts per 15 minutes)
   app.use("/api/auth", authLimiter, authRoutes);
 
-  // Webhook endpoints (rate limited: 200 requests per minute)
-  app.use("/api/webhooks", webhookLimiter, webhookRoutes);
+  // Webhook endpoints were rate-limited before their dedicated body parser.
+  app.use("/api/webhooks", webhookRoutes);
 
   // REST API v1 — External service integration (API key auth)
   try {

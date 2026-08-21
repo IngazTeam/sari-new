@@ -1,6 +1,8 @@
 import { z } from 'zod';
-import { publicProcedure, protectedProcedure, router } from '../_core/trpc';
+import { protectedProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
+import { decryptSecret, encryptSecret } from '../security/secrets';
+import { rotateZidWebhookCredentials } from '../webhooks/zid-security';
 import {
   createIntegration,
   createSyncLog,
@@ -57,12 +59,21 @@ export const zidRouter = router({
         return { connected: false };
       }
 
+      const settings = integration.settings ? JSON.parse(integration.settings) : {};
       return {
         connected: integration.isActive,
         storeName: integration.storeName,
         storeUrl: integration.storeUrl,
         lastSync: integration.lastSyncAt,
-        settings: integration.settings ? JSON.parse(integration.settings) : null,
+        webhookEndpointPath: integration.webhookEndpointId
+          ? `/api/webhooks/zid/${integration.webhookEndpointId}`
+          : null,
+        settings: {
+          autoSync: settings.autoSync !== false,
+          syncProducts: settings.syncProducts !== false,
+          syncOrders: settings.syncOrders !== false,
+          syncCustomers: settings.syncCustomers !== false,
+        },
       };
     }),
 
@@ -104,7 +115,7 @@ export const zidRouter = router({
             syncProducts: true,
             syncOrders: true,
             syncCustomers: true,
-            managerToken: input.managerToken || input.accessToken,
+            managerToken: encryptSecret(input.managerToken || input.accessToken),
           }),
         });
 
@@ -186,7 +197,7 @@ export const zidRouter = router({
             syncProducts: true,
             syncOrders: true,
             syncCustomers: true,
-            managerToken,
+            managerToken: encryptSecret(managerToken),
           }),
         });
 
@@ -225,7 +236,7 @@ export const zidRouter = router({
       try {
         // Sync products — Zid v1 endpoint: /managers/store/products
         const settings = integration.settings ? JSON.parse(integration.settings) : {};
-        const managerToken = settings.managerToken || integration.accessToken;
+        const managerToken = decryptSecret(settings.managerToken) || integration.accessToken;
         const products = await zidApiRequest('/managers/store/products', integration.accessToken, managerToken);
         let syncedProducts = 0;
 
@@ -287,6 +298,20 @@ export const zidRouter = router({
       return { success: true };
     }),
 
+  rotateWebhookCredentials: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      try {
+        return await rotateZidWebhookCredentials(merchant.id);
+      } catch (error: any) {
+        if (error?.message === 'ZID_INTEGRATION_NOT_ACTIVE') {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'اربط متجر زد النشط أولاً' });
+        }
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر إنشاء بيانات Webhook' });
+      }
+    }),
+
   // Get sync logs
   getSyncLogs: protectedProcedure
     .input(z.object({
@@ -323,45 +348,29 @@ export const zidRouter = router({
       };
     }),
 
-  // Handle Zid webhook
-  handleWebhook: publicProcedure
-    .input(z.object({
-      merchantId: z.number(),
-      payload: z.any(),
-      signature: z.string().optional(),
-    }))
-    .mutation(async ({ input }) => {
-      const { processZidWebhook } = await import('../webhooks/zid-webhook');
-
-      // Get Zid settings to retrieve webhook secret
-      const dbZid = await import('../db_zid');
-      const settings = await dbZid.getZidSettings(input.merchantId);
-
-      const result = await processZidWebhook(
-        input.payload,
-        input.merchantId,
-        input.signature,
-        settings?.clientSecret || undefined
-      );
-
-      return result;
-    }),
 });
 
 
 // Webhook handler for Zid events
 export async function handleZidWebhook(merchantId: number, event: string, payload: any) {
-  console.log(`[Zid Webhook] Merchant ${merchantId} - Event: ${event}`);
-
   const integration = await getIntegrationByType(merchantId, 'zid');
   if (!integration || !integration.isActive) {
-    console.log('[Zid Webhook] Integration not found or inactive');
     return;
   }
 
   const settings = integration.settings ? JSON.parse(integration.settings) : {};
+  const normalizedEvent: Record<string, string> = {
+    'order.create': 'order.created',
+    'order.update': 'order.updated',
+    'order.status.update': 'order.updated',
+    'order.payment_status.update': 'order.updated',
+    'product.create': 'product.created',
+    'product.update': 'product.updated',
+    'product.publish': 'product.updated',
+    'inventory.update': 'inventory.updated',
+  };
 
-  switch (event) {
+  switch (normalizedEvent[event] || event) {
     case 'order.created':
     case 'order.updated':
       if (settings.syncOrders) {
@@ -386,6 +395,6 @@ export async function handleZidWebhook(merchantId: number, event: string, payloa
       break;
 
     default:
-      console.log(`[Zid Webhook] Unknown event: ${event}`);
+      return;
   }
 }

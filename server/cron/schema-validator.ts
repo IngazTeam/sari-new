@@ -23,6 +23,8 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'legal_retention_records', columns: ['subject_reference_hash', 'encrypted_payload', 'retain_until'] },
   { table: 'merchant_members', columns: ['merchant_id', 'user_id', 'role', 'is_active'] },
   { table: 'merchant_invitations', columns: ['token', 'recipient_hash', 'accepted_by_user_id', 'status', 'expires_at'] },
+  { table: 'platform_integrations', columns: ['webhook_endpoint_id', 'webhook_auth_hash'] },
+  { table: 'zid_webhooks', columns: ['payload_hash', 'attempt_count', 'claimed_at'] },
   { table: 'merchants', columns: [
     'timezone', 'integration_source', 'provision_idempotency_hash', 'provision_payload_hash',
     'escalation_phones', 'emergency_phone',

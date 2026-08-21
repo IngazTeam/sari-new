@@ -9,120 +9,74 @@ import {
   getZidProductByZidId,
   saveZidOrder,
   saveZidProduct,
-  saveZidWebhook,
-  updateZidWebhookStatus,
 } from '../db';
-import * as dbZid from '../db_zid';
-import { verifyZidWebhookSignature } from '../_core/zidApi';
 
-interface ZidWebhookPayload {
+export interface ZidWebhookPayload {
   event: string;
   data: any;
-  created_at: string;
+  created_at?: string;
   webhook_id?: string;
 }
 
-/**
- * Process Zid webhook event
- */
-// NQ-3: In-memory dedup guard for webhook retries (10-min TTL)
-const zidWebhookDedup = new Map<string, number>();
+const EVENT_ALIASES: Readonly<Record<string, string>> = {
+  'order.create': 'order.created',
+  'order.update': 'order.updated',
+  'order.status.update': 'order.updated',
+  'order.payment_status.update': 'order.updated',
+  'order.cancel': 'order.cancelled',
+  'product.create': 'product.created',
+  'product.update': 'product.updated',
+  'product.publish': 'product.updated',
+  'product.delete': 'product.deleted',
+  'inventory.update': 'inventory.updated',
+};
+
+export function parseZidWebhookPayload(value: unknown): ZidWebhookPayload | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.event !== 'string' || !/^[a-z0-9_.-]{1,100}$/i.test(candidate.event)) return null;
+  if (!candidate.data || typeof candidate.data !== 'object' || Array.isArray(candidate.data)) return null;
+  if (candidate.webhook_id !== undefined && typeof candidate.webhook_id !== 'string') return null;
+  if (candidate.created_at !== undefined && typeof candidate.created_at !== 'string') return null;
+  return {
+    event: candidate.event,
+    data: candidate.data,
+    created_at: candidate.created_at,
+    webhook_id: candidate.webhook_id,
+  };
+}
 
 export async function processZidWebhook(
   payload: ZidWebhookPayload,
   merchantId: number,
-  signature?: string,
-  secret?: string
 ): Promise<{ success: boolean; message: string }> {
-  console.log('[Zid Webhook] Processing event:', payload.event);
-
-  // NQ-3: Webhook idempotency guard — prevent double-processing on retries
-  const dedupKey = `${payload.event}:${merchantId}:${payload.data?.id || payload.webhook_id || payload.created_at}`;
-  if (zidWebhookDedup.has(dedupKey)) {
-    console.log(`[Zid Webhook] Duplicate ignored: ${dedupKey}`);
-    return { success: true, message: 'Duplicate webhook ignored' };
+  const event = EVENT_ALIASES[payload.event] || payload.event;
+  switch (event) {
+    case 'order.created':
+      await handleOrderCreated(merchantId, payload.data);
+      break;
+    case 'order.updated':
+      await handleOrderUpdated(merchantId, payload.data);
+      break;
+    case 'order.cancelled':
+      await handleOrderCancelled(merchantId, payload.data);
+      break;
+    case 'product.created':
+      await handleProductCreated(merchantId, payload.data);
+      break;
+    case 'product.updated':
+      await handleProductUpdated(merchantId, payload.data);
+      break;
+    case 'product.deleted':
+      await handleProductDeleted(merchantId, payload.data);
+      break;
+    case 'inventory.updated':
+      await handleInventoryUpdated(merchantId, payload.data);
+      break;
+    default:
+      return { success: true, message: 'Unsupported event ignored' };
   }
-  zidWebhookDedup.set(dedupKey, Date.now());
-  // Cleanup old entries (keep last 10 minutes)
-  if (zidWebhookDedup.size > 200) {
-    const cutoff = Date.now() - 600_000;
-    for (const [k, ts] of Array.from(zidWebhookDedup.entries())) {
-      if (ts < cutoff) zidWebhookDedup.delete(k);
-    }
-  }
-
-  try {
-    // Verify signature if provided
-    if (signature && secret) {
-      const isValid = await verifyZidWebhookSignature(
-        JSON.stringify(payload),
-        signature,
-        secret
-      );
-
-      if (!isValid) {
-        throw new Error('Invalid webhook signature');
-      }
-    }
-
-    // Save webhook event to database
-    const webhookRecord = await saveZidWebhook(merchantId, {
-      webhookId: payload.webhook_id,
-      eventType: payload.event,
-      payload: JSON.stringify(payload),
-      status: 'pending',
-    });
-
-    try {
-      // Process based on event type
-      switch (payload.event) {
-        case 'order.created':
-          await handleOrderCreated(merchantId, payload.data, webhookRecord!.id);
-          break;
-
-        case 'order.updated':
-          await handleOrderUpdated(merchantId, payload.data, webhookRecord!.id);
-          break;
-
-        case 'order.cancelled':
-          await handleOrderCancelled(merchantId, payload.data, webhookRecord!.id);
-          break;
-
-        case 'product.created':
-          await handleProductCreated(merchantId, payload.data, webhookRecord!.id);
-          break;
-
-        case 'product.updated':
-          await handleProductUpdated(merchantId, payload.data, webhookRecord!.id);
-          break;
-
-        case 'product.deleted':
-          await handleProductDeleted(merchantId, payload.data, webhookRecord!.id);
-          break;
-
-        case 'inventory.updated':
-          await handleInventoryUpdated(merchantId, payload.data, webhookRecord!.id);
-          break;
-
-        default:
-          console.log('[Zid Webhook] Unknown event type:', payload.event);
-          await updateZidWebhookStatus(webhookRecord!.id, 'processed', 'Unknown event type');
-          return { success: true, message: 'Unknown event type' };
-      }
-
-      // Mark webhook as processed
-      await updateZidWebhookStatus(webhookRecord!.id, 'processed');
-
-      return { success: true, message: 'Webhook processed successfully' };
-    } catch (error: any) {
-      console.error('[Zid Webhook] Processing error:', error);
-      await updateZidWebhookStatus(webhookRecord!.id, 'failed', error.message);
-      throw error;
-    }
-  } catch (error: any) {
-    console.error('[Zid Webhook] Error:', error);
-    return { success: false, message: error.message };
-  }
+  return { success: true, message: 'Webhook processed successfully' };
 }
 
 /**
@@ -131,10 +85,7 @@ export async function processZidWebhook(
 async function handleOrderCreated(
   merchantId: number,
   orderData: any,
-  webhookId: number
 ) {
-  console.log('[Zid Webhook] Handling order.created:', orderData.id);
-
   // Save order to zid_orders table
   await saveZidOrder(merchantId, {
     zidOrderId: String(orderData.id),
@@ -157,7 +108,6 @@ async function handleOrderCreated(
   // Send WhatsApp notification to merchant
   await sendOrderNotificationToMerchant(merchantId, orderData);
 
-  console.log('[Zid Webhook] Order created successfully');
 }
 
 /**
@@ -166,10 +116,7 @@ async function handleOrderCreated(
 async function handleOrderUpdated(
   merchantId: number,
   orderData: any,
-  webhookId: number
 ) {
-  console.log('[Zid Webhook] Handling order.updated:', orderData.id);
-
   // Update order in database
   await saveZidOrder(merchantId, {
     zidOrderId: String(orderData.id),
@@ -192,7 +139,6 @@ async function handleOrderUpdated(
   // Send WhatsApp notification to customer about order update
   await sendOrderUpdateToCustomer(merchantId, orderData);
 
-  console.log('[Zid Webhook] Order updated successfully');
 }
 
 /**
@@ -201,10 +147,7 @@ async function handleOrderUpdated(
 async function handleOrderCancelled(
   merchantId: number,
   orderData: any,
-  webhookId: number
 ) {
-  console.log('[Zid Webhook] Handling order.cancelled:', orderData.id);
-
   // Update order status
   await saveZidOrder(merchantId, {
     zidOrderId: String(orderData.id),
@@ -215,7 +158,6 @@ async function handleOrderCancelled(
   // Send cancellation notification
   await sendOrderCancellationToCustomer(merchantId, orderData);
 
-  console.log('[Zid Webhook] Order cancelled successfully');
 }
 
 /**
@@ -224,10 +166,7 @@ async function handleOrderCancelled(
 async function handleProductCreated(
   merchantId: number,
   productData: any,
-  webhookId: number
 ) {
-  console.log('[Zid Webhook] Handling product.created:', productData.id);
-
   // Save product to zid_products table
   await saveZidProduct(merchantId, {
     zidProductId: String(productData.id),
@@ -250,7 +189,6 @@ async function handleProductCreated(
     zidData: JSON.stringify(productData),
   });
 
-  console.log('[Zid Webhook] Product created successfully');
 }
 
 /**
@@ -259,10 +197,7 @@ async function handleProductCreated(
 async function handleProductUpdated(
   merchantId: number,
   productData: any,
-  webhookId: number
 ) {
-  console.log('[Zid Webhook] Handling product.updated:', productData.id);
-
   // Update product in database
   await saveZidProduct(merchantId, {
     zidProductId: String(productData.id),
@@ -285,7 +220,6 @@ async function handleProductUpdated(
     zidData: JSON.stringify(productData),
   });
 
-  console.log('[Zid Webhook] Product updated successfully');
 }
 
 /**
@@ -294,10 +228,7 @@ async function handleProductUpdated(
 async function handleProductDeleted(
   merchantId: number,
   productData: any,
-  webhookId: number
 ) {
-  console.log('[Zid Webhook] Handling product.deleted:', productData.id);
-
   // Mark product as inactive
   const product = await getZidProductByZidId(merchantId, String(productData.id));
   if (product) {
@@ -308,7 +239,6 @@ async function handleProductDeleted(
     });
   }
 
-  console.log('[Zid Webhook] Product deleted successfully');
 }
 
 /**
@@ -317,10 +247,7 @@ async function handleProductDeleted(
 async function handleInventoryUpdated(
   merchantId: number,
   inventoryData: any,
-  webhookId: number
 ) {
-  console.log('[Zid Webhook] Handling inventory.updated:', inventoryData.product_id);
-
   // Update product quantity
   const product = await getZidProductByZidId(merchantId, String(inventoryData.product_id));
   if (product) {
@@ -331,7 +258,6 @@ async function handleInventoryUpdated(
     });
   }
 
-  console.log('[Zid Webhook] Inventory updated successfully');
 }
 
 /**
@@ -394,8 +320,8 @@ async function sendOrderNotificationToMerchant(merchantId: number, orderData: an
       // @ts-ignore
       whatsappConnection.apiUrl
     );
-  } catch (error) {
-    console.error('[Zid Webhook] Error sending merchant notification:', error);
+  } catch {
+    console.error('[Zid Webhook] Merchant notification delivery failed');
   }
 }
 
@@ -431,8 +357,8 @@ async function sendOrderUpdateToCustomer(merchantId: number, orderData: any) {
       // @ts-ignore
       whatsappConnection.apiUrl
     );
-  } catch (error) {
-    console.error('[Zid Webhook] Error sending customer update:', error);
+  } catch {
+    console.error('[Zid Webhook] Customer update delivery failed');
   }
 }
 
@@ -467,18 +393,7 @@ async function sendOrderCancellationToCustomer(merchantId: number, orderData: an
       // @ts-ignore
       whatsappConnection.apiUrl
     );
-  } catch (error) {
-    console.error('[Zid Webhook] Error sending cancellation notification:', error);
+  } catch {
+    console.error('[Zid Webhook] Cancellation notification delivery failed');
   }
-}
-
-/**
- * Verify Zid webhook signature (wrapper for compatibility)
- */
-export function verifyZidSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): Promise<boolean> {
-  return verifyZidWebhookSignature(payload, signature, secret);
 }

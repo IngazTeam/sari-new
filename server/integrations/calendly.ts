@@ -50,12 +50,17 @@ export const calendlyRouter = router({
         return { connected: false };
       }
 
+      const settings = integration.settings ? JSON.parse(integration.settings) : {};
       return {
         connected: !!integration.isActive,
         userName: integration.storeName, // Using storeName to store user name
         userUri: integration.storeUrl, // Using storeUrl to store user URI
         lastSync: integration.lastSyncAt,
-        settings: integration.settings ? JSON.parse(integration.settings) : null,
+        settings: {
+          autoConfirm: settings.autoConfirm !== false,
+          sendReminders: settings.sendReminders !== false,
+          syncToWhatsApp: settings.syncToWhatsApp !== false,
+        },
       };
     }),
 

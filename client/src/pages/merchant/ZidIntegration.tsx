@@ -35,9 +35,11 @@ export default function ZidIntegration() {
   const [syncProducts, setSyncProducts] = useState(true);
   const [syncOrders, setSyncOrders] = useState(true);
   const [syncCustomers, setSyncCustomers] = useState(true);
-
-  // Get merchant ID from localStorage
-  const merchantId = parseInt(localStorage.getItem('merchantId') || '0');
+  const [webhookCredentials, setWebhookCredentials] = useState<{
+    endpointPath: string;
+    username: string;
+    password: string;
+  } | null>(null);
 
   // Get connection status
   const { data: connection, isLoading, refetch } = trpc.zid.getConnection.useQuery(
@@ -117,6 +119,19 @@ export default function ZidIntegration() {
     },
   });
 
+  const rotateWebhookMutation = trpc.zid.rotateWebhookCredentials.useMutation({
+    onSuccess: (credentials) => {
+      setWebhookCredentials(credentials);
+      refetch();
+      toast.success('تم إنشاء بيانات Webhook', {
+        description: 'انسخ كلمة المرور الآن؛ لن نعرضها مرة أخرى.',
+      });
+    },
+    onError: (error: any) => {
+      toast.error('تعذر إنشاء بيانات Webhook', { description: error.message });
+    },
+  });
+
   const handleConnect = () => {
     if (!storeUrl || !accessToken) {
       toast.error(t('zidIntegrationPage.text51'), {
@@ -134,6 +149,7 @@ export default function ZidIntegration() {
 
   const handleDisconnect = () => {
     if (confirm(t('zidIntegrationPage.text52'))) {
+      setWebhookCredentials(null);
       disconnectMutation.mutate();
     }
   };
@@ -334,12 +350,42 @@ export default function ZidIntegration() {
                   <AlertDescription>
                     <div className="space-y-2">
                       <p className="font-medium">{t('zidIntegrationPage.text15')}</p>
-                      <code className="block p-2 bg-muted rounded text-sm break-all">
-                        {window.location.origin}/api/webhooks/zid/{merchantId}
-                      </code>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {t('zidIntegrationPage.text54')}
-                      </p>
+                      {(webhookCredentials || connection.webhookEndpointPath) ? (
+                        <>
+                          <code className="block p-2 bg-muted rounded text-sm break-all" dir="ltr">
+                            {window.location.origin}{webhookCredentials?.endpointPath || connection.webhookEndpointPath}
+                          </code>
+                          {webhookCredentials ? (
+                            <div className="space-y-2 rounded border border-amber-300 bg-amber-50 p-3 text-amber-950 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+                              <div className="flex items-center gap-2 font-medium">
+                                <AlertCircle className="h-4 w-4" />
+                                تُعرض كلمة المرور مرة واحدة فقط
+                              </div>
+                              <div>نوع التحقق: <code dir="ltr">Basic Auth</code></div>
+                              <div>اسم المستخدم: <code dir="ltr">{webhookCredentials.username}</code></div>
+                              <div>كلمة المرور: <code className="break-all" dir="ltr">{webhookCredentials.password}</code></div>
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              التحقق مضبوط مسبقًا. دوّر البيانات فقط إذا فقدتها أو اشتبهت بتسريبها.
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          أنشئ رابطًا وبيانات Basic Auth ثم أضفها في إعدادات Webhooks في زد.
+                        </p>
+                      )}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => rotateWebhookMutation.mutate()}
+                        disabled={rotateWebhookMutation.isPending}
+                      >
+                        {rotateWebhookMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
+                        {connection.webhookEndpointPath ? 'تدوير بيانات Webhook' : 'إنشاء بيانات Webhook'}
+                      </Button>
+                      <p className="text-sm text-muted-foreground mt-2">{t('zidIntegrationPage.text54')}</p>
                     </div>
                   </AlertDescription>
                 </Alert>

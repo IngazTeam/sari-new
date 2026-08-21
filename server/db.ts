@@ -7316,6 +7316,39 @@ export async function hasMerchantValidTapConfig(merchantId: number): Promise<boo
 // Platform Integrations (Zid, Calendly, etc.)
 // ============================================
 
+const PLATFORM_SETTING_SECRET_KEYS = [
+  'managerToken',
+  'webhook_secret',
+  'clientSecret',
+  'apiKey',
+] as const;
+
+function parseIntegrationSettings(value: string | null | undefined): Record<string, any> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function protectIntegrationSettings(value: string | null | undefined): string | undefined {
+  if (!value) return value || undefined;
+  const parsed = parseIntegrationSettings(value);
+  for (const key of PLATFORM_SETTING_SECRET_KEYS) {
+    if (typeof parsed[key] === 'string') parsed[key] = encryptSecret(parsed[key]);
+  }
+  return JSON.stringify(parsed);
+}
+
+function redactIntegrationSettings(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const parsed = parseIntegrationSettings(value);
+  for (const key of PLATFORM_SETTING_SECRET_KEYS) delete parsed[key];
+  return JSON.stringify(parsed);
+}
+
 /**
  * Get integration by type for a merchant
  */
@@ -7331,7 +7364,12 @@ export async function getIntegrationByType(merchantId: number, type: 'zid' | 'ca
     ))
     .limit(1);
 
-  return result[0];
+  const integration = result[0];
+  return integration ? {
+    ...integration,
+    accessToken: decryptSecret(integration.accessToken),
+    refreshToken: decryptSecret(integration.refreshToken),
+  } : undefined;
 }
 
 /**
@@ -7349,20 +7387,30 @@ export async function createIntegration(data: {
 }): Promise<PlatformIntegration | undefined> {
   const db = await getDb();
   if (!db) return undefined;
-
-  // Delete existing integration of same type
-  await deleteIntegrationByType(data.merchantId, data.type);
-
-  const result = await db.insert(platformIntegrations).values({
+  // Resolve encryption before any database mutation. The tenant/type unique
+  // constraint makes reconnects atomic and prevents concurrent duplicate rows.
+  const protectedValues = {
     merchantId: data.merchantId,
     platformType: data.type,
     storeName: data.storeName,
     storeUrl: data.storeUrl,
-    accessToken: data.accessToken,
-    refreshToken: data.refreshToken,
+    accessToken: encryptSecret(data.accessToken),
+    refreshToken: encryptSecret(data.refreshToken),
     isActive: data.isActive !== false ? 1 : 0,
-    settings: data.settings,
-  });
+    settings: protectIntegrationSettings(data.settings),
+  };
+  await db.insert(platformIntegrations)
+    .values(protectedValues)
+    .onDuplicateKeyUpdate({
+      set: {
+        storeName: protectedValues.storeName,
+        storeUrl: protectedValues.storeUrl,
+        accessToken: protectedValues.accessToken,
+        refreshToken: protectedValues.refreshToken,
+        isActive: protectedValues.isActive,
+        settings: protectedValues.settings,
+      },
+    });
 
   return getIntegrationByType(data.merchantId, data.type);
 }
@@ -7401,8 +7449,14 @@ export async function updateIntegrationSettings(integrationId: number, settings:
   const db = await getDb();
   if (!db) return;
 
+  const existing = await db.select({ settings: platformIntegrations.settings })
+    .from(platformIntegrations)
+    .where(eq(platformIntegrations.id, integrationId))
+    .limit(1);
+  const merged = { ...parseIntegrationSettings(existing[0]?.settings), ...settings };
+
   await db.update(platformIntegrations)
-    .set({ settings: JSON.stringify(settings) })
+    .set({ settings: protectIntegrationSettings(JSON.stringify(merged)) })
     .where(eq(platformIntegrations.id, integrationId));
 }
 
@@ -7413,9 +7467,16 @@ export async function getIntegrationsByMerchant(merchantId: number): Promise<Pla
   const db = await getDb();
   if (!db) return [];
 
-  return db.select()
+  const integrations = await db.select()
     .from(platformIntegrations)
     .where(eq(platformIntegrations.merchantId, merchantId));
+  return integrations.map(integration => ({
+    ...integration,
+    accessToken: null,
+    refreshToken: null,
+    webhookAuthHash: null,
+    settings: redactIntegrationSettings(integration.settings),
+  }));
 }
 
 /**

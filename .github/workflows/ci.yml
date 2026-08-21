@@ -94,3 +94,4 @@ jobs:
           server/auth.platformProvision.test.ts
           server/auth.teamInvitations.test.ts
           server/auth.adminDeletion.test.ts
+          server/auth.zidWebhook.test.ts

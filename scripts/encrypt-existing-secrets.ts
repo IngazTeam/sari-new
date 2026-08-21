@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import {
   merchantPaymentSettings,
   paymentGateways,
+  platformIntegrations,
   whatsappConnections,
   whatsappConnectionRequests,
   whatsappInstances,
@@ -79,6 +80,37 @@ async function main() {
     if (row.webhookSecret && !isEncryptedSecret(row.webhookSecret)) changes.webhookSecret = encryptSecret(row.webhookSecret);
     if (Object.keys(changes).length > 0) {
       await db.update(paymentGateways).set(changes).where(eq(paymentGateways.id, row.id));
+      updated++;
+    }
+  }
+
+  const integrations = await db.select({
+    id: platformIntegrations.id,
+    accessToken: platformIntegrations.accessToken,
+    refreshToken: platformIntegrations.refreshToken,
+    settings: platformIntegrations.settings,
+  }).from(platformIntegrations);
+  for (const row of integrations) {
+    const changes: Record<string, string> = {};
+    if (row.accessToken && !isEncryptedSecret(row.accessToken)) changes.accessToken = encryptSecret(row.accessToken);
+    if (row.refreshToken && !isEncryptedSecret(row.refreshToken)) changes.refreshToken = encryptSecret(row.refreshToken);
+    if (row.settings) {
+      try {
+        const settings = JSON.parse(row.settings);
+        let settingsChanged = false;
+        for (const key of ['managerToken', 'webhook_secret', 'clientSecret', 'apiKey']) {
+          if (typeof settings[key] === 'string' && !isEncryptedSecret(settings[key])) {
+            settings[key] = encryptSecret(settings[key]);
+            settingsChanged = true;
+          }
+        }
+        if (settingsChanged) changes.settings = JSON.stringify(settings);
+      } catch {
+        console.warn(`[SecurityMigration] Skipped malformed platform settings row ${row.id}`);
+      }
+    }
+    if (Object.keys(changes).length > 0) {
+      await db.update(platformIntegrations).set(changes).where(eq(platformIntegrations.id, row.id));
       updated++;
     }
   }

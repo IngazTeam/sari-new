@@ -81,8 +81,13 @@ export default function ZidSettings() {
     }
   };
 
-  const handleAutoSyncToggle = (field: 'autoSyncProducts' | 'autoSyncOrders' | 'autoSyncCustomers', value: boolean) => {
-    updateAutoSyncMutation.mutate({ [field]: value } as any);
+  const handleAutoSyncToggle = (field: 'syncProducts' | 'syncOrders' | 'syncCustomers', value: boolean) => {
+    updateAutoSyncMutation.mutate({
+      autoSync: status?.settings?.autoSync ?? true,
+      syncProducts: field === 'syncProducts' ? value : (status?.settings?.syncProducts ?? true),
+      syncOrders: field === 'syncOrders' ? value : (status?.settings?.syncOrders ?? true),
+      syncCustomers: field === 'syncCustomers' ? value : (status?.settings?.syncCustomers ?? true),
+    });
   };
 
   if (isLoading) {
@@ -250,9 +255,9 @@ export default function ZidSettings() {
                 <p className="text-sm text-muted-foreground">{t('zidSettings.auto_8')}</p>
               </div>
               <Switch
-                checked={status.settings?.autoSyncProducts}
+                checked={status.settings?.syncProducts}
                 onCheckedChange={(checked) =>
-                  handleAutoSyncToggle('autoSyncProducts', checked)
+                  handleAutoSyncToggle('syncProducts', checked)
                 }
                 disabled={updateAutoSyncMutation.isPending}
               />
@@ -264,9 +269,9 @@ export default function ZidSettings() {
                 <p className="text-sm text-muted-foreground">{t('zidSettings.auto_9')}</p>
               </div>
               <Switch
-                checked={status.settings?.autoSyncOrders}
+                checked={status.settings?.syncOrders}
                 onCheckedChange={(checked) =>
-                  handleAutoSyncToggle('autoSyncOrders', checked)
+                  handleAutoSyncToggle('syncOrders', checked)
                 }
                 disabled={updateAutoSyncMutation.isPending}
               />
@@ -278,9 +283,9 @@ export default function ZidSettings() {
                 <p className="text-sm text-muted-foreground">{t('zidSettings.auto_10')}</p>
               </div>
               <Switch
-                checked={status.settings?.autoSyncCustomers}
+                checked={status.settings?.syncCustomers}
                 onCheckedChange={(checked) =>
-                  handleAutoSyncToggle('autoSyncCustomers', checked)
+                  handleAutoSyncToggle('syncCustomers', checked)
                 }
                 disabled={updateAutoSyncMutation.isPending}
               />

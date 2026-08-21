@@ -7,7 +7,13 @@ import { handleMetaCloudWebhook, handleMetaWebhookVerification } from './meta-cl
 import { verifyGreenWebhookAuthorization } from './greenapi-auth';
 import { updateWhatsAppDeliveryStatus } from '../channels/whatsapp/service';
 import { handleSallaWebhook } from './salla';
-import { handleZidWebhook } from '../integrations/zid';
+import { parseZidWebhookPayload, processZidWebhook } from './zid-webhook';
+import {
+  authenticateZidWebhook,
+  claimZidWebhook,
+  completeZidWebhook,
+  failZidWebhook,
+} from './zid-security';
 import { handleCalendlyWebhook } from '../integrations/calendly';
 import { getIntegrationByType } from '../db';
 import { getPaymentGatewayByName, getPaymentTransactionByTapChargeId, getTapSettings } from '../db';
@@ -200,48 +206,44 @@ router.post('/salla', async (req: Request, res: Response) => {
 
 /**
  * Zid Webhook Endpoint
- * POST /api/webhooks/zid/:merchantId
+ * Zid documents HTTP Basic authentication for webhook delivery. The opaque
+ * endpoint identifier is a locator, not tenant authority; the stored Basic
+ * credential digest is the authority and is never returned after rotation.
+ * POST /api/webhooks/zid/:endpointId
  */
-router.post('/zid/:merchantId', async (req: Request, res: Response) => {
+router.post('/zid/:endpointId', async (req: Request & { rawBody?: Buffer }, res: Response) => {
   try {
-    const merchantId = parseInt(req.params.merchantId);
+    const authorization = typeof req.headers.authorization === 'string'
+      ? req.headers.authorization
+      : undefined;
+    const principal = await authenticateZidWebhook(req.params.endpointId, authorization);
+    if (!principal) return res.status(401).json({ error: 'Unauthorized' });
 
-    if (isNaN(merchantId)) {
-      return res.status(400).json({ error: 'Invalid merchant ID' });
+    const payload = parseZidWebhookPayload(req.body);
+    if (!payload) return res.status(400).json({ error: 'Invalid webhook payload' });
+    if (!req.rawBody) return res.status(500).json({ error: 'Webhook body unavailable' });
+
+    const claim = await claimZidWebhook({
+      merchantId: principal.merchantId,
+      rawBody: req.rawBody,
+      eventType: payload.event,
+      externalWebhookId: payload.webhook_id,
+    });
+    if (!claim.claimed) {
+      return res.status(200).json({ message: 'Webhook already received' });
     }
 
-    console.log(`[Zid Webhook] Merchant ${merchantId} - Received webhook event`);
-
-    // SECURITY: Verify webhook signature (HMAC-SHA256) — mandatory
-    const signature = req.headers['x-zid-signature'] as string;
-    const zidSecret = process.env.ZID_WEBHOOK_SECRET;
-    if (!zidSecret) {
-      console.error(`[Zid Webhook] ZID_WEBHOOK_SECRET not configured — rejecting`);
-      return res.status(500).json({ error: 'Webhook not configured' });
+    try {
+      await processZidWebhook(payload, principal.merchantId);
+      await completeZidWebhook(claim.receiptId, claim.attemptCount);
+      return res.status(200).json({ message: 'Webhook processed successfully' });
+    } catch {
+      await failZidWebhook(claim.receiptId, claim.attemptCount).catch(() => undefined);
+      console.error('[Zid Webhook] Authenticated delivery processing failed');
+      return res.status(500).json({ error: 'Webhook processing failed' });
     }
-    if (!signature) {
-      console.warn(`[Zid Webhook] Merchant ${merchantId} - Missing signature`);
-      return res.status(401).json({ error: 'Missing webhook signature' });
-    }
-    const expectedSignature = crypto
-      .createHmac('sha256', zidSecret)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
-    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature))) {
-      console.warn(`[Zid Webhook] Merchant ${merchantId} - Invalid signature`);
-      return res.status(401).json({ error: 'Invalid webhook signature' });
-    }
-
-    // Extract event type from payload
-    const event = req.body.event || req.body.type || 'unknown';
-    const payload = req.body.data || req.body.payload || req.body;
-
-    // Process webhook
-    await handleZidWebhook(merchantId, event, payload);
-
-    return res.status(200).json({ message: 'Webhook processed successfully' });
-  } catch (error) {
-    console.error('[Zid Webhook] Error:', error);
+  } catch {
+    console.error('[Zid Webhook] Ingress unavailable');
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
