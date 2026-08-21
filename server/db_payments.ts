@@ -385,15 +385,9 @@ export async function incrementPaymentLinkUsage(
     .update(paymentLinks)
     .set({
       usageCount: sql`${paymentLinks.usageCount} + 1`,
-      successfulPayments: success
-        ? sql`${paymentLinks.successfulPayments} + 1`
-        : paymentLinks.successfulPayments,
-      failedPayments: success
-        ? paymentLinks.failedPayments
-        : sql`${paymentLinks.failedPayments} + 1`,
-      totalCollected: success
-        ? sql`${paymentLinks.totalCollected} + ${amount}`
-        : paymentLinks.totalCollected,
+      successfulPayments: sql`${paymentLinks.successfulPayments} + ${success ? 1 : 0}`,
+      failedPayments: sql`${paymentLinks.failedPayments} + ${success ? 0 : 1}`,
+      totalCollected: sql`${paymentLinks.totalCollected} + ${success ? amount : 0}`,
       status: sql`CASE
         WHEN ${paymentLinks.maxUsageCount} IS NOT NULL
           AND ${paymentLinks.usageCount} + 1 >= ${paymentLinks.maxUsageCount}

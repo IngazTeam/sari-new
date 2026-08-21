@@ -39,7 +39,7 @@ export default function PaymentSettings() {
   const [tapTestMode, setTapTestMode] = useState(true);
   const [autoSendPaymentLink, setAutoSendPaymentLink] = useState(true);
   const [paymentLinkMessage, setPaymentLinkMessage] = useState('');
-  const [defaultCurrency, setDefaultCurrency] = useState('SAR');
+  const [defaultCurrency, setDefaultCurrency] = useState<'SAR'>('SAR');
 
   // Fetch current settings
   const { data: settings, isLoading, refetch } = trpc.merchantPayments.getSettings.useQuery();
@@ -74,7 +74,7 @@ export default function PaymentSettings() {
       setTapTestMode(!!settings.tapTestMode);
       setAutoSendPaymentLink(!!settings.autoSendPaymentLink);
       setPaymentLinkMessage(settings.paymentLinkMessage || '');
-      setDefaultCurrency(settings.defaultCurrency || 'SAR');
+      setDefaultCurrency('SAR');
     }
   }, [settings]);
 

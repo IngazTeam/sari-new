@@ -6541,8 +6541,6 @@ export const appRouter = router({
           if (productNames.has(normalizedName)) {
             productsSkipped += 1;
             continue;
-          } else if (result.success && result.status === 'CAPTURED') {
-            throw new TRPCError({ code: 'CONFLICT', message: 'Payment amount verification failed' });
           }
 
           const created = await createProduct({
