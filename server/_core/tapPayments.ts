@@ -6,6 +6,7 @@
  */
 
 import { ENV } from "./env";
+import { halalasToTapAmount } from '../payment/payment-link-policy';
 
 // ============================================
 // Types & Interfaces
@@ -252,7 +253,7 @@ export async function createCharge(params: {
   }
 
   const chargeData: TapCharge = {
-    amount,
+    amount: halalasToTapAmount(amount),
     currency,
     customer: {
       first_name: firstName,
@@ -358,7 +359,7 @@ export async function createRefund(params: {
 
   const refundData: TapRefund = {
     charge_id: chargeId,
-    amount,
+    amount: halalasToTapAmount(amount),
     currency,
     reason,
     metadata,

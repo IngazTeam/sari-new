@@ -197,6 +197,16 @@ export default function PaymentSettings() {
             />
           </div>
 
+          <Alert variant={tapTestMode ? 'default' : 'destructive'}>
+            <Info className="h-4 w-4" />
+            <AlertTitle>{tapTestMode ? 'وضع الاختبار' : 'وضع الإنتاج'}</AlertTitle>
+            <AlertDescription>
+              {tapTestMode
+                ? 'استخدم مفاتيح sk_test وpk_test فقط. لن تُقبل مفاتيح الإنتاج في هذا الوضع.'
+                : 'ستُنشئ العمليات رسوماً حقيقية. استخدم مفاتيح sk_live وpk_live ثم اختبر الاتصال قبل التفعيل.'}
+            </AlertDescription>
+          </Alert>
+
           <Separator />
 
           {/* API Keys */}
@@ -207,7 +217,7 @@ export default function PaymentSettings() {
               <Label htmlFor="tap-public-key">Public Key</Label>
               <Input
                 id="tap-public-key"
-                placeholder="pk_test_..."
+                placeholder={tapTestMode ? 'pk_test_...' : 'pk_live_...'}
                 value={tapPublicKey}
                 onChange={(e) => setTapPublicKey(e.target.value)}
                 dir="ltr"
@@ -223,7 +233,7 @@ export default function PaymentSettings() {
                 <Input
                   id="tap-secret-key"
                   type={showSecretKey ? "text" : "password"}
-                  placeholder="sk_test_..."
+                  placeholder={tapTestMode ? 'sk_test_...' : 'sk_live_...'}
                   value={tapSecretKey}
                   onChange={(e) => setTapSecretKey(e.target.value)}
                   dir="ltr"
@@ -308,6 +318,11 @@ export default function PaymentSettings() {
               {t('paymentSettingsPage.text29')}
             </Button>
           </div>
+          {tapEnabled && !settings?.isVerified && (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              لن تُنشأ روابط دفع حتى تحفظ المفاتيح وتنجح خطوة «اختبار الاتصال».
+            </p>
+          )}
         </CardContent>
       </Card>
 

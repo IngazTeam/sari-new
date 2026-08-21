@@ -544,7 +544,7 @@ export async function executeAction(params: {
           let paymentUrl: string | null = null;
           try {
             const paymentSettings = await getMerchantPaymentSettings(merchantId);
-            if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey) {
+            if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey && paymentSettings.isVerified) {
               const merchant = await getMerchantById(merchantId);
               const chargeData = {
                 amount: totalAmount / 100, // هللات → ريال
@@ -558,7 +558,10 @@ export async function executeAction(params: {
                 },
                 source: { id: 'src_all' },
                 redirect: {
-                  url: `${process.env.VITE_APP_URL || 'https://sari.manus.space'}/payment/callback`,
+                  url: (await import('../utils/public-url')).publicPaymentUrls.return(),
+                },
+                post: {
+                  url: (await import('../utils/public-url')).publicPaymentUrls.webhook(),
                 },
                 description: `طلب #${order.id} من ${merchant?.businessName || 'المتجر'}`,
                 metadata: {

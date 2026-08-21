@@ -26,8 +26,8 @@ export const paymentsRouter = router({
     // Create payment charge
     createCharge: protectedProcedure
         .input(z.object({
-            amount: z.number().positive(),
-            currency: z.string().default('SAR'),
+            amount: z.number().int().min(100).max(100_000_000),
+            currency: z.enum(['SAR']).default('SAR'),
             customerName: z.string(),
             customerEmail: z.string().email().optional(),
             customerPhone: z.string(),
@@ -45,7 +45,8 @@ export const paymentsRouter = router({
 
             const charge = await tapPayments.createCharge({
                 ...input,
-                webhookUrl: `${process.env.VITE_FRONTEND_FORGE_API_URL}/api/webhooks/tap`,
+                redirectUrl: (await import('./utils/public-url')).publicPaymentUrls.return(),
+                webhookUrl: (await import('./utils/public-url')).publicPaymentUrls.webhook(),
             });
 
             const payment = await dbPayments.createOrderPayment({
@@ -137,8 +138,8 @@ export const paymentsRouter = router({
     createRefund: protectedProcedure
         .input(z.object({
             paymentId: z.number(),
-            amount: z.number().positive(),
-            reason: z.string(),
+            amount: z.number().int().min(100).max(100_000_000),
+            reason: z.string().trim().min(3).max(500),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await requireMerchant(ctx.user.id);
@@ -151,6 +152,16 @@ export const paymentsRouter = router({
             }
             if (!payment.tapChargeId) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payment has no Tap charge ID' });
+            }
+            if (payment.status !== 'captured' || input.amount > payment.amount) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid refund amount or payment status' });
+            }
+            const existingRefunds = await dbPayments.getPaymentRefundsByPaymentId(payment.id);
+            const alreadyRefunded = existingRefunds
+                .filter(refund => refund.status === 'pending' || refund.status === 'completed')
+                .reduce((sum, refund) => sum + refund.amount, 0);
+            if (input.amount > payment.amount - alreadyRefunded) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Refund exceeds the remaining captured amount' });
             }
 
             const refund = await tapPayments.createRefund({
@@ -171,7 +182,9 @@ export const paymentsRouter = router({
                 processedBy: ctx.user.id,
             });
 
-            await dbPayments.updateOrderPaymentStatus(payment.id, 'refunded');
+            if (input.amount === payment.amount - alreadyRefunded) {
+                await dbPayments.updateOrderPaymentStatus(payment.id, 'refunded');
+            }
             return { refundId: dbRefund?.id, tapRefundId: refund.id, status: refund.status };
         }),
 
@@ -197,12 +210,12 @@ export const paymentsRouter = router({
 
     createLink: protectedProcedure
         .input(z.object({
-            title: z.string(),
-            description: z.string().optional(),
-            amount: z.number().positive(),
-            currency: z.string().default('SAR'),
+            title: z.string().trim().min(2).max(255),
+            description: z.string().trim().max(1000).optional(),
+            amount: z.number().int().min(100).max(100_000_000),
+            currency: z.enum(['SAR']).default('SAR'),
             isFixedAmount: z.boolean().default(true),
-            maxUsageCount: z.number().optional(),
+            maxUsageCount: z.number().int().min(1).max(100_000).optional(),
             expiresAt: z.string().optional(),
             orderId: z.number().optional(),
             bookingId: z.number().optional(),
@@ -212,7 +225,8 @@ export const paymentsRouter = router({
             const dbPayments = await import('./db_payments');
             const crypto = await import('node:crypto');
             const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;
-            const tapPaymentUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL}/pay/${linkId}`;
+            const { publicPaymentUrls } = await import('./utils/public-url');
+            const tapPaymentUrl = publicPaymentUrls.link(linkId);
 
             const link = await dbPayments.createPaymentLink({
                 merchantId: merchant.id,

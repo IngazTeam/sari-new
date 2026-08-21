@@ -420,10 +420,7 @@ export const merchantSubscriptionRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/merchant/subscription/payment-callback`,
-          },
-          post: {
-            url: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/api/trpc/payment.handleWebhook`,
+            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
           },
           description: `Subscription to ${plan.name} (${input.billingCycle})`,
           metadata: {
@@ -551,7 +548,7 @@ export const merchantSubscriptionRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/merchant/subscription/payment-callback`,
+            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
           },
           description: `Upgrade to ${newPlan.name} (${input.newBillingCycle})`,
           metadata: {
@@ -736,7 +733,7 @@ export const merchantAddonsRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/merchant/subscription/payment-callback`,
+            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
           },
           description: `Purchase ${addon.name} x${input.quantity}`,
           metadata: {

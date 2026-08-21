@@ -3,8 +3,9 @@
  * https://developers.tap.company
  */
 
-import { createPayment, getPaymentByTransactionId, updatePaymentStatus } from '../db';
+import { createPayment, getPaymentByTransactionId, updatePayment, updatePaymentStatus } from '../db';
 import { ENV } from '../_core/env';
+import crypto from 'node:crypto';
 
 interface TapChargeRequest {
   amount: number;
@@ -26,6 +27,10 @@ interface TapChargeRequest {
     merchantId: number;
     subscriptionId: number;
     planId: number;
+  };
+  reference: {
+    transaction: string;
+    order: string;
   };
 }
 
@@ -50,6 +55,7 @@ export async function createTapCharge(params: {
   returnUrl: string;
 }): Promise<{ success: boolean; paymentUrl?: string; chargeId?: string; error?: string }> {
   const startTime = Date.now();
+  let localPaymentId: number | null = null;
   console.log('[Tap Payment] Creating charge:', {
     merchantId: params.merchantId,
     amount: params.amount,
@@ -64,6 +70,22 @@ export async function createTapCharge(params: {
     }
 
     const apiUrl = 'https://api.tap.company/v2/charges';
+
+    // Persist the payment intent first so the Tap reference always resolves to
+    // a real local payment during fast webhook delivery.
+    const localPayment = await createPayment({
+      merchantId: params.merchantId,
+      subscriptionId: params.subscriptionId,
+      amount: params.amount,
+      currency: params.currency,
+      paymentMethod: 'tap',
+      transactionId: `creating_${crypto.randomUUID()}`,
+      status: 'pending',
+    });
+    if (!localPayment) {
+      return { success: false, error: 'Failed to persist payment intent' };
+    }
+    localPaymentId = localPayment.id;
 
     // Prepare charge request
     const chargeRequest: TapChargeRequest = {
@@ -87,6 +109,10 @@ export async function createTapCharge(params: {
         subscriptionId: params.subscriptionId,
         planId: params.planId,
       },
+      reference: {
+        transaction: String(localPayment.id),
+        order: String(params.subscriptionId),
+      },
     };
 
     // Make API request
@@ -106,21 +132,13 @@ export async function createTapCharge(params: {
         error: errorData,
         merchantId: params.merchantId,
       });
+      await updatePayment(localPayment.id, { status: 'failed' });
       return { success: false, error: errorData.message || 'Failed to create charge' };
     }
 
     const chargeResponse: TapChargeResponse = await response.json();
 
-    // Create payment record in database
-    await createPayment({
-      merchantId: params.merchantId,
-      subscriptionId: params.subscriptionId,
-      amount: params.amount,
-      currency: params.currency,
-      paymentMethod: 'tap',
-      transactionId: chargeResponse.id,
-      status: 'pending',
-    });
+    await updatePayment(localPayment.id, { transactionId: chargeResponse.id });
 
     const duration = Date.now() - startTime;
     console.log('[Tap Payment] Charge created successfully:', {
@@ -135,6 +153,11 @@ export async function createTapCharge(params: {
       chargeId: chargeResponse.id,
     };
   } catch (error) {
+    if (localPaymentId) {
+      await updatePayment(localPaymentId, { status: 'failed' }).catch(updateError => {
+        console.error('[Tap Payment] Failed to close local payment intent:', updateError);
+      });
+    }
     const duration = Date.now() - startTime;
     console.error('[Tap Payment] Exception:', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -145,7 +168,13 @@ export async function createTapCharge(params: {
   }
 }
 
-export async function verifyTapPayment(chargeId: string): Promise<{ success: boolean; status: string; error?: string }> {
+export async function verifyTapPayment(chargeId: string): Promise<{
+  success: boolean;
+  status: string;
+  amount?: number;
+  currency?: string;
+  error?: string;
+}> {
   try {
     if (!ENV.tapSecretKey) {
       return { success: false, status: 'failed', error: 'Tap configuration not found' };
@@ -177,6 +206,8 @@ export async function verifyTapPayment(chargeId: string): Promise<{ success: boo
     return {
       success: true,
       status: charge.status,
+      amount: charge.amount,
+      currency: charge.currency,
     };
   } catch (error) {
     console.error('Tap Verification Error:', error);

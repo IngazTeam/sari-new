@@ -9,6 +9,10 @@ import { handleCalendlyWebhook } from '../integrations/calendly';
 import { getIntegrationByType } from '../db';
 import { getPaymentGatewayByName } from '../db';
 import { ENV } from '../_core/env';
+import { getMerchantPaymentSettings } from '../db';
+import * as dbPayments from '../db_payments';
+import { readPaymentLinkId } from '../payment/payment-link-policy';
+import { processTapWebhook as processOrderPaymentWebhook } from './tap-webhook';
 
 const router = Router();
 
@@ -20,10 +24,21 @@ router.post('/tap', async (req: Request, res: Response) => {
   try {
     const signature = req.headers['x-tap-signature'] as string;
     const payload = JSON.stringify(req.body);
+    const charge = req.body?.data?.object || req.body;
+    const orderPayment = charge?.id
+      ? await dbPayments.getOrderPaymentByTapChargeId(String(charge.id))
+      : null;
 
-    // Check if Tap is configured
-    if (!ENV.tapSecretKey) {
-      return res.status(400).json({ error: 'Tap gateway not configured' });
+    // Payment links use each merchant's verified Tap key. Platform subscription
+    // charges continue to use the platform key. Select the verifier from a local,
+    // trusted payment record rather than untrusted webhook metadata.
+    let verificationSecret = ENV.tapSecretKey;
+    if (orderPayment && readPaymentLinkId(orderPayment.metadata)) {
+      const settings = await getMerchantPaymentSettings(orderPayment.merchantId);
+      verificationSecret = settings?.tapSecretKey || '';
+    }
+    if (!verificationSecret) {
+      return res.status(503).json({ error: 'Tap gateway not configured' });
     }
 
     // SECURITY: Webhook signature verification is MANDATORY
@@ -32,14 +47,17 @@ router.post('/tap', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Missing webhook signature' });
     }
 
-    const isValid = await verifyTapSignature(payload, signature, ENV.tapSecretKey);
+    const isValid = await verifyTapSignature(payload, signature, verificationSecret);
     if (!isValid) {
       console.error('[Tap Webhook] Invalid signature');
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
-    // Process webhook
-    const result = await handleTapWebhook(req.body);
+    // Order/booking/payment-link charges live in order_payments. Subscription
+    // charges use the legacy payments table. Route to the matching idempotent handler.
+    const result = orderPayment
+      ? await processOrderPaymentWebhook(req.body?.data?.object ? req.body : { data: { object: charge } })
+      : await handleTapWebhook(req.body);
 
     if (result.success) {
       return res.status(200).json({ message: result.message });

@@ -46,13 +46,35 @@ export async function handleTapWebhook(payload: any): Promise<{ success: boolean
       return { success: false, message: 'Missing reference (payment ID)' };
     }
 
-    const paymentId = parseInt(reference.number || reference);
+    const paymentId = parseInt(
+      reference.number || reference.transaction || reference.payment || reference,
+      10,
+    );
+    if (!Number.isSafeInteger(paymentId) || paymentId <= 0) {
+      return { success: false, message: 'Invalid payment reference' };
+    }
 
     // Get payment from database
     const payment = await getPaymentById(paymentId);
     if (!payment) {
       console.error('[Tap Webhook] Payment not found:', paymentId);
       return { success: false, message: 'Payment not found' };
+    }
+
+    if (['completed', 'failed', 'refunded'].includes(payment.status)) {
+      return { success: true, message: 'Webhook already processed (idempotent)' };
+    }
+
+    if (Number(payment.amount) !== Number(amount) || payment.currency !== currency) {
+      console.error('[Tap Webhook] Amount or currency mismatch', {
+        paymentId,
+        expectedAmount: payment.amount,
+        receivedAmount: amount,
+        expectedCurrency: payment.currency,
+        receivedCurrency: currency,
+      });
+      await updatePaymentStatus(paymentId, 'failed', tapId);
+      return { success: false, message: 'Payment amount mismatch' };
     }
 
     console.log('[Tap Webhook] Processing payment:', {

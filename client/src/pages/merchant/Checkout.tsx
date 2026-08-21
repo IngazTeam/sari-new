@@ -2,11 +2,8 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { CreditCard, Loader2, Tag, X } from "lucide-react";
+import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
-import { useLocation } from "wouter";
 
 import { useTranslation } from 'react-i18next';
 export default function Checkout() {
@@ -29,53 +26,12 @@ export default function Checkout() {
     },
   });
 
-  const [selectedGateway, setSelectedGateway] = useState<'tap' | 'paypal' | null>(null);
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
-  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
-
-  const trpcUtils = trpc.useUtils();
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) {
-      toast.error(t('checkoutPage.text1'));
-      return;
-    }
-    setIsValidatingCoupon(true);
-    try {
-      const coupon = await trpcUtils.coupons.validate.fetch({ code: couponCode, planId });
-      if (coupon) {
-        setAppliedCoupon(coupon);
-        toast.success(t('checkoutPage.text0'));
-      } else {
-        toast.error(t('checkoutPage.text26'));
-      }
-    } catch (error: any) {
-      toast.error(error.message || t('checkoutPage.text26'));
-    } finally {
-      setIsValidatingCoupon(false);
-    }
-  };
-
-  const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode('');
-  };
-
-  // Calculate discount
+  // The legacy plan price is the final VAT-inclusive amount. The server reads
+  // the same persisted value when creating the Tap charge; no amount is sent
+  // from the browser.
   const basePrice = plan?.priceMonthly || 0;
-  const tax = basePrice * 0.15;
-  let discount = 0;
-  if (appliedCoupon) {
-    if (appliedCoupon.discountType === 'percentage') {
-      discount = basePrice * (appliedCoupon.discountValue / 100);
-    } else {
-      discount = appliedCoupon.discountValue;
-    }
-  }
-  const finalPrice = basePrice - discount;
-  const finalTax = finalPrice * 0.15;
-  const totalPrice = finalPrice + finalTax;
+  const includedVat = basePrice * 15 / 115;
+  const totalPrice = basePrice;
 
   if (planLoading) {
     return (
@@ -100,18 +56,10 @@ export default function Checkout() {
     );
   }
 
-  // Tap is always enabled
-  const enabledGateways = [{ id: 1, gateway: 'tap' as const, testMode: true }];
-
   const handlePayment = async () => {
-    if (!selectedGateway) {
-      toast.error(t('toast.subscriptions.msg2'));
-      return;
-    }
-
     await createSessionMutation.mutateAsync({
       planId: plan.id,
-      gateway: selectedGateway,
+      gateway: 'tap',
     });
   };
 
@@ -147,80 +95,17 @@ export default function Checkout() {
                 <span>{basePrice.toFixed(2)} {t('common.currency')}</span>
               </div>
               
-              {appliedCoupon && (
-                <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
-                  <span>{t('checkoutPage.discount')} ({appliedCoupon.code})</span>
-                  <span>-{discount.toFixed(2)} {t('common.currency')}</span>
-                </div>
-              )}
-              
-              {appliedCoupon && (
-                <div className="flex justify-between text-sm">
-                  <span>{t('checkoutPage.text9')}</span>
-                  <span>{finalPrice.toFixed(2)} {t('common.currency')}</span>
-                </div>
-              )}
-              
               <div className="flex justify-between text-sm">
-                <span>{t('checkoutPage.text11')}</span>
-                <span>{finalTax.toFixed(2)} {t('common.currency')}</span>
+                <span>{t('checkoutPage.vatIncluded', { defaultValue: 'ضريبة القيمة المضافة (مشمولة)' })}</span>
+                <span>{includedVat.toFixed(2)} {t('common.currency')}</span>
               </div>
               
               <div className="flex justify-between font-bold text-lg border-t pt-2">
                 <span>{t('checkoutPage.text13')}</span>
-                <span className={appliedCoupon ? 'text-green-600 dark:text-green-400' : ''}>
+                <span>
                   {t('checkoutPage.text36', { var0: totalPrice.toFixed(2) })}
                 </span>
               </div>
-              
-              {appliedCoupon && (
-                <div className="text-xs text-muted-foreground text-center">
-                  {t('checkoutPage.text37', { var0: discount.toFixed(2) })}
-                </div>
-              )}
-            </div>
-
-            {/* Coupon Input */}
-            <div className="border-t pt-4">
-              <p className="text-sm font-medium mb-2">{t('checkoutPage.text14')}</p>
-              {!appliedCoupon ? (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder={t('checkoutPage.text15')}
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                    disabled={isValidatingCoupon}
-                  />
-                  <Button
-                    onClick={handleApplyCoupon}
-                    disabled={isValidatingCoupon || !couponCode.trim()}
-                    variant="outline"
-                  >
-                    {isValidatingCoupon ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Tag className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between bg-green-50 dark:bg-green-950/20 p-3 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                      {appliedCoupon.code}
-                    </span>
-                  </div>
-                  <Button
-                    onClick={handleRemoveCoupon}
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-1"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
             </div>
 
             <div className="bg-muted p-4 rounded-lg space-y-2">
@@ -241,25 +126,7 @@ export default function Checkout() {
             <CardDescription>{t('checkoutPage.text21')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {enabledGateways.length === 0 && (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">
-                  {t('checkoutPage.text29')}
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  {t('checkoutPage.text30')}
-                </p>
-              </div>
-            )}
-
-            <button
-              onClick={() => setSelectedGateway('tap')}
-              className={`w-full p-4 border-2 rounded-lg transition-all ${
-                selectedGateway === 'tap'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
+            <div className="w-full rounded-lg border-2 border-primary bg-primary/5 p-4">
               <div className="flex items-center gap-3">
                 <CreditCard className="h-6 w-6" />
                 <div className="flex-1 text-right">
@@ -268,36 +135,15 @@ export default function Checkout() {
                     {t('checkoutPage.text31')}
                   </p>
                 </div>
-                <Badge>{t('checkoutPage.text22')}</Badge>
+                <Badge>{t('checkoutPage.available', { defaultValue: 'متاح' })}</Badge>
               </div>
-            </button>
-
-            <button
-              onClick={() => setSelectedGateway('paypal')}
-              className={`w-full p-4 border-2 rounded-lg transition-all ${
-                selectedGateway === 'paypal'
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-6 w-6 bg-[#0070ba] rounded flex items-center justify-center text-white text-xs font-bold">
-                  PP
-                </div>
-                <div className="flex-1 text-right">
-                  <p className="font-medium">PayPal</p>
-                  <p className="text-sm text-muted-foreground">
-                    {t('checkoutPage.text32')}
-                  </p>
-                </div>
-              </div>
-            </button>
+            </div>
 
             <Button
               className="w-full"
               size="lg"
               onClick={handlePayment}
-              disabled={!selectedGateway || createSessionMutation.isPending}
+              disabled={createSessionMutation.isPending}
             >
               {createSessionMutation.isPending ? (
                 <>

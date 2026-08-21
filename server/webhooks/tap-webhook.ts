@@ -17,6 +17,7 @@ import {
   updateOrderStatus,
 } from '../db';
 import * as dbPayments from '../db_payments';
+import { readPaymentLinkId } from '../payment/payment-link-policy';
 import { sendMessageWithCredentials } from '../whatsapp';
 
 interface TapWebhookPayload {
@@ -128,17 +129,30 @@ export async function processTapWebhook(
     }
 
     // SEC: Idempotency guard — skip if payment already reached a terminal status
-    const terminalStatuses = ['captured', 'completed', 'refunded'];
-    if (terminalStatuses.includes(payment.status) && (status === 'CAPTURED' || status === 'FAILED')) {
+    const terminalStatuses = ['captured', 'completed', 'failed', 'cancelled', 'refunded'];
+    if (terminalStatuses.includes(payment.status)) {
       console.log(`[TapWebhook] ⏭️ Duplicate webhook skipped: charge ${chargeId} already in terminal status '${payment.status}'`);
       return { success: true, message: 'Webhook already processed (idempotent)' };
     }
 
     // تحديث حالة المعاملة
     const newStatus = mapTapStatusToPaymentStatus(status);
-    await dbPayments.updatePaymentStatus(payment.id, newStatus, {
+    const transitioned = await dbPayments.transitionPaymentStatus(payment.id, payment.status, newStatus, {
       tapResponse: JSON.stringify(charge)
     });
+    if (!transitioned) {
+      console.log(`[TapWebhook] ⏭️ Concurrent duplicate webhook skipped for charge ${chargeId}`);
+      return { success: true, message: 'Webhook already processed (concurrent duplicate)' };
+    }
+
+    const paymentLinkId = readPaymentLinkId(payment.metadata);
+    if (paymentLinkId) {
+      if (status === 'CAPTURED') {
+        await dbPayments.incrementPaymentLinkUsage(paymentLinkId, payment.amount, true, payment.merchantId);
+      } else if (['FAILED', 'DECLINED', 'TIMEDOUT', 'CANCELLED', 'ABANDONED'].includes(status)) {
+        await dbPayments.incrementPaymentLinkUsage(paymentLinkId, payment.amount, false, payment.merchantId);
+      }
+    }
 
     // معالجة حسب نوع المعاملة
     if (metadata.type === 'order' && metadata.orderId) {

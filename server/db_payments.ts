@@ -374,34 +374,37 @@ export async function updatePaymentLink(
 export async function incrementPaymentLinkUsage(
   id: number,
   amount: number,
-  success: boolean
+  success: boolean,
+  merchantId?: number,
 ): Promise<void> {
   const db = await getDb();
-  const link = await getPaymentLinkById(id);
-  if (!link) return;
-
-  const updateData: any = {
-    usageCount: link.usageCount + 1,
-    updatedAt: new Date().toISOString(),
-  };
-
-  if (success) {
-    updateData.successfulPayments = link.successfulPayments + 1;
-    updateData.totalCollected = link.totalCollected + amount;
-  } else {
-    updateData.failedPayments = link.failedPayments + 1;
-  }
-
-  // ط§ظ„طھط­ظ‚ظ‚ ظ…ظ† ط§ظ†طھظ‡ط§ط، طµظ„ط§ط­ظٹط© ط§ظ„ط±ط§ط¨ط·
-  if (link.maxUsageCount && updateData.usageCount >= link.maxUsageCount) {
-    updateData.status = 'completed';
-    updateData.isActive = 0;
-  }
+  const conditions = [eq(paymentLinks.id, id)];
+  if (merchantId !== undefined) conditions.push(eq(paymentLinks.merchantId, merchantId));
 
   await db
     .update(paymentLinks)
-    .set(updateData)
-    .where(eq(paymentLinks.id, id));
+    .set({
+      usageCount: sql`${paymentLinks.usageCount} + 1`,
+      successfulPayments: success
+        ? sql`${paymentLinks.successfulPayments} + 1`
+        : paymentLinks.successfulPayments,
+      failedPayments: success
+        ? paymentLinks.failedPayments
+        : sql`${paymentLinks.failedPayments} + 1`,
+      totalCollected: success
+        ? sql`${paymentLinks.totalCollected} + ${amount}`
+        : paymentLinks.totalCollected,
+      status: sql`CASE
+        WHEN ${paymentLinks.maxUsageCount} IS NOT NULL
+          AND ${paymentLinks.usageCount} + 1 >= ${paymentLinks.maxUsageCount}
+        THEN 'completed' ELSE ${paymentLinks.status} END`,
+      isActive: sql`CASE
+        WHEN ${paymentLinks.maxUsageCount} IS NOT NULL
+          AND ${paymentLinks.usageCount} + 1 >= ${paymentLinks.maxUsageCount}
+        THEN 0 ELSE ${paymentLinks.isActive} END`,
+      updatedAt: new Date().toISOString(),
+    })
+    .where(and(...conditions));
 }
 
 /**
@@ -591,6 +594,45 @@ export async function updatePaymentStatus(
   }
 
   return await updateOrderPaymentStatus(id, dbStatus, additionalData);
+}
+
+/**
+ * Atomically transition a payment from the status observed by the webhook.
+ * This is the compare-and-set boundary that prevents concurrent duplicate
+ * webhooks from incrementing link counters or applying order side effects twice.
+ */
+export async function transitionPaymentStatus(
+  id: number,
+  expectedStatus: OrderPayment['status'],
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled',
+  additionalData?: {
+    tapResponse?: string;
+    errorMessage?: string;
+    errorCode?: string;
+  },
+): Promise<boolean> {
+  const db = await getDb();
+  const dbStatus = status === 'completed'
+    ? 'captured'
+    : status === 'processing'
+      ? 'authorized'
+      : status;
+  const now = new Date().toISOString();
+  const updateData: Record<string, unknown> = {
+    status: dbStatus,
+    updatedAt: now,
+    ...additionalData,
+  };
+  if (dbStatus === 'authorized') updateData.authorizedAt = now;
+  if (dbStatus === 'captured') updateData.capturedAt = now;
+  if (dbStatus === 'failed') updateData.failedAt = now;
+  if (dbStatus === 'refunded') updateData.refundedAt = now;
+
+  const result = await db
+    .update(orderPayments)
+    .set(updateData)
+    .where(and(eq(orderPayments.id, id), eq(orderPayments.status, expectedStatus)));
+  return Number((result[0] as any)?.affectedRows || 0) === 1;
 }
 
 /**

@@ -27,9 +27,10 @@ export const merchantPaymentsRouter = router({
 
         // Return settings with masked secret key
         if (settings?.tapSecretKey) {
+            const { maskSecret } = await import('./payment/payment-link-policy');
             return {
                 ...settings,
-                tapSecretKey: settings.tapSecretKey.slice(0, 8) + '****' + settings.tapSecretKey.slice(-4),
+                tapSecretKey: maskSecret(settings.tapSecretKey),
             };
         }
 
@@ -40,12 +41,12 @@ export const merchantPaymentsRouter = router({
     saveSettings: protectedProcedure
         .input(z.object({
             tapEnabled: z.boolean(),
-            tapPublicKey: z.string().optional(),
-            tapSecretKey: z.string().optional(),
+            tapPublicKey: z.string().trim().max(500).optional(),
+            tapSecretKey: z.string().trim().max(500).optional(),
             tapTestMode: z.boolean().default(true),
             autoSendPaymentLink: z.boolean().default(true),
-            paymentLinkMessage: z.string().optional(),
-            defaultCurrency: z.string().default('SAR'),
+            paymentLinkMessage: z.string().max(1000).optional(),
+            defaultCurrency: z.enum(['SAR']).default('SAR'),
         }))
         .mutation(async ({ ctx, input }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);
@@ -53,11 +54,26 @@ export const merchantPaymentsRouter = router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
             }
 
+            const existingSettings = await getMerchantPaymentSettings(merchant.id);
+            const secretWasSupplied = Boolean(input.tapSecretKey && !input.tapSecretKey.includes('****'));
+            const effectiveSecret = secretWasSupplied ? input.tapSecretKey! : existingSettings?.tapSecretKey;
+            const effectivePublicKey = input.tapPublicKey || existingSettings?.tapPublicKey;
+            const { tapKeyMatchesMode } = await import('./payment/payment-link-policy');
+            if (input.tapEnabled && (!effectiveSecret || !effectivePublicKey)) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'أدخل مفتاحي Tap العام والسري قبل التفعيل' });
+            }
+            if (effectiveSecret && !tapKeyMatchesMode(effectiveSecret, input.tapTestMode)) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع مفتاح Tap لا يطابق وضع الاختبار/الإنتاج المحدد' });
+            }
+            const credentialsChanged = secretWasSupplied
+                || (input.tapPublicKey != null && input.tapPublicKey !== existingSettings?.tapPublicKey)
+                || Boolean(existingSettings && Boolean(existingSettings.tapTestMode) !== input.tapTestMode);
             const updateData: any = {
                 tapEnabled: input.tapEnabled ? 1 : 0,
                 tapTestMode: input.tapTestMode ? 1 : 0,
                 autoSendPaymentLink: input.autoSendPaymentLink ? 1 : 0,
                 defaultCurrency: input.defaultCurrency,
+                ...(credentialsChanged || !input.tapEnabled ? { isVerified: 0, lastVerifiedAt: null } : {}),
             };
 
             if (input.tapPublicKey) {
@@ -87,6 +103,10 @@ export const merchantPaymentsRouter = router({
         const settings = await getMerchantPaymentSettings(merchant.id);
         if (!settings?.tapSecretKey) {
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم إدخال مفاتيح Tap' });
+        }
+        const { tapKeyMatchesMode } = await import('./payment/payment-link-policy');
+        if (!tapKeyMatchesMode(settings.tapSecretKey, Boolean(settings.tapTestMode))) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع الاختبار/الإنتاج' });
         }
 
         try {
@@ -138,7 +158,7 @@ export const merchantPaymentsRouter = router({
             }
 
             const settings = await getMerchantPaymentSettings(merchant.id);
-            if (!settings?.tapEnabled || !settings?.tapSecretKey) {
+            if (!settings?.tapEnabled || !settings?.tapSecretKey || !settings.isVerified) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'الدفع الإلكتروني غير مفعل' });
             }
 
@@ -158,7 +178,10 @@ export const merchantPaymentsRouter = router({
                     },
                     source: { id: 'src_all' },
                     redirect: {
-                        url: `${process.env.VITE_APP_URL || 'https://sari.manus.space'}/payment/callback`,
+                        url: (await import('./utils/public-url')).publicPaymentUrls.return(),
+                    },
+                    post: {
+                        url: (await import('./utils/public-url')).publicPaymentUrls.webhook(),
                     },
                     description: input.description || `طلب من ${merchant.businessName}`,
                     metadata: {

@@ -116,7 +116,7 @@ export const subscriptionSignupRouter = router({
           },
           source: { id: 'src_all' },
           redirect: {
-            url: `${process.env.VITE_APP_URL || 'http://localhost:3000'}/payment/callback`,
+            url: (await import('../utils/public-url')).publicPaymentUrls.callback(),
           },
           description: `Subscription: ${plan.name} (${input.billingCycle})`,
           metadata: {

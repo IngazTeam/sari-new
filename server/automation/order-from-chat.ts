@@ -305,7 +305,7 @@ export async function createOrderFromChat(
       // جلب إعدادات الدفع للتاجر
       const paymentSettings = await getMerchantPaymentSettings(merchantId);
       
-      if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey) {
+      if (paymentSettings?.tapEnabled && paymentSettings?.tapSecretKey && paymentSettings.isVerified) {
         const baseUrl = 'https://api.tap.company/v2';
         const merchant = await getMerchantById(merchantId);
         
@@ -321,7 +321,10 @@ export async function createOrderFromChat(
           },
           source: { id: 'src_all' },
           redirect: {
-            url: `${process.env.VITE_APP_URL || 'https://sari.manus.space'}/payment/callback`,
+            url: (await import('../utils/public-url')).publicPaymentUrls.return(),
+          },
+          post: {
+            url: (await import('../utils/public-url')).publicPaymentUrls.webhook(),
           },
           description: `طلب رقم ${order.orderNumber} من ${merchant?.businessName || 'المتجر'}`,
           metadata: {

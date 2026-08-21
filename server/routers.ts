@@ -2700,7 +2700,7 @@ export const appRouter = router({
   subscriptionPayments: router({
     createSession: protectedProcedure
       .input(z.object({
-        planId: z.number(),
+        planId: z.number().int().positive(),
         gateway: z.enum(['tap', 'paypal']),
       }))
       .mutation(async ({ ctx, input }) => {
@@ -2712,7 +2712,7 @@ export const appRouter = router({
 
         // Get plan
         const plan = await getPlanById(input.planId);
-        if (!plan) {
+        if (!plan || !plan.isActive) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Plan not found' });
         }
 
@@ -2735,8 +2735,9 @@ export const appRouter = router({
         }
 
         // Prepare payment parameters
-        const returnUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/merchant/payment/success?subscriptionId=${subscription.id}`;
-        const cancelUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/merchant/payment/cancel?subscriptionId=${subscription.id}`;
+        const { buildPublicUrl } = await import('./utils/public-url');
+        const returnUrl = buildPublicUrl(`/merchant/payment/success?subscriptionId=${subscription.id}`);
+        const cancelUrl = buildPublicUrl(`/merchant/payment/cancel?subscriptionId=${subscription.id}`);
 
         // Create payment session based on gateway
         if (input.gateway === 'tap') {
@@ -2753,6 +2754,7 @@ export const appRouter = router({
           });
 
           if (!result.success) {
+            await updateSubscription(subscription.id, { status: 'cancelled' });
             throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to create payment' });
           }
 
@@ -2774,6 +2776,7 @@ export const appRouter = router({
           });
 
           if (!result.success) {
+            await updateSubscription(subscription.id, { status: 'cancelled' });
             throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error || 'Failed to create payment' });
           }
 
@@ -2800,7 +2803,7 @@ export const appRouter = router({
 
         // Get payment
         const payment = await getPaymentByTransactionId(input.transactionId);
-        if (!payment || payment.merchantId !== merchant.id) {
+        if (!payment || payment.merchantId !== merchant.id || payment.subscriptionId !== input.subscriptionId) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
         }
 
@@ -2809,7 +2812,12 @@ export const appRouter = router({
           const { verifyTapPayment } = await import('./payment/tap');
           const result = await verifyTapPayment(input.transactionId);
 
-          if (result.success && result.status === 'CAPTURED') {
+          if (
+            result.success
+            && result.status === 'CAPTURED'
+            && Number(result.amount) === Number(payment.amount)
+            && result.currency === payment.currency
+          ) {
             // Update subscription status
             await updateSubscription(input.subscriptionId, { status: 'active' });
             // Update merchant subscription
@@ -6533,6 +6541,8 @@ export const appRouter = router({
           if (productNames.has(normalizedName)) {
             productsSkipped += 1;
             continue;
+          } else if (result.success && result.status === 'CAPTURED') {
+            throw new TRPCError({ code: 'CONFLICT', message: 'Payment amount verification failed' });
           }
 
           const created = await createProduct({
@@ -7908,17 +7918,166 @@ export const appRouter = router({
   // Payment System - Tap Payments Integration
   // ============================================
   payments: router({
+    // Public checkout data contains no merchant credentials or customer information.
+    getPublicLink: publicProcedure
+      .input(z.object({ linkId: z.string().min(20).max(100) }))
+      .query(async ({ input }) => {
+        const dbPayments = await import('./db_payments');
+        const { getPaymentLinkAvailability } = await import('./payment/payment-link-policy');
+        const link = await dbPayments.getPaymentLinkByLinkId(input.linkId);
+        if (!link) throw new TRPCError({ code: 'NOT_FOUND', message: 'رابط الدفع غير موجود' });
+
+        const availability = getPaymentLinkAvailability(link);
+        return {
+          linkId: link.linkId,
+          title: link.title,
+          description: link.description,
+          amount: link.amount,
+          currency: link.currency,
+          available: availability.available,
+          unavailableReason: availability.available ? null : availability.reason,
+        };
+      }),
+
+    checkoutLink: publicProcedure
+      .input(z.object({
+        linkId: z.string().min(20).max(100),
+        customerName: z.string().trim().min(2).max(120),
+        customerPhone: z.string().trim().min(9).max(20),
+        customerEmail: z.string().trim().email().max(255).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const dbPayments = await import('./db_payments');
+        const { getPaymentLinkAvailability, halalasToTapAmount, normalizeSaudiPhone } =
+          await import('./payment/payment-link-policy');
+        const { publicPaymentUrls } = await import('./utils/public-url');
+
+        const link = await dbPayments.getPaymentLinkByLinkId(input.linkId);
+        if (!link) throw new TRPCError({ code: 'NOT_FOUND', message: 'رابط الدفع غير موجود' });
+
+        const availability = getPaymentLinkAvailability(link);
+        if (!availability.available) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'رابط الدفع غير متاح أو منتهي' });
+        }
+
+        const settings = await getMerchantPaymentSettings(link.merchantId);
+        if (!settings?.tapEnabled || !settings.tapSecretKey || !settings.isVerified) {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'بوابة الدفع غير جاهزة لهذا المتجر' });
+        }
+
+        let phoneNumber: string;
+        try {
+          phoneNumber = normalizeSaudiPhone(input.customerPhone);
+        } catch {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'رقم الجوال غير صالح' });
+        }
+
+        const chargePayload = {
+          amount: halalasToTapAmount(link.amount),
+          currency: link.currency,
+          customer: {
+            first_name: input.customerName,
+            email: input.customerEmail,
+            phone: { country_code: '966', number: phoneNumber },
+          },
+          source: { id: 'src_all' },
+          redirect: { url: publicPaymentUrls.linkStatus(link.linkId) },
+          post: { url: publicPaymentUrls.webhook() },
+          description: link.description || link.title,
+          metadata: {
+            type: 'payment_link',
+            merchantId: link.merchantId,
+            paymentLinkId: link.id,
+            paymentLinkToken: link.linkId,
+            orderId: link.orderId || undefined,
+            bookingId: link.bookingId || undefined,
+          },
+        };
+
+        const response = await fetch('https://api.tap.company/v2/charges', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${settings.tapSecretKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(chargePayload),
+        });
+        const charge = await response.json().catch(() => ({}));
+        if (!response.ok || !charge?.id || !charge?.transaction?.url) {
+          console.error('[PaymentLink] Tap charge creation failed', {
+            merchantId: link.merchantId,
+            paymentLinkId: link.id,
+            status: response.status,
+          });
+          throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر إنشاء جلسة الدفع، حاول لاحقاً' });
+        }
+
+        const payment = await dbPayments.createOrderPayment({
+          merchantId: link.merchantId,
+          orderId: link.orderId,
+          bookingId: link.bookingId,
+          customerPhone: `+966${phoneNumber}`,
+          customerName: input.customerName,
+          customerEmail: input.customerEmail || null,
+          amount: link.amount,
+          currency: link.currency,
+          tapChargeId: charge.id,
+          tapPaymentUrl: charge.transaction.url,
+          status: 'pending',
+          description: link.description || link.title,
+          metadata: JSON.stringify(chargePayload.metadata),
+          expiresAt: charge.transaction?.expiry?.period
+            ? new Date(Date.now() + charge.transaction.expiry.period * 60 * 60 * 1000).toISOString()
+            : null,
+        });
+        if (!payment) {
+          console.error('[PaymentLink] Charge created without a local payment record', {
+            merchantId: link.merchantId,
+            paymentLinkId: link.id,
+            chargeId: charge.id,
+          });
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حفظ عملية الدفع' });
+        }
+
+        return { paymentUrl: charge.transaction.url };
+      }),
+
+    getPublicLinkPaymentStatus: publicProcedure
+      .input(z.object({
+        linkId: z.string().min(20).max(100),
+        chargeId: z.string().min(3).max(255),
+      }))
+      .query(async ({ input }) => {
+        const dbPayments = await import('./db_payments');
+        const { readPaymentLinkId } = await import('./payment/payment-link-policy');
+        const link = await dbPayments.getPaymentLinkByLinkId(input.linkId);
+        const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
+        if (!link || !payment || payment.merchantId !== link.merchantId || readPaymentLinkId(payment.metadata) !== link.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'عملية الدفع غير موجودة' });
+        }
+        return { status: payment.status };
+      }),
+
+    getPublicChargeStatus: publicProcedure
+      .input(z.object({ chargeId: z.string().min(3).max(255) }))
+      .query(async ({ input }) => {
+        const dbPayments = await import('./db_payments');
+        const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
+        if (!payment) throw new TRPCError({ code: 'NOT_FOUND', message: 'عملية الدفع غير موجودة' });
+        return { status: payment.status };
+      }),
+
     // Create payment charge
     createCharge: protectedProcedure
       .input(z.object({
-        amount: z.number().positive(),
-        currency: z.string().default('SAR'),
-        customerName: z.string(),
+        amount: z.number().int().min(100).max(100_000_000),
+        currency: z.enum(['SAR']).default('SAR'),
+        customerName: z.string().trim().min(2).max(120),
         customerEmail: z.string().email().optional(),
-        customerPhone: z.string(),
-        description: z.string().optional(),
-        orderId: z.number().optional(),
-        bookingId: z.number().optional(),
+        customerPhone: z.string().trim().min(9).max(20),
+        description: z.string().max(500).optional(),
+        orderId: z.number().int().positive().optional(),
+        bookingId: z.number().int().positive().optional(),
         redirectUrl: z.string().url(),
         // @ts-ignore
         metadata: z.record(z.any()).optional(),
@@ -7931,7 +8090,8 @@ export const appRouter = router({
 
         const charge = await tapPayments.createCharge({
           ...input,
-          webhookUrl: `${process.env.VITE_FRONTEND_FORGE_API_URL}/api/webhooks/tap`,
+          redirectUrl: (await import('./utils/public-url')).publicPaymentUrls.return(),
+          webhookUrl: (await import('./utils/public-url')).publicPaymentUrls.webhook(),
         });
 
         const payment = await dbPayments.createOrderPayment({
@@ -7961,15 +8121,18 @@ export const appRouter = router({
 
     verifyPayment: protectedProcedure
       .input(z.object({ chargeId: z.string() }))
-      .query(async ({ input }) => {
+      .query(async ({ ctx, input }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const tapPayments = await import('./_core/tapPayments');
         const dbPayments = await import('./db_payments');
 
-        const verification = await tapPayments.verifyPayment(input.chargeId);
         const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
-        if (payment) {
-          await dbPayments.updateOrderPaymentStatus(payment.id, verification.status.toLowerCase() as any);
+        if (!payment || payment.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
         }
+        const verification = await tapPayments.verifyPayment(input.chargeId);
+        await dbPayments.updateOrderPaymentStatus(payment.id, verification.status.toLowerCase() as any);
         return verification;
       }),
 
@@ -8020,8 +8183,8 @@ export const appRouter = router({
     createRefund: protectedProcedure
       .input(z.object({
         paymentId: z.number(),
-        amount: z.number().positive(),
-        reason: z.string(),
+        amount: z.number().int().min(100).max(100_000_000),
+        reason: z.string().trim().min(3).max(500),
       }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
@@ -8035,6 +8198,16 @@ export const appRouter = router({
         }
         if (!payment.tapChargeId) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payment has no Tap charge ID' });
+        }
+        if (payment.status !== 'captured' || input.amount > payment.amount) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid refund amount or payment status' });
+        }
+        const existingRefunds = await dbPayments.getPaymentRefundsByPaymentId(payment.id);
+        const alreadyRefunded = existingRefunds
+          .filter(refund => refund.status === 'pending' || refund.status === 'completed')
+          .reduce((sum, refund) => sum + refund.amount, 0);
+        if (input.amount > payment.amount - alreadyRefunded) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Refund exceeds the remaining captured amount' });
         }
 
         const refund = await tapPayments.createRefund({
@@ -8055,7 +8228,9 @@ export const appRouter = router({
           processedBy: ctx.user.id,
         });
 
-        await dbPayments.updateOrderPaymentStatus(payment.id, 'refunded');
+        if (input.amount === payment.amount - alreadyRefunded) {
+          await dbPayments.updateOrderPaymentStatus(payment.id, 'refunded');
+        }
         return { refundId: dbRefund?.id, tapRefundId: refund.id, status: refund.status };
       }),
 
@@ -8070,6 +8245,10 @@ export const appRouter = router({
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         const dbPayments = await import('./db_payments');
         if (input.paymentId) {
+          const payment = await dbPayments.getOrderPaymentById(input.paymentId);
+          if (!payment || payment.merchantId !== merchant.id) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
+          }
           return await dbPayments.getPaymentRefundsByPaymentId(input.paymentId);
         }
         return await dbPayments.getPaymentRefundsByMerchant(merchant.id, { status: input.status, limit: input.limit });
@@ -8077,12 +8256,12 @@ export const appRouter = router({
 
     createLink: protectedProcedure
       .input(z.object({
-        title: z.string(),
-        description: z.string().optional(),
-        amount: z.number().positive(),
-        currency: z.string().default('SAR'),
+        title: z.string().trim().min(2).max(255),
+        description: z.string().trim().max(1000).optional(),
+        amount: z.number().int().min(100).max(100_000_000),
+        currency: z.enum(['SAR']).default('SAR'),
         isFixedAmount: z.boolean().default(true),
-        maxUsageCount: z.number().optional(),
+        maxUsageCount: z.number().int().min(1).max(100_000).optional(),
         expiresAt: z.string().optional(),
         orderId: z.number().optional(),
         bookingId: z.number().optional(),
@@ -8093,7 +8272,8 @@ export const appRouter = router({
         const dbPayments = await import('./db_payments');
         const crypto = await import('node:crypto');
         const linkId = `link_${crypto.randomBytes(16).toString('hex')}`;
-        const tapPaymentUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL}/pay/${linkId}`;
+        const { publicPaymentUrls } = await import('./utils/public-url');
+        const tapPaymentUrl = publicPaymentUrls.link(linkId);
 
         const link = await dbPayments.createPaymentLink({
           merchantId: merchant.id,
@@ -8205,9 +8385,10 @@ export const appRouter = router({
 
       // Return settings with masked secret key
       if (settings?.tapSecretKey) {
+        const { maskSecret } = await import('./payment/payment-link-policy');
         return {
           ...settings,
-          tapSecretKey: settings.tapSecretKey.slice(0, 8) + '****' + settings.tapSecretKey.slice(-4),
+          tapSecretKey: maskSecret(settings.tapSecretKey),
         };
       }
 
@@ -8218,12 +8399,12 @@ export const appRouter = router({
     saveSettings: protectedProcedure
       .input(z.object({
         tapEnabled: z.boolean(),
-        tapPublicKey: z.string().optional(),
-        tapSecretKey: z.string().optional(),
+        tapPublicKey: z.string().trim().max(500).optional(),
+        tapSecretKey: z.string().trim().max(500).optional(),
         tapTestMode: z.boolean().default(true),
         autoSendPaymentLink: z.boolean().default(true),
-        paymentLinkMessage: z.string().optional(),
-        defaultCurrency: z.string().default('SAR'),
+        paymentLinkMessage: z.string().max(1000).optional(),
+        defaultCurrency: z.enum(['SAR']).default('SAR'),
       }))
       .mutation(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
@@ -8231,12 +8412,27 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        // If secret key contains asterisks, don't update it (it's masked)
+        const existingSettings = await getMerchantPaymentSettings(merchant.id);
+        const secretWasSupplied = Boolean(input.tapSecretKey && !input.tapSecretKey.includes('****'));
+        const effectiveSecret = secretWasSupplied ? input.tapSecretKey! : existingSettings?.tapSecretKey;
+        const effectivePublicKey = input.tapPublicKey || existingSettings?.tapPublicKey;
+        const { tapKeyMatchesMode } = await import('./payment/payment-link-policy');
+        if (input.tapEnabled && (!effectiveSecret || !effectivePublicKey)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'أدخل مفتاحي Tap العام والسري قبل التفعيل' });
+        }
+        if (effectiveSecret && !tapKeyMatchesMode(effectiveSecret, input.tapTestMode)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع مفتاح Tap لا يطابق وضع الاختبار/الإنتاج المحدد' });
+        }
+
+        const credentialsChanged = secretWasSupplied
+          || (input.tapPublicKey != null && input.tapPublicKey !== existingSettings?.tapPublicKey)
+          || Boolean(existingSettings && Boolean(existingSettings.tapTestMode) !== input.tapTestMode);
         const updateData: any = {
           tapEnabled: input.tapEnabled ? 1 : 0,
           tapTestMode: input.tapTestMode ? 1 : 0,
           autoSendPaymentLink: input.autoSendPaymentLink ? 1 : 0,
           defaultCurrency: input.defaultCurrency,
+          ...(credentialsChanged || !input.tapEnabled ? { isVerified: 0, lastVerifiedAt: null } : {}),
         };
 
         if (input.tapPublicKey) {
@@ -8266,6 +8462,10 @@ export const appRouter = router({
       const settings = await getMerchantPaymentSettings(merchant.id);
       if (!settings?.tapSecretKey) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم إدخال مفاتيح Tap' });
+      }
+      const { tapKeyMatchesMode } = await import('./payment/payment-link-policy');
+      if (!tapKeyMatchesMode(settings.tapSecretKey, Boolean(settings.tapTestMode))) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع الاختبار/الإنتاج' });
       }
 
       try {
@@ -8319,7 +8519,7 @@ export const appRouter = router({
         }
 
         const settings = await getMerchantPaymentSettings(merchant.id);
-        if (!settings?.tapEnabled || !settings?.tapSecretKey) {
+        if (!settings?.tapEnabled || !settings?.tapSecretKey || !settings.isVerified) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'الدفع الإلكتروني غير مفعل' });
         }
 
@@ -8340,7 +8540,10 @@ export const appRouter = router({
             },
             source: { id: 'src_all' },
             redirect: {
-              url: `${process.env.VITE_APP_URL || 'https://sari.manus.space'}/payment/callback`,
+              url: (await import('./utils/public-url')).publicPaymentUrls.return(),
+            },
+            post: {
+              url: (await import('./utils/public-url')).publicPaymentUrls.webhook(),
             },
             description: input.description || `طلب من ${merchant.businessName}`,
             metadata: {

@@ -65,7 +65,10 @@ const Privacy = lazyLoad(() => import("./pages/company/Privacy"));
 const TrySari = lazyLoad(() => import("./pages/TrySari"));
 // TrySariEnhanced removed — merged into TrySari
 const SubscribePage = lazyLoad(() => import("./pages/SubscribePage"));
-const PaymentCallback = lazyLoad(() => import("./pages/PaymentCallback"));
+const PaymentCallback = lazyLoad(() => import("./pages/SubscriptionPaymentCallback"));
+const PaymentLinkCheckout = lazyLoad(() => import("./pages/PaymentLinkCheckout"));
+const PaymentLinkStatus = lazyLoad(() => import("./pages/PaymentLinkStatus"));
+const PaymentReturn = lazyLoad(() => import("./pages/PaymentReturn"));
 
 // SEO Landing Pages
 const AISalesAgent = lazyLoad(() => import("./pages/landing/AISalesAgent"));
@@ -252,6 +255,9 @@ function Router() {
       <Route path="/subscribe" component={SubscribePage} />
       <Route path="/subscribe/:planId" component={SubscribePage} />
       <Route path="/payment/callback" component={PaymentCallback} />
+      <Route path="/payment/return" component={PaymentReturn} />
+      <Route path="/pay/:linkId/status" component={PaymentLinkStatus} />
+      <Route path="/pay/:linkId" component={PaymentLinkCheckout} />
       <Route path="/support" component={SupportPage} />
       <Route path="/solutions/sales">
         <PublicLayout><SolutionsSales /></PublicLayout>
