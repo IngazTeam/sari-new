@@ -840,6 +840,7 @@ export const users = mysqlTable("users", {
 	lastSignedIn: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	password: varchar({ length: 255 }),
 	accountStatus: mysqlEnum("account_status", ['active', 'deletion_pending', 'anonymized']).default('active').notNull(),
+	emailVerifiedAt: timestamp("email_verified_at", { mode: 'string' }),
 	deletionRequestedAt: timestamp("deletion_requested_at", { mode: 'string' }),
 	deletedAt: timestamp("deleted_at", { mode: 'string' }),
 	// Trial period fields
@@ -1248,13 +1249,18 @@ export const googleOAuthSettings = mysqlTable("google_oauth_settings", {
 export const emailVerificationTokens = mysqlTable("email_verification_tokens", {
 	id: int().autoincrement().primaryKey(),
 	userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-	email: varchar({ length: 255 }).notNull(),
-	token: varchar({ length: 255 }).notNull().unique(),
+	email: varchar({ length: 320 }).notNull(),
+	tokenHash: varchar("token", { length: 64 }).notNull().unique(),
+	requestIpHash: varchar("request_ip_hash", { length: 64 }).notNull(),
 	expiresAt: timestamp("expires_at", { mode: 'string' }).notNull(),
 	isUsed: tinyint("is_used").default(0).notNull(),
 	usedAt: timestamp("used_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-});
+}, table => [
+	index("email_verification_user_time_idx").on(table.userId, table.createdAt),
+	index("email_verification_ip_time_idx").on(table.requestIpHash, table.createdAt),
+	index("email_verification_expiry_idx").on(table.expiresAt),
+]);
 
 // Setup Wizard Tables
 export const businessTemplates = mysqlTable("business_templates", {

@@ -177,9 +177,6 @@ import {
   seoSitemaps,
   SeoSitemap,
   InsertSeoSitemap,
-  emailVerificationTokens,
-  EmailVerificationToken,
-  InsertEmailVerificationToken,
   emailTemplates,
   merchantPaymentSettings,
   MerchantPaymentSettings,
@@ -5938,51 +5935,6 @@ export async function getSignupPromptTestStats(days: number = 30) {
     return null;
   }
 }
-
-// ============================================
-// Email Verification
-// ============================================
-
-export async function createEmailVerificationToken(data: InsertEmailVerificationToken) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return db.insert(emailVerificationTokens).values(data);
-}
-
-export async function getEmailVerificationToken(token: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return db.query.emailVerificationTokens.findFirst({
-    where: eq(emailVerificationTokens.token, token),
-  });
-}
-
-export async function markEmailVerificationTokenAsUsed(tokenId: number) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return db.update(emailVerificationTokens)
-    .set({
-      isUsed: 1,
-      usedAt: formatDateForDB(new Date())
-    })
-    .where(eq(emailVerificationTokens.id, tokenId));
-}
-
-export async function deleteExpiredVerificationTokens() {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return db.delete(emailVerificationTokens)
-    .where(lt(emailVerificationTokens.expiresAt, new Date().toISOString()));
-}
-
-export async function updateUserEmailVerified(userId: number, email: string) {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
-  return db.update(users)
-    .set({ email })
-    .where(eq(users.id, userId));
-}
-
 
 // Green API Sync Helper Functions
 export async function getMessageByExternalId(externalId: string): Promise<Message | undefined> {

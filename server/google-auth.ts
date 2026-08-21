@@ -1,6 +1,7 @@
 import { OAuth2Client } from "google-auth-library";
 import { ENV } from "./_core/env";
 import { createUser, getUserByEmail } from './db';
+import { markVerifiedIdentityProviderEmail } from './accounts/email-verification-security';
 
 /**
  * التحقق من صحة Google ID Token
@@ -18,18 +19,18 @@ export async function verifyGoogleToken(token: string) {
     });
 
     const payload = ticket.getPayload();
-    if (!payload) {
+    if (!payload?.email || payload.email_verified !== true || !payload.sub) {
       throw new Error("فشل التحقق من Google Token");
     }
 
     return {
-      email: payload.email || "",
+      email: payload.email.trim().toLowerCase(),
       name: payload.name || "",
       picture: payload.picture || "",
-      googleId: payload.sub || "",
+      googleId: payload.sub,
     };
-  } catch (error) {
-    console.error("خطأ في التحقق من Google Token:", error);
+  } catch {
+    console.error('[Auth] Google token verification failed');
     throw new Error("فشل التحقق من Google Token");
   }
 }
@@ -48,21 +49,26 @@ export async function findOrCreateGoogleUser(googleData: {
     const existingUser = await getUserByEmail(googleData.email);
 
     if (existingUser) {
+      await markVerifiedIdentityProviderEmail(existingUser.id, googleData.email);
       return existingUser;
     }
 
     // إنشاء مستخدم جديد
-    // @ts-ignore
     const newUser = await createUser({
+      openId: `google_${googleData.googleId}`,
       email: googleData.email,
       name: googleData.name,
-      password: "", // لا نحتاج لكلمة مرور عند استخدام Google OAuth
+      loginMethod: 'google',
       role: "user",
     });
 
+    if (newUser) {
+      await markVerifiedIdentityProviderEmail(newUser.id, googleData.email);
+    }
+
     return newUser;
-  } catch (error) {
-    console.error("خطأ في البحث أو إنشاء مستخدم Google:", error);
+  } catch {
+    console.error('[Auth] Google user resolution failed');
     throw new Error("فشل في البحث أو إنشاء مستخدم Google");
   }
 }

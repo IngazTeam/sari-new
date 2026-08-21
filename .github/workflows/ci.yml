@@ -90,3 +90,4 @@ jobs:
           server/auth.passwordReset.test.ts
           server/auth.sessionRegistry.test.ts
           server/auth.loginRateLimit.test.ts
+          server/auth.emailVerification.test.ts

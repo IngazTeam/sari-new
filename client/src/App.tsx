@@ -42,6 +42,7 @@ const Login = lazyLoad(() => import("./pages/Login"));
 const SignUp = lazyLoad(() => import("./pages/SignUp"));
 const ForgotPassword = lazyLoad(() => import("./pages/ForgotPassword"));
 const ResetPassword = lazyLoad(() => import("./pages/ResetPassword"));
+const VerifyEmail = lazyLoad(() => import("./pages/VerifyEmail"));
 const ProductsPage = lazyLoad(() => import("./pages/Products"));
 const PricingPage = lazyLoad(() => import("./pages/Pricing"));
 const SupportPage = lazyLoad(() => import("./pages/Support"));
@@ -239,6 +240,7 @@ function Router() {
       </Route>
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password/:token" component={ResetPassword} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/products" component={ProductsPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/subscribe" component={SubscribePage} />

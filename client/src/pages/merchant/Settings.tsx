@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, FileText, Upload, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Image, Globe } from 'lucide-react';
+import { Settings as SettingsIcon, User, Store, CreditCard, Save, Bot, DollarSign, FileText, Upload, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Image, Globe, MailCheck } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -132,6 +132,16 @@ export default function MerchantSettings() {
     },
   });
 
+  const sendVerificationMutation = trpc.auth.emailVerification.sendVerificationEmail.useMutation({
+    onSuccess: (result) => {
+      toast.success(result.message);
+      if (result.alreadyVerified) refetchUser();
+    },
+    onError: (error) => {
+      toast.error(error.message || 'تعذر إرسال رابط التحقق حالياً');
+    },
+  });
+
   const updateMerchantMutation = trpc.merchants.update.useMutation({
     onSuccess: () => {
       toast.success(t('toast.settings.msg3'));
@@ -150,7 +160,6 @@ export default function MerchantSettings() {
 
     updateProfileMutation.mutate({
       name: userName,
-      email: userEmail || undefined,
     });
   };
 
@@ -209,9 +218,39 @@ export default function MerchantSettings() {
                 id="user-email"
                 type="email"
                 value={userEmail}
-                onChange={(e) => setUserEmail(e.target.value)}
                 placeholder="example@email.com"
+                readOnly
+                disabled
+                aria-describedby="email-verification-status"
               />
+              <div id="email-verification-status" className="flex flex-wrap items-center gap-2 text-xs">
+                {user?.emailVerifiedAt ? (
+                  <span className="inline-flex items-center gap-1 text-green-700">
+                    <CheckCircle2 className="h-4 w-4" /> البريد مؤكد
+                  </span>
+                ) : (
+                  <>
+                    <span className="text-amber-700">البريد غير مؤكد</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => sendVerificationMutation.mutate()}
+                      disabled={sendVerificationMutation.isPending || !userEmail}
+                    >
+                      {sendVerificationMutation.isPending ? (
+                        <Loader2 className="ml-1 h-4 w-4 animate-spin" />
+                      ) : (
+                        <MailCheck className="ml-1 h-4 w-4" />
+                      )}
+                      إرسال رابط التحقق
+                    </Button>
+                  </>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                تغيير البريد عملية حساسة وتتم عبر الدعم بعد التحقق من ملكية الحساب.
+              </p>
             </div>
           </div>
 

@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { verifyGoogleToken, findOrCreateGoogleUser, validateGoogleConfig } from "./google-auth";
 import * as db from "./db";
+import * as verification from './accounts/email-verification-security';
 
 // Mock the db module
 vi.mock("./db");
+vi.mock('./accounts/email-verification-security', () => ({
+  markVerifiedIdentityProviderEmail: vi.fn(),
+}));
 
 describe("Google Auth Functions", () => {
   beforeEach(() => {
@@ -57,6 +61,7 @@ describe("Google Auth Functions", () => {
 
       expect(result).toEqual(mockUser);
       expect(db.getUserByEmail).toHaveBeenCalledWith("test@example.com");
+      expect(verification.markVerifiedIdentityProviderEmail).toHaveBeenCalledWith(1, 'test@example.com');
     });
 
     it("should create new user if not found", async () => {
@@ -80,11 +85,13 @@ describe("Google Auth Functions", () => {
       expect(result).toEqual(newUser);
       expect(db.getUserByEmail).toHaveBeenCalledWith("newuser@example.com");
       expect(db.createUser).toHaveBeenCalledWith({
+        openId: 'google_google-456',
         email: "newuser@example.com",
         name: "New User",
-        password: "",
+        loginMethod: 'google',
         role: "user",
       });
+      expect(verification.markVerifiedIdentityProviderEmail).toHaveBeenCalledWith(2, 'newuser@example.com');
     });
 
     it("should handle errors gracefully", async () => {

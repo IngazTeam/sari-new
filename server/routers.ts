@@ -91,7 +91,6 @@ import {
   createCampaignLog,
   createDiscountCode,
   createDiscountCoupon,
-  createEmailVerificationToken,
   createGoogleIntegration,
   createMessage,
   createNotification,
@@ -185,7 +184,6 @@ import {
   getDiscountCodeById,
   getDiscountCodesByMerchantId,
   getDiscountCouponByCode,
-  getEmailVerificationToken,
   getExpiringWhatsAppInstances,
   getGoogleIntegration,
   getInvoiceById,
@@ -267,7 +265,6 @@ import {
   incrementTemplateUsage,
   markAbandonedCartRecovered,
   markConvertedToSignup,
-  markEmailVerificationTokenAsUsed,
   markSignupPromptShown,
   markTestConversationAsDeal,
   pauseABTest,
@@ -307,7 +304,6 @@ import {
   updateSubscription,
   updateTemplateTranslation,
   updateUser,
-  updateUserEmailVerified,
   updateUserLastSignedIn,
   updateWhatsAppConnectionRequest,
   updateWhatsAppInstance,
@@ -326,6 +322,11 @@ import {
   consumePasswordResetTokenAndUpdatePassword,
   reservePasswordResetAttempt,
 } from './accounts/password-reset-security';
+import { deliverEmailVerification } from './accounts/email-verification-delivery';
+import {
+  consumeEmailVerificationToken,
+  EMAIL_VERIFICATION_TOKEN_PATTERN,
+} from './accounts/email-verification-security';
 import * as seoDb from './seo-functions';
 import bcrypt from 'bcryptjs';
 import { createSessionToken } from './_core/auth';
@@ -485,55 +486,57 @@ export const appRouter = router({
     // Email Verification
     emailVerification: router({
       sendVerificationEmail: protectedProcedure
-        .input(z.object({ email: z.string().email() }))
-        .mutation(async ({ input, ctx }) => {
-          const crypto = await import('node:crypto');
-          const token = crypto.randomBytes(32).toString('hex');
-          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
-          await createEmailVerificationToken({
+        .mutation(async ({ ctx }) => {
+          if (!ctx.user.email) {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'لا يوجد بريد مرتبط بالحساب' });
+          }
+          const clientIp = String(ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown').slice(0, 45);
+          const result = await deliverEmailVerification({
             userId: ctx.user.id,
-            email: input.email,
-            token,
-            expiresAt: expiresAt as any,
+            email: ctx.user.email,
+            ipAddress: clientIp,
           });
-
-          // Send verification email (token is NOT returned to client)
-          try {
-            const { sendEmail } = await import('./reports/email-sender');
-            const verifyLink = `${process.env.VITE_APP_URL || 'https://sary.live'}/verify-email?token=${token}`;
-            await sendEmail({
-              to: input.email,
-              subject: 'تأكيد البريد الإلكتروني - ساري',
-              html: `<div dir="rtl"><h2>تأكيد البريد الإلكتروني</h2><p>اضغط على الرابط التالي لتأكيد بريدك الإلكتروني:</p><a href="${verifyLink}">${verifyLink}</a><p>ينتهي هذا الرابط خلال 24 ساعة.</p></div>`,
+          if (!result.delivered) {
+            if ('retryAfterSeconds' in result) {
+              throw new TRPCError({
+                code: 'TOO_MANY_REQUESTS',
+                message: 'طلبات كثيرة لإرسال رابط التحقق. حاول لاحقاً.',
+                cause: { remainingTime: result.retryAfterSeconds },
+              });
+            }
+            throw new TRPCError({
+              code: 'INTERNAL_SERVER_ERROR',
+              message: 'تعذر إرسال رابط التحقق حالياً. حاول لاحقاً.',
             });
-          } catch (error) {
-            console.error('[Email Verification] Failed to send email:', error);
           }
 
-          return { success: true, message: 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني' };
+          return {
+            success: true,
+            alreadyVerified: result.alreadyVerified,
+            message: result.alreadyVerified
+              ? 'البريد الإلكتروني مؤكد مسبقاً'
+              : 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني',
+          };
         }),
 
       verifyEmail: publicProcedure
-        .input(z.object({ token: z.string() }))
-        .mutation(async ({ input }) => {
-          const verificationToken = await getEmailVerificationToken(input.token);
-
-          if (!verificationToken) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Token not found' });
+        .input(z.object({
+          token: z.string().length(64).regex(EMAIL_VERIFICATION_TOKEN_PATTERN),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          const { checkRateLimit } = await import('./_core/rateLimiter');
+          const clientIp = String(ctx.req.ip || ctx.req.socket?.remoteAddress || 'unknown').slice(0, 45);
+          const check = checkRateLimit(`email_verify_consume_ip:${clientIp}`, 30, 15 * 60 * 1000);
+          if (!check.allowed) {
+            throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'طلبات كثيرة. حاول لاحقاً.' });
           }
-
-          if (verificationToken.isUsed) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token already used' });
+          const consumed = await consumeEmailVerificationToken(input.token);
+          if (!consumed) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'رابط التحقق غير صالح أو منتهي الصلاحية',
+            });
           }
-
-          if (new Date(verificationToken.expiresAt) < new Date()) {
-            throw new TRPCError({ code: 'BAD_REQUEST', message: 'Token expired' });
-          }
-
-          await markEmailVerificationTokenAsUsed(verificationToken.id);
-          await updateUserEmailVerified(verificationToken.userId, verificationToken.email);
-
           return { success: true };
         }),
     }),
@@ -555,7 +558,9 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         // SECURITY: Rate limit signup attempts (3 per hour per IP)
         const { checkRateLimit } = await import('./_core/rateLimiter');
-        const clientIp = (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown';
+        const clientIp = String(
+          (ctx as any).req?.ip || (ctx as any).req?.socket?.remoteAddress || 'unknown',
+        ).slice(0, 45);
         const signupCheck = checkRateLimit(`signup_ip:${clientIp}`, 3, 60 * 60 * 1000);
         if (!signupCheck.allowed) {
           throw new TRPCError({ code: 'TOO_MANY_REQUESTS', message: 'عدد كبير من محاولات التسجيل. حاول لاحقاً.' });
@@ -603,6 +608,18 @@ export const appRouter = router({
           // Don't fail signup if email fails
         }
 
+        let verificationEmailSent = false;
+        try {
+          const verification = await deliverEmailVerification({
+            userId: user.id,
+            email: input.email,
+            ipAddress: clientIp,
+          });
+          verificationEmailSent = verification.delivered;
+        } catch {
+          console.error('[Signup] Email verification delivery failed');
+        }
+
         // Create session token
         const sessionToken = await createSessionToken(String(user.id), {
           name: user.name || '',
@@ -615,6 +632,7 @@ export const appRouter = router({
 
         return {
           success: true,
+          verificationEmailSent,
           user: {
             id: user.id,
             name: user.name,
@@ -744,11 +762,22 @@ export const appRouter = router({
     // Update user profile
     updateProfile: protectedProcedure
       .input(z.object({
-        name: z.string().optional(),
-        email: z.string().email().optional(),
+        name: z.string().trim().min(2).max(120).optional(),
+        email: z.string().trim().email().max(320).transform(value => value.toLowerCase()).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        await updateUser(ctx.user.id, input);
+        if (
+          input.email &&
+          input.email !== ctx.user.email?.trim().toLowerCase()
+        ) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'تغيير البريد يتطلب مسار تحقق مخصص. تواصل مع الدعم حالياً.',
+          });
+        }
+        if (input.name) {
+          await updateUser(ctx.user.id, { name: input.name });
+        }
         return { success: true };
       }),
 

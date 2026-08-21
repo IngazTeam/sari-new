@@ -13,6 +13,7 @@ import { Link } from 'wouter';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 export default function SignUp() {
   const { t } = useTranslation();
@@ -42,6 +43,11 @@ export default function SignUp() {
 
   const signupMutation = trpc.auth.signup.useMutation({
     onSuccess: (data: any) => {
+      if (data.verificationEmailSent) {
+        toast.success('أرسلنا رابط تأكيد البريد. افتحه خلال ساعة واحدة.');
+      } else {
+        toast.info('يمكنك إرسال رابط تأكيد البريد لاحقاً من إعدادات الحساب.');
+      }
       // Redirect based on role
       if (data.user.role === 'admin' || data.user.role === 'superadmin') {
         setLocation('/admin/dashboard');
