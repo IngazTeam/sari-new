@@ -183,7 +183,7 @@ export const discountCodes = mysqlTable("discount_codes", {
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
 	(table) => [
-		index("discount_codes_code_unique").on(table.code),
+		uniqueIndex("uq_discount_codes_merchant_code").on(table.merchantId, table.code),
 	]);
 
 export const invoices = mysqlTable("invoices", {

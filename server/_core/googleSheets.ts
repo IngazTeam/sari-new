@@ -4,7 +4,6 @@
  */
 
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
 import {
   createGoogleIntegration,
   getGoogleIntegration,
@@ -17,7 +16,7 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 /**
  * إنشاء OAuth2 client
  */
-async function createOAuth2Client(): Promise<OAuth2Client> {
+async function createOAuth2Client() {
   // قراءة Credentials من قاعدة البيانات
   const settings = await getGoogleOAuthSettings();
   
@@ -103,7 +102,7 @@ export async function handleOAuthCallback(
 /**
  * الحصول على OAuth2 client مع credentials محفوظة
  */
-async function getAuthenticatedClient(merchantId: number): Promise<OAuth2Client | null> {
+async function getAuthenticatedClient(merchantId: number) {
   try {
     const integration = await getGoogleIntegration(merchantId, 'sheets');
     

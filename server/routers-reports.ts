@@ -9,8 +9,8 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import { getMerchantByUserId, getDb } from './db';
-import { orders, conversations, messages, products } from '../drizzle/schema';
-import { eq, and, gte, sql, count, desc } from 'drizzle-orm';
+import { orders, conversations, messages } from '../drizzle/schema';
+import { eq, and, gte, sql, count, desc, inArray } from 'drizzle-orm';
 
 /**
  * Calculate the start date for a given period
@@ -56,6 +56,7 @@ export const reportsRouter = router({
 
             const periodStart = getPeriodStartDate(input.period);
             const periodStartStr = formatDateForDB(periodStart);
+            const revenueStatuses = ['paid', 'processing', 'shipped', 'delivered'] as const;
 
             // Current period stats
             const [stats] = await db.select({
@@ -67,6 +68,7 @@ export const reportsRouter = router({
             .where(and(
                 eq(orders.merchantId, merchant.id),
                 gte(orders.createdAt, periodStartStr),
+                inArray(orders.status, revenueStatuses),
             ));
 
             // Previous period for growth calculation
@@ -83,6 +85,7 @@ export const reportsRouter = router({
                 eq(orders.merchantId, merchant.id),
                 gte(orders.createdAt, prevPeriodStartStr),
                 sql`${orders.createdAt} < ${periodStartStr}`,
+                inArray(orders.status, revenueStatuses),
             ));
 
             const prevRevenue = Number(prevStats?.totalRevenue || 0);
@@ -107,17 +110,36 @@ export const reportsRouter = router({
                 ? Math.round((totalOrds / totalConvs) * 100)
                 : 0;
 
-            // Top products (from order items — items is a JSON text field)
-            // Return basic stats since items parsing is complex
-            const topProductsList = await db.select({
-                id: products.id,
-                name: products.name,
-                price: products.price,
-            })
-            .from(products)
-            .where(eq(products.merchantId, merchant.id))
-            .orderBy(desc(products.updatedAt))
-            .limit(5);
+            // Top products are calculated from paid order snapshots, not the current catalog.
+            const paidOrderItems = await db.select({ items: orders.items })
+                .from(orders)
+                .where(and(
+                    eq(orders.merchantId, merchant.id),
+                    gte(orders.createdAt, periodStartStr),
+                    inArray(orders.status, revenueStatuses),
+                ));
+            const productTotals = new Map<string, { name: string; quantity: number; revenue: number }>();
+            for (const order of paidOrderItems) {
+                try {
+                    const items = JSON.parse(order.items) as Array<{ name?: unknown; quantity?: unknown; price?: unknown }>;
+                    if (!Array.isArray(items)) continue;
+                    for (const item of items) {
+                        const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : 'منتج غير مسمى';
+                        const quantity = Number(item.quantity);
+                        const price = Number(item.price);
+                        if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(price) || price < 0) continue;
+                        const current = productTotals.get(name) || { name, quantity: 0, revenue: 0 };
+                        current.quantity += quantity;
+                        current.revenue += quantity * price;
+                        productTotals.set(name, current);
+                    }
+                } catch {
+                    // Invalid historical snapshot is excluded rather than producing NaN in a financial report.
+                }
+            }
+            const topProductsList = Array.from(productTotals.values())
+                .sort((a, b) => b.revenue - a.revenue)
+                .slice(0, 5);
 
             return {
                 totalRevenue: currentRevenue,

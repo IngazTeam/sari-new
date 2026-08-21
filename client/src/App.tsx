@@ -128,7 +128,6 @@ const BookingReviews = lazyLoad(() => import("./pages/merchant/BookingReviews"))
 const TestSari = lazyLoad(() => import("./pages/merchant/TestSari"));
 const MetricsDashboard = lazyLoad(() => import("./pages/merchant/MetricsDashboard"));
 const SariPlayground = lazyLoad(() => import("./pages/SariPlayground"));
-const SariAnalytics = lazyLoad(() => import("./pages/SariAnalytics"));
 const WhatsAppWebhookSetup = lazyLoad(() => import("./pages/merchant/WhatsAppWebhookSetup"));
 const BotSettings = lazyLoad(() => import("./pages/merchant/BotSettings"));
 const HumanTakeoverSettings = lazyLoad(() => import("./pages/merchant/HumanTakeoverSettings"));
@@ -138,8 +137,6 @@ const ScheduledMessages = lazyLoad(() => import("./pages/merchant/ScheduledMessa
 const SariPersonality = lazyLoad(() => import("./pages/merchant/SariPersonality"));
 const QuickResponses = lazyLoad(() => import("./pages/merchant/QuickResponses"));
 const InsightsDashboard = lazyLoad(() => import("./pages/merchant/InsightsDashboard"));
-const AdvancedAnalytics = lazyLoad(() => import("./pages/merchant/AdvancedAnalytics"));
-const AdvancedAnalyticsDashboard = lazyLoad(() => import("./pages/merchant/AdvancedAnalyticsDashboard"));
 const DataSync = lazyLoad(() => import("./pages/merchant/DataSync"));
 const PerformanceMetrics = lazyLoad(() => import("./pages/merchant/PerformanceMetrics"));
 const ZidIntegration = lazyLoad(() => import("./pages/merchant/ZidIntegration"));
@@ -588,7 +585,7 @@ function Router() {
 
       <Route path="/merchant/sari-analytics">
         <DashboardLayout>
-          <SariAnalytics />
+          <Analytics />
         </DashboardLayout>
       </Route>
 
@@ -646,13 +643,13 @@ function Router() {
 
       <Route path="/merchant/advanced-analytics">
         <DashboardLayout>
-          <AdvancedAnalytics />
+          <Analytics />
         </DashboardLayout>
       </Route>
 
       <Route path="/merchant/analytics-dashboard">
         <DashboardLayout>
-          <AdvancedAnalyticsDashboard />
+          <Analytics />
         </DashboardLayout>
       </Route>
 
@@ -955,7 +952,7 @@ function Router() {
       </Route>
 
       <Route path="/merchant/analysis">
-        <DashboardLayout><AdvancedAnalytics /></DashboardLayout>
+        <DashboardLayout><Analytics /></DashboardLayout>
       </Route>
 
       <Route path="/merchant/weekly-reports">
@@ -963,11 +960,11 @@ function Router() {
       </Route>
 
       <Route path="/merchant/ab-tests">
-        <DashboardLayout><AdvancedAnalyticsDashboard /></DashboardLayout>
+        <DashboardLayout><InsightsDashboard /></DashboardLayout>
       </Route>
 
       <Route path="/merchant/try-sari-analytics">
-        <DashboardLayout><SariAnalytics /></DashboardLayout>
+        <DashboardLayout><MetricsDashboard /></DashboardLayout>
       </Route>
 
       <Route path="/merchant/merchant-payments">

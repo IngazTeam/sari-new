@@ -2233,11 +2233,14 @@ export async function getDiscountCodeById(id: number): Promise<DiscountCode | un
   return result[0];
 }
 
-export async function getDiscountCodeByCode(code: string): Promise<DiscountCode | undefined> {
+export async function getDiscountCodeByCode(merchantId: number, code: string): Promise<DiscountCode | undefined> {
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.select().from(discountCodes).where(eq(discountCodes.code, code.toUpperCase())).limit(1);
+  const result = await db.select().from(discountCodes).where(and(
+    eq(discountCodes.merchantId, merchantId),
+    eq(discountCodes.code, code.trim().toUpperCase()),
+  )).limit(1);
   return result[0];
 }
 
@@ -2258,17 +2261,22 @@ export async function updateDiscountCode(id: number, data: Partial<InsertDiscoun
   }).where(eq(discountCodes.id, id));
 }
 
-export async function incrementDiscountCodeUsage(code: string): Promise<void> {
+export async function incrementDiscountCodeUsage(merchantId: number, code: string): Promise<boolean> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) return false;
 
-  const discountCode = await getDiscountCodeByCode(code);
-  if (!discountCode) return;
-
-  await db.update(discountCodes).set({
-    usedCount: discountCode.usedCount + 1,
+  const result = await db.update(discountCodes).set({
+    usedCount: sql`${discountCodes.usedCount} + 1`,
     updatedAt: formatDateForDB(new Date())
-  }).where(eq(discountCodes.id, discountCode.id));
+  }).where(and(
+    eq(discountCodes.merchantId, merchantId),
+    eq(discountCodes.code, code.trim().toUpperCase()),
+    eq(discountCodes.isActive, 1),
+    or(isNull(discountCodes.expiresAt), gt(discountCodes.expiresAt, formatDateForDB(new Date()))),
+    or(isNull(discountCodes.maxUses), lt(discountCodes.usedCount, discountCodes.maxUses)),
+  ));
+
+  return Number((result[0] as { affectedRows?: number }).affectedRows || 0) === 1;
 }
 
 export async function deleteDiscountCode(id: number): Promise<void> {
@@ -4537,7 +4545,6 @@ export async function findMatchingQuickResponse(
   // Try exact trigger match first
   for (const response of responses) {
     if (lowerMessage === response.trigger.toLowerCase().trim()) {
-      await incrementQuickResponseUse(response.id);
       return response;
     }
   }
@@ -4546,17 +4553,24 @@ export async function findMatchingQuickResponse(
   for (const response of responses) {
     if (response.keywords) {
       try {
-        const keywords = JSON.parse(response.keywords) as string[];
+        const parsed = JSON.parse(response.keywords);
+        const keywords = Array.isArray(parsed) ? parsed.map(String) : [];
         const hasMatch = keywords.some(kw =>
           lowerMessage.includes(kw.toLowerCase())
         );
 
         if (hasMatch) {
-          await incrementQuickResponseUse(response.id);
           return response;
         }
       } catch (e) {
-        // Invalid JSON, skip
+        // Backward compatibility: the UI historically stored comma-separated text.
+        const keywords = response.keywords
+          .split(/[,،\n]/)
+          .map(keyword => keyword.trim())
+          .filter(Boolean);
+        if (keywords.some(keyword => lowerMessage.includes(keyword.toLowerCase()))) {
+          return response;
+        }
       }
     }
   }

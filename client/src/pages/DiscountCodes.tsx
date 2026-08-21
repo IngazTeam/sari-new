@@ -1,7 +1,5 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -112,7 +110,6 @@ function getDateAfterDays(days: number): string {
 
 export default function DiscountCodes() {
   const { t } = useTranslation();
-  const { user } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [newCode, setNewCode] = useState({
@@ -124,16 +121,14 @@ export default function DiscountCodes() {
     expiresAt: "",
   });
 
-  const merchantId = 1; // TODO: Get from merchant context
-
   // Queries
-  const { data: codes, refetch } = trpc.discounts.list.useQuery({ merchantId });
-  const { data: stats } = trpc.discounts.getStats.useQuery({ merchantId });
+  const { data: codes, refetch } = trpc.discounts.list.useQuery();
+  const { data: stats } = trpc.discounts.getStats.useQuery();
 
   // Mutations
   const createMutation = trpc.discounts.create.useMutation({
     onSuccess: () => {
-      toast.success("t('toast.discounts.msg1')}");
+      toast.success("تم إنشاء كود الخصم بنجاح");
       refetch();
       setIsCreateDialogOpen(false);
       setNewCode({
@@ -152,7 +147,7 @@ export default function DiscountCodes() {
 
   const updateMutation = trpc.discounts.update.useMutation({
     onSuccess: () => {
-      toast.success("t('toast.discounts.msg3')}");
+      toast.success("تم تحديث كود الخصم");
       refetch();
     },
     onError: (error: any) => {
@@ -162,7 +157,7 @@ export default function DiscountCodes() {
 
   const deleteMutation = trpc.discounts.delete.useMutation({
     onSuccess: () => {
-      toast.success("t('toast.discounts.msg5')}");
+      toast.success("تم حذف كود الخصم");
       refetch();
       setDeleteTarget(null);
     },
@@ -173,15 +168,20 @@ export default function DiscountCodes() {
 
   const handleCreate = () => {
     if (!newCode.code || !newCode.value) {
-      toast.error("t('toast.discounts.msg7')}");
+      toast.error("يرجى إدخال الكود وقيمة الخصم");
+      return;
+    }
+
+    const value = Number(newCode.value);
+    if (!Number.isFinite(value) || value <= 0 || (newCode.type === "percentage" && value > 100)) {
+      toast.error(newCode.type === "percentage" ? "نسبة الخصم يجب أن تكون بين 0 و100" : "قيمة الخصم غير صالحة");
       return;
     }
 
     createMutation.mutate({
-      merchantId,
-      code: newCode.code,
+      code: newCode.code.trim(),
       type: newCode.type,
-      value: parseFloat(newCode.value),
+      value,
       minOrderAmount: newCode.minOrderAmount ? parseFloat(newCode.minOrderAmount) : undefined,
       maxUses: newCode.maxUses ? parseInt(newCode.maxUses) : undefined,
       expiresAt: newCode.expiresAt || undefined,
@@ -206,7 +206,7 @@ export default function DiscountCodes() {
     setIsCreateDialogOpen(true);
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("ar-SA");
   };
@@ -433,7 +433,6 @@ export default function DiscountCodes() {
                     <TableCell>
                       {code.usedCount} / {code.maxUses || "∞"}
                     </TableCell>
-                    {/* @ts-ignore */}
                     <TableCell>{formatDate(code.expiresAt)}</TableCell>
                     <TableCell>
                       {code.isActive ? (
@@ -447,8 +446,7 @@ export default function DiscountCodes() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          // @ts-ignore
-                          onClick={() => handleToggleActive(code.id, code.isActive)}
+                          onClick={() => handleToggleActive(code.id, Boolean(code.isActive))}
                         >
                           {code.isActive ? (
                             <ToggleLeft className="h-4 w-4" />

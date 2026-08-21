@@ -38,6 +38,10 @@ export default function Reports() {
   const { formatCurrency } = useCurrency();
   const [period, setPeriod] = useState<"day" | "week" | "month" | "year">("month");
   const [isExporting, setIsExporting] = useState(false);
+  const finiteNumber = (value: unknown) => {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+  };
 
   // Fetch reports data
   const { data: salesReport, isLoading: loadingSales } =
@@ -182,10 +186,9 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {formatCurrency(salesReport?.totalRevenue || 0)}
+                      {formatCurrency(finiteNumber(salesReport?.totalRevenue))}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      // @ts-ignore
                       {salesReport?.growth > 0 ? "+" : ""}
                       {salesReport?.growth || 0}% عن الفترة السابقة
                     </p>
@@ -212,7 +215,7 @@ export default function Reports() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {formatCurrency(salesReport?.averageOrderValue || 0)}
+                      {formatCurrency(finiteNumber(salesReport?.averageOrderValue))}
                     </div>
                     <p className="text-xs text-muted-foreground">{t('reports.auto_5')}</p>
                   </CardContent>
@@ -239,7 +242,6 @@ export default function Reports() {
                   <CardDescription>{t('reports.auto_8')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  // @ts-ignore
                   {salesReport?.topProducts?.length > 0 ? (
                     <div className="space-y-3">
                       {salesReport?.topProducts?.map((product: any, index: number) => (
@@ -254,7 +256,7 @@ export default function Reports() {
                             </p>
                           </div>
                           <p className="font-bold">
-                            {formatCurrency(product.revenue)}
+                            {formatCurrency(finiteNumber(product.revenue))}
                           </p>
                         </div>
                       ))}
@@ -357,7 +359,6 @@ export default function Reports() {
                   <CardDescription>{t('reports.auto_18')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  // @ts-ignore
                   {customersReport?.topCustomers?.length > 0 ? (
                     <div className="space-y-3">
                       {customersReport?.topCustomers?.map(
@@ -373,7 +374,7 @@ export default function Reports() {
                               </p>
                             </div>
                             <p className="font-bold">
-                              {formatCurrency(customer.totalSpent)}
+                              {formatCurrency(finiteNumber(customer.totalSpent))}
                             </p>
                           </div>
                         )
@@ -477,7 +478,6 @@ export default function Reports() {
                   <CardDescription>{t('reports.auto_28')}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  // @ts-ignore
                   {conversationsReport?.topTopics?.length > 0 ? (
                     <div className="space-y-3">
                       {conversationsReport?.topTopics?.map(

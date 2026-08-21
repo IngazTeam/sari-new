@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
+import { containsUnverifiedActionClaim } from './ai/transactional-truth';
 import {
   createQuickResponse,
   deleteQuickResponse,
@@ -31,9 +32,11 @@ export const quickResponsesRouter = router({
     // Create quick response
     create: protectedProcedure
         .input(z.object({
-            trigger: z.string().min(1),
-            response: z.string().min(1),
-            keywords: z.string().optional(),
+            trigger: z.string().trim().min(1).max(255),
+            response: z.string().trim().min(1).max(2000).refine(response => !containsUnverifiedActionClaim(response), {
+                message: 'لا يمكن حفظ رد يؤكد طلباً أو حجزاً أو تحويلاً دون عملية موثقة',
+            }),
+            keywords: z.string().max(2000).optional(),
             priority: z.number().min(1).max(10).optional(),
             category: z.string().optional(),
         }))
@@ -53,9 +56,11 @@ export const quickResponsesRouter = router({
     update: protectedProcedure
         .input(z.object({
             id: z.number(),
-            trigger: z.string().min(1).optional(),
-            response: z.string().min(1).optional(),
-            keywords: z.string().optional(),
+            trigger: z.string().trim().min(1).max(255).optional(),
+            response: z.string().trim().min(1).max(2000).refine(response => !containsUnverifiedActionClaim(response), {
+                message: 'لا يمكن حفظ رد يؤكد طلباً أو حجزاً أو تحويلاً دون عملية موثقة',
+            }).optional(),
+            keywords: z.string().max(2000).optional(),
             priority: z.number().min(1).max(10).optional(),
             category: z.string().optional(),
             isActive: z.boolean().optional(),
@@ -72,9 +77,11 @@ export const quickResponsesRouter = router({
                 throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
             }
 
-            const { id, ...data } = input;
-            // @ts-ignore
-            return await updateQuickResponse(id, data);
+            const { id, isActive, ...data } = input;
+            return await updateQuickResponse(id, {
+                ...data,
+                ...(isActive === undefined ? {} : { isActive: isActive ? 1 : 0 }),
+            });
         }),
 
     // Delete quick response

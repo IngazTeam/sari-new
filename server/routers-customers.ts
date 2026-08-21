@@ -91,6 +91,35 @@ export const customersRouter = router({
             'آخر تفاعل': new Date(c.lastMessageAt).toLocaleDateString('ar-SA'),
         }));
     }),
+
+    exportCsv: protectedProcedure.query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const customers = await getCustomersByMerchant(merchant.id);
+        const { buildCsv } = await import('./utils/csv');
+        const data = buildCsv(
+            ['الاسم', 'رقم الجوال', 'عدد الطلبات', 'إجمالي المشتريات', 'نقاط الولاء', 'الحالة', 'آخر تفاعل'],
+            customers.map(customer => [
+                customer.customerName || 'غير معروف',
+                customer.customerPhone,
+                customer.orderCount || 0,
+                customer.totalSpent || 0,
+                customer.loyaltyPoints || 0,
+                customer.status === 'active' ? 'نشط' : customer.status === 'new' ? 'جديد' : 'غير نشط',
+                customer.lastMessageAt ? new Date(customer.lastMessageAt).toISOString() : '',
+            ]),
+        );
+
+        return {
+            filename: `customers-${merchant.id}-${new Date().toISOString().slice(0, 10)}.csv`,
+            mimeType: 'text/csv;charset=utf-8',
+            count: customers.length,
+            data,
+        };
+    }),
 });
 
 export type CustomersRouter = typeof customersRouter;

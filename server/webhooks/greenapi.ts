@@ -305,8 +305,7 @@ async function processTextMessage(params: {
       mediaUrl: params.mediaUrl || params.imageUrl || null,
       isProcessed: 0,
       externalId: params.externalId || null,
-      // @ts-ignore
-      aiwResponse: null,
+      aiResponse: null,
     });
     
     // إرسال إشعار بالرسالة الجديدة
@@ -1249,7 +1248,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
 
     // ── Human Takeover Check ──
     const allConvs = await getConversationsByMerchantId(instance.merchantId);
-    const currentConv = allConvs.find(c => c.customerPhone === customerPhone);
+    const currentConv = allConvs.find(c => c.id === conversationId);
     if (currentConv && (currentConv as any).humanTakeover) {
       const expiresAt = (currentConv as any).humanExpiresAt;
       const takeoverAt = (currentConv as any).humanTakeoverAt;
@@ -1640,8 +1639,7 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
         content: response,
         voiceUrl: null,
         isProcessed: 1,
-        // @ts-ignore
-        aiwResponse: response,
+        aiResponse: response,
       });
       
       // Increment message usage (incoming + outgoing = 2 messages)

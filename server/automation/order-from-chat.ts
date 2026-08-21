@@ -222,19 +222,22 @@ export async function createOrderFromChat(
       if (discountCode) {
         const validation = await validateDiscountCode(merchantId, discountCode, totalAmount);
         if (validation.valid && validation.discountCode) {
-          finalAmount = validation.finalAmount || totalAmount;
-          const discountAmount = validation.discount || 0;
-          discountInfo = {
-            code: discountCode,
-            type: 'discount',
-            discountType: validation.discountCode.type,
-            value: validation.discountCode.value,
-            originalAmount: totalAmount,
-            discountAmount,
-            finalAmount
-          };
-          // Increment usage count
-          await incrementDiscountCodeUsage(discountCode);
+          const reserved = await incrementDiscountCodeUsage(merchantId, discountCode);
+          if (!reserved) {
+            console.warn(`[OrderFromChat] Discount ${discountCode} became unavailable before reservation`);
+          } else {
+            finalAmount = validation.finalAmount || totalAmount;
+            const discountAmount = validation.discount || 0;
+            discountInfo = {
+              code: discountCode,
+              type: 'discount',
+              discountType: validation.discountCode.type,
+              value: validation.discountCode.value,
+              originalAmount: totalAmount,
+              discountAmount,
+              finalAmount
+            };
+          }
         }
       }
 

@@ -1,6 +1,5 @@
 import {
-  // @ts-ignore
-  createDiscountCode,
+  createDiscountCode as createDiscountCodeRecord,
   getDiscountCodeByCode,
   getOrderById,
   getOrdersByMerchantId,
@@ -41,22 +40,21 @@ export async function createDiscountCode(data: {
     const code = data.code || generateDiscountCode();
 
     // التحقق من عدم وجود الكود مسبقاً
-    const existing = await getDiscountCodeByCode(code);
+    const existing = await getDiscountCodeByCode(data.merchantId, code);
     if (existing) {
       return { success: false, error: 'الكود موجود مسبقاً' };
     }
 
     // إنشاء الكود
-    const discountCode = await createDiscountCode({
+    const discountCode = await createDiscountCodeRecord({
       merchantId: data.merchantId,
-      code,
+      code: code.trim().toUpperCase(),
       type: data.type,
       value: data.value,
-      // @ts-ignore
       maxUses: data.usageLimit || 1,
       usedCount: 0,
-      isActive: true,
-      expiresAt: data.expiresAt,
+      isActive: 1,
+      expiresAt: data.expiresAt ? data.expiresAt.toISOString().slice(0, 19).replace('T', ' ') : undefined,
     });
 
     return { success: true, code: discountCode };
@@ -82,12 +80,7 @@ export async function validateDiscountCode(
 }> {
   try {
     // الحصول على الكود
-    const discountCode = await getDiscountCodeByCode(code);
-
-    // التحقق من أن الكود يخص هذا التاجر
-    if (discountCode && discountCode.merchantId !== merchantId) {
-      return { valid: false, error: 'كود الخصم غير صحيح' };
-    }
+    const discountCode = await getDiscountCodeByCode(merchantId, code);
 
     if (!discountCode) {
       return { valid: false, error: 'كود الخصم غير صحيح' };
@@ -164,7 +157,10 @@ export async function applyDiscountCode(
     // TODO: تحديث الطلب بالخصم (سيتم تطبيقه عند إنشاء الطلب)
 
     // زيادة عدد مرات استخدام الكود
-    await incrementDiscountCodeUsage(code);
+    const reserved = await incrementDiscountCodeUsage(merchantId, code);
+    if (!reserved) {
+      return { success: false, error: 'تعذر تطبيق الكود؛ قد يكون منتهياً أو استُخدم بالكامل' };
+    }
 
     console.log(`[Discount System] Applied discount ${code} to order ${orderId}: ${validation.discount} SAR`);
 

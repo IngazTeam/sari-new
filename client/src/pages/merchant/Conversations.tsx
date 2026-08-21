@@ -65,6 +65,7 @@ export default function Conversations() {
   const merchantTimezone = (currentMerchant as any)?.timezone || 'Asia/Riyadh';
   const uploadAudioMutation = trpc.voice.uploadAudio.useMutation();
   const sendReplyMutation = trpc.conversations.sendReply.useMutation();
+  const sendVoiceReplyMutation = trpc.conversations.sendVoiceReply.useMutation();
   const syncMutation = trpc.conversations.syncFromWhatsApp.useMutation();
   const diagnoseMutation = trpc.conversations.diagnoseWebhook.useMutation();
   const { data: connectionHealth } = trpc.conversations.connectionStatus.useQuery(undefined, {
@@ -643,31 +644,41 @@ export default function Conversations() {
                   <VoiceRecorder
                     onRecordingComplete={async (audioBlob, duration) => {
                       try {
-                        // تحويل Blob إلى base64
-                        const reader = new FileReader();
-                        reader.readAsDataURL(audioBlob);
-                        reader.onloadend = async () => {
-                          const base64 = reader.result as string;
-                          const audioBase64 = base64.split(',')[1]; // إزالة data:audio/webm;base64,
+                        const supportedMimeTypes = ['audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/wav'] as const;
+                        const normalizedMimeType = audioBlob.type.split(';')[0] as typeof supportedMimeTypes[number];
+                        if (!supportedMimeTypes.includes(normalizedMimeType)) {
+                          throw new Error(`Unsupported audio format: ${audioBlob.type}`);
+                        }
 
-                          toast.loading(t('conversationsPage.uploadingRecording'));
+                        const dataUrl = await new Promise<string>((resolve, reject) => {
+                          const reader = new FileReader();
+                          reader.onerror = () => reject(reader.error || new Error('Failed to read audio recording'));
+                          reader.onload = () => resolve(String(reader.result));
+                          reader.readAsDataURL(audioBlob);
+                        });
+                        const audioBase64 = dataUrl.split(',')[1];
+                        if (!audioBase64) throw new Error('Audio recording is empty');
 
-                          // رفع الملف إلى S3
-                          const uploadResult = await uploadAudioMutation.mutateAsync({
-                            audioBase64,
-                            mimeType: audioBlob.type,
-                            duration,
-                            conversationId: selectedConversationId!,
-                          });
+                        toast.loading(t('conversationsPage.uploadingRecording'));
+                        const uploadResult = await uploadAudioMutation.mutateAsync({
+                          audioBase64,
+                          mimeType: normalizedMimeType,
+                          duration,
+                        });
+                        const sendResult = await sendVoiceReplyMutation.mutateAsync({
+                          conversationId: selectedConversationId!,
+                          storageKey: uploadResult.storageKey,
+                          mimeType: normalizedMimeType,
+                          duration,
+                        });
 
-                          if (uploadResult.success) {
-                            toast.dismiss();
-                            toast.success(`${t('toast.conversations.msg1')} (${uploadResult.size.toFixed(2)}MB)`);
-
-                            // TODO: إرسال الرسالة الصوتية عبر WhatsApp
-                            console.log('Audio URL:', uploadResult.audioUrl);
-                          }
-                        };
+                        toast.dismiss();
+                        if (sendResult.persisted) {
+                          toast.success(`تم إرسال الرسالة الصوتية ✓ (${uploadResult.size.toFixed(2)}MB)`);
+                        } else {
+                          toast.warning('وصلت الرسالة إلى WhatsApp، لكن تعذر تحديث سجل المحادثة. لن نعيد الإرسال تلقائيًا.');
+                        }
+                        utils.conversations.getMessages.invalidate({ conversationId: selectedConversationId! });
                       } catch (error) {
                         toast.dismiss();
                         toast.error(t('toast.conversations.msg2'));

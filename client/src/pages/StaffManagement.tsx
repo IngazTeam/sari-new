@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -18,9 +17,18 @@ interface StaffFormData {
   specialization: string;
 }
 
+interface StaffMember {
+  id: number;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  role: string | null;
+  isActive: number;
+}
+
 export default function StaffManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<any>(null);
+  const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [formData, setFormData] = useState<StaffFormData>({
     name: "",
     email: "",
@@ -29,7 +37,7 @@ export default function StaffManagement() {
   });
 
   const utils = trpc.useUtils();
-  const { data: staffList, isLoading } = trpc.staff.list.useQuery(undefined as any);
+  const { data: staffList, isLoading, error: staffListError } = trpc.staff.list.useQuery({});
   
   const createMutation = trpc.staff.create.useMutation({
     onSuccess: () => {
@@ -38,7 +46,7 @@ export default function StaffManagement() {
       resetForm();
       utils.staff.list.invalidate();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast.error(`فشل الإضافة: ${error.message}`);
     }
   });
@@ -50,7 +58,7 @@ export default function StaffManagement() {
       resetForm();
       utils.staff.list.invalidate();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast.error(`فشل التحديث: ${error.message}`);
     }
   });
@@ -60,7 +68,7 @@ export default function StaffManagement() {
       toast.success("تم الحذف بنجاح");
       utils.staff.list.invalidate();
     },
-    onError: (error: any) => {
+    onError: (error) => {
       toast.error(`فشل الحذف: ${error.message}`);
     }
   });
@@ -83,7 +91,7 @@ export default function StaffManagement() {
       return;
     }
 
-    const payload: any = {
+    const payload = {
       name: formData.name,
       email: formData.email || undefined,
       phone: formData.phone,
@@ -100,7 +108,7 @@ export default function StaffManagement() {
     }
   };
 
-  const handleEdit = (staff: any) => {
+  const handleEdit = (staff: StaffMember) => {
     setEditingStaff(staff);
     setFormData({
       name: staff.name,
@@ -125,8 +133,8 @@ export default function StaffManagement() {
   };
 
   const staffCount = staffList?.staff?.length || 0;
-  const activeCount = staffList?.staff?.filter((s: any) => s.isActive).length || 0;
-  const specializations = new Set(staffList?.staff?.map((s: any) => s.role).filter(Boolean));
+  const activeCount = staffList?.staff?.filter((staff) => Boolean(staff.isActive)).length || 0;
+  const specializations = new Set(staffList?.staff?.map((staff) => staff.role).filter(Boolean));
 
   return (
     <div className="container max-w-6xl py-8">
@@ -280,6 +288,10 @@ export default function StaffManagement() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : staffListError ? (
+            <div className="text-center py-12 text-red-600">
+              تعذر تحميل مقدمي الخدمات: {staffListError.message}
+            </div>
           ) : staffCount === 0 ? (
             <div className="text-center py-12">
               <CalendarClock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
@@ -303,7 +315,7 @@ export default function StaffManagement() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(staffList as any)?.staff?.map((staff) => (
+                {staffList?.staff?.map((staff) => (
                   <TableRow key={staff.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">

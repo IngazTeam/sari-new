@@ -20,6 +20,7 @@
 
 import { callGPT4, type ChatMessage } from './openai';
 import type { CustomerIntent } from './session-context';
+import { containsUnverifiedActionClaim } from './transactional-truth';
 
 // SEC-VAL-01: Reuse existing sanitizer to prevent prompt injection through validator
 const INJECTION_PATTERNS = [
@@ -69,6 +70,7 @@ export type ValidationRule =
   | 'contact_leak'            // Bot shared phone/email (Rule #6)
   | 'empty_response'          // Bot gave a non-answer ("أنا هنا لمساعدتك")
   | 'identity_leak'           // Bot mentioned "ساري"/"Sari" instead of merchant name
+  | 'unverified_action'       // Bot claimed an order/booking/handoff without a persisted result
   | 'too_long';               // Response exceeds reasonable WhatsApp length
 
 // ═══════════════════════════════════════════════════════════════
@@ -84,6 +86,7 @@ function fastPreCheck(
   response: string,
   customerMessage: string,
   lastBotMessage?: string,
+  confirmedActionId?: string | number,
 ): ValidationViolation[] {
   const violations: ValidationViolation[] = [];
   const resp = response.trim();
@@ -173,7 +176,17 @@ function fastPreCheck(
     });
   }
 
-  // 8. BUG-8: Placeholder detection — bot used a template bracket instead of real data
+  // 8. Transactional truth: never claim that an order, booking or handoff happened
+  // unless the caller supplies the persisted action identifier.
+  if (containsUnverifiedActionClaim(resp, confirmedActionId)) {
+    violations.push({
+      rule: 'unverified_action',
+      severity: 'critical',
+      description: 'الرد يؤكد إجراءً أو تحويلًا لم يُرفق له معرّف محفوظ',
+    });
+  }
+
+  // 9. BUG-8: Placeholder detection — bot used a template bracket instead of real data
   // GPT sometimes copies bracket-notation from system prompt examples (e.g., [أدخل السعر])
   const placeholderPatterns = [
     /\[أدخل ال/,           // [أدخل السعر], [أدخل التاريخ], etc.
@@ -241,12 +254,13 @@ export async function validateResponse(params: {
   productNames?: string[];
   lastBotMessage?: string;
   maxResponseLength?: number;
+  confirmedActionId?: string | number;
 }): Promise<ValidationResult> {
   const startTime = Date.now();
-  const { response, customerMessage, intent, productNames, lastBotMessage } = params;
+  const { response, customerMessage, intent, productNames, lastBotMessage, confirmedActionId } = params;
 
   // ── Phase 1: Fast pre-check (0ms, no API) ──
-  const fastViolations = fastPreCheck(response, customerMessage, lastBotMessage);
+  const fastViolations = fastPreCheck(response, customerMessage, lastBotMessage, confirmedActionId);
 
   // If critical violation found in fast check, skip GPT and return immediately
   const hasCritical = fastViolations.some(v => v.severity === 'critical');
@@ -428,7 +442,7 @@ ${productList}
   const validRules: Set<string> = new Set([
     'unanswered_question', 'missing_price', 'preamble_detected',
     'hallucinated_product', 'inappropriate_cta', 'self_repetition',
-    'contact_leak', 'empty_response', 'too_long',
+    'contact_leak', 'empty_response', 'identity_leak', 'unverified_action', 'too_long',
   ]);
 
   return parsed.violations
@@ -467,11 +481,11 @@ async function generateCorrectedResponse(params: {
 1. ابدأ بالإجابة المباشرة — لا مقدمات ولا ديباجات
 2. اذكر السعر إذا سأل العميل عنه — **ابحث في قائمة المنتجات المتوفرة عن السعر**
 3. لا تذكر منتجات غير موجودة في القائمة
-4. لا تشارك أرقام هواتف أو إيميلات — بدلاً من ذلك قل "خلني أوصل طلبك للفريق المختص ويتواصلون معك" أو "سجلت طلبك وبيتواصل معك أحد من الفريق"
+4. لا تشارك أرقام هواتف أو إيميلات. لا تدّعِ أنك سجلت أو حولت أو أرسلت شيئًا. قل: "لا أستطيع تنفيذ التحويل من هذه المحادثة؛ استخدم قناة الدعم المعتمدة في المتجر"
 5. اجعل الرد قصير ومباشر (150-250 حرف)
 6. **🔴 ممنوع تقول "خلني أتأكد" إذا المنتج موجود في القائمة!** — ابحث بالاسم العربي والإنجليزي وأجب
 7. حالة العميل: ${intent} — اختر CTA مناسب
-8. إذا كان العميل يطلب تعاون أو شراكة — رحب بالطلب وقل "وصّلت طلبك للمسؤول المختص وبيتواصل معك مباشرة 🙏" بدون ذكر أي بيانات تواصل
+8. إذا كان العميل يطلب تعاونًا أو شراكة — رحب به دون ادعاء الإرسال أو التحويل، ووجّهه إلى قناة الدعم المعتمدة في المتجر
 9. **مطابقة ذكية**: "ACLS" = "دعم الحياة القلبية المتقدمة (ACLS)" — ابحث في الأوصاف أيضاً
 
 أعد الرد المصحح فقط — بدون شرح.`;

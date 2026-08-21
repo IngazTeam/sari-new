@@ -69,6 +69,8 @@ import { TRPCError } from '@trpc/server';
 import type { WhatsAppRequest } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { notificationPreferences } from '../drizzle/schema';
+import { containsUnverifiedActionClaim } from './ai/transactional-truth';
+import { decodeValidatedAudio } from './utils/audio';
 import {
   activateUserTrial,
   approveWhatsAppConnectionRequest,
@@ -92,6 +94,7 @@ import {
   createEmailVerificationToken,
   createGoogleIntegration,
   createMerchant,
+  createMessage,
   createNotification,
   createOccasionCampaign,
   createOrUpdatePaymentGateway,
@@ -219,6 +222,7 @@ import {
   getPlanById,
   getPlanChangeLogs,
   getPrimaryWhatsAppInstance,
+  getQuickResponseById,
   getQuickResponses,
   getReferralCodeByCode,
   getReferralCodeByMerchantId,
@@ -284,6 +288,7 @@ import {
   updateBooking,
   updateBotSettings,
   updateCampaign,
+  updateConversation,
   updateCustomerReview,
   updateDiscountCode,
   updateDiscountCoupon,
@@ -2239,6 +2244,109 @@ export const appRouter = router({
         return { success: true, messageId: result.messageId };
       }),
 
+    // Send a voice reply that was uploaded through the authenticated voice endpoint.
+    // The client passes an opaque storage key, never an arbitrary URL.
+    sendVoiceReply: protectedProcedure
+      .input(z.object({
+        conversationId: z.number().int().positive(),
+        storageKey: z.string().min(1).max(500),
+        mimeType: z.enum(['audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/wav']),
+        duration: z.number().positive().max(3600),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const conversation = await getConversationById(input.conversationId);
+        if (!conversation || conversation.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Not authorized' });
+        }
+
+        const expectedPrefix = `audio/voice-${ctx.user.id}-`;
+        if (!input.storageKey.startsWith(expectedPrefix) || input.storageKey.includes('..')) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Invalid audio object' });
+        }
+
+        const waInstance = await getPrimaryWhatsAppInstance(merchant.id);
+        let waInstanceId: string;
+        let waToken: string;
+        let waApiUrl: string;
+
+        if (waInstance && waInstance.status === 'active' && waInstance.instanceId && waInstance.token) {
+          waInstanceId = waInstance.instanceId;
+          waToken = waInstance.token;
+          waApiUrl = (waInstance as any).apiUrl || 'https://api.green-api.com';
+        } else {
+          const waRequest = await getWhatsAppConnectionRequestByMerchantId(merchant.id);
+          if (!waRequest || !waRequest.instanceId || !waRequest.apiToken) {
+            throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'يجب ربط حساب WhatsApp أولاً' });
+          }
+          waInstanceId = waRequest.instanceId;
+          waToken = waRequest.apiToken;
+          waApiUrl = waRequest.apiUrl || 'https://api.green-api.com';
+        }
+
+        const { storageGet } = await import('./storage');
+        const { url: audioUrl } = await storageGet(input.storageKey);
+        const extensionByMime: Record<typeof input.mimeType, string> = {
+          'audio/webm': 'webm',
+          'audio/ogg': 'ogg',
+          'audio/mpeg': 'mp3',
+          'audio/mp3': 'mp3',
+          'audio/mp4': 'm4a',
+          'audio/wav': 'wav',
+        };
+        const fileName = `voice-message.${extensionByMime[input.mimeType]}`;
+
+        const { sendFileWithCredentials } = await import('./whatsapp');
+        const result = await sendFileWithCredentials(
+          waInstanceId,
+          waToken,
+          waApiUrl,
+          conversation.customerPhone,
+          audioUrl,
+          fileName,
+        );
+
+        if (!result.success || !result.messageId) {
+          console.error('[Dashboard] Voice provider rejected message:', result.error || 'missing message identifier');
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'فشل إرسال الرسالة الصوتية عبر مزود WhatsApp',
+          });
+        }
+
+        let persisted = true;
+        try {
+          const savedMessage = await createMessage({
+            conversationId: input.conversationId,
+            direction: 'outgoing',
+            messageType: 'voice',
+            content: `[رسالة صوتية — ${Math.round(input.duration)} ثانية]`,
+            voiceUrl: audioUrl,
+            mediaUrl: audioUrl,
+            externalId: result.messageId,
+            isProcessed: 1,
+          });
+          persisted = Boolean(savedMessage);
+
+          const botSettings = await getBotSettings(merchant.id);
+          const timeoutMin = botSettings.takeoverTimeoutMinutes || 15;
+          await updateConversation(input.conversationId, {
+            humanTakeover: 1,
+            humanTakeoverAt: new Date(),
+            humanExpiresAt: new Date(Date.now() + timeoutMin * 60 * 1000),
+          } as any);
+        } catch (persistenceError) {
+          persisted = false;
+          console.error(`[Dashboard] Voice ${result.messageId} delivered but persistence failed:`, persistenceError);
+        }
+
+        return { success: true, messageId: result.messageId, persisted };
+      }),
+
     // ── Sync conversations from Green API (recover missed data) ──
     syncFromWhatsApp: protectedProcedure
       .mutation(async ({ ctx }) => {
@@ -3128,23 +3236,29 @@ export const appRouter = router({
     // Create discount code
     create: protectedProcedure
       .input(z.object({
-        merchantId: z.number(),
-        code: z.string().min(4).max(50),
+        code: z.string().trim().min(4).max(50),
         type: z.enum(['percentage', 'fixed']),
         value: z.number().positive(),
-        minOrderAmount: z.number().optional(),
-        maxUses: z.number().optional(),
-        expiresAt: z.string().optional(),
+        minOrderAmount: z.number().nonnegative().optional(),
+        maxUses: z.number().int().positive().optional(),
+        expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      }).refine((data) => data.type !== 'percentage' || data.value <= 100, {
+        path: ['value'],
+        message: 'Percentage discount cannot exceed 100',
       }))
       .mutation(async ({ input, ctx }) => {
-        // Verify user owns this merchant
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const existingCodes = await getDiscountCodesByMerchantId(merchant.id);
+        if (existingCodes.some((code) => code.code === input.code.toUpperCase())) {
+          throw new TRPCError({ code: 'CONFLICT', message: 'كود الخصم موجود مسبقاً' });
         }
 
         const discountCode = await createDiscountCode({
-          merchantId: input.merchantId,
+          merchantId: merchant.id,
           code: input.code.toUpperCase(),
           type: input.type,
           value: input.value,
@@ -3160,14 +3274,12 @@ export const appRouter = router({
 
     // List all discount codes
     list: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      .query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-
-        return await getDiscountCodesByMerchantId(input.merchantId);
+        return await getDiscountCodesByMerchantId(merchant.id);
       }),
 
     // Get discount code by ID
@@ -3192,8 +3304,8 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         isActive: z.boolean().optional(),
-        maxUses: z.number().optional(),
-        expiresAt: z.string().optional(),
+        maxUses: z.number().int().positive().optional(),
+        expiresAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const discountCode = await getDiscountCodeById(input.id);
@@ -3207,8 +3319,7 @@ export const appRouter = router({
         }
 
         await updateDiscountCode(input.id, {
-          // @ts-ignore
-          isActive: input.isActive,
+          isActive: input.isActive === undefined ? undefined : input.isActive ? 1 : 0,
           maxUses: input.maxUses,
           expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
         });
@@ -3236,14 +3347,12 @@ export const appRouter = router({
 
     // Get statistics
     getStats: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      .query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-
-        const codes = await getDiscountCodesByMerchantId(input.merchantId);
+        const codes = await getDiscountCodesByMerchantId(merchant.id);
         const active = codes.filter(c => c.isActive).length;
         const used = codes.reduce((sum, c) => sum + c.usedCount, 0);
 
@@ -4824,34 +4933,32 @@ export const appRouter = router({
     // رفع ملف صوتي إلى S3
     uploadAudio: protectedProcedure
       .input(z.object({
-        audioBase64: z.string(), // الملف الصوتي بصيغة base64
-        mimeType: z.string(), // نوع الملف (audio/webm, audio/mp4, etc.)
-        duration: z.number(), // مدة التسجيل بالثواني
-        conversationId: z.number().optional(), // معرف المحادثة (اختياري)
+        audioBase64: z.string().min(1).max(24 * 1024 * 1024),
+        mimeType: z.enum(['audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/wav']),
+        duration: z.number().positive().max(3600),
       }))
       .mutation(async ({ input, ctx }) => {
         try {
-          // تحويل base64 إلى Buffer
-          const audioBuffer = Buffer.from(input.audioBase64, 'base64');
-
-          // التحقق من حجم الملف (16MB max)
+          const audioBuffer = decodeValidatedAudio(input.audioBase64, input.mimeType);
           const sizeMB = audioBuffer.length / (1024 * 1024);
-          if (sizeMB > 16) {
-            throw new TRPCError({
-              code: 'BAD_REQUEST',
-              message: `حجم الملف كبير جداً (${sizeMB.toFixed(2)}MB). الحد الأقصى 16MB`
-            });
-          }
 
           // تحديد امتداد الملف
-          const extension = input.mimeType.includes('webm') ? 'webm' : 'mp3';
+          const extensionByMime: Record<typeof input.mimeType, string> = {
+            'audio/webm': 'webm',
+            'audio/ogg': 'ogg',
+            'audio/mpeg': 'mp3',
+            'audio/mp3': 'mp3',
+            'audio/mp4': 'm4a',
+            'audio/wav': 'wav',
+          };
+          const extension = extensionByMime[input.mimeType];
           const timestamp = Date.now();
           const randomStr = (await import('node:crypto')).randomBytes(4).toString('hex');
           const fileName = `voice-${ctx.user.id}-${timestamp}-${randomStr}.${extension}`;
 
           // رفع الملف إلى S3
           const { storagePut } = await import('./storage');
-          const { url } = await storagePut(
+          const { key, url } = await storagePut(
             `audio/${fileName}`,
             audioBuffer,
             input.mimeType
@@ -4859,15 +4966,30 @@ export const appRouter = router({
 
           return {
             success: true,
+            storageKey: key,
             audioUrl: url,
             duration: input.duration,
             size: sizeMB,
           };
         } catch (error) {
           console.error('[Voice] Upload failed:', error);
+          if (error instanceof TRPCError) throw error;
+          const audioValidationCodes = new Set([
+            'INVALID_BASE64',
+            'EMPTY_AUDIO',
+            'AUDIO_TOO_LARGE',
+            'AUDIO_SIGNATURE_MISMATCH',
+          ]);
+          const errorCode = error instanceof Error ? error.message : '';
+          const isValidationError = audioValidationCodes.has(errorCode);
+          const message = errorCode === 'AUDIO_TOO_LARGE'
+            ? 'حجم الملف الصوتي يتجاوز 16MB'
+            : isValidationError
+              ? 'الملف المرفوع ليس تسجيلاً صوتياً صالحاً أو لا يطابق نوعه'
+              : 'تعذر تخزين التسجيل الصوتي';
           throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'فشل رفع الملف الصوتي'
+            code: isValidationError ? 'BAD_REQUEST' : 'INTERNAL_SERVER_ERROR',
+            message,
           });
         }
       }),
@@ -5642,9 +5764,11 @@ export const appRouter = router({
     // Create quick response
     create: protectedProcedure
       .input(z.object({
-        trigger: z.string().min(1),
-        response: z.string().min(1),
-        keywords: z.string().optional(),
+        trigger: z.string().trim().min(1).max(255),
+        response: z.string().trim().min(1).max(2000).refine(response => !containsUnverifiedActionClaim(response), {
+          message: 'لا يمكن حفظ رد يؤكد طلباً أو حجزاً أو تحويلاً دون عملية موثقة',
+        }),
+        keywords: z.string().max(2000).optional(),
         priority: z.number().min(1).max(10).optional(),
         category: z.string().optional(),
       }))
@@ -5664,9 +5788,11 @@ export const appRouter = router({
     update: protectedProcedure
       .input(z.object({
         id: z.number(),
-        trigger: z.string().min(1).optional(),
-        response: z.string().min(1).optional(),
-        keywords: z.string().optional(),
+        trigger: z.string().trim().min(1).max(255).optional(),
+        response: z.string().trim().min(1).max(2000).refine(response => !containsUnverifiedActionClaim(response), {
+          message: 'لا يمكن حفظ رد يؤكد طلباً أو حجزاً أو تحويلاً دون عملية موثقة',
+        }).optional(),
+        keywords: z.string().max(2000).optional(),
         priority: z.number().min(1).max(10).optional(),
         category: z.string().optional(),
         isActive: z.boolean().optional(),
@@ -5677,8 +5803,16 @@ export const appRouter = router({
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        const { id, ...data } = input;
-        return await (updateQuickResponse as any)(id, data);
+        const existingResponse = await getQuickResponseById(input.id);
+        if (!existingResponse || existingResponse.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        }
+
+        const { id, isActive, ...data } = input;
+        return await updateQuickResponse(id, {
+          ...data,
+          ...(isActive === undefined ? {} : { isActive: isActive ? 1 : 0 }),
+        });
       }),
 
     // Delete quick response
@@ -5688,6 +5822,11 @@ export const appRouter = router({
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+        }
+
+        const existingResponse = await getQuickResponseById(input.id);
+        if (!existingResponse || existingResponse.merchantId !== merchant.id) {
+          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
         await deleteQuickResponse(input.id);
@@ -6795,12 +6934,12 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({
         activeOnly: z.boolean().optional(),
-      }))
+      }).optional())
       .query(async ({ ctx, input }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-        const staff = input.activeOnly
+        const staff = input?.activeOnly
           ? await getActiveStaffByMerchant(merchant.id)
           : await getStaffMembersByMerchant(merchant.id);
 
@@ -8213,6 +8352,34 @@ export const appRouter = router({
         '\u0622\u062e\u0631 \u062a\u0641\u0627\u0639\u0644': new Date(c.lastMessageAt).toLocaleDateString('ar-SA'),
       }));
     }),
+
+    // Download-ready UTF-8 CSV. Tenant identity is derived exclusively from the session.
+    exportCsv: protectedProcedure.query(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+
+      const customers = await getCustomersByMerchant(merchant.id);
+      const { buildCsv } = await import('./utils/csv');
+      const data = buildCsv(
+        ['الاسم', 'رقم الجوال', 'عدد الطلبات', 'إجمالي المشتريات', 'نقاط الولاء', 'الحالة', 'آخر تفاعل'],
+        customers.map(customer => [
+          customer.customerName || 'غير معروف',
+          customer.customerPhone,
+          customer.orderCount || 0,
+          customer.totalSpent || 0,
+          customer.loyaltyPoints || 0,
+          customer.status === 'active' ? 'نشط' : customer.status === 'new' ? 'جديد' : 'غير نشط',
+          customer.lastMessageAt ? new Date(customer.lastMessageAt).toISOString() : '',
+        ]),
+      );
+
+      return {
+        filename: `customers-${merchant.id}-${new Date().toISOString().slice(0, 10)}.csv`,
+        mimeType: 'text/csv;charset=utf-8',
+        count: customers.length,
+        data,
+      };
+    }),
   }),
 
   // Website Analysis
@@ -8898,18 +9065,17 @@ export const appRouter = router({
   notificationPreferences: router({
     // Get merchant's notification preferences
     get: protectedProcedure
-      .input(z.object({ merchantId: z.number() }))
-      .query(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+      .query(async ({ ctx }) => {
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
         const dbConn = await getDb();
         if (!dbConn) {
           // Return default preferences if DB not available
           return {
-            merchantId: input.merchantId,
+            merchantId: merchant.id,
             newOrdersEnabled: true,
             newMessagesEnabled: true,
             appointmentsEnabled: true,
@@ -8927,13 +9093,13 @@ export const appRouter = router({
         }
 
         const result = await dbConn.select().from(notificationPreferences)
-          .where(eq(notificationPreferences.merchantId, input.merchantId))
+          .where(eq(notificationPreferences.merchantId, merchant.id))
           .limit(1);
 
         // Return default preferences if not found
         if (result.length === 0) {
           return {
-            merchantId: input.merchantId,
+            merchantId: merchant.id,
             newOrdersEnabled: true,
             newMessagesEnabled: true,
             appointmentsEnabled: true,
@@ -8956,7 +9122,6 @@ export const appRouter = router({
     // Update notification preferences
     update: protectedProcedure
       .input(z.object({
-        merchantId: z.number(),
         newOrdersEnabled: z.boolean().optional(),
         newMessagesEnabled: z.boolean().optional(),
         appointmentsEnabled: z.boolean().optional(),
@@ -8972,30 +9137,30 @@ export const appRouter = router({
         batchInterval: z.number().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        const merchant = await getMerchantById(input.merchantId);
-        if (!merchant || merchant.userId !== ctx.user.id) {
-          throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
+        const merchant = await getMerchantByUserId(ctx.user.id);
+        if (!merchant) {
+          throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
         const dbConn = await getDb();
         if (!dbConn) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Database unavailable' });
 
-        const { merchantId, ...updateData } = input;
+        const updateData = input;
 
         // Check if preferences exist
         const existing = await dbConn.select().from(notificationPreferences)
-          .where(eq(notificationPreferences.merchantId, merchantId))
+          .where(eq(notificationPreferences.merchantId, merchant.id))
           .limit(1);
 
         if (existing.length > 0) {
           // Update existing preferences
           await dbConn.update(notificationPreferences)
             .set(updateData)
-            .where(eq(notificationPreferences.merchantId, merchantId));
+            .where(eq(notificationPreferences.merchantId, merchant.id));
         } else {
           // Create new preferences
           await dbConn.insert(notificationPreferences).values({
-            merchantId,
+            merchantId: merchant.id,
             ...updateData,
           });
         }

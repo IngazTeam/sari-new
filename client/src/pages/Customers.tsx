@@ -62,6 +62,11 @@ export default function Customers() {
   // Fetch stats
   const { data: stats } = trpc.customers.getStats.useQuery();
 
+  const customerExport = trpc.customers.exportCsv.useQuery(undefined, {
+    enabled: false,
+    retry: false,
+  });
+
   // Add note mutation
   // @ts-ignore
   const addNoteMutation = trpc.customers.addNote.useMutation({
@@ -141,12 +146,36 @@ export default function Customers() {
     });
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     toast({
       title: "جاري التصدير",
-      description: "سيتم تحميل ملف CSV قريباً",
+      description: "يتم تجهيز ملف CSV الآمن",
     });
-    // TODO: Implement CSV export
+
+    const result = await customerExport.refetch();
+    if (result.error || !result.data) {
+      toast({
+        title: "فشل التصدير",
+        description: result.error?.message || "لم يتم إنشاء الملف",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const blob = new Blob([result.data.data], { type: result.data.mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = result.data.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "تم التصدير",
+      description: `تم تحميل ${result.data.count} عميل في ملف CSV`,
+    });
   };
 
   return (
@@ -156,7 +185,7 @@ export default function Customers() {
           <h1 className="text-3xl font-bold">{t('customersPage.text0')}</h1>
           <p className="text-muted-foreground mt-1">{t('customers.auto_0')}</p>
         </div>
-        <Button onClick={handleExport} variant="outline">
+        <Button onClick={handleExport} variant="outline" disabled={customerExport.isFetching}>
           <Download className="ml-2 h-4 w-4" />{t('customers.auto_1')}</Button>
       </div>
 

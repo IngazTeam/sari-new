@@ -54,12 +54,12 @@ export const staffRouter = router({
     list: protectedProcedure
         .input(z.object({
             activeOnly: z.boolean().optional(),
-        }))
+        }).optional())
         .query(async ({ ctx, input }) => {
             const merchant = await getMerchantByUserId(ctx.user.id);
             if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-            const staff = input.activeOnly
+            const staff = input?.activeOnly
                 ? await getActiveStaffByMerchant(merchant.id)
                 : await getStaffMembersByMerchant(merchant.id);
 

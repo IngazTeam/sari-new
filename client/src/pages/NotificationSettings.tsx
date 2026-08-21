@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-
 import { trpc } from '@/lib/trpc';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,29 +16,15 @@ import {
   Calendar, 
   Package, 
   AlertTriangle,
-  Loader2,
-  Save
+  Loader2
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function NotificationSettings() {
   const { t } = useTranslation();
-  const [merchantId, setMerchantId] = useState<number | null>(null);
-
-  // Get merchant ID
-  const { data: merchants } = trpc.merchants.list.useQuery();
-
-  useEffect(() => {
-    if (merchants && merchants.length > 0) {
-      setMerchantId(merchants[0].id);
-    }
-  }, [merchants]);
 
   // Get notification preferences
-  const { data: preferences, isLoading, refetch } = trpc.notificationPreferences.get.useQuery(
-    { merchantId: merchantId! },
-    { enabled: !!merchantId }
-  );
+  const { data: preferences, isLoading, error, refetch } = trpc.notificationPreferences.get.useQuery();
 
   // Update preferences mutation
   const updateMutation = trpc.notificationPreferences.update.useMutation({
@@ -54,17 +38,24 @@ export default function NotificationSettings() {
   });
 
   const handleUpdate = (data: any) => {
-    if (!merchantId) return;
-    updateMutation.mutate({
-      merchantId,
-      ...data,
-    });
+    updateMutation.mutate(data);
   };
 
-  if (isLoading || !preferences) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (error || !preferences) {
+    return (
+      <div className="container mx-auto py-12 text-center" dir="rtl">
+        <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-red-600" />
+        <p className="font-medium text-red-700">تعذر تحميل إعدادات الإشعارات</p>
+        <p className="mt-2 text-sm text-gray-600">{error?.message || 'لم تُرجع الخدمة بيانات صالحة'}</p>
+        <Button className="mt-4" variant="outline" onClick={() => refetch()}>إعادة المحاولة</Button>
       </div>
     );
   }

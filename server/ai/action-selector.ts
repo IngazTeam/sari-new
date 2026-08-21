@@ -23,7 +23,6 @@ import {
   getOrdersByCustomerPhone,
   getProductsByMerchantId,
   getTopProducts,
-  incrementDiscountCodeUsage,
 } from '../db';
 
 // Rate-limit map: prevent sending discount codes too frequently to the same customer
@@ -344,8 +343,8 @@ export async function executeAction(params: {
               await sendMessage(customerPhone,
                 `🎁 عندنا عرض خاص لك!\n\nاستخدم كود الخصم: *${d.code}*\nقيمة الخصم: *${valueStr}*\n\nالعرض لفترة محدودة! ⏰`
               );
-              // Track discount usage + rate-limit
-              await incrementDiscountCodeUsage(d.code);
+              // Sending an offer is not a redemption. Usage is reserved atomically
+              // only when an order actually applies the code.
               _discountRateLimit.set(discountKey, Date.now());
               discountSent = true;
               console.log(`[ActionSelector] ✅ Sent existing discount code: ${d.code}`);
@@ -642,10 +641,10 @@ export async function executeAction(params: {
             // Order created but no payment link (Tap not configured)
             await sendMessage(customerPhone,
               `✅ *تم تسجيل طلبك!*\n\n` +
-              `📦 *رقم الطلب:* #${order.id}\n\n` +
-              `*المنتجات:*\n${itemsText}\n` +
-              taxLine + `\n\n` +
-              `سيتواصل معك فريقنا لإتمام الطلب والدفع 🙏`
+               `📦 *رقم الطلب:* #${order.id}\n\n` +
+               `*المنتجات:*\n${itemsText}\n` +
+               taxLine + `\n\n` +
+               `لم يُنشأ رابط دفع لهذا الطلب. استخدم وسيلة الدفع المعتمدة الظاهرة في المتجر لإتمامه 🙏`
             );
           }
 
@@ -653,10 +652,10 @@ export async function executeAction(params: {
 
         } catch (orderErr: any) {
           console.warn(`[ActionSelector] Order creation failed: ${orderErr.message}`);
-          // Fallback: send text-only confirmation
+          // Transactional truth: never confirm an order when persistence failed.
           const itemsList = action.items.map((item, i) => `${i + 1}. ${item}`).join('\n');
           await sendMessage(customerPhone,
-            `📋 *تأكيد الطلب*\n\nالمنتجات:\n${itemsList}\n\nسيتواصل معك فريقنا لإتمام الطلب 🙏`
+            `تعذر إنشاء الطلب، ولم يتم تسجيله حتى الآن.\n\nالمنتجات المطلوبة:\n${itemsList}\n\nحاول مرة ثانية بعد قليل 🙏`
           );
         }
         break;

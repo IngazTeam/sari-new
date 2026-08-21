@@ -43,6 +43,12 @@ export interface EscalationContact {
   order: number;
 }
 
+export interface SmartEscalationResult {
+  message: string;
+  escalationId: number | null;
+  notified: boolean;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Professional Hold Responses — What Sari tells the customer
 // ═══════════════════════════════════════════════════════════════
@@ -189,7 +195,7 @@ export async function handleSmartEscalation(params: {
   customerName?: string;
   customerQuestion: string;
   botResponse?: string;
-}): Promise<string> {
+}): Promise<SmartEscalationResult> {
   try {
     // 1. Create escalation entry
     const escalationId = await createEscalation({
@@ -203,11 +209,15 @@ export async function handleSmartEscalation(params: {
     });
 
     if (!escalationId) {
-      // Fallback: couldn't create escalation — return a professional generic response
-      return HOLD_RESPONSES_BUSINESS_HOURS[0];
+      return {
+        message: 'أبغى أتأكد من المعلومة الدقيقة قبل ما أجاوبك. حاول مرة ثانية بعد قليل 🙏',
+        escalationId: null,
+        notified: false,
+      };
     }
 
     // 2. Alert first contact in the chain (F3+F6: awaited with retry, not fire-and-forget)
+    let notified = false;
     try {
       await notifyEscalationContact({
         merchantId: params.merchantId,
@@ -217,6 +227,7 @@ export async function handleSmartEscalation(params: {
         question: params.customerQuestion,
         level: 0, // First contact
       });
+      notified = true;
       console.log(`[Escalation] ✅ Merchant notified for escalation #${escalationId}`);
     } catch (notifyErr: any) {
       console.error(`[Escalation] ⚠️ First notification attempt failed: ${notifyErr.message} — retrying once...`);
@@ -231,18 +242,22 @@ export async function handleSmartEscalation(params: {
           question: params.customerQuestion,
           level: 0,
         });
+        notified = true;
         console.log(`[Escalation] ✅ Retry succeeded for escalation #${escalationId}`);
       } catch (retryErr: any) {
         console.error(`[Escalation] 🔴 BOTH notification attempts failed for escalation #${escalationId}: ${retryErr.message}`);
         // Final fallback: in-app notification only
-        await sendNotification({
-          merchantId: params.merchantId,
-          type: 'new_message',
-          title: '🔴 تصعيد لم يصل عبر الواتساب',
-          body: `العميل ${params.customerName || ''} يسأل: "${params.customerQuestion.substring(0, 100)}" — تعذر إرسال التنبيه عبر الواتساب`,
-          url: '/merchant/conversations',
-          metadata: { escalationId, failureReason: retryErr.message },
-        }).catch(() => {});
+        try {
+          await sendNotification({
+            merchantId: params.merchantId,
+            type: 'new_message',
+            title: '🔴 تصعيد لم يصل عبر الواتساب',
+            body: `العميل ${params.customerName || ''} يسأل: "${params.customerQuestion.substring(0, 100)}" — تعذر إرسال التنبيه عبر الواتساب`,
+            url: '/merchant/conversations',
+            metadata: { escalationId, failureReason: retryErr.message },
+          });
+          notified = true;
+        } catch { /* escalation remains persisted for dashboard follow-up */ }
       }
     }
 
@@ -263,14 +278,18 @@ export async function handleSmartEscalation(params: {
 
     if (isBusinessHours) {
       const idx = Math.floor(Math.random() * HOLD_RESPONSES_BUSINESS_HOURS.length);
-      return HOLD_RESPONSES_BUSINESS_HOURS[idx];
+      return { message: HOLD_RESPONSES_BUSINESS_HOURS[idx], escalationId, notified };
     } else {
       const idx = Math.floor(Math.random() * HOLD_RESPONSES_AFTER_HOURS.length);
-      return HOLD_RESPONSES_AFTER_HOURS[idx];
+      return { message: HOLD_RESPONSES_AFTER_HOURS[idx], escalationId, notified };
     }
   } catch (err: any) {
     console.error('[Escalation] handleSmartEscalation failed:', err.message);
-    return HOLD_RESPONSES_BUSINESS_HOURS[0];
+    return {
+      message: 'أبغى أتأكد من المعلومة الدقيقة قبل ما أجاوبك. حاول مرة ثانية بعد قليل 🙏',
+      escalationId: null,
+      notified: false,
+    };
   }
 }
 

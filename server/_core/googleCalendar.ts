@@ -4,7 +4,6 @@
  */
 
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
 import { getGoogleOAuthSettings } from '../db';
 
 // OAuth2 Configuration
@@ -15,7 +14,7 @@ const REDIRECT_URI = process.env.GOOGLE_CALENDAR_REDIRECT_URI || 'http://localho
  * Create OAuth2 client
  * Reads credentials from database instead of environment variables
  */
-export async function createOAuth2Client(): Promise<OAuth2Client> {
+export async function createOAuth2Client() {
   // Try to get credentials from database first
   const settings = await getGoogleOAuthSettings();
   

@@ -50,7 +50,7 @@ describe('Occasion Campaigns System', () => {
       expect(code).toMatch(/^RAMADAN\d{8}$/);
 
       // Verify discount code exists in database
-      const discount = await db.getDiscountCodeByCode(code);
+      const discount = await db.getDiscountCodeByCode(testMerchantId, code);
       expect(discount).toBeDefined();
       expect(discount?.type).toBe('percentage');
       expect(discount?.value).toBe(20);
@@ -63,7 +63,7 @@ describe('Occasion Campaigns System', () => {
       expect(code).toBeDefined();
       expect(code).toMatch(/^NATIONAL\d{8}$/);
 
-      const discount = await db.getDiscountCodeByCode(code);
+      const discount = await db.getDiscountCodeByCode(testMerchantId, code);
       expect(discount).toBeDefined();
       expect(discount?.value).toBe(23);
     });
@@ -74,7 +74,7 @@ describe('Occasion Campaigns System', () => {
       expect(code).toBeDefined();
       expect(code).toMatch(/^EIDFITR\d{8}$/);
 
-      const discount = await db.getDiscountCodeByCode(code);
+      const discount = await db.getDiscountCodeByCode(testMerchantId, code);
       expect(discount).toBeDefined();
       expect(discount?.value).toBe(25);
     });
