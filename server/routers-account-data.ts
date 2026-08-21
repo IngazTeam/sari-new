@@ -44,6 +44,9 @@ function mapLifecycleError(error: unknown): never {
   if (message === 'ACCOUNT_UNAVAILABLE') {
     throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'الحساب غير متاح لهذا الإجراء' });
   }
+  if (message === 'DELETION_STATE_MISMATCH') {
+    throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'حالة الحساب وطلب الحذف غير متطابقتين وتحتاجان مراجعة' });
+  }
   throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر تنفيذ طلب الخصوصية' });
 }
 
@@ -111,7 +114,7 @@ export const accountDataRouter = router({
   adminResolveRequest: adminProcedure
     .input(z.object({
       requestId: z.number().int().positive(),
-      decision: z.enum(['completed', 'rejected', 'requires_review']),
+      decision: z.enum(['completed', 'rejected', 'requires_review', 'retry']),
       notes: z.string().trim().min(3).max(2_000),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -124,6 +127,15 @@ export const accountDataRouter = router({
         }
         if (message === 'REQUEST_ALREADY_FINAL') {
           throw new TRPCError({ code: 'CONFLICT', message: 'تم إغلاق الطلب مسبقاً' });
+        }
+        if (message === 'DELETION_COMPLETION_WORKER_ONLY') {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'طلبات الحذف لا تُستكمل أو تُرفض يدويًا؛ عامل الحذف الذري وحده يغلقها',
+          });
+        }
+        if (message === 'DELETION_RETRY_REQUIRES_REVIEW' || message === 'RETRY_ONLY_FOR_DELETION') {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'إعادة المحاولة متاحة فقط لطلب حذف يحتاج مراجعة' });
         }
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر تحديث الطلب' });
       }

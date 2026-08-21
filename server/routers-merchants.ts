@@ -34,6 +34,10 @@ import {
   updateUser,
 } from './db';
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
+import {
+  getAdminAccountDeletionImpact,
+  requestAccountDeletionByAdmin,
+} from './accounts/lifecycle';
 
 // PEN-ESC-05 FIX: Rate limiter for escalation phone chain updates
 const _escalationPhoneRateLimit: Record<number, number> = {};
@@ -45,6 +49,35 @@ const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
     }
     return next({ ctx });
 });
+
+function mapAdminDeletionError(error: unknown): never {
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'MERCHANT_NOT_FOUND') {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'التاجر غير موجود' });
+    }
+    if (message === 'ADMIN_ACTOR_REQUIRED') {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'جلسة الإدارة غير صالحة لهذا الإجراء' });
+    }
+    if (message === 'ADMIN_ACCOUNT_DELETION_FORBIDDEN') {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'لا يمكن حذف حساب إدارة من شاشة التجار' });
+    }
+    if (message === 'ADMIN_DELETION_CONFIRMATION_INVALID') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'عبارة التأكيد غير مطابقة' });
+    }
+    if (message === 'MERCHANT_OWNERSHIP_TRANSFER_REQUIRED') {
+        throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'يجب نقل ملكية المتاجر التي تضم أعضاء نشطين قبل جدولة حذف الحساب',
+        });
+    }
+    if (message === 'ACCOUNT_UNAVAILABLE') {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'الحساب غير نشط أو سبق تعليق هويته' });
+    }
+    if (message === 'DELETION_STATE_MISMATCH') {
+        throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'حالة الحساب وطلب الحذف غير متطابقتين وتحتاجان مراجعة' });
+    }
+    throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر جدولة حذف الحساب' });
+}
 
 export const merchantsRouter = router({
     // Get current merchant for logged-in user
@@ -198,80 +231,39 @@ export const merchantsRouter = router({
             });
         }),
 
-    // Delete merchant and all related data (Admin only)
-    delete: adminProcedure
-        .input(z.object({ merchantId: z.number() }))
-        .mutation(async ({ input }) => {
-            const merchant = await getMerchantById(input.merchantId);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-
-            const pool = await getPool();
-            if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'DB unavailable' });
-
-            // SEC-PENTEST-02: Frozen array — these are hardcoded table names, NOT user input.
-            // Object.freeze prevents accidental mutation and signals code-review intent.
-            const tables = Object.freeze([
-                'brain_activity_log',
-                'notification_preferences',
-                'abandoned_carts',
-                'discount_codes',
-                'occasion_campaigns',
-                'scheduled_messages',
-                'campaign_logs',
-                'campaigns',
-                'messages',
-                'conversations',
-                'invoices', // SEC-R3-06: was missing (no FK cascade)
-                'orders',
-                'customers',
-                'sari_conversions',
-                'sari_api_keys',
-                'merchant_addons',
-                'merchant_subscriptions',
-                'products',
-                'extracted_faqs',
-                'knowledge_docs',
-                'bot_settings',
-                'sari_personality_settings',
-                'byaan_connections',
-                'salla_connections',
-                'whatsapp_connection_requests',
-                'whatsapp_instances',
-            ] as const);
-
-            for (const table of tables) {
-                try {
-                    await pool.execute(`DELETE FROM \`${table}\` WHERE merchant_id = ?`, [input.merchantId]);
-                } catch (e: any) {
-                    // Table may not exist or column name differs — try without underscore
-                    try {
-                        await pool.execute(`DELETE FROM \`${table}\` WHERE merchantId = ?`, [input.merchantId]);
-                    } catch {
-                        // Skip silently
-                    }
-                }
-            }
-
-            // Delete merchant
-            await pool.execute('DELETE FROM `merchants` WHERE id = ?', [input.merchantId]);
-
-            // Delete associated user
-            if (merchant.userId) {
-                await pool.execute('DELETE FROM `users` WHERE id = ?', [merchant.userId]);
-            }
-
-            // SEC-R3-04: Persistent audit log for deletions
+    deletionImpact: adminProcedure
+        .input(z.object({ merchantId: z.number().int().positive() }))
+        .query(async ({ input }) => {
             try {
-                await pool.execute(
-                    `INSERT INTO brain_activity_log (merchant_id, action_type, description, details, created_at) VALUES (0, 'merchant_deleted', ?, ?, NOW())`,
-                    [`Admin deleted merchant #${input.merchantId}: ${merchant.businessName}`, JSON.stringify({ deletedMerchantId: input.merchantId, businessName: merchant.businessName, userId: merchant.userId })]
-                );
-            } catch { /* audit log is best-effort */ }
+                return await getAdminAccountDeletionImpact(input.merchantId);
+            } catch (error) {
+                return mapAdminDeletionError(error);
+            }
+        }),
 
-            console.log(`[Admin] Merchant DELETED: id=${input.merchantId}, business=${merchant.businessName}`);
-            return { success: true, deletedId: input.merchantId };
+    // Schedule account-wide deletion through the audited privacy lifecycle.
+    delete: adminProcedure
+        .input(z.object({
+            merchantId: z.number().int().positive(),
+            confirmation: z.string().max(64),
+            reasonCode: z.enum(['customer_request', 'duplicate_test_account', 'legal_requirement']),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            try {
+                const request = await requestAccountDeletionByAdmin({
+                    ...input,
+                    adminUserId: ctx.user.id,
+                });
+                console.log('[Admin] Account deletion scheduled', {
+                    requestId: request.id,
+                    merchantId: input.merchantId,
+                    affectedMerchantCount: request.affectedMerchantCount,
+                    alreadyScheduled: request.alreadyScheduled,
+                });
+                return { success: true, request };
+            } catch (error) {
+                return mapAdminDeletionError(error);
+            }
         }),
 
     // Get merchant by ID (Admin only)

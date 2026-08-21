@@ -12,6 +12,10 @@ import { encryptSecret, isEncryptedSecret } from '../security/secrets';
 import { privacyHash } from './privacy-hash';
 
 type ConsentType = 'terms' | 'privacy' | 'marketing';
+export type AdminAccountDeletionReason =
+  | 'customer_request'
+  | 'duplicate_test_account'
+  | 'legal_requirement';
 
 interface UserRow extends RowDataPacket {
   id: number;
@@ -48,6 +52,57 @@ function plusHours(date: Date, hours: number): Date {
 
 function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
+}
+
+async function assertNoSharedMerchantOwnership(connection: PoolConnection, userId: number): Promise<void> {
+  const [sharedMerchants] = await connection.execute<RowDataPacket[]>(
+    `SELECT m.id
+       FROM merchants m
+      WHERE m.userId = ?
+        AND EXISTS (
+          SELECT 1 FROM merchant_members mm
+           WHERE mm.merchant_id = m.id AND mm.user_id <> ? AND mm.is_active = 1
+        )
+      LIMIT 1`,
+    [userId, userId],
+  );
+  if (sharedMerchants[0]) throw new Error('MERCHANT_OWNERSHIP_TRANSFER_REQUIRED');
+}
+
+async function suspendAccountForDeletion(
+  connection: PoolConnection,
+  userId: number,
+  now: Date,
+): Promise<void> {
+  const timestamp = mysqlTimestamp(now);
+  await connection.execute(
+    `UPDATE users SET account_status = 'deletion_pending', deletion_requested_at = ?, password = NULL,
+                      is_trial_active = 0, updatedAt = ? WHERE id = ? AND account_status = 'active'`,
+    [timestamp, timestamp, userId],
+  );
+  await connection.execute(
+    `UPDATE auth_sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL`,
+    [timestamp, userId],
+  );
+  await connection.execute(
+    `UPDATE merchants SET status = 'suspended', autoReplyEnabled = 0, updatedAt = ? WHERE userId = ?`,
+    [timestamp, userId],
+  );
+  await connection.execute(
+    `UPDATE whatsapp_instances wi JOIN merchants m ON m.id = wi.merchant_id
+        SET wi.status = 'inactive', wi.updated_at = ? WHERE m.userId = ?`,
+    [timestamp, userId],
+  );
+  await connection.execute(
+    `UPDATE sari_api_keys sak JOIN merchants m ON m.id = sak.merchant_id
+        SET sak.is_active = 0 WHERE m.userId = ?`,
+    [userId],
+  );
+  await connection.execute(
+    `UPDATE byaan_connections bc JOIN merchants m ON m.id = bc.merchant_id
+        SET bc.is_active = 0, bc.updated_at = ? WHERE m.userId = ?`,
+    [timestamp, userId],
+  );
 }
 
 function mysqlErrorCode(error: unknown): string | undefined {
@@ -585,9 +640,17 @@ export async function listDataSubjectRequestsForAdmin(status?: string) {
   );
   return rows.map(row => {
     let details: string | null = null;
+    let source: string | null = null;
+    let reasonCode: string | null = null;
+    let affectedMerchantCount: number | null = null;
     try {
       const metadata = row.requestMetadata ? JSON.parse(String(row.requestMetadata)) : null;
       details = typeof metadata?.details === 'string' ? metadata.details : null;
+      source = typeof metadata?.source === 'string' ? metadata.source : null;
+      reasonCode = typeof metadata?.reasonCode === 'string' ? metadata.reasonCode : null;
+      affectedMerchantCount = Number.isSafeInteger(metadata?.affectedMerchantCount)
+        ? Number(metadata.affectedMerchantCount)
+        : null;
     } catch {
       details = null;
     }
@@ -601,6 +664,9 @@ export async function listDataSubjectRequestsForAdmin(status?: string) {
       rejectionReason: row.rejectionReason,
       resolutionNotes: row.resolutionNotes,
       details,
+      source,
+      reasonCode,
+      affectedMerchantCount,
       subject: row.userId ? { userId: row.userId, name: row.name, email: row.email } : null,
     };
   });
@@ -609,7 +675,7 @@ export async function listDataSubjectRequestsForAdmin(status?: string) {
 export async function resolveDataSubjectRequest(input: {
   requestId: number;
   reviewerUserId: number;
-  decision: 'completed' | 'rejected' | 'requires_review';
+  decision: 'completed' | 'rejected' | 'requires_review' | 'retry';
   notes: string;
 }) {
   const pool = await getPool();
@@ -618,13 +684,33 @@ export async function resolveDataSubjectRequest(input: {
   try {
     await connection.beginTransaction();
     const [rows] = await connection.execute<RowDataPacket[]>(
-      `SELECT id, status FROM data_subject_requests WHERE id = ? LIMIT 1 FOR UPDATE`,
+      `SELECT id, request_type AS requestType, status
+         FROM data_subject_requests WHERE id = ? LIMIT 1 FOR UPDATE`,
       [input.requestId],
     );
     const request = rows[0];
     if (!request) throw new Error('REQUEST_NOT_FOUND');
     if (!['pending', 'processing', 'requires_review'].includes(String(request.status))) {
       throw new Error('REQUEST_ALREADY_FINAL');
+    }
+    if (request.requestType === 'deletion') {
+      if (input.decision === 'completed' || input.decision === 'rejected') {
+        throw new Error('DELETION_COMPLETION_WORKER_ONLY');
+      }
+      if (input.decision === 'retry') {
+        if (request.status !== 'requires_review') throw new Error('DELETION_RETRY_REQUIRES_REVIEW');
+        await connection.execute(
+          `UPDATE data_subject_requests
+              SET status = 'pending', handled_by_user_id = ?, resolution_notes = ?,
+                  rejection_reason = NULL, processing_scheduled_at = NOW(), completed_at = NULL, updated_at = NOW()
+            WHERE id = ? AND status = 'requires_review'`,
+          [input.reviewerUserId, input.notes.trim(), input.requestId],
+        );
+        await connection.commit();
+        return { success: true };
+      }
+    } else if (input.decision === 'retry') {
+      throw new Error('RETRY_ONLY_FOR_DELETION');
     }
     const completedAt = input.decision === 'completed' || input.decision === 'rejected'
       ? mysqlTimestamp(new Date())
@@ -669,23 +755,13 @@ export async function requestAccountDeletion(userId: number, password: string) {
       [userId],
     );
     if (existing[0]) {
+      if (user.accountStatus !== 'deletion_pending') throw new Error('DELETION_STATE_MISMATCH');
       await connection.commit();
       return existing[0];
     }
     if (user.accountStatus !== 'active') throw new Error('ACCOUNT_UNAVAILABLE');
 
-    const [sharedMerchants] = await connection.execute<RowDataPacket[]>(
-      `SELECT m.id
-         FROM merchants m
-        WHERE m.userId = ?
-          AND EXISTS (
-            SELECT 1 FROM merchant_members mm
-             WHERE mm.merchant_id = m.id AND mm.user_id <> ? AND mm.is_active = 1
-          )
-        LIMIT 1`,
-      [userId, userId],
-    );
-    if (sharedMerchants[0]) throw new Error('MERCHANT_OWNERSHIP_TRANSFER_REQUIRED');
+    await assertNoSharedMerchantOwnership(connection, userId);
 
     const now = new Date();
     const dueAt = plusDays(now, DATA_SUBJECT_RESPONSE_DAYS);
@@ -708,26 +784,169 @@ export async function requestAccountDeletion(userId: number, password: string) {
       ],
     );
     const requestId = Number((result as { insertId: number }).insertId);
-    await connection.execute(
-      `UPDATE users SET account_status = 'deletion_pending', deletion_requested_at = ?, password = NULL,
-                        is_trial_active = 0, updatedAt = ? WHERE id = ?`,
-      [mysqlTimestamp(now), mysqlTimestamp(now), userId],
-    );
-    await connection.execute(
-      `UPDATE merchants SET status = 'suspended', autoReplyEnabled = 0, updatedAt = ? WHERE userId = ?`,
-      [mysqlTimestamp(now), userId],
-    );
-    await connection.execute(
-      `UPDATE whatsapp_instances wi JOIN merchants m ON m.id = wi.merchant_id
-          SET wi.status = 'inactive', wi.updated_at = ? WHERE m.userId = ?`,
-      [mysqlTimestamp(now), userId],
-    );
+    await suspendAccountForDeletion(connection, userId, now);
     await connection.commit();
     return {
       id: requestId,
       status: 'pending',
       dueAt: mysqlTimestamp(dueAt),
       processingScheduledAt: mysqlTimestamp(scheduledAt),
+    };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function getAdminAccountDeletionImpact(merchantId: number): Promise<{
+  merchantId: number;
+  affectedMerchantCount: number;
+  sharedMemberCount: number;
+  existingRequest: { id: number; status: string; processingScheduledAt: Date | string | null } | null;
+}> {
+  const pool = await getPool();
+  if (!pool) throw new Error('Database not available');
+  const [targets] = await pool.execute<RowDataPacket[]>(
+    `SELECT m.id AS merchantId, u.id AS userId, u.role
+       FROM merchants m INNER JOIN users u ON u.id = m.userId
+      WHERE m.id = ? LIMIT 1`,
+    [merchantId],
+  );
+  const target = targets[0];
+  if (!target) throw new Error('MERCHANT_NOT_FOUND');
+  if (target.role === 'admin') throw new Error('ADMIN_ACCOUNT_DELETION_FORBIDDEN');
+  const [owned] = await pool.execute<RowDataPacket[]>(
+    'SELECT id FROM merchants WHERE userId = ?',
+    [target.userId],
+  );
+  const [shared] = await pool.execute<RowDataPacket[]>(
+    `SELECT COUNT(*) AS count
+       FROM merchant_members mm INNER JOIN merchants m ON m.id = mm.merchant_id
+      WHERE m.userId = ? AND mm.user_id <> ? AND mm.is_active = 1`,
+    [target.userId, target.userId],
+  );
+  const [requests] = await pool.execute<RowDataPacket[]>(
+    `SELECT id, status, processing_scheduled_at AS processingScheduledAt
+       FROM data_subject_requests
+      WHERE user_id = ? AND request_type = 'deletion'
+        AND status IN ('pending', 'processing', 'requires_review')
+      ORDER BY id DESC LIMIT 1`,
+    [target.userId],
+  );
+  return {
+    merchantId,
+    affectedMerchantCount: owned.length,
+    sharedMemberCount: Number(shared[0]?.count || 0),
+    existingRequest: requests[0]
+      ? {
+          id: Number(requests[0].id),
+          status: String(requests[0].status),
+          processingScheduledAt: requests[0].processingScheduledAt || null,
+        }
+      : null,
+  };
+}
+
+export async function requestAccountDeletionByAdmin(input: {
+  merchantId: number;
+  adminUserId: number;
+  confirmation: string;
+  reasonCode: AdminAccountDeletionReason;
+}): Promise<{
+  id: number;
+  status: string;
+  processingScheduledAt: Date | string | null;
+  affectedMerchantCount: number;
+  alreadyScheduled: boolean;
+}> {
+  if (input.confirmation !== `DELETE-${input.merchantId}`) {
+    throw new Error('ADMIN_DELETION_CONFIRMATION_INVALID');
+  }
+  const pool = await getPool();
+  if (!pool) throw new Error('Database not available');
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [admins] = await connection.execute<RowDataPacket[]>(
+      `SELECT id FROM users
+        WHERE id = ? AND role = 'admin' AND account_status = 'active' LIMIT 1 FOR UPDATE`,
+      [input.adminUserId],
+    );
+    if (!admins[0]) throw new Error('ADMIN_ACTOR_REQUIRED');
+
+    const [targets] = await connection.execute<RowDataPacket[]>(
+      `SELECT m.id AS merchantId, u.id AS userId, u.email, u.role, u.account_status AS accountStatus
+         FROM merchants m INNER JOIN users u ON u.id = m.userId
+        WHERE m.id = ? LIMIT 1 FOR UPDATE`,
+      [input.merchantId],
+    );
+    const target = targets[0];
+    if (!target) throw new Error('MERCHANT_NOT_FOUND');
+    if (target.role === 'admin') throw new Error('ADMIN_ACCOUNT_DELETION_FORBIDDEN');
+
+    const [ownedMerchants] = await connection.execute<RowDataPacket[]>(
+      'SELECT id FROM merchants WHERE userId = ? FOR UPDATE',
+      [target.userId],
+    );
+    const [existing] = await connection.execute<RowDataPacket[]>(
+      `SELECT id, status, processing_scheduled_at AS processingScheduledAt
+         FROM data_subject_requests
+        WHERE user_id = ? AND request_type = 'deletion'
+          AND status IN ('pending', 'processing', 'requires_review')
+        ORDER BY id DESC LIMIT 1 FOR UPDATE`,
+      [target.userId],
+    );
+    if (existing[0]) {
+      if (target.accountStatus !== 'deletion_pending') throw new Error('DELETION_STATE_MISMATCH');
+      await connection.commit();
+      return {
+        id: Number(existing[0].id),
+        status: String(existing[0].status),
+        processingScheduledAt: existing[0].processingScheduledAt || null,
+        affectedMerchantCount: ownedMerchants.length,
+        alreadyScheduled: true,
+      };
+    }
+    if (target.accountStatus !== 'active') throw new Error('ACCOUNT_UNAVAILABLE');
+    await assertNoSharedMerchantOwnership(connection, Number(target.userId));
+
+    const now = new Date();
+    const dueAt = plusDays(now, DATA_SUBJECT_RESPONSE_DAYS);
+    const scheduledAt = plusHours(now, ACCOUNT_DELETION_GRACE_HOURS);
+    const metadata = JSON.stringify({
+      source: 'admin_console',
+      reasonCode: input.reasonCode,
+      targetMerchantId: input.merchantId,
+      affectedMerchantCount: ownedMerchants.length,
+      graceHours: ACCOUNT_DELETION_GRACE_HOURS,
+    });
+    const [result] = await connection.execute(
+      `INSERT INTO data_subject_requests
+        (user_id, subject_reference_hash, request_type, status, requested_at, due_at,
+         processing_scheduled_at, handled_by_user_id, request_metadata, created_at, updated_at)
+       VALUES (?, ?, 'deletion', 'pending', ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        target.userId,
+        privacyHash(String(target.email || target.userId)),
+        mysqlTimestamp(now),
+        mysqlTimestamp(dueAt),
+        mysqlTimestamp(scheduledAt),
+        input.adminUserId,
+        metadata,
+        mysqlTimestamp(now),
+        mysqlTimestamp(now),
+      ],
+    );
+    await suspendAccountForDeletion(connection, Number(target.userId), now);
+    await connection.commit();
+    return {
+      id: Number((result as { insertId: number }).insertId),
+      status: 'pending',
+      processingScheduledAt: mysqlTimestamp(scheduledAt),
+      affectedMerchantCount: ownedMerchants.length,
+      alreadyScheduled: false,
     };
   } catch (error) {
     await connection.rollback();

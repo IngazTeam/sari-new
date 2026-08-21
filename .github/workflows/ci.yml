@@ -93,3 +93,4 @@ jobs:
           server/auth.emailVerification.test.ts
           server/auth.platformProvision.test.ts
           server/auth.teamInvitations.test.ts
+          server/auth.adminDeletion.test.ts

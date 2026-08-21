@@ -29,7 +29,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { Store, Eye, Trash2, ChevronRight, ChevronLeft, Search, Users, UserCheck, UserX } from 'lucide-react';
 import { useLocation } from 'wouter';
@@ -43,12 +42,16 @@ export default function MerchantsManagement() {
   const [, setLocation] = useLocation();
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteReason, setDeleteReason] = useState<'customer_request' | 'duplicate_test_account' | 'legal_requirement'>('customer_request');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { data: merchants, isLoading } = trpc.merchants.list.useQuery();
+  const { data: deletionImpact, isLoading: deletionImpactLoading } = trpc.merchants.deletionImpact.useQuery(
+    { merchantId: deleteTarget?.id || 0 },
+    { enabled: Boolean(deleteTarget) },
+  );
 
   const updateStatusMutation = trpc.merchants.updateStatus.useMutation({
     onSuccess: () => {
@@ -62,15 +65,18 @@ export default function MerchantsManagement() {
 
   const deleteMutation = trpc.merchants.delete.useMutation({
     onSuccess: (data: any) => {
-      toast.success(`تم حذف التاجر #${data.deletedId} بنجاح`);
+      const request = data.request;
+      toast.success(
+        request.alreadyScheduled
+          ? `طلب الحذف #${request.id} مجدول مسبقاً`
+          : `جُدول طلب الحذف #${request.id} بعد مهلة المراجعة`,
+      );
       utils.merchants.list.invalidate();
       setDeleteTarget(null);
-      selectedIds.delete(data.deletedId);
-      setSelectedIds(new Set(selectedIds));
+      setDeleteConfirmation('');
     },
     onError: (error: any) => {
-      toast.error('فشل حذف التاجر: ' + error.message);
-      setDeleteTarget(null);
+      toast.error('تعذر جدولة الحذف: ' + error.message);
     },
   });
 
@@ -103,35 +109,11 @@ export default function MerchantsManagement() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    deleteMutation.mutate({ merchantId: deleteTarget.id });
-  };
-
-  const handleBulkDelete = async () => {
-    const ids = Array.from(selectedIds);
-    for (const id of ids) {
-      try {
-        await deleteMutation.mutateAsync({ merchantId: id });
-      } catch {
-        // continue with next
-      }
-    }
-    setSelectedIds(new Set());
-    setBulkDeleteOpen(false);
-  };
-
-  const toggleSelect = (id: number) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedIds(next);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedIds.size === paginatedMerchants.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(paginatedMerchants.map((m: any) => m.id)));
-    }
+    deleteMutation.mutate({
+      merchantId: deleteTarget.id,
+      confirmation: deleteConfirmation,
+      reasonCode: deleteReason,
+    });
   };
 
   const getSubscriptionBadge = (status: string) => {
@@ -225,17 +207,6 @@ export default function MerchantsManagement() {
                   className="w-[250px] pr-9"
                 />
               </div>
-              {/* Bulk delete */}
-              {selectedIds.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setBulkDeleteOpen(true)}
-                >
-                  <Trash2 className="h-4 w-4 ml-1" />
-                  حذف ({selectedIds.size})
-                </Button>
-              )}
             </div>
           </div>
         </CardHeader>
@@ -250,12 +221,6 @@ export default function MerchantsManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/40">
-                      <TableHead className="w-[40px]">
-                        <Checkbox
-                          checked={selectedIds.size === paginatedMerchants.length && paginatedMerchants.length > 0}
-                          onCheckedChange={toggleSelectAll}
-                        />
-                      </TableHead>
                       <TableHead className="w-[50px] text-center">#</TableHead>
                       <TableHead className="min-w-[180px]">اسم المتجر</TableHead>
                       <TableHead className="min-w-[180px]">الإيميل</TableHead>
@@ -268,13 +233,7 @@ export default function MerchantsManagement() {
                   </TableHeader>
                   <TableBody>
                     {paginatedMerchants.map((merchant: any) => (
-                      <TableRow key={merchant.id} className={selectedIds.has(merchant.id) ? 'bg-blue-50/50' : ''}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedIds.has(merchant.id)}
-                            onCheckedChange={() => toggleSelect(merchant.id)}
-                          />
-                        </TableCell>
+                      <TableRow key={merchant.id}>
                         <TableCell className="text-center text-muted-foreground text-xs font-mono">{merchant.id}</TableCell>
                         <TableCell>
                           <span className="font-medium text-sm">{merchant.businessName || '—'}</span>
@@ -332,9 +291,13 @@ export default function MerchantsManagement() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => setDeleteTarget({ id: merchant.id, name: merchant.businessName || `#${merchant.id}` })}
+                              onClick={() => {
+                                setDeleteConfirmation('');
+                                setDeleteReason('customer_request');
+                                setDeleteTarget({ id: merchant.id, name: merchant.businessName || `#${merchant.id}` });
+                              }}
                               disabled={deleteMutation.isPending}
-                              title="حذف"
+                              title="جدولة حذف الحساب"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -401,55 +364,80 @@ export default function MerchantsManagement() {
         </CardContent>
       </Card>
 
-      {/* Delete Single Confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+      {/* Audited account-deletion scheduling */}
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !deleteMutation.isPending) {
+            setDeleteTarget(null);
+            setDeleteConfirmation('');
+          }
+        }}
+      >
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-600">⚠️ حذف تاجر نهائياً</AlertDialogTitle>
-            <AlertDialogDescription className="text-right space-y-2">
-              <p>هل أنت متأكد من حذف التاجر <strong className="text-foreground">{deleteTarget?.name}</strong> (#{deleteTarget?.id})؟</p>
-              <p className="text-red-500 font-medium">سيتم حذف جميع البيانات المرتبطة نهائياً:</p>
-              <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
-                <li>المنتجات والأسئلة الشائعة</li>
-                <li>المحادثات والرسائل</li>
-                <li>العملاء والطلبات</li>
-                <li>الاشتراكات ومفاتيح API</li>
-                <li>حساب المستخدم</li>
-              </ul>
-              <p className="text-red-600 font-bold text-sm">هذا الإجراء لا يمكن التراجع عنه!</p>
+            <AlertDialogTitle className="text-red-600">⚠️ جدولة حذف حساب</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4 text-right">
+                <p>التاجر المحدد: <strong className="text-foreground">{deleteTarget?.name}</strong> (#{deleteTarget?.id}).</p>
+                {deletionImpactLoading ? (
+                  <p>جاري حساب نطاق الحذف…</p>
+                ) : deletionImpact ? (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-red-800">
+                    <p className="font-medium">هذا حذف على مستوى الحساب، وسيشمل {deletionImpact.affectedMerchantCount} متجر/متاجر يملكها المستخدم نفسه.</p>
+                    <p>يتوقف الدخول وواتساب وبيان ومفاتيح API فوراً، ثم ينفذ العامل حذفاً ذرياً بعد مهلة 24 ساعة مع حفظ السجلات المالية المشفرة المطلوبة نظامياً.</p>
+                    {deletionImpact.sharedMemberCount > 0 && (
+                      <p className="mt-2 font-bold">الحذف محجوب: انقل ملكية المتاجر التي تضم أعضاء نشطين أولاً.</p>
+                    )}
+                    {deletionImpact.existingRequest && (
+                      <p className="mt-2">يوجد طلب مفتوح #{deletionImpact.existingRequest.id} بالحالة {deletionImpact.existingRequest.status}.</p>
+                    )}
+                  </div>
+                ) : null}
+                <div className="space-y-2">
+                  <label htmlFor="deleteReason" className="block text-sm font-medium text-foreground">سبب الإجراء</label>
+                  <Select value={deleteReason} onValueChange={(value) => setDeleteReason(value as typeof deleteReason)}>
+                    <SelectTrigger id="deleteReason"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="customer_request">طلب موثق من العميل</SelectItem>
+                      <SelectItem value="duplicate_test_account">حساب اختبار/مكرر</SelectItem>
+                      <SelectItem value="legal_requirement">متطلب قانوني</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="deleteConfirmation" className="block text-sm font-medium text-foreground">
+                    اكتب <span dir="ltr" className="font-mono">DELETE-{deleteTarget?.id}</span> للتأكيد
+                  </label>
+                  <Input
+                    id="deleteConfirmation"
+                    dir="ltr"
+                    autoComplete="off"
+                    value={deleteConfirmation}
+                    onChange={(event) => setDeleteConfirmation(event.target.value)}
+                    placeholder={`DELETE-${deleteTarget?.id || ''}`}
+                  />
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDelete}
+              onClick={(event) => {
+                event.preventDefault();
+                handleDelete();
+              }}
               className="bg-red-600 hover:bg-red-700 text-white"
-              disabled={deleteMutation.isPending}
+              disabled={
+                deleteMutation.isPending ||
+                deletionImpactLoading ||
+                !deletionImpact ||
+                deletionImpact.sharedMemberCount > 0 ||
+                deleteConfirmation !== `DELETE-${deleteTarget?.id}`
+              }
             >
-              {deleteMutation.isPending ? 'جاري الحذف...' : 'حذف نهائياً'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Bulk Delete Confirmation */}
-      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-600">⚠️ حذف {selectedIds.size} تاجر نهائياً</AlertDialogTitle>
-            <AlertDialogDescription className="text-right space-y-2">
-              <p>هل أنت متأكد من حذف <strong className="text-foreground">{selectedIds.size} تاجر</strong> المحددين؟</p>
-              <p className="text-red-600 font-bold text-sm">سيتم حذف جميع بياناتهم نهائياً بما في ذلك المنتجات والمحادثات والاشتراكات!</p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? 'جاري الحذف...' : `حذف ${selectedIds.size} تاجر`}
+              {deleteMutation.isPending ? 'جاري الجدولة…' : 'تعليق الحساب وجدولة الحذف'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

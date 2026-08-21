@@ -16,7 +16,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-type Decision = 'completed' | 'rejected' | 'requires_review';
+type Decision = 'completed' | 'rejected' | 'requires_review' | 'retry';
+type SelectedRequest = { id: number; requestType: string; status: string };
 
 function dateText(value: unknown): string {
   if (!value) return '—';
@@ -28,7 +29,7 @@ export default function PrivacyRequests() {
   const { toast } = useToast();
   const utils = trpc.useUtils();
   const [status, setStatus] = useState<string>('open');
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<SelectedRequest | null>(null);
   const [decision, setDecision] = useState<Decision>('completed');
   const [notes, setNotes] = useState('');
   const queryStatus = status === 'all' || status === 'open' ? undefined : status as any;
@@ -41,7 +42,7 @@ export default function PrivacyRequests() {
 
   const resolveMutation = trpc.accountData.adminResolveRequest.useMutation({
     onSuccess: async () => {
-      setSelectedId(null);
+      setSelectedRequest(null);
       setNotes('');
       await utils.accountData.adminListRequests.invalidate();
       toast({ title: 'تم تحديث طلب الخصوصية' });
@@ -102,9 +103,23 @@ export default function PrivacyRequests() {
                     <span>الإكمال: {dateText(request.completedAt)}</span>
                   </div>
                   {request.details && <p className="whitespace-pre-wrap rounded-md border bg-muted/40 p-3">{request.details}</p>}
+                  {request.source === 'admin_console' && (
+                    <p className="rounded-md border bg-muted/40 p-3">
+                      مجدول من لوحة الإدارة — السبب: {request.reasonCode || 'غير محدد'} — نطاق الحساب: {request.affectedMerchantCount || 1} متجر/متاجر.
+                    </p>
+                  )}
                   {request.resolutionNotes && <p className="text-muted-foreground">ملاحظات القرار: {request.resolutionNotes}</p>}
                   {['pending', 'processing', 'requires_review'].includes(request.status) && (
-                    <Button variant="outline" onClick={() => { setSelectedId(Number(request.id)); setDecision('completed'); setNotes(''); }}>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSelectedRequest({ id: Number(request.id), requestType: request.requestType, status: request.status });
+                        setDecision(request.requestType === 'deletion'
+                          ? request.status === 'requires_review' ? 'retry' : 'requires_review'
+                          : 'completed');
+                        setNotes('');
+                      }}
+                    >
                       معالجة الطلب
                     </Button>
                   )}
@@ -115,11 +130,15 @@ export default function PrivacyRequests() {
         </div>
       )}
 
-      <Dialog open={selectedId !== null} onOpenChange={open => { if (!open) setSelectedId(null); }}>
+      <Dialog open={selectedRequest !== null} onOpenChange={open => { if (!open) setSelectedRequest(null); }}>
         <DialogContent dir="rtl">
           <DialogHeader>
-            <DialogTitle>قرار الطلب #{selectedId}</DialogTitle>
-            <DialogDescription>وثّق ما تم تنفيذه أو سبب الرفض. لا تضع كلمات مرور أو أسراراً في الملاحظات.</DialogDescription>
+            <DialogTitle>قرار الطلب #{selectedRequest?.id}</DialogTitle>
+            <DialogDescription>
+              {selectedRequest?.requestType === 'deletion'
+                ? 'عامل الحذف الذري وحده يغلق طلب الحذف. يمكنك إيقافه للمراجعة أو إعادة محاولة طلب متعثر.'
+                : 'وثّق ما تم تنفيذه أو سبب الرفض. لا تضع كلمات مرور أو أسراراً في الملاحظات.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -127,9 +146,18 @@ export default function PrivacyRequests() {
               <Select value={decision} onValueChange={value => setDecision(value as Decision)}>
                 <SelectTrigger id="decision"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="completed">مكتمل</SelectItem>
-                  <SelectItem value="requires_review">يحتاج مراجعة إضافية</SelectItem>
-                  <SelectItem value="rejected">مرفوض مع السبب</SelectItem>
+                  {selectedRequest?.requestType === 'deletion' ? (
+                    <>
+                      <SelectItem value="requires_review">إيقاف للمراجعة</SelectItem>
+                      {selectedRequest.status === 'requires_review' && <SelectItem value="retry">إعادة محاولة العامل الذري</SelectItem>}
+                    </>
+                  ) : (
+                    <>
+                      <SelectItem value="completed">مكتمل</SelectItem>
+                      <SelectItem value="requires_review">يحتاج مراجعة إضافية</SelectItem>
+                      <SelectItem value="rejected">مرفوض مع السبب</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -141,8 +169,8 @@ export default function PrivacyRequests() {
           <DialogFooter>
             <Button
               variant={decision === 'rejected' ? 'destructive' : 'default'}
-              disabled={!selectedId || notes.trim().length < 3 || resolveMutation.isPending}
-              onClick={() => selectedId && resolveMutation.mutate({ requestId: selectedId, decision, notes })}
+              disabled={!selectedRequest || notes.trim().length < 3 || resolveMutation.isPending}
+              onClick={() => selectedRequest && resolveMutation.mutate({ requestId: selectedRequest.id, decision, notes })}
             >
               {resolveMutation.isPending ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : decision === 'completed' ? <CheckCircle2 className="ml-2 h-4 w-4" /> : decision === 'rejected' ? <XCircle className="ml-2 h-4 w-4" /> : <Clock3 className="ml-2 h-4 w-4" />}
               حفظ القرار

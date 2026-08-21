@@ -116,7 +116,7 @@ async function validateApiKey(key: string): Promise<{ merchant: any; keyId: numb
 
   // Get merchant
   const merchant = await getMerchantById(apiKeyRow.merchant_id);
-  if (!merchant) return null;
+  if (!merchant || merchant.status !== 'active') return null;
 
   // Update last_used_at (fire-and-forget)
   pool.execute(
@@ -394,7 +394,8 @@ async function byaanTenantSignatureMiddleware(req: PlatformRequest, res: Respons
     const [rows] = await pool.execute(
       `SELECT m.*, bc.webhook_secret
        FROM merchants m INNER JOIN byaan_connections bc ON bc.merchant_id = m.id
-       WHERE bc.tenant_domain = ? AND bc.is_active = 1 AND bc.verified_at IS NOT NULL LIMIT 1`,
+       WHERE bc.tenant_domain = ? AND bc.is_active = 1 AND bc.verified_at IS NOT NULL
+         AND m.status = 'active' LIMIT 1`,
       [String(req.tenantDomain).trim().toLowerCase().replace(/\.$/, '')]
     );
     const tenant = (rows as any[])?.[0];
