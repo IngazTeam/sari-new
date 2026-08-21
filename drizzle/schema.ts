@@ -898,7 +898,7 @@ export const whatsappConnections = mysqlTable("whatsappConnections", {
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	phoneNumber: varchar({ length: 20 }),
 	instanceId: varchar({ length: 255 }),
-	apiToken: varchar({ length: 255 }),
+	apiToken: text(),
 	status: mysqlEnum(['connected', 'disconnected', 'pending', 'error']).default('pending').notNull(),
 	qrCode: text(),
 	lastConnected: timestamp({ mode: 'string' }),
@@ -923,7 +923,7 @@ export const whatsappConnectionRequests = mysqlTable("whatsapp_connection_reques
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	instanceId: varchar({ length: 255 }),
-	apiToken: varchar({ length: 255 }),
+	apiToken: text(),
 	apiUrl: varchar({ length: 255 }).default('https://api.green-api.com'),
 	connectedAt: timestamp({ mode: 'string' }),
 });

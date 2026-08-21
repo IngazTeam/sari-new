@@ -327,6 +327,8 @@ import bcrypt from 'bcryptjs';
 import { createSessionToken } from './_core/auth';
 import { THIRTY_DAYS_MS } from '@shared/const';
 import { z } from 'zod';
+import { toPublicWhatsAppConnectionRequest, toPublicWhatsAppInstance, toPublicWhatsAppRequest } from './whatsapp/public-records';
+import { toPublicPaymentGateway } from './security/secrets';
 
 const optionalWebUrl = z.string().trim().max(500).refine((value) => {
   if (!value) return true;
@@ -1541,7 +1543,7 @@ export const appRouter = router({
           console.warn('[WhatsApp] Admin notification failed (non-blocking):', (notifErr as Error).message);
         }
 
-        return { success: true, request };
+        return { success: true, request: toPublicWhatsAppConnectionRequest(request) };
       }),
 
     // Get current connection request status
@@ -1551,7 +1553,7 @@ export const appRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
-      return await getWhatsAppConnectionRequestByMerchantId(merchant.id);
+      return toPublicWhatsAppConnectionRequest(await getWhatsAppConnectionRequestByMerchantId(merchant.id));
     }),
 
     // Disconnect WhatsApp (Reset) - allows merchant to remove current connection and request a new one
@@ -1603,7 +1605,8 @@ export const appRouter = router({
     listRequests: adminProcedure
       .input(z.object({ status: z.enum(['pending', 'approved', 'rejected']).optional() }))
       .query(async ({ input }) => {
-        return await getAllWhatsAppConnectionRequests(input.status);
+        const requests = await getAllWhatsAppConnectionRequests(input.status);
+        return requests.map(request => toPublicWhatsAppConnectionRequest(request));
       }),
 
     // Approve connection request (Admin only) - with Green API credentials
@@ -1865,50 +1868,24 @@ export const appRouter = router({
         const instancePrefix = input.instanceId.substring(0, 4);
         const url = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}/getStateInstance/${input.token}`;
 
-        // Request details for debugging
-        const requestDetails = {
-          url,
-          method: 'GET',
-          instanceId: input.instanceId,
-          tokenPreview: input.token.substring(0, 10) + '...',
-          timestamp: new Date().toISOString(),
-        };
-
-        console.log('[Green API Test] Request Details:', JSON.stringify(requestDetails, null, 2));
+        console.log('[Green API Test] Connection test started');
 
         try {
           const response = await axios.default.get(url, {
             timeout: 15000,
           });
 
-          console.log('[Green API Test] Response:', response.data);
-
           const isConnected = response.data.stateInstance === 'authorized';
           return {
             success: isConnected,
             status: response.data.stateInstance || 'unknown',
             phoneNumber: response.data.phoneNumber,
-            // Debug info
-            debug: {
-              url,
-              method: 'GET',
-              responseStatus: response.status,
-              responseData: response.data,
-            },
           };
         } catch (error: any) {
-          const errorDetails = {
-            url,
-            method: 'GET',
-            errorMessage: error.message,
+          console.warn('[Green API Test] Connection test failed', {
             errorCode: error.code,
             responseStatus: error.response?.status,
-            responseStatusText: error.response?.statusText,
-            responseData: error.response?.data,
-            timestamp: new Date().toISOString(),
-          };
-
-          console.error('[Green API Test] Error Details:', JSON.stringify(errorDetails, null, 2));
+          });
 
           let errorMessage = 'فشل الاتصال';
           if (error.response?.status === 401 || error.response?.status === 403) {
@@ -1924,7 +1901,6 @@ export const appRouter = router({
             success: false,
             status: 'error',
             error: errorMessage,
-            debug: errorDetails,
           };
         }
       }),
@@ -2048,7 +2024,7 @@ export const appRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
-      return await getPrimaryWhatsAppInstance(merchant.id);
+      return toPublicWhatsAppInstance(await getPrimaryWhatsAppInstance(merchant.id));
     }),
 
     // Get all WhatsApp instances
@@ -2058,7 +2034,8 @@ export const appRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
       }
 
-      return await getWhatsAppInstancesByMerchantId(merchant.id);
+      const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
+      return instances.map(instance => toPublicWhatsAppInstance(instance));
     }),
 
     // Delete WhatsApp instance
@@ -2844,7 +2821,8 @@ export const appRouter = router({
   // Payment Gateways Router (Admin only)
   paymentGateways: router({
     list: adminProcedure.query(async () => {
-      return await getAllPaymentGateways();
+      const gateways = await getAllPaymentGateways();
+      return gateways.map(gateway => toPublicPaymentGateway(gateway));
     }),
 
     upsert: adminProcedure
@@ -2857,12 +2835,15 @@ export const appRouter = router({
         testMode: z.boolean(),
       }))
       .mutation(async ({ input }) => {
-        // @ts-ignore
-        const result = await createOrUpdatePaymentGateway(input);
+        const result = await createOrUpdatePaymentGateway({
+          ...input,
+          isEnabled: input.isEnabled ? 1 : 0,
+          testMode: input.testMode ? 1 : 0,
+        });
         if (!result) {
           throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save payment gateway' });
         }
-        return { success: true, gateway: result };
+        return { success: true, gateway: toPublicPaymentGateway(result) };
       }),
   }),
 
@@ -3924,12 +3905,12 @@ export const appRouter = router({
 
   // WhatsApp Instances Management
   whatsappInstances: router({
-    // List all instances for merchant (ADMIN ONLY — returns full data including tokens)
-    // PEN-WA-10 FIX: Restricted to admin — merchants must use listSafe
+    // List all instances for merchant (ADMIN ONLY — credentials never leave the server)
     list: adminProcedure
       .input(z.object({ merchantId: z.number() }))
       .query(async ({ input }) => {
-        return await getWhatsAppInstancesByMerchantId(input.merchantId);
+        const instances = await getWhatsAppInstancesByMerchantId(input.merchantId);
+        return instances.map(instance => toPublicWhatsAppInstance(instance));
       }),
 
     // List instances for merchant dashboard (SAFE — no tokens, no API keys)
@@ -4040,7 +4021,7 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        return await getPrimaryWhatsAppInstance(input.merchantId);
+        return toPublicWhatsAppInstance(await getPrimaryWhatsAppInstance(input.merchantId));
       }),
 
     // ==================== Reconnect Flow (Change Number) ====================
@@ -4345,7 +4326,7 @@ export const appRouter = router({
           await setWhatsAppInstanceAsPrimary(instance.id, input.merchantId);
         }
 
-        return instance;
+        return toPublicWhatsAppInstance(instance);
       }),
 
     // Update instance (ADMIN ONLY — merchants use toggleStatus/setPrimary)
@@ -4388,7 +4369,7 @@ export const appRouter = router({
           expiresAt: input.expiresAt ? new Date(input.expiresAt).toISOString().slice(0, 19).replace("T", " ") : undefined,
         });
 
-        return await getWhatsAppInstanceById(input.id);
+        return toPublicWhatsAppInstance(await getWhatsAppInstanceById(input.id));
       }),
 
     // Set as primary
@@ -4611,19 +4592,21 @@ export const appRouter = router({
           console.error('Failed to send WhatsApp connection request notification:', error);
         }
 
-        return request;
+        return toPublicWhatsAppRequest(request);
       }),
 
     // PEN-WA-02 FIX: Use adminProcedure middleware instead of manual role check
     listAll: adminProcedure
       .query(async () => {
-        return getAllWhatsAppRequests();
+        const requests = await getAllWhatsAppRequests();
+        return requests.map(request => toPublicWhatsAppRequest(request));
       }),
 
     // Get pending requests (admin only)
     listPending: adminProcedure
       .query(async () => {
-        return getPendingWhatsAppRequests();
+        const requests = await getPendingWhatsAppRequests();
+        return requests.map(request => toPublicWhatsAppRequest(request));
       }),
 
     // Get merchant's requests
@@ -4635,7 +4618,8 @@ export const appRouter = router({
           throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied' });
         }
 
-        return getWhatsAppRequestsByMerchantId(input.merchantId);
+        const requests = await getWhatsAppRequestsByMerchantId(input.merchantId);
+        return requests.map(request => toPublicWhatsAppRequest(request));
       }),
 
     // PEN-WA-02 FIX: Use adminProcedure + PEN-WA-03 FIX: Validate status
@@ -4679,7 +4663,7 @@ export const appRouter = router({
           await updateWhatsAppRequest(input.requestId, { adminNotes: input.adminNotes });
         }
 
-        return request;
+        return toPublicWhatsAppRequest(request);
       }),
 
     // PEN-WA-02 FIX: Use adminProcedure + PEN-WA-03 FIX: Validate status

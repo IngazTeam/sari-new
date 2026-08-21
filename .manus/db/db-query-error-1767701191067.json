@@ -1,8 +1,0 @@
-{
-  "query": "ALTER TABLE sari_personality_settings MODIFY COLUMN language ENUM('ar','en','fr','tr','es','it','both') NOT NULL DEFAULT 'ar';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute ALTER TABLE sari_personality_settings MODIFY COLUMN language ENUM('ar','en','fr','tr','es','it','both') NOT NULL DEFAULT 'ar';",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'language' in 'sari_personality_settings'"
-  ]
-}

@@ -16,6 +16,7 @@ const ENV_CONFIGS: EnvConfig[] = [
     // Critical - Server will not start without these
     { name: 'DATABASE_URL', required: true, description: 'MySQL database connection string' },
     { name: 'JWT_SECRET', required: true, description: 'Secret key for JWT token signing (min 32 chars)' },
+    { name: 'FIELD_ENCRYPTION_KEY', required: process.env.NODE_ENV === 'production', description: 'Encryption key for stored integration credentials (min 32 chars)' },
 
     // Important - Core features won't work without these
     { name: 'OPENAI_API_KEY', required: true, description: 'OpenAI API key for AI features' },
@@ -76,6 +77,11 @@ export function validateEnv(): ValidationResult {
             if (config.name === 'JWT_SECRET' && value.length < 32) {
                 result.valid = false;
                 result.errors.push(`❌ JWT_SECRET must be at least 32 characters long (current: ${value.length})`);
+            }
+
+            if (config.name === 'FIELD_ENCRYPTION_KEY' && value.length < 32) {
+                result.valid = false;
+                result.errors.push(`❌ FIELD_ENCRYPTION_KEY must be at least 32 characters long (current: ${value.length})`);
             }
 
             if (config.name === 'DATABASE_URL' && !value.startsWith('mysql://')) {

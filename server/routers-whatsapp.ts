@@ -27,6 +27,7 @@ import {
   updateWhatsAppConnectionRequest,
   updateWhatsAppInstance,
 } from './db';
+import { toPublicWhatsAppConnectionRequest, toPublicWhatsAppInstance } from './whatsapp/public-records';
 
 // Admin-only procedure
 const adminProcedure = protectedProcedure.use(({ ctx, next }) => {
@@ -111,7 +112,7 @@ export const whatsappRouter = router({
                 console.warn('[WhatsApp] Admin notification failed (non-blocking):', (notifErr as Error).message);
             }
 
-            return { success: true, request };
+            return { success: true, request: toPublicWhatsAppConnectionRequest(request) };
         }),
 
     // Get current connection request status
@@ -121,7 +122,7 @@ export const whatsappRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await getWhatsAppConnectionRequestByMerchantId(merchant.id);
+        return toPublicWhatsAppConnectionRequest(await getWhatsAppConnectionRequestByMerchantId(merchant.id));
     }),
 
     // Disconnect WhatsApp (Reset)
@@ -184,7 +185,8 @@ export const whatsappRouter = router({
     listRequests: adminProcedure
         .input(z.object({ status: z.enum(['pending', 'approved', 'rejected']).optional() }))
         .query(async ({ input }) => {
-            return await getAllWhatsAppConnectionRequests(input.status);
+            const requests = await getAllWhatsAppConnectionRequests(input.status);
+            return requests.map(request => toPublicWhatsAppConnectionRequest(request));
         }),
 
     // Approve connection request (Admin only)
@@ -502,45 +504,21 @@ export const whatsappRouter = router({
             const instancePrefix = input.instanceId.substring(0, 4);
             const url = `https://${instancePrefix}.api.greenapi.com/waInstance${input.instanceId}/getStateInstance/${input.token}`;
 
-            const requestDetails = {
-                url,
-                method: 'GET',
-                instanceId: input.instanceId,
-                tokenPreview: input.token.substring(0, 10) + '...',
-                timestamp: new Date().toISOString(),
-            };
-
-            console.log('[Green API Test] Request Details:', JSON.stringify(requestDetails, null, 2));
+            console.log('[Green API Test] Connection test started');
 
             try {
                 const response = await axios.default.get(url, { timeout: 15000 });
-                console.log('[Green API Test] Response:', response.data);
-
                 const isConnected = response.data.stateInstance === 'authorized';
                 return {
                     success: isConnected,
                     status: response.data.stateInstance || 'unknown',
                     phoneNumber: response.data.phoneNumber,
-                    debug: {
-                        url,
-                        method: 'GET',
-                        responseStatus: response.status,
-                        responseData: response.data,
-                    },
                 };
             } catch (error: any) {
-                const errorDetails = {
-                    url,
-                    method: 'GET',
-                    errorMessage: error.message,
+                console.warn('[Green API Test] Connection test failed', {
                     errorCode: error.code,
                     responseStatus: error.response?.status,
-                    responseStatusText: error.response?.statusText,
-                    responseData: error.response?.data,
-                    timestamp: new Date().toISOString(),
-                };
-
-                console.error('[Green API Test] Error Details:', JSON.stringify(errorDetails, null, 2));
+                });
 
                 let errorMessage = 'فشل الاتصال';
                 if (error.response?.status === 401 || error.response?.status === 403) {
@@ -555,7 +533,6 @@ export const whatsappRouter = router({
                     success: false,
                     status: 'error',
                     error: errorMessage,
-                    debug: errorDetails,
                 };
             }
         }),
@@ -686,7 +663,7 @@ export const whatsappRouter = router({
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
 
-        return await getPrimaryWhatsAppInstance(merchant.id);
+        return toPublicWhatsAppInstance(await getPrimaryWhatsAppInstance(merchant.id));
     }),
 
     // Get all WhatsApp instances (VULN-6 FIX: strip sensitive fields)

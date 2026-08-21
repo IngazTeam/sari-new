@@ -93,14 +93,14 @@ export const authRouter = router({
             const user = await getUserByEmail(input.email);
 
             if (!user || !user.password) {
-                console.warn(`[Auth] ❌ Failed login: email=${input.email} ip=${ctx.req.ip} reason=user_not_found`);
+                console.warn('[Auth] Failed login', { reason: 'invalid_credentials', requestId: ctx.req.headers['x-request-id'] });
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
             }
 
             const isValidPassword = await bcrypt.compare(input.password, user.password);
 
             if (!isValidPassword) {
-                console.warn(`[Auth] ❌ Failed login: email=${input.email} ip=${ctx.req.ip} reason=wrong_password`);
+                console.warn('[Auth] Failed login', { reason: 'invalid_credentials', requestId: ctx.req.headers['x-request-id'] });
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid email or password' });
             }
 

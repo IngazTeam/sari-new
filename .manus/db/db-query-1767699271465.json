@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS template_translations (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  template_id INT NOT NULL,\n  language ENUM('ar', 'en') NOT NULL,\n  template_name VARCHAR(255) NOT NULL,\n  description TEXT,\n  suitable_for TEXT,\n  bot_personality TEXT,\n  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  FOREIGN KEY (template_id) REFERENCES business_templates(id) ON DELETE CASCADE,\n  INDEX template_translations_template_id_idx (template_id),\n  INDEX template_translations_language_idx (language)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS template_translations (\n  id INT AUTO_INCREMENT PRIMARY KEY,\n  template_id INT NOT NULL,\n  language ENUM('ar', 'en') NOT NULL,\n  template_name VARCHAR(255) NOT NULL,\n  description TEXT,\n  suitable_for TEXT,\n  bot_personality TEXT,\n  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  FOREIGN KEY (template_id) REFERENCES business_templates(id) ON DELETE CASCADE,\n  INDEX template_translations_template_id_idx (template_id),\n  INDEX template_translations_language_idx (language)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1728
-}

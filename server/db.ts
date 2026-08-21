@@ -278,6 +278,7 @@ import {
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import mysql from "mysql2/promise";
+import { decryptSecret, encryptSecret } from './security/secrets';
 
 // Type aliases for tables that don't export their own types
 type BotSettings = InferSelectModel<typeof botSettings>;
@@ -288,6 +289,38 @@ type SeoKeyword = InferSelectModel<typeof seoKeywordsAnalysis>;
 type InsertSeoKeyword = InferInsertModel<typeof seoKeywordsAnalysis>;
 // seoKeywords table alias — db.ts references this
 const seoKeywords = seoKeywordsAnalysis;
+
+function decryptWhatsAppConnection(record: WhatsAppConnection | undefined): WhatsAppConnection | undefined {
+  return record ? { ...record, apiToken: decryptSecret(record.apiToken) } : undefined;
+}
+
+function decryptWhatsAppConnectionRequest(record: WhatsAppConnectionRequest | undefined): WhatsAppConnectionRequest | undefined {
+  return record ? { ...record, apiToken: decryptSecret(record.apiToken) } : undefined;
+}
+
+function decryptWhatsAppInstance(record: WhatsAppInstance | undefined): WhatsAppInstance | undefined {
+  return record ? { ...record, token: decryptSecret(record.token) } : undefined;
+}
+
+function decryptWhatsAppRequest(record: WhatsAppRequest | undefined): WhatsAppRequest | undefined {
+  return record ? { ...record, token: decryptSecret(record.token) } : undefined;
+}
+
+function decryptPaymentGateway(record: PaymentGateway | undefined): PaymentGateway | undefined {
+  return record ? {
+    ...record,
+    secretKey: decryptSecret(record.secretKey),
+    webhookSecret: decryptSecret(record.webhookSecret),
+  } : undefined;
+}
+
+function decryptMerchantPaymentSettings(record: MerchantPaymentSettings | undefined): MerchantPaymentSettings | undefined {
+  return record ? {
+    ...record,
+    tapSecretKey: decryptSecret(record.tapSecretKey),
+    tapWebhookSecret: decryptSecret(record.tapWebhookSecret),
+  } : undefined;
+}
 
 // أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬ Connection Pool Configuration أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬أ¢â€‌â‚¬
 // Sized for 2000+ merchants with concurrent access
@@ -962,7 +995,10 @@ export async function createWhatsappConnection(
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.insert(whatsappConnections).values(connection);
+  const result = await db.insert(whatsappConnections).values({
+    ...connection,
+    apiToken: encryptSecret(connection.apiToken),
+  });
   const insertedId = Number((result[0] as any).insertId);
 
   return getWhatsappConnectionById(insertedId);
@@ -973,7 +1009,7 @@ export async function getWhatsappConnectionById(id: number): Promise<WhatsAppCon
   if (!db) return undefined;
 
   const result = await db.select().from(whatsappConnections).where(eq(whatsappConnections.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return decryptWhatsAppConnection(result[0]);
 }
 
 export async function getWhatsappConnectionByMerchantId(merchantId: number): Promise<WhatsAppConnection | undefined> {
@@ -986,14 +1022,17 @@ export async function getWhatsappConnectionByMerchantId(merchantId: number): Pro
     .where(eq(whatsappConnections.merchantId, merchantId))
     .limit(1);
 
-  return result.length > 0 ? result[0] : undefined;
+  return decryptWhatsAppConnection(result[0]);
 }
 
 export async function updateWhatsappConnection(id: number, data: Partial<InsertWhatsAppConnection>): Promise<void> {
   const db = await getDb();
   if (!db) return;
 
-  await db.update(whatsappConnections).set(data).where(eq(whatsappConnections.id, id));
+  await db.update(whatsappConnections).set({
+    ...data,
+    ...(data.apiToken !== undefined && { apiToken: encryptSecret(data.apiToken) }),
+  }).where(eq(whatsappConnections.id, id));
 }
 
 // ============================================
@@ -1672,7 +1711,7 @@ export async function getWhatsappConnectionByPhone(phoneNumber: string) {
     .where(eq(whatsappConnections.phoneNumber, phoneNumber))
     .limit(1);
 
-  return result.length > 0 ? result[0] : null;
+  return decryptWhatsAppConnection(result[0]) ?? null;
 }
 
 export async function getConversationByCustomerPhone(merchantId: number, customerPhone: string) {
@@ -1735,11 +1774,14 @@ export async function createWhatsAppConnectionRequest(request: InsertWhatsAppCon
   const db = await getDb();
   if (!db) return undefined;
 
-  const result = await db.insert(whatsappConnectionRequests).values(request);
+  const result = await db.insert(whatsappConnectionRequests).values({
+    ...request,
+    apiToken: encryptSecret(request.apiToken),
+  });
   const insertedId = Number((result[0] as any).insertId);
 
   const inserted = await db.select().from(whatsappConnectionRequests).where(eq(whatsappConnectionRequests.id, insertedId)).limit(1);
-  return inserted.length > 0 ? inserted[0] : undefined;
+  return decryptWhatsAppConnectionRequest(inserted[0]);
 }
 
 export async function getWhatsAppConnectionRequestById(id: number): Promise<WhatsAppConnectionRequest | undefined> {
@@ -1747,7 +1789,7 @@ export async function getWhatsAppConnectionRequestById(id: number): Promise<What
   if (!db) return undefined;
 
   const result = await db.select().from(whatsappConnectionRequests).where(eq(whatsappConnectionRequests.id, id)).limit(1);
-  return result.length > 0 ? result[0] : undefined;
+  return decryptWhatsAppConnectionRequest(result[0]);
 }
 
 export async function getWhatsAppConnectionRequestByMerchantId(merchantId: number): Promise<WhatsAppConnectionRequest | undefined> {
@@ -1761,7 +1803,7 @@ export async function getWhatsAppConnectionRequestByMerchantId(merchantId: numbe
     .orderBy(desc(whatsappConnectionRequests.createdAt))
     .limit(1);
 
-  return result.length > 0 ? result[0] : undefined;
+  return decryptWhatsAppConnectionRequest(result[0]);
 }
 
 export async function getAllWhatsAppConnectionRequests(status?: "pending" | "approved" | "rejected"): Promise<WhatsAppConnectionRequest[]> {
@@ -1769,14 +1811,17 @@ export async function getAllWhatsAppConnectionRequests(status?: "pending" | "app
   if (!db) return [];
 
   if (status) {
-    return db
+    const records = await db
       .select()
       .from(whatsappConnectionRequests)
       .where(eq(whatsappConnectionRequests.status, status))
       .orderBy(desc(whatsappConnectionRequests.createdAt));
+    return records.map(record => decryptWhatsAppConnectionRequest(record)!);
   }
 
-  return db.select().from(whatsappConnectionRequests).orderBy(desc(whatsappConnectionRequests.createdAt));
+  const records = await db.select().from(whatsappConnectionRequests)
+    .orderBy(desc(whatsappConnectionRequests.createdAt));
+  return records.map(record => decryptWhatsAppConnectionRequest(record)!);
 }
 
 export async function updateWhatsAppConnectionRequest(
@@ -1786,7 +1831,10 @@ export async function updateWhatsAppConnectionRequest(
   const db = await getDb();
   if (!db) return;
 
-  await db.update(whatsappConnectionRequests).set(data).where(eq(whatsappConnectionRequests.id, id));
+  await db.update(whatsappConnectionRequests).set({
+    ...data,
+    ...(data.apiToken !== undefined && { apiToken: encryptSecret(data.apiToken) }),
+  }).where(eq(whatsappConnectionRequests.id, id));
 }
 
 export async function approveWhatsAppConnectionRequest(
@@ -1804,7 +1852,7 @@ export async function approveWhatsAppConnectionRequest(
     reviewedBy,
     reviewedAt: formatDateForDB(new Date()),
     instanceId: instanceId || undefined,
-    apiToken: apiToken || undefined,
+    apiToken: apiToken ? encryptSecret(apiToken) : undefined,
     apiUrl: apiUrl || 'https://api.green-api.com',
   }).where(eq(whatsappConnectionRequests.id, id));
 }
@@ -1841,6 +1889,13 @@ export async function createOrUpdatePaymentGateway(gateway: InsertPaymentGateway
   const db = await getDb();
   if (!db) return undefined;
 
+  const { secretKey, webhookSecret, ...publicGatewayFields } = gateway;
+  const encryptedGateway: InsertPaymentGateway = {
+    ...publicGatewayFields,
+    ...(secretKey !== undefined && { secretKey: encryptSecret(secretKey) }),
+    ...(webhookSecret !== undefined && { webhookSecret: encryptSecret(webhookSecret) }),
+  };
+
   // Check if gateway already exists
   const existing = await db.select().from(paymentGateways).where(eq(paymentGateways.gateway, gateway.gateway)).limit(1);
 
@@ -1848,7 +1903,7 @@ export async function createOrUpdatePaymentGateway(gateway: InsertPaymentGateway
     // Update existing gateway
     await db.update(paymentGateways)
       .set({
-        ...gateway,
+        ...encryptedGateway,
         updatedAt: formatDateForDB(new Date()),
       })
       .where(eq(paymentGateways.gateway, gateway.gateway));
@@ -1856,7 +1911,7 @@ export async function createOrUpdatePaymentGateway(gateway: InsertPaymentGateway
     return getPaymentGatewayByName(gateway.gateway);
   } else {
     // Create new gateway
-    const result = await db.insert(paymentGateways).values(gateway);
+    const result = await db.insert(paymentGateways).values(encryptedGateway);
     const insertedId = Number((result[0] as any).insertId);
     return getPaymentGatewayById(insertedId);
   }
@@ -1867,7 +1922,7 @@ export async function getPaymentGatewayById(id: number): Promise<PaymentGateway 
   if (!db) return undefined;
 
   const result = await db.select().from(paymentGateways).where(eq(paymentGateways.id, id)).limit(1);
-  return result[0];
+  return decryptPaymentGateway(result[0]);
 }
 
 export async function getPaymentGatewayByName(gateway: 'tap' | 'paypal'): Promise<PaymentGateway | undefined> {
@@ -1875,21 +1930,23 @@ export async function getPaymentGatewayByName(gateway: 'tap' | 'paypal'): Promis
   if (!db) return undefined;
 
   const result = await db.select().from(paymentGateways).where(eq(paymentGateways.gateway, gateway)).limit(1);
-  return result[0];
+  return decryptPaymentGateway(result[0]);
 }
 
 export async function getAllPaymentGateways(): Promise<PaymentGateway[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(paymentGateways);
+  const records = await db.select().from(paymentGateways);
+  return records.map(record => decryptPaymentGateway(record)!);
 }
 
 export async function getEnabledPaymentGateways(): Promise<PaymentGateway[]> {
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(paymentGateways).where(eq(paymentGateways.isEnabled, 1));
+  const records = await db.select().from(paymentGateways).where(eq(paymentGateways.isEnabled, 1));
+  return records.map(record => decryptPaymentGateway(record)!);
 }
 
 // ============================================
@@ -2822,7 +2879,7 @@ export async function getActiveInstanceByPhoneNumber(phoneNumber: string, exclud
   const [instance] = await db.select().from(whatsappInstances)
     .where(and(...conditions));
 
-  return instance;
+  return decryptWhatsAppInstance(instance);
 }
 
 /**
@@ -2851,7 +2908,10 @@ export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Prom
   const db = await getDb();
   if (!db) return undefined;
 
-  const [instance] = await db.insert(whatsappInstances).values(data);
+  const [instance] = await db.insert(whatsappInstances).values({
+    ...data,
+    token: encryptSecret(data.token),
+  });
   return getWhatsAppInstanceById(Number(instance.insertId));
 }
 
@@ -2863,7 +2923,7 @@ export async function getWhatsAppInstanceById(id: number): Promise<WhatsAppInsta
   if (!db) return undefined;
 
   const [instance] = await db.select().from(whatsappInstances).where(eq(whatsappInstances.id, id));
-  return instance;
+  return decryptWhatsAppInstance(instance);
 }
 
 /**
@@ -2873,9 +2933,10 @@ export async function getWhatsAppInstancesByMerchantId(merchantId: number): Prom
   const db = await getDb();
   if (!db) return [];
 
-  return db.select().from(whatsappInstances)
+  const records = await db.select().from(whatsappInstances)
     .where(eq(whatsappInstances.merchantId, merchantId))
     .orderBy(desc(whatsappInstances.isPrimary), desc(whatsappInstances.createdAt));
+  return records.map(record => decryptWhatsAppInstance(record)!);
 }
 
 /**
@@ -2892,7 +2953,7 @@ export async function getPrimaryWhatsAppInstance(merchantId: number): Promise<Wh
       eq(whatsappInstances.status, 'active')
     ));
 
-  return instance;
+  return decryptWhatsAppInstance(instance);
 }
 
 /**
@@ -2905,7 +2966,7 @@ export async function getWhatsAppInstanceByInstanceId(instanceId: string): Promi
   const [instance] = await db.select().from(whatsappInstances)
     .where(eq(whatsappInstances.instanceId, instanceId));
 
-  return instance;
+  return decryptWhatsAppInstance(instance);
 }
 
 /**
@@ -2916,7 +2977,11 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
   if (!db) return;
 
   await db.update(whatsappInstances)
-    .set({ ...data, updatedAt: formatDateForDB(new Date()) })
+    .set({
+      ...data,
+      ...(data.token !== undefined && { token: encryptSecret(data.token) }),
+      updatedAt: formatDateForDB(new Date()),
+    })
     .where(eq(whatsappInstances.id, id));
 }
 
@@ -3067,47 +3132,57 @@ export async function getExpiringWhatsAppInstances(): Promise<{
 export async function createWhatsAppRequest(data: InsertWhatsAppRequest) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  const result = await db.insert(whatsappRequests).values(data);
+  const result = await db.insert(whatsappRequests).values({
+    ...data,
+    token: encryptSecret(data.token),
+  });
   const insertId = Number((result[0] as any).insertId);
   const [request] = await db.select().from(whatsappRequests).where(eq(whatsappRequests.id, insertId));
-  return request;
+  return decryptWhatsAppRequest(request);
 }
 
 export async function getWhatsAppRequestById(id: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
   const [request] = await db.select().from(whatsappRequests).where(eq(whatsappRequests.id, id));
-  return request;
+  return decryptWhatsAppRequest(request);
 }
 
 export async function getWhatsAppRequestsByMerchantId(merchantId: number) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  return db.select().from(whatsappRequests)
+  const records = await db.select().from(whatsappRequests)
     .where(eq(whatsappRequests.merchantId, merchantId))
     .orderBy(desc(whatsappRequests.createdAt));
+  return records.map(record => decryptWhatsAppRequest(record)!);
 }
 
 export async function getAllWhatsAppRequests() {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  return db.select().from(whatsappRequests)
+  const records = await db.select().from(whatsappRequests)
     .orderBy(desc(whatsappRequests.createdAt));
+  return records.map(record => decryptWhatsAppRequest(record)!);
 }
 
 export async function getPendingWhatsAppRequests() {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
-  return db.select().from(whatsappRequests)
+  const records = await db.select().from(whatsappRequests)
     .where(eq(whatsappRequests.status, 'pending'))
     .orderBy(desc(whatsappRequests.createdAt));
+  return records.map(record => decryptWhatsAppRequest(record)!);
 }
 
 export async function updateWhatsAppRequest(id: number, data: Partial<InsertWhatsAppRequest>) {
   const db = await getDb();
   if (!db) throw new Error('Database not initialized');
   await db.update(whatsappRequests)
-    .set({ ...data, updatedAt: formatDateForDB(new Date()) })
+    .set({
+      ...data,
+      ...(data.token !== undefined && { token: encryptSecret(data.token) }),
+      updatedAt: formatDateForDB(new Date()),
+    })
     .where(eq(whatsappRequests.id, id));
   return getWhatsAppRequestById(id);
 }
@@ -3125,7 +3200,7 @@ export async function approveWhatsAppRequest(
     .set({
       status: 'approved',
       instanceId,
-      token,
+      token: encryptSecret(token),
       apiUrl,
       reviewedBy,
       reviewedAt: formatDateForDB(new Date()),
@@ -7095,7 +7170,7 @@ export async function getMerchantPaymentSettings(merchantId: number): Promise<Me
     .where(eq(merchantPaymentSettings.merchantId, merchantId))
     .limit(1);
 
-  return results[0] || null;
+  return decryptMerchantPaymentSettings(results[0]) || null;
 }
 
 /**
@@ -7109,17 +7184,22 @@ export async function upsertMerchantPaymentSettings(
   if (!db) return null;
 
   const existing = await getMerchantPaymentSettings(merchantId);
+  const encryptedData = {
+    ...data,
+    ...(data.tapSecretKey !== undefined && { tapSecretKey: encryptSecret(data.tapSecretKey) }),
+    ...(data.tapWebhookSecret !== undefined && { tapWebhookSecret: encryptSecret(data.tapWebhookSecret) }),
+  };
 
   if (existing) {
     // Update existing
     await db.update(merchantPaymentSettings)
-      .set(data)
+      .set(encryptedData)
       .where(eq(merchantPaymentSettings.merchantId, merchantId));
   } else {
     // Insert new
     await db.insert(merchantPaymentSettings).values({
       merchantId,
-      ...data,
+      ...encryptedData,
     });
   }
 
@@ -7172,9 +7252,10 @@ export async function getMerchantsWithTapEnabled(): Promise<MerchantPaymentSetti
   const db = await getDb();
   if (!db) return [];
 
-  return db.select()
+  const records = await db.select()
     .from(merchantPaymentSettings)
     .where(eq(merchantPaymentSettings.tapEnabled, 1));
+  return records.map(record => decryptMerchantPaymentSettings(record)!);
 }
 
 /**

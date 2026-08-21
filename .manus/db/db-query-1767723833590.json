@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `notification_records` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `merchant_id` int NOT NULL,\n  `notification_key` varchar(255) NOT NULL,\n  `type` varchar(100) NOT NULL,\n  `message` text NOT NULL,\n  `sent_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX `notification_records_merchant_id_idx` (`merchant_id`),\n  INDEX `notification_records_key_idx` (`notification_key`),\n  INDEX `notification_records_type_idx` (`type`),\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE\n)",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `notification_records` (\n  `id` int AUTO_INCREMENT PRIMARY KEY,\n  `merchant_id` int NOT NULL,\n  `notification_key` varchar(255) NOT NULL,\n  `type` varchar(100) NOT NULL,\n  `message` text NOT NULL,\n  `sent_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  INDEX `notification_records_merchant_id_idx` (`merchant_id`),\n  INDEX `notification_records_key_idx` (`notification_key`),\n  INDEX `notification_records_type_idx` (`type`),\n  FOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE CASCADE\n)",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1845
-}

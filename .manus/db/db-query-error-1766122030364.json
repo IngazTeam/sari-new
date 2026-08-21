@@ -1,8 +1,0 @@
-{
-  "query": "ALTER TABLE `merchants` \nADD COLUMN `setup_completed` tinyint NOT NULL DEFAULT 0 AFTER `business_type`,\nADD COLUMN `setup_completed_at` timestamp NULL AFTER `setup_completed`,\nADD COLUMN `address` varchar(500) AFTER `setup_completed_at`,\nADD COLUMN `description` text AFTER `address`,\nADD COLUMN `working_hours_type` enum('24_7','weekdays','custom') DEFAULT 'weekdays' AFTER `description`,\nADD COLUMN `working_hours` text AFTER `working_hours_type`;",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute ALTER TABLE `merchants` \nADD COLUMN `setup_completed` tinyint NOT NULL DEFAULT 0 AFTER `business_type`,\nADD COLUMN `setup_completed_at` timestamp NULL AFTER `setup_completed`,\nADD COLUMN `address` varchar(500) AFTER `setup_completed_at`,\nADD COLUMN `description` text AFTER `address`,\nADD COLUMN `working_hours_type` enum('24_7','weekdays','custom') DEFAULT 'weekdays' AFTER `description`,\nADD COLUMN `working_hours` text AFTER `working_hours_type`;",
-  "returncode": 1,
-  "logs": [
-    "ERROR 1054 (42S22) at line 1: Unknown column 'setup_completed' in 'merchants'"
-  ]
-}

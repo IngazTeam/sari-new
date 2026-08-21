@@ -1,9 +1,0 @@
-{
-  "query": "ALTER TABLE `merchants` \nADD COLUMN IF NOT EXISTS `website_url` varchar(500),\nADD COLUMN IF NOT EXISTS `platform_type` enum('salla', 'zid', 'shopify', 'woocommerce', 'custom', 'unknown'),\nADD COLUMN IF NOT EXISTS `last_analysis_date` timestamp,\nADD COLUMN IF NOT EXISTS `analysis_status` enum('pending', 'analyzing', 'completed', 'failed') DEFAULT 'pending';",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute ALTER TABLE `merchants` \nADD COLUMN IF NOT EXISTS `website_url` varchar(500),\nADD COLUMN IF NOT EXISTS `platform_type` enum('salla', 'zid', 'shopify', 'woocommerce', 'custom', 'unknown'),\nADD COLUMN IF NOT EXISTS `last_analysis_date` timestamp,\nADD COLUMN IF NOT EXISTS `analysis_status` enum('pending', 'analyzing', 'completed', 'failed') DEFAULT 'pending';",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 2643
-}

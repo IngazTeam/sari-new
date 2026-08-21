@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useTranslation } from 'react-i18next';
 export default function PaymentGateways() {
@@ -29,38 +29,34 @@ export default function PaymentGateways() {
   const paypalGateway = gateways?.find(g => g.gateway === 'paypal');
 
   // State for Tap Payment
-  const [tapEnabled, setTapEnabled] = useState(tapGateway?.isEnabled || false);
-  const [tapTestMode, setTapTestMode] = useState(tapGateway?.testMode ?? true);
-  const [tapPublicKey, setTapPublicKey] = useState(tapGateway?.publicKey || '');
-  const [tapSecretKey, setTapSecretKey] = useState(tapGateway?.secretKey || '');
-  const [tapWebhookSecret, setTapWebhookSecret] = useState(tapGateway?.webhookSecret || '');
+  const [tapEnabled, setTapEnabled] = useState(false);
+  const [tapTestMode, setTapTestMode] = useState(true);
+  const [tapPublicKey, setTapPublicKey] = useState('');
+  const [tapSecretKey, setTapSecretKey] = useState('');
+  const [tapWebhookSecret, setTapWebhookSecret] = useState('');
   const [showTapSecret, setShowTapSecret] = useState(false);
 
   // State for PayPal
-  const [paypalEnabled, setPaypalEnabled] = useState(paypalGateway?.isEnabled || false);
-  const [paypalTestMode, setPaypalTestMode] = useState(paypalGateway?.testMode ?? true);
-  const [paypalClientId, setPaypalClientId] = useState(paypalGateway?.publicKey || '');
-  const [paypalSecret, setPaypalSecret] = useState(paypalGateway?.secretKey || '');
-  const [paypalWebhookId, setPaypalWebhookId] = useState(paypalGateway?.webhookSecret || '');
+  const [paypalEnabled, setPaypalEnabled] = useState(false);
+  const [paypalTestMode, setPaypalTestMode] = useState(true);
+  const [paypalClientId, setPaypalClientId] = useState('');
+  const [paypalSecret, setPaypalSecret] = useState('');
+  const [paypalWebhookId, setPaypalWebhookId] = useState('');
   const [showPaypalSecret, setShowPaypalSecret] = useState(false);
 
   // Update state when data loads
-  useState(() => {
+  useEffect(() => {
     if (tapGateway) {
-      setTapEnabled(tapGateway.isEnabled);
-      setTapTestMode(tapGateway.testMode);
+      setTapEnabled(Boolean(tapGateway.isEnabled));
+      setTapTestMode(Boolean(tapGateway.testMode));
       setTapPublicKey(tapGateway.publicKey || '');
-      setTapSecretKey(tapGateway.secretKey || '');
-      setTapWebhookSecret(tapGateway.webhookSecret || '');
     }
     if (paypalGateway) {
-      setPaypalEnabled(paypalGateway.isEnabled);
-      setPaypalTestMode(paypalGateway.testMode);
+      setPaypalEnabled(Boolean(paypalGateway.isEnabled));
+      setPaypalTestMode(Boolean(paypalGateway.testMode));
       setPaypalClientId(paypalGateway.publicKey || '');
-      setPaypalSecret(paypalGateway.secretKey || '');
-      setPaypalWebhookId(paypalGateway.webhookSecret || '');
     }
-  });
+  }, [tapGateway, paypalGateway]);
 
   const handleSaveTap = async () => {
     try {
@@ -68,8 +64,8 @@ export default function PaymentGateways() {
         gateway: 'tap',
         isEnabled: !!tapEnabled,
         publicKey: tapPublicKey,
-        secretKey: tapSecretKey,
-        webhookSecret: tapWebhookSecret,
+        ...(tapSecretKey.trim() ? { secretKey: tapSecretKey.trim() } : {}),
+        ...(tapWebhookSecret.trim() ? { webhookSecret: tapWebhookSecret.trim() } : {}),
         testMode: !!tapTestMode,
       });
     } catch (error) {
@@ -83,8 +79,8 @@ export default function PaymentGateways() {
         gateway: 'paypal',
         isEnabled: !!paypalEnabled,
         publicKey: paypalClientId,
-        secretKey: paypalSecret,
-        webhookSecret: paypalWebhookId,
+        ...(paypalSecret.trim() ? { secretKey: paypalSecret.trim() } : {}),
+        ...(paypalWebhookId.trim() ? { webhookSecret: paypalWebhookId.trim() } : {}),
         testMode: !!paypalTestMode,
       });
     } catch (error) {
@@ -167,7 +163,7 @@ export default function PaymentGateways() {
                 <Input
                   id="tap-secret-key"
                   type={showTapSecret ? "text" : "password"}
-                  placeholder="sk_test_..."
+                  placeholder={tapGateway?.hasSecretKey ? "محفوظ — اتركه فارغاً للإبقاء عليه" : "sk_test_..."}
                   value={tapSecretKey}
                   onChange={(e) => setTapSecretKey(e.target.value)}
                 />
@@ -191,7 +187,7 @@ export default function PaymentGateways() {
               <Label htmlFor="tap-webhook-secret">Webhook Secret</Label>
               <Input
                 id="tap-webhook-secret"
-                placeholder="whsec_..."
+                placeholder={tapGateway?.hasWebhookSecret ? "محفوظ — اتركه فارغاً للإبقاء عليه" : "whsec_..."}
                 value={tapWebhookSecret}
                 onChange={(e) => setTapWebhookSecret(e.target.value)}
               />
@@ -275,7 +271,7 @@ export default function PaymentGateways() {
                 <Input
                   id="paypal-secret"
                   type={showPaypalSecret ? "text" : "password"}
-                  placeholder="EGnHDxD_qRPdaLdZz8iCr8N7_MzF-YHPTkjs6NKYQvQSBngp4PTTVWkPZRbL..."
+                  placeholder={paypalGateway?.hasSecretKey ? "محفوظ — اتركه فارغاً للإبقاء عليه" : "أدخل Secret الجديد"}
                   value={paypalSecret}
                   onChange={(e) => setPaypalSecret(e.target.value)}
                 />
@@ -299,7 +295,7 @@ export default function PaymentGateways() {
               <Label htmlFor="paypal-webhook-id">Webhook ID</Label>
               <Input
                 id="paypal-webhook-id"
-                placeholder="WH-..."
+                placeholder={paypalGateway?.hasWebhookSecret ? "محفوظ — اتركه فارغاً للإبقاء عليه" : "WH-..."}
                 value={paypalWebhookId}
                 onChange={(e) => setPaypalWebhookId(e.target.value)}
               />

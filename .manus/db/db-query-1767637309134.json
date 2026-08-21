@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `discovered_pages` (\n\t`id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n\t`merchant_id` int NOT NULL,\n\t`page_type` enum('about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other') NOT NULL,\n\t`title` varchar(500),\n\t`url` varchar(1000) NOT NULL,\n\t`content` text,\n\t`is_active` tinyint NOT NULL DEFAULT 1,\n\t`use_in_bot` tinyint NOT NULL DEFAULT 1,\n\t`discovered_at` timestamp NOT NULL DEFAULT (now()),\n\t`created_at` timestamp NOT NULL DEFAULT (now()),\n\t`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tFOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE cascade,\n\tINDEX `discovered_pages_merchant_id_idx` (`merchant_id`),\n\tINDEX `discovered_pages_page_type_idx` (`page_type`)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `discovered_pages` (\n\t`id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n\t`merchant_id` int NOT NULL,\n\t`page_type` enum('about', 'shipping', 'returns', 'faq', 'contact', 'privacy', 'terms', 'other') NOT NULL,\n\t`title` varchar(500),\n\t`url` varchar(1000) NOT NULL,\n\t`content` text,\n\t`is_active` tinyint NOT NULL DEFAULT 1,\n\t`use_in_bot` tinyint NOT NULL DEFAULT 1,\n\t`discovered_at` timestamp NOT NULL DEFAULT (now()),\n\t`created_at` timestamp NOT NULL DEFAULT (now()),\n\t`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tFOREIGN KEY (`merchant_id`) REFERENCES `merchants`(`id`) ON DELETE cascade,\n\tINDEX `discovered_pages_merchant_id_idx` (`merchant_id`),\n\tINDEX `discovered_pages_page_type_idx` (`page_type`)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1769
-}

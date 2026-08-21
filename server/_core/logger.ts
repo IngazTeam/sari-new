@@ -3,6 +3,8 @@
  * Provides consistent logging with context and optional external service integration
  */
 
+import { redactLogValue } from '../security/log-redaction';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -39,7 +41,7 @@ function formatLogEntry(entry: LogEntry): string {
     let output = `${levelIcon} [${timestamp}] [${level.toUpperCase()}] ${message}`;
 
     if (context && Object.keys(context).length > 0) {
-        output += ` | ${JSON.stringify(context)}`;
+        output += ` | ${JSON.stringify(redactLogValue(context))}`;
     }
 
     return output;
@@ -116,8 +118,8 @@ export function logError(message: string, error?: Error | unknown, context?: Log
             ...context,
             ...(errorObj && {
                 errorName: errorObj.name,
-                errorMessage: errorObj.message,
-                stack: errorObj.stack,
+                errorMessage: redactLogValue(errorObj.message),
+                ...(process.env.NODE_ENV === 'development' && { stack: redactLogValue(errorObj.stack) }),
             }),
         },
         error: errorObj,
@@ -127,7 +129,8 @@ export function logError(message: string, error?: Error | unknown, context?: Log
 
     // Send to external service in production
     if (process.env.NODE_ENV === 'production') {
-        sendToExternalService(entry).catch(console.error);
+        const safeEntry = redactLogValue(entry) as LogEntry;
+        sendToExternalService(safeEntry).catch(() => undefined);
     }
 }
 

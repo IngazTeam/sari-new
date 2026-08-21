@@ -7,6 +7,16 @@ import cors from 'cors';
 import crypto from 'node:crypto';
 import type { Express, Request, Response, NextFunction } from 'express';
 
+class CorsPolicyError extends Error {
+    status = 403;
+    code = 'CORS_FORBIDDEN';
+
+    constructor() {
+        super('Origin is not allowed');
+        this.name = 'CorsPolicyError';
+    }
+}
+
 /**
  * Configure Helmet security headers
  * Protects against common web vulnerabilities
@@ -68,7 +78,7 @@ export const corsConfig = cors({
             return callback(null, true);
         }
 
-        return callback(new Error('Not allowed by CORS'));
+        return callback(new CorsPolicyError());
     },
     credentials: true, // Allow cookies
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -86,6 +96,25 @@ export function requestId(req: Request, res: Response, next: NextFunction): void
     next();
 }
 
+export function permissionsPolicy(_req: Request, res: Response, next: NextFunction): void {
+    res.setHeader(
+        'Permissions-Policy',
+        'camera=(), microphone=(self), geolocation=(), payment=(self "https://checkout.tap.company"), usb=()'
+    );
+    next();
+}
+
+export function corsErrorHandler(err: unknown, _req: Request, res: Response, next: NextFunction): void {
+    if (err instanceof CorsPolicyError) {
+        res.status(403).json({
+            error: 'Origin is not allowed',
+            code: 'CORS_FORBIDDEN',
+        });
+        return;
+    }
+    next(err);
+}
+
 /**
  * Security logging middleware
  * Logs suspicious activities
@@ -100,12 +129,12 @@ export function securityLogger(req: Request, res: Response, next: NextFunction):
         /;\s*(drop|delete|truncate|alter)\s/i, // SQL DDL injection
     ];
 
-    const fullUrl = req.originalUrl || req.url;
-    const body = JSON.stringify(req.body || {});
+    const safePath = req.path || '/';
+    const body = JSON.stringify(req.body || {}).slice(0, 10_000);
 
     for (const pattern of suspiciousPatterns) {
-        if (pattern.test(fullUrl) || pattern.test(body)) {
-            console.warn(`[Security] ⛔ BLOCKED suspicious request: ${req.method} ${fullUrl} from ${req.ip}`);
+        if (pattern.test(safePath) || pattern.test(body)) {
+            console.warn(`[Security] blocked suspicious request: ${req.method} ${safePath} requestId=${req.headers['x-request-id'] || 'unknown'}`);
             res.status(403).json({ error: 'Request blocked by security policy' });
             return; // SEC-05 FIX: Block instead of just logging
         }
@@ -124,11 +153,12 @@ export function applySecurityMiddleware(app: Express): void {
     // Security headers
     app.use(securityHeaders);
 
+    // Browser capability restrictions not currently covered by Helmet.
+    app.use(permissionsPolicy);
+
     // CORS
     app.use(corsConfig);
-
-    // Security logging
-    app.use(securityLogger);
+    app.use(corsErrorHandler);
 
     console.log('[Security] ✅ Security middleware initialized');
 }

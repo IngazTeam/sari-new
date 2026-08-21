@@ -34,8 +34,9 @@ import { startSupervisorRecoveryJob } from "../jobs/supervisor-cron";
 import cron from "node-cron";
 import { authLimiter, webhookLimiter, apiLimiter } from "./rateLimiter";
 import { validateEnv } from "./validateEnv";
-import { applySecurityMiddleware } from "./security";
+import { applySecurityMiddleware, securityLogger } from "./security";
 import { logError } from "./logger";
+import { installProductionConsoleRedaction } from "../security/log-redaction";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -57,6 +58,8 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  installProductionConsoleRedaction();
+
   // Validate environment variables first
   validateEnv();
 
@@ -74,6 +77,8 @@ async function startServer() {
   // for the JSON envelope, while preventing the former 50 MB allocation on every route.
   app.use(express.json({ limit: "26mb" }));
   app.use(express.urlencoded({ limit: "1mb", extended: true }));
+  // Body-aware security checks must run after parsers.
+  app.use(securityLogger);
   // Parse cookies
   app.use(cookieParser());
 
@@ -479,12 +484,28 @@ async function startServer() {
 
   // Global error handler for API routes - ensures JSON responses instead of HTML
   app.use('/api', (err: any, req: any, res: any, next: any) => {
-    console.error('🔴 [API Error]', err);
+    const isInvalidJson = err?.type === 'entity.parse.failed'
+      || (err instanceof SyntaxError && Number((err as SyntaxError & { status?: number }).status) === 400);
+    logError('API request failed', err, {
+      requestId: req.headers?.['x-request-id'],
+      method: req.method,
+      path: req.path,
+      status: isInvalidJson ? 400 : err?.status || err?.statusCode || 500,
+    });
 
     // Always return JSON for API errors
     res.setHeader('Content-Type', 'application/json');
 
-    const statusCode = err.status || err.statusCode || 500;
+    if (isInvalidJson) {
+      return res.status(400).json({
+        error: 'Invalid JSON payload',
+        errorAr: 'صيغة JSON غير صالحة',
+        code: 'INVALID_JSON',
+      });
+    }
+
+    const rawStatusCode = Number(err.status || err.statusCode || 500);
+    const statusCode = rawStatusCode >= 400 && rawStatusCode <= 599 ? rawStatusCode : 500;
     const canExposeMessage = statusCode < 500 && typeof err.message === 'string';
     res.status(statusCode).json({
       error: canExposeMessage ? err.message : 'Internal server error',

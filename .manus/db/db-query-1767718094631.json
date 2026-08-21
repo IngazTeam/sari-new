@@ -1,9 +1,0 @@
-{
-  "query": "CREATE TABLE IF NOT EXISTS `subscription_addons` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `name` varchar(255) NOT NULL,\n  `name_en` varchar(255) NOT NULL,\n  `description` text,\n  `description_en` text,\n  `type` enum('extra_whatsapp', 'extra_customers', 'custom') NOT NULL,\n  `monthly_price` decimal(10, 2) NOT NULL,\n  `yearly_price` decimal(10, 2) NOT NULL,\n  `currency` varchar(10) NOT NULL DEFAULT 'SAR',\n  `value` int NOT NULL,\n  `is_active` tinyint NOT NULL DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  INDEX `subscription_addons_is_active_idx` (`is_active`),\n  INDEX `subscription_addons_type_idx` (`type`)\n);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3GAtigc1mT3FupY.root --database aEd97Sv38TzpxF76sMza4k --execute CREATE TABLE IF NOT EXISTS `subscription_addons` (\n  `id` int AUTO_INCREMENT NOT NULL PRIMARY KEY,\n  `name` varchar(255) NOT NULL,\n  `name_en` varchar(255) NOT NULL,\n  `description` text,\n  `description_en` text,\n  `type` enum('extra_whatsapp', 'extra_customers', 'custom') NOT NULL,\n  `monthly_price` decimal(10, 2) NOT NULL,\n  `yearly_price` decimal(10, 2) NOT NULL,\n  `currency` varchar(10) NOT NULL DEFAULT 'SAR',\n  `value` int NOT NULL,\n  `is_active` tinyint NOT NULL DEFAULT 1,\n  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  INDEX `subscription_addons_is_active_idx` (`is_active`),\n  INDEX `subscription_addons_type_idx` (`type`)\n);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 1640
-}

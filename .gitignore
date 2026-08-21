@@ -113,6 +113,7 @@ full-setup.mjs
 .tmp/
 
 # Security: Test/scratch files — never track credentials, sessions, or API test data
+.manus/
 cookies.txt
 login_body.json
 scratch_login.json

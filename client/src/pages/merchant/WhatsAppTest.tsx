@@ -67,7 +67,9 @@ export default function WhatsAppTest() {
   useEffect(() => {
     if (savedInstance) {
       setInstanceId(savedInstance.instanceId);
-      setApiToken(savedInstance.token);
+      // Credentials are never returned by the API. The merchant must enter a token
+      // explicitly for an ad-hoc connectivity test.
+      setApiToken("");
       setIsSaved(true);
     }
   }, [savedInstance]);

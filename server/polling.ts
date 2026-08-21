@@ -156,7 +156,10 @@ async function pollMessages(
       return;
     }
 
-    console.log(`[Polling] Received notification for merchant ${merchantId}:`, JSON.stringify(notification, null, 2));
+    console.log(`[Polling] Received notification for merchant ${merchantId}`, {
+      typeWebhook: notification.typeWebhook || 'unknown',
+      hasMessageData: Boolean(notification.messageData),
+    });
 
     // Process the notification
     await processNotification(merchantId, instanceId, apiToken, apiUrl, notification);

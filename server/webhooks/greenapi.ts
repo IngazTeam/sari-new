@@ -507,7 +507,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
   try {
     const payload: GreenAPIWebhookPayload = webhookData;
     
-    console.log('[Webhook] Received webhook:', JSON.stringify(payload, null, 2));
+    console.log('[Webhook] Received Green API event', {
+      typeWebhook: payload.typeWebhook || 'unknown',
+      hasMessageData: Boolean(payload.messageData),
+      idMessage: payload.idMessage || null,
+    });
     
     // ── Handle outgoing messages (Human Takeover detection) ──
     // GreenAPI docs: outgoingMessageReceived (manual), outgoingAPIMessageReceived (API-sent)
@@ -899,7 +903,11 @@ export async function handleGreenAPIWebhook(webhookData: any): Promise<WebhookRe
           const botName = payload.senderData?.chatName || '';
           const isMentionedViaName = false; // Too risky — would match customer names
 
-          console.log(`[Webhook] Group mention check: botPhone=${botPhone}, jids=${JSON.stringify(mentionedJids)}, viaJid=${isMentionedViaJid}, viaText=${isMentionedViaText}, text="${msgText.substring(0, 80)}"`);
+          console.log('[Webhook] Group mention evaluated', {
+            mentionedJidCount: mentionedJids.length,
+            viaJid: isMentionedViaJid,
+            viaText: isMentionedViaText,
+          });
 
           if (!isMentionedViaJid && !isMentionedViaText) {
             return { success: true, message: 'Group: no mention' };
