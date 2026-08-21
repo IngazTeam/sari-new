@@ -70,9 +70,10 @@ async function startServer() {
   // Apply security middleware (Helmet, CORS, request ID)
   applySecurityMiddleware(app);
 
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // Voice transcription accepts up to 24 MB of base64 data. Keep a small margin
+  // for the JSON envelope, while preventing the former 50 MB allocation on every route.
+  app.use(express.json({ limit: "26mb" }));
+  app.use(express.urlencoded({ limit: "1mb", extended: true }));
   // Parse cookies
   app.use(cookieParser());
 
@@ -95,63 +96,20 @@ async function startServer() {
     next();
   });
 
-  // NQ-5: Enhanced Health check endpoints for ops visibility
-  app.get('/health', async (req, res) => {
-    try {
-      const memUsage = process.memoryUsage();
-      const uptimeSec = process.uptime();
-
-      // Gather system metrics (all non-blocking)
-      let sessionCount = 0;
-      let circuitBreakerStatus = 'unknown';
-      let costCeilingMerchants = 0;
-
-      try {
-        const { getSessionStats } = await import('../ai/session-context');
-        const stats = getSessionStats();
-        sessionCount = stats.active;
-      } catch { /* silent */ }
-
-      try {
-        const { getCircuitBreakerStatus } = await import('../ai/openai');
-        circuitBreakerStatus = getCircuitBreakerStatus();
-      } catch { circuitBreakerStatus = 'unavailable'; }
-
-      try {
-        const { getAllMerchantUsage } = await import('../ai/cost-ceiling');
-        costCeilingMerchants = getAllMerchantUsage().length;
-      } catch { /* silent */ }
-
-      res.json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`,
-        memory: {
-          heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
-          heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
-          rssMB: Math.round(memUsage.rss / 1024 / 1024),
-        },
-        ai: {
-          activeSessions: sessionCount,
-          circuitBreaker: circuitBreakerStatus,
-          activeMerchants: costCeilingMerchants,
-        },
-      });
-    } catch {
-      res.json({ status: 'healthy', timestamp: new Date().toISOString() });
-    }
+  // Public liveness intentionally exposes no memory, AI, or merchant metrics.
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'healthy' });
   });
 
   app.get('/ready', async (req, res) => {
     try {
       // Check database connectivity
-      const { getDb } = await import('../db');
-      const db = getDb();
-      if (!db) throw new Error('DB not connected');
-      // Simple query to verify connection
+      const { getPool } = await import('../db');
+      const pool = await getPool();
+      if (!pool) throw new Error('DB not connected');
+      await pool.query('SELECT 1');
       res.json({
         status: 'ready',
-        timestamp: new Date().toISOString(),
         checks: {
           database: 'connected',
         },
@@ -159,7 +117,6 @@ async function startServer() {
     } catch (error) {
       res.status(503).json({
         status: 'not_ready',
-        timestamp: new Date().toISOString(),
         checks: {
           database: 'disconnected',
         },
@@ -528,10 +485,11 @@ async function startServer() {
     res.setHeader('Content-Type', 'application/json');
 
     const statusCode = err.status || err.statusCode || 500;
+    const canExposeMessage = statusCode < 500 && typeof err.message === 'string';
     res.status(statusCode).json({
-      error: err.message || 'Internal server error',
+      error: canExposeMessage ? err.message : 'Internal server error',
       errorAr: 'حدث خطأ داخلي في الخادم',
-      code: err.code || 'INTERNAL_ERROR',
+      code: statusCode < 500 && err.code ? err.code : 'INTERNAL_ERROR',
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
   });
@@ -550,7 +508,9 @@ async function startServer() {
 
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const port = process.env.NODE_ENV === 'production'
+    ? preferredPort
+    : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
@@ -723,10 +683,12 @@ process.on('unhandledRejection', (reason) => {
 });
 
 process.on('uncaughtException', (error) => {
-  // HOTFIX: Do NOT exit — log and continue. PM2 restart loop was killing WhatsApp connectivity.
-  // Only truly fatal errors (OOM, segfault) should crash the process.
-  logError('Uncaught Exception (non-fatal — process continues)', error);
+  // The process may be corrupted after an uncaught exception. Let the process
+  // supervisor restart it instead of serving traffic from an unknown state.
+  logError('Uncaught Exception (fatal)', error);
   console.error('[CRITICAL] uncaughtException:', error?.message || error);
+  process.exitCode = 1;
+  setImmediate(() => process.exit(1));
 });
 
 startServer().catch(console.error);

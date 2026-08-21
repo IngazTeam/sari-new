@@ -107,7 +107,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "wouter";
+import { Redirect, useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 import { NotificationBell } from "./NotificationBell";
@@ -277,6 +277,12 @@ export default function DashboardLayout({
         </div>
       </div>
     );
+  }
+
+  const isAdminRoute = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
+  const isAdmin = user.role === 'admin' || user.role === 'superadmin';
+  if (isAdminRoute && !isAdmin) {
+    return <Redirect to="/merchant/dashboard" />;
   }
 
   return (
