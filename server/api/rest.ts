@@ -53,6 +53,13 @@ import {
   parseApiKeyPermissions,
   requiredApiKeyScope,
 } from './api-key-permissions';
+import { normalizeApiListPagination } from './api-read-model-core';
+import {
+  getApiKnowledgeOverview,
+  listApiConversations,
+  listApiFaqs,
+  listApiProducts,
+} from './api-read-model';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -525,20 +532,19 @@ sariApiRouter.get('/me', (req: AuthenticatedRequest, res: Response) => {
 // ── GET /api/v1/brain/sources — Knowledge sources overview ──
 sariApiRouter.get('/brain/sources', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const merchantId = req.merchant.id;
+    const overview = await getApiKnowledgeOverview(req.merchant.id);
     const sources: any[] = [];
 
-    // Document
-    const doc = await getKnowledgeDocByMerchantId(merchantId);
-    if (doc) sources.push({ type: 'document', name: doc.fileName, status: doc.extractionStatus, textLength: doc.extractedText?.length || 0 });
-
-    // Products
-    const products = await (getProductsByMerchantId as any)(merchantId);
-    if (products.length > 0) sources.push({ type: 'products', count: products.length });
-
-    // FAQs
-    const faqs = await getExtractedFaqsByMerchantId(merchantId);
-    if (faqs.length > 0) sources.push({ type: 'faqs', count: faqs.length, activeCount: faqs.filter((f: any) => f.isActive).length });
+    if (overview.document) sources.push({ type: 'document', ...overview.document });
+    if (overview.products > 0) sources.push({ type: 'products', count: overview.products });
+    if (overview.faqs > 0) {
+      sources.push({
+        type: 'faqs',
+        count: overview.faqs,
+        activeCount: overview.enabledFaqs,
+        usableCount: overview.usableFaqs,
+      });
+    }
 
     res.json({ sources });
   } catch (e) {
@@ -570,24 +576,13 @@ sariApiRouter.post('/brain/test', async (req: AuthenticatedRequest, res: Respons
 // ── GET /api/v1/products — List products ────────────────────
 sariApiRouter.get('/products', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const products = await (getProductsByMerchantId as any)(req.merchant.id);
-    const limit = Math.min(parseInt(req.query.limit as string) || 50, 200);
-    const offset = parseInt(req.query.offset as string) || 0;
-
-    res.json({
-      total: products.length,
-      data: products.slice(offset, offset + limit).map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        description: p.description,
-        price: p.price,
-        category: p.category,
-        imageUrl: p.imageUrl,
-        inStock: p.inStock,
-        createdAt: p.createdAt,
-      })),
-    });
+    const pagination = normalizeApiListPagination(req.query);
+    const result = await listApiProducts(req.merchant.id, pagination);
+    res.json({ ...result, ...pagination });
   } catch (e) {
+    if ((e as Error)?.name === 'ApiReadModelValidationError') {
+      return res.status(400).json({ error: 'Invalid pagination query', errorAr: 'معاملات الصفحات غير صالحة' });
+    }
     res.status(500).json({ error: 'Failed to fetch products', errorAr: 'فشل جلب المنتجات' });
   }
 });
@@ -649,19 +644,13 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
 // ── GET /api/v1/faqs — List FAQs ────────────────────────────
 sariApiRouter.get('/faqs', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const faqs = await getExtractedFaqsByMerchantId(req.merchant.id);
-    res.json({
-      total: faqs.length,
-      data: faqs.map((f: any) => ({
-        id: f.id,
-        question: f.question,
-        answer: f.answer,
-        category: f.category,
-        isActive: f.isActive,
-        useInBot: f.useInBot,
-      })),
-    });
+    const pagination = normalizeApiListPagination(req.query);
+    const result = await listApiFaqs(req.merchant.id, pagination);
+    res.json({ ...result, ...pagination });
   } catch (e) {
+    if ((e as Error)?.name === 'ApiReadModelValidationError') {
+      return res.status(400).json({ error: 'Invalid pagination query', errorAr: 'معاملات الصفحات غير صالحة' });
+    }
     res.status(500).json({ error: 'Failed to fetch FAQs', errorAr: 'فشل جلب الأسئلة الشائعة' });
   }
 });
@@ -761,23 +750,13 @@ sariApiRouter.post('/brain/reset', async (req: AuthenticatedRequest, res: Respon
 // ── GET /api/v1/conversations — Conversation summaries ──────
 sariApiRouter.get('/conversations', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const conversations = await getConversationsByMerchantId(req.merchant.id);
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
-
-    res.json({
-      total: conversations.length,
-      data: conversations.slice(0, limit).map((c: any) => ({
-        id: c.id,
-        customerPhone: c.customerPhone,
-        customerName: c.customerName,
-        lastMessage: c.lastMessage,
-        messageCount: c.messageCount,
-        status: c.status,
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt,
-      })),
-    });
+    const pagination = normalizeApiListPagination(req.query, { defaultLimit: 20, maxLimit: 100 });
+    const result = await listApiConversations(req.merchant.id, pagination);
+    res.json({ ...result, ...pagination });
   } catch (e) {
+    if ((e as Error)?.name === 'ApiReadModelValidationError') {
+      return res.status(400).json({ error: 'Invalid pagination query', errorAr: 'معاملات الصفحات غير صالحة' });
+    }
     res.status(500).json({ error: 'Failed to fetch conversations', errorAr: 'فشل جلب المحادثات' });
   }
 });
@@ -785,19 +764,16 @@ sariApiRouter.get('/conversations', async (req: AuthenticatedRequest, res: Respo
 // ── GET /api/v1/stats — Dashboard statistics ────────────────
 sariApiRouter.get('/stats', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const merchantId = req.merchant.id;
-
-    const products = await (getProductsByMerchantId as any)(merchantId);
-    const conversations = await getConversationsByMerchantId(merchantId);
-    const faqs = await getExtractedFaqsByMerchantId(merchantId);
-    const doc = await getKnowledgeDocByMerchantId(merchantId);
+    const overview = await getApiKnowledgeOverview(req.merchant.id);
 
     res.json({
-      products: products.length,
-      conversations: conversations.length,
-      faqs: faqs.length,
-      hasDocument: !!doc,
-      documentStatus: doc?.extractionStatus || null,
+      products: overview.products,
+      conversations: overview.conversations,
+      faqs: overview.faqs,
+      enabledFaqs: overview.enabledFaqs,
+      usableFaqs: overview.usableFaqs,
+      hasDocument: overview.document !== null,
+      documentStatus: overview.document?.status ?? null,
     });
   } catch (e) {
     res.status(500).json({ error: 'Failed to fetch stats', errorAr: 'فشل جلب الإحصائيات' });
