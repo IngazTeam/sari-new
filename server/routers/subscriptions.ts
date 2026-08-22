@@ -13,7 +13,7 @@ import {
   cancelMerchantSubscription,
   checkMerchantSubscriptionStatus,
   createMerchantAddon,
-  createPaymentTransaction,
+  createOrReusePaymentTransactionForCheckout,
   createSubscriptionAddon,
   createSubscriptionPlan,
   createTapSettings,
@@ -39,24 +39,26 @@ import {
   getTapSettings,
   getUserById,
   reorderSubscriptionPlans,
-  updatePaymentTransaction,
   updateSubscriptionAddon,
   updateSubscriptionPlan,
   updateTapSettings,
 } from '../db';
-import { createCharge, retrieveCharge, refundCharge } from "../_core/tap";
+import { retrieveCharge, refundCharge } from "../_core/tap";
 import { calculateProration } from "../_core/subscriptionManager";
 import {
   completeImmediateCanonicalPlanChange,
   processCanonicalSubscriptionCharge,
   startCanonicalTrial,
 } from '../subscriptions/canonical-state';
-import { publicPaymentUrls } from '../utils/public-url';
 import { tapKeyMatchesMode, tapPublicKeyMatchesMode } from '../payment/payment-link-policy';
 import {
   toPlatformTapSettingsView,
   verifyPlatformTapCredentialsSnapshot,
 } from '../payment/platform-tap-settings';
+import {
+  createPlatformSubscriptionTapCharge,
+  SubscriptionTapCheckoutError,
+} from '../payment/subscription-tap-checkout';
 
 function assertBillableAmount(amount: number, currency: string): { amount: number; currency: string } {
   const normalizedCurrency = currency.trim().toUpperCase();
@@ -67,6 +69,22 @@ function assertBillableAmount(amount: number, currency: string): { amount: numbe
     throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unsupported billing currency' });
   }
   return { amount: Math.round(amount * 100) / 100, currency: normalizedCurrency };
+}
+
+function subscriptionCheckoutError(error: unknown): TRPCError {
+  if (error instanceof Error && error.message === 'CHECKOUT_ATTEMPT_CONFLICT') {
+    return new TRPCError({ code: 'CONFLICT', message: 'محاولة الدفع مرتبطة بطلب مختلف؛ أعد تحميل الصفحة' });
+  }
+  if (error instanceof SubscriptionTapCheckoutError) {
+    if (error.failure === 'gateway_not_ready') {
+      return new TRPCError({ code: 'BAD_REQUEST', message: 'بوابة الدفع غير جاهزة حالياً' });
+    }
+    if (error.failure === 'attempt_already_finished' || error.failure === 'charge_identity_conflict') {
+      return new TRPCError({ code: 'CONFLICT', message: 'تعذر إعادة استخدام محاولة الدفع؛ أعد تحميل الصفحة' });
+    }
+    return new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر إنشاء جلسة الدفع؛ حاول مرة أخرى' });
+  }
+  return new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر بدء عملية الدفع' });
 }
 
 // ============================================
@@ -350,7 +368,8 @@ export const merchantSubscriptionRouter = router({
     .input(z.object({
       planId: z.number().int().positive(),
       billingCycle: z.enum(['monthly', 'yearly']),
-    }))
+      checkoutAttemptId: z.string().uuid(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
@@ -369,71 +388,41 @@ export const merchantSubscriptionRouter = router({
         : parseFloat(plan.yearlyPrice);
       const { amount, currency } = assertBillableAmount(selectedAmount, plan.currency);
 
-      // Create payment transaction
-      const transactionId = await createPaymentTransaction({
-        merchantId: merchant.id,
-        subscriptionId: null,
-        type: 'subscription',
-        amount: amount.toFixed(2),
-        currency,
-        status: 'pending',
-        paymentMethod: 'tap',
-        metadata: JSON.stringify({
-          planId: input.planId,
-          billingCycle: input.billingCycle,
-        }),
-      });
-
-      // Create Tap charge
       try {
-        const charge = await createCharge({
-          amount,
+        const { transaction } = await createOrReusePaymentTransactionForCheckout({
+          merchantId: merchant.id,
+          subscriptionId: null,
+          type: 'subscription',
+          amount: amount.toFixed(2),
           currency,
-          customer: {
-            first_name: merchant.businessName,
-            // @ts-ignore
-            email: ctx.user.email,
-            phone: merchant.phone ? {
-              country_code: '966',
-              number: merchant.phone.replace(/^\+?966/, ''),
-            } : undefined,
-          },
-          source: { id: 'src_all' },
-          redirect: {
-            url: publicPaymentUrls.callback(),
-          },
-          post: { url: publicPaymentUrls.webhook() },
-          description: `Subscription to ${plan.name} (${input.billingCycle})`,
-          metadata: {
-            merchantId: merchant.id,
-            transactionId,
+          status: 'pending',
+          paymentMethod: 'tap',
+          checkoutAttemptId: input.checkoutAttemptId,
+          metadata: JSON.stringify({
             planId: input.planId,
             billingCycle: input.billingCycle,
-          },
+          }),
         });
-
-        // Update transaction with Tap charge ID
-        await updatePaymentTransaction(transactionId, {
-          tapChargeId: charge.id,
-          tapResponse: JSON.stringify(charge),
+        const checkout = await createPlatformSubscriptionTapCharge({
+          transaction,
+          merchantId: merchant.id,
+          checkoutAttemptId: input.checkoutAttemptId,
+          amount,
+          currency,
+          customerName: merchant.businessName,
+          customerEmail: ctx.user.email,
+          customerPhone: merchant.phone,
+          description: `Subscription to ${plan.name} (${input.billingCycle})`,
         });
 
         return {
           success: true,
-          transactionId,
-          paymentUrl: charge.transaction?.url,
-          chargeId: charge.id,
+          transactionId: transaction.id,
+          paymentUrl: checkout.paymentUrl,
+          chargeId: checkout.chargeId,
         };
       } catch (error) {
-        // Update transaction status to failed
-        await updatePaymentTransaction(transactionId, {
-          status: 'failed',
-        });
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create payment charge',
-        });
+        throw subscriptionCheckoutError(error);
       }
     }),
 
@@ -442,7 +431,8 @@ export const merchantSubscriptionRouter = router({
     .input(z.object({
       newPlanId: z.number().int().positive(),
       newBillingCycle: z.enum(['monthly', 'yearly']),
-    }))
+      checkoutAttemptId: z.string().uuid(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
@@ -483,81 +473,58 @@ export const merchantSubscriptionRouter = router({
         ? assertBillableAmount(proration.chargeAmount, currency)
         : { amount: 0, currency };
 
-      // Create payment transaction for upgrade
-      const transactionId = await createPaymentTransaction({
-        merchantId: merchant.id,
-        subscriptionId: currentSubscription.id,
-        type: payable.amount === 0 ? 'downgrade' : 'upgrade',
-        amount: payable.amount.toFixed(2),
-        currency: payable.currency,
-        status: 'pending',
-        paymentMethod: 'tap',
-        metadata: JSON.stringify({
-          newPlanId: input.newPlanId,
-          newBillingCycle: input.newBillingCycle,
-          proration,
-          previousPlanId: currentSubscription.planId,
-          previousBillingCycle: currentSubscription.billingCycle,
-          previousStartDate: currentSubscription.startDate,
-          previousEndDate: currentSubscription.endDate,
-          previousStatus: currentSubscription.status,
-        }),
-      });
-
-      // If charge amount is 0 or negative, upgrade immediately
-      if (payable.amount === 0) {
-        await completeImmediateCanonicalPlanChange(transactionId, merchant.id);
-        return { success: true, immediate: true };
-      }
-
-      // Create Tap charge for the difference
       try {
-        const charge = await createCharge({
-          amount: payable.amount,
+        const { transaction } = await createOrReusePaymentTransactionForCheckout({
+          merchantId: merchant.id,
+          subscriptionId: currentSubscription.id,
+          type: payable.amount === 0 ? 'downgrade' : 'upgrade',
+          amount: payable.amount.toFixed(2),
           currency: payable.currency,
-          customer: {
-            first_name: merchant.businessName,
-            // @ts-ignore
-            email: ctx.user.email,
-            phone: merchant.phone ? {
-              country_code: '966',
-              number: merchant.phone.replace(/^\+?966/, ''),
-            } : undefined,
-          },
-          source: { id: 'src_all' },
-          redirect: {
-            url: publicPaymentUrls.callback(),
-          },
-          post: { url: publicPaymentUrls.webhook() },
-          description: `Upgrade to ${newPlan.name} (${input.newBillingCycle})`,
-          metadata: {
-            merchantId: merchant.id,
-            transactionId,
-            type: 'upgrade',
+          status: 'pending',
+          paymentMethod: 'tap',
+          checkoutAttemptId: input.checkoutAttemptId,
+          metadata: JSON.stringify({
             newPlanId: input.newPlanId,
             newBillingCycle: input.newBillingCycle,
-          },
+            proration,
+            previousPlanId: currentSubscription.planId,
+            previousBillingCycle: currentSubscription.billingCycle,
+            previousStartDate: currentSubscription.startDate,
+            previousEndDate: currentSubscription.endDate,
+            previousStatus: currentSubscription.status,
+          }),
         });
 
-        // Update transaction with Tap charge ID
-        await updatePaymentTransaction(transactionId, {
-          tapChargeId: charge.id,
-          tapResponse: JSON.stringify(charge),
+        if (payable.amount === 0) {
+          if (transaction.status === 'pending') {
+            await completeImmediateCanonicalPlanChange(transaction.id, merchant.id);
+          } else if (transaction.status !== 'completed') {
+            throw new SubscriptionTapCheckoutError('attempt_already_finished');
+          }
+          return { success: true, immediate: true };
+        }
+
+        const checkout = await createPlatformSubscriptionTapCharge({
+          transaction,
+          merchantId: merchant.id,
+          checkoutAttemptId: input.checkoutAttemptId,
+          amount: payable.amount,
+          currency: payable.currency,
+          customerName: merchant.businessName,
+          customerEmail: ctx.user.email,
+          customerPhone: merchant.phone,
+          description: `Upgrade to ${newPlan.name} (${input.newBillingCycle})`,
         });
 
         return {
           success: true,
-          transactionId,
-          paymentUrl: charge.transaction?.url,
-          chargeId: charge.id,
+          transactionId: transaction.id,
+          paymentUrl: checkout.paymentUrl,
+          chargeId: checkout.chargeId,
           proratedAmount: payable.amount,
         };
       } catch (error) {
-        await updatePaymentTransaction(transactionId, { status: 'failed' });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create payment charge',
-        });
+        throw subscriptionCheckoutError(error);
       }
     }),
 
@@ -646,7 +613,8 @@ export const merchantAddonsRouter = router({
       addonId: z.number().int().positive(),
       quantity: z.number().int().min(1).max(100).default(1),
       billingCycle: z.enum(['monthly', 'yearly']),
-    }))
+      checkoutAttemptId: z.string().uuid(),
+    }).strict())
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) {
@@ -672,70 +640,42 @@ export const merchantAddonsRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Active subscription required' });
       }
 
-      // Create payment transaction
-      const transactionId = await createPaymentTransaction({
-        merchantId: merchant.id,
-        subscriptionId: subscription?.id || null,
-        type: 'addon',
-        amount: billable.amount.toFixed(2),
-        currency: billable.currency,
-        status: 'pending',
-        paymentMethod: 'tap',
-        metadata: JSON.stringify({
-          addonId: input.addonId,
-          quantity: input.quantity,
-          billingCycle: input.billingCycle,
-        }),
-      });
-
-      // Create Tap charge
       try {
-        const charge = await createCharge({
-          amount: billable.amount,
+        const { transaction } = await createOrReusePaymentTransactionForCheckout({
+          merchantId: merchant.id,
+          subscriptionId: subscription.id,
+          type: 'addon',
+          amount: billable.amount.toFixed(2),
           currency: billable.currency,
-          customer: {
-            first_name: merchant.businessName,
-            // @ts-ignore
-            email: ctx.user.email,
-            phone: merchant.phone ? {
-              country_code: '966',
-              number: merchant.phone.replace(/^\+?966/, ''),
-            } : undefined,
-          },
-          source: { id: 'src_all' },
-          redirect: {
-            url: publicPaymentUrls.callback(),
-          },
-          post: { url: publicPaymentUrls.webhook() },
-          description: `Purchase ${addon.name} x${input.quantity}`,
-          metadata: {
-            merchantId: merchant.id,
-            transactionId,
-            type: 'addon',
+          status: 'pending',
+          paymentMethod: 'tap',
+          checkoutAttemptId: input.checkoutAttemptId,
+          metadata: JSON.stringify({
             addonId: input.addonId,
             quantity: input.quantity,
             billingCycle: input.billingCycle,
-          },
+          }),
         });
-
-        // Update transaction with Tap charge ID
-        await updatePaymentTransaction(transactionId, {
-          tapChargeId: charge.id,
-          tapResponse: JSON.stringify(charge),
+        const checkout = await createPlatformSubscriptionTapCharge({
+          transaction,
+          merchantId: merchant.id,
+          checkoutAttemptId: input.checkoutAttemptId,
+          amount: billable.amount,
+          currency: billable.currency,
+          customerName: merchant.businessName,
+          customerEmail: ctx.user.email,
+          customerPhone: merchant.phone,
+          description: `Purchase ${addon.name} x${input.quantity}`,
         });
 
         return {
           success: true,
-          transactionId,
-          paymentUrl: charge.transaction?.url,
-          chargeId: charge.id,
+          transactionId: transaction.id,
+          paymentUrl: checkout.paymentUrl,
+          chargeId: checkout.chargeId,
         };
       } catch (error) {
-        await updatePaymentTransaction(transactionId, { status: 'failed' });
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create payment charge',
-        });
+        throw subscriptionCheckoutError(error);
       }
     }),
 

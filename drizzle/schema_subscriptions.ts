@@ -157,7 +157,8 @@ export const paymentTransactions = mysqlTable("payment_transactions", {
 
 	// Tap Integration
 	tapChargeId: varchar("tap_charge_id", { length: 255 }), // معرف الدفعة من Tap
-	tapResponse: text("tap_response"), // الاستجابة الكاملة من Tap (JSON)
+	tapResponse: text("tap_response"), // خلاصة تشغيلية محدودة بلا PII
+	checkoutAttemptId: varchar("checkout_attempt_id", { length: 36 }),
 
 	// Payment Date
 	paidAt: timestamp("paid_at", { mode: 'string' }),
@@ -177,6 +178,7 @@ export const paymentTransactions = mysqlTable("payment_transactions", {
 		index("payment_transactions_subscription_id_idx").on(table.subscriptionId),
 		index("payment_transactions_status_idx").on(table.status),
 		uniqueIndex("payment_transactions_tap_charge_id_unique").on(table.tapChargeId),
+		uniqueIndex("payment_transactions_merchant_attempt_unique").on(table.merchantId, table.checkoutAttemptId),
 		index("payment_transactions_type_idx").on(table.type),
 		foreignKey({
 			name: "pt_sub_id_fk",

@@ -77,7 +77,7 @@ export function buildTapCheckoutIdempotentReference(
 
 export interface TapCheckoutChargeExpectation {
   amountInHalalas: number;
-  currency: 'SAR';
+  currency: string;
   testMode: boolean;
 }
 

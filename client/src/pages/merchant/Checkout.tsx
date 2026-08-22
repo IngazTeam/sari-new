@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useRef } from 'react';
 
 import { useTranslation } from 'react-i18next';
 export default function Checkout() {
   const { t } = useTranslation();
+  const checkoutAttemptId = useRef(window.crypto.randomUUID()).current;
 
   const params = new URLSearchParams(window.location.search);
   const planIdStr = params.get('planId');
@@ -61,6 +63,7 @@ export default function Checkout() {
     await createSessionMutation.mutateAsync({
       planId: plan.id,
       billingCycle: 'monthly',
+      checkoutAttemptId,
     });
   };
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,15 @@ export default function ComparePlans() {
   const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const checkoutAttempts = useRef(new Map<string, string>());
+
+  const checkoutAttemptFor = (key: string) => {
+    const existing = checkoutAttempts.current.get(key);
+    if (existing) return existing;
+    const created = window.crypto.randomUUID();
+    checkoutAttempts.current.set(key, created);
+    return created;
+  };
 
   // Fetch all plans
   const {
@@ -31,7 +40,11 @@ export default function ComparePlans() {
 
   // Upgrade/downgrade mutation
   const upgradeMutation = trpc.merchantSubscription.upgradePlan.useMutation({
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if ('paymentUrl' in result && result.paymentUrl) {
+        window.location.href = result.paymentUrl;
+        return;
+      }
       toast.success(t('merchantUx.comparePlans.updated'));
       setLocation('/merchant/subscription');
     },
@@ -56,6 +69,7 @@ export default function ComparePlans() {
     upgradeMutation.mutate({
       newPlanId: planId,
       newBillingCycle: currentSubscription.billingCycle,
+      checkoutAttemptId: checkoutAttemptFor(`upgrade:${planId}:${currentSubscription.billingCycle}`),
     });
   };
 

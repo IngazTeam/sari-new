@@ -27,7 +27,9 @@ export function toPlatformTapSettingsView<T extends {
   const testMode = !Boolean(settings.isLive);
   const keyModeMatches = tapKeyMatchesMode(secretKey, testMode)
     && tapPublicKeyMatchesMode(settings.publicKey, testMode);
-  const credentialsVerified = settings.lastTestStatus === 'success' && keyModeMatches;
+  const credentialsVerified = settings.lastTestStatus === 'success'
+    && settings.lastTestMessage === 'verified'
+    && keyModeMatches;
   return {
     ...safe,
     lastTestStatus: credentialsVerified ? 'success' as const : settings.lastTestStatus === 'failed' ? 'failed' as const : null,

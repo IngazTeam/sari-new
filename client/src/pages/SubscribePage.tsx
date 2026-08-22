@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,15 @@ export default function SubscribePage() {
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const checkoutAttempts = useRef(new Map<string, string>());
+
+  const checkoutAttemptFor = (key: string) => {
+    const existing = checkoutAttempts.current.get(key);
+    if (existing) return existing;
+    const created = window.crypto.randomUUID();
+    checkoutAttempts.current.set(key, created);
+    return created;
+  };
 
   // Fetch plans
   const { data: plans, isLoading: plansLoading } = trpc.subscriptionPlans.listPlans.useQuery();
@@ -151,6 +160,7 @@ export default function SubscribePage() {
       const subscriptionResult = await createSubscriptionMutation.mutateAsync({
         planId: selectedPlanId,
         billingCycle,
+        checkoutAttemptId: checkoutAttemptFor(`subscription:${selectedPlanId}:${billingCycle}`),
       });
 
       // Step 3: Redirect to Tap Payment

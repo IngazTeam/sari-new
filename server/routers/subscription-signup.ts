@@ -7,15 +7,15 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import {
-  createPaymentTransaction,
+  createOrReusePaymentTransactionForCheckout,
   getMerchantByUserId,
   getSubscriptionPlanById,
-  getTapSettings,
   getUserById,
-  updatePaymentTransaction,
 } from '../db';
-import { createCharge } from "../_core/tap";
-import { publicPaymentUrls } from '../utils/public-url';
+import {
+  createPlatformSubscriptionTapCharge,
+  SubscriptionTapCheckoutError,
+} from '../payment/subscription-tap-checkout';
 
 function normalizeBillableAmount(amount: number, currency: string): { amount: number; currency: string } {
   const normalizedCurrency = currency.trim().toUpperCase();
@@ -35,12 +35,12 @@ export const subscriptionSignupRouter = router({
    */
   createSubscriptionWithPayment: protectedProcedure
     .input(z.object({
-      planId: z.number(),
+      planId: z.number().int().positive(),
       billingCycle: z.enum(['monthly', 'yearly']),
+      checkoutAttemptId: z.string().uuid(),
       // PEN-02 FIX: Removed userId from input — use ctx.user.id only
-    }))
+    }).strict())
     .mutation(async ({ input, ctx }) => {
-      let transactionId: number | null = null;
       try {
         // PEN-02 FIX: Only use authenticated user ID, never accept from input
         const userId = ctx.user.id;
@@ -78,8 +78,7 @@ export const subscriptionSignupRouter = router({
           : parseFloat(plan.yearlyPrice);
         const { amount, currency } = normalizeBillableAmount(selectedAmount, plan.currency || 'SAR');
 
-        // Create payment transaction
-        const createdTransactionId = await createPaymentTransaction({
+        const { transaction } = await createOrReusePaymentTransactionForCheckout({
           merchantId: merchant.id,
           subscriptionId: null,
           type: 'subscription',
@@ -87,70 +86,43 @@ export const subscriptionSignupRouter = router({
           currency,
           status: 'pending',
           paymentMethod: 'tap',
+          checkoutAttemptId: input.checkoutAttemptId,
           metadata: JSON.stringify({
             planId: input.planId,
             billingCycle: input.billingCycle,
           }),
         });
-        transactionId = createdTransactionId;
-
-        // Get Tap settings
-        const tapSettings = await getTapSettings();
-        if (!tapSettings || !tapSettings.isActive) {
-          throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Payment gateway not configured'
-          });
-        }
-
-        // Create Tap charge
-        const charge = await createCharge({
+        const checkout = await createPlatformSubscriptionTapCharge({
+          transaction,
+          merchantId: merchant.id,
+          checkoutAttemptId: input.checkoutAttemptId,
           amount,
           currency,
-          customer: {
-            first_name: merchant.businessName,
-            // @ts-ignore
-            email: user.email,
-            phone: merchant.phone ? {
-              country_code: '966',
-              number: merchant.phone.replace(/^\+?966/, '').replace(/^0/, ''),
-            } : undefined,
-          },
-          source: { id: 'src_all' },
-          redirect: {
-            url: publicPaymentUrls.callback(),
-          },
-          post: { url: publicPaymentUrls.webhook() },
+          customerName: merchant.businessName,
+          customerEmail: user.email,
+          customerPhone: merchant.phone,
           description: `Subscription: ${plan.name} (${input.billingCycle})`,
-          metadata: {
-            merchantId: merchant.id,
-            transactionId: createdTransactionId,
-            type: 'subscription',
-            planId: input.planId,
-            billingCycle: input.billingCycle,
-          },
-        });
-
-        // Update transaction with Tap charge ID
-        await updatePaymentTransaction(createdTransactionId, {
-          tapChargeId: charge.id,
-          tapResponse: JSON.stringify(charge),
         });
 
         return {
           success: true,
-          transactionId: createdTransactionId,
-          paymentUrl: charge.transaction?.url,
-          chargeId: charge.id,
+          transactionId: transaction.id,
+          paymentUrl: checkout.paymentUrl,
+          chargeId: checkout.chargeId,
         };
       } catch (error: any) {
-        if (transactionId) {
-          await updatePaymentTransaction(transactionId, { status: 'failed' }).catch(() => undefined);
-        }
-        console.error('[Subscription Signup] Error:', error);
-
         if (error instanceof TRPCError) {
           throw error;
+        }
+        if (error instanceof Error && error.message === 'CHECKOUT_ATTEMPT_CONFLICT') {
+          throw new TRPCError({ code: 'CONFLICT', message: 'محاولة الدفع مرتبطة بطلب مختلف؛ أعد تحميل الصفحة' });
+        }
+        if (error instanceof SubscriptionTapCheckoutError) {
+          const code = error.failure === 'gateway_not_ready' ? 'BAD_REQUEST'
+            : error.failure === 'attempt_already_finished' || error.failure === 'charge_identity_conflict'
+              ? 'CONFLICT'
+              : 'BAD_GATEWAY';
+          throw new TRPCError({ code, message: 'تعذر إنشاء جلسة الدفع؛ حاول مرة أخرى' });
         }
 
         throw new TRPCError({

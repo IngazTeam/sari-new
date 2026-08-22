@@ -10843,6 +10843,76 @@ export async function createPaymentTransaction(data: NewPaymentTransaction) {
   return (result as any).insertId;
 }
 
+export async function getPaymentTransactionByMerchantAttempt(
+  merchantId: number,
+  checkoutAttemptId: string,
+) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const results = await db.select().from(paymentTransactions).where(and(
+    eq(paymentTransactions.merchantId, merchantId),
+    eq(paymentTransactions.checkoutAttemptId, checkoutAttemptId.toLowerCase()),
+  )).limit(1);
+  return results[0];
+}
+
+export async function createOrReusePaymentTransactionForCheckout(
+  data: NewPaymentTransaction & { checkoutAttemptId: string },
+) {
+  const checkoutAttemptId = data.checkoutAttemptId.toLowerCase();
+  let transactionId: number;
+  try {
+    transactionId = Number(await createPaymentTransaction({ ...data, checkoutAttemptId }));
+  } catch (error: any) {
+    if (error?.code !== 'ER_DUP_ENTRY') throw error;
+    const existing = await getPaymentTransactionByMerchantAttempt(data.merchantId, checkoutAttemptId);
+    if (!existing) throw error;
+    const sameIntent = existing.type === data.type
+      && existing.subscriptionId === (data.subscriptionId ?? null)
+      && Number(existing.amount) === Number(data.amount)
+      && existing.currency === data.currency
+      && existing.paymentMethod === (data.paymentMethod ?? 'tap')
+      && existing.metadata === (data.metadata ?? null);
+    if (!sameIntent) throw new Error('CHECKOUT_ATTEMPT_CONFLICT');
+    return { transaction: existing, reused: true };
+  }
+
+  const transaction = await getPaymentTransactionById(transactionId);
+  if (!transaction) throw new Error('PAYMENT_TRANSACTION_CREATE_FAILED');
+  return { transaction, reused: false };
+}
+
+export async function attachTapChargeToPaymentTransaction(input: {
+  transactionId: number;
+  merchantId: number;
+  tapChargeId: string;
+  safeTapResponse: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error('Database not available');
+  const result = await db.update(paymentTransactions).set({
+    tapChargeId: input.tapChargeId,
+    tapResponse: input.safeTapResponse,
+  }).where(and(
+    eq(paymentTransactions.id, input.transactionId),
+    eq(paymentTransactions.merchantId, input.merchantId),
+    eq(paymentTransactions.status, 'pending'),
+    or(
+      isNull(paymentTransactions.tapChargeId),
+      eq(paymentTransactions.tapChargeId, input.tapChargeId),
+    ),
+  ));
+  const affectedRows = Number((result as any)[0]?.affectedRows ?? 0);
+  const transaction = await getPaymentTransactionById(input.transactionId);
+  if (!transaction
+    || transaction.merchantId !== input.merchantId
+    || transaction.tapChargeId !== input.tapChargeId
+    || (affectedRows !== 1 && transaction.tapResponse !== input.safeTapResponse)) {
+    throw new Error('PAYMENT_CHARGE_IDENTITY_CONFLICT');
+  }
+  return transaction;
+}
+
 export async function updatePaymentTransaction(id: number, data: Partial<NewPaymentTransaction>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

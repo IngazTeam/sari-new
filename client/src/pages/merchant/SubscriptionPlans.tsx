@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,16 +12,26 @@ export default function SubscriptionPlans() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [selectedPeriod, setSelectedPeriod] = useState<'monthly' | 'yearly'>('monthly');
+  const checkoutAttempts = useRef(new Map<string, string>());
 
   const { data: plans, isLoading } = trpc.subscriptionPlans.listPlans.useQuery();
   const { data: currentSubscription } = trpc.merchantSubscription.getCurrentSubscription.useQuery();
   const subscribe = trpc.merchantSubscription.subscribe.useMutation();
+
+  const checkoutAttemptFor = (key: string) => {
+    const existing = checkoutAttempts.current.get(key);
+    if (existing) return existing;
+    const created = window.crypto.randomUUID();
+    checkoutAttempts.current.set(key, created);
+    return created;
+  };
 
   const handleSubscribe = async (planId: number) => {
     try {
       const result = await subscribe.mutateAsync({
         planId,
         billingCycle: selectedPeriod,
+        checkoutAttemptId: checkoutAttemptFor(`subscription:${planId}:${selectedPeriod}`),
       });
 
       if (result.paymentUrl) {
