@@ -96,3 +96,4 @@ jobs:
           server/auth.adminDeletion.test.ts
           server/auth.zidWebhook.test.ts
           server/auth.zidOAuth.test.ts
+          server/auth.zidConvergence.test.ts

@@ -173,20 +173,6 @@ describe('Zid Integration', () => {
       expect(client).toBeDefined();
     });
 
-    it('should generate authorization URL', async () => {
-      const { ZidClient } = await import('./integrations/zid/zidClient');
-      
-      const client = new ZidClient({
-        clientId: 'test_client_id',
-        clientSecret: 'test_client_secret',
-        redirectUri: 'https://example.com/callback',
-      });
-
-      const authUrl = client.getAuthorizationUrl();
-      expect(authUrl).toContain('oauth.zid.sa');
-      expect(authUrl).toContain('test_client_id');
-      expect(authUrl).toContain('response_type=code');
-    });
   });
 
   describe('Cleanup', () => {

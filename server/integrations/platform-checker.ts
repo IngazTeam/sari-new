@@ -4,12 +4,11 @@
  * يمنع ربط أكثر من منصة تجارة إلكترونية في نفس الوقت
  * لتجنب تضارب البيانات وتكرار الطلبات
  * 
- * ⚠️  Uses Drizzle ORM where schema exists to prevent column name mismatches.
- *     Only zid_settings uses raw SQL (no Drizzle schema defined).
+ * Uses Drizzle ORM for every platform to prevent column-name drift.
  */
 
-import { getDb, getPool, getWooCommerceSettings } from '../db';
-import { sallaConnections } from '../../drizzle/schema';
+import { getDb, getWooCommerceSettings } from '../db';
+import { platformIntegrations, sallaConnections, zidSettings } from '../../drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
 export interface ExistingPlatform {
@@ -56,28 +55,38 @@ export async function checkExistingIntegrations(merchantId: number): Promise<Exi
   }
 
   // ═══════════════════════════════════════════
-  // زد (Zid) — Raw SQL (no Drizzle schema)
-  // TODO: Add Drizzle schema for zid_settings
+  // زد (Zid) — canonical platform integration with a legacy fallback
   // ═══════════════════════════════════════════
   try {
-    const pool = await getPool();
-    if (pool) {
-      const [rows] = await pool.execute(
-        `SELECT * FROM zid_settings WHERE merchant_id = ? AND is_active = 1 LIMIT 1`,
-        [merchantId]
-      );
-      const zidSettings = (rows as any[])?.[0];
-      if (zidSettings) {
-        existingPlatforms.push({
-          platform: 'zid',
-          name: 'زد',
-          storeUrl: zidSettings.store_url || undefined,
-          connectedAt: zidSettings.created_at,
-        });
-      }
+    const db = await getDb();
+    const [canonicalZid] = await db!
+      .select()
+      .from(platformIntegrations)
+      .where(and(
+        eq(platformIntegrations.merchantId, merchantId),
+        eq(platformIntegrations.platformType, 'zid'),
+        eq(platformIntegrations.isActive, 1),
+      ))
+      .limit(1);
+    const [legacyZid] = canonicalZid ? [] : await db!
+      .select()
+      .from(zidSettings)
+      .where(and(
+        eq(zidSettings.merchantId, merchantId),
+        eq(zidSettings.isActive, 1),
+      ))
+      .limit(1);
+    const zid = canonicalZid || legacyZid;
+    if (zid) {
+      existingPlatforms.push({
+        platform: 'zid',
+        name: 'زد',
+        storeUrl: zid.storeUrl || undefined,
+        connectedAt: zid.createdAt ? new Date(zid.createdAt) : null,
+      });
     }
-  } catch (error) {
-    console.error('[Platform Checker] Error checking Zid:', error);
+  } catch {
+    console.error('[Platform Checker] Zid check failed');
   }
 
   // ═══════════════════════════════════════════

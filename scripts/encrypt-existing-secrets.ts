@@ -4,6 +4,7 @@ import {
   merchantPaymentSettings,
   paymentGateways,
   platformIntegrations,
+  zidSettings,
   whatsappConnections,
   whatsappConnectionRequests,
   whatsappInstances,
@@ -111,6 +112,25 @@ async function main() {
     }
     if (Object.keys(changes).length > 0) {
       await db.update(platformIntegrations).set(changes).where(eq(platformIntegrations.id, row.id));
+      updated++;
+    }
+  }
+
+  const legacyZidRows = await db.select({
+    id: zidSettings.id,
+    clientSecret: zidSettings.clientSecret,
+    accessToken: zidSettings.accessToken,
+    managerToken: zidSettings.managerToken,
+    refreshToken: zidSettings.refreshToken,
+  }).from(zidSettings);
+  for (const row of legacyZidRows) {
+    const changes: Record<string, string> = {};
+    for (const key of ['clientSecret', 'accessToken', 'managerToken', 'refreshToken'] as const) {
+      const value = row[key];
+      if (value && !isEncryptedSecret(value)) changes[key] = encryptSecret(value);
+    }
+    if (Object.keys(changes).length > 0) {
+      await db.update(zidSettings).set(changes).where(eq(zidSettings.id, row.id));
       updated++;
     }
   }

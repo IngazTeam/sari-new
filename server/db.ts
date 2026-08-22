@@ -8933,6 +8933,26 @@ export async function getAnalysisStats(merchantId: number): Promise<{
 
 // ==================== Zid Integration Database Functions ====================
 
+const LEGACY_ZID_SECRET_FIELDS = ['clientSecret', 'accessToken', 'managerToken', 'refreshToken'] as const;
+
+function protectLegacyZidSettings(settings: Record<string, any>): Record<string, any> {
+  const protectedSettings = { ...settings };
+  for (const field of LEGACY_ZID_SECRET_FIELDS) {
+    if (typeof protectedSettings[field] === 'string') {
+      protectedSettings[field] = encryptSecret(protectedSettings[field]);
+    }
+  }
+  return protectedSettings;
+}
+
+function revealLegacyZidSettings<T extends Record<string, any>>(settings: T): T {
+  const revealed: Record<string, any> = { ...settings };
+  for (const field of LEGACY_ZID_SECRET_FIELDS) {
+    if (typeof revealed[field] === 'string') revealed[field] = decryptSecret(revealed[field]);
+  }
+  return revealed as T;
+}
+
 /**
  * Get Zid settings for merchant
  */
@@ -8946,7 +8966,7 @@ export async function getZidSettings(merchantId: number) {
     .where(eq(zidSettings.merchantId, merchantId))
     .limit(1);
 
-  return result[0] || null;
+  return result[0] ? revealLegacyZidSettings(result[0]) : null;
 }
 
 /**
@@ -8957,12 +8977,13 @@ export async function upsertZidSettings(merchantId: number, settings: any) {
   if (!db) return null;
 
   const existing = await getZidSettings(merchantId);
+  const protectedSettings = protectLegacyZidSettings(settings);
 
   if (existing) {
     await db
       .update(zidSettings)
       .set({
-        ...settings,
+        ...protectedSettings,
         updatedAt: formatDateForDB(new Date()),
       })
       .where(eq(zidSettings.id, existing.id));
@@ -8973,7 +8994,7 @@ export async function upsertZidSettings(merchantId: number, settings: any) {
       .insert(zidSettings)
       .values({
         merchantId,
-        ...settings,
+        ...protectedSettings,
       });
 
     return { id: Number((result[0] as any).insertId), merchantId, ...settings };

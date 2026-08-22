@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.1 — محدّث بتحصين OAuth زد ونقل الأسرار إلى الخادم\
+**الإصدار:** 3.2 — محدّث بتوحيد مصدر اعتمادات زد وأتمتة الطلب\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -49,6 +49,7 @@
 26. أُغلق محليًا حذف التاجر الإداري الجزئي والجماعي: صار حذف حساب كاملًا مجدولًا وذريًا مع معاينة الأثر، نقل ملكية، إبطال الجلسات وWhatsApp/API/Byaan، وإكمال العامل فقط.
 27. أُغلق محليًا تجاوز مصادقة Zid وتسميم replay وتسريب الاعتمادات: endpoint معتم وBasic Auth لكل متجر، digest فقط، receipts دائمة، تشفير tokens وDTOs منقحة، وربط ذري بلا تكرارات.
 28. أُغلق محليًا تسريب Client Secret في متصفح التاجر وغياب OAuth state: confidential client خادمي، redirect ثابت، state دائم مربوط بالجلسة وأحادي الاستخدام، وفصل صحيح لرمزي Zid مع تشفيرهما.
+29. أُغلق محليًا split-brain بين ربط Zid وأتمتة الطلب: `platform_integrations` مصدر أول، legacy مهاجر ومشفر، كشف منصة صحيح، وفصل ذري للمصدرين.
 
 **قرار الخطة:**
 
@@ -57,7 +58,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.1
+### حالة تنفيذ الجولة 3.2
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -90,8 +91,9 @@
 | حذف الحساب الإداري | مكتمل محليًا/MySQL وstaging معلقان | account-wide DSR ذري، مهلة 24 ساعة، إبطال جميع القنوات، worker-only completion ومنع bulk delete؛ 180/180 بوابة إصدار |
 | تكامل وWebhook زد | مكتمل محليًا/MySQL وZid E2E معلقان | Basic Auth capability، replay دائم وminimized، AES-GCM للاعتمادات، atomic upsert و11 بنتست؛ 191/191 بوابة إصدار |
 | OAuth زد | مكتمل محليًا/MySQL وZid E2E معلقان | confidential client خادمي، state مربوط بالجلسة/المتجر وأحادي الاستخدام، redirect ثابت وصفر أسرار في المتصفح؛ 200/200 بوابة إصدار |
+| مصدر اعتماد Zid وأتمتة الطلب | مكتمل محليًا/MySQL وZid E2E معلقان | canonical-first، legacy encrypted/migrated، فصل ذري، ورؤوس API صحيحة ومنقحة؛ 208/208 بوابة إصدار |
 
-**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة واتساق طلبات deletion، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0017` على staging، ضبط مفاتيح التشفير والـHMAC وMeta/Green و`ZID_CLIENT_ID/ZID_CLIENT_SECRET` من secret manager، تشغيل تشفير الاعتمادات التاريخية، وتدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR كامل يشمل تعليق القنوات والعامل والrollback. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، وتوليد/تسجيل Basic Auth جديد لكل Zid webhook بعد `0014`، واختبار replay والتدوير وحدث order/product رسمي، وتدوير Client Secret الخاص بـZid الذي سبق إدخاله في المتصفح وتثبيت callback ثم اختبار OAuth/sync/refresh، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
+**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة واتساق طلبات deletion، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0018` على staging، ضبط مفاتيح التشفير والـHMAC وMeta/Green و`ZID_CLIENT_ID/ZID_CLIENT_SECRET` من secret manager، تشغيل تشفير الاعتمادات التاريخية بما فيها `zid_settings`، وتدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR كامل يشمل تعليق القنوات والعامل والrollback. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، وتوليد/تسجيل Basic Auth جديد لكل Zid webhook بعد `0014`، واختبار replay والتدوير وحدث order/product رسمي، وتدوير Client Secret الخاص بـZid الذي سبق إدخاله في المتصفح وتثبيت callback ثم اختبار OAuth/sync/refresh وإنشاء draft order من محادثة، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
 
 ### سجل الكوميتات المنفذة
 
@@ -120,6 +122,7 @@
 | `42184a3` | حماية هوية الإدارة ودعوات الفريق وربط القبول بالمتلقي الموثق |
 | `8123681` | حذف الحساب الإداري الذري وإبطال القنوات وإكمال العامل فقط |
 | `8d68348` | تأمين Zid webhook وreplay وتشفير اعتمادات التكامل |
+| `978e11d` | نقل Zid OAuth إلى confidential client خادمي وstate أحادي الاستخدام |
 
 ---
 
@@ -969,6 +972,7 @@ WhatsAppChannel
 | CH-003 | P0 | إرسال الصوت فعليًا عبر WhatsApp | Integrations/Backend/QA | provider ID وتسليم sandbox بلا تكرار |
 | CH-004 | P0 | تأمين تكامل وWebhook زد | Integrations/Backend/QA | Basic Auth لكل متجر، replay دائم، أسرار مشفرة، وعقد Zid/MySQL E2E ناجح |
 | CH-005 | P0 | تحصين OAuth زد وإدارة دورة الرموز | Integrations/Backend/QA | سر الخادم لا يصل للمتصفح، state أحادي الاستخدام، OAuth/sync/refresh E2E ناجحة |
+| CH-006 | P0 | توحيد مصدر اعتماد Zid وأتمتة الطلب | Integrations/Backend/QA | canonical واحد، legacy مهاجر ومشفر، فصل ذري، وdraft order من المحادثة ناجح |
 | QA-001 | P1 | فصل وإصلاح الاختبارات | QA/Developers | صفر فشل في CI |
 | QA-002 | P1 | عقود tRPC وحالات النجاح | Full-stack/QA | صفر سجل شبح أو success وهمي |
 | COM-001 | P1 | الموافقة وإلغاء الاشتراك | Product/Backend | مكتمل للحساب محليًا؛ suppression حملات العملاء معلق |
@@ -1021,6 +1025,7 @@ WhatsAppChannel
 - [x] حذف الحساب الإداري ذري ومؤجل محليًا؛ 180/180 بوابة إصدار وDrizzle/build ناجحة، وعقدا MySQL وتمرين staging للحذف/الاستعادة معلقان.
 - [x] ingress زد محصن محليًا؛ 191/191 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0014`–`0015` وعقدا MySQL وتدوير/إرسال Zid المنشور معلقة.
 - [x] OAuth زد محصن محليًا؛ 200/200 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0016`–`0017` وعقود MySQL وتدوير secret وتجربة Zid المنشورة معلقة.
+- [x] مصدر اعتماد Zid موحد محليًا؛ 208/208 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0018` وعقود MySQL وتشفير legacy وتجربة draft order منشورة معلقة.
 - [ ] migrations موحدة للمسارات المستخدمة.
 - [ ] قناة Meta الرسمية جاهزة أو خطة انتقال معتمدة بزمن محدد.
 - [ ] الموافقة وإلغاء الاشتراك يعملان.

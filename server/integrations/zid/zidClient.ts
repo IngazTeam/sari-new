@@ -9,6 +9,7 @@ interface ZidConfig {
   redirectUri: string;
   accessToken?: string;
   managerToken?: string;
+  fetchImpl?: typeof fetch;
 }
 
 interface ZidTokenResponse {
@@ -161,87 +162,10 @@ interface ZidShippingMethod {
 
 export class ZidClient {
   private baseUrl = 'https://api.zid.sa/v1';
-  private oauthUrl = 'https://oauth.zid.sa';
   private config: ZidConfig;
 
   constructor(config: ZidConfig) {
     this.config = config;
-  }
-
-  /**
-   * الحصول على رابط التفويض OAuth
-   */
-  getAuthorizationUrl(): string {
-    const params = new URLSearchParams({
-      client_id: this.config.clientId,
-      redirect_uri: this.config.redirectUri,
-      response_type: 'code',
-    });
-
-    return `${this.oauthUrl}/oauth/authorize?${params.toString()}`;
-  }
-
-  /**
-   * تبديل الكود بـ Access Token
-   */
-  async exchangeCodeForToken(code: string): Promise<ZidTokenResponse> {
-    const response = await fetch(`${this.oauthUrl}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        grant_type: 'authorization_code',
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
-        redirect_uri: this.config.redirectUri,
-        code,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`فشل في الحصول على Token: ${error}`);
-    }
-
-    const data = await response.json();
-    
-    // حفظ الـ tokens
-    this.config.accessToken = data.access_token;
-    this.config.managerToken = data.Authorization;
-
-    return data;
-  }
-
-  /**
-   * تجديد Access Token
-   */
-  async refreshAccessToken(refreshToken: string): Promise<ZidTokenResponse> {
-    const response = await fetch(`${this.oauthUrl}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        grant_type: 'refresh_token',
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
-        refresh_token: refreshToken,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`فشل في تجديد Token: ${error}`);
-    }
-
-    const data = await response.json();
-    
-    // تحديث الـ tokens
-    this.config.accessToken = data.access_token;
-    this.config.managerToken = data.Authorization;
-
-    return data;
   }
 
   /**
@@ -256,26 +180,33 @@ export class ZidClient {
     }
 
     const url = `${this.baseUrl}${endpoint}`;
+    const authorizationToken = this.config.managerToken.trim().replace(/^Bearer\s+/i, '');
+    const managerToken = this.config.accessToken.trim().replace(/^Bearer\s+/i, '');
+    if (!authorizationToken || !managerToken) throw new Error('ZID_API_CREDENTIALS_INVALID');
     const headers = {
+      ...options.headers,
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'Accept-Language': 'ar',
-      'Authorization': `Bearer ${this.config.managerToken}`,
-      'X-Manager-Token': this.config.accessToken,
-      ...options.headers,
+      'Authorization': `Bearer ${authorizationToken}`,
+      'X-Manager-Token': managerToken,
     };
 
-    const response = await fetch(url, {
+    const response = await (this.config.fetchImpl || fetch)(url, {
       ...options,
       headers,
+      signal: options.signal || AbortSignal.timeout(15_000),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Zid API Error: ${response.status} - ${error}`);
+      throw new Error(`ZID_API_REQUEST_FAILED_${response.status}`);
     }
 
-    return response.json();
+    try {
+      return await response.json();
+    } catch {
+      throw new Error('ZID_API_RESPONSE_INVALID');
+    }
   }
 
   // ==================== Products APIs ====================
@@ -621,8 +552,7 @@ export class ZidClient {
     try {
       const { products } = await this.getProducts(1, 100);
       return products.find(p => p.sku === sku) || null;
-    } catch (error) {
-      console.error('Error finding product by SKU:', error);
+    } catch {
       return null;
     }
   }
@@ -634,8 +564,7 @@ export class ZidClient {
     try {
       const { payment_methods } = await this.getPaymentMethods();
       return payment_methods.find(pm => pm.code === 'payment_link.zidpay' && pm.enabled) || null;
-    } catch (error) {
-      console.error('Error getting payment link method:', error);
+    } catch {
       return null;
     }
   }
@@ -647,8 +576,7 @@ export class ZidClient {
     try {
       const { payment_methods } = await this.getPaymentMethods();
       return payment_methods.find(pm => pm.code === 'cod' && pm.enabled) || null;
-    } catch (error) {
-      console.error('Error getting COD payment method:', error);
+    } catch {
       return null;
     }
   }

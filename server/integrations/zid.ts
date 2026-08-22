@@ -12,7 +12,6 @@ import {
 import {
   createIntegration,
   createSyncLog,
-  deleteIntegrationByType,
   getCustomerCountByMerchant,
   getIntegrationByType,
   getMerchantByUserId,
@@ -25,6 +24,7 @@ import {
   upsertOrderFromZid,
   upsertProductFromZid,
 } from '../db';
+import { deleteAllZidConnections, deleteZidSettings as deleteLegacyZidSettings } from '../db_zid';
 
 // Zid API Base URL
 const ZID_API_BASE = 'https://api.zid.sa/v1';
@@ -32,23 +32,33 @@ const ZID_API_BASE = 'https://api.zid.sa/v1';
 // Helper function to make Zid API requests
 // Zid v1 API requires both Authorization (OAuth) and X-Manager-Token headers
 async function zidApiRequest(endpoint: string, accessToken: string, managerToken?: string, options: RequestInit = {}) {
+  const authorizationToken = accessToken.trim().replace(/^Bearer\s+/i, '');
+  const normalizedManagerToken = managerToken?.trim().replace(/^Bearer\s+/i, '');
+  if (!authorizationToken || (managerToken !== undefined && !normalizedManagerToken)) {
+    throw new Error('ZID_API_CREDENTIALS_INVALID');
+  }
   const response = await fetch(`${ZID_API_BASE}${endpoint}`, {
     ...options,
     headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      ...(managerToken ? { 'X-Manager-Token': managerToken } : {}),
+      ...options.headers,
+      'Authorization': `Bearer ${authorizationToken}`,
+      ...(normalizedManagerToken ? { 'X-Manager-Token': normalizedManagerToken } : {}),
       'Content-Type': 'application/json',
       'Accept': 'application/json',
       'Accept-Language': 'ar',
-      ...options.headers,
     },
+    signal: options.signal || AbortSignal.timeout(15_000),
   });
 
   if (!response.ok) {
     throw new Error(`ZID_API_REQUEST_FAILED_${response.status}`);
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch {
+    throw new Error('ZID_API_RESPONSE_INVALID');
+  }
 }
 
 // Zid Integration Router
@@ -85,9 +95,9 @@ export const zidRouter = router({
   // Connect to Zid store
   connect: protectedProcedure
     .input(z.object({
-      storeUrl: z.string().url(),
-      accessToken: z.string(),
-      managerToken: z.string().optional(),
+      storeUrl: z.string().url().refine(value => new URL(value).protocol === 'https:', 'HTTPS is required'),
+      accessToken: z.string().min(16).max(16_384),
+      managerToken: z.string().min(16).max(16_384).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
@@ -123,12 +133,15 @@ export const zidRouter = router({
             managerToken: encryptSecret(input.managerToken || input.accessToken),
           }),
         });
+        await deleteLegacyZidSettings(merchant.id).catch(() => {
+          console.warn('[Zid] Legacy credential cleanup pending');
+        });
 
         return { success: true, message: 'تم ربط متجر زد بنجاح' };
-      } catch (error: any) {
+      } catch {
         throw new TRPCError({
           code: 'BAD_REQUEST',
-          message: error.message || 'فشل الاتصال بمتجر زد',
+          message: 'فشل الاتصال بمتجر زد',
         });
       }
     }),
@@ -209,6 +222,9 @@ export const zidRouter = router({
               : null,
           }),
         });
+        await deleteLegacyZidSettings(merchant.id).catch(() => {
+          console.warn('[Zid] Legacy credential cleanup pending');
+        });
 
         return { success: true, message: 'تم ربط متجر زد بنجاح عبر OAuth' };
       } catch (error) {
@@ -227,7 +243,7 @@ export const zidRouter = router({
     .mutation(async ({ ctx }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      await deleteIntegrationByType(merchant.id, 'zid');
+      await deleteAllZidConnections(merchant.id);
       return { success: true, message: 'تم فصل متجر زد' };
     }),
 

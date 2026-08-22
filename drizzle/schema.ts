@@ -1598,7 +1598,9 @@ export const zidSettings = mysqlTable("zid_settings", {
 
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-});
+}, table => [
+	uniqueIndex("zid_settings_merchant_unique").on(table.merchantId),
+]);
 
 export const zidSyncLogs = mysqlTable("zid_sync_logs", {
 	id: int().autoincrement().notNull().primaryKey(),
