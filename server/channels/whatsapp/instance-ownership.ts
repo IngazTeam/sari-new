@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+import { TRPCError } from '@trpc/server';
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { privacyHashExact } from '../../accounts/privacy-hash';
 
@@ -17,11 +19,19 @@ export class WhatsAppInstanceLockBusyError extends Error {
   }
 }
 
-export class WhatsAppPhoneOwnershipConflictError extends Error {
+export class WhatsAppPhoneOwnershipConflictError extends TRPCError {
   constructor() {
-    super('Verified WhatsApp phone transfer required');
+    super({ code: 'CONFLICT', message: 'Verified WhatsApp phone transfer required' });
     this.name = 'WhatsAppPhoneOwnershipConflictError';
   }
+}
+
+export function isWhatsAppActivePhoneUniqueConflict(error: unknown): boolean {
+  const candidate = error as { code?: unknown; sqlMessage?: unknown; message?: unknown } | null;
+  if (candidate?.code !== 'ER_DUP_ENTRY') return false;
+  const detail = `${String(candidate.sqlMessage || '')} ${String(candidate.message || '')}`;
+  return detail.includes('whatsapp_instances_active_phone_identity_unique')
+    || detail.includes('active_phone_identity_hash');
 }
 
 export function canonicalWhatsAppPhoneDigits(value: string): string {
@@ -32,6 +42,10 @@ export function canonicalWhatsAppPhoneDigits(value: string): string {
   if (digits.startsWith('00')) digits = digits.slice(2);
   if (!/^\d{7,15}$/.test(digits)) throw new Error('Invalid WhatsApp phone number');
   return digits;
+}
+
+export function activeWhatsAppPhoneIdentityHash(phoneNumber: string): string {
+  return crypto.createHash('sha256').update(canonicalWhatsAppPhoneDigits(phoneNumber), 'utf8').digest('hex');
 }
 
 function instanceLockName(namespace: string): string {
@@ -80,7 +94,8 @@ export async function assertWhatsAppPhoneAvailable(
   excludeInstanceId?: number,
 ): Promise<void> {
   const digits = canonicalWhatsAppPhoneDigits(phoneNumber);
-  const params: Array<string | number> = [digits, `00${digits}`];
+  const identityHash = activeWhatsAppPhoneIdentityHash(digits);
+  const params: Array<string | number> = [identityHash];
   let excludeSql = '';
   if (excludeInstanceId !== undefined) {
     if (!Number.isSafeInteger(excludeInstanceId) || excludeInstanceId < 1) {
@@ -93,8 +108,7 @@ export async function assertWhatsAppPhoneAvailable(
     `SELECT id
        FROM whatsapp_instances
       WHERE status = 'active'
-        AND phone_number IS NOT NULL
-        AND REGEXP_REPLACE(phone_number, '[^0-9]', '') IN (?, ?)${excludeSql}
+        AND active_phone_identity_hash = ?${excludeSql}
       LIMIT 1
       FOR UPDATE`,
     params,

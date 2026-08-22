@@ -90,7 +90,9 @@ async function suspendAccountForDeletion(
   );
   await connection.execute(
     `UPDATE whatsapp_instances wi JOIN merchants m ON m.id = wi.merchant_id
-        SET wi.status = 'inactive', wi.updated_at = ? WHERE m.userId = ?`,
+        SET wi.status = 'inactive', wi.is_primary = 0,
+            wi.active_phone_identity_hash = NULL, wi.updated_at = ?
+      WHERE m.userId = ?`,
     [timestamp, userId],
   );
   await connection.execute(

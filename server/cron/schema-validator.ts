@@ -37,7 +37,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'bot_settings', columns: ['auto_discount_enabled', 'auto_discount_max_percent', 'auto_discount_expire_hours', 'custom_instructions'] },
   { table: 'whatsappConnections', columns: ['apiToken'] },
   { table: 'whatsapp_connection_requests', columns: ['apiToken'] },
-  { table: 'whatsapp_instances', columns: ['provider', 'webhook_token_hash', 'phone_number_id'] },
+  { table: 'whatsapp_instances', columns: ['provider', 'webhook_token_hash', 'phone_number_id', 'active_phone_identity_hash'] },
   { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
   { table: 'payment_gateways' },
   { table: 'subscription_plans', columns: ['conversation_limit', 'message_limit', 'voice_message_limit'] },

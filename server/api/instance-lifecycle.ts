@@ -3,7 +3,9 @@ import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import {
   acquireWhatsAppInstanceLock,
+  activeWhatsAppPhoneIdentityHash,
   assertWhatsAppPhoneAvailable,
+  isWhatsAppActivePhoneUniqueConflict,
   releaseWhatsAppInstanceLocks,
   WhatsAppPhoneOwnershipConflictError,
   whatsAppMerchantLockNamespace,
@@ -108,7 +110,7 @@ export function normalizeRestInstanceMutationBody(value: unknown): RestInstanceM
 async function assertInstanceSchema(): Promise<void> {
   await assertRuntimeSchema('REST WhatsApp instance lifecycle', [{
     table: 'whatsapp_instances',
-    columns: ['id', 'merchant_id', 'instance_id', 'phone_number', 'status', 'is_primary', 'created_at'],
+    columns: ['id', 'merchant_id', 'instance_id', 'phone_number', 'active_phone_identity_hash', 'status', 'is_primary', 'created_at'],
   }]);
 }
 
@@ -219,6 +221,9 @@ export async function mutateRestWhatsAppInstance(
       ? target.status
       : normalized.isActive ? 'active' : 'inactive';
     const finalActive = finalStatus === 'active';
+    const activePhoneIdentityHash = finalActive && target.phoneNumber
+      ? activeWhatsAppPhoneIdentityHash(target.phoneNumber)
+      : null;
     if (normalized.isPrimary === true && !finalActive) {
       await connection.rollback();
       transactionOpen = false;
@@ -248,9 +253,9 @@ export async function mutateRestWhatsAppInstance(
     }
     await connection.execute(
       `UPDATE whatsapp_instances
-          SET status = ?, is_primary = ?, updated_at = NOW()
+          SET status = ?, is_primary = ?, active_phone_identity_hash = ?, updated_at = NOW()
         WHERE id = ? AND merchant_id = ?`,
-      [finalStatus, wantsPrimary && finalActive ? 1 : 0, instanceId, merchantId],
+      [finalStatus, wantsPrimary && finalActive ? 1 : 0, activePhoneIdentityHash, instanceId, merchantId],
     );
 
     const targetLostPrimary = Number(target.isPrimary) === 1 && (!finalActive || normalized.isPrimary === false);
@@ -307,6 +312,9 @@ export async function mutateRestWhatsAppInstance(
     return { kind: 'updated', instance: mapPublicInstance(updatedRows[0]) };
   } catch (error) {
     if (transactionOpen) await connection.rollback();
+    if (isWhatsAppActivePhoneUniqueConflict(error)) {
+      return { kind: 'phone_conflict' };
+    }
     throw error;
   } finally {
     const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);

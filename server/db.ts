@@ -5,9 +5,11 @@ import { hashSessionId } from './_core/session-security';
 import { buildUsageMetric } from './usage-metrics';
 import {
   acquireWhatsAppInstanceLock,
+  activeWhatsAppPhoneIdentityHash,
   assertWhatsAppPhoneAvailable,
-  canonicalWhatsAppPhoneDigits,
+  isWhatsAppActivePhoneUniqueConflict,
   releaseWhatsAppInstanceLocks,
+  WhatsAppPhoneOwnershipConflictError,
   whatsAppMerchantLockNamespace,
   whatsAppPhoneLockNamespace,
 } from './channels/whatsapp/instance-ownership';
@@ -2944,8 +2946,7 @@ export async function getActiveInstanceByPhoneNumber(
 ): Promise<Pick<WhatsAppInstance, 'id' | 'merchantId'> | undefined> {
   const pool = await getPool();
   if (!pool) return undefined;
-  const digits = canonicalWhatsAppPhoneDigits(phoneNumber);
-  const params: Array<string | number> = [digits, `00${digits}`];
+  const params: Array<string | number> = [activeWhatsAppPhoneIdentityHash(phoneNumber)];
   let merchantSql = '';
   if (excludeMerchantId !== undefined) {
     if (!Number.isSafeInteger(excludeMerchantId) || excludeMerchantId < 1) {
@@ -2958,8 +2959,7 @@ export async function getActiveInstanceByPhoneNumber(
     `SELECT id, merchant_id AS merchantId
        FROM whatsapp_instances
       WHERE status = 'active'
-        AND phone_number IS NOT NULL
-        AND REGEXP_REPLACE(phone_number, '[^0-9]', '') IN (?, ?)${merchantSql}
+        AND active_phone_identity_hash = ?${merchantSql}
       LIMIT 1`,
     params,
   );
@@ -3001,11 +3001,19 @@ export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Prom
       const [instance] = await tx.insert(whatsappInstances).values({
         ...data,
         isPrimary: data.status === 'active' ? data.isPrimary : 0,
+        activePhoneIdentityHash: data.status === 'active' && data.phoneNumber
+          ? activeWhatsAppPhoneIdentityHash(data.phoneNumber)
+          : null,
         token: encryptSecret(data.token),
       });
       return Number(instance.insertId);
     });
     return getWhatsAppInstanceById(insertId);
+  } catch (error) {
+    if (isWhatsAppActivePhoneUniqueConflict(error)) {
+      throw new WhatsAppPhoneOwnershipConflictError();
+    }
+    throw error;
   } finally {
     const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
     if (releasedAll) connection.release();
@@ -3126,6 +3134,9 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
         .set({
           ...data,
           isPrimary: finalPrimary ? 1 : 0,
+          activePhoneIdentityHash: finalStatus === 'active' && finalPhoneNumber
+            ? activeWhatsAppPhoneIdentityHash(finalPhoneNumber)
+            : null,
           ...(data.token !== undefined && { token: encryptSecret(data.token) }),
           updatedAt: formatDateForDB(new Date()),
         })
@@ -3155,6 +3166,11 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
         }
       }
     });
+  } catch (error) {
+    if (isWhatsAppActivePhoneUniqueConflict(error)) {
+      throw new WhatsAppPhoneOwnershipConflictError();
+    }
+    throw error;
   } finally {
     const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
     if (releasedAll) connection.release();
@@ -3258,7 +3274,12 @@ export async function markWhatsAppInstanceExpired(id: number): Promise<void> {
   if (!db) return;
 
   await db.update(whatsappInstances)
-    .set({ status: 'expired', updatedAt: formatDateForDB(new Date()) })
+    .set({
+      status: 'expired',
+      isPrimary: 0,
+      activePhoneIdentityHash: null,
+      updatedAt: formatDateForDB(new Date()),
+    })
     .where(eq(whatsappInstances.id, id));
 }
 

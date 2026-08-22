@@ -1054,6 +1054,10 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 	phoneNumberId: varchar("phone_number_id", { length: 255 }),
 	webhookTokenHash: varchar("webhook_token_hash", { length: 64 }),
 	phoneNumber: varchar("phone_number", { length: 20 }),
+	// SHA-256 of the canonical phone digits while active; NULL otherwise. The
+	// unique index is the database-level last line of defence against two tenants
+	// owning the same active number even if an application lock is bypassed.
+	activePhoneIdentityHash: varchar("active_phone_identity_hash", { length: 64 }),
 	webhookUrl: text("webhook_url"),
 	status: mysqlEnum(['active', 'inactive', 'pending', 'expired']).default('pending').notNull(),
 	isPrimary: tinyint("is_primary").default(0).notNull(),
@@ -1065,6 +1069,7 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 }, (table) => [
 	uniqueIndex("uq_whatsapp_instance_id").on(table.instanceId),
+	uniqueIndex("whatsapp_instances_active_phone_identity_unique").on(table.activePhoneIdentityHash),
 	index("idx_whatsapp_provider_phone_id").on(table.provider, table.phoneNumberId),
 ]);
 

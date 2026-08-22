@@ -218,6 +218,13 @@
       "when": 1787502000000,
       "tag": "0030_lame_frog_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1787505600000,
+      "tag": "0031_striped_hemingway",
+      "breakpoints": true
     }
   ]
 }

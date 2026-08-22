@@ -6,7 +6,10 @@ import {
   setWhatsAppInstanceAsPrimary,
   updateWhatsAppInstance,
 } from './db';
-import { WhatsAppPhoneOwnershipConflictError } from './channels/whatsapp/instance-ownership';
+import {
+  activeWhatsAppPhoneIdentityHash,
+  WhatsAppPhoneOwnershipConflictError,
+} from './channels/whatsapp/instance-ownership';
 
 const TEST_PREFIX = 'ci-wa-own-';
 
@@ -138,5 +141,27 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
     expect(rows).toHaveLength(2);
     expect(rows.filter(row => Number(row.isPrimary) === 1)).toHaveLength(1);
     expect(rows.every(row => Number(row.merchantId) === merchantId)).toBe(true);
+  });
+
+  it('rejects a conflicting active owner even when SQL bypasses application locks', async () => {
+    const merchantA = await createMerchant('db-unique-a');
+    const merchantB = await createMerchant('db-unique-b');
+    const phoneNumber = '+966504445566';
+    await createInstance(merchantA, 'db-unique-a', phoneNumber);
+    const pool = await getPool();
+    if (!pool) throw new Error('Database not initialized');
+
+    await expect(pool.execute(
+      `INSERT INTO whatsapp_instances (
+         merchant_id, provider, instance_id, token, phone_number,
+         active_phone_identity_hash, status, is_primary
+       ) VALUES (?, 'mock', ?, 'direct-sql-token', ?, ?, 'active', 0)`,
+      [
+        merchantB,
+        `${TEST_PREFIX}db-bypass-${crypto.randomUUID().slice(0, 12)}`,
+        '00966504445566',
+        activeWhatsAppPhoneIdentityHash(phoneNumber),
+      ],
+    )).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
   });
 });
