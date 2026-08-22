@@ -1,12 +1,11 @@
 import { type Express } from "express";
-import express from "express";
-import compression from "compression";
 import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+import { classifySpaRoute } from "@shared/spa-route-policy";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -20,6 +19,27 @@ export async function setupVite(app: Express, server: Server) {
     configFile: false,
     server: serverOptions,
     appType: "custom",
+  });
+
+  // Apply the production route semantics to document navigations in dev while
+  // leaving Vite source/module requests untouched.
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/') || req.path.startsWith('/webhooks/')) return next();
+    if (!String(req.headers.accept || '').includes('text/html')) return next();
+
+    const decision = classifySpaRoute(req.originalUrl);
+    if (decision.kind === 'redirect') {
+      const queryIndex = req.originalUrl.indexOf('?');
+      const query = queryIndex >= 0 ? req.originalUrl.slice(queryIndex) : '';
+      return res.redirect(308, `${decision.target}${query}`);
+    }
+    if (decision.kind === 'sensitive') {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+      return res.status(404).type('text/plain').send('Not Found');
+    }
+    res.locals.spaStatus = decision.kind === 'known' ? 200 : 404;
+    if (res.locals.spaStatus === 404) res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    return next();
   });
 
   // Middleware filter: skip Vite for API and webhook routes
@@ -60,40 +80,10 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`
       );
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      res.status(res.locals.spaStatus || 200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
     }
-  });
-}
-
-export function serveStatic(app: Express) {
-  const distPath =
-    path.resolve(import.meta.dirname, "public");
-
-  // Enable Gzip compression for all responses
-  app.use(compression());
-
-  // Serve hashed assets with long-term cache (1 year)
-  app.use(
-    "/assets",
-    express.static(path.join(distPath, "assets"), {
-      maxAge: "1y",
-      immutable: true,
-    })
-  );
-
-  // Serve other static files with short cache (1 hour)
-  app.use(
-    express.static(distPath, {
-      maxAge: "1h",
-    })
-  );
-
-  // SPA fallback - no cache for HTML
-  app.use("*", (_req, res) => {
-    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-    res.sendFile(path.join(distPath, "index.html"));
   });
 }

@@ -1,52 +1,60 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { AlertCircle, Home } from "lucide-react";
-import { useLocation } from "wouter";
+import { useTranslation } from 'react-i18next';
+import { Link } from 'wouter';
+import { AlertCircle, Headphones, Home } from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { SeoHead } from '@/components/SeoHead';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function NotFound() {
-  const [, setLocation] = useLocation();
-
-  const handleGoHome = () => {
-    setLocation("/");
-  };
+  const { t, i18n } = useTranslation();
+  const isArabic = (i18n.resolvedLanguage || i18n.language || 'ar').startsWith('ar');
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-      <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-        <CardContent className="pt-8 pb-8 text-center">
-          <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="absolute inset-0 bg-red-100 rounded-full animate-pulse" />
-              <AlertCircle className="relative h-16 w-16 text-red-500" />
+    <div className="min-h-screen flex flex-col bg-background" dir={isArabic ? 'rtl' : 'ltr'}>
+      <SeoHead
+        title={t('publicUx.notFound.pageTitle')}
+        description={t('publicUx.notFound.metaDescription')}
+        noindex
+      />
+      <Navbar />
+
+      <main className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-background py-16">
+        <Card className="w-full max-w-lg mx-4 shadow-lg border-0 bg-background/90 backdrop-blur-sm">
+          <CardContent className="py-10 text-center">
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-destructive/10 rounded-full" />
+                <AlertCircle aria-hidden="true" className="relative h-16 w-16 text-destructive" />
+              </div>
             </div>
-          </div>
 
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">404</h1>
+            <p className="text-sm font-semibold tracking-widest text-muted-foreground">404</p>
+            <h1 className="text-3xl font-bold mt-2">{t('publicUx.notFound.title')}</h1>
+            <p className="text-muted-foreground mt-4 mb-8 leading-relaxed">
+              {t('publicUx.notFound.description')}
+            </p>
 
-          <h2 className="text-xl font-semibold text-slate-700 mb-4">
-            Page Not Found
-          </h2>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild>
+                <Link href="/">
+                  <Home aria-hidden="true" className={`h-4 w-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                  {t('publicUx.notFound.home')}
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/support">
+                  <Headphones aria-hidden="true" className={`h-4 w-4 ${isArabic ? 'ml-2' : 'mr-2'}`} />
+                  {t('publicUx.notFound.support')}
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </main>
 
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Sorry, the page you are looking for doesn't exist.
-            <br />
-            It may have been moved or deleted.
-          </p>
-
-          <div
-            id="not-found-button-group"
-            className="flex flex-col sm:flex-row gap-3 justify-center"
-          >
-            <Button
-              onClick={handleGoHome}
-              className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go Home
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Footer />
     </div>
   );
 }

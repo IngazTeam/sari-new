@@ -89,6 +89,22 @@ const publicUxEn: PublicUxCopy = {
     faqSecurityQuestion: 'What should I never include in a ticket?',
     faqSecurityAnswer: 'Never send a password, verification code, API key, or payment-card data. The issue description, time, and affected steps are enough.',
   },
+  navigation: {
+    languageLabel: 'Language',
+    switchLanguage: 'Change site language',
+    menuOpen: 'Open navigation menu',
+    menuClose: 'Close navigation menu',
+    mobileMenu: 'Mobile navigation',
+    industries: 'Industries',
+  },
+  notFound: {
+    pageTitle: 'Page not found | Sari',
+    metaDescription: 'The requested page could not be found on Sari.',
+    title: 'Page not found',
+    description: 'The link may be outdated or the page may have moved. Use the home page, or contact support if you expected it to exist.',
+    home: 'Go to home page',
+    support: 'Open support',
+  },
 };
 
 export default publicUxEn;

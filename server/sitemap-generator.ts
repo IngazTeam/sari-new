@@ -19,8 +19,6 @@ export async function generateSitemapIndex(): Promise<string> {
   const today = new Date().toISOString().split('T')[0];
   const sitemaps = [
     { loc: `${BASE_URL}/sitemap-pages.xml`, lastmod: today },
-    { loc: `${BASE_URL}/sitemap-blog.xml`, lastmod: today },
-    { loc: `${BASE_URL}/sitemap-products.xml`, lastmod: today },
   ];
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
@@ -66,21 +64,6 @@ export async function generatePagesSitemap(): Promise<string> {
       changefreq: 'monthly',
       priority: 0.9,
     },
-    {
-      loc: `${BASE_URL}/solutions/sales`,
-      changefreq: 'monthly',
-      priority: 0.8,
-    },
-    {
-      loc: `${BASE_URL}/solutions/marketing`,
-      changefreq: 'monthly',
-      priority: 0.8,
-    },
-    {
-      loc: `${BASE_URL}/solutions/support`,
-      changefreq: 'monthly',
-      priority: 0.8,
-    },
     // ─── SEO Money Pages ───
     {
       loc: `${BASE_URL}/ai-whatsapp-sales-agent`,
@@ -116,15 +99,6 @@ export async function generatePagesSitemap(): Promise<string> {
       alternates: [
         { lang: 'ar', href: `${BASE_URL}/ai-customer-service-whatsapp` },
         { lang: 'en', href: `${BASE_URL}/ai-customer-service-whatsapp?lang=en` },
-      ],
-    },
-    {
-      loc: `${BASE_URL}/conversational-commerce-platform`,
-      changefreq: 'weekly',
-      priority: 0.9,
-      alternates: [
-        { lang: 'ar', href: `${BASE_URL}/conversational-commerce-platform` },
-        { lang: 'en', href: `${BASE_URL}/conversational-commerce-platform?lang=en` },
       ],
     },
     // ─── SEO Vertical Industry Pages — Arabic only ───
@@ -256,15 +230,6 @@ export async function generatePagesSitemap(): Promise<string> {
         { lang: 'en', href: `${BASE_URL}/docs/whatsapp-payment-guide?lang=en` },
       ],
     },
-    {
-      loc: `${BASE_URL}/docs/ai-sales-guide`,
-      changefreq: 'monthly',
-      priority: 0.85,
-      alternates: [
-        { lang: 'ar', href: `${BASE_URL}/docs/ai-sales-guide` },
-        { lang: 'en', href: `${BASE_URL}/docs/ai-sales-guide?lang=en` },
-      ],
-    },
     // ─── Standard Pages ───
     {
       loc: `${BASE_URL}/resources/blog`,
@@ -287,9 +252,9 @@ export async function generatePagesSitemap(): Promise<string> {
       priority: 0.6,
     },
     {
-      loc: `${BASE_URL}/company/contact`,
-      changefreq: 'yearly',
-      priority: 0.6,
+      loc: `${BASE_URL}/support`,
+      changefreq: 'monthly',
+      priority: 0.7,
     },
     {
       loc: `${BASE_URL}/company/terms`,
@@ -301,16 +266,6 @@ export async function generatePagesSitemap(): Promise<string> {
       changefreq: 'yearly',
       priority: 0.4,
     },
-    {
-      loc: `${BASE_URL}/login`,
-      changefreq: 'yearly',
-      priority: 0.3,
-    },
-    {
-      loc: `${BASE_URL}/signup`,
-      changefreq: 'yearly',
-      priority: 0.5,
-    },
   ];
 
   return generateSitemap(pages);
@@ -320,57 +275,14 @@ export async function generatePagesSitemap(): Promise<string> {
  * Generate sitemap for blog posts (dynamic from DB when available)
  */
 export async function generateBlogSitemap(): Promise<string> {
-  const pages: SitemapUrl[] = [
-    {
-      loc: `${BASE_URL}/blog/getting-started-with-sari`,
-      lastmod: '2024-01-15',
-      changefreq: 'monthly',
-      priority: 0.8,
-    },
-    {
-      loc: `${BASE_URL}/blog/whatsapp-marketing-tips`,
-      lastmod: '2024-01-10',
-      changefreq: 'monthly',
-      priority: 0.8,
-    },
-    {
-      loc: `${BASE_URL}/blog/ai-chatbot-best-practices`,
-      lastmod: '2024-01-05',
-      changefreq: 'monthly',
-      priority: 0.8,
-    },
-  ];
-
-  return generateSitemap(pages);
+  return generateSitemap([]);
 }
 
 /**
  * Generate sitemap for products
  */
 export async function generateProductsSitemap(): Promise<string> {
-  const today = new Date().toISOString().split('T')[0];
-  const pages: SitemapUrl[] = [
-    {
-      loc: `${BASE_URL}/products/ai-sales-agent`,
-      lastmod: today,
-      changefreq: 'monthly',
-      priority: 0.9,
-    },
-    {
-      loc: `${BASE_URL}/products/marketing-automation`,
-      lastmod: today,
-      changefreq: 'monthly',
-      priority: 0.9,
-    },
-    {
-      loc: `${BASE_URL}/products/customer-support`,
-      lastmod: today,
-      changefreq: 'monthly',
-      priority: 0.9,
-    },
-  ];
-
-  return generateSitemap(pages);
+  return generateSitemap([]);
 }
 
 /**

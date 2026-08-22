@@ -25,11 +25,22 @@ export const supportCopyKeys = [
   'faqSecurityAnswer',
 ] as const;
 
+export const navigationCopyKeys = [
+  'languageLabel', 'switchLanguage', 'menuOpen', 'menuClose',
+  'mobileMenu', 'industries',
+] as const;
+
+export const notFoundCopyKeys = [
+  'pageTitle', 'metaDescription', 'title', 'description', 'home', 'support',
+] as const;
+
 type CopySection<Keys extends readonly string[]> = Record<Keys[number], string>;
 
 export type PublicUxCopy = {
   pricing: CopySection<typeof pricingCopyKeys>;
   support: CopySection<typeof supportCopyKeys>;
+  navigation: CopySection<typeof navigationCopyKeys>;
+  notFound: CopySection<typeof notFoundCopyKeys>;
 };
 
 export function flattenPublicUxKeys(copy: PublicUxCopy): string[] {

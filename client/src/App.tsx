@@ -1,6 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
 import { Route, Switch, Redirect } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -37,6 +36,7 @@ const lazyLoad = (importFn: () => Promise<{ default: React.ComponentType<any> }>
 };
 
 // Public pages - lazy loaded
+const NotFound = lazyLoad(() => import("./pages/NotFound"));
 const Home = lazyLoad(() => import("./pages/Home"));
 const Login = lazyLoad(() => import("./pages/Login"));
 const SignUp = lazyLoad(() => import("./pages/SignUp"));

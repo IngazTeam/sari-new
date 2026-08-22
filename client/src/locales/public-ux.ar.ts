@@ -89,6 +89,22 @@ const publicUxAr: PublicUxCopy = {
     faqSecurityQuestion: 'ما الذي لا ينبغي إرساله في التذكرة؟',
     faqSecurityAnswer: 'لا ترسل كلمة المرور أو رمز التحقق أو مفاتيح API أو بيانات بطاقة الدفع. يكفي وصف المشكلة والوقت والخطوات المتأثرة.',
   },
+  navigation: {
+    languageLabel: 'اللغة',
+    switchLanguage: 'تغيير لغة الموقع',
+    menuOpen: 'فتح قائمة التنقل',
+    menuClose: 'إغلاق قائمة التنقل',
+    mobileMenu: 'قائمة التنقل للجوال',
+    industries: 'القطاعات',
+  },
+  notFound: {
+    pageTitle: 'الصفحة غير موجودة | ساري',
+    metaDescription: 'تعذر العثور على الصفحة المطلوبة في ساري.',
+    title: 'الصفحة غير موجودة',
+    description: 'قد يكون الرابط قديمًا أو نُقلت الصفحة. استخدم الصفحة الرئيسية أو تواصل مع الدعم إذا كنت تتوقع وجودها.',
+    home: 'العودة للرئيسية',
+    support: 'فتح الدعم',
+  },
 };
 
 export default publicUxAr;
