@@ -72,6 +72,12 @@ export default function ZidIntegration() {
     { enabled: connection?.connected }
   );
 
+  const { data: notificationHealth } = trpc.zid.getNotificationHealth.useQuery(
+    undefined,
+    // @ts-ignore
+    { enabled: connection?.connected, refetchInterval: 30_000 }
+  );
+
   // Mutations
   const beginOAuthMutation = trpc.zid.beginOAuth.useMutation({
     onSuccess: ({ authorizationUrl }) => {
@@ -337,6 +343,35 @@ export default function ZidIntegration() {
                     disabled={!autoSync || !syncOrders}
                   />
                 </div>
+
+                {notificationHealth && (notifyMerchantOrders || notificationHealth.total > 0) && (
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                    <Label className="text-base">{t('zidIntegrationPage.text58')}</Label>
+                    <div className="grid grid-cols-3 gap-3 text-center">
+                      <div>
+                        <div className="text-xl font-semibold text-green-600">{notificationHealth.delivered}</div>
+                        <div className="text-xs text-muted-foreground">{t('zidIntegrationPage.text59')}</div>
+                      </div>
+                      <div>
+                        <div className="text-xl font-semibold text-amber-600">{notificationHealth.awaiting}</div>
+                        <div className="text-xs text-muted-foreground">{t('zidIntegrationPage.text60')}</div>
+                      </div>
+                      <div>
+                        <div className="text-xl font-semibold text-muted-foreground">{notificationHealth.suppressed}</div>
+                        <div className="text-xs text-muted-foreground">{t('zidIntegrationPage.text61')}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {(notificationHealth?.needsReview || 0) > 0 && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      {t('zidIntegrationPage.text62', { count: notificationHealth?.needsReview })}
+                    </AlertDescription>
+                  </Alert>
+                )}
 
                 <div className="flex gap-3 pt-4">
                   <Button onClick={handleSaveSettings} disabled={updateSettingsMutation.isPending}>

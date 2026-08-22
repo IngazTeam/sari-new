@@ -46,6 +46,7 @@ import {
   fetchAllZidOrders,
 } from './zid-commerce-sync';
 import { parseZidSettings } from './zid-settings';
+import { getZidOrderNotificationHealth } from './zid-order-notification-outbox';
 const sensitiveActionInput = z.object({
   password: z.string().min(8).max(128).optional(),
 }).optional();
@@ -183,6 +184,13 @@ export const zidRouter = router({
           notifyMerchantOrders: settings.notifyMerchantOrders,
         },
       };
+    }),
+
+  getNotificationHealth: protectedProcedure
+    .query(async ({ ctx }) => {
+      const merchant = await getMerchantByUserId(ctx.user.id);
+      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      return getZidOrderNotificationHealth(merchant.id);
     }),
 
   beginOAuth: protectedProcedure

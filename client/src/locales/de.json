@@ -4009,7 +4009,12 @@
     "text54": "Copy this URL and add it to the Webhooks settings in the Zid dashboard",
     "text55": "Zid Webhooks Setup Guide",
     "text56": "Notify merchant of new orders",
-    "text57": "Send one WhatsApp alert to the store number when a new Zid order arrives. No customer messages are sent."
+    "text57": "Send one WhatsApp alert to the store number when a new Zid order arrives. No customer messages are sent.",
+    "text58": "Alert performance over 7 days",
+    "text59": "Delivered",
+    "text60": "Awaiting delivery",
+    "text61": "Suppressed",
+    "text62": "We could not confirm delivery of {{count}} alert(s). Review your WhatsApp connection and orders to avoid duplicate handling."
   },
   "adminAdminRecommendationsPage": {
     "text0": "Total Recommendations",

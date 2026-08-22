@@ -33,6 +33,14 @@ type NotificationContext = RowDataPacket & {
   integrationSettings: string | null;
 };
 
+type NotificationHealthRow = RowDataPacket & {
+  total: number | string | null;
+  delivered: number | string | null;
+  awaiting: number | string | null;
+  suppressed: number | string | null;
+  needsReview: number | string | null;
+};
+
 class RetriableNotificationError extends Error {
   constructor(readonly code: string) {
     super(code);
@@ -80,6 +88,38 @@ export async function enqueueZidOrderCreatedNotification(input: {
     [input.merchantId, orderId, eventKey],
   );
   return eventKey;
+}
+
+export async function getZidOrderNotificationHealth(merchantId: number): Promise<{
+  total: number;
+  delivered: number;
+  awaiting: number;
+  suppressed: number;
+  needsReview: number;
+}> {
+  if (!Number.isInteger(merchantId) || merchantId <= 0) throw new Error('Invalid merchant');
+  await ensureOutboxSchema();
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const [rows] = await pool.execute<NotificationHealthRow[]>(
+    `SELECT
+       SUM(CASE WHEN created_at >= DATE_SUB(NOW(3), INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS total,
+       SUM(CASE WHEN created_at >= DATE_SUB(NOW(3), INTERVAL 7 DAY) AND status = 'delivered' THEN 1 ELSE 0 END) AS delivered,
+       SUM(CASE WHEN created_at >= DATE_SUB(NOW(3), INTERVAL 7 DAY) AND status IN ('pending', 'processing', 'failed') THEN 1 ELSE 0 END) AS awaiting,
+       SUM(CASE WHEN created_at >= DATE_SUB(NOW(3), INTERVAL 7 DAY) AND status = 'suppressed' THEN 1 ELSE 0 END) AS suppressed,
+       SUM(CASE WHEN status = 'manual_review' THEN 1 ELSE 0 END) AS needsReview
+     FROM zid_order_notification_outbox
+     WHERE merchant_id = ? AND (created_at >= DATE_SUB(NOW(3), INTERVAL 7 DAY) OR status = 'manual_review')`,
+    [merchantId],
+  );
+  const health = rows[0];
+  return {
+    total: Number(health?.total || 0),
+    delivered: Number(health?.delivered || 0),
+    awaiting: Number(health?.awaiting || 0),
+    suppressed: Number(health?.suppressed || 0),
+    needsReview: Number(health?.needsReview || 0),
+  };
 }
 
 async function setTerminalStatus(

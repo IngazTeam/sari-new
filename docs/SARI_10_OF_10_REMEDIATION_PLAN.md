@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.12 — محدّث بإشعار التاجر الدائم والاختياري لطلبات Zid\
+**الإصدار:** 3.13 — محدّث بمراقبة صحة إشعارات طلبات Zid\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -59,6 +59,7 @@
 36. أُغلق محليًا انقسام طلبات Zid بين webhook وfull sync وتراجع حالتها: مصدر canonical مرتب زمنيًا، projection ذري unique، وإزالة إرسال WhatsApp المباشر غير المصرح وغير القابل للتكرار الآمن من ingress.
 37. أُغلق محليًا تجاهل Webhook Zid لاختيارات التاجر: parser مركزي typed، `autoSync` master switch، resource policy مرتبطة بالمصادقة، وفشل مغلق للإعدادات التالفة قبل claim والكتابة.
 38. أُعيد محليًا إشعار التاجر بطلب Zid الجديد بصورة اختيارية ومغلقة افتراضيًا: outbox دائم بلا PII، هوية event ثابتة، إعادة فحص opt-in وقت التسليم، retry محدود للفشل الصريح، ومراجعة يدوية للنتيجة الملتبسة بدل التكرار. رسائل العملاء ما زالت معطلة حتى استكمال consent/suppression مستقل.
+39. أُغلقت محليًا فجوة تشغيل outbox بلا رؤية: أضيفت إحصاءات tenant-scoped ومجمعة فقط، نافذة سبعة أيام للحركة، إبقاء حالات `manual_review` ظاهرة دون حد زمني، وتنبيه في واجهة Zid بلا كشف order/event/phone وبلا زر retry غير آمن.
 
 **قرار الخطة:**
 
@@ -67,7 +68,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.12
+### حالة تنفيذ الجولة 3.13
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -111,6 +112,7 @@
 | طلبات Webhook Zid | مكتمل محليًا/migration وZid E2E والنشر معلقة | canonical source وevent ordering، projection unique ذري، cancellation tombstone وإيقاف side effects المباشرة؛ 9/9 بنتست و269/269 بوابة إصدار |
 | سياسة موارد Webhook Zid | مكتمل محليًا/Zid E2E والنشر معلقان | policy من endpoint المصادق، `autoSync` وresource switches قبل claim، malformed settings fail-closed؛ 8/8 بنتست و277/277 بوابة إصدار |
 | إشعار التاجر بطلب Zid الجديد | مكتمل محليًا/migration وWhatsApp sandbox والنشر معلقة | opt-in صريح، outbox دائم بلا PII، event/channel idempotency، lease recovery ومراجعة النتائج الملتبسة؛ 12/12 بنتست و289/289 بوابة إصدار |
+| مراقبة صحة إشعارات Zid | مكتمل محليًا/migration والنشر معلقان | protected tenant aggregate، لا معرفات أو PII، polling محدود وتنبيه مراجعة بلا blind retry؛ 9/9 بنتست و298/298 بوابة إصدار |
 
 **المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة واتساق طلبات deletion، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0023` على staging، ضبط مفاتيح التشفير والـHMAC وMeta/Green و`ZID_CLIENT_ID/ZID_CLIENT_SECRET` من secret manager، تشغيل تشفير الاعتمادات التاريخية بما فيها `zid_settings`، وتدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR كامل يشمل تعليق القنوات والعامل والrollback. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، وتوليد/تسجيل Basic Auth جديد لكل Zid webhook بعد `0014`، واختبار replay والتدوير وحدث order/product رسمي، وتدوير Client Secret الخاص بـZid الذي سبق إدخاله في المتصفح وتثبيت callback ثم اختبار OAuth/sync/refresh وإنشاء draft order من محادثة، ومنح `orders.read` و`third_customers_read` ومطابقة طلبات/عملاء sandbox بعد `0019`، وتشغيل preflight المعرفات وإثبات المصالحة بعد `0020` ثم `preflight:zid-product-identity` قبل `0021` و`preflight:zid-order-identity` قبل `0022`، وتطبيق `0023` ثم اختبار opt-in/opt-out وإعادة تشغيل worker بعد الانهيار على Meta/Green sandbox مع مراجعة `manual_review`، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
 
@@ -1059,6 +1061,7 @@ WhatsAppChannel
 - [x] طلبات Webhook Zid توحدت مع المصدر canonical وصارت unique ومرتبة زمنيًا محليًا؛ 9/9 بنتست مخصص و269/269 بوابة إصدار وDrizzle/build ناجحة، وتشغيل preflight وتطبيق `0022` وZid sandbox وإعادة اختبار المنشور معلقة.
 - [x] Webhook Zid صار يحترم `autoSync` ومفاتيح الموارد قبل claim والكتابة محليًا؛ 8/8 بنتست مخصص و277/277 بوابة إصدار وDrizzle/build ناجحة، واختبار تبديل الإعدادات على Zid sandbox والمنشور معلق.
 - [x] إشعار التاجر بطلب Zid الجديد صار opt-in ودائمًا ومصغر البيانات محليًا؛ 12/12 بنتست مخصص و88/88 فحصًا مركزًا و289/289 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0023` واختبار Meta/Green sandbox والانهيار/الاستعادة والمنشور معلقة. رسائل العملاء لم تُفعّل.
+- [x] صحة outbox صارت مرئية للتاجر كمجاميع tenant-scoped فقط؛ 9/9 بنتست مخصص و298/298 بوابة إصدار وTypeScript/build ناجحة، وإثبات الأرقام والتنبيه على staging والمنشور معلق.
 - [ ] migrations موحدة للمسارات المستخدمة.
 - [ ] قناة Meta الرسمية جاهزة أو خطة انتقال معتمدة بزمن محدد.
 - [ ] الموافقة وإلغاء الاشتراك يعملان.
