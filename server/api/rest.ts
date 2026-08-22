@@ -625,7 +625,11 @@ sariApiRouter.get('/faqs', async (req: AuthenticatedRequest, res: Response) => {
 
 // ── POST /api/v1/sync/faqs — Bulk sync FAQs ─────────────────
 sariApiRouter.post('/sync/faqs', async (req: AuthenticatedRequest, res: Response) => {
-  const { faqs, mode } = req.body;
+  const { faqs, mode: rawMode } = req.body ?? {};
+  if (rawMode !== undefined && rawMode !== 'append' && rawMode !== 'replace') {
+    return res.status(400).json({ error: 'mode must be append or replace', errorAr: 'يجب أن يكون الوضع append أو replace' });
+  }
+  const mode = rawMode === 'replace' ? 'replace' : 'append';
   if (!Array.isArray(faqs)) {
     return res.status(400).json({ error: 'faqs array is required', errorAr: 'مصفوفة الأسئلة مطلوبة' });
   }
@@ -635,30 +639,31 @@ sariApiRouter.post('/sync/faqs', async (req: AuthenticatedRequest, res: Response
 
   try {
     const merchantId = req.merchant.id;
-
-    if (mode === 'replace') {
-      await deleteAllExtractedFaqs(merchantId);
-    }
-
-    let created = 0;
-    for (const f of faqs) {
-      if (!f.question || !f.answer) continue;
-      await createExtractedFaq({
+    const [{ syncApiFaqs }, { logBrainActivity }] = await Promise.all([
+      import('../integrations/api-faq-sync'),
+      import('../routers-sari-brain'),
+    ]);
+    const result = await syncApiFaqs(merchantId, faqs, mode);
+    const telemetry = await Promise.allSettled([
+      logBrainActivity(
         merchantId,
-        question: String(f.question).substring(0, 500),
-        answer: String(f.answer).substring(0, 2000),
-        category: f.category ? String(f.category).substring(0, 100) : 'عام',
-        isActive: true,
-        useInBot: true,
-      });
-      created++;
+        'faq_created',
+        `API Sync: ${result.created} جديد، ${result.updated} محدّث، ${result.archived} مؤرشف (${mode})`,
+        { ...result, mode, source: 'api' },
+      ),
+    ]);
+    if (telemetry.some((entry) => entry.status === 'rejected')) {
+      console.warn('[SariAPI] API FAQ sync committed but telemetry update failed');
     }
 
-    const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(merchantId, 'faq_created', `API Sync: ${created} سؤال شائع (${mode || 'append'})`, { count: created, source: 'api' });
-
-    res.json({ success: true, created, mode: mode || 'append' });
+    res.json({ success: true, ...result, mode });
   } catch (e) {
+    if ((e as Error)?.name === 'ApiFaqSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid FAQ sync entry',
+        errorAr: 'تحتوي دفعة الأسئلة على عنصر غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] FAQ sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت المزامنة' });
   }
@@ -1425,7 +1430,8 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     }
     let allFaqs: any[] = knowledgeFaqs.items;
     if (allFaqs.length === 0 && !knowledgeFaqs.hasManagedFaqs) {
-      allFaqs = await getExtractedFaqsByMerchantId(merchantId);
+      const { getActiveFaqsForBot } = await import('../db');
+      allFaqs = await getActiveFaqsForBot(merchantId);
     }
     if (allFaqs.length > 0) {
       parts.push(`\n--- الأسئلة الشائعة والمعلومات (${allFaqs.length}) ---`);
@@ -1596,13 +1602,14 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
       // FAQs count + categories
       try {
         const [faqRows] = await pool.execute(
-          `SELECT COUNT(*) as cnt FROM extracted_faqs WHERE merchant_id = ?`,
+          `SELECT COUNT(*) as cnt FROM extracted_faqs WHERE merchant_id = ? AND source_status = 'active'`,
           [merchant.id]
         );
         faqCount = (faqRows as any[])?.[0]?.cnt || 0;
 
         const [catRows] = await pool.execute(
-          `SELECT DISTINCT category FROM extracted_faqs WHERE merchant_id = ? AND category IS NOT NULL`,
+          `SELECT DISTINCT category FROM extracted_faqs
+           WHERE merchant_id = ? AND source_status = 'active' AND category IS NOT NULL`,
           [merchant.id]
         );
         faqCategories = (catRows as any[])?.map((r: any) => r.category).filter(Boolean) || [];

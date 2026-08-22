@@ -2340,6 +2340,9 @@ export const extractedFaqs = mysqlTable("extracted_faqs", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
 	pageId: int("page_id").references(() => discoveredPages.id, { onDelete: "set null" }), // Source page
+	externalId: varchar("external_id", { length: 100 }),
+	syncSource: mysqlEnum("sync_source", ['extracted', 'api']).default('extracted').notNull(),
+	sourceStatus: mysqlEnum("source_status", ['active', 'archived']).default('active').notNull(),
 
 	// FAQ Content
 	question: text().notNull(),
@@ -2361,9 +2364,11 @@ export const extractedFaqs = mysqlTable("extracted_faqs", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
 	(table) => [
+		uniqueIndex("uq_extracted_faq_source").on(table.merchantId, table.syncSource, table.externalId),
 		index("extracted_faqs_merchant_id_idx").on(table.merchantId),
 		index("extracted_faqs_category_idx").on(table.category),
 		index("extracted_faqs_page_id_idx").on(table.pageId),
+		index("idx_extracted_faq_bot").on(table.merchantId, table.sourceStatus, table.isActive, table.useInBot, table.id),
 	]);
 
 // Type exports for the new tables

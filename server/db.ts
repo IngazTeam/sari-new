@@ -9027,7 +9027,10 @@ export async function getExtractedFaqsByMerchantId(merchantId: number): Promise<
   const result = await db
     .select()
     .from(extractedFaqs)
-    .where(eq(extractedFaqs.merchantId, merchantId))
+    .where(and(
+      eq(extractedFaqs.merchantId, merchantId),
+      eq(extractedFaqs.sourceStatus, 'active'),
+    ))
     .orderBy(extractedFaqs.priority, extractedFaqs.category);
 
   return result.map(faq => ({
@@ -9078,6 +9081,7 @@ export async function getActiveFaqsForBot(merchantId: number): Promise<any[]> {
     .where(
       and(
         eq(extractedFaqs.merchantId, merchantId),
+        eq(extractedFaqs.sourceStatus, 'active'),
         eq(extractedFaqs.isActive, 1),
         eq(extractedFaqs.useInBot, 1)
       )
