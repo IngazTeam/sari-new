@@ -1,28 +1,33 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
-// Country data: flag, name (Arabic), dial code, max digits (local number without country code)
+// Country data: flag, translated name key, dial code, and local-number length.
 const COUNTRIES = [
-    { code: 'SA', flag: '🇸🇦', name: 'السعودية', dial: '+966', digits: 9 },
-    { code: 'AE', flag: '🇦🇪', name: 'الإمارات', dial: '+971', digits: 9 },
-    { code: 'KW', flag: '🇰🇼', name: 'الكويت', dial: '+965', digits: 8 },
-    { code: 'BH', flag: '🇧🇭', name: 'البحرين', dial: '+973', digits: 8 },
-    { code: 'QA', flag: '🇶🇦', name: 'قطر', dial: '+974', digits: 8 },
-    { code: 'OM', flag: '🇴🇲', name: 'عُمان', dial: '+968', digits: 8 },
-    { code: 'EG', flag: '🇪🇬', name: 'مصر', dial: '+20', digits: 10 },
-    { code: 'JO', flag: '🇯🇴', name: 'الأردن', dial: '+962', digits: 9 },
-    { code: 'IQ', flag: '🇮🇶', name: 'العراق', dial: '+964', digits: 10 },
-    { code: 'YE', flag: '🇾🇪', name: 'اليمن', dial: '+967', digits: 9 },
-    { code: 'SD', flag: '🇸🇩', name: 'السودان', dial: '+249', digits: 9 },
-    { code: 'LY', flag: '🇱🇾', name: 'ليبيا', dial: '+218', digits: 9 },
+    { code: 'SA', flag: '🇸🇦', nameKey: 'countrySA', dial: '+966', digits: 9 },
+    { code: 'AE', flag: '🇦🇪', nameKey: 'countryAE', dial: '+971', digits: 9 },
+    { code: 'KW', flag: '🇰🇼', nameKey: 'countryKW', dial: '+965', digits: 8 },
+    { code: 'BH', flag: '🇧🇭', nameKey: 'countryBH', dial: '+973', digits: 8 },
+    { code: 'QA', flag: '🇶🇦', nameKey: 'countryQA', dial: '+974', digits: 8 },
+    { code: 'OM', flag: '🇴🇲', nameKey: 'countryOM', dial: '+968', digits: 8 },
+    { code: 'EG', flag: '🇪🇬', nameKey: 'countryEG', dial: '+20', digits: 10 },
+    { code: 'JO', flag: '🇯🇴', nameKey: 'countryJO', dial: '+962', digits: 9 },
+    { code: 'IQ', flag: '🇮🇶', nameKey: 'countryIQ', dial: '+964', digits: 10 },
+    { code: 'YE', flag: '🇾🇪', nameKey: 'countryYE', dial: '+967', digits: 9 },
+    { code: 'SD', flag: '🇸🇩', nameKey: 'countrySD', dial: '+249', digits: 9 },
+    { code: 'LY', flag: '🇱🇾', nameKey: 'countryLY', dial: '+218', digits: 9 },
 ] as const;
 
 type Country = (typeof COUNTRIES)[number];
 
 interface PhoneInputProps {
+    id?: string;
+    name?: string;
     value: string;
     onChange: (fullNumber: string) => void;
+    autoComplete?: string;
+    ariaDescribedBy?: string;
+    ariaInvalid?: boolean;
     required?: boolean;
     disabled?: boolean;
     error?: boolean;
@@ -63,16 +68,20 @@ function parsePhoneValue(value: string): { country: Country; localNumber: string
 }
 
 export function PhoneInput({
+    id,
+    name,
     value,
     onChange,
+    autoComplete,
+    ariaDescribedBy,
+    ariaInvalid = false,
     required = false,
     disabled = false,
     error = false,
     className,
     placeholder,
 }: PhoneInputProps) {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const dropdownRef = React.useRef<HTMLDivElement>(null);
+    const { t } = useTranslation();
 
     // Parse the initial/current value to get country and local number
     const parsed = parsePhoneValue(value || '');
@@ -90,19 +99,6 @@ export function PhoneInput({
         setLocalNumber(p.localNumber);
     }, [value]);
 
-    // Close dropdown on outside click
-    React.useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        }
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
-        }
-    }, [isOpen]);
-
     const handleLocalNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         // Only allow digits
         const digits = e.target.value.replace(/[^0-9]/g, '');
@@ -119,7 +115,6 @@ export function PhoneInput({
 
     const handleCountrySelect = (country: Country) => {
         setSelectedCountry(country);
-        setIsOpen(false);
 
         // Re-emit with new country code
         const dialDigits = country.dial.replace('+', '');
@@ -132,7 +127,7 @@ export function PhoneInput({
     const defaultPlaceholder = '5' + '0'.repeat(selectedCountry.digits - 1);
 
     return (
-        <div className={cn('relative', className)} ref={dropdownRef}>
+        <div className={cn('relative', className)}>
             <div
                 className={cn(
                     'flex items-center border rounded-md bg-background transition-colors',
@@ -141,80 +136,59 @@ export function PhoneInput({
                     disabled && 'opacity-50 cursor-not-allowed'
                 )}
             >
-                {/* Country selector */}
-                <button
-                    type="button"
+                <select
                     disabled={disabled}
-                    onClick={() => setIsOpen(!isOpen)}
+                    value={selectedCountry.code}
+                    autoComplete="tel-country-code"
+                    onChange={(event) => {
+                        const country = COUNTRIES.find((item) => item.code === event.target.value);
+                        if (country) handleCountrySelect(country);
+                    }}
                     className={cn(
-                        'flex items-center gap-1 px-2 py-2 border-l border-input',
-                        'hover:bg-accent transition-colors rounded-r-md shrink-0',
-                        'focus:outline-none focus:bg-accent'
+                        'max-w-36 bg-transparent px-2 py-2 border-0 border-e border-input text-sm',
+                        'hover:bg-accent transition-colors shrink-0',
+                        'focus:outline-none focus:bg-accent disabled:cursor-not-allowed'
                     )}
-                    aria-label="اختر الدولة"
+                    aria-label={t('authUx.signup.countrySelector')}
                 >
-                    <span className="text-lg leading-none">{selectedCountry.flag}</span>
-                    <span className="text-sm text-muted-foreground font-mono" dir="ltr">
-                        {selectedCountry.dial}
-                    </span>
-                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                </button>
+                    {COUNTRIES.map((country) => (
+                        <option key={country.code} value={country.code}>
+                            {country.flag} {t(`authUx.signup.${country.nameKey}`)} ({country.dial})
+                        </option>
+                    ))}
+                </select>
 
                 {/* Phone number input */}
                 <input
+                    id={id}
+                    name={name}
                     type="tel"
                     inputMode="numeric"
+                    autoComplete={autoComplete}
                     dir="ltr"
                     value={localNumber}
                     onChange={handleLocalNumberChange}
                     placeholder={placeholder || defaultPlaceholder}
                     disabled={disabled}
                     required={required}
+                    minLength={selectedCountry.digits}
                     maxLength={selectedCountry.digits}
                     className={cn(
                         'flex-1 px-3 py-2 text-sm bg-transparent border-0',
                         'focus:outline-none placeholder:text-muted-foreground',
                         'disabled:cursor-not-allowed font-mono tracking-wider'
                     )}
-                    aria-label="رقم الهاتف"
+                    aria-label={id ? undefined : t('authUx.signup.phoneInputLabel')}
+                    aria-describedby={ariaDescribedBy}
+                    aria-invalid={ariaInvalid}
                 />
 
                 {/* Digit counter */}
-                <span className="text-xs text-muted-foreground px-2 shrink-0 tabular-nums">
+                <span className="text-xs text-muted-foreground px-2 shrink-0 tabular-nums" aria-hidden="true">
                     {localNumber.length}/{selectedCountry.digits}
                 </span>
             </div>
 
-            {/* Country dropdown */}
-            {isOpen && (
-                <div
-                    className={cn(
-                        'absolute top-full right-0 mt-1 z-50',
-                        'w-64 max-h-64 overflow-y-auto',
-                        'bg-popover border border-border rounded-lg shadow-lg',
-                        'animate-in fade-in-0 zoom-in-95'
-                    )}
-                >
-                    {COUNTRIES.map((country) => (
-                        <button
-                            key={country.code}
-                            type="button"
-                            onClick={() => handleCountrySelect(country)}
-                            className={cn(
-                                'w-full flex items-center gap-3 px-3 py-2.5 text-sm',
-                                'hover:bg-accent transition-colors',
-                                selectedCountry.code === country.code && 'bg-accent font-medium'
-                            )}
-                        >
-                            <span className="text-lg">{country.flag}</span>
-                            <span className="flex-1 text-right">{country.name}</span>
-                            <span className="text-muted-foreground font-mono text-xs" dir="ltr">
-                                {country.dial}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }

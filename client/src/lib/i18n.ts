@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import type { MerchantUxCopy } from '../locales/merchant-ux.schema';
+import type { AuthUxCopy } from '../locales/auth-ux.schema';
 
 export const SUPPORTED_LANGUAGE_CODES = [
   'ar',
@@ -17,6 +18,7 @@ export type SupportedLanguageCode = (typeof SUPPORTED_LANGUAGE_CODES)[number];
 
 type TranslationModule = { default: Record<string, unknown> };
 type MerchantUxModule = { default: MerchantUxCopy };
+type AuthUxModule = { default: AuthUxCopy };
 
 // Keep every catalogue out of the application entry chunk. Vite emits one
 // independently cacheable chunk per language and fetches only the selected one.
@@ -46,16 +48,32 @@ const merchantUxLoaders: Record<SupportedLanguageCode, () => Promise<MerchantUxM
   zh: () => import('../locales/merchant-ux.en'),
 };
 
+// Authentication is part of the conversion funnel and cannot mix Arabic copy
+// into an English form. Unreviewed locales intentionally receive the complete
+// English catalogue until first-party translations are available.
+const authUxLoaders: Record<SupportedLanguageCode, () => Promise<AuthUxModule>> = {
+  ar: () => import('../locales/auth-ux.ar'),
+  en: () => import('../locales/auth-ux.en'),
+  fr: () => import('../locales/auth-ux.en'),
+  tr: () => import('../locales/auth-ux.en'),
+  es: () => import('../locales/auth-ux.en'),
+  it: () => import('../locales/auth-ux.en'),
+  de: () => import('../locales/auth-ux.en'),
+  zh: () => import('../locales/auth-ux.en'),
+};
+
 async function loadTranslations(language: SupportedLanguageCode): Promise<TranslationModule> {
-  const [legacy, merchantUx] = await Promise.all([
+  const [legacy, merchantUx, authUx] = await Promise.all([
     translationLoaders[language](),
     merchantUxLoaders[language](),
+    authUxLoaders[language](),
   ]);
 
   return {
     default: {
       ...legacy.default,
       merchantUx: merchantUx.default,
+      authUx: authUx.default,
     },
   };
 }
