@@ -3435,10 +3435,15 @@ export const sariConversions = mysqlTable("sari_conversions", {
 	productName: varchar("product_name", { length: 255 }),
 	amount: decimal({ precision: 10, scale: 2 }),
 	externalRef: varchar("external_ref", { length: 100 }),
+	idempotencyKey: varchar("idempotency_key", { length: 100 }),
 	source: varchar({ length: 50 }).default('whatsapp'),
 	status: mysqlEnum(['pending', 'completed', 'cancelled']).default('completed'),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-}, table => [index("idx_sari_conversion_merchant_date").on(table.merchantId, table.createdAt)]);
+}, table => [
+	index("idx_sari_conversion_merchant_date").on(table.merchantId, table.createdAt),
+	uniqueIndex("uq_sari_conversion_source_key").on(table.merchantId, table.source, table.idempotencyKey),
+	index("idx_sari_conversion_summary").on(table.merchantId, table.status, table.actionType, table.createdAt),
+]);
 
 export const supervisorInterventions = mysqlTable("supervisor_interventions", {
 	id: int().autoincrement().primaryKey(),

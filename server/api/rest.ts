@@ -1743,21 +1743,13 @@ sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Resp
   try {
     const merchantId = merchant.id;
 
-    const [conversations, products, faqs] = await Promise.all([
+    const { getConversionSummary } = await import('../integrations/byaan');
+    const [conversations, products, faqs, conversionSummary] = await Promise.all([
       getConversationsByMerchantId(merchantId),
       (getProductsByMerchantId as any)(merchantId),
       getExtractedFaqsByMerchantId(merchantId),
+      getConversionSummary(merchantId),
     ]);
-
-    // Calculate enrollments from sari_conversions
-    let totalEnrollments = 0;
-    let totalRevenue = 0;
-    try {
-      const { getConversions } = await import('../integrations/byaan');
-      const conversions = await getConversions(merchantId, 200);
-      totalEnrollments = conversions.filter((c: any) => c.action_type === 'enrollment').length;
-      totalRevenue = conversions.reduce((sum: number, c: any) => sum + (Number(c.amount) || 0), 0);
-    } catch (e) { /* sari_conversions table may not exist yet */ }
 
     // Calculate response rate: conversations with at least one bot reply / total
     const totalConversations = conversations.length;
@@ -1770,8 +1762,8 @@ sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Resp
 
     res.json({
       totalConversations,
-      totalEnrollments,
-      totalRevenue,
+      totalEnrollments: conversionSummary.totalEnrollments,
+      totalRevenue: conversionSummary.totalRevenue,
       responseRate,
       // Extra fields for richer dashboards
       totalProducts: products.length,
@@ -1879,11 +1871,8 @@ sariPlatformRouter.get('/merchant/enrollments', async (req: PlatformRequest, res
     const period = rawPeriod && validPeriods.includes(rawPeriod) ? rawPeriod : 'month';
     const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 50, 1), 200);
 
-    // Get conversions filtered by period
-    const { getConversions } = await import('../integrations/byaan');
-    const allConversions = await getConversions(merchant.id, limit);
-
-    // Filter by period
+    // Resolve the period before querying so totals are calculated by MySQL over
+    // the complete ledger, not an in-memory slice of the newest rows.
     const now = new Date();
     let periodStart: Date;
     switch (period) {
@@ -1900,19 +1889,19 @@ sariPlatformRouter.get('/merchant/enrollments', async (req: PlatformRequest, res
         periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
     }
 
-    const filtered = allConversions.filter((c: any) =>
-      new Date(c.created_at) >= periodStart
-    );
-
-    const enrollments = filtered.filter((c: any) => c.action_type === 'enrollment');
-    const payments = filtered.filter((c: any) => c.action_type === 'payment');
+    const { getConversionPage, getConversionSummary } = await import('../integrations/byaan');
+    const [summary, enrollmentPage] = await Promise.all([
+      getConversionSummary(merchant.id, periodStart),
+      getConversionPage(merchant.id, limit, 'enrollment', periodStart),
+    ]);
 
     res.json({
       period,
-      totalEnrollments: enrollments.length,
-      totalPayments: payments.length,
-      totalRevenue: filtered.reduce((sum: number, c: any) => sum + (Number(c.amount) || 0), 0),
-      enrollments: enrollments.map((c: any) => ({
+      totalEnrollments: summary.totalEnrollments,
+      totalPayments: summary.totalPayments,
+      totalRevenue: summary.totalRevenue,
+      returnedEnrollments: enrollmentPage.data.length,
+      enrollments: enrollmentPage.data.map((c) => ({
         id: c.id,
         customerName: c.customer_name,
         phone: c.customer_phone,
@@ -2183,12 +2172,20 @@ sariApiRouter.delete('/connect/byaan', async (req: AuthenticatedRequest, res: Re
 // ── GET /api/v1/conversions — Enrollment/payment log ────────
 sariApiRouter.get('/conversions', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { getConversions } = await import('../integrations/byaan');
-    const limit = Math.min(parseInt(req.query.limit as string) || 20, 200);
+    const { getConversionPage } = await import('../integrations/byaan');
+    const parsedLimit = Number.parseInt(String(req.query.limit || '20'), 10);
+    const limit = Number.isSafeInteger(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 200) : 20;
     const actionType = req.query.type as string | undefined;
+    if (actionType && !VALID_ACTION_TYPES.includes(actionType as typeof VALID_ACTION_TYPES[number])) {
+      return res.status(400).json({ error: 'Invalid conversion type', errorAr: 'نوع العملية غير صالح' });
+    }
 
-    const data = await getConversions(req.merchant.id, limit, actionType);
-    res.json({ total: data.length, data });
+    const page = await getConversionPage(
+      req.merchant.id,
+      limit,
+      actionType as typeof VALID_ACTION_TYPES[number] | undefined,
+    );
+    res.json(page);
   } catch (e) {
     res.status(500).json({ error: 'Failed to fetch conversions', errorAr: 'فشل جلب التسجيلات' });
   }
@@ -2196,29 +2193,42 @@ sariApiRouter.get('/conversions', async (req: AuthenticatedRequest, res: Respons
 
 // ── POST /api/v1/conversions — Record a conversion ──────────
 sariApiRouter.post('/conversions', async (req: AuthenticatedRequest, res: Response) => {
-  const { customerPhone, customerName, actionType, productName, amount, externalRef } = req.body;
-  if (!actionType || !productName) {
-    return res.status(400).json({ error: 'actionType and productName required', errorAr: 'نوع العملية واسم المنتج مطلوبان' });
+  if (!checkSyncLimit(`conversion_${req.apiKeyId || 'unknown'}`)) {
+    return res.status(429).json({ error: 'Conversion write limit exceeded (10/min)', errorAr: 'تجاوزت حد تسجيل العمليات (10/دقيقة)' });
   }
-  // PEN-BYAAN-06: Validate actionType enum
-  if (!VALID_ACTION_TYPES.includes(actionType)) {
-    return res.status(400).json({ error: 'Invalid actionType. Must be: enrollment, payment, inquiry', errorAr: 'نوع العملية غير صالح' });
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+    return res.status(400).json({ error: 'Conversion object is required', errorAr: 'بيانات العملية مطلوبة' });
   }
-  // PEN-BYAAN-08: Amount bounds check
-  const safeAmount = amount ? Math.max(0, Math.min(Number(amount) || 0, 999999)) : undefined;
+  const headerRef = req.headers['idempotency-key'];
+  if (Array.isArray(headerRef)) {
+    return res.status(400).json({ error: 'Invalid Idempotency-Key', errorAr: 'مفتاح منع التكرار غير صالح' });
+  }
+  const bodyRef = (req.body as Record<string, unknown>).externalRef;
+  if (headerRef && bodyRef !== undefined && bodyRef !== headerRef) {
+    return res.status(409).json({ error: 'Idempotency-Key does not match externalRef', errorAr: 'مفتاح منع التكرار لا يطابق المرجع الخارجي' });
+  }
+  const payload = {
+    ...(req.body as Record<string, unknown>),
+    externalRef: bodyRef ?? headerRef,
+  };
 
   try {
     const { recordConversion } = await import('../integrations/byaan');
-    const id = await recordConversion(req.merchant.id, {
-      customerPhone: stripHtml(String(customerPhone || '')),
-      customerName: stripHtml(String(customerName || '')),
-      actionType,
-      productName: stripHtml(String(productName)),
-      amount: safeAmount,
-      externalRef: externalRef ? stripHtml(String(externalRef)) : undefined,
-    });
-    res.json({ success: true, id });
+    const result = await recordConversion(req.merchant.id, payload);
+    res.status(result.created ? 201 : 200).json({ success: true, ...result });
   } catch (e) {
+    if ((e as Error)?.name === 'ByaanSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid conversion event',
+        errorAr: 'بيانات العملية غير صالحة أو تتجاوز الحدود',
+      });
+    }
+    if ((e as Error)?.name === 'ApiConversionConflictError') {
+      return res.status(409).json({
+        error: 'externalRef already belongs to a different event or terminal state',
+        errorAr: 'المرجع الخارجي مرتبط بعملية مختلفة أو حالة نهائية',
+      });
+    }
     res.status(500).json({ error: 'Failed to record conversion', errorAr: 'فشل تسجيل العملية' });
   }
 });

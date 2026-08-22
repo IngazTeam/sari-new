@@ -24,6 +24,14 @@ import {
 } from './byaan-security';
 import { enqueueByaanLifecycleEvent } from './byaan-outbox';
 import { ByaanSyncValidationError } from './byaan-sync-errors';
+import {
+  getConversionPage,
+  getConversionSummary,
+  recordApiConversion,
+  ApiConversionWriteResult,
+} from './api-conversion-sync';
+
+export { getConversionPage, getConversionSummary } from './api-conversion-sync';
 
 export { ByaanSyncValidationError } from './byaan-sync-errors';
 
@@ -62,11 +70,11 @@ export interface ByaanSettings {
 
 export interface ByaanConversion {
   customerPhone: string;
-  customerName: string;
+  customerName?: string;
   actionType: 'enrollment' | 'payment' | 'inquiry';
   productName: string;
   amount?: number;
-  externalRef?: string;
+  externalRef: string;
   status?: 'pending' | 'completed' | 'cancelled';
 }
 
@@ -860,53 +868,16 @@ export async function syncSettings(merchantId: number, settings: ByaanSettings):
 // Conversions — Track enrollments/payments via Sari
 // ═══════════════════════════════════════════════════════════════
 
-export async function recordConversion(merchantId: number, data: ByaanConversion): Promise<number> {
-  await ensureByaanTables();
-  const dbConn = await getPool();
-  if (!dbConn) return 0;
-
-  const [result] = await (dbConn as any).execute(
-    `INSERT INTO sari_conversions (merchant_id, customer_phone, customer_name, action_type, product_name, amount, external_ref, source, status) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'whatsapp', ?)`,
-    [
-      merchantId,
-      data.customerPhone,
-      data.customerName?.substring(0, 255),
-      data.actionType,
-      data.productName?.substring(0, 255),
-      data.amount || null,
-      data.externalRef || null,
-      data.status || 'completed',
-    ]
-  );
-
-  return (result as any).insertId;
+export async function recordConversion(merchantId: number, data: unknown): Promise<ApiConversionWriteResult> {
+  return recordApiConversion(merchantId, data);
 }
 
 export async function getConversions(merchantId: number, limit: number = 20, actionType?: string) {
-  await ensureByaanTables();
-  const dbConn = await getPool();
-  if (!dbConn) return [];
-
-  const safeLimit = Math.min(Math.max(limit, 1), 200);
-
-  if (actionType) {
-    // PEN-BYAAN-11: Validate actionType
-    const validTypes = ['enrollment', 'payment', 'inquiry'];
-    if (!validTypes.includes(actionType)) return [];
-
-    const [rows] = await (dbConn as any).execute(
-      `SELECT * FROM sari_conversions WHERE merchant_id = ? AND action_type = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
-      [merchantId, actionType]
-    );
-    return rows as any[];
-  }
-
-  const [rows] = await (dbConn as any).execute(
-    `SELECT * FROM sari_conversions WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ${safeLimit}`,
-    [merchantId]
-  );
-  return rows as any[];
+  const validType = actionType === 'enrollment' || actionType === 'payment' || actionType === 'inquiry'
+    ? actionType
+    : undefined;
+  if (actionType && !validType) return [];
+  return (await getConversionPage(merchantId, limit, validType)).data;
 }
 
 // ═══════════════════════════════════════════════════════════════
