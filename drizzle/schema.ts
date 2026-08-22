@@ -1,4 +1,4 @@
-import { mysqlTable, mysqlEnum, int, varchar, text, mediumtext, timestamp, tinyint, decimal, date, index, uniqueIndex } from "drizzle-orm/mysql-core"
+import { mysqlTable, mysqlEnum, int, varchar, text, mediumtext, timestamp, tinyint, decimal, date, index, uniqueIndex, check } from "drizzle-orm/mysql-core"
 import { sql, InferSelectModel, InferInsertModel } from "drizzle-orm"
 
 export const abTestResults = mysqlTable("ab_test_results", {
@@ -1061,6 +1061,13 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 	webhookUrl: text("webhook_url"),
 	status: mysqlEnum(['active', 'inactive', 'pending', 'expired']).default('pending').notNull(),
 	isPrimary: tinyint("is_primary").default(0).notNull(),
+	// MySQL unique indexes allow multiple NULL values. Only an active primary
+	// projects its merchant id, so this prevents direct/uncoordinated writers
+	// from creating two active primaries for one merchant.
+	activePrimaryMerchantId: int("active_primary_merchant_id").generatedAlwaysAs(
+		sql`CASE WHEN \`status\` = 'active' AND \`is_primary\` = 1 THEN \`merchant_id\` ELSE NULL END`,
+		{ mode: 'stored' },
+	),
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
 	connectedAt: timestamp("connected_at", { mode: 'string' }),
 	expiresAt: timestamp("expires_at", { mode: 'string' }),
@@ -1070,6 +1077,11 @@ export const whatsappInstances = mysqlTable("whatsapp_instances", {
 }, (table) => [
 	uniqueIndex("uq_whatsapp_instance_id").on(table.instanceId),
 	uniqueIndex("whatsapp_instances_active_phone_identity_unique").on(table.activePhoneIdentityHash),
+	uniqueIndex("whatsapp_instances_active_primary_merchant_unique").on(table.activePrimaryMerchantId),
+	check(
+		"whatsapp_instances_primary_requires_active_check",
+		sql`\`is_primary\` IN (0, 1) AND (\`is_primary\` = 0 OR \`status\` = 'active')`,
+	),
 	index("idx_whatsapp_provider_phone_id").on(table.provider, table.phoneNumberId),
 ]);
 

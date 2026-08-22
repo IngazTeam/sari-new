@@ -24,6 +24,7 @@
     "preflight:zid-product-identity": "node scripts/preflight-zid-product-identity.mjs",
     "preflight:zid-order-identity": "node scripts/preflight-zid-order-identity.mjs",
     "preflight:whatsapp-active-phone": "node scripts/preflight-whatsapp-active-phone-identity.mjs",
+    "preflight:whatsapp-active-primary": "node scripts/preflight-whatsapp-active-primary.mjs",
     "ops:load:dry-run": "node scripts/ops/load-gate.mjs --dry-run",
     "ops:load": "node scripts/ops/load-gate.mjs",
     "ops:restore:snapshot": "node scripts/ops/restore-manifest.mjs --mode=snapshot",

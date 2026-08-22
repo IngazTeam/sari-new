@@ -321,4 +321,37 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
     });
     expect(rows.filter(row => row.status === 'active' && Number(row.isPrimary) === 1)).toHaveLength(1);
   });
+
+  it('rejects direct SQL attempts to create a second active primary or an inactive primary', async () => {
+    const merchantId = await createMerchant('primary-db-constraint');
+    const first = await createInstance(merchantId, 'primary-db-a', '+966505556721');
+    const second = await createInstance(merchantId, 'primary-db-b', '+966505556722');
+    expect(first.isPrimary).toBe(1);
+    expect(second.isPrimary).toBe(0);
+
+    const pool = await getPool();
+    if (!pool) throw new Error('Database not initialized');
+    await expect(pool.execute(
+      'UPDATE whatsapp_instances SET is_primary = 1 WHERE id = ?',
+      [second.id],
+    )).rejects.toMatchObject({ code: 'ER_DUP_ENTRY' });
+    await expect(pool.execute(
+      "UPDATE whatsapp_instances SET status = 'inactive' WHERE id = ?",
+      [first.id],
+    )).rejects.toMatchObject({ code: 'ER_CHECK_CONSTRAINT_VIOLATED' });
+    await expect(pool.execute(
+      'UPDATE whatsapp_instances SET is_primary = 2 WHERE id = ?',
+      [second.id],
+    )).rejects.toMatchObject({ code: 'ER_CHECK_CONSTRAINT_VIOLATED' });
+
+    const [rows] = await pool.execute<any[]>(
+      `SELECT id, status, is_primary AS isPrimary
+         FROM whatsapp_instances
+        WHERE merchant_id = ?
+        ORDER BY id`,
+      [merchantId],
+    );
+    expect(rows.filter(row => row.status === 'active')).toHaveLength(2);
+    expect(rows.filter(row => row.status === 'active' && Number(row.isPrimary) === 1)).toHaveLength(1);
+  });
 });
