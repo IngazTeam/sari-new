@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTranslation } from 'react-i18next';
 
 const ACTION_ICONS: Record<string, string> = {
   document_deleted: '🗑️', products_deleted: '🗑️', website_deleted: '🗑️',
@@ -51,6 +52,7 @@ const RISK_LABELS: Record<string, string> = {
 };
 
 export default function SariBrain() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const { data: sources, isLoading } = trpc.sariBrain.getSources.useQuery();
@@ -1003,7 +1005,13 @@ export default function SariBrain() {
                         <p className="text-[10px] text-muted-foreground max-w-[200px] truncate hidden md:block">{(section.summary || section.content || '').substring(0, 80)}</p>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-500 hover:text-red-700">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-500 hover:text-red-700"
+                              aria-label={t('merchantUx.actions.deleteNamed', { name: section.title })}
+                            >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </AlertDialogTrigger>
@@ -1026,7 +1034,14 @@ export default function SariBrain() {
                               <span className="text-muted-foreground">└</span>
                               <span className="text-sm">{SECTION_ICONS[child.section_type || child.sectionType || sType] || '📄'}</span>
                               <p className="text-xs font-medium flex-1 truncate">{child.title}</p>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-400" onClick={() => deleteSectionMut.mutate({ sectionId: child.id })}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-red-400"
+                                onClick={() => deleteSectionMut.mutate({ sectionId: child.id })}
+                                aria-label={t('merchantUx.actions.deleteNamed', { name: child.title })}
+                              >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
                             </div>
@@ -1142,7 +1157,13 @@ export default function SariBrain() {
                   {source.deletable ? (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          aria-label={t('merchantUx.actions.deleteNamed', { name: source.name })}
+                        >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -1263,22 +1284,38 @@ export default function SariBrain() {
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
+                          type="button"
                           variant="ghost" size="sm" className="h-7 w-7 p-0"
                           onClick={() => setViewingPageId(page.id)}
                           title="عرض المحتوى المسحوب"
+                          aria-label={t('merchantUx.actions.viewContentNamed', { name: page.title })}
                         >
                           <Search className="h-3.5 w-3.5 text-primary" />
                         </Button>
                         <Button
+                          type="button"
                           variant="ghost" size="sm" className="h-7 w-7 p-0"
                           onClick={() => togglePageMutation.mutate({ pageId: page.id, useInBot: !page.useInBot })}
                           title={page.useInBot ? 'إيقاف استخدام هذه الصفحة في الردود' : 'تفعيل استخدام هذه الصفحة في الردود'}
+                          aria-label={t(
+                            page.useInBot
+                              ? 'merchantUx.actions.deactivateNamed'
+                              : 'merchantUx.actions.activateNamed',
+                            { name: page.title },
+                          )}
                         >
                           {page.useInBot ? <Eye className="h-3.5 w-3.5 text-green-600" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50" title="حذف الصفحة من ذاكرة ساري">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
+                              title="حذف الصفحة من ذاكرة ساري"
+                              aria-label={t('merchantUx.actions.deleteNamed', { name: page.title })}
+                            >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </AlertDialogTrigger>
@@ -1582,8 +1619,14 @@ export default function SariBrain() {
                         </Badge>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
-                      onClick={() => deleteFaqMutation.mutate({ id: faq.id })}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 shrink-0"
+                      onClick={() => deleteFaqMutation.mutate({ id: faq.id })}
+                      aria-label={t('merchantUx.actions.deleteNamed', { name: faq.question })}
+                    >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>

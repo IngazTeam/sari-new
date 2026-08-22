@@ -517,9 +517,11 @@ export default function WhatsAppTest() {
                       <div className="flex items-center justify-between">
                         <code className="text-sm">{testResults.connection.phoneNumber}</code>
                         <Button
+                          type="button"
                           size="sm"
                           variant="ghost"
                           onClick={() => copyToClipboard(testResults.connection!.phoneNumber!)}
+                          aria-label={t('merchantUx.actions.copyPhoneNumber')}
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -564,9 +566,11 @@ export default function WhatsAppTest() {
                       <div className="flex items-center justify-between">
                         <code className="text-xs break-all">{testResults.textMessage.messageId}</code>
                         <Button
+                          type="button"
                           size="sm"
                           variant="ghost"
                           onClick={() => copyToClipboard(testResults.textMessage!.messageId!)}
+                          aria-label={t('merchantUx.actions.copyMessageId')}
                         >
                           <Copy className="w-3 h-3" />
                         </Button>
@@ -611,9 +615,11 @@ export default function WhatsAppTest() {
                       <div className="flex items-center justify-between">
                         <code className="text-xs break-all">{testResults.imageMessage.messageId}</code>
                         <Button
+                          type="button"
                           size="sm"
                           variant="ghost"
                           onClick={() => copyToClipboard(testResults.imageMessage!.messageId!)}
+                          aria-label={t('merchantUx.actions.copyMessageId')}
                         >
                           <Copy className="w-3 h-3" />
                         </Button>

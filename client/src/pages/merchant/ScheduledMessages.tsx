@@ -157,7 +157,13 @@ export default function ScheduledMessages() {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>{editingId ? t('scheduledMessagesPage.text15') : t('scheduledMessagesPage.text16')}</span>
-              <Button variant="ghost" size="sm" onClick={resetForm}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={resetForm}
+                aria-label={t('merchantUx.actions.closeForm')}
+              >
                 <X className="h-4 w-4" />
               </Button>
             </CardTitle>
@@ -291,17 +297,21 @@ export default function ScheduledMessages() {
                     disabled={toggleMutation.isPending}
                   />
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => handleEdit(message)}
+                    aria-label={t('merchantUx.actions.editNamed', { name: message.title })}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button
+                    type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(message.id)}
                     disabled={deleteMutation.isPending}
+                    aria-label={t('merchantUx.actions.deleteNamed', { name: message.title })}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

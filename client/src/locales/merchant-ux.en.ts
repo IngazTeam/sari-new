@@ -68,7 +68,11 @@ const merchantUxEn: MerchantUxCopy = {
     editNamed: 'Edit {{name}}', deleteNamed: 'Delete {{name}}', activateNamed: 'Activate {{name}}',
     deactivateNamed: 'Deactivate {{name}}', viewNamed: 'View {{name}}',
     viewReportNamed: 'View {{name}} report', sendNamed: 'Send {{name}}',
-    previousPage: 'Previous page', nextPage: 'Next page',
+    previousPage: 'Previous page', nextPage: 'Next page', copyWebhookUrl: 'Copy webhook URL',
+    copyPhoneNumber: 'Copy phone number', copyMessageId: 'Copy message ID',
+    positiveFeedback: 'Rate response as helpful', negativeFeedback: 'Rate response as not helpful',
+    sendMessage: 'Send message', closeForm: 'Close form',
+    viewContentNamed: 'View {{name}} content', openConversationImage: 'Open conversation image',
   },
 };
 

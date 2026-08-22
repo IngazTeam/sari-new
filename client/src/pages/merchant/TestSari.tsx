@@ -474,6 +474,7 @@ export default function TestSari() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 className={`h-6 w-6 p-0 ${message.rating === "positive"
@@ -481,6 +482,8 @@ export default function TestSari() {
                                   : "text-muted-foreground hover:text-green-600"
                                   }`}
                                 onClick={() => handleRating(message.id, "positive")}
+                                aria-label={t('merchantUx.actions.positiveFeedback')}
+                                aria-pressed={message.rating === "positive"}
                               >
                                 <ThumbsUp className="h-3 w-3" />
                               </Button>
@@ -493,6 +496,7 @@ export default function TestSari() {
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
+                                type="button"
                                 variant="ghost"
                                 size="sm"
                                 className={`h-6 w-6 p-0 ${message.rating === "negative"
@@ -500,6 +504,8 @@ export default function TestSari() {
                                   : "text-muted-foreground hover:text-red-600"
                                   }`}
                                 onClick={() => handleRating(message.id, "negative")}
+                                aria-label={t('merchantUx.actions.negativeFeedback')}
+                                aria-pressed={message.rating === "negative"}
                               >
                                 <ThumbsDown className="h-3 w-3" />
                               </Button>
@@ -553,8 +559,10 @@ export default function TestSari() {
               className="flex-1"
             />
             <Button
+              type="button"
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || sendMessageMutation.isPending}
+              aria-label={t('merchantUx.actions.sendMessage')}
             >
               {sendMessageMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

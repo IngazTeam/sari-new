@@ -42,7 +42,9 @@ export const comparePlanCopyKeys = [
 export const actionCopyKeys = [
   'copyNamed', 'openNamed', 'disableNamed', 'editNamed', 'deleteNamed',
   'activateNamed', 'deactivateNamed', 'viewNamed', 'viewReportNamed',
-  'sendNamed', 'previousPage', 'nextPage',
+  'sendNamed', 'previousPage', 'nextPage', 'copyWebhookUrl', 'copyPhoneNumber',
+  'copyMessageId', 'positiveFeedback', 'negativeFeedback', 'sendMessage',
+  'closeForm', 'viewContentNamed', 'openConversationImage',
 ] as const;
 
 type CopySection<Keys extends readonly string[]> = Record<Keys[number], string>;

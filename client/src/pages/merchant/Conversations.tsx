@@ -303,9 +303,22 @@ export default function Conversations() {
                   {filteredConversations.map((conversation) => (
                     <div
                       key={conversation.id}
-                      className={`px-3 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/40 ${selectedConversationId === conversation.id ? 'bg-muted' : ''
+                      className={`px-3 py-3 cursor-pointer hover:bg-muted/50 transition-colors border-b border-border/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset ${selectedConversationId === conversation.id ? 'bg-muted' : ''
                         }`}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={selectedConversationId === conversation.id}
+                      aria-label={t('merchantUx.actions.viewNamed', {
+                        name: conversation.customerName || conversation.customerPhone,
+                      })}
                       onClick={() => setSelectedConversationId(conversation.id)}
+                      onKeyDown={(event) => {
+                        if (event.currentTarget !== event.target) return;
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedConversationId(conversation.id);
+                        }
+                      }}
                     >
                       <div className="flex items-start gap-2">
                         <Avatar className="h-9 w-9 shrink-0">
@@ -458,8 +471,17 @@ export default function Conversations() {
                               {(isImage && finalImgUrl) && (
                                 <div className="mb-2">
                                   <div
-                                    className="relative group cursor-pointer overflow-hidden rounded-md"
+                                    className="relative group cursor-pointer overflow-hidden rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={t('merchantUx.actions.openConversationImage')}
                                     onClick={() => setLightboxImage(finalImgUrl)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        setLightboxImage(finalImgUrl);
+                                      }
+                                    }}
                                   >
                                     <img
                                       src={finalImgUrl}
@@ -628,10 +650,12 @@ export default function Conversations() {
                     />
                   </div>
                   <Button
+                    type="button"
                     size="icon"
                     onClick={handleSendReply}
                     disabled={!replyText.trim() || isSending}
                     className="shrink-0 h-[44px] w-[44px]"
+                    aria-label={t('merchantUx.actions.sendMessage')}
                   >
                     {isSending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

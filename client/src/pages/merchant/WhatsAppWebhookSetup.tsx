@@ -159,9 +159,11 @@ export default function WhatsAppWebhookSetup() {
                   className="font-mono text-sm"
                 />
                 <Button 
+                  type="button"
                   variant="outline" 
                   size="icon"
                   onClick={() => copyToClipboard(webhookUrl)}
+                  aria-label={t('merchantUx.actions.copyWebhookUrl')}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>

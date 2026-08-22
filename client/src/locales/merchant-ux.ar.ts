@@ -71,7 +71,11 @@ const merchantUxAr: MerchantUxCopy = {
     editNamed: 'تعديل {{name}}', deleteNamed: 'حذف {{name}}', activateNamed: 'تفعيل {{name}}',
     deactivateNamed: 'إيقاف {{name}}', viewNamed: 'عرض {{name}}',
     viewReportNamed: 'عرض تقرير {{name}}', sendNamed: 'إرسال {{name}}',
-    previousPage: 'الصفحة السابقة', nextPage: 'الصفحة التالية',
+    previousPage: 'الصفحة السابقة', nextPage: 'الصفحة التالية', copyWebhookUrl: 'نسخ رابط Webhook',
+    copyPhoneNumber: 'نسخ رقم الهاتف', copyMessageId: 'نسخ معرّف الرسالة',
+    positiveFeedback: 'تقييم الرد بأنه مفيد', negativeFeedback: 'تقييم الرد بأنه غير مفيد',
+    sendMessage: 'إرسال الرسالة', closeForm: 'إغلاق النموذج',
+    viewContentNamed: 'عرض محتوى {{name}}', openConversationImage: 'فتح صورة المحادثة',
   },
 };
 
