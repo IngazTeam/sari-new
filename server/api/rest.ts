@@ -1252,29 +1252,38 @@ sariPlatformRouter.post('/sync/settings', async (req: PlatformRequest, res: Resp
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
 
-  const { settings } = req.body;
-  if (!settings || typeof settings !== 'object') {
+  const { settings } = req.body ?? {};
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
     return res.status(400).json({ error: 'settings object is required', errorAr: 'كائن الإعدادات مطلوب' });
   }
 
   try {
-    const { syncSettings } = await import('../integrations/byaan');
+    const [{ syncSettings, updateByaanSyncStatus }, { logBrainActivity }] = await Promise.all([
+      import('../integrations/byaan'),
+      import('../routers-sari-brain'),
+    ]);
     const result = await syncSettings(merchant.id, settings);
 
+    const telemetryTasks: Promise<unknown>[] = [updateByaanSyncStatus(merchant.id, 'active')];
     if (result.updated.length > 0) {
-      const { logBrainActivity } = await import('../routers-sari-brain');
-      await logBrainActivity(merchant.id, 'settings_changed',
+      telemetryTasks.push(logBrainActivity(merchant.id, 'settings_changed',
         `Platform Settings Sync: ${result.updated.join(', ')}`,
         { updated: result.updated, source: 'platform' }
-      );
+      ));
     }
-
-    // Update last_sync_at timestamp
-    const { updateByaanSyncStatus } = await import('../integrations/byaan');
-    await updateByaanSyncStatus(merchant.id, 'active');
+    const telemetry = await Promise.allSettled(telemetryTasks);
+    if (telemetry.some((entry) => entry.status === 'rejected')) {
+      console.warn('[SariAPI] Platform settings sync committed but telemetry update failed');
+    }
 
     res.json({ success: true, ...result });
   } catch (e) {
+    if ((e as Error)?.name === 'ByaanSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid settings sync entry',
+        errorAr: 'تحتوي مزامنة الإعدادات على حقل غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] Platform settings sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة الإعدادات' });
   }
@@ -2073,25 +2082,38 @@ sariApiRouter.post('/sync/settings', async (req: AuthenticatedRequest, res: Resp
     return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
   }
 
-  const { settings } = req.body;
-  if (!settings || typeof settings !== 'object') {
+  const { settings } = req.body ?? {};
+  if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
     return res.status(400).json({ error: 'settings object is required', errorAr: 'كائن الإعدادات مطلوب' });
   }
 
   try {
-    const { syncSettings } = await import('../integrations/byaan');
+    const [{ syncSettings }, { logBrainActivity }] = await Promise.all([
+      import('../integrations/byaan'),
+      import('../routers-sari-brain'),
+    ]);
     const result = await syncSettings(req.merchant.id, settings);
 
     if (result.updated.length > 0) {
-      const { logBrainActivity } = await import('../routers-sari-brain');
-      await logBrainActivity(req.merchant.id, 'settings_changed',
-        `API Settings Sync: ${result.updated.join(', ')}`,
-        { updated: result.updated, source: 'api' }
-      );
+      const telemetry = await Promise.allSettled([
+        logBrainActivity(req.merchant.id, 'settings_changed',
+          `API Settings Sync: ${result.updated.join(', ')}`,
+          { updated: result.updated, source: 'api' }
+        ),
+      ]);
+      if (telemetry.some((entry) => entry.status === 'rejected')) {
+        console.warn('[SariAPI] API settings sync committed but telemetry update failed');
+      }
     }
 
     res.json({ success: true, ...result });
   } catch (e) {
+    if ((e as Error)?.name === 'ByaanSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid settings sync entry',
+        errorAr: 'تحتوي مزامنة الإعدادات على حقل غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] Settings sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة الإعدادات' });
   }

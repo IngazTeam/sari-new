@@ -23,6 +23,9 @@ import {
   signByaanRequest,
 } from './byaan-security';
 import { enqueueByaanLifecycleEvent } from './byaan-outbox';
+import { ByaanSyncValidationError } from './byaan-sync-errors';
+
+export { ByaanSyncValidationError } from './byaan-sync-errors';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -68,15 +71,6 @@ export interface ByaanConversion {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Settings Whitelist — ما يمكن لبيان تعديله
-// ═══════════════════════════════════════════════════════════════
-
-// PEN-R2-03: Removed 'industry' — mapping was removed in PEN-07, no corresponding DB column
-const ALLOWED_SETTINGS_FIELDS = [
-  'businessName', 'website', 'city', 'description'
-] as const;
-
-// ═══════════════════════════════════════════════════════════════
 // Terminology — مسميات تتكيف حسب المنصة
 // ═══════════════════════════════════════════════════════════════
 
@@ -102,13 +96,6 @@ async function ensureByaanTables() {
     { table: 'sari_conversions' },
     { table: 'merchants', columns: ['integration_source'] },
   ]);
-}
-
-export class ByaanSyncValidationError extends Error {
-  constructor(entity: 'trainee' | 'faq') {
-    super(`Invalid Byaan ${entity} sync entry`);
-    this.name = 'ByaanSyncValidationError';
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -847,40 +834,26 @@ export async function getByaanSyncStats(merchantId: number): Promise<{ trainees:
 // ═══════════════════════════════════════════════════════════════
 
 export async function syncSettings(merchantId: number, settings: ByaanSettings): Promise<{ updated: string[] }> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    throw new Error('Invalid merchant for Byaan settings sync');
+  }
+  const { normalizeByaanSettings } = await import('./byaan-settings-sync-core');
+  const normalized = normalizeByaanSettings(settings);
+  await ensureByaanTables();
   const dbConn = await getPool();
-  if (!dbConn) return { updated: [] };
+  if (!dbConn) throw new Error('Byaan settings unavailable');
+  if (normalized.length === 0) return { updated: [] };
 
-  const updatedFields: string[] = [];
-  const updates: string[] = [];
-  const values: any[] = [];
-
-  for (const field of ALLOWED_SETTINGS_FIELDS) {
-    if (settings[field] !== undefined && settings[field] !== null) {
-      // PEN-B2S-06: Strip HTML to prevent stored XSS (description can contain social media URLs from Byaan)
-      const sanitized = String(settings[field]).replace(/<[^>]*>/g, '').trim().substring(0, field === 'description' ? 2000 : 500);
-      // PEN-BYAAN-07 FIX: Removed industry→platform_type mapping to prevent overwrite
-      const colMap: Record<string, string> = {
-        businessName: 'business_name',
-        website: 'website_url',
-        city: 'address',
-        description: 'description',
-      };
-      const col = colMap[field] || field;
-      updates.push(`${col} = ?`);
-      values.push(sanitized);
-      updatedFields.push(field);
-    }
+  const values: Array<string | number | null> = normalized.map((entry) => entry.value);
+  values.push(merchantId);
+  const [result] = await (dbConn as any).execute(
+    `UPDATE merchants SET ${normalized.map((entry) => `\`${entry.column}\` = ?`).join(', ')} WHERE id = ?`,
+    values,
+  );
+  if (Number((result as any).affectedRows || 0) !== 1) {
+    throw new Error('Byaan settings merchant not found');
   }
-
-  if (updates.length > 0) {
-    values.push(merchantId);
-    await (dbConn as any).execute(
-      `UPDATE merchants SET ${updates.join(', ')} WHERE id = ?`,
-      values
-    );
-  }
-
-  return { updated: updatedFields };
+  return { updated: normalized.map((entry) => entry.field) };
 }
 
 // ═══════════════════════════════════════════════════════════════
