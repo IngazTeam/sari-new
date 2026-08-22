@@ -21,7 +21,16 @@ vi.mock('./db', () => ({
   getAppointmentStatsByMerchant: vi.fn(),
 }));
 
+vi.mock('./db_zid', () => ({
+  createZidSyncLog: vi.fn(async (data) => ({ id: 1, ...data })),
+  updateZidSyncLog: vi.fn(),
+  getZidSyncLogs: vi.fn(async () => []),
+  deleteAllZidConnections: vi.fn(),
+  deleteZidSettings: vi.fn(),
+}));
+
 import * as db from './db';
+import * as dbZid from './db_zid';
 import { handleZidWebhook } from './integrations/zid';
 import { handleCalendlyWebhook } from './integrations/calendly';
 
@@ -59,7 +68,7 @@ describe('Zid Integration', () => {
       await handleZidWebhook(1, 'order.created', orderPayload);
 
       expect(db.upsertOrderFromZid).toHaveBeenCalledWith(1, orderPayload);
-      expect(db.createSyncLog).toHaveBeenCalled();
+      expect(dbZid.createZidSyncLog).toHaveBeenCalled();
     });
 
     it('should process product.created event when syncProducts is enabled', async () => {
@@ -82,7 +91,7 @@ describe('Zid Integration', () => {
       await handleZidWebhook(1, 'product.created', productPayload);
 
       expect(db.upsertProductFromZid).toHaveBeenCalledWith(1, productPayload);
-      expect(db.createSyncLog).toHaveBeenCalled();
+      expect(dbZid.createZidSyncLog).toHaveBeenCalled();
     });
 
     it('should process inventory.updated event', async () => {

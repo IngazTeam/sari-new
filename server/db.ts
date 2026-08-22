@@ -278,6 +278,7 @@ import {
 import { ENV } from "./_core/env";
 import { createHash } from 'node:crypto';
 import mysql from "mysql2/promise";
+import { normalizeZidProduct, type NormalizedZidProduct } from './integrations/zid-product-normalization';
 import { decryptSecret, encryptSecret } from './security/secrets';
 import { privacyHash } from './accounts/privacy-hash';
 
@@ -7437,8 +7438,7 @@ export async function updateIntegrationLastSync(integrationId: number): Promise<
   if (!db) return;
 
   await db.update(platformIntegrations)
-    // @ts-ignore
-    .set({ lastSyncAt: new Date().toISOString().slice(0, 19).replace("T", " ").toISOString().slice(0, 19).replace('T', ' ') })
+    .set({ lastSyncAt: new Date().toISOString().slice(0, 19).replace('T', ' ') })
     .where(eq(platformIntegrations.id, integrationId));
 }
 
@@ -7483,38 +7483,58 @@ export async function getIntegrationsByMerchant(merchantId: number): Promise<Pla
  * Upsert product from Zid
  */
 export async function upsertProductFromZid(merchantId: number, zidProduct: any): Promise<void> {
+  await upsertNormalizedProductsFromZid(merchantId, [normalizeZidProduct(zidProduct)]);
+}
+
+/**
+ * Persist a fully validated Zid product batch atomically.
+ */
+export async function upsertNormalizedProductsFromZid(
+  merchantId: number,
+  zidProducts: NormalizedZidProduct[],
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
-
-  // Check if product exists by external ID
-  const existing = await db.select()
-    .from(products)
-    .where(and(
-      eq(products.merchantId, merchantId),
-      eq(products.sallaProductId, String(zidProduct.id))
-    ))
-    .limit(1);
-
-  const productData = {
-    merchantId,
-    sallaProductId: String(zidProduct.id),
-    name: zidProduct.name || zidProduct.title,
-    description: zidProduct.description,
-    price: Math.round((zidProduct.price || 0) * 100), // Convert to cents
-    stock: zidProduct.quantity || zidProduct.stock || 0,
-    imageUrl: zidProduct.image?.url || zidProduct.images?.[0]?.url,
-    category: zidProduct.category?.name,
-    isActive: zidProduct.is_active !== false ? 1 : 0,
-
-  };
-
-  if (existing[0]) {
-    await db.update(products)
-      .set(productData)
-      .where(eq(products.id, existing[0].id));
-  } else {
-    await db.insert(products).values(productData);
-  }
+  await db.transaction(async tx => {
+    for (const zidProduct of zidProducts) {
+      const existing = await tx.select({ id: products.id })
+        .from(products)
+        .where(and(
+          eq(products.merchantId, merchantId),
+          eq(products.sallaProductId, zidProduct.externalId),
+        ))
+        .limit(1);
+      const productData = {
+        merchantId,
+        sallaProductId: zidProduct.externalId,
+        name: zidProduct.name,
+        nameAr: zidProduct.nameAr,
+        description: zidProduct.description,
+        descriptionAr: zidProduct.descriptionAr,
+        price: zidProduct.price,
+        compareAtPrice: zidProduct.compareAtPrice,
+        costPrice: zidProduct.costPrice,
+        currency: zidProduct.currency,
+        stock: zidProduct.stock,
+        trackInventory: zidProduct.trackInventory,
+        imageUrl: zidProduct.imageUrl,
+        images: zidProduct.images,
+        productUrl: zidProduct.productUrl,
+        category: zidProduct.category,
+        sku: zidProduct.sku,
+        barcode: zidProduct.barcode,
+        isActive: zidProduct.isActive,
+        status: zidProduct.status,
+        hasVariants: zidProduct.hasVariants,
+        lastSyncedAt: zidProduct.lastSyncedAt,
+      };
+      if (existing[0]) {
+        await tx.update(products).set(productData).where(eq(products.id, existing[0].id));
+      } else {
+        await tx.insert(products).values(productData);
+      }
+    }
+  });
 }
 
 /**

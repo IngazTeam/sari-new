@@ -225,7 +225,7 @@ export async function createZidSyncLog(data: InsertZidSyncLog): Promise<ZidSyncL
   const db = await getDb();
   const result = await db.insert(zidSyncLogs).values({
     ...data,
-    startedAt: new Date().toISOString(),
+    startedAt: data.startedAt || new Date().toISOString().slice(0, 19).replace('T', ' '),
   });
   const logId = Number((result[0] as any).insertId);
   // Re-fetch the created row
@@ -255,7 +255,7 @@ export async function updateSyncStatus(
   const updates: Partial<InsertZidSyncLog> = { status };
 
   if (status === 'completed' || status === 'failed') {
-    updates.completedAt = new Date().toISOString();
+    updates.completedAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
   }
 
   if (errorMessage) {

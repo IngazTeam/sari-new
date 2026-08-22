@@ -448,7 +448,7 @@ export default function ZidIntegration() {
                     {syncLogs.map((log: any, index: number) => (
                       <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                         <div className="flex items-center gap-3">
-                          {log.status === 'success' ? (
+                          {log.status === 'completed' ? (
                             <CheckCircle2 className="h-5 w-5 text-green-500" />
                           ) : (
                             <XCircle className="h-5 w-5 text-red-500" />
