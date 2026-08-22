@@ -98,3 +98,4 @@ jobs:
           server/auth.zidOAuth.test.ts
           server/auth.zidConvergence.test.ts
           server/auth.zidTokenRefresh.test.ts
+          server/api.distributedRateLimit.test.ts
