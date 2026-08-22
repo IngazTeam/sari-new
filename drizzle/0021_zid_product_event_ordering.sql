@@ -1,0 +1,2 @@
+ALTER TABLE `products` MODIFY COLUMN `lastSyncedAt` timestamp(3);--> statement-breakpoint
+ALTER TABLE `products` ADD CONSTRAINT `products_merchant_external_unique` UNIQUE(`merchantId`,`sallaProductId`);

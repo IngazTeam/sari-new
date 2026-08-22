@@ -44,6 +44,11 @@ export function zidProductProjectionId(externalId: string): string {
   return `zid:${normalizeZidProductExternalId(externalId)}`;
 }
 
+export function formatZidProductSyncTime(value: Date): string {
+  if (!Number.isFinite(value.getTime())) throw new ZidProductSyncError('invalid_product');
+  return value.toISOString().slice(0, 23).replace('T', ' ');
+}
+
 function record(value: unknown): Record<string, any> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, any>
@@ -170,6 +175,6 @@ export function normalizeZidProduct(value: unknown, now = new Date()): Normalize
     isActive: published ? 1 : 0,
     status: published ? 'active' : 'draft',
     hasVariants: product.has_options === true || product.has_fields === true ? 1 : 0,
-    lastSyncedAt: now.toISOString().slice(0, 19).replace('T', ' '),
+    lastSyncedAt: formatZidProductSyncTime(now),
   };
 }

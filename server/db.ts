@@ -280,6 +280,7 @@ import { ENV } from "./_core/env";
 import { createHash } from 'node:crypto';
 import mysql from "mysql2/promise";
 import {
+  formatZidProductSyncTime,
   normalizeZidProduct,
   normalizeZidProductExternalId,
   zidProductProjectionId,
@@ -7494,8 +7495,12 @@ export async function getIntegrationsByMerchant(merchantId: number): Promise<Pla
 /**
  * Upsert product from Zid
  */
-export async function upsertProductFromZid(merchantId: number, zidProduct: any): Promise<void> {
-  await persistNormalizedProductsFromZid(merchantId, [normalizeZidProduct(zidProduct)], false);
+export async function upsertProductFromZid(
+  merchantId: number,
+  zidProduct: any,
+  occurredAt = new Date(),
+): Promise<void> {
+  await persistNormalizedProductsFromZid(merchantId, [normalizeZidProduct(zidProduct, occurredAt)], false);
 }
 
 /**
@@ -7518,13 +7523,6 @@ async function persistNormalizedProductsFromZid(
   return db.transaction(async tx => {
     for (const zidProduct of zidProducts) {
       const projectionId = zidProductProjectionId(zidProduct.externalId);
-      const existing = await tx.select({ id: products.id })
-        .from(products)
-        .where(and(
-          eq(products.merchantId, merchantId),
-          eq(products.sallaProductId, projectionId),
-        ))
-        .limit(1);
       const productData = {
         merchantId,
         sallaProductId: projectionId,
@@ -7549,11 +7547,17 @@ async function persistNormalizedProductsFromZid(
         hasVariants: zidProduct.hasVariants,
         lastSyncedAt: zidProduct.lastSyncedAt,
       };
-      if (existing[0]) {
-        await tx.update(products).set(productData).where(eq(products.id, existing[0].id));
-      } else {
-        await tx.insert(products).values(productData);
-      }
+      // Reserve the external identity using the database uniqueness contract.
+      // A no-op duplicate update acquires the row lock before the freshness-
+      // guarded update, eliminating the select/insert race across workers.
+      await tx.insert(products).values(productData).onDuplicateKeyUpdate({
+        set: { sallaProductId: sql`${products.sallaProductId}` },
+      });
+      await tx.update(products).set(productData).where(and(
+        eq(products.merchantId, merchantId),
+        eq(products.sallaProductId, projectionId),
+        or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, zidProduct.lastSyncedAt)),
+      ));
     }
     let disabledProducts = 0;
     if (reconcileMissing) {
@@ -7579,13 +7583,24 @@ async function persistNormalizedProductsFromZid(
   });
 }
 
-export async function deactivateProductFromZid(merchantId: number, externalId: unknown): Promise<void> {
+export async function deactivateProductFromZid(
+  merchantId: number,
+  externalId: unknown,
+  occurredAt = new Date(),
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
   const projectionId = zidProductProjectionId(normalizeZidProductExternalId(externalId));
-  await db.update(products).set({ isActive: 0, status: 'draft', stock: 0 }).where(and(
+  const eventTime = formatZidProductSyncTime(occurredAt);
+  await db.update(products).set({
+    isActive: 0,
+    status: 'draft',
+    stock: 0,
+    lastSyncedAt: eventTime,
+  }).where(and(
     eq(products.merchantId, merchantId),
     eq(products.sallaProductId, projectionId),
+    or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, eventTime)),
   ));
 }
 
@@ -7752,7 +7767,11 @@ export async function upsertNormalizedCustomersFromZid(
 /**
  * Update product inventory from Zid
  */
-export async function updateProductInventoryFromZid(merchantId: number, payload: any): Promise<void> {
+export async function updateProductInventoryFromZid(
+  merchantId: number,
+  payload: any,
+  occurredAt = new Date(),
+): Promise<void> {
   const db = await getDb();
   if (!db) return;
   const externalId = normalizeZidProductExternalId(payload?.product_id ?? payload?.id);
@@ -7763,11 +7782,14 @@ export async function updateProductInventoryFromZid(merchantId: number, payload:
   if (!Number.isFinite(quantity) || quantity < 0 || quantity > 2_147_483_647) {
     throw new Error('INVALID_ZID_INVENTORY');
   }
+  const eventTime = formatZidProductSyncTime(occurredAt);
   await db.update(products)
-    .set({ stock: Math.floor(quantity) })
+    .set({ stock: Math.floor(quantity), lastSyncedAt: eventTime })
     .where(and(
       eq(products.merchantId, merchantId),
-      eq(products.sallaProductId, zidProductProjectionId(externalId))
+      eq(products.sallaProductId, zidProductProjectionId(externalId)),
+      eq(products.isActive, 1),
+      or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, eventTime)),
     ));
 }
 

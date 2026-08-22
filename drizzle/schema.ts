@@ -521,14 +521,16 @@ export const products = mysqlTable("products", {
 	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 	sallaProductId: varchar({ length: 100 }),
-	lastSyncedAt: timestamp({ mode: 'string' }),
+	lastSyncedAt: timestamp({ mode: 'string', fsp: 3 }),
 	// Course-specific fields (Byaan integration)
 	courseStartDate: timestamp("course_start_date", { mode: 'string' }),
 	courseEndDate: timestamp("course_end_date", { mode: 'string' }),
 	maxStudents: int("max_students"),
 	enrolledCount: int("enrolled_count").default(0),
 	registrationOpen: tinyint("registration_open").default(1),
-});
+}, (table) => [
+	uniqueIndex("products_merchant_external_unique").on(table.merchantId, table.sallaProductId),
+]);
 
 export const productCategories = mysqlTable("product_categories", {
 	id: int().autoincrement().primaryKey(),

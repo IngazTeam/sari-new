@@ -32,17 +32,33 @@ const EVENT_ALIASES: Readonly<Record<string, string>> = {
   'inventory.update': 'inventory.updated',
 };
 
-export function parseZidWebhookPayload(value: unknown): ZidWebhookPayload | null {
+const MIN_EVENT_TIME_MS = Date.UTC(2000, 0, 1);
+const MAX_FUTURE_SKEW_MS = 5 * 60_000;
+
+export function normalizeZidWebhookOccurredAt(value: unknown, now = new Date()): Date | null {
+  if (value === undefined) return now;
+  if (typeof value !== 'string' || value.length > 64) return null;
+  const timestamp = Date.parse(value);
+  if (
+    !Number.isFinite(timestamp)
+    || timestamp < MIN_EVENT_TIME_MS
+    || timestamp > now.getTime() + MAX_FUTURE_SKEW_MS
+  ) return null;
+  return new Date(timestamp);
+}
+
+export function parseZidWebhookPayload(value: unknown, now = new Date()): ZidWebhookPayload | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const candidate = value as Record<string, unknown>;
   if (typeof candidate.event !== 'string' || !/^[a-z0-9_.-]{1,100}$/i.test(candidate.event)) return null;
   if (!candidate.data || typeof candidate.data !== 'object' || Array.isArray(candidate.data)) return null;
   if (candidate.webhook_id !== undefined && typeof candidate.webhook_id !== 'string') return null;
-  if (candidate.created_at !== undefined && typeof candidate.created_at !== 'string') return null;
+  const occurredAt = normalizeZidWebhookOccurredAt(candidate.created_at, now);
+  if (!occurredAt) return null;
   return {
     event: candidate.event,
     data: candidate.data,
-    created_at: candidate.created_at,
+    created_at: occurredAt.toISOString(),
     webhook_id: candidate.webhook_id,
   };
 }
@@ -52,6 +68,8 @@ export async function processZidWebhook(
   merchantId: number,
 ): Promise<{ success: boolean; message: string }> {
   const event = EVENT_ALIASES[payload.event] || payload.event;
+  const occurredAt = normalizeZidWebhookOccurredAt(payload.created_at);
+  if (!occurredAt) throw new Error('INVALID_ZID_WEBHOOK_TIME');
   switch (event) {
     case 'order.created':
       await handleOrderCreated(merchantId, payload.data);
@@ -63,16 +81,16 @@ export async function processZidWebhook(
       await handleOrderCancelled(merchantId, payload.data);
       break;
     case 'product.created':
-      await handleProductCreated(merchantId, payload.data);
+      await handleProductCreated(merchantId, payload.data, occurredAt);
       break;
     case 'product.updated':
-      await handleProductUpdated(merchantId, payload.data);
+      await handleProductUpdated(merchantId, payload.data, occurredAt);
       break;
     case 'product.deleted':
-      await handleProductDeleted(merchantId, payload.data);
+      await handleProductDeleted(merchantId, payload.data, occurredAt);
       break;
     case 'inventory.updated':
-      await handleInventoryUpdated(merchantId, payload.data);
+      await handleInventoryUpdated(merchantId, payload.data, occurredAt);
       break;
     default:
       return { success: true, message: 'Unsupported event ignored' };
@@ -162,8 +180,9 @@ async function handleOrderCancelled(
 async function handleProductCreated(
   merchantId: number,
   productData: any,
+  occurredAt: Date,
 ) {
-  await upsertProductFromZid(merchantId, productData);
+  await upsertProductFromZid(merchantId, productData, occurredAt);
 }
 
 /**
@@ -172,8 +191,9 @@ async function handleProductCreated(
 async function handleProductUpdated(
   merchantId: number,
   productData: any,
+  occurredAt: Date,
 ) {
-  await upsertProductFromZid(merchantId, productData);
+  await upsertProductFromZid(merchantId, productData, occurredAt);
 }
 
 /**
@@ -182,8 +202,9 @@ async function handleProductUpdated(
 async function handleProductDeleted(
   merchantId: number,
   productData: any,
+  occurredAt: Date,
 ) {
-  await deactivateProductFromZid(merchantId, productData.id);
+  await deactivateProductFromZid(merchantId, productData.id, occurredAt);
 }
 
 /**
@@ -192,8 +213,9 @@ async function handleProductDeleted(
 async function handleInventoryUpdated(
   merchantId: number,
   inventoryData: any,
+  occurredAt: Date,
 ) {
-  await updateProductInventoryFromZid(merchantId, inventoryData);
+  await updateProductInventoryFromZid(merchantId, inventoryData, occurredAt);
 }
 
 /**

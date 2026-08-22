@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.8 — محدّث بمصالحة حذف وتعطيل بيانات زد\
+**الإصدار:** 3.9 — محدّث بمنع سباقات منتجات زد وترتيب أحداثها\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -55,6 +55,7 @@
 32. أُصلح محليًا مسار مزامنة منتجات Zid: endpoint رسمي وStore-Id موثوق، pagination محدودة لا تتبع `next`، response/SSRF bounds، تطبيع صادق، transaction وقفل موزع، وسجل منقح قابل للعرض.
 33. أُغلقت محليًا فجوة مزامنة طلبات وعملاء Zid: endpoints رسمية محدودة، cursors موثوقة، تطبيع PII وحالات ومبالغ، مصدر مصغر، projections مشروطة، وقيود uniqueness بعد dedupe آمن.
 34. أُغلق محليًا بقاء بيانات Zid المحذوفة وتصادم IDs بين المنصات: projections namespaced، snapshot reconciliation ذرية، تعطيل قابل للعكس، وwebhook على catalog canonical.
+35. أُغلق محليًا سباق إنشاء projection وإعادة ترتيب webhooks: uniqueness مركبة، حجز ذري للهوية، مقارنة حداثة بدقة ميلي ثانية، tombstone مرتب، وpreflight يفشل بأمان قبل الترحيل.
 
 **قرار الخطة:**
 
@@ -63,7 +64,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.8
+### حالة تنفيذ الجولة 3.9
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -103,8 +104,9 @@
 | مزامنة منتجات Zid | مكتمل محليًا/Zid E2E والنشر معلقان | `/v1/products/` وصفحات محدودة وStore-Id، 5MiB/15s/origin bounds، transaction وقفل موزع وسجل صحيح؛ 10/10 بنتست مخصص و232/232 بوابة إصدار |
 | مزامنة طلبات وعملاء Zid | مكتمل محليًا/migration وZid E2E والنشر معلقة | orders pages وcustomer cursors محدودة، PII minimization وmasked identities، transaction/uniqueness وسجلات مستقلة؛ 12/12 بنتست و244/244 بوابة إصدار |
 | مصالحة بيانات Zid | مكتمل محليًا/migration وZid E2E والنشر معلقة | `zid:` namespace، تعطيل الغائب transactionally، حماية webhook الأحدث، وهجرة linked-only؛ 8/8 بنتست و252/252 بوابة إصدار |
+| تزامن وترتيب منتجات Zid | مكتمل محليًا/migration وZid E2E والنشر معلقة | uniqueness على هوية المتجر، atomic reservation، event-time/tombstone بدقة ms وpreflight؛ 8/8 بنتست و260/260 بوابة إصدار |
 
-**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة واتساق طلبات deletion، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0020` على staging، ضبط مفاتيح التشفير والـHMAC وMeta/Green و`ZID_CLIENT_ID/ZID_CLIENT_SECRET` من secret manager، تشغيل تشفير الاعتمادات التاريخية بما فيها `zid_settings`، وتدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR كامل يشمل تعليق القنوات والعامل والrollback. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، وتوليد/تسجيل Basic Auth جديد لكل Zid webhook بعد `0014`، واختبار replay والتدوير وحدث order/product رسمي، وتدوير Client Secret الخاص بـZid الذي سبق إدخاله في المتصفح وتثبيت callback ثم اختبار OAuth/sync/refresh وإنشاء draft order من محادثة، ومنح `orders.read` و`third_customers_read` ومطابقة طلبات/عملاء sandbox بعد `0019`، وتشغيل preflight هوية المنتجات وإثبات المصالحة بعد `0020`، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
+**المتبقي قبل النشر:** فحص التكرارات والسجلات اليتيمة واتساق طلبات deletion، backup قابل للاستعادة، تطبيق migrations `0003` إلى `0021` على staging، ضبط مفاتيح التشفير والـHMAC وMeta/Green و`ZID_CLIENT_ID/ZID_CLIENT_SECRET` من secret manager، تشغيل تشفير الاعتمادات التاريخية بما فيها `zid_settings`، وتدوير credentials القديمة وتنظيف تاريخ Git بعملية منسقة، ثم smoke/E2E بحسابي متجر وتمرين DSR كامل يشمل تعليق القنوات والعامل والrollback. يلزم كذلك إعادة إصدار دعوات الفريق pending بعد `0013`، وتوليد/تسجيل Basic Auth جديد لكل Zid webhook بعد `0014`، واختبار replay والتدوير وحدث order/product رسمي، وتدوير Client Secret الخاص بـZid الذي سبق إدخاله في المتصفح وتثبيت callback ثم اختبار OAuth/sync/refresh وإنشاء draft order من محادثة، ومنح `orders.read` و`third_customers_read` ومطابقة طلبات/عملاء sandbox بعد `0019`، وتشغيل preflight المعرفات وإثبات المصالحة بعد `0020` ثم `preflight:zid-product-identity` قبل `0021`، واختبار إرسال/قبول دعوة وreset فعليين عبر SMTP2GO، Meta WABA sandbox، إعادة تسجيل Green webhooks بالـBearer، provision/replay على tenant بيان اختباري، Tap sandbox، مراجعة PDPL القانونية، تشغيل CI remote وربط branch protection، وإزالة High الوحيد عبر استبدال Chromium القديم بعد فصل تغييرات Zahypi.
 
 ### سجل الكوميتات المنفذة
 
@@ -1047,6 +1049,7 @@ WhatsAppChannel
 - [x] تحديث منتجات Zid صار محدودًا وذريًا وموثقًا محليًا؛ 10/10 بنتست مخصص و232/232 بوابة إصدار وbuild ناجحة، وscopes وZid sandbox ومصالحة الحذف وإعادة اختبار المنشور معلقة.
 - [x] طلبات وعملاء Zid صاروا محدودين ومطبعين ومحفوظين دون payload خام محليًا؛ 12/12 بنتست مخصص و244/244 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0019` وscopes وZid sandbox وإعادة اختبار المنشور معلقة.
 - [x] مصالحة Zid صارت namespaced وذرية وقابلة للعكس محليًا؛ 8/8 بنتست مخصص و252/252 بوابة إصدار وDrizzle/build ناجحة، وتطبيق `0020` وpreflight وZid sandbox وإعادة اختبار المنشور معلقة.
+- [x] هوية منتجات Zid وأحداثها صارت unique وذرية ومرتبة زمنيًا محليًا؛ 8/8 بنتست مخصص و260/260 بوابة إصدار وDrizzle/build ناجحة، وتشغيل preflight وتطبيق `0021` وZid sandbox وإعادة اختبار المنشور معلقة.
 - [ ] migrations موحدة للمسارات المستخدمة.
 - [ ] قناة Meta الرسمية جاهزة أو خطة انتقال معتمدة بزمن محدد.
 - [ ] الموافقة وإلغاء الاشتراك يعملان.
