@@ -28,6 +28,22 @@ export class ZidProductSyncError extends Error {
   }
 }
 
+export function normalizeZidProductExternalId(value: unknown): string {
+  const candidate = typeof value === 'number' && Number.isSafeInteger(value)
+    ? String(value)
+    : typeof value === 'string' ? value.trim() : '';
+  // `products.sallaProductId` is varchar(100); reserve four characters for
+  // the `zid:` source namespace used by projections.
+  if (!candidate || candidate.length > 96 || /[\u0000-\u001f\u007f]/.test(candidate)) {
+    throw new ZidProductSyncError('invalid_product');
+  }
+  return candidate;
+}
+
+export function zidProductProjectionId(externalId: string): string {
+  return `zid:${normalizeZidProductExternalId(externalId)}`;
+}
+
 function record(value: unknown): Record<string, any> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, any>
@@ -95,15 +111,11 @@ function productStock(product: Record<string, any>): { stock: number; trackInven
 export function normalizeZidProduct(value: unknown, now = new Date()): NormalizedZidProduct {
   const product = record(value);
   const rawExternalId = typeof product.id === 'number' ? String(product.id) : product.id;
-  const externalId = safeZidText(rawExternalId, 100);
+  const externalId = normalizeZidProductExternalId(rawExternalId);
   const name = localizedText(product.name ?? product.title, 255);
   const basePrice = cents(product.price);
   if (
-    !externalId
-    || typeof rawExternalId !== 'string'
-    || rawExternalId.trim().length > 100
-    || /[\u0000-\u001f\u007f]/.test(externalId)
-    || !name
+    !name
     || basePrice === null
   ) {
     throw new ZidProductSyncError('invalid_product');

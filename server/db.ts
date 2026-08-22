@@ -1,5 +1,5 @@
 import {
-  eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, type InferSelectModel, type InferInsertModel
+  eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, notInArray, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
 import { hashSessionId } from './_core/session-security';
 
@@ -279,7 +279,12 @@ import {
 import { ENV } from "./_core/env";
 import { createHash } from 'node:crypto';
 import mysql from "mysql2/promise";
-import { normalizeZidProduct, type NormalizedZidProduct } from './integrations/zid-product-normalization';
+import {
+  normalizeZidProduct,
+  normalizeZidProductExternalId,
+  zidProductProjectionId,
+  type NormalizedZidProduct,
+} from './integrations/zid-product-normalization';
 import {
   normalizeZidOrder,
   normalizeZidPhone,
@@ -7490,7 +7495,7 @@ export async function getIntegrationsByMerchant(merchantId: number): Promise<Pla
  * Upsert product from Zid
  */
 export async function upsertProductFromZid(merchantId: number, zidProduct: any): Promise<void> {
-  await upsertNormalizedProductsFromZid(merchantId, [normalizeZidProduct(zidProduct)]);
+  await persistNormalizedProductsFromZid(merchantId, [normalizeZidProduct(zidProduct)], false);
 }
 
 /**
@@ -7499,21 +7504,30 @@ export async function upsertProductFromZid(merchantId: number, zidProduct: any):
 export async function upsertNormalizedProductsFromZid(
   merchantId: number,
   zidProducts: NormalizedZidProduct[],
-): Promise<void> {
+): Promise<{ upsertedProducts: number; disabledProducts: number }> {
+  return persistNormalizedProductsFromZid(merchantId, zidProducts, true);
+}
+
+async function persistNormalizedProductsFromZid(
+  merchantId: number,
+  zidProducts: NormalizedZidProduct[],
+  reconcileMissing: boolean,
+): Promise<{ upsertedProducts: number; disabledProducts: number }> {
   const db = await getDb();
-  if (!db) return;
-  await db.transaction(async tx => {
+  if (!db) return { upsertedProducts: 0, disabledProducts: 0 };
+  return db.transaction(async tx => {
     for (const zidProduct of zidProducts) {
+      const projectionId = zidProductProjectionId(zidProduct.externalId);
       const existing = await tx.select({ id: products.id })
         .from(products)
         .where(and(
           eq(products.merchantId, merchantId),
-          eq(products.sallaProductId, zidProduct.externalId),
+          eq(products.sallaProductId, projectionId),
         ))
         .limit(1);
       const productData = {
         merchantId,
-        sallaProductId: zidProduct.externalId,
+        sallaProductId: projectionId,
         name: zidProduct.name,
         nameAr: zidProduct.nameAr,
         description: zidProduct.description,
@@ -7541,7 +7555,38 @@ export async function upsertNormalizedProductsFromZid(
         await tx.insert(products).values(productData);
       }
     }
+    let disabledProducts = 0;
+    if (reconcileMissing) {
+      const activeProjectionIds = zidProducts.map(product => zidProductProjectionId(product.externalId));
+      const batchStartedAt = zidProducts[0]?.lastSyncedAt
+        || formatDateForDB(new Date(Date.now() - 1_000));
+      const missingConditions = [
+        eq(products.merchantId, merchantId),
+        like(products.sallaProductId, 'zid:%'),
+        or(isNull(products.lastSyncedAt), lt(products.lastSyncedAt, batchStartedAt)),
+      ];
+      if (activeProjectionIds.length > 0) {
+        missingConditions.push(notInArray(products.sallaProductId, activeProjectionIds));
+      }
+      const disabled = await tx.update(products).set({
+        isActive: 0,
+        status: 'draft',
+        stock: 0,
+      }).where(and(...missingConditions));
+      disabledProducts = Number((disabled[0] as any).affectedRows) || 0;
+    }
+    return { upsertedProducts: zidProducts.length, disabledProducts };
   });
+}
+
+export async function deactivateProductFromZid(merchantId: number, externalId: unknown): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const projectionId = zidProductProjectionId(normalizeZidProductExternalId(externalId));
+  await db.update(products).set({ isActive: 0, status: 'draft', stock: 0 }).where(and(
+    eq(products.merchantId, merchantId),
+    eq(products.sallaProductId, projectionId),
+  ));
 }
 
 /**
@@ -7657,10 +7702,10 @@ export async function upsertNormalizedOrdersFromZid(
 export async function upsertNormalizedCustomersFromZid(
   merchantId: number,
   normalizedCustomers: NormalizedZidCustomer[],
-): Promise<{ sourceCustomers: number; contactableCustomers: number }> {
+): Promise<{ sourceCustomers: number; contactableCustomers: number; deactivatedCustomers: number }> {
   const db = await getDb();
-  if (!db) return { sourceCustomers: 0, contactableCustomers: 0 };
-  await db.transaction(async tx => {
+  if (!db) return { sourceCustomers: 0, contactableCustomers: 0, deactivatedCustomers: 0 };
+  const deactivatedCustomers = await db.transaction(async tx => {
     for (const customer of normalizedCustomers) {
       await tx.insert(zidCustomers).values({
         merchantId,
@@ -7686,10 +7731,21 @@ export async function upsertNormalizedCustomersFromZid(
         },
       });
     }
+    const activeExternalIds = normalizedCustomers.map(customer => customer.externalId);
+    const missingConditions = [
+      eq(zidCustomers.merchantId, merchantId),
+      eq(zidCustomers.isActive, 1),
+    ];
+    if (activeExternalIds.length > 0) {
+      missingConditions.push(notInArray(zidCustomers.zidCustomerId, activeExternalIds));
+    }
+    const deactivated = await tx.update(zidCustomers).set({ isActive: 0 }).where(and(...missingConditions));
+    return Number((deactivated[0] as any).affectedRows) || 0;
   });
   return {
     sourceCustomers: normalizedCustomers.length,
-    contactableCustomers: normalizedCustomers.filter(customer => customer.phone).length,
+    contactableCustomers: normalizedCustomers.filter(customer => customer.phone && customer.isActive === 1).length,
+    deactivatedCustomers,
   };
 }
 
@@ -7699,12 +7755,19 @@ export async function upsertNormalizedCustomersFromZid(
 export async function updateProductInventoryFromZid(merchantId: number, payload: any): Promise<void> {
   const db = await getDb();
   if (!db) return;
-
+  const externalId = normalizeZidProductExternalId(payload?.product_id ?? payload?.id);
+  const rawQuantity = payload?.quantity ?? payload?.stock;
+  const quantity = typeof rawQuantity === 'string' && rawQuantity.trim()
+    ? Number(rawQuantity)
+    : rawQuantity;
+  if (!Number.isFinite(quantity) || quantity < 0 || quantity > 2_147_483_647) {
+    throw new Error('INVALID_ZID_INVENTORY');
+  }
   await db.update(products)
-    .set({ stock: payload.quantity || payload.stock || 0 })
+    .set({ stock: Math.floor(quantity) })
     .where(and(
       eq(products.merchantId, merchantId),
-      eq(products.sallaProductId, String(payload.product_id))
+      eq(products.sallaProductId, zidProductProjectionId(externalId))
     ));
 }
 
@@ -7848,7 +7911,7 @@ export async function getCustomerCountByMerchant(merchantId: number): Promise<nu
       .groupBy(conversations.customerPhone),
     db.select({ phone: zidCustomers.phone })
       .from(zidCustomers)
-      .where(eq(zidCustomers.merchantId, merchantId)),
+      .where(and(eq(zidCustomers.merchantId, merchantId), eq(zidCustomers.isActive, 1))),
   ]);
   return new Set([
     ...conversationPhones.map(row => normalizeZidPhone(row.phone) || row.phone),
@@ -7900,7 +7963,10 @@ export async function getCustomersByMerchant(merchantId: number): Promise<any[]>
     .groupBy(conversations.customerPhone, conversations.customerName);
 
   const [zidCustomerData, orderData, loyaltyData] = await Promise.all([
-    db.select().from(zidCustomers).where(eq(zidCustomers.merchantId, merchantId)),
+    db.select().from(zidCustomers).where(and(
+      eq(zidCustomers.merchantId, merchantId),
+      eq(zidCustomers.isActive, 1),
+    )),
     db.select({
       customerPhone: orders.customerPhone,
       orderCount: sql<number>`COUNT(*)`,
@@ -8020,6 +8086,7 @@ export async function getCustomerByPhone(merchantId: number, customerPhone: stri
     ? await db.select().from(zidCustomers).where(and(
       eq(zidCustomers.merchantId, merchantId),
       eq(zidCustomers.phone, customerPhone),
+      eq(zidCustomers.isActive, 1),
     )).limit(1)
     : [];
   if (!customerConv[0] && !zidCustomer[0]) return null;

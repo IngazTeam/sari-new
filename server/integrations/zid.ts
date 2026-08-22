@@ -366,11 +366,11 @@ export const zidRouter = router({
                   await updateIntegrationSettings(currentIntegration.id, { storeId });
                 }
                 const products = await fetchAllZidProducts({ credentials: apiCredentials, storeId });
-                await upsertNormalizedProductsFromZid(merchant.id, products);
-                return { total: products.length, result: products.length };
+                const persisted = await upsertNormalizedProductsFromZid(merchant.id, products);
+                return { total: products.length, result: persisted };
               },
             });
-            summary.push(`${productCount} منتج`);
+            summary.push(`${productCount.upsertedProducts} منتج (${productCount.disabledProducts} عُطّل لغيابه)`);
           }
 
           if (syncOrders) {
@@ -396,7 +396,7 @@ export const zidRouter = router({
                 return { total: sourceCustomers.length, result: persisted };
               },
             });
-            summary.push(`${customerCounts.sourceCustomers} عميل (${customerCounts.contactableCustomers} برقم صالح)`);
+            summary.push(`${customerCounts.sourceCustomers} عميل (${customerCounts.contactableCustomers} نشط برقم صالح، ${customerCounts.deactivatedCustomers} عُطّل لغيابه)`);
           }
 
           await updateIntegrationLastSync(currentIntegration.id);

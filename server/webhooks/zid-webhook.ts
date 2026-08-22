@@ -4,11 +4,12 @@
  */
 
 import {
+  deactivateProductFromZid,
   getMerchantById,
   getWhatsAppConnection,
-  getZidProductByZidId,
   saveZidOrder,
-  saveZidProduct,
+  updateProductInventoryFromZid,
+  upsertProductFromZid,
 } from '../db';
 
 export interface ZidWebhookPayload {
@@ -162,28 +163,7 @@ async function handleProductCreated(
   merchantId: number,
   productData: any,
 ) {
-  // Save product to zid_products table
-  await saveZidProduct(merchantId, {
-    zidProductId: String(productData.id),
-    zidSku: productData.sku,
-    nameAr: productData.name?.ar || productData.name,
-    nameEn: productData.name?.en,
-    descriptionAr: productData.description?.ar || productData.description,
-    descriptionEn: productData.description?.en,
-    price: String(productData.price),
-    salePrice: productData.sale_price ? String(productData.sale_price) : undefined,
-    currency: productData.currency || 'SAR',
-    quantity: productData.quantity || 0,
-    isInStock: productData.is_available ? 1 : 0,
-    mainImage: productData.main_image || productData.image?.url,
-    images: JSON.stringify(productData.images || []),
-    categoryId: productData.category?.id ? String(productData.category.id) : undefined,
-    categoryName: productData.category?.name,
-    isActive: productData.is_active ? 1 : 0,
-    isPublished: productData.is_published ? 1 : 0,
-    zidData: JSON.stringify(productData),
-  });
-
+  await upsertProductFromZid(merchantId, productData);
 }
 
 /**
@@ -193,28 +173,7 @@ async function handleProductUpdated(
   merchantId: number,
   productData: any,
 ) {
-  // Update product in database
-  await saveZidProduct(merchantId, {
-    zidProductId: String(productData.id),
-    zidSku: productData.sku,
-    nameAr: productData.name?.ar || productData.name,
-    nameEn: productData.name?.en,
-    descriptionAr: productData.description?.ar || productData.description,
-    descriptionEn: productData.description?.en,
-    price: String(productData.price),
-    salePrice: productData.sale_price ? String(productData.sale_price) : undefined,
-    currency: productData.currency || 'SAR',
-    quantity: productData.quantity || 0,
-    isInStock: productData.is_available ? 1 : 0,
-    mainImage: productData.main_image || productData.image?.url,
-    images: JSON.stringify(productData.images || []),
-    categoryId: productData.category?.id ? String(productData.category.id) : undefined,
-    categoryName: productData.category?.name,
-    isActive: productData.is_active ? 1 : 0,
-    isPublished: productData.is_published ? 1 : 0,
-    zidData: JSON.stringify(productData),
-  });
-
+  await upsertProductFromZid(merchantId, productData);
 }
 
 /**
@@ -224,16 +183,7 @@ async function handleProductDeleted(
   merchantId: number,
   productData: any,
 ) {
-  // Mark product as inactive
-  const product = await getZidProductByZidId(merchantId, String(productData.id));
-  if (product) {
-    await saveZidProduct(merchantId, {
-      zidProductId: String(productData.id),
-      isActive: 0,
-      isPublished: 0,
-    });
-  }
-
+  await deactivateProductFromZid(merchantId, productData.id);
 }
 
 /**
@@ -243,16 +193,7 @@ async function handleInventoryUpdated(
   merchantId: number,
   inventoryData: any,
 ) {
-  // Update product quantity
-  const product = await getZidProductByZidId(merchantId, String(inventoryData.product_id));
-  if (product) {
-    await saveZidProduct(merchantId, {
-      zidProductId: String(inventoryData.product_id),
-      quantity: inventoryData.quantity || 0,
-      isInStock: (inventoryData.quantity || 0) > 0 ? 1 : 0,
-    });
-  }
-
+  await updateProductInventoryFromZid(merchantId, inventoryData);
 }
 
 /**
