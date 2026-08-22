@@ -20,9 +20,6 @@ import {
   createExtractedFaq,
   createProduct,
   deactivateInstancesByPhoneNumber,
-  deleteAllExtractedFaqs,
-  deleteAllProductsByMerchantId,
-  deleteKnowledgeDocsByMerchantId,
   getActiveInstanceByPhoneNumber,
   getConversationCountByMerchantId,
   getConversationsByMerchantId,
@@ -176,6 +173,7 @@ function checkApiRateLimit(key: string, maxRequests: number = 100, windowMs: num
 // PEN-BYAAN-01: Separate rate limiters for sensitive operations
 const provisionLimitMap: Record<string, { count: number; resetAt: number }> = {};
 const syncLimitMap: Record<string, { count: number; resetAt: number }> = {};
+const destructiveLimitMap: Record<string, { count: number; resetAt: number }> = {};
 
 function checkProvisionLimit(key: string): boolean {
   return checkSpecialLimit(provisionLimitMap, key, 5, 3600_000); // 5 per hour
@@ -226,6 +224,9 @@ setInterval(() => {
   }
   for (const key of Object.keys(syncLimitMap)) {
     if (syncLimitMap[key].resetAt < now) delete syncLimitMap[key];
+  }
+  for (const key of Object.keys(destructiveLimitMap)) {
+    if (destructiveLimitMap[key].resetAt < now) delete destructiveLimitMap[key];
   }
 }, 300_000);
 
@@ -711,31 +712,47 @@ sariApiRouter.post('/sync/faqs', async (req: AuthenticatedRequest, res: Response
   }
 });
 
-// ── POST /api/v1/brain/reset — Full brain reset ─────────────
+// ── POST /api/v1/brain/reset — Reset API-managed knowledge ──
 sariApiRouter.post('/brain/reset', async (req: AuthenticatedRequest, res: Response) => {
+  if (!checkSpecialLimit(destructiveLimitMap, `brain_reset_${req.apiKeyId || 'unknown'}`, 3, 3600_000)) {
+    return res.status(429).json({
+      error: 'Brain reset rate limit exceeded (3/hour)',
+      errorAr: 'تجاوزت حد إعادة الضبط (3/ساعة)',
+    });
+  }
+
   try {
     const merchantId = req.merchant.id;
-    const { types } = req.body; // optional: ['products', 'faqs', 'document']
+    const [{ resetApiManagedKnowledge }, { apiProductSourceForMerchant }, { logBrainActivity }, knowledgeDb] = await Promise.all([
+      import('../integrations/api-brain-reset'),
+      import('../integrations/api-brain-reset-core'),
+      import('../routers-sari-brain'),
+      import('../db/knowledge'),
+    ]);
+    const productSource = apiProductSourceForMerchant(req.merchant.integrationSource);
+    const result = await resetApiManagedKnowledge(merchantId, req.body, productSource);
 
-    const deleted: string[] = [];
-
-    const typesToReset = types && Array.isArray(types) ? types : ['products', 'faqs', 'document'];
-
-    if (typesToReset.includes('document')) {
-      try { await deleteKnowledgeDocsByMerchantId(merchantId); deleted.push('document'); } catch (e) { /* skip */ }
+    const sideEffects = await Promise.allSettled([
+      logBrainActivity(
+        merchantId,
+        'brain_reset',
+        `API Reset: ${result.deleted.products} منتجات، ${result.deleted.faqs} أسئلة`,
+        { ...result, types: req.body.types },
+      ),
+      knowledgeDb.invalidateCache(merchantId),
+    ]);
+    if (sideEffects.some(entry => entry.status === 'rejected')) {
+      console.warn('[SariAPI] API brain reset committed but cache/activity update failed');
     }
-    if (typesToReset.includes('products')) {
-      try { await deleteAllProductsByMerchantId(merchantId); deleted.push('products'); } catch (e) { /* skip */ }
-    }
-    if (typesToReset.includes('faqs')) {
-      try { await deleteAllExtractedFaqs(merchantId); deleted.push('faqs'); } catch (e) { /* skip */ }
-    }
 
-    const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(merchantId, 'brain_reset', `API Reset: ${deleted.join(', ')}`, { deleted, source: 'api' });
-
-    res.json({ success: true, deleted });
+    res.json({ success: true, ...result });
   } catch (e) {
+    if ((e as Error)?.name === 'ApiBrainResetValidationError') {
+      return res.status(422).json({
+        error: 'Explicit products/faqs selection and reset confirmation are required',
+        errorAr: 'يلزم تحديد المنتجات أو الأسئلة صراحة وإرسال تأكيد إعادة الضبط',
+      });
+    }
     console.error('[SariAPI] Reset failed:', e);
     res.status(500).json({ error: 'Reset failed', errorAr: 'فشل إعادة الضبط' });
   }
