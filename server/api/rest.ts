@@ -557,8 +557,10 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
     return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
   }
 
-  const { products, mode: rawMode } = req.body;
-  // PEN-SYNC-21: Whitelist mode parameter (same as platform endpoint)
+  const { products, mode: rawMode } = req.body ?? {};
+  if (rawMode !== undefined && rawMode !== 'append' && rawMode !== 'replace') {
+    return res.status(400).json({ error: 'mode must be append or replace', errorAr: 'يجب أن يكون الوضع append أو replace' });
+  }
   const mode = rawMode === 'replace' ? 'replace' : 'append';
   if (!Array.isArray(products)) {
     return res.status(400).json({ error: 'products array is required', errorAr: 'مصفوفة المنتجات مطلوبة' });
@@ -569,61 +571,33 @@ sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Resp
 
   try {
     const merchantId = req.merchant.id;
+    const [{ syncExternalProducts }, { logBrainActivity }] = await Promise.all([
+      import('../integrations/product-source-sync'),
+      import('../routers-sari-brain'),
+    ]);
+    const source = req.merchant.integrationSource === 'byaan' ? 'byaan' : 'api';
+    const result = await syncExternalProducts(merchantId, products, mode, source);
 
-    // If mode is 'replace', delete existing products first
-    if (mode === 'replace') {
-      await deleteAllProductsByMerchantId(merchantId);
+    const telemetry = await Promise.allSettled([
+      logBrainActivity(
+        merchantId,
+        'products_imported',
+        `API Sync: ${result.created} جديد، ${result.updated} محدّث، ${result.archived} مؤرشف (${mode})`,
+        { ...result, mode, source },
+      ),
+    ]);
+    if (telemetry.some((entry) => entry.status === 'rejected')) {
+      console.warn('[SariAPI] API product sync committed but telemetry update failed');
     }
 
-    // Load existing products for upsert matching (by name)
-    const existingProducts = mode !== 'replace'
-      ? await (getProductsByMerchantId as any)(merchantId, { limit: 9999 })
-      : [];
-    const existingMap = new Map<string, number>();
-    for (const ep of existingProducts) {
-      existingMap.set((ep.name || '').trim().toLowerCase(), ep.id);
-    }
-
-    let created = 0;
-    let updated = 0;
-    let errors = 0;
-    for (const p of products) {
-      if (!p.name) continue;
-      try {
-        const sanitizedName = String(p.name).substring(0, 255);
-        const productData: any = {
-          merchantId,
-          name: sanitizedName,
-          description: p.description ? String(p.description).substring(0, 2000) : undefined,
-          price: Number(p.price) || 0,
-          category: p.category ? String(p.category).substring(0, 100) : undefined,
-          imageUrl: p.imageUrl ? String(p.imageUrl).substring(0, 500) : undefined,
-          isActive: p.inStock !== undefined ? Boolean(p.inStock) : (p.isActive !== undefined ? Boolean(p.isActive) : true),
-        };
-
-        // Upsert: check if product with same name already exists
-        const existingId = existingMap.get(sanitizedName.trim().toLowerCase());
-        if (existingId) {
-          const { merchantId: _, ...updateData } = productData;
-          await updateProduct(existingId, updateData);
-          updated++;
-        } else {
-          await createProduct(productData);
-          created++;
-          existingMap.set(sanitizedName.trim().toLowerCase(), -1);
-        }
-      } catch (insertErr: any) {
-        errors++;
-        console.error(`[SariAPI] Product sync failed for "${String(p.name).substring(0, 50)}":`, insertErr?.message);
-      }
-    }
-
-    // Log activity
-    const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(merchantId, 'products_imported', `API Sync: ${created} جديد، ${updated} محدّث (${mode || 'upsert'})`, { created, updated, mode, source: 'api' });
-
-    res.json({ success: true, created, updated, mode: mode || 'upsert' });
+    res.json({ success: true, ...result, mode });
   } catch (e) {
+    if ((e as Error)?.name === 'ProductSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid product sync entry',
+        errorAr: 'تحتوي دفعة المنتجات على عنصر غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] Product sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت المزامنة' });
   }
@@ -1161,8 +1135,10 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
 
-  const { products, mode: rawMode } = req.body;
-  // SEC-2: Whitelist mode parameter
+  const { products, mode: rawMode } = req.body ?? {};
+  if (rawMode !== undefined && rawMode !== 'append' && rawMode !== 'replace') {
+    return res.status(400).json({ error: 'mode must be append or replace', errorAr: 'يجب أن يكون الوضع append أو replace' });
+  }
   const mode = rawMode === 'replace' ? 'replace' : 'append';
   if (!Array.isArray(products)) {
     return res.status(400).json({ error: 'products array is required', errorAr: 'مصفوفة المنتجات مطلوبة' });
@@ -1173,94 +1149,34 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
 
   try {
     const merchantId = merchant.id;
+    const [{ syncExternalProducts }, { updateByaanSyncStatus }, { logBrainActivity }] = await Promise.all([
+      import('../integrations/product-source-sync'),
+      import('../integrations/byaan'),
+      import('../routers-sari-brain'),
+    ]);
+    const result = await syncExternalProducts(merchantId, products, mode, 'byaan');
 
-    if (mode === 'replace') {
-      await deleteAllProductsByMerchantId(merchantId);
+    const telemetry = await Promise.allSettled([
+      logBrainActivity(
+        merchantId,
+        'products_imported',
+        `Platform Sync: ${result.created} جديد، ${result.updated} محدّث، ${result.archived} مؤرشف (${mode})`,
+        { ...result, mode, source: 'platform' },
+      ),
+      updateByaanSyncStatus(merchantId, 'active'),
+    ]);
+    if (telemetry.some((entry) => entry.status === 'rejected')) {
+      console.warn('[SariAPI] Platform product sync committed but telemetry update failed');
     }
 
-    // Load existing products for upsert matching (by name)
-    const existingProducts = mode !== 'replace' 
-      ? await (getProductsByMerchantId as any)(merchantId, { limit: 9999 })
-      : [];
-    // Build lookup map: normalized name → product id
-    const existingMap = new Map<string, number>();
-    for (const ep of existingProducts) {
-      existingMap.set((ep.name || '').trim().toLowerCase(), ep.id);
-    }
-
-    let created = 0;
-    let updated = 0;
-    let errors = 0;
-    for (const p of products) {
-      if (!p.name) continue;
-      try {
-        // SEC-3: Sanitize all text fields to prevent stored XSS
-        // Byaan courses: save course dates + enrollment for availability checks
-        const stockValue = p.maxStudents ? Number(p.maxStudents) : (p.stock ? Number(p.stock) : null);
-        const sanitizedName = stripHtml(String(p.name)).substring(0, 255);
-
-        // Course date validation: auto-deactivate expired courses
-        const courseEndDate = p.endDate || p.courseEndDate || null;
-        const courseStartDate = p.startDate || p.courseStartDate || null;
-        const enrolledCount = p.enrolledCount ? Number(p.enrolledCount) : 0;
-        const maxStudents = p.maxStudents ? Number(p.maxStudents) : null;
-        const isExpired = courseEndDate ? new Date(courseEndDate) < new Date() : false;
-        const isFull = maxStudents !== null && enrolledCount >= maxStudents;
-        const registrationOpen = p.registrationOpen !== undefined 
-          ? Boolean(p.registrationOpen) 
-          : (!isExpired && !isFull);
-
-        const productData: any = {
-          merchantId,
-          name: sanitizedName,
-          nameAr: p.nameAr ? stripHtml(String(p.nameAr)).substring(0, 255) : undefined,
-          description: p.description ? stripHtml(String(p.description)).substring(0, 2000) : undefined,
-          descriptionAr: p.descriptionAr ? stripHtml(String(p.descriptionAr)).substring(0, 2000) : undefined,
-          price: Number(p.price) || 0,
-          category: p.category ? stripHtml(String(p.category)).substring(0, 100) : undefined,
-          imageUrl: p.imageUrl ? stripHtml(String(p.imageUrl)).substring(0, 500) : undefined,
-          productUrl: p.productUrl ? stripHtml(String(p.productUrl)).substring(0, 500) : undefined,
-          // Auto-deactivate expired courses
-          isActive: isExpired ? false : (p.inStock !== undefined ? Boolean(p.inStock) : (p.isActive !== undefined ? Boolean(p.isActive) : true)),
-          stock: stockValue,
-          trackInventory: stockValue !== null ? 1 : 0,
-          // Course-specific fields
-          courseStartDate: courseStartDate || undefined,
-          courseEndDate: courseEndDate || undefined,
-          maxStudents: maxStudents,
-          enrolledCount: enrolledCount,
-          registrationOpen: registrationOpen ? 1 : 0,
-        };
-
-        // Upsert: check if product with same name already exists
-        const existingId = existingMap.get(sanitizedName.trim().toLowerCase());
-        if (existingId) {
-          // Update existing product (don't duplicate)
-          const { merchantId: _, ...updateData } = productData;
-          await updateProduct(existingId, updateData);
-          updated++;
-        } else {
-          // Create new product
-          await createProduct(productData);
-          created++;
-          // Add to map so subsequent duplicates in same batch are caught
-          existingMap.set(sanitizedName.trim().toLowerCase(), -1);
-        }
-      } catch (insertErr: any) {
-        errors++;
-        console.error(`[SariAPI] Platform product sync failed for "${stripHtml(String(p.name)).substring(0, 50)}":`, insertErr?.message);
-      }
-    }
-
-    const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(merchantId, 'products_imported', `Platform Sync: ${created} جديد، ${updated} محدّث (${mode || 'upsert'})`, { created, updated, mode, source: 'platform' });
-
-    // Update last_sync_at timestamp
-    const { updateByaanSyncStatus } = await import('../integrations/byaan');
-    await updateByaanSyncStatus(merchantId, 'active');
-
-    res.json({ success: true, created, updated, mode: mode || 'upsert' });
+    res.json({ success: true, ...result, mode });
   } catch (e) {
+    if ((e as Error)?.name === 'ProductSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid product sync entry',
+        errorAr: 'تحتوي دفعة المنتجات على عنصر غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] Platform product sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت المزامنة' });
   }
