@@ -39,12 +39,19 @@ export const comparePlanCopyKeys = [
   'noPlansDescription', 'unlimited', 'updateFailed',
 ] as const;
 
+export const actionCopyKeys = [
+  'copyNamed', 'openNamed', 'disableNamed', 'editNamed', 'deleteNamed',
+  'activateNamed', 'deactivateNamed', 'viewNamed', 'viewReportNamed',
+  'sendNamed', 'previousPage', 'nextPage',
+] as const;
+
 type CopySection<Keys extends readonly string[]> = Record<Keys[number], string>;
 
 export type MerchantUxCopy = {
   serviceForm: CopySection<typeof serviceFormCopyKeys>;
   discounts: CopySection<typeof discountCopyKeys>;
   comparePlans: CopySection<typeof comparePlanCopyKeys>;
+  actions: CopySection<typeof actionCopyKeys>;
 };
 
 export function flattenMerchantUxKeys(copy: MerchantUxCopy): string[] {

@@ -275,9 +275,11 @@ export default function ServicePackages() {
                       {t('servicePackagesPage.text31')}
                     </Button>
                     <Button
+                      type="button"
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(pkg.id)}
+                      aria-label={t('merchantUx.actions.deleteNamed', { name: pkg.name })}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

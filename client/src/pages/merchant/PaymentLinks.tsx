@@ -325,25 +325,31 @@ export default function PaymentLinks() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => copyLink(link.tapPaymentUrl)}
+                            aria-label={t('merchantUx.actions.copyNamed', { name: link.title })}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => window.open(link.tapPaymentUrl, '_blank')}
+                            aria-label={t('merchantUx.actions.openNamed', { name: link.title })}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
                           {link.isActive && (
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
                               onClick={() => disableLinkMutation.mutate({ id: link.id })}
                               disabled={disableLinkMutation.isPending}
+                              aria-label={t('merchantUx.actions.disableNamed', { name: link.title })}
                             >
                               <Ban className="h-4 w-4" />
                             </Button>

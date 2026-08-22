@@ -231,9 +231,11 @@ export default function ServiceCategories() {
                       {t('serviceCategoriesPage.text27')}
                     </Button>
                     <Button
+                      type="button"
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(category.id)}
+                      aria-label={t('merchantUx.actions.deleteNamed', { name: category.name })}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

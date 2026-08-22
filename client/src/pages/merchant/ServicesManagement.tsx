@@ -223,9 +223,11 @@ export default function ServicesManagement() {
                       {t('servicesManagementPage.text23')}
                     </Button>
                     <Button
+                      type="button"
                       variant="destructive"
                       size="sm"
                       onClick={() => handleDelete(service.id)}
+                      aria-label={t('merchantUx.actions.deleteNamed', { name: service.name })}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

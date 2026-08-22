@@ -66,6 +66,13 @@ const merchantUxAr: MerchantUxCopy = {
     noPlansDescription: 'لا يمكن تغيير الاشتراك حتى تعود بيانات الباقات من الخادم.',
     unlimited: 'غير محدود', updateFailed: 'فشل تحديث الباقة',
   },
+  actions: {
+    copyNamed: 'نسخ {{name}}', openNamed: 'فتح {{name}}', disableNamed: 'تعطيل {{name}}',
+    editNamed: 'تعديل {{name}}', deleteNamed: 'حذف {{name}}', activateNamed: 'تفعيل {{name}}',
+    deactivateNamed: 'إيقاف {{name}}', viewNamed: 'عرض {{name}}',
+    viewReportNamed: 'عرض تقرير {{name}}', sendNamed: 'إرسال {{name}}',
+    previousPage: 'الصفحة السابقة', nextPage: 'الصفحة التالية',
+  },
 };
 
 export default merchantUxAr;

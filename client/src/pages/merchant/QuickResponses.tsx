@@ -310,9 +310,16 @@ export default function QuickResponses() {
                     <TableCell className="text-left">
                       <div className="flex gap-2">
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleToggleActive(response.id, !!response.isActive)}
+                          aria-label={t(
+                            response.isActive
+                              ? 'merchantUx.actions.deactivateNamed'
+                              : 'merchantUx.actions.activateNamed',
+                            { name: response.trigger },
+                          )}
                         >
                           {response.isActive ? (
                             <ToggleLeft className="h-4 w-4" />
@@ -321,16 +328,20 @@ export default function QuickResponses() {
                           )}
                         </Button>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => openEditDialog(response)}
+                          aria-label={t('merchantUx.actions.editNamed', { name: response.trigger })}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(response.id)}
+                          aria-label={t('merchantUx.actions.deleteNamed', { name: response.trigger })}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

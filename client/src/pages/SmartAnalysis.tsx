@@ -549,7 +549,15 @@ export default function SmartAnalysis() {
                       {page.useInBot && <Badge className="bg-green-100 text-green-800">{t('smartAnalysis.auto_27')}</Badge>}
                     </CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => deletePage.mutate({ pageId: page.id })}><Trash2 className="w-4 h-4" /></Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deletePage.mutate({ pageId: page.id })}
+                    aria-label={t('merchantUx.actions.deleteNamed', { name: page.title || page.pageType })}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -576,7 +584,15 @@ export default function SmartAnalysis() {
                       {faq.useInBot && <Badge className="bg-green-100 text-green-800">{t('smartAnalysis.auto_29')}</Badge>}
                     </CardDescription>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => deleteFaq.mutate({ faqId: faq.id })}><Trash2 className="w-4 h-4" /></Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => deleteFaq.mutate({ faqId: faq.id })}
+                    aria-label={t('merchantUx.actions.deleteNamed', { name: faq.question })}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent><p className="text-sm text-muted-foreground">{faq.answer}</p></CardContent>
@@ -593,14 +609,35 @@ export default function SmartAnalysis() {
           ) : analyses && analyses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {analyses.map((analysis) => (
-                <Card key={analysis.id} className={`cursor-pointer transition-all hover:shadow-md ${selectedAnalysisId === analysis.id ? 'ring-2 ring-primary' : ''}`} onClick={() => setSelectedAnalysisId(analysis.id)}>
+                <Card
+                  key={analysis.id}
+                  className={`cursor-pointer transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedAnalysisId === analysis.id ? 'ring-2 ring-primary' : ''}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={selectedAnalysisId === analysis.id}
+                  aria-label={t('merchantUx.actions.viewNamed', { name: analysis.title || analysis.url })}
+                  onClick={() => setSelectedAnalysisId(analysis.id)}
+                  onKeyDown={(event) => {
+                    if (event.currentTarget !== event.target) return;
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setSelectedAnalysisId(analysis.id);
+                    }
+                  }}
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <CardTitle className="text-lg line-clamp-1">{analysis.title || 'بدون عنوان'}</CardTitle>
                         <CardDescription className="line-clamp-1">{analysis.url}</CardDescription>
                       </div>
-                      <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); if (confirm('هل أنت متأكد من حذف هذا التحليل؟')) deleteAnalysisMutation.mutate({ id: analysis.id }); }}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => { e.stopPropagation(); if (confirm('هل أنت متأكد من حذف هذا التحليل؟')) deleteAnalysisMutation.mutate({ id: analysis.id }); }}
+                        aria-label={t('merchantUx.actions.deleteNamed', { name: analysis.title || analysis.url })}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

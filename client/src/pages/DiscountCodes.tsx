@@ -488,9 +488,16 @@ export default function DiscountCodes() {
                     <TableCell className="text-left">
                       <div className="flex items-center gap-2">
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleToggleActive(code.id, Boolean(code.isActive))}
+                          aria-label={t(
+                            code.isActive
+                              ? 'merchantUx.actions.deactivateNamed'
+                              : 'merchantUx.actions.activateNamed',
+                            { name: code.code },
+                          )}
                         >
                           {code.isActive ? (
                             <ToggleLeft className="h-4 w-4" />
@@ -499,9 +506,11 @@ export default function DiscountCodes() {
                           )}
                         </Button>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => setDeleteTarget(code.id)}
+                          aria-label={t('merchantUx.actions.deleteNamed', { name: code.code })}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>

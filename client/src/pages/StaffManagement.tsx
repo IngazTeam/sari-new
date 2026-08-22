@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, User, Phone, Briefcase, Loader2, CalendarClock, UserCheck, Layers } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 interface StaffFormData {
   name: string;
@@ -27,6 +28,7 @@ interface StaffMember {
 }
 
 export default function StaffManagement() {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [formData, setFormData] = useState<StaffFormData>({
@@ -350,17 +352,21 @@ export default function StaffManagement() {
                     <TableCell className="text-left">
                       <div className="flex items-center gap-2">
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEdit(staff)}
+                          aria-label={t('merchantUx.actions.editNamed', { name: staff.name })}
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(staff.id, staff.name)}
                           disabled={deleteMutation.isPending}
+                          aria-label={t('merchantUx.actions.deleteNamed', { name: staff.name })}
                         >
                           <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>

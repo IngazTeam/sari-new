@@ -304,19 +304,23 @@ export default function Orders() {
               </div>
               <div className="flex gap-2">
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
+                  aria-label={t('merchantUx.actions.previousPage')}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
                 <span className="flex items-center px-3 text-sm font-medium">{currentPage}</span>
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(p => p + 1)}
                   disabled={!orders || orders.length < pageSize}
+                  aria-label={t('merchantUx.actions.nextPage')}
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>

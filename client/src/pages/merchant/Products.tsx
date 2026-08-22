@@ -565,18 +565,22 @@ export default function Products() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEdit(product)}
                             disabled={isLocked}
+                            aria-label={t('merchantUx.actions.editNamed', { name: product.name })}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDelete(product.id, product.name)}
                             disabled={deleteMutation.isPending || isLocked}
+                            aria-label={t('merchantUx.actions.deleteNamed', { name: product.name })}
                           >
                             <Trash2 className="h-4 w-4 text-red-600" />
                           </Button>

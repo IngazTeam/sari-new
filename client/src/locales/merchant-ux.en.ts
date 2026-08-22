@@ -63,6 +63,13 @@ const merchantUxEn: MerchantUxCopy = {
     noPlans: 'No plans are currently available', noPlansDescription: 'The subscription cannot be changed until plan data is available.',
     unlimited: 'Unlimited', updateFailed: 'Could not update the plan',
   },
+  actions: {
+    copyNamed: 'Copy {{name}}', openNamed: 'Open {{name}}', disableNamed: 'Disable {{name}}',
+    editNamed: 'Edit {{name}}', deleteNamed: 'Delete {{name}}', activateNamed: 'Activate {{name}}',
+    deactivateNamed: 'Deactivate {{name}}', viewNamed: 'View {{name}}',
+    viewReportNamed: 'View {{name}} report', sendNamed: 'Send {{name}}',
+    previousPage: 'Previous page', nextPage: 'Next page',
+  },
 };
 
 export default merchantUxEn;

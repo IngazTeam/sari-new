@@ -212,20 +212,24 @@ export default function Campaigns() {
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
+                          type="button"
                           size="sm"
                           variant="ghost"
                           onClick={() => setLocation(`/merchant/campaigns/${campaign.id}`)}
                           title={t('campaignsPage.viewDetails')}
+                          aria-label={t('merchantUx.actions.viewNamed', { name: campaign.name })}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
 
                         {campaign.status === 'completed' && (
                           <Button
+                            type="button"
                             size="sm"
                             variant="ghost"
                             onClick={() => setLocation(`/merchant/campaigns/${campaign.id}/report`)}
                             title={t('campaignsPage.viewReport')}
+                            aria-label={t('merchantUx.actions.viewReportNamed', { name: campaign.name })}
                           >
                             <FileText className="w-4 h-4 text-blue-600" />
                           </Button>
@@ -234,26 +238,32 @@ export default function Campaigns() {
                         {campaign.status === 'draft' && (
                           <>
                             <Button
+                              type="button"
                               size="sm"
                               variant="ghost"
                               onClick={() => handleSend(campaign.id, campaign.name)}
                               disabled={sendMutation.isPending}
                               title={t('campaignsPage.sendNow')}
+                              aria-label={t('merchantUx.actions.sendNamed', { name: campaign.name })}
                             >
                               <Send className="w-4 h-4 text-green-600" />
                             </Button>
                             <Button
+                              type="button"
                               size="sm"
                               variant="ghost"
                               onClick={() => setLocation(`/merchant/campaigns/${campaign.id}/edit`)}
+                              aria-label={t('merchantUx.actions.editNamed', { name: campaign.name })}
                             >
                               <Pencil className="w-4 h-4" />
                             </Button>
                             <Button
+                              type="button"
                               size="sm"
                               variant="ghost"
                               onClick={() => handleDelete(campaign.id)}
                               disabled={deleteMutation.isPending}
+                              aria-label={t('merchantUx.actions.deleteNamed', { name: campaign.name })}
                             >
                               <Trash2 className="w-4 h-4 text-red-600" />
                             </Button>
