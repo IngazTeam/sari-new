@@ -32,12 +32,7 @@ export default function CalendlyIntegration() {
   const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
-  const [autoConfirm, setAutoConfirm] = useState(true);
-  const [sendReminders, setSendReminders] = useState(true);
-  const [syncToWhatsApp, setSyncToWhatsApp] = useState(true);
-
-  // Get merchant ID from localStorage
-  const merchantId = parseInt(localStorage.getItem('merchantId') || '0');
+  const [syncToWhatsApp, setSyncToWhatsApp] = useState(false);
 
   // Get connection status
   const { data: connection, isLoading, refetch } = trpc.calendly.getConnection.useQuery(
@@ -146,8 +141,6 @@ export default function CalendlyIntegration() {
 
   const handleSaveSettings = () => {
     updateSettingsMutation.mutate({
-      autoConfirm,
-      sendReminders,
       syncToWhatsApp,
     });
   };
@@ -155,9 +148,7 @@ export default function CalendlyIntegration() {
   // Load settings when connection data is available
   useEffect(() => {
     if (connection?.settings) {
-      setAutoConfirm(connection.settings.autoConfirm ?? true);
-      setSendReminders(connection.settings.sendReminders ?? true);
-      setSyncToWhatsApp(connection.settings.syncToWhatsApp ?? true);
+      setSyncToWhatsApp(connection.settings.syncToWhatsApp ?? false);
     }
   }, [connection]);
 
@@ -174,7 +165,9 @@ export default function CalendlyIntegration() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{t('calendlyIntegrationPage.text1')}</h1>
         <p className="text-muted-foreground">
-          {t('calendlyIntegrationPage.text49')}
+          {i18n.language.startsWith('ar')
+            ? 'اربط Calendly لمزامنة المواعيد، مع خيار إرسال تأكيد واتساب بعد موافقتك.'
+            : 'Connect Calendly to sync appointments, with an opt-in WhatsApp confirmation.'}
         </p>
       </div>
 
@@ -217,13 +210,15 @@ export default function CalendlyIntegration() {
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Users className="h-5 w-5 mx-auto mb-2 text-orange-500" />
-                <div className="text-2xl font-bold">{stats?.eventTypes || 0}</div>
+                <div className="text-2xl font-bold">{eventTypes?.length || 0}</div>
                 <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text7')}</div>
               </div>
               <div className="text-center p-4 bg-muted/50 rounded-lg">
                 <Bell className="h-5 w-5 mx-auto mb-2 text-purple-500" />
                 <div className="text-2xl font-bold">{stats?.remindersSent || 0}</div>
-                <div className="text-sm text-muted-foreground">{t('calendlyIntegrationPage.text8')}</div>
+                <div className="text-sm text-muted-foreground">
+                  {i18n.language.startsWith('ar') ? 'تأكيدات واتساب مرسلة' : 'WhatsApp confirmations sent'}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -300,30 +295,12 @@ export default function CalendlyIntegration() {
               <CardHeader>
                 <CardTitle>{t('calendlyIntegrationPage.text11')}</CardTitle>
                 <CardDescription>
-                  {t('calendlyIntegrationPage.text51')}
+                  {i18n.language.startsWith('ar')
+                    ? 'إرسال تأكيد الحجز اختياري ومتوقف افتراضيًا.'
+                    : 'Booking confirmations are optional and disabled by default.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base">{t('calendlyIntegrationPage.text12')}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {t('calendlyIntegrationPage.text30')}
-                    </p>
-                  </div>
-                  <Switch checked={autoConfirm} onCheckedChange={setAutoConfirm} />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base">{t('calendlyIntegrationPage.text13')}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {t('calendlyIntegrationPage.text31')}
-                    </p>
-                  </div>
-                  <Switch checked={sendReminders} onCheckedChange={setSendReminders} />
-                </div>
-
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-base">{t('calendlyIntegrationPage.text14')}</Label>
@@ -361,7 +338,9 @@ export default function CalendlyIntegration() {
               <CardHeader>
                 <CardTitle>{t('calendlyIntegrationPage.text15')}</CardTitle>
                 <CardDescription>
-                  {t('calendlyIntegrationPage.text52')}
+                  {i18n.language.startsWith('ar')
+                    ? 'يسجل ساري الاشتراك ويحقق كل طلب قبل حفظه.'
+                    : 'Sari registers the subscription and verifies every delivery before persistence.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -369,13 +348,29 @@ export default function CalendlyIntegration() {
                   <Webhook className="h-4 w-4" />
                   <AlertDescription>
                     <div className="space-y-2">
-                      <p className="font-medium">{t('calendlyIntegrationPage.text16')}</p>
-                      <code className="block p-2 bg-muted rounded text-sm break-all">
-                        {window.location.origin}/api/webhooks/calendly/{merchantId}
-                      </code>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">
+                          {i18n.language.startsWith('ar') ? 'حالة Webhook' : 'Webhook status'}
+                        </p>
+                        <Badge variant={connection?.webhook?.registered ? 'default' : 'destructive'}>
+                          {connection?.webhook?.registered
+                            ? (i18n.language.startsWith('ar') ? 'مسجل تلقائيًا' : 'Registered automatically')
+                            : (i18n.language.startsWith('ar') ? 'غير مسجل' : 'Not registered')}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-muted-foreground mt-2">
-                        {t('calendlyIntegrationPage.text53')}
+                        {i18n.language.startsWith('ar')
+                          ? 'يدير ساري عنوان الاستقبال ومفتاح التوقيع تلقائيًا. لا تنسخ عنوانًا أو رقم متجر إلى Calendly.'
+                          : 'Sari manages the callback and signing key automatically. No merchant identifier or manual URL is exposed.'}
                       </p>
+                      {connection?.webhook?.health && (
+                        <div className="grid grid-cols-2 gap-2 pt-2 text-sm sm:grid-cols-4">
+                          <span>{i18n.language.startsWith('ar') ? 'آخر 7 أيام' : 'Last 7 days'}: {connection.webhook.health.recentTotal}</span>
+                          <span>{i18n.language.startsWith('ar') ? 'مكتمل' : 'Completed'}: {connection.webhook.health.recentCompleted}</span>
+                          <span>{i18n.language.startsWith('ar') ? 'قيد الانتظار' : 'Awaiting'}: {connection.webhook.health.awaiting}</span>
+                          <span>{i18n.language.startsWith('ar') ? 'مراجعة' : 'Review'}: {connection.webhook.health.manualReview}</span>
+                        </div>
+                      )}
                     </div>
                   </AlertDescription>
                 </Alert>
@@ -391,15 +386,11 @@ export default function CalendlyIntegration() {
                       <CheckCircle2 className="h-4 w-4 text-green-500" />
                       <span>{t('calendlyIntegrationPage.text19')}</span>
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
-                      <span>{t('calendlyIntegrationPage.text20')}</span>
-                    </li>
                   </ul>
                 </div>
 
                 <Button variant="outline" asChild>
-                  <a href="https://developer.calendly.com/api-docs/ZG9jOjQ2NTA5-webhooks" target="_blank" rel="noopener noreferrer">
+                  <a href="https://developer.calendly.com/receive-data-from-scheduled-events-in-real-time-with-webhook-subscriptions" target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4 ml-2" />
                     {t('calendlyIntegrationPage.text54')}
                   </a>
@@ -485,7 +476,7 @@ export default function CalendlyIntegration() {
                 {t('calendlyIntegrationPage.text38')}
               </Button>
               <Button variant="outline" asChild>
-                <a href="https://calendly.com/integrations/api_webhooks" target="_blank" rel="noopener noreferrer">
+                <a href="https://developer.calendly.com/how-to-authenticate-with-personal-access-tokens" target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4 ml-2" />
                   {t('calendlyIntegrationPage.text56')}
                 </a>

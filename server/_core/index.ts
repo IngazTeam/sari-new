@@ -40,6 +40,7 @@ import { installProductionConsoleRedaction } from "../security/log-redaction";
 import { startByaanOutboxWorker } from "../integrations/byaan-outbox";
 import { startZidOrderNotificationWorker } from "../integrations/zid-order-notification-outbox";
 import { startSallaWebhookReceiptWorker } from "../integrations/salla-webhook-receipts";
+import { startCalendlyWebhookReceiptWorker } from "../integrations/calendly-webhook-receipts";
 import publicSupportRouter from "../public-support";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -636,6 +637,9 @@ async function startServer() {
 
       // Durable Salla webhook effects with leases, retry and persistent replay protection.
       startSallaWebhookReceiptWorker();
+
+      // Durable Calendly invitee projection with canonical provider fetches.
+      startCalendlyWebhookReceiptWorker();
 
       // Initialize Escalation Cascade job (runs every 60s — cascading phone alerts)
       startEscalationCascadeJob();

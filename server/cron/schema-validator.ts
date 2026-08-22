@@ -25,7 +25,11 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'legal_retention_records', columns: ['subject_reference_hash', 'encrypted_payload', 'retain_until'] },
   { table: 'merchant_members', columns: ['merchant_id', 'user_id', 'role', 'is_active'] },
   { table: 'merchant_invitations', columns: ['token', 'recipient_hash', 'accepted_by_user_id', 'status', 'expires_at'] },
-  { table: 'platform_integrations', columns: ['webhook_endpoint_id', 'webhook_auth_hash'] },
+  { table: 'platform_integrations', columns: [
+    'webhook_endpoint_id', 'webhook_auth_hash', 'webhook_signing_secret', 'webhook_subscription_uri',
+  ] },
+  { table: 'calendly_appointments', columns: ['merchant_id', 'invitee_uri', 'provider_updated_at'] },
+  { table: 'calendly_webhook_receipts', columns: ['event_key', 'status', 'available_at', 'claimed_at'] },
   { table: 'zid_webhooks', columns: ['payload_hash', 'attempt_count', 'claimed_at'] },
   { table: 'zid_order_notification_outbox', columns: ['event_key', 'status', 'available_at', 'claimed_at'] },
   { table: 'zid_oauth_states', columns: ['state_hash', 'session_hash', 'expires_at', 'consumed_at'] },

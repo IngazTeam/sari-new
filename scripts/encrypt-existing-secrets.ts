@@ -90,12 +90,16 @@ async function main() {
     id: platformIntegrations.id,
     accessToken: platformIntegrations.accessToken,
     refreshToken: platformIntegrations.refreshToken,
+    webhookSigningSecret: platformIntegrations.webhookSigningSecret,
     settings: platformIntegrations.settings,
   }).from(platformIntegrations);
   for (const row of integrations) {
     const changes: Record<string, string> = {};
     if (row.accessToken && !isEncryptedSecret(row.accessToken)) changes.accessToken = encryptSecret(row.accessToken);
     if (row.refreshToken && !isEncryptedSecret(row.refreshToken)) changes.refreshToken = encryptSecret(row.refreshToken);
+    if (row.webhookSigningSecret && !isEncryptedSecret(row.webhookSigningSecret)) {
+      changes.webhookSigningSecret = encryptSecret(row.webhookSigningSecret);
+    }
     if (row.settings) {
       try {
         const settings = JSON.parse(row.settings);

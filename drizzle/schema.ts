@@ -1568,6 +1568,8 @@ export const platformIntegrations = mysqlTable("platform_integrations", {
 	refreshToken: text("refresh_token"), // encrypted
 	webhookEndpointId: varchar("webhook_endpoint_id", { length: 48 }),
 	webhookAuthHash: varchar("webhook_auth_hash", { length: 64 }),
+	webhookSigningSecret: text("webhook_signing_secret"), // encrypted; Calendly per-subscription signing key
+	webhookSubscriptionUri: varchar("webhook_subscription_uri", { length: 500 }),
 	isActive: tinyint("is_active").default(1).notNull(),
 	settings: text(), // JSON settings
 	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
@@ -1578,6 +1580,62 @@ export const platformIntegrations = mysqlTable("platform_integrations", {
 		uniqueIndex("platform_integrations_webhook_endpoint_unique").on(table.webhookEndpointId),
 		uniqueIndex("platform_integrations_merchant_type_unique").on(table.merchantId, table.platformType),
 	]);
+
+// Calendly is invitee-scoped: group events can contain multiple invitees, so
+// neither the generic appointments table nor the event URI alone is a valid
+// identity. Keep the provider projection explicit and tenant-scoped.
+export const calendlyAppointments = mysqlTable("calendly_appointments", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	integrationId: int("integration_id").notNull().references(() => platformIntegrations.id, { onDelete: "cascade" }),
+	eventUri: varchar("event_uri", { length: 500 }).notNull(),
+	inviteeUri: varchar("invitee_uri", { length: 500 }).notNull(),
+	eventName: varchar("event_name", { length: 255 }).notNull(),
+	customerName: varchar("customer_name", { length: 255 }).notNull(),
+	customerEmail: varchar("customer_email", { length: 320 }),
+	customerPhone: varchar("customer_phone", { length: 50 }),
+	startAt: timestamp("start_at", { mode: 'string' }).notNull(),
+	endAt: timestamp("end_at", { mode: 'string' }).notNull(),
+	status: mysqlEnum(['active', 'cancelled']).default('active').notNull(),
+	location: varchar({ length: 500 }),
+	providerUpdatedAt: timestamp("provider_updated_at", { mode: 'string' }).notNull(),
+	cancelledAt: timestamp("cancelled_at", { mode: 'string' }),
+	notificationSentAt: timestamp("notification_sent_at", { mode: 'string' }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("calendly_appointments_invitee_unique").on(table.merchantId, table.inviteeUri),
+	index("calendly_appointments_event_idx").on(table.merchantId, table.eventUri),
+	index("calendly_appointments_upcoming_idx").on(table.merchantId, table.status, table.startAt),
+]);
+
+// Durable, PII-minimized webhook inbox. The signed payload is reduced to
+// provider resource URIs plus a digest; the worker fetches canonical data.
+export const calendlyWebhookReceipts = mysqlTable("calendly_webhook_receipts", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	integrationId: int("integration_id").notNull().references(() => platformIntegrations.id, { onDelete: "cascade" }),
+	eventKey: varchar("event_key", { length: 64 }).notNull(),
+	eventType: mysqlEnum("event_type", ['invitee.created', 'invitee.canceled']).notNull(),
+	eventUri: varchar("event_uri", { length: 500 }).notNull(),
+	inviteeUri: varchar("invitee_uri", { length: 500 }).notNull(),
+	signatureTimestamp: int("signature_timestamp").notNull(),
+	status: mysqlEnum(['pending', 'processing', 'completed', 'failed', 'manual_review']).default('pending').notNull(),
+	attemptCount: int("attempt_count").default(0).notNull(),
+	effectApplied: tinyint("effect_applied").default(0).notNull(),
+	notificationRequired: tinyint("notification_required").default(0).notNull(),
+	processingToken: varchar("processing_token", { length: 64 }),
+	availableAt: timestamp("available_at", { mode: 'string' }).defaultNow().notNull(),
+	claimedAt: timestamp("claimed_at", { mode: 'string' }),
+	processedAt: timestamp("processed_at", { mode: 'string' }),
+	lastError: varchar("last_error", { length: 100 }),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("calendly_webhook_receipts_event_unique").on(table.merchantId, table.eventKey),
+	index("calendly_webhook_receipts_dispatch_idx").on(table.status, table.availableAt, table.id),
+	index("calendly_webhook_receipts_merchant_idx").on(table.merchantId, table.createdAt),
+]);
 
 export const zidOauthStates = mysqlTable("zid_oauth_states", {
 	id: int().autoincrement().primaryKey(),
@@ -1844,6 +1902,10 @@ export type ZidSyncLog = InferSelectModel<typeof zidSyncLogs>;
 export type InsertZidSyncLog = InferInsertModel<typeof zidSyncLogs>;
 export type PlatformIntegration = InferSelectModel<typeof platformIntegrations>;
 export type InsertPlatformIntegration = InferInsertModel<typeof platformIntegrations>;
+export type CalendlyAppointment = InferSelectModel<typeof calendlyAppointments>;
+export type InsertCalendlyAppointment = InferInsertModel<typeof calendlyAppointments>;
+export type CalendlyWebhookReceipt = InferSelectModel<typeof calendlyWebhookReceipts>;
+export type InsertCalendlyWebhookReceipt = InferInsertModel<typeof calendlyWebhookReceipts>;
 
 // ============================================
 // Payment System Tables - Tap Payments Integration

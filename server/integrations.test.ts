@@ -11,14 +11,11 @@ vi.mock('./db', () => ({
   upsertProductFromZid: vi.fn(),
   upsertOrderFromZid: vi.fn(),
   updateProductInventoryFromZid: vi.fn(),
-  upsertAppointmentFromCalendly: vi.fn(),
-  cancelAppointmentFromCalendly: vi.fn(),
   createSyncLog: vi.fn(),
   getProductCountByMerchant: vi.fn(),
   getOrderCountByMerchant: vi.fn(),
   getCustomerCountByMerchant: vi.fn(),
   getSyncLogsByMerchant: vi.fn(),
-  getAppointmentStatsByMerchant: vi.fn(),
 }));
 
 vi.mock('./db_zid', () => ({
@@ -32,7 +29,6 @@ vi.mock('./db_zid', () => ({
 import * as db from './db';
 import * as dbZid from './db_zid';
 import { handleZidWebhook } from './integrations/zid';
-import { handleCalendlyWebhook } from './integrations/calendly';
 
 describe('Zid Integration', () => {
   beforeEach(() => {
@@ -137,113 +133,6 @@ describe('Zid Integration', () => {
 
       expect(db.upsertOrderFromZid).not.toHaveBeenCalled();
       expect(db.upsertProductFromZid).not.toHaveBeenCalled();
-    });
-  });
-});
-
-describe('Calendly Integration', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('handleCalendlyWebhook', () => {
-    it('should ignore webhook if integration is not active', async () => {
-      vi.mocked(db.getIntegrationByType).mockResolvedValue(undefined);
-
-      await handleCalendlyWebhook(1, 'invitee.created', { payload: { event: {} } });
-
-      expect(db.upsertAppointmentFromCalendly).not.toHaveBeenCalled();
-    });
-
-    it('should process invitee.created event', async () => {
-      vi.mocked(db.getIntegrationByType).mockResolvedValue({
-        id: 1,
-        merchantId: 1,
-        platformType: 'calendly',
-        storeName: 'Test User',
-        storeUrl: 'https://api.calendly.com/users/123',
-        accessToken: 'api_key_123',
-        refreshToken: null,
-        isActive: 1,
-        settings: JSON.stringify({ syncToWhatsApp: false }),
-        lastSyncAt: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      const eventPayload = {
-        payload: {
-          event: {
-            uri: 'https://api.calendly.com/scheduled_events/abc123',
-            name: 'Consultation',
-            start_time: '2024-01-15T10:00:00Z',
-            end_time: '2024-01-15T11:00:00Z',
-          },
-          invitee: {
-            name: 'John Doe',
-            email: 'john@example.com',
-          },
-        },
-      };
-
-      await handleCalendlyWebhook(1, 'invitee.created', eventPayload);
-
-      expect(db.upsertAppointmentFromCalendly).toHaveBeenCalledWith(1, eventPayload);
-      expect(db.createSyncLog).toHaveBeenCalled();
-    });
-
-    it('should process invitee.canceled event', async () => {
-      vi.mocked(db.getIntegrationByType).mockResolvedValue({
-        id: 1,
-        merchantId: 1,
-        platformType: 'calendly',
-        storeName: 'Test User',
-        storeUrl: 'https://api.calendly.com/users/123',
-        accessToken: 'api_key_123',
-        refreshToken: null,
-        isActive: 1,
-        settings: JSON.stringify({}),
-        lastSyncAt: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      const cancelPayload = {
-        payload: {
-          event: {
-            uri: 'https://api.calendly.com/scheduled_events/abc123',
-            name: 'Consultation',
-          },
-        },
-      };
-
-      await handleCalendlyWebhook(1, 'invitee.canceled', cancelPayload);
-
-      expect(db.cancelAppointmentFromCalendly).toHaveBeenCalledWith(1, cancelPayload);
-      expect(db.createSyncLog).toHaveBeenCalled();
-    });
-
-    it('should handle unknown events gracefully', async () => {
-      vi.mocked(db.getIntegrationByType).mockResolvedValue({
-        id: 1,
-        merchantId: 1,
-        platformType: 'calendly',
-        storeName: 'Test User',
-        storeUrl: 'https://api.calendly.com/users/123',
-        accessToken: 'api_key_123',
-        refreshToken: null,
-        isActive: 1,
-        settings: JSON.stringify({}),
-        lastSyncAt: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-
-      // Should not throw
-      await handleCalendlyWebhook(1, 'unknown.event', {});
-
-      expect(db.upsertAppointmentFromCalendly).not.toHaveBeenCalled();
-      expect(db.cancelAppointmentFromCalendly).not.toHaveBeenCalled();
     });
   });
 });

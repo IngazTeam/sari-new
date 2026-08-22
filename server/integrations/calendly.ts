@@ -1,337 +1,272 @@
+import crypto from 'node:crypto';
 import { z } from 'zod';
-import { protectedProcedure, router } from '../_core/trpc';
 import { TRPCError } from '@trpc/server';
+import { protectedProcedure, router } from '../_core/trpc';
 import {
-  cancelAppointmentFromCalendly,
-  createIntegration,
-  createScheduledMessage,
-  createSyncLog,
   deleteIntegrationByType,
-  getAppointmentStatsByMerchant,
   getIntegrationByType,
   getMerchantByUserId,
+  getPool,
+  replaceCalendlyIntegration,
   updateIntegrationLastSync,
   updateIntegrationSettings,
-  upsertAppointmentFromCalendly,
 } from '../db';
+import {
+  CalendlyApiError,
+  calendlyApiRequest,
+  createCalendlyWebhookSubscription,
+  deleteCalendlyWebhookSubscription,
+  getCalendlyCurrentUser,
+  listCalendlyCollection,
+} from './calendly-api';
+import {
+  getCalendlyAppointmentStats,
+  getCalendlyWebhookHealth,
+  syncCalendlyAppointments,
+} from './calendly-webhook-receipts';
 
-// Calendly API Base URL
-const CALENDLY_API_BASE = 'https://api.calendly.com';
+const apiKeySchema = z.string()
+  .trim()
+  .min(20)
+  .max(4096)
+  .refine(value => !/[\u0000-\u001f\u007f]/.test(value), 'Invalid token');
 
-// Helper function to make Calendly API requests
-async function calendlyApiRequest(endpoint: string, apiKey: string, options: RequestInit = {}) {
-  const response = await fetch(`${CALENDLY_API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Calendly API Error: ${response.status} - ${error}`);
+function integrationSettings(value: string | null): {
+  syncToWhatsApp: boolean;
+} {
+  try {
+    const parsed = value ? JSON.parse(value) : {};
+    return {
+      syncToWhatsApp: parsed?.syncToWhatsApp === true,
+    };
+  } catch {
+    return { syncToWhatsApp: false };
   }
-
-  return response.json();
 }
 
-// Calendly Integration Router
+function calendlyWebhookOrigin(): string {
+  const configured = process.env.CALENDLY_WEBHOOK_BASE_URL
+    || process.env.FRONTEND_URL
+    || process.env.VITE_APP_URL
+    || (process.env.NODE_ENV === 'production' ? 'https://sary.live' : '');
+  if (!configured) throw new Error('CALENDLY_WEBHOOK_BASE_URL_REQUIRED');
+  let url: URL;
+  try {
+    url = new URL(configured);
+  } catch {
+    throw new Error('CALENDLY_WEBHOOK_BASE_URL_INVALID');
+  }
+  const localDevelopment = process.env.NODE_ENV !== 'production'
+    && (url.hostname === 'localhost' || url.hostname === '127.0.0.1');
+  if ((!localDevelopment && url.protocol !== 'https:') || url.username || url.password || url.hash) {
+    throw new Error('CALENDLY_WEBHOOK_BASE_URL_INVALID');
+  }
+  return url.origin;
+}
+
+function safeCalendlyMessage(error: unknown, fallback: string): string {
+  if (error instanceof CalendlyApiError && error.status === 403) {
+    return 'يتطلب Calendly خطة تدعم Webhooks وصلاحيات webhooks:write وscheduled_events:read وinvitees:read';
+  }
+  if (error instanceof CalendlyApiError && error.status === 401) return 'رمز Calendly غير صالح أو منتهي';
+  if (error instanceof Error && error.message.startsWith('CALENDLY_WEBHOOK_BASE_URL_')) {
+    return 'عنوان Webhook الآمن غير مضبوط في الخادم';
+  }
+  return fallback;
+}
+
+async function requireMerchant(userId: number) {
+  const merchant = await getMerchantByUserId(userId);
+  if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+  return merchant;
+}
+
+async function withCalendlyConnectionLock<T>(merchantId: number, action: () => Promise<T>): Promise<T> {
+  const pool = await getPool();
+  if (!pool) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'قاعدة البيانات غير متاحة' });
+  const connection = await pool.getConnection();
+  const lockName = `sari:calendly:connection:${merchantId}`;
+  let acquired = false;
+  try {
+    const [rows] = await connection.query<any[]>('SELECT GET_LOCK(?, 20) AS acquired', [lockName]);
+    acquired = Number(rows[0]?.acquired) === 1;
+    if (!acquired) throw new TRPCError({ code: 'CONFLICT', message: 'عملية ربط Calendly أخرى قيد التنفيذ' });
+    return await action();
+  } finally {
+    if (acquired) await connection.query('SELECT RELEASE_LOCK(?)', [lockName]).catch(() => undefined);
+    connection.release();
+  }
+}
+
 export const calendlyRouter = router({
-  // Get connection status
-  getConnection: protectedProcedure
-    .query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      const integration = await getIntegrationByType(merchant.id, 'calendly');
-      
-      if (!integration) {
-        return { connected: false };
-      }
+  getConnection: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await requireMerchant(ctx.user.id);
+    const integration = await getIntegrationByType(merchant.id, 'calendly');
+    if (!integration) return { connected: false as const };
+    const health = await getCalendlyWebhookHealth(merchant.id);
+    return {
+      connected: Boolean(integration.isActive),
+      userName: integration.storeName,
+      userUri: integration.storeUrl,
+      lastSync: integration.lastSyncAt,
+      webhook: {
+        registered: Boolean(integration.webhookEndpointId && integration.webhookSubscriptionUri),
+        health,
+      },
+      settings: integrationSettings(integration.settings),
+    };
+  }),
 
-      const settings = integration.settings ? JSON.parse(integration.settings) : {};
-      return {
-        connected: !!integration.isActive,
-        userName: integration.storeName, // Using storeName to store user name
-        userUri: integration.storeUrl, // Using storeUrl to store user URI
-        lastSync: integration.lastSyncAt,
-        settings: {
-          autoConfirm: settings.autoConfirm !== false,
-          sendReminders: settings.sendReminders !== false,
-          syncToWhatsApp: settings.syncToWhatsApp !== false,
-        },
-      };
-    }),
-
-  // Connect to Calendly
   connect: protectedProcedure
-    .input(z.object({
-      apiKey: z.string(),
-    }))
+    .input(z.object({ apiKey: apiKeySchema }).strict())
     .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      try {
-        // Verify the API key by fetching current user
-        const userInfo = await calendlyApiRequest('/users/me', input.apiKey);
-
-        // Save integration
-        await createIntegration({
-          merchantId: merchant.id,
-          type: 'calendly',
-          storeName: userInfo.resource.name || 'Calendly User',
-          storeUrl: userInfo.resource.uri,
-          accessToken: input.apiKey,
-          isActive: true,
-          settings: JSON.stringify({
-            autoConfirm: true,
-            sendReminders: true,
-            syncToWhatsApp: true,
-          }),
-        });
-
-        return { success: true, message: 'تم ربط حساب Calendly بنجاح' };
-      } catch (error: any) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: error.message || 'فشل الاتصال بـ Calendly',
-        });
-      }
-    }),
-
-  // Disconnect from Calendly
-  disconnect: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      await deleteIntegrationByType(merchant.id, 'calendly');
-      return { success: true, message: 'تم فصل حساب Calendly' };
-    }),
-
-  // Sync now
-  syncNow: protectedProcedure
-    .mutation(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      const integration = await getIntegrationByType(merchant.id, 'calendly');
-      
-      if (!integration || !integration.accessToken) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'لم يتم العثور على تكامل Calendly',
-        });
-      }
-
-      try {
-        // Get user URI
-        const userUri = integration.storeUrl;
-        
-        // Fetch scheduled events
-        const events = await calendlyApiRequest(
-          // @ts-ignore
-          `/scheduled_events?user=${encodeURIComponent(userUri)}&status=active`,
-          integration.accessToken
-        );
-
-        let syncedEvents = 0;
-        
-        if (events.collection) {
-          for (const event of events.collection) {
-            await (upsertAppointmentFromCalendly as any)(merchant.id, event);
-            syncedEvents++;
+      const merchant = await requireMerchant(ctx.user.id);
+      return withCalendlyConnectionLock(merchant.id, async () => {
+        const previous = await getIntegrationByType(merchant.id, 'calendly');
+        const endpointId = crypto.randomBytes(32).toString('base64url');
+        const signingKey = crypto.randomBytes(48).toString('base64url');
+        let subscriptionUri: string | null = null;
+        try {
+          const user = await getCalendlyCurrentUser(input.apiKey);
+          const callbackUrl = `${calendlyWebhookOrigin()}/api/webhooks/calendly/${endpointId}`;
+          subscriptionUri = await createCalendlyWebhookSubscription({
+            accessToken: input.apiKey,
+            callbackUrl,
+            signingKey,
+            organizationUri: user.current_organization,
+            userUri: user.uri,
+          });
+          const integration = await replaceCalendlyIntegration({
+            merchantId: merchant.id,
+            storeName: typeof user.name === 'string' ? user.name.slice(0, 255) : 'Calendly User',
+            storeUrl: user.uri,
+            accessToken: input.apiKey,
+            webhookEndpointId: endpointId,
+            webhookSigningSecret: signingKey,
+            webhookSubscriptionUri: subscriptionUri,
+            settings: JSON.stringify({
+              syncToWhatsApp: false,
+            }),
+          });
+          if (!integration) throw new Error('DATABASE_UNAVAILABLE');
+          if (previous?.accessToken && previous.webhookSubscriptionUri && previous.webhookSubscriptionUri !== subscriptionUri) {
+            await deleteCalendlyWebhookSubscription(previous.accessToken, previous.webhookSubscriptionUri).catch(() => {
+              console.warn('[Calendly] previous webhook cleanup deferred');
+            });
           }
+          return { success: true, message: 'تم ربط Calendly وتسجيل Webhook آمن تلقائيًا' };
+        } catch (error) {
+          if (subscriptionUri) {
+            await deleteCalendlyWebhookSubscription(input.apiKey, subscriptionUri).catch(() => undefined);
+          }
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: safeCalendlyMessage(error, 'تعذر ربط Calendly أو تسجيل Webhook'),
+          });
         }
-
-        // Update last sync time
-        await updateIntegrationLastSync(integration.id);
-
-        // Log sync
-        await createSyncLog(merchant.id, 'calendly_sync' as any, 'success');
-
-        return { 
-          success: true, 
-          message: `تمت مزامنة ${syncedEvents} موعد بنجاح` 
-        };
-      } catch (error: any) {
-        await createSyncLog(merchant.id, 'calendly_sync' as any, 'failed');
-
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: error.message || 'فشلت المزامنة',
-        });
-      }
+      });
     }),
 
-  // Update settings
+  disconnect: protectedProcedure.mutation(async ({ ctx }) => {
+    const merchant = await requireMerchant(ctx.user.id);
+    return withCalendlyConnectionLock(merchant.id, async () => {
+      const integration = await getIntegrationByType(merchant.id, 'calendly');
+      if (integration?.accessToken && integration.webhookSubscriptionUri) {
+        await deleteCalendlyWebhookSubscription(integration.accessToken, integration.webhookSubscriptionUri).catch(() => {
+          console.warn('[Calendly] remote webhook cleanup failed during disconnect');
+        });
+      }
+      await deleteIntegrationByType(merchant.id, 'calendly');
+      return { success: true, message: 'تم فصل حساب Calendly وإبطال نقطة الاستقبال المحلية' };
+    });
+  }),
+
+  syncNow: protectedProcedure.mutation(async ({ ctx }) => {
+    const merchant = await requireMerchant(ctx.user.id);
+    const integration = await getIntegrationByType(merchant.id, 'calendly');
+    if (!integration?.accessToken || !integration.isActive) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly نشط' });
+    }
+    try {
+      const syncedEvents = await syncCalendlyAppointments(integration);
+      await updateIntegrationLastSync(integration.id);
+      return { success: true, message: `تمت مزامنة ${syncedEvents} مدعو بنجاح` };
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: safeCalendlyMessage(error, 'فشلت مزامنة Calendly'),
+      });
+    }
+  }),
+
   updateSettings: protectedProcedure
     .input(z.object({
-      autoConfirm: z.boolean(),
-      sendReminders: z.boolean(),
       syncToWhatsApp: z.boolean(),
-    }))
+    }).strict())
     .mutation(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = await requireMerchant(ctx.user.id);
       const integration = await getIntegrationByType(merchant.id, 'calendly');
-      
-      if (!integration) {
-        throw new TRPCError({
-          code: 'NOT_FOUND',
-          message: 'لم يتم العثور على تكامل Calendly',
-        });
-      }
-
-      await updateIntegrationSettings(integration.id, {
-        autoConfirm: input.autoConfirm,
-        sendReminders: input.sendReminders,
-        syncToWhatsApp: input.syncToWhatsApp,
-      });
-
+      if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'لم يتم العثور على تكامل Calendly' });
+      await updateIntegrationSettings(integration.id, input);
       return { success: true };
     }),
 
-  // Get upcoming events
   getUpcomingEvents: protectedProcedure
-    .input(z.object({ 
-      limit: z.number().optional().default(5),
-    }))
+    .input(z.object({ limit: z.number().int().min(1).max(20).default(5) }).strict())
     .query(async ({ ctx, input }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
+      const merchant = await requireMerchant(ctx.user.id);
       const integration = await getIntegrationByType(merchant.id, 'calendly');
-      
-      if (!integration || !integration.accessToken) {
-        return [];
-      }
-
+      if (!integration?.accessToken || !integration.storeUrl) return [];
       try {
-        const userUri = integration.storeUrl;
         const now = new Date().toISOString();
-        
-        const events = await calendlyApiRequest(
-          // @ts-ignore
-          `/scheduled_events?user=${encodeURIComponent(userUri)}&status=active&min_start_time=${now}&count=${input.limit}`,
-          integration.accessToken
+        const response = await calendlyApiRequest<{ collection?: any[] }>(
+          `/scheduled_events?user=${encodeURIComponent(integration.storeUrl)}&status=active&min_start_time=${encodeURIComponent(now)}&count=${input.limit}`,
+          integration.accessToken,
         );
-
-        return events.collection?.map((event: any) => ({
-          uri: event.uri,
-          name: event.name,
+        return Array.isArray(response.collection) ? response.collection.slice(0, input.limit).map(event => ({
+          uri: typeof event.uri === 'string' ? event.uri : '',
+          name: typeof event.name === 'string' ? event.name.slice(0, 255) : 'Calendly',
           startTime: event.start_time,
           endTime: event.end_time,
           status: event.status,
-          inviteeName: event.invitees_counter?.total > 0 ? 'عميل' : '-',
-        })) || [];
-      } catch (error) {
-        console.error('[Calendly] Error fetching events:', error);
+          inviteeName: '-',
+        })) : [];
+      } catch {
         return [];
       }
     }),
 
-  // Get event types
-  getEventTypes: protectedProcedure
-    .query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      const integration = await getIntegrationByType(merchant.id, 'calendly');
-      
-      if (!integration || !integration.accessToken) {
-        return [];
-      }
+  getEventTypes: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await requireMerchant(ctx.user.id);
+    const integration = await getIntegrationByType(merchant.id, 'calendly');
+    if (!integration?.accessToken || !integration.storeUrl) return [];
+    try {
+      const eventTypes = await listCalendlyCollection<any>(
+        integration.accessToken,
+        `/event_types?user=${encodeURIComponent(integration.storeUrl)}&active=true&count=100`,
+        100,
+      );
+      return eventTypes.map(eventType => ({
+        uri: typeof eventType.uri === 'string' ? eventType.uri : '',
+        name: typeof eventType.name === 'string' ? eventType.name.slice(0, 255) : 'Calendly',
+        duration: Number.isFinite(Number(eventType.duration)) ? Number(eventType.duration) : 0,
+        schedulingUrl: typeof eventType.scheduling_url === 'string' ? eventType.scheduling_url : '',
+        active: eventType.active === true,
+      }));
+    } catch {
+      return [];
+    }
+  }),
 
-      try {
-        const userUri = integration.storeUrl;
-        
-        const eventTypes = await calendlyApiRequest(
-          // @ts-ignore
-          `/event_types?user=${encodeURIComponent(userUri)}&active=true`,
-          integration.accessToken
-        );
-
-        return eventTypes.collection?.map((et: any) => ({
-          uri: et.uri,
-          name: et.name,
-          duration: et.duration,
-          schedulingUrl: et.scheduling_url,
-          active: et.active,
-        })) || [];
-      } catch (error) {
-        console.error('[Calendly] Error fetching event types:', error);
-        return [];
-      }
-    }),
-
-  // Get stats
-  getStats: protectedProcedure
-    .query(async ({ ctx }) => {
-      const merchant = await getMerchantByUserId(ctx.user.id);
-      if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-      const integration = await getIntegrationByType(merchant.id, 'calendly');
-      
-      if (!integration) {
-        return null;
-      }
-
-      // Get appointment stats from database
-      const stats = await getAppointmentStatsByMerchant(merchant.id);
-      
-      return {
-        totalEvents: stats.total || 0,
-        upcomingEvents: stats.upcoming || 0,
-        eventTypes: stats.eventTypes || 0,
-        remindersSent: stats.remindersSent || 0,
-      };
-    }),
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const merchant = await requireMerchant(ctx.user.id);
+    const integration = await getIntegrationByType(merchant.id, 'calendly');
+    if (!integration) return null;
+    const stats = await getCalendlyAppointmentStats(merchant.id);
+    return {
+      totalEvents: stats.total,
+      upcomingEvents: stats.upcoming,
+      remindersSent: stats.remindersSent,
+    };
+  }),
 });
-
-// Webhook handler for Calendly events
-export async function handleCalendlyWebhook(merchantId: number, event: string, payload: any) {
-  console.log(`[Calendly Webhook] Merchant ${merchantId} - Event: ${event}`);
-
-  const integration = await getIntegrationByType(merchantId, 'calendly');
-  if (!integration || !!!integration.isActive) {
-    console.log('[Calendly Webhook] Integration not found or inactive');
-    return;
-  }
-
-  const settings = integration.settings ? JSON.parse(integration.settings) : {};
-
-  switch (event) {
-    case 'invitee.created':
-      // New appointment booked
-      await (upsertAppointmentFromCalendly as any)(merchantId, payload);
-      
-      // Send WhatsApp notification if enabled
-      if (settings.syncToWhatsApp) {
-        const invitee = payload.payload?.invitee;
-        if (invitee?.phone_number) {
-          await (createScheduledMessage as any)({
-            merchantId,
-            message: `مرحباً ${invitee.name}! تم تأكيد موعدك بنجاح.\n\n📅 التاريخ: ${new Date(payload.payload?.event?.start_time).toLocaleDateString('ar-SA')}\n⏰ الوقت: ${new Date(payload.payload?.event?.start_time).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}\n\nنتطلع لرؤيتك!`,
-            scheduledAt: new Date(),
-            status: 'pending',
-          });
-        }
-      }
-
-      await createSyncLog(merchantId, 'full_sync' as any, 'success');
-      break;
-
-    case 'invitee.canceled':
-      // Appointment canceled
-      await (cancelAppointmentFromCalendly as any)(merchantId, payload);
-      
-      await createSyncLog(merchantId, 'full_sync' as any, 'success');
-      break;
-
-    case 'routing_form_submission.created':
-      // Form submitted - could be used for lead capture
-      // @ts-ignore
-      await createSyncLog(merchantId ?? (input as any).merchantId, 'calendly_webhook' as any, 'success');
-      break;
-
-    default:
-      console.log(`[Calendly Webhook] Unknown event: ${event}`);
-  }
-}

@@ -193,6 +193,8 @@ import {
   platformIntegrations,
   PlatformIntegration,
   InsertPlatformIntegration,
+  calendlyAppointments,
+  calendlyWebhookReceipts,
   loyaltyPoints,
   LoyaltyPoints,
   InsertLoyaltyPoints,
@@ -7572,6 +7574,35 @@ export async function getIntegrationByType(merchantId: number, type: 'zid' | 'ca
     ...integration,
     accessToken: decryptSecret(integration.accessToken),
     refreshToken: decryptSecret(integration.refreshToken),
+    webhookSigningSecret: decryptSecret(integration.webhookSigningSecret),
+  } : undefined;
+}
+
+/**
+ * Resolve a webhook endpoint without accepting a merchant identifier from the
+ * caller. The opaque endpoint is a locator; the per-subscription signature is
+ * still required before any event is accepted.
+ */
+export async function getIntegrationByWebhookEndpoint(
+  endpointId: string,
+  type: 'zid' | 'calendly' | 'shopify' | 'woocommerce',
+): Promise<PlatformIntegration | undefined> {
+  if (!/^[A-Za-z0-9_-]{32,48}$/.test(endpointId)) return undefined;
+  const db = await getDb();
+  if (!db) return undefined;
+  const [integration] = await db.select()
+    .from(platformIntegrations)
+    .where(and(
+      eq(platformIntegrations.webhookEndpointId, endpointId),
+      eq(platformIntegrations.platformType, type),
+      eq(platformIntegrations.isActive, 1),
+    ))
+    .limit(1);
+  return integration ? {
+    ...integration,
+    accessToken: decryptSecret(integration.accessToken),
+    refreshToken: decryptSecret(integration.refreshToken),
+    webhookSigningSecret: decryptSecret(integration.webhookSigningSecret),
   } : undefined;
 }
 
@@ -7585,6 +7616,9 @@ export async function createIntegration(data: {
   storeUrl?: string;
   accessToken?: string;
   refreshToken?: string;
+  webhookEndpointId?: string;
+  webhookSigningSecret?: string;
+  webhookSubscriptionUri?: string;
   isActive?: boolean;
   settings?: string;
 }): Promise<PlatformIntegration | undefined> {
@@ -7599,6 +7633,9 @@ export async function createIntegration(data: {
     storeUrl: data.storeUrl,
     accessToken: encryptSecret(data.accessToken),
     refreshToken: encryptSecret(data.refreshToken),
+    webhookEndpointId: data.webhookEndpointId,
+    webhookSigningSecret: encryptSecret(data.webhookSigningSecret),
+    webhookSubscriptionUri: data.webhookSubscriptionUri,
     isActive: data.isActive !== false ? 1 : 0,
     settings: protectIntegrationSettings(data.settings),
   };
@@ -7610,12 +7647,81 @@ export async function createIntegration(data: {
         storeUrl: protectedValues.storeUrl,
         accessToken: protectedValues.accessToken,
         refreshToken: protectedValues.refreshToken,
+        webhookEndpointId: protectedValues.webhookEndpointId,
+        webhookSigningSecret: protectedValues.webhookSigningSecret,
+        webhookSubscriptionUri: protectedValues.webhookSubscriptionUri,
         isActive: protectedValues.isActive,
         settings: protectedValues.settings,
       },
     });
 
   return getIntegrationByType(data.merchantId, data.type);
+}
+
+/**
+ * Replace Calendly credentials and webhook registration atomically. If the
+ * connected Calendly user changes, provider projections and queued events from
+ * the previous account are removed in the same transaction so they cannot be
+ * processed with the new account token.
+ */
+export async function replaceCalendlyIntegration(data: {
+  merchantId: number;
+  storeName: string;
+  storeUrl: string;
+  accessToken: string;
+  webhookEndpointId: string;
+  webhookSigningSecret: string;
+  webhookSubscriptionUri: string;
+  settings: string;
+}): Promise<PlatformIntegration | undefined> {
+  const database = await getDb();
+  if (!database) return undefined;
+  const protectedValues = {
+    storeName: data.storeName,
+    storeUrl: data.storeUrl,
+    accessToken: encryptSecret(data.accessToken),
+    webhookEndpointId: data.webhookEndpointId,
+    webhookSigningSecret: encryptSecret(data.webhookSigningSecret),
+    webhookSubscriptionUri: data.webhookSubscriptionUri,
+    settings: protectIntegrationSettings(data.settings),
+    isActive: 1,
+  };
+  await database.transaction(async tx => {
+    const [existing] = await tx.select({ id: platformIntegrations.id, storeUrl: platformIntegrations.storeUrl })
+      .from(platformIntegrations)
+      .where(and(
+        eq(platformIntegrations.merchantId, data.merchantId),
+        eq(platformIntegrations.platformType, 'calendly'),
+      ))
+      .limit(1)
+      .for('update');
+    if (!existing) {
+      await tx.insert(platformIntegrations).values({
+        merchantId: data.merchantId,
+        platformType: 'calendly',
+        ...protectedValues,
+      });
+      return;
+    }
+    if (existing.storeUrl !== data.storeUrl) {
+      await tx.delete(calendlyWebhookReceipts).where(and(
+        eq(calendlyWebhookReceipts.merchantId, data.merchantId),
+        eq(calendlyWebhookReceipts.integrationId, existing.id),
+      ));
+      await tx.delete(calendlyAppointments).where(and(
+        eq(calendlyAppointments.merchantId, data.merchantId),
+        eq(calendlyAppointments.integrationId, existing.id),
+      ));
+    }
+    await tx.update(platformIntegrations)
+      .set(protectedValues)
+      .where(and(
+        eq(platformIntegrations.id, existing.id),
+        eq(platformIntegrations.merchantId, data.merchantId),
+        eq(platformIntegrations.platformType, 'calendly'),
+      ));
+  });
+  return getIntegrationByType(data.merchantId, 'calendly');
 }
 
 /**
@@ -7676,7 +7782,10 @@ export async function getIntegrationsByMerchant(merchantId: number): Promise<Pla
     ...integration,
     accessToken: null,
     refreshToken: null,
+    webhookEndpointId: null,
     webhookAuthHash: null,
+    webhookSigningSecret: null,
+    webhookSubscriptionUri: null,
     settings: redactIntegrationSettings(integration.settings),
   }));
 }
@@ -8079,105 +8188,6 @@ export async function updateProductInventoryFromZid(
       eq(products.isActive, 1),
       or(isNull(products.lastSyncedAt), lte(products.lastSyncedAt, eventTime)),
     ));
-}
-
-/**
- * Upsert appointment from Calendly
- */
-export async function upsertAppointmentFromCalendly(merchantId: number, calendlyEvent: any): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  const eventUri = calendlyEvent.uri || calendlyEvent.payload?.event?.uri;
-
-  // Check if appointment exists by external ID
-  const existing = await db.select()
-    .from(appointments)
-    .where(and(
-      eq(appointments.merchantId, merchantId),
-      eq(appointments.googleEventId, eventUri)
-    ))
-    .limit(1);
-
-  const event = calendlyEvent.payload?.event || calendlyEvent;
-  const invitee = calendlyEvent.payload?.invitee;
-
-  const appointmentData = {
-    merchantId,
-    googleEventId: eventUri,
-    customerPhone: invitee?.phone_number || '',
-    customerName: invitee?.name || event.name,
-    startTime: event.start_time,
-    endTime: event.end_time,
-    status: 'confirmed',
-    notes: event.location?.location || '',
-  };
-
-  if (existing[0]) {
-    await db.update(appointments)
-      .set(appointmentData as any)
-      .where(eq(appointments.id, existing[0].id));
-  } else {
-    await db.insert(appointments).values(appointmentData as any);
-  }
-}
-
-/**
- * Cancel appointment from Calendly
- */
-export async function cancelAppointmentFromCalendly(merchantId: number, payload: any): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  const eventUri = payload.payload?.event?.uri;
-
-  await db.update(appointments)
-    .set({ status: 'cancelled' })
-    .where(and(
-      eq(appointments.merchantId, merchantId),
-      eq(appointments.googleEventId, eventUri)
-    ));
-}
-
-/**
- * Get appointment stats by merchant
- */
-export async function getAppointmentStatsByMerchant(merchantId: number): Promise<{
-  total: number;
-  upcoming: number;
-  eventTypes: number;
-  remindersSent: number;
-}> {
-  const db = await getDb();
-  if (!db) return { total: 0, upcoming: 0, eventTypes: 0, remindersSent: 0 };
-
-  const now = new Date().toISOString();
-
-  const totalResult = await db.select({ count: sql<number>`count(*)` })
-    .from(appointments)
-    .where(eq(appointments.merchantId, merchantId));
-
-  const upcomingResult = await db.select({ count: sql<number>`count(*)` })
-    .from(appointments)
-    .where(and(
-      eq(appointments.merchantId, merchantId),
-      gte(appointments.startTime, now),
-      eq(appointments.status, 'confirmed')
-    ));
-
-  const reminderResult = await db.select({ count: sql<number>`count(*)` })
-    .from(appointments)
-    .where(and(
-      eq(appointments.merchantId, merchantId),
-      eq(appointments.reminder24hSent, 1)
-    ));
-
-  return {
-    total: Number(totalResult[0]?.count) || 0,
-    upcoming: Number(upcomingResult[0]?.count) || 0,
-    eventTypes: 0, // This would need to be fetched from Calendly API
-    remindersSent: Number(reminderResult[0]?.count) || 0,
-  };
 }
 
 /**

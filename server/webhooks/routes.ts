@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import crypto from 'node:crypto';
 import { handleGreenAPIWebhook } from './greenapi';
 import { handleMetaCloudWebhook, handleMetaWebhookVerification } from './meta-cloud';
 import { verifyGreenWebhookAuthorization } from './greenapi-auth';
@@ -13,8 +12,14 @@ import {
   completeZidWebhook,
   failZidWebhook,
 } from './zid-security';
-import { handleCalendlyWebhook } from '../integrations/calendly';
-import { getIntegrationByType } from '../db';
+import { getIntegrationByWebhookEndpoint } from '../db';
+import { enqueueCalendlyWebhookReceipt } from '../integrations/calendly-webhook-receipts';
+import {
+  CALENDLY_ENDPOINT_PATTERN,
+  CALENDLY_WEBHOOK_MAX_BYTES,
+  parseCalendlyWebhook,
+  verifyCalendlySignature,
+} from './calendly-security';
 import { getPaymentTransactionByTapChargeId, getTapSettings } from '../db';
 import { ENV } from '../_core/env';
 import { getMerchantPaymentSettings } from '../db';
@@ -234,120 +239,40 @@ router.post('/zid/:endpointId', async (req: Request & { rawBody?: Buffer }, res:
 
 /**
  * Calendly Webhook Endpoint
- * POST /api/webhooks/calendly/:merchantId
+ * POST /api/webhooks/calendly/:endpointId
  */
-router.post('/calendly/:merchantId', async (req: Request, res: Response) => {
+router.post('/calendly/:endpointId', async (req: Request & { rawBody?: Buffer }, res: Response) => {
   try {
-    const merchantId = parseInt(req.params.merchantId);
-
-    if (isNaN(merchantId)) {
-      return res.status(400).json({ error: 'Invalid merchant ID' });
-    }
-
-    console.log(`[Calendly Webhook] Merchant ${merchantId} - Received webhook event`);
-
-    // SECURITY: Verify webhook signature (HMAC-SHA256) — mandatory
-    const signature = req.headers['calendly-webhook-signature'] as string;
-    const calendlySecret = process.env.CALENDLY_WEBHOOK_SECRET;
-    if (!calendlySecret) {
-      console.error(`[Calendly Webhook] CALENDLY_WEBHOOK_SECRET not configured — rejecting`);
-      return res.status(500).json({ error: 'Webhook not configured' });
-    }
-    if (!signature) {
-      console.warn(`[Calendly Webhook] Merchant ${merchantId} - Missing signature`);
-      return res.status(401).json({ error: 'Missing webhook signature' });
-    }
-    // Calendly signature format: t=timestamp,v1=signature
-    const parts = signature.split(',');
-    const timestampPart = parts.find(p => p.startsWith('t='));
-    const signaturePart = parts.find(p => p.startsWith('v1='));
-    if (!timestampPart || !signaturePart) {
-      console.warn(`[Calendly Webhook] Merchant ${merchantId} - Malformed signature`);
-      return res.status(401).json({ error: 'Malformed webhook signature' });
-    }
-    const timestamp = timestampPart.replace('t=', '');
-    const receivedSig = signaturePart.replace('v1=', '');
-    const calPayload = `${timestamp}.${JSON.stringify(req.body)}`;
-    const expectedSig = crypto
-      .createHmac('sha256', calendlySecret)
-      .update(calPayload)
-      .digest('hex');
-    if (!crypto.timingSafeEqual(Buffer.from(receivedSig), Buffer.from(expectedSig))) {
-      console.warn(`[Calendly Webhook] Merchant ${merchantId} - Invalid signature`);
-      return res.status(401).json({ error: 'Invalid webhook signature' });
-    }
-
-    // Extract event type from payload
-    const event = req.body.event || 'unknown';
-    const payload = req.body;
-
-    // Process webhook
-    await handleCalendlyWebhook(merchantId, event, payload);
-
-    return res.status(200).json({ message: 'Webhook processed successfully' });
-  } catch (error) {
-    console.error('[Calendly Webhook] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-/**
- * Generic Integration Webhook Status
- * GET /api/webhooks/status/:platform/:merchantId
- */
-router.get('/status/:platform/:merchantId', async (req: Request, res: Response) => {
-  try {
-    const { platform, merchantId } = req.params;
-    const parsedMerchantId = parseInt(merchantId);
-
-    if (isNaN(parsedMerchantId)) {
-      return res.status(400).json({ error: 'Invalid merchant ID' });
-    }
-
-    // SECURITY: Validate JWT token — not just header presence
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Authorization required' });
-    }
-
-    try {
-      const jwt = await import('jsonwebtoken');
-      const token = authHeader.replace('Bearer ', '');
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
-        return res.status(500).json({ error: 'Server configuration error' });
-      }
-      jwt.default.verify(token, jwtSecret, { algorithms: ['HS256'] });
-    } catch (err) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-
-    const validPlatforms = ['zid', 'calendly', 'salla'];
-    if (!validPlatforms.includes(platform)) {
-      return res.status(400).json({ error: 'Invalid platform' });
-    }
-
-    // Get integration status
-    const integration = await getIntegrationByType(
-      parsedMerchantId,
-      platform as 'zid' | 'calendly' | 'shopify' | 'woocommerce'
-    );
-
-    if (!integration) {
-      return res.status(404).json({
-        connected: false,
-        message: 'Integration not found'
-      });
-    }
-
-    return res.status(200).json({
-      connected: !!integration.isActive,
-      lastSync: integration.lastSyncAt,
-      webhookUrl: `${req.protocol}://${req.get('host')}/api/webhooks/${platform}/${merchantId}`,
+    const endpointId = String(req.params.endpointId || '');
+    const rawBody = req.rawBody;
+    if (!CALENDLY_ENDPOINT_PATTERN.test(endpointId)) return res.status(401).json({ error: 'Unauthorized' });
+    if (!rawBody) return res.status(500).json({ error: 'Webhook body unavailable' });
+    if (rawBody.length > CALENDLY_WEBHOOK_MAX_BYTES) return res.status(413).json({ error: 'Payload too large' });
+    const integration = await getIntegrationByWebhookEndpoint(endpointId, 'calendly');
+    if (!integration?.webhookSigningSecret) return res.status(401).json({ error: 'Unauthorized' });
+    const signatureHeader = Array.isArray(req.headers['calendly-webhook-signature'])
+      ? undefined
+      : req.headers['calendly-webhook-signature'];
+    const signature = verifyCalendlySignature({
+      rawBody,
+      signatureHeader,
+      signingSecret: integration.webhookSigningSecret,
     });
-  } catch (error) {
-    console.error('[Webhook Status] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    if (!signature.valid) return res.status(401).json({ error: 'Unauthorized' });
+    const payload = parseCalendlyWebhook(rawBody);
+    if (!payload) return res.status(400).json({ error: 'Invalid webhook payload' });
+    const result = await enqueueCalendlyWebhookReceipt({
+      merchantId: integration.merchantId,
+      integrationId: integration.id,
+      signatureTimestamp: signature.timestamp,
+      payload,
+    });
+    return res.status(result.duplicate ? 200 : 202).json({
+      message: result.duplicate ? 'Webhook already received' : 'Webhook accepted',
+    });
+  } catch {
+    console.error('[Calendly Webhook] ingress unavailable');
+    return res.status(503).json({ error: 'Webhook temporarily unavailable' });
   }
 });
 
