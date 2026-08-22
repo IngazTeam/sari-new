@@ -16,7 +16,6 @@ import {
   updateMerchantSubscription,
   updateMerchantSubscriptionStatus,
 } from '../db';
-import { createCharge } from "./tap";
 
 // ============================================
 // Types

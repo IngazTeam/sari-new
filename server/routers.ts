@@ -306,7 +306,10 @@ import {
   validatePasswordResetToken,
 } from './db';
 import {
+  PAYMENT_LINK_ID_PATTERN,
   PAYMENT_PROVIDER_REFERENCE_PATTERN,
+  TAP_CHARGE_ID_PATTERN,
+  toPublicOrderPaymentStatus,
   toPublicSubscriptionPaymentStatus,
 } from '@shared/subscription-payment-status';
 import { registerMerchantAccount } from './accounts/lifecycle';
@@ -7562,7 +7565,7 @@ export const appRouter = router({
   payments: router({
     // Public checkout data contains no merchant credentials or customer information.
     getPublicLink: publicProcedure
-      .input(z.object({ linkId: z.string().min(20).max(100) }))
+      .input(z.object({ linkId: z.string().regex(PAYMENT_LINK_ID_PATTERN) }).strict())
       .query(async ({ input }) => {
         const dbPayments = await import('./db_payments');
         const { getPaymentLinkAvailability } = await import('./payment/payment-link-policy');
@@ -7583,12 +7586,12 @@ export const appRouter = router({
 
     checkoutLink: publicProcedure
       .input(z.object({
-        linkId: z.string().min(20).max(100),
+        linkId: z.string().regex(PAYMENT_LINK_ID_PATTERN),
         customerName: z.string().trim().min(2).max(120),
         customerPhone: z.string().trim().min(9).max(20),
         customerEmail: z.string().trim().email().max(255).optional(),
         checkoutAttemptId: z.string().uuid(),
-      }))
+      }).strict())
       .mutation(async ({ input }) => {
         const dbPayments = await import('./db_payments');
         const {
@@ -7721,44 +7724,29 @@ export const appRouter = router({
 
     getPublicLinkPaymentStatus: publicProcedure
       .input(z.object({
-        linkId: z.string().min(20).max(100),
-        chargeId: z.string().min(3).max(255),
-      }))
+        linkId: z.string().regex(PAYMENT_LINK_ID_PATTERN),
+        chargeId: z.string().regex(TAP_CHARGE_ID_PATTERN),
+      }).strict())
       .query(async ({ input }) => {
         const dbPayments = await import('./db_payments');
         const { readPaymentLinkId } = await import('./payment/payment-link-policy');
         const link = await dbPayments.getPaymentLinkByLinkId(input.linkId);
         const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
-        if (!link || !payment || payment.merchantId !== link.merchantId || readPaymentLinkId(payment.metadata) !== link.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'عملية الدفع غير موجودة' });
-        }
-        return { status: payment.status };
+        const owned = Boolean(
+          link
+          && payment
+          && payment.merchantId === link.merchantId
+          && readPaymentLinkId(payment.metadata) === link.id,
+        );
+        return { status: toPublicOrderPaymentStatus(owned ? payment?.status : undefined) };
       }),
 
     getPublicChargeStatus: publicProcedure
-      .input(z.object({ chargeId: z.string().min(3).max(255) }))
+      .input(z.object({ chargeId: z.string().regex(TAP_CHARGE_ID_PATTERN) }).strict())
       .query(async ({ input }) => {
         const dbPayments = await import('./db_payments');
         const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
-        if (!payment) throw new TRPCError({ code: 'NOT_FOUND', message: 'عملية الدفع غير موجودة' });
-        return { status: payment.status };
-      }),
-
-    verifyPayment: protectedProcedure
-      .input(z.object({ chargeId: z.string() }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const tapPayments = await import('./_core/tapPayments');
-        const dbPayments = await import('./db_payments');
-
-        const payment = await dbPayments.getOrderPaymentByTapChargeId(input.chargeId);
-        if (!payment || payment.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
-        }
-        const verification = await tapPayments.verifyPayment(input.chargeId);
-        await dbPayments.updateOrderPaymentStatus(payment.id, verification.status.toLowerCase() as any);
-        return verification;
+        return { status: toPublicOrderPaymentStatus(payment?.status) };
       }),
 
     getById: protectedProcedure
@@ -7803,80 +7791,6 @@ export const appRouter = router({
         const startDate = input.startDate ? new Date(input.startDate) : undefined;
         const endDate = input.endDate ? new Date(input.endDate) : undefined;
         return await dbPayments.getPaymentStats(merchant.id, startDate, endDate);
-      }),
-
-    createRefund: protectedProcedure
-      .input(z.object({
-        paymentId: z.number(),
-        amount: z.number().int().min(100).max(100_000_000),
-        reason: z.string().trim().min(3).max(500),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const dbPayments = await import('./db_payments');
-        const tapPayments = await import('./_core/tapPayments');
-
-        const payment = await dbPayments.getOrderPaymentById(input.paymentId);
-        if (!payment || payment.merchantId !== merchant.id) {
-          throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
-        }
-        if (!payment.tapChargeId) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payment has no Tap charge ID' });
-        }
-        if (payment.status !== 'captured' || input.amount > payment.amount) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid refund amount or payment status' });
-        }
-        const existingRefunds = await dbPayments.getPaymentRefundsByPaymentId(payment.id);
-        const alreadyRefunded = existingRefunds
-          .filter(refund => refund.status === 'pending' || refund.status === 'completed')
-          .reduce((sum, refund) => sum + refund.amount, 0);
-        if (input.amount > payment.amount - alreadyRefunded) {
-          throw new TRPCError({ code: 'BAD_REQUEST', message: 'Refund exceeds the remaining captured amount' });
-        }
-
-        const refund = await tapPayments.createRefund({
-          chargeId: payment.tapChargeId,
-          amount: input.amount,
-          currency: payment.currency,
-          reason: input.reason,
-        });
-
-        const dbRefund = await dbPayments.createPaymentRefund({
-          paymentId: payment.id,
-          merchantId: merchant.id,
-          amount: input.amount,
-          currency: payment.currency,
-          reason: input.reason,
-          tapRefundId: refund.id,
-          status: 'pending',
-          processedBy: ctx.user.id,
-        });
-
-        if (input.amount === payment.amount - alreadyRefunded) {
-          await dbPayments.updateOrderPaymentStatus(payment.id, 'refunded');
-        }
-        return { refundId: dbRefund?.id, tapRefundId: refund.id, status: refund.status };
-      }),
-
-    listRefunds: protectedProcedure
-      .input(z.object({
-        paymentId: z.number().optional(),
-        status: z.string().optional(),
-        limit: z.number().default(50),
-      }))
-      .query(async ({ ctx, input }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        const dbPayments = await import('./db_payments');
-        if (input.paymentId) {
-          const payment = await dbPayments.getOrderPaymentById(input.paymentId);
-          if (!payment || payment.merchantId !== merchant.id) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Payment not found' });
-          }
-          return await dbPayments.getPaymentRefundsByPaymentId(input.paymentId);
-        }
-        return await dbPayments.getPaymentRefundsByMerchant(merchant.id, { status: input.status, limit: input.limit });
       }),
 
     createLink: protectedProcedure
