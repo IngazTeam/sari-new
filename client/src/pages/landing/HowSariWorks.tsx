@@ -24,13 +24,13 @@ const schemaData = {
         { "@type": "HowToStep", "position": 1, "name": "ربط المتجر", "text": "اربط متجرك من سلة أو زد أو أضف منتجاتك يدوياً. ساري يسحب الكتالوج تلقائياً." },
         { "@type": "HowToStep", "position": 2, "name": "توصيل واتساب", "text": "فعّل رقم واتساب الأعمال الخاص بك عبر مسح رمز QR أو ربط API." },
         { "@type": "HowToStep", "position": 3, "name": "تخصيص الشخصية", "text": "حدد اسم ساري ونبرة الحديث والردود السريعة ليتناسب مع هوية متجرك." },
-        { "@type": "HowToStep", "position": 4, "name": "الإطلاق والبيع", "text": "ساري يبدأ بالرد على العملاء تلقائياً، عرض المنتجات، ومعالجة الطلبات 24/7." },
+        { "@type": "HowToStep", "position": 4, "name": "الاختبار ثم التشغيل", "text": "اختبر الرد وعرض المنتجات وحفظ الطلب، ثم شغّل الأتمتة ضمن حالة القناة وحدود الباقة وسياسات متجرك." },
       ],
     },
     {
       "@type": "FAQPage",
       "mainEntity": [
-        { "@type": "Question", "name": "كم يستغرق تفعيل ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "أقل من 10 دقائق. سجّل، اربط واتساب، أضف منتجاتك — وساري جاهز للعمل فوراً." }},
+        { "@type": "Question", "name": "كم يستغرق تفعيل ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "يعتمد الوقت على اكتمال بيانات متجرك وتحقق قناة واتساب والتكاملات المطلوبة. تعرض لوحة الإعداد الحالة والخطوة التالية بدل وعد زمني ثابت." }},
         { "@type": "Question", "name": "هل أحتاج خبرة تقنية؟", "acceptedAnswer": { "@type": "Answer", "text": "لا. ساري مصمم ليكون سهل الاستخدام. كل شيء يتم عبر لوحة تحكم بسيطة بدون أي برمجة." }},
         { "@type": "Question", "name": "كيف يتعلم ساري عن منتجاتي؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري يسحب كتالوج منتجاتك تلقائياً من سلة/زد أو من ملف Excel. يفهم الأسماء والأسعار والأوصاف ويستخدمها في المحادثات." }},
         { "@type": "Question", "name": "هل يمكنني مراقبة محادثات ساري؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم. لوحة التحكم تعرض المحادثات ومقاييس التشغيل المسجلة. مؤشرات الرضا والإيراد لا تُعرض إلا عند توفر بيانات قياس فعلية لها." }},
@@ -46,7 +46,7 @@ const schemaData = {
 
 export default function HowSariWorks() {
   const { i18n } = useTranslation();
-  const isAr = i18n.language === 'ar';
+  const isAr = (i18n.resolvedLanguage || i18n.language).startsWith('ar');
 
   const steps = [
     { icon: <Database className="w-8 h-8" />, n: '1', color: 'bg-blue-600', title: isAr ? 'اربط متجرك' : 'Connect Your Store', desc: isAr ? 'اربط متجرك من سلة، زد، أو ووكومرس — أو ارفع منتجاتك من ملف Excel. ساري يسحب كل المنتجات والأسعار والصور تلقائياً ويبني قاعدة معرفة ذكية.' : 'Connect your store from Salla, Zid, or WooCommerce — or upload from Excel. Sari auto-pulls all products, prices, and images to build a smart knowledge base.' },
@@ -60,13 +60,12 @@ export default function HowSariWorks() {
     { icon: <ShoppingCart className="w-6 h-6" />, title: isAr ? 'عرض المنتجات' : 'Product Display', desc: isAr ? 'يعرض المنتجات مع الصور والأسعار مباشرة في المحادثة' : 'Shows products with images and prices directly in chat' },
     { icon: <Send className="w-6 h-6" />, title: isAr ? 'روابط الدفع' : 'Payment Links', desc: isAr ? 'يرسل رابط دفع إلكتروني ويتابع حتى إتمام عملية الشراء' : 'Sends payment link and follows up until purchase completion' },
     { icon: <BarChart3 className="w-6 h-6" />, title: isAr ? 'تحليلات تشغيلية' : 'Operational Analytics', desc: isAr ? 'يتتبع المحادثات والأحداث المسجلة دون اختلاق مؤشرات رضا أو إيراد' : 'Tracks recorded conversations and events without inventing satisfaction or revenue metrics' },
-    { icon: <Zap className="w-6 h-6" />, title: isAr ? 'سرعة الرد' : 'Instant Response', desc: isAr ? 'يرد خلال ثوانٍ 24/7 — لا انتظار ولا إجازات' : 'Responds in seconds 24/7 — no waiting, no holidays' },
+    { icon: <Zap className="w-6 h-6" />, title: isAr ? 'رد آلي عند توفر القناة' : 'Automated Replies When Available', desc: isAr ? 'يرد آليًا عندما تكون الخدمة والقناة متاحتين، مع تحويل بشري عند الحاجة' : 'Replies automatically while the service and channel are available, with human handoff when needed' },
     { icon: <Star className="w-6 h-6" />, title: isAr ? 'تخصيص كامل' : 'Full Customization', desc: isAr ? 'خصّص الاسم والشخصية والنبرة ليتناسب مع هوية متجرك' : 'Customize name, personality, and tone to match your brand' },
   ];
 
   return (
     <>
-      // @ts-ignore
       <SeoHead title={isAr ? 'كيف يعمل ساري — الدليل الشامل لوكيل المبيعات الذكي' : 'How Sari Works — Complete AI Sales Agent Guide'} description={isAr ? 'تعرف على كيف يعمل ساري كموظف مبيعات ذكي عبر واتساب. من ربط المتجر حتى البيع التلقائي في 4 خطوات بسيطة.' : 'Learn how Sari works as an AI sales agent on WhatsApp. From connecting your store to automatic selling in 4 simple steps.'} url={`${BASE}/docs/how-sari-works`} schemaMarkup={JSON.stringify(schemaData)} />
       <Navbar />
       {/* Hero */}
@@ -76,7 +75,9 @@ export default function HowSariWorks() {
           <h1 className="text-4xl md:text-6xl font-bold mb-6">{isAr ? 'كيف يعمل ساري؟' : 'How Does Sari Work?'}</h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{isAr ? 'من التسجيل إلى اختبار أول محادثة عبر خطوات إعداد واضحة؛ المدة تعتمد على تحقق قناة واتساب وتكاملات متجرك.' : 'From signup to testing the first conversation through a clear setup flow; timing depends on WhatsApp verification and store integrations.'}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup"><a><Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg h-14 px-8">{isAr ? 'ابدأ مجاناً الآن' : 'Start Free Now'}<ArrowRight className="ms-2 w-5 h-5" /></Button></a></Link>
+            <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg h-14 px-8">
+              <Link href="/signup">{isAr ? 'ابدأ التجربة' : 'Start Trial'}<ArrowRight aria-hidden="true" className="ms-2 w-5 h-5" /></Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -111,7 +112,6 @@ export default function HowSariWorks() {
       <section className="py-20 bg-white dark:bg-background">
         <div className="container max-w-4xl">
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'أسئلة شائعة' : 'FAQ'}</h2>
-          // @ts-ignore
           <div className="space-y-4">{schemaData["@graph"][1].mainEntity.map((q: any, i: number) => (<Card key={i} className="border"><CardContent className="p-6"><h3 className="font-bold mb-2">{q.name}</h3><p className="text-muted-foreground text-sm">{q.acceptedAnswer.text}</p></CardContent></Card>))}</div>
         </div>
       </section>
@@ -120,8 +120,10 @@ export default function HowSariWorks() {
       <section className="py-20 bg-blue-600 text-white">
         <div className="container text-center">
           <h2 className="text-3xl md:text-5xl font-bold mb-6">{isAr ? 'جاهز تبدأ؟' : 'Ready to Start?'}</h2>
-          <p className="text-xl opacity-90 mb-8">{isAr ? 'سجّل مجاناً وفعّل ساري في أقل من 10 دقائق' : 'Sign up free and activate Sari in less than 10 minutes'}</p>
-          <Link href="/signup"><a><Button size="lg" variant="secondary" className="text-lg h-14 px-8">{isAr ? 'ابدأ مجاناً' : 'Start Free'}<ArrowRight className="ms-2 w-5 h-5" /></Button></a></Link>
+          <p className="text-xl opacity-90 mb-8">{isAr ? 'أنشئ حسابك واتبع حالة الإعداد حتى تصبح القناة والتكاملات جاهزة للاختبار' : 'Create your account and follow setup status until the channel and integrations are ready to test'}</p>
+          <Button asChild size="lg" variant="secondary" className="text-lg h-14 px-8">
+            <Link href="/signup">{isAr ? 'ابدأ التجربة' : 'Start Trial'}<ArrowRight aria-hidden="true" className="ms-2 w-5 h-5" /></Link>
+          </Button>
         </div>
       </section>
       <Footer />

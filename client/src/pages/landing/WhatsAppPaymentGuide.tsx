@@ -7,8 +7,7 @@ import { SeoHead } from '@/components/SeoHead';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
-  CreditCard, ArrowRight, CheckCircle2, Shield, Zap,
-  Smartphone, Link2, QrCode, Banknote, Globe, Clock, Star,
+  CreditCard, ArrowRight, CheckCircle2, Shield,
 } from 'lucide-react';
 
 const BASE = 'https://sary.live';
@@ -21,19 +20,19 @@ const schemaData = {
       "name": "دليل الدفع عبر واتساب مع ساري",
       "description": "دليل شامل لإعداد واستخدام روابط الدفع الإلكتروني عبر محادثات واتساب مع ساري",
       "step": [
-        { "@type": "HowToStep", "position": 1, "name": "ربط بوابة الدفع", "text": "اربط حسابك في Tap أو Moyasar أو أي بوابة دفع مدعومة من إعدادات ساري." },
-        { "@type": "HowToStep", "position": 2, "name": "إعداد المنتجات", "text": "تأكد من إضافة أسعار منتجاتك. ساري يستخدمها تلقائياً عند إنشاء روابط الدفع." },
-        { "@type": "HowToStep", "position": 3, "name": "البيع التلقائي", "text": "عندما يريد العميل الشراء، ساري يرسل رابط دفع مباشر في المحادثة تلقائياً." },
-        { "@type": "HowToStep", "position": 4, "name": "التأكيد والمتابعة", "text": "بعد الدفع، ساري يؤكد الطلب ويرسل تفاصيل الشحن والفاتورة للعميل تلقائياً." },
+        { "@type": "HowToStep", "position": 1, "name": "إعداد Tap", "text": "أدخل مفاتيح Tap المطابقة لوضع الاختبار أو الإنتاج، ثم اختبر الاتصال قبل التفعيل." },
+        { "@type": "HowToStep", "position": 2, "name": "مراجعة الطلب", "text": "يأخذ الخادم السعر والعملة والمرجع من السجل المحفوظ، لا من نص يرسله المتصفح." },
+        { "@type": "HowToStep", "position": 3, "name": "إنشاء الرابط", "text": "يرسل ساري رابط الدفع فقط إذا أعادت Tap رابط عملية صالحًا؛ وإلا تظهر نتيجة فشل صريحة." },
+        { "@type": "HowToStep", "position": 4, "name": "التحقق من النتيجة", "text": "تتغير حالة الدفع بعد callback موثّق ومطابقة المبلغ والعملة والمرجع." },
       ],
     },
     {
       "@type": "FAQPage",
       "mainEntity": [
-        { "@type": "Question", "name": "ما هي بوابات الدفع المدعومة؟", "acceptedAnswer": { "@type": "Answer", "text": "ساري يدعم Tap Payments و Moyasar و Apple Pay و مدى. يمكنك ربط بوابة الدفع من إعدادات لوحة التحكم." }},
-        { "@type": "Question", "name": "هل الدفع آمن؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم. كل عمليات الدفع تتم عبر بوابات مرخصة ومشفرة بمعيار PCI DSS. ساري لا يخزن أي بيانات بطاقات." }},
-        { "@type": "Question", "name": "هل يمكن للعميل الدفع بأكثر من طريقة؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم. رابط الدفع يدعم فيزا وماستركارد ومدى وApple Pay وSTCPay حسب بوابة الدفع المربوطة." }},
-        { "@type": "Question", "name": "هل يرسل ساري فاتورة بعد الدفع؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم. ساري يرسل تأكيد الطلب وتفاصيل الفاتورة تلقائياً عبر واتساب بعد إتمام الدفع." }},
+        { "@type": "Question", "name": "ما بوابة الدفع المدعومة في المسار الحالي؟", "acceptedAnswer": { "@type": "Answer", "text": "المسار الحالي يدعم Tap Payments بمفاتيح يملكها التاجر ويجب التحقق منها قبل الاستخدام." }},
+        { "@type": "Question", "name": "كيف تُحمى بيانات البطاقة؟", "acceptedAnswer": { "@type": "Answer", "text": "يفتح العميل الرابط المستضاف الذي تعيده Tap؛ لا يطلب ساري رقم البطاقة أو رمزها داخل محادثة واتساب." }},
+        { "@type": "Question", "name": "ما وسائل الدفع المتاحة؟", "acceptedAnswer": { "@type": "Answer", "text": "تحدد Tap وحساب التاجر والبلد وسائل الدفع التي تظهر داخل صفحة المزود. لا تعد صفحة ساري بطريقة غير مفعلة في حسابك." }},
+        { "@type": "Question", "name": "متى يؤكد ساري نجاح الدفع؟", "acceptedAnswer": { "@type": "Answer", "text": "بعد callback موثّق ومطابقة حالة العملية والمبلغ والعملة والمرجع؛ فتح الرابط وحده لا يعني نجاح الدفع." }},
         { "@type": "Question", "name": "كم رسوم الدفع؟", "acceptedAnswer": { "@type": "Answer", "text": "رسوم المعاملة ووسائل الدفع المتاحة يحددها عقد التاجر مع بوابة الدفع وقد تتغير. راجع لوحة البوابة واتفاقيتك قبل نشر السعر لعملائك." }},
       ]
     },
@@ -46,35 +45,33 @@ const schemaData = {
 
 export default function WhatsAppPaymentGuide() {
   const { i18n } = useTranslation();
-  const isAr = i18n.language === 'ar';
+  const isAr = (i18n.resolvedLanguage || i18n.language).startsWith('ar');
 
-  const paymentMethods = [
-    { icon: <CreditCard className="w-6 h-6" />, name: isAr ? 'فيزا / ماستركارد' : 'Visa / Mastercard' },
-    { icon: <Banknote className="w-6 h-6" />, name: isAr ? 'مدى' : 'Mada' },
-    { icon: <Smartphone className="w-6 h-6" />, name: 'Apple Pay' },
-    { icon: <QrCode className="w-6 h-6" />, name: 'STC Pay' },
+  const paymentFacts = [
+    isAr ? 'Tap Payments هو المسار الحالي' : 'Tap Payments is the current path',
+    isAr ? 'فصل صريح بين test وlive' : 'Explicit test/live separation',
+    isAr ? 'وسائل الدفع يحددها حساب التاجر لدى Tap' : 'Payment methods depend on the merchant Tap account',
   ];
 
   const steps = [
-    { n: '1', color: 'bg-emerald-600', title: isAr ? 'اربط بوابة الدفع' : 'Connect Payment Gateway', desc: isAr ? 'من إعدادات ساري، اربط حسابك في Tap أو Moyasar. التفعيل فوري ولا يحتاج خبرة تقنية.' : 'From Sari settings, connect your Tap or Moyasar account. Activation is instant, no technical expertise needed.' },
-    { n: '2', color: 'bg-blue-600', title: isAr ? 'العميل يطلب الشراء' : 'Customer Wants to Buy', desc: isAr ? 'العميل يراسلك على واتساب ويختار المنتج. ساري يشرح المميزات ويجيب الأسئلة حتى يقتنع العميل.' : 'Customer messages you on WhatsApp and picks a product. Sari explains features and answers questions until convinced.' },
-    { n: '3', color: 'bg-purple-600', title: isAr ? 'رابط دفع فوري' : 'Instant Payment Link', desc: isAr ? 'ساري يرسل رابط دفع مباشرة في المحادثة. العميل يضغط، يدفع بالطريقة المفضلة — خلال 30 ثانية.' : 'Sari sends a payment link directly in chat. Customer clicks, pays with preferred method — in 30 seconds.' },
-    { n: '4', color: 'bg-orange-600', title: isAr ? 'تأكيد وشحن' : 'Confirmation & Shipping', desc: isAr ? 'بعد الدفع، ساري يرسل تأكيد الطلب + رقم الفاتورة + تفاصيل الشحن — كل شيء تلقائي.' : 'After payment, Sari sends order confirmation + invoice number + shipping details — all automatic.' },
+    { n: '1', color: 'bg-emerald-600', title: isAr ? 'تحقق من إعداد Tap' : 'Verify Tap Setup', desc: isAr ? 'استخدم مفاتيح test للاختبار وlive للإنتاج. لا يعمل الدفع إذا كانت المفاتيح أو الوضع غير متطابقين أو لم ينجح اختبار الاتصال.' : 'Use test keys for testing and live keys for production. Payments remain disabled when keys, mode, or verification do not match.' },
+    { n: '2', color: 'bg-blue-600', title: isAr ? 'احفظ الطلب أولًا' : 'Persist the Order First', desc: isAr ? 'يحفظ ساري الطلب والسعر والعملة والمرجع خادميًا قبل طلب رابط الدفع.' : 'Sari persists the order, price, currency, and reference server-side before requesting a payment URL.' },
+    { n: '3', color: 'bg-purple-600', title: isAr ? 'أرسل رابط المزود عند نجاحه' : 'Send the Provider URL on Success', desc: isAr ? 'إذا أعادت Tap رابطًا صالحًا يمكن إرساله في المحادثة؛ فشل المزود لا يتحول إلى رسالة نجاح.' : 'When Tap returns a valid URL it can be sent in chat; provider failure is never presented as success.' },
+    { n: '4', color: 'bg-orange-600', title: isAr ? 'أكد النتيجة الموثقة' : 'Confirm the Verified Result', desc: isAr ? 'يؤكد الخادم الدفع بعد callback صحيح ومطابقة المبلغ والعملة والمرجع. تفاصيل الفاتورة والتسوية تتبع إعدادات التاجر والمزود.' : 'The server confirms payment after a valid callback and amount, currency, and reference checks. Invoicing and settlement follow merchant and provider settings.' },
   ];
 
   return (
     <>
-      // @ts-ignore
-      <SeoHead title={isAr ? 'دليل الدفع عبر واتساب — روابط دفع ذكية من ساري' : 'WhatsApp Payment Guide — Smart Payment Links by Sari'} description={isAr ? 'تعرف على كيفية إرسال روابط دفع إلكترونية عبر واتساب مع ساري. دعم فيزا، مدى، Apple Pay وSTCPay.' : 'Learn how to send electronic payment links via WhatsApp with Sari. Supports Visa, Mada, Apple Pay, and STCPay.'} url={`${BASE}/docs/whatsapp-payment-guide`} schemaMarkup={JSON.stringify(schemaData)} />
+      <SeoHead title={isAr ? 'دليل الدفع عبر واتساب — ربط Tap والتحقق من النتيجة' : 'WhatsApp Payment Guide — Tap Setup and Verification'} description={isAr ? 'تعرّف على إنشاء رابط Tap من طلب محفوظ والتحقق من callback والمبلغ والعملة قبل تأكيد الدفع.' : 'Learn how Sari creates a Tap URL from a persisted order and verifies the callback, amount, and currency before confirming payment.'} url={`${BASE}/docs/whatsapp-payment-guide`} schemaMarkup={JSON.stringify(schemaData)} />
       <Navbar />
       {/* Hero */}
       <section className="py-20 bg-gradient-to-b from-emerald-50 to-background dark:from-emerald-950/20">
         <div className="container text-center max-w-4xl">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 text-emerald-700 text-sm font-medium mb-6"><CreditCard className="w-4 h-4" />{isAr ? 'دليل الدفع' : 'Payment Guide'}</div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6">{isAr ? 'الدفع عبر واتساب' : 'WhatsApp Payments'}</h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{isAr ? 'حوّل محادثات واتساب إلى نقطة بيع. أرسل روابط دفع ذكية واستقبل المدفوعات مباشرة — بدون موقع إلكتروني.' : 'Turn WhatsApp conversations into a point of sale. Send smart payment links and receive payments directly — no website needed.'}</p>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">{isAr ? 'أرسل رابط Tap الذي ينشئه الخادم من طلب محفوظ، وتابع النتيجة بعد تحقق callback بدل اعتبار فتح الرابط دفعًا ناجحًا.' : 'Send the Tap URL created server-side from a persisted order, then follow the verified callback instead of treating a link visit as a successful payment.'}</p>
           <div className="flex flex-wrap gap-4 justify-center">
-            {paymentMethods.map((m, i) => (<div key={i} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-muted border shadow-sm text-sm font-medium">{m.icon}{m.name}</div>))}
+            {paymentFacts.map(fact => (<div key={fact} className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-muted border shadow-sm text-sm font-medium"><CheckCircle2 aria-hidden="true" className="h-4 w-4 text-emerald-600" />{fact}</div>))}
           </div>
         </div>
       </section>
@@ -100,9 +97,9 @@ export default function WhatsAppPaymentGuide() {
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'أمان الدفع' : 'Payment Security'}</h2>
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: <Shield className="w-8 h-8" />, title: isAr ? 'تشفير PCI DSS' : 'PCI DSS Encryption', desc: isAr ? 'كل عمليات الدفع مشفرة بأعلى معايير الأمان العالمية' : 'All payments encrypted with highest global security standards' },
-              { icon: <CheckCircle2 className="w-8 h-8" />, title: isAr ? 'بوابات مرخصة' : 'Licensed Gateways', desc: isAr ? 'نستخدم بوابات دفع مرخصة من البنك المركزي السعودي' : 'We use gateways licensed by Saudi Central Bank' },
-              { icon: <Clock className="w-8 h-8" />, title: isAr ? 'تحويل فوري' : 'Instant Transfer', desc: isAr ? 'المبالغ تُحول لحسابك مباشرة — بدون تأخير' : 'Amounts transferred to your account directly — no delay' },
+              { icon: <Shield className="w-8 h-8" />, title: isAr ? 'إدخال البطاقة لدى المزود' : 'Provider-Hosted Card Entry', desc: isAr ? 'ساري لا يطلب رقم البطاقة أو رمزها داخل محادثة واتساب؛ يستخدم الرابط الذي تعيده Tap.' : 'Sari does not request card numbers or codes in WhatsApp; it uses the URL returned by Tap.' },
+              { icon: <CheckCircle2 className="w-8 h-8" />, title: isAr ? 'تحقق قبل التفعيل' : 'Verification Before Enablement', desc: isAr ? 'يجب أن تتطابق مفاتيح Tap مع وضع test أو live وأن ينجح فحص الاتصال.' : 'Tap keys must match test or live mode and pass connection verification.' },
+              { icon: <CreditCard className="w-8 h-8" />, title: isAr ? 'تأكيد من callback' : 'Callback-Based Confirmation', desc: isAr ? 'لا تصبح العملية مدفوعة حتى ينجح تحقق callback وتطابق المبلغ والعملة والمرجع.' : 'A transaction is not marked paid until callback, amount, currency, and reference checks pass.' },
             ].map((f, i) => (<Card key={i}><CardContent className="p-6 text-center"><div className="w-14 h-14 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4">{f.icon}</div><h3 className="font-bold mb-2">{f.title}</h3><p className="text-sm text-muted-foreground">{f.desc}</p></CardContent></Card>))}
           </div>
         </div>
@@ -112,7 +109,6 @@ export default function WhatsAppPaymentGuide() {
       <section className="py-20 bg-white dark:bg-background">
         <div className="container max-w-4xl">
           <h2 className="text-3xl md:text-5xl font-bold text-center mb-16">{isAr ? 'أسئلة شائعة' : 'FAQ'}</h2>
-          // @ts-ignore
           <div className="space-y-4">{schemaData["@graph"][1].mainEntity.map((q: any, i: number) => (<Card key={i} className="border"><CardContent className="p-6"><h3 className="font-bold mb-2">{q.name}</h3><p className="text-muted-foreground text-sm">{q.acceptedAnswer.text}</p></CardContent></Card>))}</div>
         </div>
       </section>
@@ -120,9 +116,11 @@ export default function WhatsAppPaymentGuide() {
       {/* CTA */}
       <section className="py-20 bg-emerald-600 text-white">
         <div className="container text-center">
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">{isAr ? 'جاهز تبدأ تقبض؟' : 'Ready to Get Paid?'}</h2>
-          <p className="text-xl opacity-90 mb-8">{isAr ? 'فعّل الدفع عبر واتساب مجاناً — بدون عمولة من ساري' : 'Activate WhatsApp payments for free — no commission from Sari'}</p>
-          <Link href="/signup"><a><Button size="lg" variant="secondary" className="text-lg h-14 px-8">{isAr ? 'ابدأ مجاناً' : 'Start Free'}<ArrowRight className="ms-2 w-5 h-5" /></Button></a></Link>
+          <h2 className="text-3xl md:text-5xl font-bold mb-6">{isAr ? 'اختبر الدفع قبل تشغيله للعملاء' : 'Test Payments Before Going Live'}</h2>
+          <p className="text-xl opacity-90 mb-8">{isAr ? 'ابدأ بحساب تجريبي، اربط مفاتيح Tap الاختبارية، وتحقق من النجاح والفشل وcallback قبل استخدام live.' : 'Start a trial, connect Tap test keys, and verify success, failure, and callbacks before using live mode.'}</p>
+          <Button asChild size="lg" variant="secondary" className="text-lg h-14 px-8">
+            <Link href="/signup">{isAr ? 'ابدأ التجربة' : 'Start Trial'}<ArrowRight aria-hidden="true" className="ms-2 w-5 h-5" /></Link>
+          </Button>
         </div>
       </section>
       <Footer />

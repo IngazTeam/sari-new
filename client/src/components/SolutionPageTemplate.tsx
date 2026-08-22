@@ -220,16 +220,14 @@ export function SolutionPageTemplate({ sector, service }: SolutionPageTemplatePr
             {service.ctaTitle || 'جاهز لتحويل واتساب إلى موظف مبيعات؟'}
           </h2>
           <p className="text-xl opacity-90 mb-10 max-w-2xl mx-auto">
-            {service.ctaDescription || 'ابدأ الآن وجرب ساري مجاناً — بدون بطاقة ائتمان — تفعيل خلال 5 دقائق.'}
+            {service.ctaDescription || 'أنشئ حسابك وابدأ الإعداد. يعتمد وقت التشغيل على اكتمال بيانات متجرك وتحقق قناة واتساب والتكاملات التي تختارها.'}
           </p>
-          <Link href="/signup">
-            <a>
-              <Button size="lg" variant="secondary" className="text-lg h-14 px-10">
-                ابدأ مجاناً الآن
-                <ArrowLeft className="ms-2 w-5 h-5" />
-              </Button>
-            </a>
-          </Link>
+          <Button asChild size="lg" variant="secondary" className="text-lg h-14 px-10">
+            <Link href="/signup">
+              ابدأ التجربة
+              <ArrowLeft aria-hidden="true" className="ms-2 w-5 h-5" />
+            </Link>
+          </Button>
         </div>
       </section>
 

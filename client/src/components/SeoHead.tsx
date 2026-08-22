@@ -202,7 +202,7 @@ const seoConfigsAr = {
   },
   solutionsSales: {
     title: "حلول المبيعات | ساري - أتمتة مبيعات واتساب",
-    description: "حوّل واتساب إلى قناة مبيعات قوية. رد تلقائي ذكي، طلبات فورية، وتوصيات منتجات بالذكاء الاصطناعي.",
+    description: "حوّل واتساب إلى قناة مبيعات قابلة للتتبع: رد آلي من بيانات متجرك، وطلبات لا تُؤكد قبل حفظها، وتوصيات منتجات بالذكاء الاصطناعي.",
     keywords: "مبيعات واتساب, أتمتة مبيعات, بوت مبيعات, قناة مبيعات واتساب",
     canonicalUrl: `${BASE_URL}/solutions/sales`,
   },
@@ -213,9 +213,9 @@ const seoConfigsAr = {
     canonicalUrl: `${BASE_URL}/solutions/marketing`,
   },
   solutionsSupport: {
-    title: "حلول الدعم | ساري - دعم عملاء واتساب 24/7",
+    title: "حلول الدعم عبر واتساب | ساري",
     description: "وفّر رداً آلياً عبر واتساب من قاعدة معرفة متجرك، مع التحويل إلى موظف بشري عند الحاجة.",
-    keywords: "دعم عملاء واتساب, خدمة عملاء ذكية, بوت دعم فني, واتساب دعم 24/7",
+    keywords: "دعم عملاء واتساب, خدمة عملاء ذكية, بوت دعم فني, تحويل لموظف بشري",
     canonicalUrl: `${BASE_URL}/solutions/support`,
   },
   about: {
@@ -244,7 +244,7 @@ const seoConfigsAr = {
   },
   signup: {
     title: "إنشاء حساب مجاني | ساري",
-    description: "أنشئ حسابك المجاني في ساري وابدأ أتمتة مبيعاتك عبر واتساب خلال دقائق.",
+    description: "أنشئ حسابك في ساري واتبع حالة إعداد المتجر وقناة واتساب والتكاملات حتى تصبح جاهزة للاختبار.",
     canonicalUrl: `${BASE_URL}/signup`,
     noindex: true,
   },
@@ -256,19 +256,19 @@ const seoConfigsAr = {
   },
   productChatbot: {
     title: "روبوت دردشة ذكي للواتساب | ساري",
-    description: "أتمت محادثات العملاء بالكامل مع روبوت ساري الذكي — يفهم السياق ويرد بلغة طبيعية تعمل على مدار الساعة.",
+    description: "أتمت المحادثات المؤهلة من معرفة متجرك عندما تكون الخدمة والقناة متاحتين، مع التحويل إلى موظف بشري عند الحاجة.",
     keywords: "شات بوت واتساب, روبوت دردشة, أتمتة واتساب",
     canonicalUrl: `${BASE_URL}/product/chatbot`,
   },
   productWhatsApp: {
     title: "ربط وتكامل واتساب بزنس | ساري",
-    description: "اربط واتسابك بساري في دقائق بتكامل سلس ومزامنة فورية مع المتاجر الإلكترونية.",
+    description: "اربط قناة واتساب بساري عبر المسار المتاح لحسابك، وتابع حالة التحقق ومزامنة بيانات المتجر من لوحة الإعداد.",
     keywords: "ربط واتساب, تكامل سلة واتساب, تكامل زد واتساب",
     canonicalUrl: `${BASE_URL}/product/whatsapp`,
   },
   productBroadcasts: {
     title: "رسائل البث الجماعي للواتساب | ساري",
-    description: "أرسل حملاتك التسويقية لآلاف العملاء في ثوانٍ مع استهداف ذكي وتقارير مفصلة.",
+    description: "أنشئ حملات واتساب لمستلمين لديهم موافقة، مع استهداف وتقارير وحدود إرسال مرتبطة بالقناة والباقة.",
     keywords: "بث جماعي واتساب, حملات واتساب, رسائل ترويجية",
     canonicalUrl: `${BASE_URL}/product/broadcasts`,
   },
@@ -353,7 +353,7 @@ const seoConfigsEn = {
   },
   solutionsSales: {
     title: "Sales Solutions | Sari - WhatsApp Sales Automation",
-    description: "Turn WhatsApp into a powerful sales channel. Smart auto-reply, instant orders, and AI-powered product recommendations.",
+    description: "Turn WhatsApp into a traceable sales channel with store-grounded replies, orders confirmed only after persistence, and AI product recommendations.",
     keywords: "WhatsApp sales, sales automation, sales bot, WhatsApp sales channel, AI sales agent",
     canonicalUrl: `${BASE_URL}/solutions/sales`,
   },
@@ -364,9 +364,9 @@ const seoConfigsEn = {
     canonicalUrl: `${BASE_URL}/solutions/marketing`,
   },
   solutionsSupport: {
-    title: "Support Solutions | Sari - 24/7 WhatsApp Customer Support",
+    title: "WhatsApp Support Solutions | Sari",
     description: "Provide automated WhatsApp answers from your store knowledge, with human handoff when needed.",
-    keywords: "WhatsApp customer support, smart customer service, support bot, WhatsApp 24/7 support, AI support",
+    keywords: "WhatsApp customer support, smart customer service, support bot, human handoff, AI support",
     canonicalUrl: `${BASE_URL}/solutions/support`,
   },
   about: {
@@ -395,7 +395,7 @@ const seoConfigsEn = {
   },
   signup: {
     title: "Create Free Account | Sari",
-    description: "Create your free Sari account and start automating your WhatsApp sales in minutes.",
+    description: "Create a Sari account and follow store, WhatsApp channel, and integration readiness until the setup is ready to test.",
     canonicalUrl: `${BASE_URL}/signup`,
     noindex: true,
   },
@@ -407,19 +407,19 @@ const seoConfigsEn = {
   },
   productChatbot: {
     title: "Smart WhatsApp Chatbot | Sari",
-    description: "Automate customer conversations completely with Sari's smart chatbot. Understands context and replies naturally 24/7.",
+    description: "Automate eligible customer conversations from your store knowledge while the service and channel are available, with human handoff when needed.",
     keywords: "WhatsApp chatbot, smart auto reply, WhatsApp automation",
     canonicalUrl: `${BASE_URL}/product/chatbot`,
   },
   productWhatsApp: {
     title: "WhatsApp Business Integration | Sari",
-    description: "Connect your WhatsApp to Sari in minutes with seamless integration and instant synchronization with online stores.",
+    description: "Connect WhatsApp through the path available to your account and follow channel verification and store-data synchronization status.",
     keywords: "WhatsApp integration, Salla integration, Zid integration",
     canonicalUrl: `${BASE_URL}/product/whatsapp`,
   },
   productBroadcasts: {
     title: "WhatsApp Broadcast Campaigns | Sari",
-    description: "Send marketing campaigns to thousands of customers in seconds with smart targeting and detailed reports.",
+    description: "Create WhatsApp campaigns for consented recipients with targeting, reporting, and delivery limits tied to the channel and plan.",
     keywords: "WhatsApp broadcast, WhatsApp campaigns, promotional messages",
     canonicalUrl: `${BASE_URL}/product/broadcasts`,
   },

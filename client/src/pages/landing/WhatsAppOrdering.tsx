@@ -28,8 +28,8 @@ const schemaData = {
     {
       "@type": "FAQPage",
       "mainEntity": [
-        { "@type": "Question", "name": "كيف يعمل نظام الطلبات عبر واتساب؟", "acceptedAnswer": { "@type": "Answer", "text": "يستقبل العميل رسالة على واتساب، ساري يعرض المنتجات المناسبة، العميل يختار، ساري يرسل رابط دفع آمن، ثم يؤكد الطلب ويرسل تفاصيل الشحن تلقائياً." }},
-        { "@type": "Question", "name": "هل يدعم ساري الدفع الإلكتروني؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري يتكامل مع بوابات الدفع الرئيسية مثل Tap وMoyasar. يرسل روابط دفع آمنة للعميل مباشرة في المحادثة." }},
+        { "@type": "Question", "name": "كيف يعمل نظام الطلبات عبر واتساب؟", "acceptedAnswer": { "@type": "Answer", "text": "يعرض ساري بيانات المنتجات، ثم يحفظ الطلب قبل تأكيده. إذا كان Tap مفعّلًا ومتحققًا يرسل الرابط الذي تعيده البوابة، وتتغير حالة الدفع بعد callback موثّق." }},
+        { "@type": "Question", "name": "هل يدعم ساري الدفع الإلكتروني؟", "acceptedAnswer": { "@type": "Answer", "text": "يدعم المسار الحالي Tap Payments عند تفعيل مفاتيح التاجر والتحقق منها. وسائل الدفع والتسوية والرسوم يحددها حساب التاجر لدى Tap." }},
         { "@type": "Question", "name": "هل يمكن ربط نظام الطلبات مع سلة وزد؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري يتكامل مع سلة وزد وووكومرس. الطلبات تُسجّل تلقائياً في متجرك مع تحديث المخزون." }},
         { "@type": "Question", "name": "هل يدعم تتبع الشحنات؟", "acceptedAnswer": { "@type": "Answer", "text": "نعم، ساري يرسل تحديثات الشحن للعملاء تلقائياً عبر واتساب مع رقم التتبع وروابط الشحن." }},
         { "@type": "Question", "name": "كم طلب يمكن معالجته يومياً؟", "acceptedAnswer": { "@type": "Answer", "text": "السعة الفعلية تعتمد على الباقة وقناة واتساب وبوابة الدفع وحدود مزودي الخدمة. راجع صفحة التسعير وحدود حسابك الحالية." }},
@@ -48,11 +48,11 @@ export default function WhatsAppOrdering() {
 
   const features = [
     { icon: MessageSquare, ar: 'استقبال الطلبات عبر المحادثة', en: 'Receive Orders via Chat', arD: 'العميل يطلب بالكلام العادي وساري يفهم ويعالج', enD: 'Customer orders in natural language and Sari understands and processes' },
-    { icon: CreditCard, ar: 'دفع إلكتروني آمن', en: 'Secure Electronic Payment', arD: 'روابط دفع فورية عبر Tap و Moyasar', enD: 'Instant payment links via Tap and Moyasar' },
-    { icon: Receipt, ar: 'فواتير تلقائية', en: 'Automatic Invoices', arD: 'فاتورة مفصلة تُرسل للعميل فور إتمام الطلب', enD: 'Detailed invoice sent to customer upon order completion' },
+    { icon: CreditCard, ar: 'رابط دفع من المزود', en: 'Provider Payment Link', arD: 'رابط Tap يظهر فقط بعد تحقق إعداد التاجر ونجاح إنشاء العملية', enD: 'A Tap link appears only after merchant verification and successful charge creation' },
+    { icon: Receipt, ar: 'تأكيد مرتبط بالسجل', en: 'Record-Backed Confirmation', arD: 'لا تُرسل رسالة نجاح إلا من طلب محفوظ وحالة دفع موثقة عند وجودها', enD: 'Success is messaged only from a persisted order and verified payment state when applicable' },
     { icon: Truck, ar: 'تتبع الشحنات', en: 'Shipment Tracking', arD: 'تحديثات مباشرة للعميل عن حالة الشحنة', enD: 'Live updates for customers about shipment status' },
     { icon: Package, ar: 'إدارة المخزون الذكية', en: 'Smart Inventory Management', arD: 'تحديث المخزون تلقائياً مع كل طلب', enD: 'Automatic inventory update with each order' },
-    { icon: Bell, ar: 'إشعارات الطلبات', en: 'Order Notifications', arD: 'تنبيهات فورية لك ولعميلك في كل مرحلة', enD: 'Instant alerts for you and your customer at every stage' },
+    { icon: Bell, ar: 'حالة طلب قابلة للتتبع', en: 'Traceable Order Status', arD: 'تتغير الحالة من الأحداث المحفوظة ونتيجة مزود الدفع', enD: 'Status changes from persisted events and the payment-provider result' },
     { icon: BarChart3, ar: 'تقارير المبيعات', en: 'Sales Reports', arD: 'تحليل تفصيلي لأفضل المنتجات والأوقات', enD: 'Detailed analysis of best products and peak times' },
     { icon: Shield, ar: 'حماية بيانات العملاء', en: 'Customer Data Protection', arD: 'عزل بيانات المتجر وضوابط وصول على العمليات الحساسة', enD: 'Merchant data isolation and access controls on sensitive operations' },
     { icon: Zap, ar: 'مسار آلي', en: 'Automated Flow', arD: 'ينفذ خطوات الطلب آلياً عند سلامة القناة والتكاملات', enD: 'Runs order steps automatically when the channel and integrations are healthy' },
@@ -61,7 +61,7 @@ export default function WhatsAppOrdering() {
   const flow = [
     { n: '1', ar: 'العميل يرسل رسالة', en: 'Customer sends message', arD: '"أبغى أطلب بيتزا مارغريتا وكولا"', enD: '"I want to order a Margherita pizza and cola"' },
     { n: '2', ar: 'ساري يفهم ويؤكد', en: 'Sari understands & confirms', arD: 'يعرض تفاصيل الطلب والسعر الإجمالي', enD: 'Shows order details and total price' },
-    { n: '3', ar: 'إرسال رابط الدفع', en: 'Payment link sent', arD: 'رابط دفع آمن يُرسل مباشرة في المحادثة', enD: 'Secure payment link sent directly in chat' },
+    { n: '3', ar: 'إنشاء رابط الدفع', en: 'Create Payment Link', arD: 'عند تفعيل Tap، يرسل ساري الرابط الذي تعيده البوابة أو يوضح تعذر إنشائه', enD: 'When Tap is enabled, Sari sends the provider URL or reports that it could not be created' },
     { n: '4', ar: 'تأكيد وتتبع', en: 'Confirmation & tracking', arD: 'تأكيد الطلب + رقم التتبع للعميل تلقائياً', enD: 'Order confirmation + tracking number sent automatically' },
   ];
 
@@ -182,8 +182,10 @@ export default function WhatsAppOrdering() {
       <section className="py-20 bg-blue-600 text-white">
         <div className="container text-center">
           <h2 className="text-3xl md:text-5xl font-bold mb-4">{isAr ? 'حوّل واتسابك إلى قناة طلبات الآن' : 'Transform WhatsApp Into an Order Channel'}</h2>
-          <p className="text-xl mb-8 opacity-90">{isAr ? 'ابدأ باستقبال طلبات عبر واتساب خلال 5 دقائق' : 'Start receiving WhatsApp orders in 5 minutes'}</p>
-          <Link href="/signup"><a><Button size="lg" variant="secondary" className="text-lg h-14 px-8">{isAr ? 'ابدأ مجاناً' : 'Start Free'}<ArrowRight className="ms-2 w-5 h-5" /></Button></a></Link>
+          <p className="text-xl mb-8 opacity-90">{isAr ? 'أنشئ حسابك واختبر حفظ الطلب وربط القناة والدفع قبل استقبال طلبات العملاء' : 'Create an account and test order persistence, channel setup, and payments before accepting customer orders'}</p>
+          <Button asChild size="lg" variant="secondary" className="text-lg h-14 px-8">
+            <Link href="/signup">{isAr ? 'ابدأ التجربة' : 'Start Trial'}<ArrowRight aria-hidden="true" className="ms-2 w-5 h-5" /></Link>
+          </Button>
         </div>
       </section>
 
