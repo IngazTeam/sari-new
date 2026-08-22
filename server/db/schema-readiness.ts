@@ -23,6 +23,15 @@ export type SchemaRequirement = {
   checkConstraints?: readonly CheckConstraintRequirement[];
 };
 
+export type SchemaReadinessOptions = {
+  /**
+   * Keep a successful result for the process lifetime. Disable this for rare,
+   * security-sensitive mutations that must observe post-startup schema drift.
+   * Concurrent callers still share the same in-flight inspection.
+   */
+  cacheSuccess?: boolean;
+};
+
 export class DatabaseSchemaOutdatedError extends Error {
   readonly code = 'DATABASE_SCHEMA_OUTDATED';
 
@@ -380,8 +389,10 @@ export async function inspectSchemaRequirements(requirements: readonly SchemaReq
 export async function assertRuntimeSchema(
   feature: string,
   requirements: readonly SchemaRequirement[],
+  options: SchemaReadinessOptions = {},
 ): Promise<void> {
-  const key = requirementKey(feature, requirements);
+  const cacheSuccess = options.cacheSuccess !== false;
+  const key = `${requirementKey(feature, requirements)}:cache-success=${cacheSuccess}`;
   const existing = readinessChecks.get(key);
   if (existing) return existing;
 
@@ -395,6 +406,10 @@ export async function assertRuntimeSchema(
   } catch (error) {
     readinessChecks.delete(key);
     throw error;
+  } finally {
+    if (!cacheSuccess && readinessChecks.get(key) === check) {
+      readinessChecks.delete(key);
+    }
   }
 }
 

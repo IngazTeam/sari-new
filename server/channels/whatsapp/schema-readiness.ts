@@ -37,5 +37,7 @@ export const WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS = [{
 export async function assertWhatsAppPrimarySchemaReady(
   feature = 'WhatsApp instance mutation',
 ): Promise<void> {
-  await assertRuntimeSchema(feature, WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS);
+  await assertRuntimeSchema(feature, WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS, {
+    cacheSuccess: false,
+  });
 }
