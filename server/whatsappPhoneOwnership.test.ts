@@ -12,6 +12,7 @@ import {
   activeWhatsAppPhoneIdentityHash,
   WhatsAppPhoneOwnershipConflictError,
 } from './channels/whatsapp/instance-ownership';
+import { mutateRestWhatsAppInstance } from './api/instance-lifecycle';
 
 const TEST_PREFIX = 'ci-wa-own-';
 
@@ -287,6 +288,37 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
       isPrimary: 1,
     });
     expect(rows.filter(row => row.status === 'active')).toHaveLength(1);
+    expect(rows.filter(row => row.status === 'active' && Number(row.isPrimary) === 1)).toHaveLength(1);
+  });
+
+  it('elects the first active instance and repairs a zero-primary REST transition', async () => {
+    const merchantId = await createMerchant('primary-invariant');
+    const first = await createInstance(merchantId, 'invariant-a', '+966505556711');
+    expect(first.isPrimary).toBe(1);
+    const second = await createInstance(merchantId, 'invariant-b', '+966505556712');
+    expect(second.isPrimary).toBe(0);
+
+    const pool = await getPool();
+    if (!pool) throw new Error('Database not initialized');
+    await pool.execute(
+      'UPDATE whatsapp_instances SET is_primary = 0 WHERE merchant_id = ?',
+      [merchantId],
+    );
+    await expect(mutateRestWhatsAppInstance(merchantId, first.id, { isActive: false }))
+      .resolves.toMatchObject({ kind: 'updated', instance: { status: 'inactive', isPrimary: false } });
+
+    const [rows] = await pool.execute<any[]>(
+      `SELECT id, status, is_primary AS isPrimary
+         FROM whatsapp_instances
+        WHERE merchant_id = ?
+        ORDER BY id`,
+      [merchantId],
+    );
+    expect(rows.filter(row => row.status === 'active')).toHaveLength(1);
+    expect(rows.find(row => Number(row.id) === second.id)).toMatchObject({
+      status: 'active',
+      isPrimary: 1,
+    });
     expect(rows.filter(row => row.status === 'active' && Number(row.isPrimary) === 1)).toHaveLength(1);
   });
 });

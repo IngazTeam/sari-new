@@ -12,6 +12,10 @@ interface PhoneOwnerRow extends RowDataPacket {
   id: number | string;
 }
 
+interface PrimaryCandidateRow extends RowDataPacket {
+  id: number | string;
+}
+
 export class WhatsAppInstanceLockBusyError extends Error {
   constructor() {
     super('WhatsApp instance mutation is busy');
@@ -129,6 +133,42 @@ export async function assertWhatsAppPhoneAvailable(
     params,
   );
   if (rows[0]) throw new WhatsAppPhoneOwnershipConflictError();
+}
+
+/**
+ * Repairs the merchant invariant while the caller owns the merchant named lock
+ * and an open transaction on this same connection. If any active instance
+ * exists, exactly one deterministic row is primary when this returns.
+ */
+export async function ensureWhatsAppActivePrimaryOnConnection(
+  connection: PoolConnection,
+  merchantId: number,
+): Promise<number | undefined> {
+  if (!Number.isSafeInteger(merchantId) || merchantId < 1) throw new Error('Invalid merchant ID');
+  const [rows] = await connection.execute<PrimaryCandidateRow[]>(
+    `SELECT id
+       FROM whatsapp_instances
+      WHERE merchant_id = ? AND status = 'active'
+      ORDER BY is_primary DESC, created_at ASC, id ASC
+      LIMIT 1
+      FOR UPDATE`,
+    [merchantId],
+  );
+  const candidateId = Number(rows[0]?.id);
+  if (!Number.isSafeInteger(candidateId) || candidateId < 1) return undefined;
+  await connection.execute(
+    `UPDATE whatsapp_instances
+        SET is_primary = 0, updated_at = NOW()
+      WHERE merchant_id = ? AND is_primary <> 0`,
+    [merchantId],
+  );
+  await connection.execute(
+    `UPDATE whatsapp_instances
+        SET is_primary = 1, updated_at = NOW()
+      WHERE id = ? AND merchant_id = ? AND status = 'active'`,
+    [candidateId, merchantId],
+  );
+  return candidateId;
 }
 
 export function whatsAppMerchantLockNamespace(merchantId: number): string {

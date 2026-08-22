@@ -5,6 +5,7 @@ import {
   acquireWhatsAppInstanceLock,
   activeWhatsAppPhoneIdentityHash,
   assertWhatsAppPhoneAvailable,
+  ensureWhatsAppActivePrimaryOnConnection,
   finalizeWhatsAppInstanceLockConnection,
   isWhatsAppActivePhoneUniqueConflict,
   WhatsAppPhoneOwnershipConflictError,
@@ -274,40 +275,7 @@ export async function mutateRestWhatsAppInstance(
       [finalStatus, wantsPrimary && finalActive ? 1 : 0, activePhoneIdentityHash, instanceId, merchantId],
     );
 
-    const targetLostPrimary = Number(target.isPrimary) === 1 && (!finalActive || normalized.isPrimary === false);
-    if (targetLostPrimary) {
-      const [candidateRows] = await connection.execute<RowDataPacket[]>(
-        `SELECT id
-           FROM whatsapp_instances
-          WHERE merchant_id = ? AND status = 'active' AND id <> ?
-          ORDER BY created_at ASC, id ASC
-          LIMIT 1
-          FOR UPDATE`,
-        [merchantId, instanceId],
-      );
-      const candidateId = Number(candidateRows[0]?.id);
-      if (Number.isSafeInteger(candidateId) && candidateId > 0) {
-        await connection.execute(
-          `UPDATE whatsapp_instances SET is_primary = 1, updated_at = NOW()
-            WHERE id = ? AND merchant_id = ? AND status = 'active'`,
-          [candidateId, merchantId],
-        );
-      }
-    } else if (finalActive && normalized.isPrimary !== false) {
-      const [primaryRows] = await connection.execute<RowDataPacket[]>(
-        `SELECT id FROM whatsapp_instances
-          WHERE merchant_id = ? AND status = 'active' AND is_primary = 1
-          LIMIT 1 FOR UPDATE`,
-        [merchantId],
-      );
-      if (!primaryRows[0]) {
-        await connection.execute(
-          `UPDATE whatsapp_instances SET is_primary = 1, updated_at = NOW()
-            WHERE id = ? AND merchant_id = ? AND status = 'active'`,
-          [instanceId, merchantId],
-        );
-      }
-    }
+    await ensureWhatsAppActivePrimaryOnConnection(connection, merchantId);
 
     const [updatedRows] = await connection.execute<PublicInstanceRow[]>(
       `SELECT id,

@@ -3035,6 +3035,7 @@ export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Prom
           : null,
         token: encryptSecret(data.token),
       });
+      await ensureWhatsAppActivePrimary(tx, data.merchantId);
       return Number(instance.insertId);
     });
     const [created] = await connectionDb.select().from(whatsappInstances)
@@ -3174,27 +3175,7 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
           eq(whatsappInstances.id, id),
           eq(whatsappInstances.merchantId, current.merchantId),
         ));
-
-      if (Number(current.isPrimary) === 1 && !finalPrimary) {
-        const [replacement] = await tx.select({ id: whatsappInstances.id })
-          .from(whatsappInstances)
-          .where(and(
-            eq(whatsappInstances.merchantId, current.merchantId),
-            eq(whatsappInstances.status, 'active'),
-            ne(whatsappInstances.id, id),
-          ))
-          .orderBy(whatsappInstances.createdAt, whatsappInstances.id)
-          .limit(1);
-        if (replacement) {
-          await tx.update(whatsappInstances)
-            .set({ isPrimary: 1, updatedAt: formatDateForDB(new Date()) })
-            .where(and(
-              eq(whatsappInstances.id, replacement.id),
-              eq(whatsappInstances.merchantId, current.merchantId),
-              eq(whatsappInstances.status, 'active'),
-            ));
-        }
-      }
+      await ensureWhatsAppActivePrimary(tx, current.merchantId);
     });
   } catch (error) {
     if (isWhatsAppActivePhoneUniqueConflict(error)) {
