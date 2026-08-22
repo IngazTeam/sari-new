@@ -2473,6 +2473,27 @@ export const zidOrders = mysqlTable("zid_orders", {
 		index("zid_orders_customer_phone_idx").on(table.customerPhone),
 	]);
 
+// Durable, PII-minimized merchant alerts for newly accepted Zid orders.
+// Recipient and message content are resolved just-in-time and never stored here.
+export const zidOrderNotificationOutbox = mysqlTable("zid_order_notification_outbox", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	zidOrderId: varchar("zid_order_id", { length: 255 }).notNull(),
+	eventKey: varchar("event_key", { length: 64 }).notNull(),
+	status: mysqlEnum(['pending', 'processing', 'delivered', 'failed', 'suppressed', 'manual_review']).default('pending').notNull(),
+	attempts: int().default(0).notNull(),
+	availableAt: timestamp("available_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	claimedAt: timestamp("claimed_at", { mode: 'string', fsp: 3 }),
+	deliveredAt: timestamp("delivered_at", { mode: 'string', fsp: 3 }),
+	lastError: varchar("last_error", { length: 100 }),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	uniqueIndex("zid_order_notification_event_unique").on(table.eventKey),
+	index("idx_zid_order_notification_dispatch").on(table.status, table.availableAt, table.id),
+	index("idx_zid_order_notification_order").on(table.merchantId, table.zidOrderId),
+]);
+
 export const zidCustomers = mysqlTable("zid_customers", {
 	id: int().autoincrement().notNull().primaryKey(),
 	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),

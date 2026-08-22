@@ -162,6 +162,13 @@
       "when": 1787389383276,
       "tag": "0022_zid_order_event_ordering",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1787390835576,
+      "tag": "0023_zid_order_notification_outbox",
+      "breakpoints": true
     }
   ]
 }

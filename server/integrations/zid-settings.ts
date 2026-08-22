@@ -4,14 +4,21 @@ export type ZidIntegrationSettings = Record<string, unknown> & {
   syncProducts: boolean;
   syncOrders: boolean;
   syncCustomers: boolean;
+  notifyMerchantOrders: boolean;
 };
 
 export type ZidWebhookPolicy = Pick<
   ZidIntegrationSettings,
-  'valid' | 'autoSync' | 'syncProducts' | 'syncOrders'
+  'valid' | 'autoSync' | 'syncProducts' | 'syncOrders' | 'notifyMerchantOrders'
 >;
 
-const BOOLEAN_KEYS = ['autoSync', 'syncProducts', 'syncOrders', 'syncCustomers'] as const;
+const BOOLEAN_KEYS = [
+  'autoSync',
+  'syncProducts',
+  'syncOrders',
+  'syncCustomers',
+  'notifyMerchantOrders',
+] as const;
 
 function disabledSettings(): ZidIntegrationSettings {
   return {
@@ -20,6 +27,7 @@ function disabledSettings(): ZidIntegrationSettings {
     syncProducts: false,
     syncOrders: false,
     syncCustomers: false,
+    notifyMerchantOrders: false,
   };
 }
 
@@ -33,6 +41,9 @@ export function parseZidSettings(value: string | null | undefined): ZidIntegrati
       syncProducts: true,
       syncOrders: true,
       syncCustomers: true,
+      // Notification delivery was introduced after the legacy settings shape.
+      // It always requires an explicit merchant opt-in.
+      notifyMerchantOrders: false,
     };
   }
   try {
@@ -48,6 +59,7 @@ export function parseZidSettings(value: string | null | undefined): ZidIntegrati
       syncProducts: parsed.syncProducts !== false,
       syncOrders: parsed.syncOrders !== false,
       syncCustomers: parsed.syncCustomers !== false,
+      notifyMerchantOrders: parsed.notifyMerchantOrders === true,
     };
   } catch {
     return disabledSettings();
@@ -60,6 +72,7 @@ export function zidWebhookPolicy(settings: ZidIntegrationSettings): ZidWebhookPo
     autoSync: settings.autoSync,
     syncProducts: settings.syncProducts,
     syncOrders: settings.syncOrders,
+    notifyMerchantOrders: settings.notifyMerchantOrders,
   };
 }
 

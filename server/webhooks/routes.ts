@@ -238,7 +238,7 @@ router.post('/zid/:endpointId', async (req: Request & { rawBody?: Buffer }, res:
     }
 
     try {
-      await processZidWebhook(payload, principal.merchantId);
+      await processZidWebhook(payload, principal.merchantId, principal.policy);
       await completeZidWebhook(claim.receiptId, claim.attemptCount);
       return res.status(200).json({ message: 'Webhook processed successfully' });
     } catch {

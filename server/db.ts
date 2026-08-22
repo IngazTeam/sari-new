@@ -7613,18 +7613,23 @@ export async function upsertOrderFromZid(
   merchantId: number,
   zidOrder: any,
   occurredAt = new Date(),
-): Promise<void> {
-  await upsertNormalizedOrdersFromZid(merchantId, [normalizeZidOrder(zidOrder, occurredAt)]);
+): Promise<boolean> {
+  const result = await upsertNormalizedOrdersFromZid(
+    merchantId,
+    [normalizeZidOrder(zidOrder, occurredAt)],
+  );
+  return result.acceptedOrders === 1;
 }
 
 /** Persist validated Zid source orders and their usable Sari projections atomically. */
 export async function upsertNormalizedOrdersFromZid(
   merchantId: number,
   normalizedOrders: NormalizedZidOrder[],
-): Promise<{ sourceOrders: number; projectedOrders: number }> {
+): Promise<{ sourceOrders: number; projectedOrders: number; acceptedOrders: number }> {
   const db = await getDb();
-  if (!db) return { sourceOrders: 0, projectedOrders: 0 };
+  if (!db) return { sourceOrders: 0, projectedOrders: 0, acceptedOrders: 0 };
   let projectedOrders = 0;
+  let acceptedOrders = 0;
   await db.transaction(async tx => {
     for (const zidOrder of normalizedOrders) {
       // Upsert the uniquely constrained source row first. InnoDB keeps the
@@ -7665,6 +7670,7 @@ export async function upsertNormalizedOrdersFromZid(
         ))
         .limit(1);
       const canonical = sourceRow[0];
+      if (canonical?.lastSyncedAt === zidOrder.lastSyncedAt) acceptedOrders += 1;
       const canonicalAmount = Number(canonical?.totalAmount);
       const canonicalAmountCents = Number.isFinite(canonicalAmount)
         ? Math.round(canonicalAmount * 100)
@@ -7705,7 +7711,7 @@ export async function upsertNormalizedOrdersFromZid(
       }
     }
   });
-  return { sourceOrders: normalizedOrders.length, projectedOrders };
+  return { sourceOrders: normalizedOrders.length, projectedOrders, acceptedOrders };
 }
 
 export async function cancelOrderFromZid(

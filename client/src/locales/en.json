@@ -3836,7 +3836,9 @@
     "text52": "Are you sure you want to disconnect the Zid store?",
     "text53": "Add the Webhook URL in the Zid dashboard to receive instant updates",
     "text54": "Copy this URL and add it to the Webhooks settings in the Zid dashboard",
-    "text55": "Zid Webhooks Setup Guide"
+    "text55": "Zid Webhooks Setup Guide",
+    "text56": "Notify merchant of new orders",
+    "text57": "Send one WhatsApp alert to the store number when a new Zid order arrives. No customer messages are sent."
   },
   "adminAdminRecommendationsPage": {
     "text0": "Total Recommendations",

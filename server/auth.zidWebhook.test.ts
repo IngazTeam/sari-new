@@ -65,6 +65,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid webhook authentication and repla
         autoSync: true,
         syncProducts: true,
         syncOrders: true,
+        notifyMerchantOrders: false,
       },
     });
 
@@ -80,6 +81,7 @@ describe.skipIf(!process.env.DATABASE_URL)('Zid webhook authentication and repla
         autoSync: true,
         syncProducts: true,
         syncOrders: true,
+        notifyMerchantOrders: false,
       },
     });
   });

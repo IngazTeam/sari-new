@@ -18,6 +18,15 @@ const STATUS_RANK: Record<WhatsAppDeliveryStatus, number> = {
   failed: 5,
 };
 
+export class WhatsAppDeliveryStateError extends Error {
+  readonly code = 'delivery_outcome_unknown';
+
+  constructor() {
+    super('WhatsApp provider outcome could not be persisted safely');
+    this.name = 'WhatsAppDeliveryStateError';
+  }
+}
+
 async function ensureChannelSchema() {
   await assertRuntimeSchema('WhatsApp channel', [
     { table: 'whatsapp_instances', columns: ['provider', 'phone_number_id', 'provider_account_id'] },
@@ -63,6 +72,7 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
   }
   const config = toProviderConfig(instance);
 
+  let reserved = false;
   try {
     await pool.execute(
       `INSERT INTO whatsapp_message_deliveries
@@ -70,6 +80,7 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
        VALUES (?, ?, ?, ?, ?, 'outgoing', 'queued')`,
       [input.merchantId, input.messageId || null, instance.id, config.provider, input.idempotencyKey]
     );
+    reserved = true;
   } catch (error: any) {
     if (error?.code !== 'ER_DUP_ENTRY') throw error;
     const [rows] = await pool.execute(
@@ -79,31 +90,54 @@ export async function sendMerchantWhatsApp(input: SendMerchantWhatsAppInput): Pr
     );
     const existing = (rows as any[])?.[0];
     if (!existing) throw error;
-    return {
-      accepted: ['sent', 'delivered', 'read'].includes(existing.status),
-      duplicate: true,
-      status: existing.status,
-      providerMessageId: existing.provider_message_id || undefined,
-      errorCode: existing.error_code || undefined,
-    };
+    if (existing.status === 'failed' && input.retryFailed) {
+      const [retry] = await pool.execute(
+        `UPDATE whatsapp_message_deliveries
+         SET status = 'queued', error_code = NULL, error_details = NULL, status_updated_at = NOW()
+         WHERE idempotency_key = ? AND merchant_id = ? AND status = 'failed'`,
+        [input.idempotencyKey, input.merchantId]
+      );
+      reserved = Number((retry as any)?.affectedRows || 0) === 1;
+    }
+    if (!reserved) {
+      return {
+        accepted: ['sent', 'delivered', 'read'].includes(existing.status),
+        duplicate: true,
+        status: existing.status,
+        providerMessageId: existing.provider_message_id || undefined,
+        errorCode: existing.error_code || (existing.status === 'queued' ? 'delivery_in_progress' : undefined),
+      };
+    }
   }
 
   const provider = getWhatsAppProvider(config.provider);
-  const result = await provider.send(config, input);
+  const result = await provider.send(config, input).catch((error: any) => ({
+    accepted: false as const,
+    status: 'failed' as const,
+    providerMessageId: undefined,
+    errorCode: 'provider_unreachable',
+    errorMessage: String(error?.message || 'Provider call failed').slice(0, 300),
+  }));
   const status: WhatsAppDeliveryStatus = result.accepted ? 'sent' : 'failed';
-  await pool.execute(
-    `UPDATE whatsapp_message_deliveries
-     SET provider_message_id = ?, status = ?, error_code = ?, error_details = ?, status_updated_at = NOW()
-     WHERE idempotency_key = ? AND merchant_id = ? AND status = 'queued'`,
-    [
-      result.providerMessageId || null,
-      status,
-      result.errorCode || null,
-      result.errorMessage?.replace(/[\r\n]/g, ' ').slice(0, 500) || null,
-      input.idempotencyKey,
-      input.merchantId,
-    ]
-  );
+  try {
+    const [persisted] = await pool.execute(
+      `UPDATE whatsapp_message_deliveries
+       SET provider_message_id = ?, status = ?, error_code = ?, error_details = ?, status_updated_at = NOW()
+       WHERE idempotency_key = ? AND merchant_id = ? AND status = 'queued'`,
+      [
+        result.providerMessageId || null,
+        status,
+        result.errorCode || null,
+        result.errorMessage?.replace(/[\r\n]/g, ' ').slice(0, 500) || null,
+        input.idempotencyKey,
+        input.merchantId,
+      ]
+    );
+    if (Number((persisted as any)?.affectedRows || 0) !== 1) throw new WhatsAppDeliveryStateError();
+  } catch (error) {
+    if (error instanceof WhatsAppDeliveryStateError) throw error;
+    throw new WhatsAppDeliveryStateError();
+  }
   return {
     accepted: result.accepted,
     duplicate: false,

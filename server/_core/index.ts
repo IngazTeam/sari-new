@@ -38,6 +38,7 @@ import { applySecurityMiddleware, securityLogger } from "./security";
 import { logError } from "./logger";
 import { installProductionConsoleRedaction } from "../security/log-redaction";
 import { startByaanOutboxWorker } from "../integrations/byaan-outbox";
+import { startZidOrderNotificationWorker } from "../integrations/zid-order-notification-outbox";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -605,6 +606,9 @@ async function startServer() {
 
       // Durable, signed Byaan lifecycle delivery with retry/backoff.
       startByaanOutboxWorker();
+
+      // Opt-in, PII-minimized merchant alerts for newly accepted Zid orders.
+      startZidOrderNotificationWorker();
 
       // Initialize Escalation Cascade job (runs every 60s — cascading phone alerts)
       startEscalationCascadeJob();

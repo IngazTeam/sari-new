@@ -10,6 +10,8 @@ import {
   upsertOrderFromZid,
   upsertProductFromZid,
 } from '../db';
+import { enqueueZidOrderCreatedNotification } from '../integrations/zid-order-notification-outbox';
+import type { ZidWebhookPolicy } from '../integrations/zid-settings';
 
 export interface ZidWebhookPayload {
   event: string;
@@ -65,13 +67,14 @@ export function parseZidWebhookPayload(value: unknown, now = new Date()): ZidWeb
 export async function processZidWebhook(
   payload: ZidWebhookPayload,
   merchantId: number,
+  policy?: ZidWebhookPolicy,
 ): Promise<{ success: boolean; message: string }> {
   const event = EVENT_ALIASES[payload.event] || payload.event;
   const occurredAt = normalizeZidWebhookOccurredAt(payload.created_at);
   if (!occurredAt) throw new Error('INVALID_ZID_WEBHOOK_TIME');
   switch (event) {
     case 'order.created':
-      await handleOrderCreated(merchantId, payload.data, occurredAt);
+      await handleOrderCreated(merchantId, payload.data, occurredAt, policy);
       break;
     case 'order.updated':
       await handleOrderUpdated(merchantId, payload.data, occurredAt);
@@ -104,8 +107,15 @@ async function handleOrderCreated(
   merchantId: number,
   orderData: any,
   occurredAt: Date,
+  policy?: ZidWebhookPolicy,
 ) {
-  await upsertOrderFromZid(merchantId, orderData, occurredAt);
+  const accepted = await upsertOrderFromZid(merchantId, orderData, occurredAt);
+  if (accepted && policy?.notifyMerchantOrders) {
+    await enqueueZidOrderCreatedNotification({
+      merchantId,
+      externalOrderId: orderData.id,
+    });
+  }
 }
 
 /**

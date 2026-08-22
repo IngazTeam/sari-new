@@ -180,6 +180,7 @@ export const zidRouter = router({
           syncProducts: settings.syncProducts,
           syncOrders: settings.syncOrders,
           syncCustomers: settings.syncCustomers,
+          notifyMerchantOrders: settings.notifyMerchantOrders,
         },
       };
     }),
@@ -257,6 +258,7 @@ export const zidRouter = router({
             syncProducts: true,
             syncOrders: true,
             syncCustomers: true,
+            notifyMerchantOrders: false,
             storeId: store.storeId,
             managerToken: encryptSecret(tokens.managerToken),
             tokenExpiresAt: tokens.expiresIn
@@ -414,6 +416,7 @@ export const zidRouter = router({
       syncProducts: z.boolean(),
       syncOrders: z.boolean(),
       syncCustomers: z.boolean(),
+      notifyMerchantOrders: z.boolean(),
     }))
     .mutation(async ({ ctx, input }) => {
       const merchant = await getMerchantByUserId(ctx.user.id);
@@ -432,6 +435,7 @@ export const zidRouter = router({
         syncProducts: input.syncProducts,
         syncOrders: input.syncOrders,
         syncCustomers: input.syncCustomers,
+        notifyMerchantOrders: input.notifyMerchantOrders,
       });
 
       return { success: true };

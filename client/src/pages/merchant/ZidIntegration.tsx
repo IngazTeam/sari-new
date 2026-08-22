@@ -44,6 +44,7 @@ export default function ZidIntegration() {
   const [syncProducts, setSyncProducts] = useState(true);
   const [syncOrders, setSyncOrders] = useState(true);
   const [syncCustomers, setSyncCustomers] = useState(true);
+  const [notifyMerchantOrders, setNotifyMerchantOrders] = useState(false);
   const [sensitiveAction, setSensitiveAction] = useState<SensitiveZidAction | null>(null);
   const [reauthPassword, setReauthPassword] = useState('');
   const [webhookCredentials, setWebhookCredentials] = useState<{
@@ -171,6 +172,7 @@ export default function ZidIntegration() {
       syncProducts,
       syncOrders,
       syncCustomers,
+      notifyMerchantOrders,
     });
   };
 
@@ -181,6 +183,7 @@ export default function ZidIntegration() {
       setSyncProducts(connection.settings.syncProducts ?? true);
       setSyncOrders(connection.settings.syncOrders ?? true);
       setSyncCustomers(connection.settings.syncCustomers ?? true);
+      setNotifyMerchantOrders(connection.settings.notifyMerchantOrders ?? false);
     }
   }, [connection]);
 
@@ -319,6 +322,20 @@ export default function ZidIntegration() {
                     </p>
                   </div>
                   <Switch checked={syncCustomers} onCheckedChange={setSyncCustomers} />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base">{t('zidIntegrationPage.text56')}</Label>
+                    <p className="text-sm text-muted-foreground">
+                      {t('zidIntegrationPage.text57')}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={notifyMerchantOrders}
+                    onCheckedChange={setNotifyMerchantOrders}
+                    disabled={!autoSync || !syncOrders}
+                  />
                 </div>
 
                 <div className="flex gap-3 pt-4">

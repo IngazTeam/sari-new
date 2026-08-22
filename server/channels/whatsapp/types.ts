@@ -42,4 +42,7 @@ export type SendMerchantWhatsAppInput = WhatsAppSendRequest & {
   idempotencyKey: string;
   messageId?: number;
   instanceRecordId?: number;
+  // Retries only rows whose provider call finished with an explicit failure.
+  // A still-queued row is never resent because its provider outcome is unknown.
+  retryFailed?: boolean;
 };
