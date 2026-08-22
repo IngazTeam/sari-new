@@ -183,6 +183,13 @@
       "when": 1787484000000,
       "tag": "0025_byaan_trainee_list_pagination",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "5",
+      "when": 1787487600000,
+      "tag": "0026_byaan_faq_knowledge_pagination",
+      "breakpoints": true
     }
   ]
 }

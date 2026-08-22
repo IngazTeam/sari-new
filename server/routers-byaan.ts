@@ -183,22 +183,33 @@ export const byaanRouter = router({
     }),
 
   // ── Get FAQs ──
-  getFaqs: protectedProcedure.query(async ({ ctx }) => {
-    const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
+  getFaqs: protectedProcedure
+    .input(z.object({
+      limit: z.number().int().min(1).max(200).default(50),
+      cursor: z.number().int().positive().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const { merchant } = await requireActiveByaanMerchant(ctx.user.id);
 
-    const { getByaanFaqsByMerchant } = await import('./integrations/byaan');
-    const faqs = await getByaanFaqsByMerchant(merchant.id);
+      const { getByaanFaqPage } = await import('./integrations/byaan');
+      const page = await getByaanFaqPage(merchant.id, {
+        limit: input?.limit || 50,
+        cursor: input?.cursor,
+      });
 
-    return sanitizeForTRPC(faqs.map((f: any) => ({
-      id: f.id,
-      question: f.question,
-      answer: f.answer,
-      category: f.category,
-      isActive: f.is_active === 1,
-      useInBot: f.use_in_bot === 1,
-      syncedAt: f.synced_at,
-    })));
-  }),
+      return sanitizeForTRPC({
+        items: page.items.map((f) => ({
+          id: f.id,
+          question: f.question,
+          answer: f.answer,
+          category: f.category,
+          isActive: f.is_active === 1,
+          useInBot: f.use_in_bot === 1,
+          syncedAt: f.synced_at,
+        })),
+        nextCursor: page.nextCursor,
+      });
+    }),
 
   // ── Toggle FAQ active/useInBot ──
   toggleFaq: protectedProcedure

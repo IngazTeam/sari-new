@@ -463,43 +463,213 @@ export async function getByaanTraineePage(
   };
 }
 
-/** Sync FAQs from Byaan into byaan_faqs table */
-export async function syncByaanFaqs(merchantId: number, faqs: { id?: string; question: string; answer: string; category?: string }[], mode: 'append' | 'replace' = 'append'): Promise<{ created: number }> {
-  await ensureByaanTables();
-  const dbConn = await getPool();
-  if (!dbConn) return { created: 0 };
-
-  if (mode === 'replace') {
-    await (dbConn as any).execute(`DELETE FROM byaan_faqs WHERE merchant_id = ?`, [merchantId]);
+/** Sync FAQs atomically while preserving merchant activation choices on updates. */
+export async function syncByaanFaqs(
+  merchantId: number,
+  faqs: { id?: string; question: string; answer: string; category?: string }[],
+  mode: 'append' | 'replace' = 'append',
+): Promise<{ created: number; updated: number; removed: number }> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    throw new Error('Invalid merchant for Byaan FAQ sync');
   }
-
-  let created = 0;
-  for (const f of faqs) {
-    if (!f.question || !f.answer) continue;
-    try {
-      const extId = f.id ? String(f.id).substring(0, 100) : null;
-      await (dbConn as any).execute(
-        `INSERT INTO byaan_faqs (merchant_id, external_id, question, answer, category, synced_at)
-         VALUES (?, ?, ?, ?, ?, NOW())`,
-        [merchantId, extId, String(f.question).replace(/<[^>]*>/g, '').substring(0, 2000), String(f.answer).replace(/<[^>]*>/g, '').substring(0, 5000), f.category ? String(f.category).replace(/<[^>]*>/g, '').substring(0, 100) : 'عام']
-      );
-      created++;
-    } catch { /* skip duplicates */ }
+  if (!Array.isArray(faqs) || faqs.length > 500) {
+    throw new Error('Invalid Byaan FAQ sync batch');
   }
-  return { created };
-}
-
-/** Get all Byaan FAQs for a merchant */
-export async function getByaanFaqsByMerchant(merchantId: number): Promise<any[]> {
   await ensureByaanTables();
   const dbConn = await getPool();
   if (!dbConn) throw new Error('Byaan data unavailable');
+
+  const normalizedByExternalId = new Map<string, {
+    externalId: string;
+    question: string;
+    answer: string;
+    category: string;
+  }>();
+  for (const f of faqs) {
+    if (!f || typeof f !== 'object' || typeof f.question !== 'string' || typeof f.answer !== 'string') continue;
+    if (!f.question || !f.answer) continue;
+    const question = String(f.question).replace(/<[^>]*>/g, '').trim().substring(0, 2000);
+    const answer = String(f.answer).replace(/<[^>]*>/g, '').trim().substring(0, 5000);
+    if (!question.trim() || !answer.trim()) continue;
+    const suppliedExternalId = f.id === undefined || f.id === null ? '' : String(f.id).trim();
+    const externalId = suppliedExternalId
+      ? suppliedExternalId.substring(0, 100)
+      : `content:${crypto.createHash('sha256').update(`${question}\0${answer}`, 'utf8').digest('hex')}`;
+    normalizedByExternalId.set(externalId, {
+      externalId,
+      question,
+      answer,
+      category: typeof f.category === 'string'
+        ? String(f.category).replace(/<[^>]*>/g, '').substring(0, 100)
+        : 'عام',
+    });
+  }
+
+  const connection = await dbConn.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [merchantRows] = await connection.execute(
+      `SELECT id FROM merchants WHERE id = ? LIMIT 1 FOR UPDATE`,
+      [merchantId],
+    );
+    if (!(merchantRows as Array<{ id: number }>).length) {
+      throw new Error('Byaan merchant not found');
+    }
+
+    const externalIds = Array.from(normalizedByExternalId.keys());
+    const existingExternalIds = new Set<string>();
+    if (externalIds.length > 0) {
+      const [existingRows] = await connection.execute(
+        `SELECT external_id FROM byaan_faqs
+         WHERE merchant_id = ? AND external_id IN (${externalIds.map(() => '?').join(', ')})`,
+        [merchantId, ...externalIds],
+      );
+      for (const row of existingRows as Array<{ external_id: string }>) {
+        existingExternalIds.add(row.external_id);
+      }
+    }
+
+    let created = 0;
+    let updated = 0;
+    for (const faq of Array.from(normalizedByExternalId.values())) {
+      await connection.execute(
+        `INSERT INTO byaan_faqs (merchant_id, external_id, question, answer, category, synced_at)
+         VALUES (?, ?, ?, ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE
+           question = VALUES(question), answer = VALUES(answer),
+           category = VALUES(category), synced_at = NOW()`,
+        [merchantId, faq.externalId, faq.question, faq.answer, faq.category],
+      );
+      if (existingExternalIds.has(faq.externalId)) updated += 1;
+      else created += 1;
+    }
+
+    let removed = 0;
+    if (mode === 'replace') {
+      const [result] = externalIds.length === 0
+        ? await connection.execute(`DELETE FROM byaan_faqs WHERE merchant_id = ?`, [merchantId])
+        : await connection.execute(
+          `DELETE FROM byaan_faqs
+           WHERE merchant_id = ? AND external_id NOT IN (${externalIds.map(() => '?').join(', ')})`,
+          [merchantId, ...externalIds],
+        );
+      removed = Number((result as any).affectedRows || 0);
+    }
+
+    await connection.commit();
+    return { created, updated, removed };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export interface ByaanFaqListRow {
+  id: number;
+  external_id: string | null;
+  question: string;
+  answer: string;
+  category: string | null;
+  is_active: number;
+  use_in_bot: number;
+  synced_at: string | null;
+}
+
+export interface ByaanFaqPage {
+  items: ByaanFaqListRow[];
+  nextCursor: number | null;
+}
+
+export interface ByaanKnowledgeFaqResult {
+  items: Array<Pick<ByaanFaqListRow, 'id' | 'question' | 'answer' | 'category'>>;
+  exceedsLimit: boolean;
+  hasManagedFaqs: boolean;
+}
+
+export const BYAAN_KNOWLEDGE_FAQ_LIMIT = 500;
+
+/** Get a bounded management page, including disabled FAQs so they can be re-enabled. */
+export async function getByaanFaqPage(
+  merchantId: number,
+  options: { limit?: number; cursor?: number } = {},
+): Promise<ByaanFaqPage> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    return { items: [], nextCursor: null };
+  }
+  await ensureByaanTables();
+  const dbConn = await getPool();
+  if (!dbConn) throw new Error('Byaan data unavailable');
+
+  const limit = Math.min(Math.max(Math.floor(options.limit || 50), 1), 200);
+  const cursor = Number.isSafeInteger(options.cursor) && Number(options.cursor) > 0
+    ? Number(options.cursor)
+    : null;
+  const params: number[] = [merchantId];
+  const cursorClause = cursor ? ' AND id > ?' : '';
+  if (cursor) params.push(cursor);
+  params.push(limit + 1);
+
   const [rows] = await (dbConn as any).execute(
     `SELECT id, external_id, question, answer, category, is_active, use_in_bot, synced_at
-     FROM byaan_faqs WHERE merchant_id = ? AND is_active = 1 ORDER BY category, id`,
-    [merchantId],
+     FROM byaan_faqs
+     WHERE merchant_id = ?${cursorClause}
+     ORDER BY id ASC
+     LIMIT ?`,
+    params,
   );
-  return rows as any[];
+  const candidates = rows as ByaanFaqListRow[];
+  const hasMore = candidates.length > limit;
+  const items = hasMore ? candidates.slice(0, limit) : candidates;
+  return {
+    items,
+    nextCursor: hasMore ? items[items.length - 1]?.id || null : null,
+  };
+}
+
+/**
+ * Read only FAQs explicitly enabled for Sari's next knowledge synchronization.
+ * The limit+1 contract makes oversized tenants fail visibly instead of ingesting
+ * an arbitrary prefix and reporting a false success.
+ */
+export async function getByaanFaqsForKnowledge(merchantId: number): Promise<ByaanKnowledgeFaqResult> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    return { items: [], exceedsLimit: false, hasManagedFaqs: false };
+  }
+  await ensureByaanTables();
+  const dbConn = await getPool();
+  if (!dbConn) throw new Error('Byaan data unavailable');
+  const connection = await dbConn.getConnection();
+
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.execute(
+      `SELECT id, question, answer, category
+       FROM byaan_faqs
+       WHERE merchant_id = ? AND is_active = 1 AND use_in_bot = 1
+       ORDER BY id ASC
+       LIMIT ?`,
+      [merchantId, BYAAN_KNOWLEDGE_FAQ_LIMIT + 1],
+    );
+    const [managedRows] = await connection.execute(
+      `SELECT id FROM byaan_faqs WHERE merchant_id = ? ORDER BY id ASC LIMIT 1`,
+      [merchantId],
+    );
+    const candidates = rows as ByaanKnowledgeFaqResult['items'];
+    const result = {
+      items: candidates.slice(0, BYAAN_KNOWLEDGE_FAQ_LIMIT),
+      exceedsLimit: candidates.length > BYAAN_KNOWLEDGE_FAQ_LIMIT,
+      hasManagedFaqs: (managedRows as Array<{ id: number }>).length > 0,
+    };
+    await connection.commit();
+    return result;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 /** Save Byaan site content */

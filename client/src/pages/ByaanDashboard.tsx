@@ -34,6 +34,8 @@ export default function ByaanDashboard() {
   const deferredSearchQuery = useDeferredValue(searchQuery.trim());
   const [traineeCursor, setTraineeCursor] = useState<number | undefined>();
   const [traineeCursorHistory, setTraineeCursorHistory] = useState<number[]>([]);
+  const [faqCursor, setFaqCursor] = useState<number | undefined>();
+  const [faqCursorHistory, setFaqCursorHistory] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState("dashboard");
 
   // === Data Fetching ===
@@ -55,14 +57,15 @@ export default function ByaanDashboard() {
   );
   const trainees = traineePage?.items || [];
   const {
-    data: faqs = [],
+    data: faqPage,
     isLoading: loadingFaqs,
     isError: faqsFailed,
     refetch: refetchFaqs,
   } = trpc.byaan.getFaqs.useQuery(
-    undefined,
+    { cursor: faqCursor, limit: 50 },
     { enabled: activeTab === "faqs" }
   );
+  const faqs = faqPage?.items || [];
 
   // === Mutations ===
   const resyncMutation = trpc.byaan.triggerResync.useMutation({
@@ -96,6 +99,19 @@ export default function ByaanDashboard() {
     const previousCursor = traineeCursorHistory[traineeCursorHistory.length - 1];
     setTraineeCursorHistory((history) => history.slice(0, -1));
     setTraineeCursor(previousCursor || undefined);
+  };
+
+  const showNextFaqPage = () => {
+    if (!faqPage?.nextCursor) return;
+    setFaqCursorHistory((history) => [...history, faqCursor || 0]);
+    setFaqCursor(faqPage.nextCursor);
+  };
+
+  const showPreviousFaqPage = () => {
+    if (faqCursorHistory.length === 0) return;
+    const previousCursor = faqCursorHistory[faqCursorHistory.length - 1];
+    setFaqCursorHistory((history) => history.slice(0, -1));
+    setFaqCursor(previousCursor || undefined);
   };
 
   if (loadingStatus) {
@@ -425,7 +441,7 @@ export default function ByaanDashboard() {
             <CardHeader>
               <CardTitle>الأسئلة الشائعة</CardTitle>
               <CardDescription>
-                الأسئلة المتزامنة من بيان — البوت يقرأها مباشرة ويستخدمها للرد على العملاء
+                الأسئلة المتزامنة من بيان — يدخل السؤال النشط والمسموح لساري في مزامنة المعرفة التالية
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -441,8 +457,17 @@ export default function ByaanDashboard() {
                   onRetry={() => { void refetchFaqs(); }}
                 />
               ) : faqs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  لا توجد أسئلة شائعة — ستظهر بعد المزامنة من بيان
+                <div className="text-center py-8 text-muted-foreground space-y-4">
+                  <p>
+                    {faqCursorHistory.length > 0
+                      ? "لا توجد أسئلة في هذه الصفحة"
+                      : "لا توجد أسئلة شائعة — ستظهر بعد المزامنة من بيان"}
+                  </p>
+                  {faqCursorHistory.length > 0 && (
+                    <Button type="button" variant="outline" size="sm" onClick={showPreviousFaqPage}>
+                      العودة إلى الصفحة السابقة
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -453,8 +478,11 @@ export default function ByaanDashboard() {
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="text-xs">{faq.category}</Badge>
-                              {faq.useInBot && (
-                                <Badge variant="default" className="text-xs">🤖 يستخدمه البوت</Badge>
+                              {faq.isActive && faq.useInBot && (
+                                <Badge variant="default" className="text-xs">🤖 جاهز لمزامنة المعرفة</Badge>
+                              )}
+                              {!faq.isActive && (
+                                <Badge variant="secondary" className="text-xs">معطّل</Badge>
                               )}
                             </div>
                             <p className="font-medium text-sm mt-2">
@@ -468,10 +496,11 @@ export default function ByaanDashboard() {
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">يستخدمه البوت</span>
+                              <span className="text-xs text-muted-foreground">في معرفة ساري</span>
                               <Switch
-                                aria-label={`استخدام سؤال ${faq.question} في البوت`}
+                                aria-label={`تضمين سؤال ${faq.question} في مزامنة معرفة ساري`}
                                 checked={faq.useInBot}
+                                disabled={toggleFaqMutation.isPending}
                                 onCheckedChange={(val) => toggleFaqMutation.mutate({
                                   faqId: faq.id, field: 'use_in_bot', value: val,
                                 })}
@@ -482,6 +511,7 @@ export default function ByaanDashboard() {
                               <Switch
                                 aria-label={`تغيير حالة سؤال ${faq.question}`}
                                 checked={faq.isActive}
+                                disabled={toggleFaqMutation.isPending}
                                 onCheckedChange={(val) => toggleFaqMutation.mutate({
                                   faqId: faq.id, field: 'is_active', value: val,
                                 })}
@@ -492,6 +522,29 @@ export default function ByaanDashboard() {
                       </CardContent>
                     </Card>
                   ))}
+                  <div className="flex items-center justify-between gap-3 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={showPreviousFaqPage}
+                      disabled={faqCursorHistory.length === 0}
+                    >
+                      الصفحة السابقة
+                    </Button>
+                    <span className="text-sm text-muted-foreground" aria-live="polite">
+                      الصفحة {faqCursorHistory.length + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={showNextFaqPage}
+                      disabled={!faqPage?.nextCursor}
+                    >
+                      الصفحة التالية
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

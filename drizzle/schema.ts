@@ -3201,7 +3201,9 @@ export const byaanFaqs = mysqlTable("byaan_faqs", {
 	syncedAt: timestamp("synced_at", { mode: 'string' }).defaultNow().notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 }, (table) => [
+	uniqueIndex("uq_byaan_faq").on(table.merchantId, table.externalId),
 	index("idx_byaan_faq_merchant").on(table.merchantId),
+	index("idx_byaan_faq_knowledge").on(table.merchantId, table.isActive, table.useInBot, table.id),
 ]);
 
 export type ByaanFaq = InferSelectModel<typeof byaanFaqs>;
