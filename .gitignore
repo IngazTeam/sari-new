@@ -50,6 +50,9 @@ pids
 coverage/
 *.lcov
 
+# Local operational evidence may contain internal database identities/metrics
+artifacts/ops/*.json
+
 # nyc test coverage
 .nyc_output
 

@@ -290,53 +290,13 @@ sudo ufw status
 
 ---
 
-## 🔟 إعداد Backup التلقائي
+## 🔟 النسخ الاحتياطي والاستعادة
 
-### إنشاء سكريبت Backup:
-```bash
-sudo nano /usr/local/bin/sari-backup.sh
-```
+لا تستخدم كلمة مرور MySQL في سطر الأوامر، ولا تعتبر وجود ملف backup دليلًا على قابليته للاستعادة. الإجراء المعتمد، أهداف RPO/RTO، التشفير، الاحتفاظ خارج الخادم، وتمرين الاستعادة المعزول موثقة في:
 
-### محتوى السكريبت:
-```bash
-#!/bin/bash
+- [`LOAD_BACKUP_RESTORE_RUNBOOK.md`](./LOAD_BACKUP_RESTORE_RUNBOOK.md)
 
-# Variables
-BACKUP_DIR="/var/backups/sari"
-DATE=$(date +%Y%m%d_%H%M%S)
-DB_NAME="sari_db"
-DB_USER="sari_user"
-DB_PASS="your_strong_password"
-
-# Create backup directory
-mkdir -p $BACKUP_DIR
-
-# Backup database
-mysqldump -u $DB_USER -p$DB_PASS $DB_NAME | gzip > $BACKUP_DIR/db_$DATE.sql.gz
-
-# Backup files
-tar -czf $BACKUP_DIR/files_$DATE.tar.gz /var/www/sari
-
-# Delete old backups (keep last 7 days)
-find $BACKUP_DIR -type f -mtime +7 -delete
-
-echo "Backup completed: $DATE"
-```
-
-### جعل السكريبت قابل للتنفيذ:
-```bash
-sudo chmod +x /usr/local/bin/sari-backup.sh
-```
-
-### إضافة Cron Job:
-```bash
-sudo crontab -e
-```
-
-### إضافة السطر التالي (Backup يومي الساعة 2 صباحاً):
-```
-0 2 * * * /usr/local/bin/sari-backup.sh >> /var/log/sari-backup.log 2>&1
-```
+لا يُنفذ اختبار حمل على الإنتاج. أداة المستودع ترفض نطاقات الإنتاج افتراضيًا وبصورة غير قابلة للتجاوز من خيارات التشغيل.
 
 ---
 
