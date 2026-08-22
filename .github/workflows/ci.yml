@@ -99,3 +99,4 @@ jobs:
           server/auth.zidConvergence.test.ts
           server/auth.zidTokenRefresh.test.ts
           server/api.distributedRateLimit.test.ts
+          server/whatsappPhoneOwnership.test.ts
