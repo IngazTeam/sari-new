@@ -7823,6 +7823,66 @@ async function persistNormalizedProductsFromZid(
   });
 }
 
+/**
+ * Apply a Tap verification result only to the exact credential tuple that was
+ * tested. The post-network row lock closes the race where a slow probe could
+ * otherwise mark newly saved, untested credentials as verified.
+ */
+export async function setMerchantPaymentVerifiedIfCredentialsMatch(
+  merchantId: number,
+  expected: { tapPublicKey: string; tapSecretKey: string; tapTestMode: boolean },
+  verified: boolean,
+): Promise<boolean> {
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  let connectionReusable = false;
+  try {
+    await connection.beginTransaction();
+    const [rows] = await connection.execute<mysql.RowDataPacket[]>(
+      `SELECT id, tap_public_key, tap_secret_key, tap_test_mode
+         FROM merchant_payment_settings
+        WHERE merchant_id = ?
+        LIMIT 1 FOR UPDATE`,
+      [merchantId],
+    );
+    const current = rows[0];
+    const credentialsMatch = Boolean(current)
+      && current.tap_public_key === expected.tapPublicKey
+      && decryptSecret(current.tap_secret_key) === expected.tapSecretKey
+      && Boolean(current.tap_test_mode) === expected.tapTestMode;
+    if (!credentialsMatch) {
+      await connection.rollback();
+      connectionReusable = true;
+      return false;
+    }
+
+    await connection.execute(
+      `UPDATE merchant_payment_settings
+          SET is_verified = ?, last_verified_at = ?
+        WHERE id = ?`,
+      [
+        verified ? 1 : 0,
+        verified ? new Date().toISOString().slice(0, 19).replace('T', ' ') : null,
+        current.id,
+      ],
+    );
+    await connection.commit();
+    connectionReusable = true;
+    return true;
+  } catch (error) {
+    try {
+      await connection.rollback();
+      connectionReusable = true;
+    } catch {
+      connectionReusable = false;
+    }
+    throw error;
+  } finally {
+    await finalizeWhatsAppInstanceLockConnection(connection, [], connectionReusable);
+  }
+}
+
 export async function deactivateProductFromZid(
   merchantId: number,
   externalId: unknown,

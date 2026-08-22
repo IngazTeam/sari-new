@@ -11,7 +11,6 @@ import { protectedProcedure, router } from "./_core/trpc";
 import {
   getMerchantByUserId,
   getMerchantPaymentSettings,
-  setMerchantPaymentVerified,
   upsertMerchantPaymentSettings,
 } from './db';
 
@@ -108,34 +107,26 @@ export const merchantPaymentsRouter = router({
             throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع الاختبار/الإنتاج' });
         }
 
-        try {
-            const baseUrl = settings.tapTestMode ? 'https://api.tap.company/v2' : 'https://api.tap.company/v2';
-            const response = await fetch(`${baseUrl}/charges`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${settings.tapSecretKey}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok || response.status === 200) {
-                await setMerchantPaymentVerified(merchant.id, true);
-                return { success: true, message: 'تم التحقق من الاتصال بنجاح' };
-            } else {
-                await setMerchantPaymentVerified(merchant.id, false);
-                const error = await response.json().catch(() => ({}));
-                throw new TRPCError({
-                    code: 'BAD_REQUEST',
-                    message: error.message || 'فشل التحقق من مفاتيح Tap'
-                });
-            }
-        } catch (error: any) {
-            if (error instanceof TRPCError) throw error;
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'حدث خطأ أثناء الاتصال بـ Tap'
-            });
+        const { verifyMerchantTapCredentialsSnapshot } = await import('./payment/merchant-tap-credential-probe');
+        const probe = await verifyMerchantTapCredentialsSnapshot(merchant.id, {
+            tapPublicKey: settings.tapPublicKey,
+            tapSecretKey: settings.tapSecretKey,
+            tapTestMode: settings.tapTestMode,
+        });
+        if (probe.outcome === 'verified') {
+            return { success: true, message: 'تم التحقق من الاتصال بنجاح' };
         }
+        if (probe.outcome === 'changed') {
+            throw new TRPCError({ code: 'CONFLICT', message: 'تغيرت إعدادات Tap أثناء الاختبار؛ أعد المحاولة' });
+        }
+        if (probe.outcome === 'rejected') {
+            throw new TRPCError({ code: 'BAD_REQUEST', message: 'فشل التحقق من مفاتيح Tap' });
+        }
+        console.warn('[TapCredentials] Credential probe unavailable', {
+            merchantId: merchant.id,
+            failure: probe.failure,
+        });
+        throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر الاتصال بـ Tap؛ حاول لاحقاً' });
     }),
 
 });

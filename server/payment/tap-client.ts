@@ -1,4 +1,5 @@
 const TAP_CHARGES_URL = 'https://api.tap.company/v2/charges';
+const TAP_CHARGES_LIST_URL = 'https://api.tap.company/v2/charges/list';
 const DEFAULT_TIMEOUT_MS = 10_000;
 const DEFAULT_MAX_RESPONSE_BYTES = 256 * 1024;
 
@@ -42,14 +43,17 @@ async function readBoundedResponse(response: Response, maxBytes: number): Promis
   return new TextDecoder().decode(combined);
 }
 
-export async function postTapCharge(
+interface TapPostOptions {
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+  maxResponseBytes?: number;
+}
+
+async function postTapJson(
+  url: string,
   secretKey: string,
   payload: unknown,
-  options: {
-    fetchImpl?: typeof fetch;
-    timeoutMs?: number;
-    maxResponseBytes?: number;
-  } = {},
+  options: TapPostOptions = {},
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   if (!secretKey.trim()) throw new TapClientError('invalid_credentials');
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -59,7 +63,7 @@ export async function postTapCharge(
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetchImpl(TAP_CHARGES_URL, {
+    const response = await fetchImpl(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${secretKey}`,
@@ -86,4 +90,30 @@ export async function postTapCharge(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function postTapCharge(
+  secretKey: string,
+  payload: unknown,
+  options: TapPostOptions = {},
+): Promise<{ ok: boolean; status: number; body: unknown }> {
+  return postTapJson(TAP_CHARGES_URL, secretKey, payload, options);
+}
+
+/**
+ * Tap documents credential-safe charge listing as POST /charges/list.
+ * Limit the result to one record; callers use only the HTTP outcome and must
+ * discard the response body because it can contain customer payment data.
+ */
+export async function testTapCredentials(
+  secretKey: string,
+  options: TapPostOptions = {},
+): Promise<{ ok: boolean; status: number }> {
+  const response = await postTapJson(
+    TAP_CHARGES_LIST_URL,
+    secretKey,
+    { limit: '1', order: 'reverse_chronological' },
+    { ...options, maxResponseBytes: options.maxResponseBytes ?? 128 * 1024 },
+  );
+  return { ok: response.ok, status: response.status };
 }
