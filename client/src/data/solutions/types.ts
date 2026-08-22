@@ -30,6 +30,29 @@ export interface FeatureItem {
   icon: LucideIcon;
 }
 
+export interface SectorAction {
+  label: string;
+  href: string;
+}
+
+export interface SectorSpotlight {
+  id: string;
+  badge: string;
+  title: string;
+  description: string;
+  features: FeatureItem[];
+  qualificationNotice: string;
+  primaryAction: SectorAction;
+  secondaryAction?: SectorAction;
+}
+
+export interface SectorCallToAction {
+  title: string;
+  description: string;
+  primaryAction: SectorAction;
+  secondaryAction?: SectorAction;
+}
+
 export interface SolutionService {
   id: string;
   slug: string;
@@ -68,4 +91,6 @@ export interface SectorData {
   icon: LucideIcon;
   themeColor: string; // Tailwind color class, e.g., 'emerald-500'
   services: SolutionService[];
+  spotlight?: SectorSpotlight;
+  callToAction?: SectorCallToAction;
 }

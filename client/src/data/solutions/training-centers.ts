@@ -20,6 +20,38 @@ export const trainingCentersData: SectorData = {
   description: 'إدارة تسجيل المتدربين، تذكيرات حصص الزووم، وإرسال الشهادات عبر واتساب.',
   icon: GraduationCap,
   themeColor: 'blue-600',
+  spotlight: {
+    id: 'byaan-integration',
+    badge: 'تكامل متخصص — يتطلب تهيئة وتحققًا',
+    title: 'اربط ساري بمنصة بيان على أساس موثّق',
+    description: 'عند تهيئة التكامل والتحقق من ملكية نطاق بيان، يستطيع ساري استخدام بيانات المركز في محادثات واتساب. يعتمد نطاق العمليات المتاحة على واجهات API المفعلة في حساب بيان الخاص بالمركز.',
+    features: [
+      {
+        title: 'بيانات التدريب من بيان إلى ساري',
+        description: 'استقبال الدورات والمتدربين والأسئلة الشائعة ومحتوى المركز عبر اتصال موثّق لكل مركز.',
+        icon: BookOpen,
+      },
+      {
+        title: 'عمليات حية عند دعمها',
+        description: 'طلب تسجيل المتدرب أو رابط الدفع أو النتائج والشهادات من واجهة بيان المتوافقة، مع إظهار الفشل بدل تأكيد عملية لم تُحفظ.',
+        icon: CreditCard,
+      },
+      {
+        title: 'ربط مملوك للمركز',
+        description: 'لا يصبح الربط نشطًا قبل إثبات ملكية النطاق، وتُوقّع الطلبات ويُمنع إعادة استخدامها أو تحويلها إلى نطاق آخر.',
+        icon: CheckCircle2,
+      },
+    ],
+    qualificationNotice: 'التكامل ليس تفعيلًا عامًا بنقرة واحدة. نتحقق أولًا من نطاق بيان، والواجهات المتاحة، ومسار التسجيل والدفع في بيئة اختبار تخص مركزك قبل اعتماد التشغيل.',
+    primaryAction: {
+      label: 'اطلب تقييم تكامل بيان',
+      href: '/support?topic=byaan-training',
+    },
+    secondaryAction: {
+      label: 'ابدأ تجربة ساري',
+      href: '/signup',
+    },
+  },
   services: [
     {
       id: 'course-registration',
@@ -183,5 +215,17 @@ export const trainingCentersData: SectorData = {
         }
       ]
     }
-  ]
+  ],
+  callToAction: {
+    title: 'هل يستخدم مركزك منصة بيان؟',
+    description: 'أرسل نطاق المركز والعمليات التي تريد ربطها لنقيّم التوافق قبل تقديم وعد بالتفعيل أو المزامنة.',
+    primaryAction: {
+      label: 'اطلب تقييم الربط',
+      href: '/support?topic=byaan-training',
+    },
+    secondaryAction: {
+      label: 'ابدأ تجربة ساري',
+      href: '/signup',
+    },
+  },
 };

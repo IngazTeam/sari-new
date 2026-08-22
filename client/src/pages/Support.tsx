@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { resolveSupportLeadContext } from '@shared/support-lead';
 
 type ServiceStatus = 'checking' | 'operational' | 'degraded' | 'unknown';
 type SubmissionState =
@@ -49,7 +50,15 @@ const SUPPORT_EMAIL = 'support@sary.live';
 export default function Support() {
   const { t, i18n } = useTranslation();
   const isArabic = (i18n.resolvedLanguage || i18n.language).startsWith('ar');
-  const [form, setForm] = useState<SupportForm>(EMPTY_FORM);
+  const [leadContext] = useState(() => resolveSupportLeadContext(
+    window.location.search,
+    isArabic ? 'ar' : 'en',
+  ));
+  const [form, setForm] = useState<SupportForm>(() => ({
+    ...EMPTY_FORM,
+    subject: leadContext.subject,
+    message: leadContext.message,
+  }));
   const [submission, setSubmission] = useState<SubmissionState>({ kind: 'idle' });
   const [serviceStatus, setServiceStatus] = useState<ServiceStatus>('checking');
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
@@ -105,7 +114,11 @@ export default function Support() {
           Accept: 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ...form, startedAt: startedAtRef.current }),
+        body: JSON.stringify({
+          ...form,
+          source: leadContext.source,
+          startedAt: startedAtRef.current,
+        }),
       });
       const payload = await response.json().catch(() => null) as {
         accepted?: boolean;

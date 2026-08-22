@@ -5,6 +5,7 @@ import { resolveUser } from './_core/auth';
 import { supportLimiter } from './_core/rateLimiter';
 import { createSupportTicket, getMerchantByUserId, getPool } from './db';
 import { sendEmail } from './reports/email-sender';
+import { SUPPORT_LEAD_SOURCES } from '../shared/support-lead';
 
 const SUPPORT_EMAIL = 'support@sary.live';
 const STATUS_CACHE_MS = 30_000;
@@ -15,6 +16,7 @@ export const publicSupportRequestSchema = z.object({
   email: z.string().trim().email().max(320).transform(value => value.toLowerCase()),
   subject: z.string().trim().min(3).max(160),
   message: z.string().trim().min(10).max(4_000),
+  source: z.enum(SUPPORT_LEAD_SOURCES).optional().default('general'),
   website: z.string().max(200).optional().default(''),
   startedAt: z.number().int().positive().optional(),
 }).strict();
@@ -62,10 +64,11 @@ function buildSupportEmail(input: z.infer<typeof publicSupportRequestSchema>, re
   const safeEmail = escapeSupportHtml(input.email);
   const safeSubject = escapeSupportHtml(input.subject);
   const safeMessage = escapeSupportHtml(input.message).replaceAll('\n', '<br>');
+  const safeSource = escapeSupportHtml(input.source);
 
   return `
     <h2>طلب دعم ${escapeSupportHtml(reference)}</h2>
-    <p><strong>المصدر:</strong> ${merchantId ? `متجر #${merchantId}` : 'زائر عام'}</p>
+    <p><strong>المصدر:</strong> ${merchantId ? `متجر #${merchantId}` : 'زائر عام'} / ${safeSource}</p>
     <p><strong>الاسم:</strong> ${safeName}</p>
     <p><strong>بريد الرد:</strong> <a href="mailto:${safeEmail}">${safeEmail}</a></p>
     <p><strong>الموضوع:</strong> ${safeSubject}</p>
@@ -134,7 +137,7 @@ publicSupportRouter.post('/support', supportLimiter, async (req, res) => {
         const ticket = await createSupportTicket({
           merchantId,
           subject: input.subject.replace(/[\r\n]+/g, ' '),
-          message: `الاسم: ${input.name}\nبريد الرد: ${input.email}\n\n${input.message}`,
+          message: `المصدر التسويقي: ${input.source}\nالاسم: ${input.name}\nبريد الرد: ${input.email}\n\n${input.message}`,
           status: 'open',
           priority: 'medium',
         });
