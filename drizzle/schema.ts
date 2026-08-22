@@ -2418,6 +2418,7 @@ export const zidProducts = mysqlTable("zid_products", {
 	(table) => [
 		index("zid_products_merchant_id_idx").on(table.merchantId),
 		index("zid_products_zid_product_id_idx").on(table.zidProductId),
+		uniqueIndex("zid_products_merchant_product_unique").on(table.merchantId, table.zidProductId),
 		index("zid_products_sari_product_id_idx").on(table.sariProductId),
 	]);
 
@@ -2462,8 +2463,30 @@ export const zidOrders = mysqlTable("zid_orders", {
 	(table) => [
 		index("zid_orders_merchant_id_idx").on(table.merchantId),
 		index("zid_orders_zid_order_id_idx").on(table.zidOrderId),
+		uniqueIndex("zid_orders_merchant_order_unique").on(table.merchantId, table.zidOrderId),
 		index("zid_orders_sari_order_id_idx").on(table.sariOrderId),
 		index("zid_orders_customer_phone_idx").on(table.customerPhone),
+	]);
+
+export const zidCustomers = mysqlTable("zid_customers", {
+	id: int().autoincrement().notNull().primaryKey(),
+	merchantId: int("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+	zidCustomerId: varchar("zid_customer_id", { length: 255 }).notNull(),
+	name: varchar({ length: 255 }),
+	email: varchar({ length: 320 }),
+	phone: varchar({ length: 50 }),
+	totalOrders: int("total_orders").default(0).notNull(),
+	totalSpent: decimal("total_spent", { precision: 12, scale: 2 }).default('0').notNull(),
+	isActive: tinyint("is_active").default(1).notNull(),
+	lastOrderAt: timestamp("last_order_at", { mode: 'string' }),
+	lastSyncedAt: timestamp("last_synced_at", { mode: 'string' }).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
+},
+	(table) => [
+		index("zid_customers_merchant_id_idx").on(table.merchantId),
+		uniqueIndex("zid_customers_merchant_customer_unique").on(table.merchantId, table.zidCustomerId),
+		index("zid_customers_merchant_phone_idx").on(table.merchantId, table.phone),
 	]);
 
 export const zidWebhooks = mysqlTable("zid_webhooks", {
@@ -2503,6 +2526,8 @@ export type ZidProduct = InferSelectModel<typeof zidProducts>;
 export type NewZidProduct = InferInsertModel<typeof zidProducts>;
 export type ZidOrder = InferSelectModel<typeof zidOrders>;
 export type NewZidOrder = InferInsertModel<typeof zidOrders>;
+export type ZidCustomer = InferSelectModel<typeof zidCustomers>;
+export type NewZidCustomer = InferInsertModel<typeof zidCustomers>;
 export type ZidWebhook = InferSelectModel<typeof zidWebhooks>;
 export type NewZidWebhook = InferInsertModel<typeof zidWebhooks>;
 

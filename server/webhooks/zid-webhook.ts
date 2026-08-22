@@ -92,17 +92,15 @@ async function handleOrderCreated(
     zidOrderNumber: orderData.order_number || orderData.reference_id,
     customerName: orderData.customer?.name || orderData.billing_address?.name,
     customerEmail: orderData.customer?.email || orderData.billing_address?.email,
-    customerPhone: orderData.customer?.phone || orderData.billing_address?.phone,
-    totalAmount: String(orderData.total || orderData.total_amount),
+    customerPhone: orderData.customer?.mobile || orderData.customer?.phone || orderData.billing_address?.phone,
+    totalAmount: String(orderData.total ?? orderData.total_amount),
     currency: orderData.currency || 'SAR',
     status: mapZidOrderStatus(orderData.status),
     paymentStatus: mapZidPaymentStatus(orderData.payment_status),
-    items: JSON.stringify(orderData.items || orderData.line_items || []),
-    shippingAddress: JSON.stringify(orderData.shipping_address || {}),
+    items: orderData.items || orderData.line_items || [],
     shippingMethod: orderData.shipping_method?.name,
     shippingCost: orderData.shipping_cost ? String(orderData.shipping_cost) : undefined,
     orderDate: orderData.created_at,
-    zidData: JSON.stringify(orderData),
   });
 
   // Send WhatsApp notification to merchant
@@ -123,17 +121,15 @@ async function handleOrderUpdated(
     zidOrderNumber: orderData.order_number || orderData.reference_id,
     customerName: orderData.customer?.name || orderData.billing_address?.name,
     customerEmail: orderData.customer?.email || orderData.billing_address?.email,
-    customerPhone: orderData.customer?.phone || orderData.billing_address?.phone,
-    totalAmount: String(orderData.total || orderData.total_amount),
+    customerPhone: orderData.customer?.mobile || orderData.customer?.phone || orderData.billing_address?.phone,
+    totalAmount: String(orderData.total ?? orderData.total_amount),
     currency: orderData.currency || 'SAR',
     status: mapZidOrderStatus(orderData.status),
     paymentStatus: mapZidPaymentStatus(orderData.payment_status),
-    items: JSON.stringify(orderData.items || orderData.line_items || []),
-    shippingAddress: JSON.stringify(orderData.shipping_address || {}),
+    items: orderData.items || orderData.line_items || [],
     shippingMethod: orderData.shipping_method?.name,
     shippingCost: orderData.shipping_cost ? String(orderData.shipping_cost) : undefined,
     orderDate: orderData.created_at,
-    zidData: JSON.stringify(orderData),
   });
 
   // Send WhatsApp notification to customer about order update
@@ -152,7 +148,6 @@ async function handleOrderCancelled(
   await saveZidOrder(merchantId, {
     zidOrderId: String(orderData.id),
     status: 'cancelled',
-    zidData: JSON.stringify(orderData),
   });
 
   // Send cancellation notification

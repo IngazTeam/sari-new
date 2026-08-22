@@ -34,7 +34,7 @@ export default function ZidProducts() {
   });
 
   const handleSync = () => {
-    syncProductsMutation.mutate();
+    syncProductsMutation.mutate({ resource: 'products' });
   };
 
   if (statusLoading) {

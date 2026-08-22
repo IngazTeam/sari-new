@@ -162,7 +162,7 @@ export default function ZidIntegration() {
     || rotateWebhookMutation.isPending;
 
   const handleSync = () => {
-    syncMutation.mutate();
+    syncMutation.mutate({ resource: 'all' });
   };
 
   const handleSaveSettings = () => {

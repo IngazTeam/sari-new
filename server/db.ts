@@ -209,6 +209,7 @@ import {
   zidSettings,
   zidProducts,
   zidOrders,
+  zidCustomers,
   zidWebhooks,
   zidSyncLogs,
   woocommerceSettings,
@@ -279,6 +280,12 @@ import { ENV } from "./_core/env";
 import { createHash } from 'node:crypto';
 import mysql from "mysql2/promise";
 import { normalizeZidProduct, type NormalizedZidProduct } from './integrations/zid-product-normalization';
+import {
+  normalizeZidOrder,
+  normalizeZidPhone,
+  type NormalizedZidCustomer,
+  type NormalizedZidOrder,
+} from './integrations/zid-commerce-normalization';
 import { decryptSecret, encryptSecret } from './security/secrets';
 import { privacyHash } from './accounts/privacy-hash';
 
@@ -7541,35 +7548,149 @@ export async function upsertNormalizedProductsFromZid(
  * Upsert order from Zid
  */
 export async function upsertOrderFromZid(merchantId: number, zidOrder: any): Promise<void> {
+  await upsertNormalizedOrdersFromZid(merchantId, [normalizeZidOrder(zidOrder)]);
+}
+
+/** Persist validated Zid source orders and their usable Sari projections atomically. */
+export async function upsertNormalizedOrdersFromZid(
+  merchantId: number,
+  normalizedOrders: NormalizedZidOrder[],
+): Promise<{ sourceOrders: number; projectedOrders: number }> {
   const db = await getDb();
-  if (!db) return;
+  if (!db) return { sourceOrders: 0, projectedOrders: 0 };
+  let projectedOrders = 0;
+  await db.transaction(async tx => {
+    for (const zidOrder of normalizedOrders) {
+      // Upsert the uniquely constrained source row first. InnoDB keeps the
+      // duplicate-key row lock until commit, serializing concurrent webhook
+      // projections for the same merchant/order without a global lock.
+      await tx.insert(zidOrders).values({
+        merchantId,
+        zidOrderId: zidOrder.externalId,
+        zidOrderNumber: zidOrder.orderNumber,
+        customerName: zidOrder.customerName,
+        customerEmail: zidOrder.customerEmail,
+        customerPhone: zidOrder.customerPhone,
+        totalAmount: zidOrder.totalAmount,
+        currency: zidOrder.currency,
+        status: zidOrder.status,
+        paymentStatus: zidOrder.paymentStatus,
+        items: zidOrder.items,
+        shippingAddress: null,
+        shippingMethod: zidOrder.shippingMethod,
+        orderDate: zidOrder.orderDate,
+        lastSyncedAt: zidOrder.lastSyncedAt,
+        zidData: null,
+      }).onDuplicateKeyUpdate({
+        set: {
+          zidOrderNumber: zidOrder.orderNumber,
+          customerName: zidOrder.customerName,
+          customerEmail: zidOrder.customerEmail,
+          customerPhone: zidOrder.customerPhone,
+          totalAmount: zidOrder.totalAmount,
+          currency: zidOrder.currency,
+          status: zidOrder.status,
+          paymentStatus: zidOrder.paymentStatus,
+          items: zidOrder.items,
+          shippingAddress: null,
+          shippingMethod: zidOrder.shippingMethod,
+          orderDate: zidOrder.orderDate,
+          lastSyncedAt: zidOrder.lastSyncedAt,
+          zidData: null,
+        },
+      });
 
-  // Check if order exists by external ID
-  const existing = await db.select()
-    .from(orders)
-    .where(and(
-      eq(orders.merchantId, merchantId),
-      eq(orders.sallaOrderId, String(zidOrder.id))
-    ))
-    .limit(1);
+      if (zidOrder.customerPhone && zidOrder.totalAmountCents !== null) {
+        const namespacedExternalId = `zid:${zidOrder.externalId}`;
+        const sourceRow = await tx.select({ id: zidOrders.id, sariOrderId: zidOrders.sariOrderId })
+          .from(zidOrders)
+          .where(and(
+            eq(zidOrders.merchantId, merchantId),
+            eq(zidOrders.zidOrderId, zidOrder.externalId),
+          ))
+          .limit(1);
+        const projection = {
+          merchantId,
+          sallaOrderId: namespacedExternalId,
+          orderNumber: zidOrder.orderNumber,
+          customerPhone: zidOrder.customerPhone,
+          customerName: zidOrder.customerName || zidOrder.customerPhone,
+          customerEmail: zidOrder.customerEmail,
+          items: zidOrder.items,
+          totalAmount: zidOrder.totalAmountCents,
+          currency: zidOrder.currency as 'SAR' | 'USD',
+          status: zidOrder.sariStatus,
+        };
+        let sariOrderId = sourceRow[0]?.sariOrderId || null;
+        if (sariOrderId) {
+          await tx.update(orders).set(projection).where(eq(orders.id, sariOrderId));
+        } else {
+          const existingProjection = await tx.select({ id: orders.id })
+            .from(orders)
+            .where(and(
+              eq(orders.merchantId, merchantId),
+              eq(orders.sallaOrderId, namespacedExternalId),
+            ))
+            .limit(1);
+          if (existingProjection[0]) {
+            sariOrderId = existingProjection[0].id;
+            await tx.update(orders).set(projection).where(eq(orders.id, sariOrderId));
+          } else {
+            const inserted = await tx.insert(orders).values({
+              ...projection,
+              ...(zidOrder.orderDate ? { createdAt: zidOrder.orderDate } : {}),
+            });
+            sariOrderId = Number((inserted[0] as any).insertId);
+          }
+          if (sourceRow[0]) {
+            await tx.update(zidOrders).set({ sariOrderId }).where(eq(zidOrders.id, sourceRow[0].id));
+          }
+        }
+        projectedOrders += 1;
+      }
+    }
+  });
+  return { sourceOrders: normalizedOrders.length, projectedOrders };
+}
 
-  const orderData = {
-    merchantId,
-    sallaOrderId: String(zidOrder.id),
-    customerPhone: zidOrder.customer?.phone || zidOrder.phone || '',
-    customerName: zidOrder.customer?.name || zidOrder.name || '',
-    totalAmount: Math.round((zidOrder.total || 0) * 100),
-    status: mapZidOrderStatus(zidOrder.status) as any,
-    items: JSON.stringify(zidOrder.items || zidOrder.products || []),
+/** Persist the minimized Zid customer directory without creating marketing consent. */
+export async function upsertNormalizedCustomersFromZid(
+  merchantId: number,
+  normalizedCustomers: NormalizedZidCustomer[],
+): Promise<{ sourceCustomers: number; contactableCustomers: number }> {
+  const db = await getDb();
+  if (!db) return { sourceCustomers: 0, contactableCustomers: 0 };
+  await db.transaction(async tx => {
+    for (const customer of normalizedCustomers) {
+      await tx.insert(zidCustomers).values({
+        merchantId,
+        zidCustomerId: customer.externalId,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        totalOrders: customer.totalOrders,
+        totalSpent: customer.totalSpent,
+        isActive: customer.isActive,
+        lastOrderAt: customer.lastOrderAt,
+        lastSyncedAt: customer.lastSyncedAt,
+      }).onDuplicateKeyUpdate({
+        set: {
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          totalOrders: customer.totalOrders,
+          totalSpent: customer.totalSpent,
+          isActive: customer.isActive,
+          lastOrderAt: customer.lastOrderAt,
+          lastSyncedAt: customer.lastSyncedAt,
+        },
+      });
+    }
+  });
+  return {
+    sourceCustomers: normalizedCustomers.length,
+    contactableCustomers: normalizedCustomers.filter(customer => customer.phone).length,
   };
-
-  if (existing[0]) {
-    await db.update(orders)
-      .set(orderData)
-      .where(eq(orders.id, existing[0].id));
-  } else {
-    await db.insert(orders).values(orderData);
-  }
 }
 
 /**
@@ -7585,21 +7706,6 @@ export async function updateProductInventoryFromZid(merchantId: number, payload:
       eq(products.merchantId, merchantId),
       eq(products.sallaProductId, String(payload.product_id))
     ));
-}
-
-/**
- * Map Zid order status to internal status
- */
-function mapZidOrderStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    'pending': 'pending',
-    'processing': 'processing',
-    'shipped': 'shipped',
-    'delivered': 'delivered',
-    'cancelled': 'cancelled',
-    'refunded': 'refunded',
-  };
-  return statusMap[status?.toLowerCase()] || 'pending';
 }
 
 /**
@@ -7735,13 +7841,20 @@ export async function getOrderCountByMerchant(merchantId: number): Promise<numbe
 export async function getCustomerCountByMerchant(merchantId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-
-  // Count unique customers from conversations
-  const result = await db.select({ count: sql<number>`count(distinct ${conversations.customerPhone})` })
-    .from(conversations)
-    .where(eq(conversations.merchantId, merchantId));
-
-  return Number(result[0]?.count) || 0;
+  const [conversationPhones, zidPhones] = await Promise.all([
+    db.select({ phone: conversations.customerPhone })
+      .from(conversations)
+      .where(eq(conversations.merchantId, merchantId))
+      .groupBy(conversations.customerPhone),
+    db.select({ phone: zidCustomers.phone })
+      .from(zidCustomers)
+      .where(eq(zidCustomers.merchantId, merchantId)),
+  ]);
+  return new Set([
+    ...conversationPhones.map(row => normalizeZidPhone(row.phone) || row.phone),
+    ...zidPhones.map(row => row.phone).filter((phone): phone is string => Boolean(phone))
+      .map(phone => normalizeZidPhone(phone) || phone),
+  ]).size;
 }
 
 /**
@@ -7786,45 +7899,79 @@ export async function getCustomersByMerchant(merchantId: number): Promise<any[]>
     .where(eq(conversations.merchantId, merchantId))
     .groupBy(conversations.customerPhone, conversations.customerName);
 
-  // Enrich with order data
-  const enrichedCustomers = await Promise.all(
-    customersData.map(async (customer) => {
-      // Get orders count and total spent
-      const orderStats = await db
-        .select({
-          orderCount: sql<number>`COUNT(*)`,
-          totalSpent: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)`,
-        })
-        .from(orders)
-        .where(
-          and(
-            eq(orders.merchantId, merchantId),
-            eq(orders.customerPhone, customer.customerPhone)
-          )
-        );
-
-      // Get loyalty points
-      const loyaltyData = await db
-        .select()
-        .from(loyaltyPoints)
-        .where(
-          and(
-            eq(loyaltyPoints.merchantId, merchantId),
-            eq(loyaltyPoints.customerPhone, customer.customerPhone)
-          )
-        )
-        .limit(1);
-
-      return {
-        ...customer,
-        orderCount: Number(orderStats[0]?.orderCount) || 0,
-        totalSpent: Number(orderStats[0]?.totalSpent) || 0,
-        loyaltyPoints: loyaltyData[0]?.totalPoints || 0,
-        status: determineCustomerStatus(customer.lastMessageAt),
-      };
-    })
-  );
-
+  const [zidCustomerData, orderData, loyaltyData] = await Promise.all([
+    db.select().from(zidCustomers).where(eq(zidCustomers.merchantId, merchantId)),
+    db.select({
+      customerPhone: orders.customerPhone,
+      orderCount: sql<number>`COUNT(*)`,
+      totalSpent: sql<number>`COALESCE(SUM(${orders.totalAmount}), 0)`,
+    }).from(orders).where(eq(orders.merchantId, merchantId)).groupBy(orders.customerPhone),
+    db.select().from(loyaltyPoints).where(eq(loyaltyPoints.merchantId, merchantId)),
+  ]);
+  const byPhone = new Map<string, any>();
+  for (const customer of customersData) {
+    const phoneKey = normalizeZidPhone(customer.customerPhone) || customer.customerPhone;
+    const previous = byPhone.get(phoneKey);
+    const previousTime = previous ? new Date(previous.lastMessageAt).getTime() : 0;
+    const currentTime = new Date(customer.lastMessageAt).getTime();
+    byPhone.set(phoneKey, {
+      customerPhone: customer.customerPhone,
+      customerName: currentTime >= previousTime ? customer.customerName : previous.customerName,
+      lastMessageAt: currentTime >= previousTime ? customer.lastMessageAt : previous.lastMessageAt,
+      firstMessageAt: previous?.firstMessageAt || customer.lastMessageAt,
+      totalMessages: Number(previous?.totalMessages || 0) + Number(customer.totalMessages || 0),
+    });
+  }
+  for (const customer of zidCustomerData) {
+    if (!customer.phone) continue;
+    const phoneKey = normalizeZidPhone(customer.phone) || customer.phone;
+    const previous = byPhone.get(phoneKey);
+    const zidInteraction = customer.lastOrderAt || customer.lastSyncedAt;
+    if (!previous) {
+      byPhone.set(phoneKey, {
+        customerPhone: customer.phone,
+        customerName: customer.name,
+        lastMessageAt: zidInteraction,
+        firstMessageAt: zidInteraction,
+        totalMessages: 0,
+      });
+    } else if (!previous.customerName && customer.name) {
+      previous.customerName = customer.name;
+    }
+  }
+  const ordersByPhone = new Map<string, { orderCount: number; totalSpent: number }>();
+  for (const row of orderData) {
+    const phoneKey = normalizeZidPhone(row.customerPhone) || row.customerPhone;
+    const existing = ordersByPhone.get(phoneKey);
+    ordersByPhone.set(phoneKey, {
+      orderCount: Number(existing?.orderCount || 0) + Number(row.orderCount || 0),
+      totalSpent: Number(existing?.totalSpent || 0) + Number(row.totalSpent || 0),
+    });
+  }
+  const loyaltyByPhone = new Map<string, (typeof loyaltyData)[number]>();
+  for (const row of loyaltyData) {
+    const phoneKey = normalizeZidPhone(row.customerPhone) || row.customerPhone;
+    const existing = loyaltyByPhone.get(phoneKey);
+    if (!existing || row.totalPoints > existing.totalPoints) loyaltyByPhone.set(phoneKey, row);
+  }
+  const enrichedCustomers = Array.from(byPhone.values()).map(customer => {
+    const phoneKey = normalizeZidPhone(customer.customerPhone) || customer.customerPhone;
+    const orderStats = ordersByPhone.get(phoneKey);
+    const loyalty = loyaltyByPhone.get(phoneKey);
+    const totalSpent = (Number(orderStats?.totalSpent) || 0) / 100;
+    return {
+      ...customer,
+      id: customer.customerPhone,
+      name: customer.customerName,
+      phone: customer.customerPhone,
+      conversationCount: Number(customer.totalMessages) || 0,
+      lastInteraction: customer.lastMessageAt,
+      orderCount: Number(orderStats?.orderCount) || 0,
+      totalSpent,
+      loyaltyPoints: loyalty?.totalPoints || 0,
+      status: determineCustomerStatus(customer.lastMessageAt),
+    };
+  });
   return enrichedCustomers.sort((a, b) =>
     new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
   );
@@ -7833,7 +7980,7 @@ export async function getCustomersByMerchant(merchantId: number): Promise<any[]>
 /**
  * Determine customer status based on last interaction
  */
-function determineCustomerStatus(lastMessageAt: Date): 'active' | 'inactive' | 'new' {
+function determineCustomerStatus(lastMessageAt: Date | string): 'active' | 'inactive' | 'new' {
   const now = new Date();
   const daysSinceLastMessage = Math.floor(
     (now.getTime() - new Date(lastMessageAt).getTime()) / (1000 * 60 * 60 * 24)
@@ -7869,7 +8016,19 @@ export async function getCustomerByPhone(merchantId: number, customerPhone: stri
     .groupBy(conversations.customerPhone, conversations.customerName)
     .limit(1);
 
-  if (!customerConv[0]) return null;
+  const zidCustomer = !customerConv[0]
+    ? await db.select().from(zidCustomers).where(and(
+      eq(zidCustomers.merchantId, merchantId),
+      eq(zidCustomers.phone, customerPhone),
+    )).limit(1)
+    : [];
+  if (!customerConv[0] && !zidCustomer[0]) return null;
+  const sourceCustomer = customerConv[0] || {
+    customerPhone,
+    customerName: zidCustomer[0].name,
+    lastMessageAt: zidCustomer[0].lastOrderAt || zidCustomer[0].lastSyncedAt,
+    firstMessageAt: zidCustomer[0].lastOrderAt || zidCustomer[0].createdAt,
+  };
 
   // Get orders
   const customerOrders = await db
@@ -7922,11 +8081,11 @@ export async function getCustomerByPhone(merchantId: number, customerPhone: stri
     .orderBy(desc(conversations.lastMessageAt));
 
   return {
-    ...customerConv[0],
+    ...sourceCustomer,
     orderCount: Number(orderStats[0]?.orderCount) || 0,
-    totalSpent: Number(orderStats[0]?.totalSpent) || 0,
+    totalSpent: (Number(orderStats[0]?.totalSpent) || 0) / 100,
     loyaltyPoints: loyaltyData[0]?.totalPoints || 0,
-    status: determineCustomerStatus(customerConv[0].lastMessageAt),
+    status: determineCustomerStatus(sourceCustomer.lastMessageAt),
     orders: customerOrders,
     conversations: customerConversations,
   };
@@ -9137,41 +9296,69 @@ export async function linkZidProductToSariProduct(
 export async function saveZidOrder(merchantId: number, orderData: any) {
   const db = await getDb();
   if (!db) return null;
-
-  // Check if order exists
-  const existing = await db
-    .select()
-    .from(zidOrders)
-    .where(
-      and(
-        eq(zidOrders.merchantId, merchantId),
-        eq(zidOrders.zidOrderId, orderData.zidOrderId)
-      )
-    )
-    .limit(1);
-
-  if (existing[0]) {
-    await db
-      .update(zidOrders)
-      .set({
-        ...orderData,
-        lastSyncedAt: formatDateForDB(new Date()),
-        updatedAt: formatDateForDB(new Date()),
-      })
-      .where(eq(zidOrders.id, existing[0].id));
-
-    return { ...existing[0], ...orderData };
-  } else {
-    const result = await db
-      .insert(zidOrders)
-      .values({
-        merchantId,
-        ...orderData,
-        lastSyncedAt: formatDateForDB(new Date()),
-      });
-
-    return { id: Number((result[0] as any).insertId), merchantId, ...orderData };
+  const externalId = typeof orderData?.zidOrderId === 'string'
+    ? orderData.zidOrderId.trim()
+    : String(orderData?.zidOrderId ?? '');
+  if (!externalId || externalId.length > 255 || /[\u0000-\u001f\u007f]/.test(externalId)) {
+    throw new Error('INVALID_ZID_ORDER');
   }
+
+  // Status-only events are allowed to update an order already ingested, but
+  // never create a structurally incomplete row.
+  if (orderData.totalAmount === undefined || orderData.totalAmount === null) {
+    if (orderData.status !== 'cancelled') return null;
+    await db.transaction(async tx => {
+      const existing = await tx.select({ id: zidOrders.id, sariOrderId: zidOrders.sariOrderId })
+        .from(zidOrders)
+        .where(and(eq(zidOrders.merchantId, merchantId), eq(zidOrders.zidOrderId, externalId)))
+        .limit(1);
+      if (!existing[0]) return;
+      await tx.update(zidOrders).set({
+        status: 'cancelled',
+        lastSyncedAt: formatDateForDB(new Date()),
+      }).where(eq(zidOrders.id, existing[0].id));
+      if (existing[0].sariOrderId) {
+        await tx.update(orders).set({ status: 'cancelled' }).where(and(
+          eq(orders.id, existing[0].sariOrderId),
+          eq(orders.merchantId, merchantId),
+        ));
+      }
+    });
+  } else {
+    let items: unknown[] = [];
+    if (Array.isArray(orderData.items)) items = orderData.items;
+    if (typeof orderData.items === 'string') {
+      try {
+        const parsed = JSON.parse(orderData.items);
+        if (Array.isArray(parsed)) items = parsed;
+      } catch {
+        throw new Error('INVALID_ZID_ORDER');
+      }
+    }
+    const normalized = normalizeZidOrder({
+      id: externalId,
+      invoice_number: orderData.zidOrderNumber,
+      order_total: orderData.totalAmount,
+      currency_code: orderData.currency,
+      status: orderData.status,
+      payment_status: orderData.paymentStatus,
+      customer: {
+        name: orderData.customerName,
+        email: orderData.customerEmail,
+        mobile: orderData.customerPhone,
+      },
+      products: items,
+      created_at: orderData.orderDate,
+      shipping: { method: { name: orderData.shippingMethod } },
+    });
+    await upsertNormalizedOrdersFromZid(merchantId, [normalized]);
+  }
+
+  const saved = await db.select().from(zidOrders).where(and(
+    eq(zidOrders.merchantId, merchantId),
+    eq(zidOrders.zidOrderId, externalId),
+  )).limit(1);
+  return saved[0] || null;
 }
 
 /**
