@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
@@ -6,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Download, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-import DashboardLayout from '@/components/DashboardLayout';
+import { QueryStateCard } from '@/components/QueryStateCard';
 import { useTranslation } from 'react-i18next';
 
 export default function SheetsExport() {
@@ -15,33 +14,32 @@ export default function SheetsExport() {
   const [selectAll, setSelectAll] = useState(false);
 
   // جلب المحادثات
-  const { data: conversations, isLoading } = trpc.conversations.list.useQuery(undefined as any);
+  const {
+    data: conversationsData,
+    isLoading,
+    error,
+    refetch,
+  } = trpc.conversations.list.useQuery({ page: 1, pageSize: 100 });
+  const conversations = conversationsData?.items ?? [];
 
   // تصدير المحادثات
   const exportMutation = trpc.sheets.exportConversations.useMutation({
-    onSuccess: (data: any) => {
+    onSuccess: (data) => {
       if (data.success) {
-        (toast as any)({
-          title: 'نجح التصدير',
-          description: data.message,
-        });
+        toast.success(data.message || 'نجح التصدير');
         setSelectedConversations([]);
         setSelectAll(false);
       } else {
-        (toast as any)({
-          title: 'فشل التصدير',
-          description: data.message,
-          variant: 'destructive',
-        });
+        toast.error(data.message || 'فشل التصدير');
       }
     },
+    onError: (mutationError) => toast.error(mutationError.message || 'فشل التصدير'),
   });
 
   const handleSelectAll = (checked: boolean) => {
     setSelectAll(checked);
-    if (checked && conversations) {
-      // @ts-ignore
-      setSelectedConversations(conversations.map((c: any) => c.id));
+    if (checked) {
+      setSelectedConversations(conversations.map((conversation) => conversation.id));
     } else {
       setSelectedConversations([]);
     }
@@ -49,20 +47,16 @@ export default function SheetsExport() {
 
   const handleSelectConversation = (conversationId: number, checked: boolean) => {
     if (checked) {
-      setSelectedConversations([...selectedConversations, conversationId]);
+      setSelectedConversations((current) => Array.from(new Set([...current, conversationId])));
     } else {
-      setSelectedConversations(selectedConversations.filter((id: any) => id !== conversationId));
+      setSelectedConversations((current) => current.filter((id) => id !== conversationId));
       setSelectAll(false);
     }
   };
 
   const handleExport = () => {
     if (selectedConversations.length === 0) {
-      (toast as any)({
-        title: 'تنبيه',
-        description: 'الرجاء اختيار محادثة واحدة على الأقل',
-        variant: 'destructive',
-      });
+      toast.error('الرجاء اختيار محادثة واحدة على الأقل');
       return;
     }
 
@@ -73,19 +67,30 @@ export default function SheetsExport() {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container max-w-6xl py-8">
+        <QueryStateCard
+          kind="error"
+          title="تعذر تحميل المحادثات"
+          description={error.message}
+          retryLabel="إعادة المحاولة"
+          onRetry={() => void refetch()}
+        />
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="container max-w-6xl py-8">
+    <div className="container max-w-6xl py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('sheetsExportPage.text0')}</h1>
+          <h1 className="text-3xl font-bold mb-2">{t('sheetsExportPage.text4')}</h1>
           <p className="text-muted-foreground">{t('sheetsExport.auto_0')}</p>
         </div>
 
@@ -95,9 +100,8 @@ export default function SheetsExport() {
             <div className="flex items-center gap-3">
               <MessageSquare className="w-8 h-8 text-blue-600" />
               <div>
-                <p className="text-sm text-muted-foreground">{t('sheetsExportPage.text1')}</p>
-                // @ts-ignore
-                <p className="text-2xl font-bold">{conversations?.length || 0}</p>
+                <p className="text-sm text-muted-foreground">{t('sheetsExportPage.text5')}</p>
+                <p className="text-2xl font-bold">{conversationsData?.total ?? conversations.length}</p>
               </div>
             </div>
           </Card>
@@ -106,7 +110,7 @@ export default function SheetsExport() {
             <div className="flex items-center gap-3">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
               <div>
-                <p className="text-sm text-muted-foreground">{t('sheetsExportPage.text2')}</p>
+                <p className="text-sm text-muted-foreground">{t('sheetsExportPage.text6')}</p>
                 <p className="text-2xl font-bold">{selectedConversations.length}</p>
               </div>
             </div>
@@ -127,7 +131,7 @@ export default function SheetsExport() {
         {/* قائمة المحادثات */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">{t('sheetsExportPage.text3')}</h2>
+            <h2 className="text-xl font-semibold">{t('sheetsExportPage.text7')}</h2>
             <div className="flex items-center gap-2">
               <Checkbox
                 id="select-all"
@@ -141,15 +145,14 @@ export default function SheetsExport() {
             </div>
           </div>
 
-          // @ts-ignore
-          {!conversations || conversations.length === 0 ? (
-            <div className="text-center py-12">
-              <MessageSquare className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">{t('sheetsExportPage.text4')}</p>
-            </div>
+          {conversations.length === 0 ? (
+            <QueryStateCard
+              kind="empty"
+              title="لا توجد محادثات قابلة للتصدير"
+              description="ابدأ محادثة أو اربط قناة واتساب، ثم عد لاختيار المحادثات التي تريد تصديرها."
+            />
           ) : (
             <div className="space-y-3">
-              // @ts-ignore
               {conversations.map((conversation) => (
                 <div
                   key={conversation.id}
@@ -198,9 +201,8 @@ export default function SheetsExport() {
         {/* ملاحظة */}
         <Card className="p-4 mt-6 bg-blue-50 border-blue-200">
           <p className="text-sm text-blue-800">
-            💡 <strong>{t('sheetsExportPage.text5')}</strong>{t('sheetsExport.auto_3')}</p>
+            💡 <strong>{t('sheetsExportPage.text10')}</strong>{t('sheetsExport.auto_3')}</p>
         </Card>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }

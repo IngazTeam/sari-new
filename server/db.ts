@@ -2,6 +2,7 @@ import {
   eq, ne, and, or, desc, gte, lte, lt, gt, sql, like, isNull, notInArray, type InferSelectModel, type InferInsertModel
 } from "drizzle-orm";
 import { hashSessionId } from './_core/session-security';
+import { buildUsageMetric } from './usage-metrics';
 
 // Helper function to format Date for MySQL timestamp comparison
 function formatDateForDB(date: Date): string {
@@ -11027,8 +11028,10 @@ export async function getMerchantCurrentUsage(merchantId: number) {
   const aiMessages = await db
     .select({ count: sql<number>`count(*)` })
     .from(schema.messages)
+    .innerJoin(schema.conversations, eq(schema.messages.conversationId, schema.conversations.id))
     .where(
       and(
+        eq(schema.conversations.merchantId, merchantId),
         eq(schema.messages.direction, 'outgoing'),
         gte(schema.messages.createdAt, startOfMonth.toISOString())
       )
@@ -11037,31 +11040,11 @@ export async function getMerchantCurrentUsage(merchantId: number) {
   const aiMessageCount = Number(aiMessages[0]?.count || 0);
 
   return {
-    customers: {
-      current: customerCount,
-      max: plan.maxCustomers,
-      percentage: (customerCount / plan.maxCustomers) * 100,
-    },
-    whatsappNumbers: {
-      current: whatsappNumbers.length,
-      max: plan.maxWhatsAppNumbers,
-      percentage: (whatsappNumbers.length / plan.maxWhatsAppNumbers) * 100,
-    },
-    products: {
-      current: products.length,
-      max: (plan as any).maxProducts ?? 100,
-      percentage: products.length / ((plan as any).maxProducts ?? 100) * 100,
-    },
-    campaigns: {
-      current: campaignCount,
-      max: (plan as any).maxCampaignsPerMonth ?? 10,
-      percentage: campaignCount / ((plan as any).maxCampaignsPerMonth ?? 10) * 100,
-    },
-    aiMessages: {
-      current: aiMessageCount,
-      max: (plan as any).aiMessagesPerMonth ?? 1000,
-      percentage: aiMessageCount / ((plan as any).aiMessagesPerMonth ?? 1000) * 100,
-    },
+    customers: buildUsageMetric(customerCount, plan.maxCustomers, 100),
+    whatsappNumbers: buildUsageMetric(whatsappNumbers.length, plan.maxWhatsAppNumbers, 1),
+    products: buildUsageMetric(products.length, (plan as any).maxProducts, 100),
+    campaigns: buildUsageMetric(campaignCount, (plan as any).maxCampaignsPerMonth, 10),
+    aiMessages: buildUsageMetric(aiMessageCount, (plan as any).aiMessagesPerMonth, 1000),
     plan: {
       id: plan.id,
       name: plan.name,
@@ -11100,8 +11083,10 @@ export async function getMerchantUsageHistory(merchantId: number) {
     const msgs = await db
       .select({ count: sql<number>`count(*)` })
       .from(schema.messages)
+      .innerJoin(schema.conversations, eq(schema.messages.conversationId, schema.conversations.id))
       .where(
         and(
+          eq(schema.conversations.merchantId, merchantId),
           eq(schema.messages.direction, 'outgoing'),
           gte(schema.messages.createdAt, monthDate.toISOString()),
           lt(schema.messages.createdAt, nextMonthDate.toISOString())

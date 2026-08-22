@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { QueryStateCard } from '@/components/QueryStateCard';
 import { 
   Users, 
   MessageSquare, 
@@ -20,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 export default function UsageDashboard() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
-  const { data: usage, isLoading } = trpc.usage.getCurrentUsage.useQuery();
+  const { data: usage, isLoading, error, refetch } = trpc.usage.getCurrentUsage.useQuery();
 
   if (isLoading) {
     return (
@@ -37,15 +38,24 @@ export default function UsageDashboard() {
     );
   }
 
-  if (!usage) {
+  if (error || !usage) {
+    const hasNoSubscription = error?.data?.code === 'NOT_FOUND';
     return (
       <div className="container py-8">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {t('usageDashboardPage.text11')}
-          </AlertDescription>
-        </Alert>
+        <QueryStateCard
+          kind={hasNoSubscription ? 'empty' : 'error'}
+          title={hasNoSubscription ? 'لا توجد باقة مرتبطة بالحساب' : 'تعذر تحميل بيانات الاستخدام'}
+          description={hasNoSubscription
+            ? 'اختر باقة أولًا حتى تظهر الحدود والاستهلاك الفعلي هنا.'
+            : error?.message || t('usageDashboardPage.text11')}
+          retryLabel="إعادة المحاولة"
+          onRetry={hasNoSubscription ? undefined : () => void refetch()}
+          action={(
+            <Button type="button" onClick={() => setLocation('/merchant/subscription/plans')}>
+              عرض الباقات
+            </Button>
+          )}
+        />
       </div>
     );
   }
@@ -198,7 +208,7 @@ export default function UsageDashboard() {
 
                     {/* Remaining */}
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{t('usageDashboardPage.remaining')}: {(item.max - item.current).toLocaleString()}</span>
+                      <span>{t('usageDashboardPage.remaining')}: {Math.max(0, item.max - item.current).toLocaleString()}</span>
                       <span>{percentage.toFixed(1)}%</span>
                     </div>
                   </>

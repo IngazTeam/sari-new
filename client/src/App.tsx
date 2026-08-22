@@ -173,7 +173,6 @@ const WhatsAppAutoNotifications = lazyLoad(() => import("./pages/WhatsAppAutoNot
 const CustomersManagement = lazyLoad(() => import("./pages/CustomersManagement"));
 const Customers = lazyLoad(() => import("./pages/Customers"));
 const CustomerDetails = lazyLoad(() => import("./pages/CustomerDetails"));
-const WebsiteAnalysis = lazyLoad(() => import("./pages/WebsiteAnalysis"));
 const CompetitorAnalysis = lazyLoad(() => import("./pages/CompetitorAnalysis"));
 const SmartAnalysis = lazyLoad(() => import("./pages/SmartAnalysis"));
 const AIWhatsAppHub = lazyLoad(() => import("./pages/merchant/AIWhatsAppHub"));
@@ -920,9 +919,7 @@ function Router() {
 
       {/* Legacy route — now redirects to unified SmartAnalysis */}
       <Route path="/merchant/website-analysis">
-        <DashboardLayout>
-          <SmartAnalysis />
-        </DashboardLayout>
+        <Redirect to="/merchant/smart-analysis" />
       </Route>
 
       <Route path="/merchant/smart-analysis">
@@ -943,13 +940,13 @@ function Router() {
         </DashboardLayout>
       </Route>
 
-      {/* Missing sidebar routes — alias to existing pages */}
+      {/* Legacy route aliases redirect to one canonical URL per product page. */}
       <Route path="/merchant/ai-suggestions">
         <DashboardLayout><InsightsDashboard /></DashboardLayout>
       </Route>
 
       <Route path="/merchant/keywords">
-        <DashboardLayout><SmartAnalysis /></DashboardLayout>
+        <Redirect to="/merchant/smart-analysis" />
       </Route>
 
       <Route path="/merchant/voice-messages">
@@ -961,7 +958,7 @@ function Router() {
       </Route>
 
       <Route path="/merchant/weekly-reports">
-        <DashboardLayout><Reports /></DashboardLayout>
+        <Redirect to="/merchant/reports" />
       </Route>
 
       <Route path="/merchant/ab-tests">
