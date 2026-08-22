@@ -104,6 +104,13 @@ async function ensureByaanTables() {
   ]);
 }
 
+export class ByaanSyncValidationError extends Error {
+  constructor(entity: 'trainee' | 'faq') {
+    super(`Invalid Byaan ${entity} sync entry`);
+    this.name = 'ByaanSyncValidationError';
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Byaan Webhook — Notify Byaan of subscription changes
 // ═══════════════════════════════════════════════════════════════
@@ -354,48 +361,154 @@ export async function updateByaanSyncStatus(merchantId: number, status: string, 
 // Trainee Sync — Smart 5-step mapping
 // ═══════════════════════════════════════════════════════════════
 
-export async function syncTrainees(merchantId: number, trainees: ByaanTrainee[]): Promise<{ created: number; updated: number; linked: number }> {
+export interface ByaanTraineeSyncResult {
+  created: number;
+  updated: number;
+  archived: number;
+  linked: number;
+}
+
+export async function syncTrainees(
+  merchantId: number,
+  trainees: ByaanTrainee[],
+  mode: 'append' | 'replace' = 'append',
+): Promise<ByaanTraineeSyncResult> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) {
+    throw new Error('Invalid merchant for Byaan trainee sync');
+  }
+  if (!Array.isArray(trainees) || trainees.length > 500 || !['append', 'replace'].includes(mode)) {
+    throw new ByaanSyncValidationError('trainee');
+  }
+
+  const normalizedByExternalId = new Map<string, {
+    externalId: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    coursesJson: string | null;
+  }>();
+  for (const trainee of trainees) {
+    if (
+      !trainee || typeof trainee !== 'object'
+      || (typeof trainee.id !== 'string' && typeof trainee.id !== 'number')
+      || (typeof trainee.id === 'number' && !Number.isFinite(trainee.id))
+      || typeof trainee.name !== 'string'
+      || (trainee.phone !== undefined && trainee.phone !== null
+        && typeof trainee.phone !== 'string' && typeof trainee.phone !== 'number')
+      || (trainee.email !== undefined && trainee.email !== null && typeof trainee.email !== 'string')
+    ) {
+      throw new ByaanSyncValidationError('trainee');
+    }
+    const externalId = trainee.id === undefined || trainee.id === null
+      ? ''
+      : String(trainee.id).trim();
+    const safeName = trainee.name.replace(/<[^>]*>/g, '').trim();
+    const normalizedPhone = trainee.phone ? String(trainee.phone).replace(/\D/g, '') : '';
+    const normalizedEmail = typeof trainee.email === 'string'
+      ? trainee.email.replace(/<[^>]*>/g, '').trim()
+      : '';
+    if (
+      !externalId || externalId.length > 100
+      || !safeName || safeName.length > 255
+      || normalizedPhone.length > 20
+      || normalizedEmail.length > 320
+      || (trainee.enrolledCourses !== undefined && !Array.isArray(trainee.enrolledCourses))
+    ) {
+      throw new ByaanSyncValidationError('trainee');
+    }
+    const phone = normalizedPhone
+      ? normalizedPhone
+      : null;
+    const safeEmail = normalizedEmail || null;
+    const courses = Array.isArray(trainee.enrolledCourses)
+      ? trainee.enrolledCourses
+        .map((course) => typeof course === 'string' ? course.replace(/<[^>]*>/g, '').trim() : '')
+      : [];
+    if (
+      courses.length > 100
+      || courses.some((course) => !course || course.length > 255)
+      || JSON.stringify(courses).length > 12_000
+    ) {
+      throw new ByaanSyncValidationError('trainee');
+    }
+    normalizedByExternalId.set(externalId, {
+      externalId,
+      name: safeName,
+      phone,
+      email: safeEmail,
+      coursesJson: courses.length > 0 ? JSON.stringify(courses) : null,
+    });
+  }
+
+  // Reject the complete payload before touching the database. This keeps bad
+  // batches cheap and guarantees that validation can never leave partial data.
   await ensureByaanTables();
   const dbConn = await getPool();
-  if (!dbConn) return { created: 0, updated: 0, linked: 0 };
+  if (!dbConn) throw new Error('Byaan data unavailable');
 
-  let created = 0, updated = 0, linked = 0;
+  const connection = await dbConn.getConnection();
+  try {
+    await connection.beginTransaction();
+    const [merchantRows] = await connection.execute(
+      `SELECT id FROM merchants WHERE id = ? LIMIT 1 FOR UPDATE`,
+      [merchantId],
+    );
+    if (!(merchantRows as Array<{ id: number }>).length) {
+      throw new Error('Byaan merchant not found');
+    }
 
-  for (const trainee of trainees) {
-    if (!trainee.name) continue;
+    const externalIds = Array.from(normalizedByExternalId.keys());
+    const existingExternalIds = new Set<string>();
+    if (externalIds.length > 0) {
+      const [existingRows] = await connection.execute(
+        `SELECT external_id FROM byaan_trainees
+         WHERE merchant_id = ? AND external_id IN (${externalIds.map(() => '?').join(', ')})`,
+        [merchantId, ...externalIds],
+      );
+      for (const row of existingRows as Array<{ external_id: string }>) {
+        existingExternalIds.add(row.external_id);
+      }
+    }
 
-    const externalId = String(trainee.id).substring(0, 100);
-    const safeName = trainee.name.replace(/<[^>]*>/g, '').substring(0, 255);
-    const phone = trainee.phone ? String(trainee.phone).replace(/\D/g, '').substring(0, 20) : null;
-    const safeEmail = trainee.email ? String(trainee.email).replace(/<[^>]*>/g, '').trim().substring(0, 320) : null;
-    const coursesJson = trainee.enrolledCourses ? JSON.stringify(trainee.enrolledCourses) : null;
-
-    try {
-      // Upsert: INSERT or UPDATE on duplicate external_id
-      await (dbConn as any).execute(
+    let created = 0;
+    let updated = 0;
+    for (const trainee of Array.from(normalizedByExternalId.values())) {
+      await connection.execute(
         `INSERT INTO byaan_trainees (merchant_id, external_id, name, phone, email, enrolled_courses, status, synced_at)
          VALUES (?, ?, ?, ?, ?, ?, 'active', NOW())
          ON DUPLICATE KEY UPDATE name = VALUES(name), phone = VALUES(phone), email = VALUES(email),
          enrolled_courses = VALUES(enrolled_courses), status = 'active', synced_at = NOW()`,
-        [merchantId, externalId, safeName, phone, safeEmail, coursesJson]
+        [merchantId, trainee.externalId, trainee.name, trainee.phone, trainee.email, trainee.coursesJson],
       );
-
-      // Check if it was an insert or update
-      const [check] = await (dbConn as any).execute(
-        `SELECT id FROM byaan_trainees WHERE merchant_id = ? AND external_id = ? AND created_at = updated_at LIMIT 1`,
-        [merchantId, externalId]
-      );
-      if ((check as any[])?.length > 0) {
-        created++;
-      } else {
-        updated++;
-      }
-    } catch (e) {
-      console.warn(`[Byaan] Trainee sync skip (${externalId}):`, (e as Error).message?.substring(0, 80));
+      if (existingExternalIds.has(trainee.externalId)) updated += 1;
+      else created += 1;
     }
-  }
 
-  return { created, updated, linked };
+    let archived = 0;
+    if (mode === 'replace') {
+      const [result] = externalIds.length === 0
+        ? await connection.execute(
+          `UPDATE byaan_trainees SET status = 'archived', synced_at = NOW()
+           WHERE merchant_id = ? AND status = 'active'`,
+          [merchantId],
+        )
+        : await connection.execute(
+          `UPDATE byaan_trainees SET status = 'archived', synced_at = NOW()
+           WHERE merchant_id = ? AND status = 'active'
+             AND external_id NOT IN (${externalIds.map(() => '?').join(', ')})`,
+          [merchantId, ...externalIds],
+        );
+      archived = Number((result as any).affectedRows || 0);
+    }
+
+    await connection.commit();
+    return { created, updated, archived, linked: 0 };
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 export interface ByaanTraineeListRow {
@@ -486,22 +599,31 @@ export async function syncByaanFaqs(
     category: string;
   }>();
   for (const f of faqs) {
-    if (!f || typeof f !== 'object' || typeof f.question !== 'string' || typeof f.answer !== 'string') continue;
-    if (!f.question || !f.answer) continue;
-    const question = String(f.question).replace(/<[^>]*>/g, '').trim().substring(0, 2000);
-    const answer = String(f.answer).replace(/<[^>]*>/g, '').trim().substring(0, 5000);
-    if (!question.trim() || !answer.trim()) continue;
+    if (!f || typeof f !== 'object' || typeof f.question !== 'string' || typeof f.answer !== 'string') {
+      throw new ByaanSyncValidationError('faq');
+    }
+    const question = String(f.question).replace(/<[^>]*>/g, '').trim();
+    const answer = String(f.answer).replace(/<[^>]*>/g, '').trim();
     const suppliedExternalId = f.id === undefined || f.id === null ? '' : String(f.id).trim();
+    const category = typeof f.category === 'string'
+      ? String(f.category).replace(/<[^>]*>/g, '').trim()
+      : 'عام';
+    if (
+      !question || question.length > 2000
+      || !answer || answer.length > 5000
+      || suppliedExternalId.length > 100
+      || !category || category.length > 100
+    ) {
+      throw new ByaanSyncValidationError('faq');
+    }
     const externalId = suppliedExternalId
-      ? suppliedExternalId.substring(0, 100)
+      ? suppliedExternalId
       : `content:${crypto.createHash('sha256').update(`${question}\0${answer}`, 'utf8').digest('hex')}`;
     normalizedByExternalId.set(externalId, {
       externalId,
       question,
       answer,
-      category: typeof f.category === 'string'
-        ? String(f.category).replace(/<[^>]*>/g, '').substring(0, 100)
-        : 'عام',
+      category,
     });
   }
 

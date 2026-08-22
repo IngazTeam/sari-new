@@ -1276,7 +1276,11 @@ sariPlatformRouter.post('/sync/trainees', async (req: PlatformRequest, res: Resp
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
 
-  const { trainees, mode } = req.body;
+  const { trainees, mode: rawTraineeMode } = req.body ?? {};
+  if (rawTraineeMode !== undefined && rawTraineeMode !== 'append' && rawTraineeMode !== 'replace') {
+    return res.status(400).json({ error: 'mode must be append or replace', errorAr: 'يجب أن يكون الوضع append أو replace' });
+  }
+  const mode = rawTraineeMode === 'replace' ? 'replace' : 'append';
   if (!Array.isArray(trainees)) {
     return res.status(400).json({ error: 'trainees array is required', errorAr: 'مصفوفة المتدربين مطلوبة' });
   }
@@ -1285,21 +1289,33 @@ sariPlatformRouter.post('/sync/trainees', async (req: PlatformRequest, res: Resp
   }
 
   try {
-    const { syncTrainees } = await import('../integrations/byaan');
-    const result = await syncTrainees(merchant.id, trainees);
+    const [{ syncTrainees, updateByaanSyncStatus }, { logBrainActivity }] = await Promise.all([
+      import('../integrations/byaan'),
+      import('../routers-sari-brain'),
+    ]);
+    const result = await syncTrainees(merchant.id, trainees, mode);
 
-    const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(merchant.id, 'settings_changed',
-      `Platform Sync متدربين: ${result.created} جديد، ${result.updated} محدث، ${result.linked} مربوط`,
-      { ...result, source: 'platform' }
-    );
+    // Sync is already committed. Telemetry must not turn a successful write
+    // into a false 500 response that causes the source to retry unnecessarily.
+    const telemetry = await Promise.allSettled([
+      logBrainActivity(merchant.id, 'settings_changed',
+        `Platform Sync متدربين: ${result.created} جديد، ${result.updated} محدث، ${result.archived} مؤرشف`,
+        { ...result, source: 'platform' }
+      ),
+      updateByaanSyncStatus(merchant.id, 'active'),
+    ]);
+    if (telemetry.some((entry) => entry.status === 'rejected')) {
+      console.warn('[SariAPI] Platform trainee sync committed but telemetry update failed');
+    }
 
-    // Update last_sync_at timestamp
-    const { updateByaanSyncStatus } = await import('../integrations/byaan');
-    await updateByaanSyncStatus(merchant.id, 'active');
-
-    res.json({ success: true, ...result, mode: mode || 'upsert' });
+    res.json({ success: true, ...result, mode });
   } catch (e) {
+    if ((e as Error)?.name === 'ByaanSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid trainee sync entry',
+        errorAr: 'تحتوي دفعة المتدربين على عنصر غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] Platform trainee sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة المتدربين' });
   }
@@ -1384,6 +1400,12 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
 
     res.json({ success: true, ...result, mode });
   } catch (e) {
+    if ((e as Error)?.name === 'ByaanSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid FAQ sync entry',
+        errorAr: 'تحتوي دفعة الأسئلة على عنصر غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] Platform FAQ sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت المزامنة' });
   }
@@ -2077,7 +2099,11 @@ sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Resp
     return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
   }
 
-  const { trainees, mode } = req.body;
+  const { trainees, mode: rawTraineeMode } = req.body ?? {};
+  if (rawTraineeMode !== undefined && rawTraineeMode !== 'append' && rawTraineeMode !== 'replace') {
+    return res.status(400).json({ error: 'mode must be append or replace', errorAr: 'يجب أن يكون الوضع append أو replace' });
+  }
+  const mode = rawTraineeMode === 'replace' ? 'replace' : 'append';
   if (!Array.isArray(trainees)) {
     return res.status(400).json({ error: 'trainees array is required', errorAr: 'مصفوفة المتدربين مطلوبة' });
   }
@@ -2086,17 +2112,31 @@ sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Resp
   }
 
   try {
-    const { syncTrainees } = await import('../integrations/byaan');
-    const result = await syncTrainees(req.merchant.id, trainees);
+    const [{ syncTrainees, updateByaanSyncStatus }, { logBrainActivity }] = await Promise.all([
+      import('../integrations/byaan'),
+      import('../routers-sari-brain'),
+    ]);
+    const result = await syncTrainees(req.merchant.id, trainees, mode);
 
-    const { logBrainActivity } = await import('../routers-sari-brain');
-    await logBrainActivity(req.merchant.id, 'settings_changed',
-      `API Sync متدربين: ${result.created} جديد، ${result.updated} محدث، ${result.linked} مربوط`,
-      { ...result, source: 'api' }
-    );
+    const telemetry = await Promise.allSettled([
+      logBrainActivity(req.merchant.id, 'settings_changed',
+        `API Sync متدربين: ${result.created} جديد، ${result.updated} محدث، ${result.archived} مؤرشف`,
+        { ...result, source: 'api' }
+      ),
+      updateByaanSyncStatus(req.merchant.id, 'active'),
+    ]);
+    if (telemetry.some((entry) => entry.status === 'rejected')) {
+      console.warn('[SariAPI] API trainee sync committed but telemetry update failed');
+    }
 
-    res.json({ success: true, ...result, mode: mode || 'upsert' });
+    res.json({ success: true, ...result, mode });
   } catch (e) {
+    if ((e as Error)?.name === 'ByaanSyncValidationError') {
+      return res.status(422).json({
+        error: 'Invalid trainee sync entry',
+        errorAr: 'تحتوي دفعة المتدربين على عنصر غير صالح أو يتجاوز الحدود',
+      });
+    }
     console.error('[SariAPI] Trainee sync failed:', e);
     res.status(500).json({ error: 'Sync failed', errorAr: 'فشلت مزامنة المتدربين' });
   }
