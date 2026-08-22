@@ -7603,11 +7603,21 @@ export const appRouter = router({
         customerName: z.string().trim().min(2).max(120),
         customerPhone: z.string().trim().min(9).max(20),
         customerEmail: z.string().trim().email().max(255).optional(),
+        checkoutAttemptId: z.string().uuid(),
       }))
       .mutation(async ({ input }) => {
         const dbPayments = await import('./db_payments');
-        const { getPaymentLinkAvailability, halalasToTapAmount, normalizeSaudiPhone } =
+        const {
+          buildTapCheckoutIdempotentReference,
+          getPaymentLinkAvailability,
+          halalasToTapAmount,
+          isTapPaymentReady,
+          normalizeSaudiPhone,
+          readPaymentLinkId,
+          validateTapCheckoutCharge,
+        } =
           await import('./payment/payment-link-policy');
+        const { postTapCharge, TapClientError } = await import('./payment/tap-client');
         const { publicPaymentUrls } = await import('./utils/public-url');
 
         const link = await dbPayments.getPaymentLinkByLinkId(input.linkId);
@@ -7619,9 +7629,11 @@ export const appRouter = router({
         }
 
         const settings = await getMerchantPaymentSettings(link.merchantId);
-        const { isTapPaymentReady } = await import('./payment/payment-link-policy');
-        if (!settings || !isTapPaymentReady(settings)) {
+        if (!settings || !settings.tapSecretKey || !isTapPaymentReady(settings)) {
           throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'بوابة الدفع غير جاهزة لهذا المتجر' });
+        }
+        if (link.currency !== 'SAR') {
+          throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'عملة رابط الدفع غير مدعومة' });
         }
 
         let phoneNumber: string;
@@ -7631,6 +7643,8 @@ export const appRouter = router({
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'رقم الجوال غير صالح' });
         }
 
+        const idempotentReference = buildTapCheckoutIdempotentReference(link.id, input.checkoutAttemptId);
+        const localMetadata = { paymentLinkId: link.id };
         const chargePayload = {
           amount: halalasToTapAmount(link.amount),
           currency: link.currency,
@@ -7643,35 +7657,47 @@ export const appRouter = router({
           redirect: { url: publicPaymentUrls.linkStatus(link.linkId) },
           post: { url: publicPaymentUrls.webhook() },
           description: link.description || link.title,
-          metadata: {
-            type: 'payment_link',
-            merchantId: link.merchantId,
-            paymentLinkId: link.id,
-            paymentLinkToken: link.linkId,
-            orderId: link.orderId || undefined,
-            bookingId: link.bookingId || undefined,
+          metadata: { udf1: idempotentReference },
+          reference: {
+            transaction: idempotentReference,
+            order: idempotentReference,
+            idempotent: idempotentReference,
           },
         };
 
-        const response = await fetch('https://api.tap.company/v2/charges', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${settings.tapSecretKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(chargePayload),
-        });
-        const charge = await response.json().catch(() => ({}));
-        if (!response.ok || !charge?.id || !charge?.transaction?.url) {
+        let tapResponse: Awaited<ReturnType<typeof postTapCharge>>;
+        try {
+          tapResponse = await postTapCharge(settings.tapSecretKey, chargePayload);
+        } catch (error) {
           console.error('[PaymentLink] Tap charge creation failed', {
             merchantId: link.merchantId,
             paymentLinkId: link.id,
-            status: response.status,
+            failure: error instanceof TapClientError ? error.failure : 'unknown',
+          });
+          throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر إنشاء جلسة الدفع، حاول لاحقاً' });
+        }
+        if (!tapResponse.ok) {
+          console.error('[PaymentLink] Tap charge creation rejected', {
+            merchantId: link.merchantId,
+            paymentLinkId: link.id,
+            status: tapResponse.status,
+          });
+          throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر إنشاء جلسة الدفع، حاول لاحقاً' });
+        }
+        const charge = validateTapCheckoutCharge(tapResponse.body, {
+          amountInHalalas: link.amount,
+          currency: 'SAR',
+          testMode: Boolean(settings.tapTestMode),
+        });
+        if (!charge) {
+          console.error('[PaymentLink] Tap returned an inconsistent checkout charge', {
+            merchantId: link.merchantId,
+            paymentLinkId: link.id,
           });
           throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر إنشاء جلسة الدفع، حاول لاحقاً' });
         }
 
-        const payment = await dbPayments.createOrderPayment({
+        const payment = await dbPayments.createOrderPaymentIdempotent({
           merchantId: link.merchantId,
           orderId: link.orderId,
           bookingId: link.bookingId,
@@ -7681,24 +7707,32 @@ export const appRouter = router({
           amount: link.amount,
           currency: link.currency,
           tapChargeId: charge.id,
-          tapPaymentUrl: charge.transaction.url,
+          tapPaymentUrl: charge.paymentUrl,
           status: 'pending',
           description: link.description || link.title,
-          metadata: JSON.stringify(chargePayload.metadata),
-          expiresAt: charge.transaction?.expiry?.period
-            ? new Date(Date.now() + charge.transaction.expiry.period * 60 * 60 * 1000).toISOString()
+          metadata: JSON.stringify(localMetadata),
+          expiresAt: charge.expiresInMs
+            ? new Date(Date.now() + charge.expiresInMs).toISOString()
             : null,
         });
-        if (!payment) {
-          console.error('[PaymentLink] Charge created without a local payment record', {
+        if (
+          payment.merchantId !== link.merchantId
+          || payment.orderId !== link.orderId
+          || payment.bookingId !== link.bookingId
+          || payment.amount !== link.amount
+          || payment.currency !== link.currency
+          || payment.tapChargeId !== charge.id
+          || payment.tapPaymentUrl !== charge.paymentUrl
+          || readPaymentLinkId(payment.metadata) !== link.id
+        ) {
+          console.error('[PaymentLink] Idempotent Tap charge conflicts with its local payment identity', {
             merchantId: link.merchantId,
             paymentLinkId: link.id,
-            chargeId: charge.id,
           });
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'تعذر حفظ عملية الدفع' });
+          throw new TRPCError({ code: 'BAD_GATEWAY', message: 'تعذر مطابقة جلسة الدفع' });
         }
 
-        return { paymentUrl: charge.transaction.url };
+        return { paymentUrl: payment.tapPaymentUrl };
       }),
 
     getPublicLinkPaymentStatus: publicProcedure

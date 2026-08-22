@@ -401,6 +401,28 @@ export async function incrementPaymentLinkUsage(
     .where(and(...conditions));
 }
 
+export async function createOrderPaymentIdempotent(
+  data: NewOrderPayment & { tapChargeId: string },
+): Promise<OrderPayment> {
+  const existing = await getOrderPaymentByTapChargeId(data.tapChargeId);
+  if (existing) return existing;
+
+  const db = await getDb();
+  try {
+    const [inserted] = await db.insert(orderPayments).values(data).$returningId();
+    if (inserted) {
+      const payment = await getOrderPaymentById(inserted.id);
+      if (payment) return payment;
+    }
+  } catch (error: any) {
+    if (error?.code !== 'ER_DUP_ENTRY') throw error;
+  }
+
+  const raced = await getOrderPaymentByTapChargeId(data.tapChargeId);
+  if (!raced) throw new Error('Tap payment idempotency conflict could not be resolved');
+  return raced;
+}
+
 /**
  * طھط¹ط·ظٹظ„ ط±ط§ط¨ط· ط¯ظپط¹
  */

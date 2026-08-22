@@ -1881,7 +1881,7 @@ export const orderPayments = mysqlTable("order_payments", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
 	(table) => [
-		index("order_payments_tap_charge_id_idx").on(table.tapChargeId),
+		uniqueIndex("order_payments_tap_charge_id_unique").on(table.tapChargeId),
 		index("order_payments_merchant_id_idx").on(table.merchantId),
 		index("order_payments_order_id_idx").on(table.orderId),
 		index("order_payments_booking_id_idx").on(table.bookingId),
@@ -1933,7 +1933,7 @@ export const paymentLinks = mysqlTable("payment_links", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().onUpdateNow().notNull(),
 },
 	(table) => [
-		index("payment_links_link_id_unique").on(table.linkId),
+		uniqueIndex("payment_links_link_id_unique").on(table.linkId),
 		index("payment_links_merchant_id_idx").on(table.merchantId),
 	]);
 

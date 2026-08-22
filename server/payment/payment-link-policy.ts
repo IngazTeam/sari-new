@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 export interface PaymentLinkState {
   isActive: number | boolean;
   status: string;
@@ -55,6 +57,75 @@ export function readPaymentLinkId(metadata: string | null | undefined): number |
   } catch {
     return null;
   }
+}
+
+export function buildTapCheckoutIdempotentReference(
+  paymentLinkId: number,
+  checkoutAttemptId: string,
+): string {
+  if (!Number.isSafeInteger(paymentLinkId) || paymentLinkId <= 0) {
+    throw new Error('Invalid payment link identity');
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(checkoutAttemptId)) {
+    throw new Error('Invalid checkout attempt identity');
+  }
+  const digest = createHash('sha256')
+    .update(`sari:tap-checkout:v1:${paymentLinkId}:${checkoutAttemptId.toLowerCase()}`)
+    .digest('hex');
+  return `sari_pl_${digest}`;
+}
+
+export interface TapCheckoutChargeExpectation {
+  amountInHalalas: number;
+  currency: 'SAR';
+  testMode: boolean;
+}
+
+export interface ValidatedTapCheckoutCharge {
+  id: string;
+  paymentUrl: string;
+  expiresInMs: number | null;
+}
+
+export function validateTapCheckoutCharge(
+  value: unknown,
+  expected: TapCheckoutChargeExpectation,
+): ValidatedTapCheckoutCharge | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const charge = value as Record<string, any>;
+  const id = typeof charge.id === 'string' ? charge.id.trim() : '';
+  if (!/^chg_[A-Za-z0-9_-]{3,250}$/.test(id)) return null;
+  if (charge.status !== 'INITIATED') return null;
+  if (charge.currency !== expected.currency) return null;
+  if (!Number.isFinite(charge.amount) || Math.round(Number(charge.amount) * 100) !== expected.amountInHalalas) {
+    return null;
+  }
+  if (typeof charge.live_mode !== 'boolean' || charge.live_mode !== !expected.testMode) return null;
+
+  const paymentUrl = typeof charge.transaction?.url === 'string' ? charge.transaction.url.trim() : '';
+  try {
+    const parsedUrl = new URL(paymentUrl);
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (parsedUrl.protocol !== 'https:' || parsedUrl.username || parsedUrl.password) return null;
+    if (hostname !== 'tap.company' && !hostname.endsWith('.tap.company')) return null;
+  } catch {
+    return null;
+  }
+
+  const rawExpiry = charge.transaction?.expiry?.period;
+  const rawExpiryType = charge.transaction?.expiry?.type;
+  const expiryUnitMs = rawExpiryType === 'MINUTE'
+    ? 60_000
+    : rawExpiryType === 'HOUR'
+      ? 3_600_000
+      : rawExpiryType === 'DAY'
+        ? 86_400_000
+        : null;
+  const expiresInMs = expiryUnitMs && Number.isFinite(rawExpiry) && rawExpiry > 0
+    && Number(rawExpiry) * expiryUnitMs <= 7 * 86_400_000
+    ? Number(rawExpiry) * expiryUnitMs
+    : null;
+  return { id, paymentUrl, expiresInMs };
 }
 
 export function tapKeyMatchesMode(secretKey: string, testMode: boolean): boolean {

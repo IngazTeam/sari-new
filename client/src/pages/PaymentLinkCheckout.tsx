@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { useParams } from 'wouter';
 import { CreditCard, Loader2, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
@@ -13,6 +13,7 @@ export default function PaymentLinkCheckout() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
+  const checkoutAttemptId = useRef(window.crypto.randomUUID()).current;
   const linkQuery = trpc.payments.getPublicLink.useQuery({ linkId }, { retry: false });
   const checkout = trpc.payments.checkoutLink.useMutation({
     onSuccess: ({ paymentUrl }) => window.location.assign(paymentUrl),
@@ -23,6 +24,7 @@ export default function PaymentLinkCheckout() {
     event.preventDefault();
     checkout.mutate({
       linkId,
+      checkoutAttemptId,
       customerName,
       customerPhone,
       customerEmail: customerEmail || undefined,
@@ -107,4 +109,3 @@ function CenteredState({ icon, title, description }: { icon?: React.ReactNode; t
     </main>
   );
 }
-
