@@ -56,6 +56,20 @@ async function createInstance(
   return instance;
 }
 
+async function within<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('WhatsApp connection-affinity timeout')), milliseconds);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL integration)', () => {
   beforeEach(cleanup);
   afterAll(cleanup);
@@ -203,5 +217,37 @@ describe.skipIf(!process.env.DATABASE_URL)('WhatsApp phone ownership (MySQL inte
       status: 'active',
       isPrimary: 0,
     })).resolves.toMatchObject({ merchantId: merchantB, status: 'active' });
+  });
+
+  it('uses the lock-owning connection when only one pool slot remains', async () => {
+    const merchantId = await createMerchant('connection-affinity');
+    const pool = await getPool();
+    if (!pool) throw new Error('Database not initialized');
+    const heldConnections = await Promise.all(
+      Array.from({ length: 24 }, () => pool.getConnection()),
+    );
+    const operation = createWhatsAppInstance({
+      merchantId,
+      provider: 'mock',
+      instanceId: `${TEST_PREFIX}affinity-${crypto.randomUUID().slice(0, 12)}`,
+      token: 'test-token-connection-affinity',
+      apiUrl: 'https://example.test',
+      phoneNumber: '+966505556699',
+      status: 'active',
+      isPrimary: 0,
+    });
+
+    let result;
+    let timeoutError: unknown;
+    try {
+      result = await within(operation, 3_000);
+    } catch (error) {
+      timeoutError = error;
+    } finally {
+      for (const connection of heldConnections) connection.release();
+    }
+    await operation.catch(() => undefined);
+    if (timeoutError) throw timeoutError;
+    expect(result).toMatchObject({ merchantId, status: 'active' });
   });
 });

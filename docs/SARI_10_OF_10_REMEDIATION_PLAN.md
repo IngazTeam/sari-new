@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.50 — محدّث باستعادة معاملات وأقفال واتساب عند الفشل\
+**الإصدار:** 3.51 — محدّث بربط معاملة واتساب باتصال القفل نفسه\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -97,6 +97,7 @@
 74. أضيف محليًا عقد MySQL إلزامي لملكية أرقام واتساب داخل وظيفة CI المعزولة بعد migrations: يسبّق create متزامنًا لمتجرين بصيغتي `+966` و`00966` ويشترط نجاح مالك واحد ورفض الآخر بخطأ الملكية، ثم يكرر السباق على update من حالتي pending ويثبت بقاء الخاسر pending دون mutation. حالة ثالثة تسبّق تعيين primary مرتين للتاجر نفسه، فتشترط primary واحدًا فقط، وتثبت رفض تمرير merchantId عبر update. التنظيف يستخدم مستخدمين test-prefix مع cascade. محليًا نجح 5/5 حراس الربط و28/28 النطاق غير المعتمد، وظهرت حالات MySQL الثلاث skipped بصدق لغياب اعتماد؛ نجحت 597/597 بوابة إصدار في 64 ملفًا وTypeScript/build. يبقى تشغيل CI الفعلي بلا skip وحفظ artifact، ثم failure injection لاتصال named lock وقياس p95.
 75. أضيف خط دفاع مادي في MySQL يمنع وجود مالكين نشطين للرقم canonical نفسه حتى لو تجاوزت كتابة جديدة أقفال التطبيق: عمود nullable باسم `active_phone_identity_hash` يحمل SHA-256 للرقم المطبع عند `active` فقط، وقيد unique في migration `0031`. أصبح lookup مفهرسًا بدل مسح `REGEXP_REPLACE`، وتحافظ create/update وREST وتعليق الحساب وانتهاء المثيل على العمود، وتتحول مخالفة القيد إلى 409/خطأ ملكية ثابت بدل 500. أضيف preflight قراءة فقط يرفض الترحيل عند أرقام قديمة غير صالحة أو مكررة دون طباعة أرقام العملاء، وعقد MySQL رابع يكتب SQL مباشرة ليثبت أن قاعدة البيانات تمنع التجاوز. اجتاز 9/9 بنتست جديد و38/38 نطاقًا غير معتمد على DB و607/607 بوابة إصدار في 65 ملفًا وTypeScript/Drizzle/build؛ ظهرت حالات MySQL الأربع skipped محليًا بصدق. يبقى تشغيل preflight على نسخة staging، مصالحة أي تعارض بإثبات ملكية لا باختيار تلقائي، تطبيق `0031`، ثم 4/4 MySQL وcanary متعدد العمليات.
 76. أُغلق محليًا إرجاع اتصال REST مشكوك فيه إلى pool بعد فشل rollback: أضيف finalizer مشترك لكل كتّاب المثيلات يحرر الأقفال بترتيب عكسي، ولا يعيد الاتصال إلا إذا كان reusable ونجحت كل `RELEASE_LOCK`؛ وإلا يدمره. صار rollback في state machine يفشل مغلقًا، يوسم الاتصال غير صالح قبل الخطأ، ولا يعيد not-found/409 كاذبًا إذا تعذرت الاستعادة. أضيفت 8 حالات fault-injection لرفض/استثناء تحرير lock والاتصال الملوث، وحالة MySQL خامسة تفشل insert داخل transaction ثم تثبت نجاح retry بالهاتف نفسه. كذلك ضُبطت مهلة مسح AST الثقيل وحده إلى 15 ثانية بعد تكرار timeout عند 5.5 ثوانٍ دون تخفيف assertions. اجتاز 46/46 نطاقًا مركزًا و615/615 بوابة إصدار في 65 ملفًا وTypeScript/build؛ حالات MySQL الخمس skipped محليًا بصدق. يبقى تنفيذ 5/5 على MySQL 8.4، وحقن disconnect حقيقي أثناء rollback/commit وقياس pool recovery على staging.
+77. أُغلق محليًا استهلاك اتصالين لكل كتابة واتساب مركزية: كانت create/update/setPrimary تمسك `PoolConnection` للـGET_LOCK ثم تنفذ `db.transaction` على pool، ما قد يجعل الطلب ينتظر اتصالًا ثانيًا وهو يحتجز الأول ويؤدي إلى starvation عند امتلاء pool. أضيف Drizzle client scoped على اتصال القفل نفسه، وصارت القراءة بعد القفل والمعاملة وإعادة قراءة الصف المنشأ كلها على session واحدة، مع بقاء finalizer مسؤولًا عن التحرير. أضيفت 7 حواجز affinity وحالة MySQL سادسة تحجز 24 من 25 اتصالًا ثم تشترط إكمال create خلال 3 ثوانٍ بالاتصال الوحيد المتبقي. اجتاز 53/53 نطاقًا مركزًا و622/622 بوابة إصدار في 65 ملفًا وTypeScript/build؛ حالات MySQL الست skipped محليًا بصدق. يبقى تنفيذ 6/6 على MySQL 8.4 وقياس wait queue تحت pool صغير و50 متنافسًا قبل الإغلاق التشغيلي.
 
 **قرار الخطة:**
 
@@ -105,7 +106,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.50
+### حالة تنفيذ الجولة 3.51
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -152,10 +153,11 @@
 | عقد MySQL لملكية واتساب | مكتمل محليًا/تشغيل CI الفعلي معلق | 3 عقود create/update/primary متزامنة على MySQL 8.4 بعد migrations، وحراس تمنع skip الدائم؛ 5/5 حراس و597/597 بوابة إصدار، و3 DB skipped محليًا بصدق |
 | قيد هوية رقم واتساب النشط | مكتمل محليًا/preflight وmigration staging معلقان | hash canonical مفهرس وunique nullable، صيانة في كل مسارات التفعيل/التعطيل، 409 ثابت وكتابة SQL مباشرة محمية؛ 9/9 بنتست و607/607 بوابة إصدار، و4 DB skipped محليًا بصدق |
 | استعادة معاملات وأقفال واتساب | مكتمل محليًا/MySQL disconnect injection معلق | finalizer مشترك، تحرير عكسي كامل، destroy عند rollback/release failure، وإعادة محاولة بعد transaction failure؛ 8/8 fault-injection و615/615 بوابة إصدار، و5 DB skipped محليًا بصدق |
+| اتصال واحد لقفل ومعاملة واتساب | مكتمل محليًا/MySQL pool-pressure معلق | Drizzle scoped على PoolConnection، لا pool-level transaction أو قراءة ثانية أثناء lock، وعقد 24/25 اتصالًا؛ 7/7 حراس و622/622 بوابة إصدار، و6 DB skipped محليًا بصدق |
 | رابط الدفع العام | مكتمل محليًا | `/pay/:linkId` وstatus/return/callback، URL canonical، والمبلغ من الخادم فقط |
 | Tap وwebhooks | مكتمل تعاقديًا محليًا | ربط المفتاح بالوضع، منع غير المتحقق، تحقق مبلغ/عملة/مرجع، انتقال ذري ونهائي واحد |
 | التشغيل والصلاحيات | مكتمل محليًا | حارس `/admin`، health محدود، readiness باستعلام DB، 5xx منقح، وفشل process صريح |
-| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 615/615 بوابة إصدار في 65 ملفًا، وDrizzle check وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 573,302 bytes raw / 171,503 bytes gzip، ومهلة AST الثقيلة محددة وحدها لمنع flake |
+| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 622/622 بوابة إصدار في 65 ملفًا، وDrizzle check وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 573,302 bytes raw / 171,503 bytes gzip، ومهلة AST الثقيلة محددة وحدها لمنع flake |
 | احتواء الأسرار والـPII | مكتمل محليًا/تشغيليًا مشروط | إزالة 197 artifact من الشجرة الحالية، تشفير AES-256-GCM، DTOs منقحة، logs منقحة و295/295 اختبار اختراق وانحدار؛ يلزم تدوير المفاتيح وتنظيف التاريخ وتطبيق migration 0003 |
 | مصدر حقيقة المخطط | مكتمل محليًا/تشغيليًا مشروط | صفر DDL في runtime، migrations `0003` و`0004` مسجّلة مع snapshots، readiness يفشل عند schema drift، و264/264 اختبار اختراق وانحدار للحزم المستهدفة؛ يلزم تطبيق staging وrestore drill |
 | التسجيل والموافقات وحقوق البيانات | مكتمل محليًا/تشغيليًا مشروط | تسجيل ذري، إيصالات موافقة مؤرخة، تسويق اختياري، تصدير وحذف وDSR وطابور admin واحتفاظ مشفر؛ 13/13 بنتست مخصص و173/173 بوابة أمن وانحدار، ويلزم تطبيق `0006` و`0007` وتمرين staging ومراجعة قانونية |
@@ -548,7 +550,7 @@
 
 ### SEC-WA-OWNERSHIP-MYSQL-001: عقد التزامن الحقيقي لملكية واتساب
 
-**الحالة في الجولة 3.50:** العقد والربط بـCI مكتملان وتوسعا لكتابة SQL مباشرة وإعادة محاولة بعد فشل transaction؛ نتيجة MySQL الفعلية بلا skip وdisconnect injection معلقان.
+**الحالة في الجولة 3.51:** العقد والربط بـCI مكتملان وتوسعا لكتابة SQL مباشرة وإعادة محاولة بعد فشل transaction وضغط pool؛ نتيجة MySQL الفعلية بلا skip وdisconnect injection معلقان.
 
 المهام:
 
@@ -561,12 +563,13 @@
 7. إضافة failure injection بعد merchant lock وبعد phone lock وأثناء transaction، والتحقق من rollback وتحرير القفل/تدمير الاتصال.
 8. حفظ نتيجة CI ومدة p50/p95/p99، وتشغيل canary من عمليتين قبل اعتبار الدليل التشغيلي مغلقًا.
 9. فشل insert داخل transaction بسبب unique مستقل ثم إعادة المحاولة بهوية صالحة؛ يجب ألا يبقى merchant/phone lock أو اتصال pool ملوثًا.
+10. حجز 24 من 25 اتصالًا ثم تشغيل create؛ يجب أن تكمل بالاتصال الأخير لأن GET_LOCK والمعاملة على session واحدة.
 
-**معيار القبول:** وظيفة CI تنفذ الحالات الخمس بلا skip وتنجح عدة مرات متتالية، ولا يظهر أكثر من active owner أو primary واحد أو tenant reassignment تحت التزامن والفشل، والكتابة المباشرة المتعارضة تفشل بـ`ER_DUP_ENTRY`، والـretry بعد transaction failure ينجح دون lock timeout.
+**معيار القبول:** وظيفة CI تنفذ الحالات الست بلا skip وتنجح عدة مرات متتالية، ولا يظهر أكثر من active owner أو primary واحد أو tenant reassignment تحت التزامن والفشل، والكتابة المباشرة المتعارضة تفشل بـ`ER_DUP_ENTRY`، والـretry بعد transaction failure وضغط 24/25 ينجحان دون lock timeout.
 
 ### SEC-WA-DB-UNIQUE-001: قيد قاعدة البيانات لهوية رقم واتساب النشط
 
-**الحالة في الجولة 3.50:** مكتمل محليًا؛ preflight وتطبيق `0031` و5/5 MySQL على staging ثم canary معلقات.
+**الحالة في الجولة 3.51:** مكتمل محليًا؛ preflight وتطبيق `0031` و6/6 MySQL على staging ثم canary معلقات.
 
 المهام:
 
@@ -577,13 +580,13 @@
 5. تشغيل `pnpm preflight:whatsapp-active-phone` على نسخة staging قبل `0031`؛ يفشل عند صيغة active غير صالحة أو مجموعة canonical مكررة، ولا يطبع رقم الهاتف.
 6. مصالحة أي تكرار عبر إثبات ملكية حديث ومراجعة بشرية وسجل تدقيق؛ لا اختيار أول/أحدث صف ولا تعطيل متجر تلقائيًا.
 7. أخذ snapshot قابل للاستعادة، إيقاف كتابات الربط مؤقتًا، تطبيق `0031`، ثم التحقق أن كل active ذي هاتف يحمل hash وأن غير النشط `NULL` ولا توجد duplicate groups.
-8. تشغيل حالات MySQL الخمس بلا skip، بما فيها `INSERT` مباشر متعارض وretry بعد transaction failure، ثم canary من عمليتين ومراقبة 409/duplicate/deadlock ومدة الترحيل.
+8. تشغيل حالات MySQL الست بلا skip، بما فيها `INSERT` مباشر متعارض وretry بعد transaction failure وضغط pool، ثم canary من عمليتين ومراقبة 409/duplicate/deadlock ومدة الترحيل.
 
 **معيار القبول:** preflight يساوي صفر invalid وصفر duplicate groups، يطبق `0031` على نسخة بيانات مماثلة للإنتاج، يرفض MySQL أي مالك active ثان حتى عبر SQL مباشر، ولا يكشف API أو السجلات الرقم أو hash أو هوية المتجر المتعارض.
 
 ### SEC-WA-LOCK-RECOVERY-001: استعادة معاملات وأقفال واتساب عند الفشل
 
-**الحالة في الجولة 3.50:** مكتمل محليًا بحراس fault-injection؛ disconnect حقيقي أثناء rollback/commit و5/5 MySQL على staging معلقان.
+**الحالة في الجولة 3.51:** مكتمل محليًا بحراس fault-injection واتصال transaction موحد؛ disconnect حقيقي أثناء rollback/commit و6/6 MySQL على staging معلقان.
 
 المهام:
 
@@ -596,7 +599,23 @@
 7. حقن قطع اتصال حقيقي بعد merchant lock وبعد phone lock وأثناء rollback/commit على staging، ومراقبة pool active/idle/wait queue وزمن retry.
 8. إبقاء اختبار AST الشامل صارم assertions مع مهلة محلية 15 ثانية تناسب مسح 77 صفحة، دون رفع testTimeout العام أو retry يخفي فشلًا.
 
-**معيار القبول:** لا يعود أي اتصال إلى pool بعد rollback/release غير مؤكد، كل الأقفال القابلة للتحرير تُحاول عكسيًا، retry بعد كل نقطة فشل ينجح ضمن مهلة محددة، و5/5 MySQL تمر بلا skip أو lock leak.
+**معيار القبول:** لا يعود أي اتصال إلى pool بعد rollback/release غير مؤكد، كل الأقفال القابلة للتحرير تُحاول عكسيًا، retry بعد كل نقطة فشل ينجح ضمن مهلة محددة، و6/6 MySQL تمر بلا skip أو lock leak.
+
+### SEC-WA-CONNECTION-AFFINITY-001: اتصال واحد لقفل ومعاملة واتساب
+
+**الحالة في الجولة 3.51:** مكتمل برمجيًا محليًا؛ عقد 24/25 مضاف إلى MySQL CI ونتيجته الفعلية وقياس 50 متنافسًا معلقان.
+
+المهام:
+
+1. إنشاء Drizzle client scoped من `PoolConnection` الذي يحمل named locks، وعدم استخدام `db.transaction` العام داخل create/update/setPrimary.
+2. تنفيذ transaction وقراءات الحالة بعد القفل على الاتصال نفسه حتى تبقى affinity واضحة ولا يحتاج الطلب slot ثانيًا.
+3. إعادة قراءة الصف المنشأ على `connectionDb` قبل finalizer بدل استدعاء helper عام يستعير اتصال pool ثانيًا بينما lock محتجز.
+4. إبقاء القراءة الأولية غير القافلة في update خارج الاتصال مقبولة، ثم إعادة القراءة tenant-scoped بعد merchant lock على session المعاملة قبل حساب final state.
+5. حارس ساكن يمنع عودة pool-level transaction في lifecycle ويشترط ثلاث معاملات `connectionDb` صراحة.
+6. عقد MySQL يحجز 24 اتصالًا من pool حجمه 25، ثم ينشئ active instance خلال 3 ثوانٍ ويحرر fixtures/الاتصالات في finally.
+7. قياس pool wait queue وp95 مع 10/25/50 متنافسًا، والتحقق أن destroy/retry لا يؤديان إلى connection storm.
+
+**معيار القبول:** كل كتابة مركزية تستخدم session واحدة من GET_LOCK حتى commit/readback/release، حالة 24/25 تمر بلا timeout، ولا يظهر pool starvation أو lock leak في canary متعدد العمليات.
 
 ### REL-001: توحيد Node وpnpm والاعتماديات
 
@@ -1272,8 +1291,9 @@ WhatsAppChannel
 | SEC-API-INSTANCE-001 | P0 | عزل دورة مثيلات واتساب REST | Backend/QA | mutation ذرية tenant-scoped، لا نقل عابر للمتاجر، primary متسق وقراءات بلا أسرار مع عقد MySQL |
 | SEC-WA-OWNERSHIP-001 | P0 | فرض ملكية رقم واتساب عند الكتابة | Backend/QA | create/update/primary مشتركة الأقفال، لا auto-transfer، تطبيع هاتف وعقد MySQL متزامن |
 | SEC-WA-OWNERSHIP-MYSQL-001 | P0 | تشغيل عقد ملكية واتساب على MySQL | Backend/QA/DevOps | create/update/primary races بلا skip، مالك/primary واحدان ورفض نقل tenant مع failure injection |
-| SEC-WA-DB-UNIQUE-001 | P0 | فرض هوية رقم active داخل MySQL | Backend/QA/DevOps | preflight نظيف، `0031` مطبق، direct SQL conflict مرفوض و5/5 MySQL مع canary متعدد العمليات |
-| SEC-WA-LOCK-RECOVERY-001 | P0 | استعادة معاملات وأقفال واتساب | Backend/QA/DevOps | destroy عند rollback/release failure، retry ناجح و5/5 MySQL مع disconnect injection بلا lock leak |
+| SEC-WA-DB-UNIQUE-001 | P0 | فرض هوية رقم active داخل MySQL | Backend/QA/DevOps | preflight نظيف، `0031` مطبق، direct SQL conflict مرفوض و6/6 MySQL مع canary متعدد العمليات |
+| SEC-WA-LOCK-RECOVERY-001 | P0 | استعادة معاملات وأقفال واتساب | Backend/QA/DevOps | destroy عند rollback/release failure، retry ناجح و6/6 MySQL مع disconnect injection بلا lock leak |
+| SEC-WA-CONNECTION-AFFINITY-001 | P0 | منع starvation في كتابات واتساب | Backend/QA/DevOps | session واحدة للقفل والمعاملة، عقد 24/25 ناجح وp95 مثبت تحت 50 متنافسًا |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
 | DB-001 | P0 | migrations موحدة | Backend | صفر runtime DDL |

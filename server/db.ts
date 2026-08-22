@@ -356,6 +356,10 @@ type SariDb = ReturnType<typeof drizzle<typeof schema>>;
 let _db: SariDb | null = null;
 let _pool: mysql.Pool | null = null;
 
+function getConnectionDb(connection: mysql.PoolConnection): SariDb {
+  return drizzle({ client: connection, schema, mode: 'default' }) as unknown as SariDb;
+}
+
 // Module-level alias أ¢â‚¬â€‌ used by 237+ functions below that call db.select/insert/update/delete
 // Gets set when getDb() initializes the connection pool
 let db: SariDb | null = null;
@@ -2978,6 +2982,7 @@ export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Prom
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
+  const connectionDb = getConnectionDb(connection);
   const heldLocks: string[] = [];
   try {
     heldLocks.push(await acquireWhatsAppInstanceLock(
@@ -2992,7 +2997,7 @@ export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Prom
       await assertWhatsAppPhoneAvailable(connection, data.phoneNumber);
     }
 
-    const insertId = await db.transaction(async tx => {
+    const insertId = await connectionDb.transaction(async tx => {
       if (data.status === 'active' && Number(data.isPrimary) === 1) {
         await tx.update(whatsappInstances)
           .set({ isPrimary: 0, updatedAt: formatDateForDB(new Date()) })
@@ -3008,7 +3013,9 @@ export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Prom
       });
       return Number(instance.insertId);
     });
-    return getWhatsAppInstanceById(insertId);
+    const [created] = await connectionDb.select().from(whatsappInstances)
+      .where(eq(whatsappInstances.id, insertId));
+    return decryptWhatsAppInstance(created);
   } catch (error) {
     if (isWhatsAppActivePhoneUniqueConflict(error)) {
       throw new WhatsAppPhoneOwnershipConflictError();
@@ -3090,13 +3097,14 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
+  const connectionDb = getConnectionDb(connection);
   const heldLocks: string[] = [];
   try {
     heldLocks.push(await acquireWhatsAppInstanceLock(
       connection,
       whatsAppMerchantLockNamespace(initial.merchantId),
     ));
-    const [current] = await db.select({
+    const [current] = await connectionDb.select({
       merchantId: whatsappInstances.merchantId,
       phoneNumber: whatsappInstances.phoneNumber,
       status: whatsappInstances.status,
@@ -3119,7 +3127,7 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
       await assertWhatsAppPhoneAvailable(connection, finalPhoneNumber, id);
     }
 
-    await db.transaction(async tx => {
+    await connectionDb.transaction(async tx => {
       if (finalPrimary) {
         await tx.update(whatsappInstances)
           .set({ isPrimary: 0, updatedAt: formatDateForDB(new Date()) })
@@ -3187,13 +3195,14 @@ export async function setWhatsAppInstanceAsPrimary(id: number, merchantId: numbe
   const pool = await getPool();
   if (!pool) throw new Error('Database unavailable');
   const connection = await pool.getConnection();
+  const connectionDb = getConnectionDb(connection);
   const heldLocks: string[] = [];
   try {
     heldLocks.push(await acquireWhatsAppInstanceLock(
       connection,
       whatsAppMerchantLockNamespace(merchantId),
     ));
-    await db.transaction(async tx => {
+    await connectionDb.transaction(async tx => {
       const [target] = await tx.select({ id: whatsappInstances.id })
         .from(whatsappInstances)
         .where(and(
