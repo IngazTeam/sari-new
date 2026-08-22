@@ -1893,6 +1893,12 @@ export const appRouter = router({
         if (existing && existing.merchantId !== merchant.id) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'Instance ID already in use' });
         }
+        if (input.phoneNumber) {
+          const phoneOwner = await getActiveInstanceByPhoneNumber(input.phoneNumber);
+          if (phoneOwner && phoneOwner.id !== existing?.id) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
+          }
+        }
 
         if (existing) {
           // Update existing instance
@@ -3810,8 +3816,8 @@ export const appRouter = router({
           }
 
           if (instance.phoneNumber) {
-            const conflicting = await getActiveInstanceByPhoneNumber(instance.phoneNumber, input.merchantId);
-            if (conflicting) {
+            const conflicting = await getActiveInstanceByPhoneNumber(instance.phoneNumber);
+            if (conflicting && conflicting.id !== instance.id) {
               throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
             }
           }
@@ -4023,7 +4029,7 @@ export const appRouter = router({
             throw new TRPCError({ code: 'PRECONDITION_FAILED', message: 'تعذر التحقق من رقم واتساب المتصل' });
           }
 
-          const conflicting = await getActiveInstanceByPhoneNumber(phoneNumber, instance.merchantId);
+          const conflicting = await getActiveInstanceByPhoneNumber(phoneNumber);
           if (conflicting && conflicting.id !== instance.id) {
             throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
           }
@@ -4137,6 +4143,12 @@ export const appRouter = router({
 
         // 3. Update instance in DB
         if (Object.keys(updates).length > 0) {
+          if (updates.phoneNumber && instance.status === 'active') {
+            const phoneOwner = await getActiveInstanceByPhoneNumber(updates.phoneNumber);
+            if (phoneOwner && phoneOwner.id !== instance.id) {
+              throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
+            }
+          }
           await updateWhatsAppInstance(instance.id, updates);
         }
 
@@ -4231,6 +4243,15 @@ export const appRouter = router({
         const instance = await getWhatsAppInstanceById(input.id);
         if (!instance || instance.merchantId !== input.merchantId) {
           throw new TRPCError({ code: 'NOT_FOUND', message: 'Instance not found' });
+        }
+
+        const finalStatus = input.status ?? instance.status;
+        const finalPhoneNumber = input.phoneNumber ?? instance.phoneNumber;
+        if (finalStatus === 'active' && finalPhoneNumber) {
+          const phoneOwner = await getActiveInstanceByPhoneNumber(finalPhoneNumber);
+          if (phoneOwner && phoneOwner.id !== instance.id) {
+            throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
+          }
         }
 
         await updateWhatsAppInstance(input.id, {
@@ -4695,6 +4716,13 @@ export const appRouter = router({
                 }
               } catch (e) {
                 console.error('[checkConnection] Failed to get phone number from settings:', e);
+              }
+
+              if (phoneNumber) {
+                const phoneOwner = await getActiveInstanceByPhoneNumber(phoneNumber);
+                if (phoneOwner) {
+                  throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
+                }
               }
 
               // Create instance WITH phone number

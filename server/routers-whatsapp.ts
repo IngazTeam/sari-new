@@ -10,7 +10,6 @@ import {
   createNotification,
   createWhatsAppConnectionRequest,
   createWhatsAppInstance,
-  deactivateInstancesByPhoneNumber,
   deleteWhatsAppConnectionRequest,
   deleteWhatsAppInstance,
   getActiveInstanceByPhoneNumber,
@@ -207,6 +206,17 @@ export const whatsappRouter = router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Request already processed' });
             }
 
+            if (request.phoneNumber) {
+                const conflicting = await getActiveInstanceByPhoneNumber(request.phoneNumber);
+                if (conflicting) {
+                    throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
+                }
+            }
+            const existingInstance = await getWhatsAppInstanceByInstanceId(input.instanceId);
+            if (existingInstance && existingInstance.merchantId !== request.merchantId) {
+                throw new TRPCError({ code: 'CONFLICT', message: 'هوية مزود واتساب مرتبطة بحساب آخر' });
+            }
+
             const userId = typeof ctx.user.id === 'string' ? parseInt(ctx.user.id) : ctx.user.id;
             await approveWhatsAppConnectionRequest(
                 input.requestId,
@@ -218,16 +228,6 @@ export const whatsappRouter = router({
 
             // Auto-create whatsapp_instances record so it appears in the instances page
             try {
-                // VULN-2 FIX: Deactivate any existing instances with this phone number for OTHER merchants
-                if (request.phoneNumber) {
-                    const conflicting = await getActiveInstanceByPhoneNumber(request.phoneNumber, request.merchantId);
-                    if (conflicting) {
-                        console.log(`[WhatsApp] Phone ${request.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${request.merchantId}`);
-                        await deactivateInstancesByPhoneNumber(request.phoneNumber, request.merchantId);
-                    }
-                }
-
-                const existingInstance = await getWhatsAppInstanceByInstanceId(input.instanceId);
                 if (!existingInstance) {
                     await createWhatsAppInstance({
                         merchantId: request.merchantId,
@@ -240,20 +240,6 @@ export const whatsappRouter = router({
                         connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
                     });
                     console.log(`[WhatsApp] Auto-created instance record for merchant ${request.merchantId}`);
-                } else if (existingInstance.merchantId !== request.merchantId) {
-                    // Instance belongs to another merchant — deactivate it and create new
-                    console.log(`[WhatsApp] Instance ${input.instanceId} belonged to merchant ${existingInstance.merchantId}, deactivating`);
-                    await updateWhatsAppInstance(existingInstance.id, { status: 'inactive', isPrimary: 0 });
-                    await createWhatsAppInstance({
-                        merchantId: request.merchantId,
-                        instanceId: input.instanceId,
-                        token: input.apiToken,
-                        apiUrl: input.apiUrl,
-                        phoneNumber: request.phoneNumber,
-                        status: 'active',
-                        isPrimary: 1,
-                        connectedAt: new Date().toISOString().slice(0, 19).replace("T", " "),
-                    });
                 } else {
                     await updateWhatsAppInstance(existingInstance.id, {
                         token: input.apiToken,
@@ -618,17 +604,13 @@ export const whatsappRouter = router({
                 await checkWhatsAppNumberLimit(merchant.id);
             }
             if (existing && existing.merchantId !== merchant.id) {
-                // VULN-1 FIX: Instead of blocking, deactivate old and allow transfer
-                console.log(`[WhatsApp] Instance ${input.instanceId} was used by merchant ${existing.merchantId}, deactivating for transfer to merchant ${merchant.id}`);
-                await updateWhatsAppInstance(existing.id, { status: 'inactive', isPrimary: 0 });
+                throw new TRPCError({ code: 'CONFLICT', message: 'هوية مزود واتساب مرتبطة بحساب آخر' });
             }
 
-            // VULN-1 FIX: Check phone number conflict and auto-deactivate
             if (input.phoneNumber) {
-                const conflicting = await getActiveInstanceByPhoneNumber(input.phoneNumber, merchant.id);
-                if (conflicting) {
-                    console.log(`[WhatsApp] Phone ${input.phoneNumber} was active for merchant ${conflicting.merchantId}, deactivating for transfer to merchant ${merchant.id}`);
-                    await deactivateInstancesByPhoneNumber(input.phoneNumber, merchant.id);
+                const conflicting = await getActiveInstanceByPhoneNumber(input.phoneNumber);
+                if (conflicting && conflicting.id !== existing?.id) {
+                    throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقل ملكية موثقًا' });
                 }
             }
 

@@ -3,6 +3,14 @@ import {
 } from "drizzle-orm";
 import { hashSessionId } from './_core/session-security';
 import { buildUsageMetric } from './usage-metrics';
+import {
+  acquireWhatsAppInstanceLock,
+  assertWhatsAppPhoneAvailable,
+  canonicalWhatsAppPhoneDigits,
+  releaseWhatsAppInstanceLocks,
+  whatsAppMerchantLockNamespace,
+  whatsAppPhoneLockNamespace,
+} from './channels/whatsapp/instance-ownership';
 
 // Helper function to format Date for MySQL timestamp comparison
 function formatDateForDB(date: Date): string {
@@ -2930,41 +2938,32 @@ export async function getOccasionCampaignsStats(merchantId: number) {
  * Find an active WhatsApp instance by phone number (across ALL merchants)
  * Used to detect if a number is already in use by another merchant
  */
-export async function getActiveInstanceByPhoneNumber(phoneNumber: string, excludeMerchantId?: number): Promise<WhatsAppInstance | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const conditions = [
-    eq(whatsappInstances.phoneNumber, phoneNumber),
-    eq(whatsappInstances.status, 'active'),
-  ];
-  if (excludeMerchantId) {
-    conditions.push(ne(whatsappInstances.merchantId, excludeMerchantId));
+export async function getActiveInstanceByPhoneNumber(
+  phoneNumber: string,
+  excludeMerchantId?: number,
+): Promise<Pick<WhatsAppInstance, 'id' | 'merchantId'> | undefined> {
+  const pool = await getPool();
+  if (!pool) return undefined;
+  const digits = canonicalWhatsAppPhoneDigits(phoneNumber);
+  const params: Array<string | number> = [digits, `00${digits}`];
+  let merchantSql = '';
+  if (excludeMerchantId !== undefined) {
+    if (!Number.isSafeInteger(excludeMerchantId) || excludeMerchantId < 1) {
+      throw new Error('Invalid merchant phone-conflict exclusion');
+    }
+    merchantSql = ' AND merchant_id <> ?';
+    params.push(excludeMerchantId);
   }
-
-  const [instance] = await db.select().from(whatsappInstances)
-    .where(and(...conditions));
-
-  return decryptWhatsAppInstance(instance);
-}
-
-/**
- * Deactivate all instances with a specific phone number (except for a given merchant)
- * Used when a number is being transferred/activated for a new merchant
- */
-export async function deactivateInstancesByPhoneNumber(phoneNumber: string, exceptMerchantId: number): Promise<number> {
-  const db = await getDb();
-  if (!db) return 0;
-
-  const result = await db.update(whatsappInstances)
-    .set({ status: 'inactive', isPrimary: 0, updatedAt: formatDateForDB(new Date()) })
-    .where(and(
-      eq(whatsappInstances.phoneNumber, phoneNumber),
-      ne(whatsappInstances.merchantId, exceptMerchantId),
-      eq(whatsappInstances.status, 'active')
-    ));
-
-  return result[0]?.affectedRows ?? 0;
+  const [rows] = await pool.execute<mysql.RowDataPacket[]>(
+    `SELECT id, merchant_id AS merchantId
+       FROM whatsapp_instances
+      WHERE status = 'active'
+        AND phone_number IS NOT NULL
+        AND REGEXP_REPLACE(phone_number, '[^0-9]', '') IN (?, ?)${merchantSql}
+      LIMIT 1`,
+    params,
+  );
+  return rows[0] ? { id: Number(rows[0].id), merchantId: Number(rows[0].merchantId) } : undefined;
 }
 
 /**
@@ -2973,12 +2972,45 @@ export async function deactivateInstancesByPhoneNumber(phoneNumber: string, exce
 export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Promise<WhatsAppInstance | undefined> {
   const db = await getDb();
   if (!db) return undefined;
+  if (!Number.isSafeInteger(data.merchantId) || data.merchantId < 1) {
+    throw new Error('Invalid WhatsApp instance merchant');
+  }
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  const heldLocks: string[] = [];
+  try {
+    heldLocks.push(await acquireWhatsAppInstanceLock(
+      connection,
+      whatsAppMerchantLockNamespace(data.merchantId),
+    ));
+    if (data.status === 'active' && data.phoneNumber) {
+      heldLocks.push(await acquireWhatsAppInstanceLock(
+        connection,
+        whatsAppPhoneLockNamespace(data.phoneNumber),
+      ));
+      await assertWhatsAppPhoneAvailable(connection, data.phoneNumber);
+    }
 
-  const [instance] = await db.insert(whatsappInstances).values({
-    ...data,
-    token: encryptSecret(data.token),
-  });
-  return getWhatsAppInstanceById(Number(instance.insertId));
+    const insertId = await db.transaction(async tx => {
+      if (data.status === 'active' && Number(data.isPrimary) === 1) {
+        await tx.update(whatsappInstances)
+          .set({ isPrimary: 0, updatedAt: formatDateForDB(new Date()) })
+          .where(eq(whatsappInstances.merchantId, data.merchantId));
+      }
+      const [instance] = await tx.insert(whatsappInstances).values({
+        ...data,
+        isPrimary: data.status === 'active' ? data.isPrimary : 0,
+        token: encryptSecret(data.token),
+      });
+      return Number(instance.insertId);
+    });
+    return getWhatsAppInstanceById(insertId);
+  } finally {
+    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
+    if (releasedAll) connection.release();
+    else connection.destroy();
+  }
 }
 
 /**
@@ -3041,14 +3073,93 @@ export async function getWhatsAppInstanceByInstanceId(instanceId: string): Promi
 export async function updateWhatsAppInstance(id: number, data: Partial<InsertWhatsAppInstance>): Promise<void> {
   const db = await getDb();
   if (!db) return;
+  if (!Number.isSafeInteger(id) || id < 1 || data.merchantId !== undefined || 'id' in data) {
+    throw new Error('Invalid WhatsApp instance update');
+  }
+  const [initial] = await db.select({ merchantId: whatsappInstances.merchantId })
+    .from(whatsappInstances)
+    .where(eq(whatsappInstances.id, id))
+    .limit(1);
+  if (!initial) throw new Error('WhatsApp instance not found');
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  const heldLocks: string[] = [];
+  try {
+    heldLocks.push(await acquireWhatsAppInstanceLock(
+      connection,
+      whatsAppMerchantLockNamespace(initial.merchantId),
+    ));
+    const [current] = await db.select({
+      merchantId: whatsappInstances.merchantId,
+      phoneNumber: whatsappInstances.phoneNumber,
+      status: whatsappInstances.status,
+      isPrimary: whatsappInstances.isPrimary,
+    }).from(whatsappInstances)
+      .where(and(eq(whatsappInstances.id, id), eq(whatsappInstances.merchantId, initial.merchantId)))
+      .limit(1);
+    if (!current) throw new Error('WhatsApp instance not found');
 
-  await db.update(whatsappInstances)
-    .set({
-      ...data,
-      ...(data.token !== undefined && { token: encryptSecret(data.token) }),
-      updatedAt: formatDateForDB(new Date()),
-    })
-    .where(eq(whatsappInstances.id, id));
+    const finalStatus = data.status ?? current.status;
+    const finalPhoneNumber = data.phoneNumber === undefined ? current.phoneNumber : data.phoneNumber;
+    const finalPrimary = finalStatus === 'active'
+      ? Number(data.isPrimary ?? current.isPrimary) === 1
+      : false;
+    if (finalStatus === 'active' && finalPhoneNumber) {
+      heldLocks.push(await acquireWhatsAppInstanceLock(
+        connection,
+        whatsAppPhoneLockNamespace(finalPhoneNumber),
+      ));
+      await assertWhatsAppPhoneAvailable(connection, finalPhoneNumber, id);
+    }
+
+    await db.transaction(async tx => {
+      if (finalPrimary) {
+        await tx.update(whatsappInstances)
+          .set({ isPrimary: 0, updatedAt: formatDateForDB(new Date()) })
+          .where(and(
+            eq(whatsappInstances.merchantId, current.merchantId),
+            ne(whatsappInstances.id, id),
+          ));
+      }
+      await tx.update(whatsappInstances)
+        .set({
+          ...data,
+          isPrimary: finalPrimary ? 1 : 0,
+          ...(data.token !== undefined && { token: encryptSecret(data.token) }),
+          updatedAt: formatDateForDB(new Date()),
+        })
+        .where(and(
+          eq(whatsappInstances.id, id),
+          eq(whatsappInstances.merchantId, current.merchantId),
+        ));
+
+      if (Number(current.isPrimary) === 1 && !finalPrimary) {
+        const [replacement] = await tx.select({ id: whatsappInstances.id })
+          .from(whatsappInstances)
+          .where(and(
+            eq(whatsappInstances.merchantId, current.merchantId),
+            eq(whatsappInstances.status, 'active'),
+            ne(whatsappInstances.id, id),
+          ))
+          .orderBy(whatsappInstances.createdAt, whatsappInstances.id)
+          .limit(1);
+        if (replacement) {
+          await tx.update(whatsappInstances)
+            .set({ isPrimary: 1, updatedAt: formatDateForDB(new Date()) })
+            .where(and(
+              eq(whatsappInstances.id, replacement.id),
+              eq(whatsappInstances.merchantId, current.merchantId),
+              eq(whatsappInstances.status, 'active'),
+            ));
+        }
+      }
+    });
+  } finally {
+    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
+    if (releasedAll) connection.release();
+    else connection.destroy();
+  }
 }
 
 /**
@@ -3058,16 +3169,44 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
 export async function setWhatsAppInstanceAsPrimary(id: number, merchantId: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-
-  // First, unset all primary instances for this merchant
-  await db.update(whatsappInstances)
-    .set({ isPrimary: 0, updatedAt: formatDateForDB(new Date()) })
-    .where(eq(whatsappInstances.merchantId, merchantId));
-
-  // Then set the specified instance as primary
-  await db.update(whatsappInstances)
-    .set({ isPrimary: 1, updatedAt: formatDateForDB(new Date()) })
-    .where(eq(whatsappInstances.id, id));
+  if (!Number.isSafeInteger(id) || id < 1 || !Number.isSafeInteger(merchantId) || merchantId < 1) {
+    throw new Error('Invalid WhatsApp primary instance');
+  }
+  const pool = await getPool();
+  if (!pool) throw new Error('Database unavailable');
+  const connection = await pool.getConnection();
+  const heldLocks: string[] = [];
+  try {
+    heldLocks.push(await acquireWhatsAppInstanceLock(
+      connection,
+      whatsAppMerchantLockNamespace(merchantId),
+    ));
+    await db.transaction(async tx => {
+      const [target] = await tx.select({ id: whatsappInstances.id })
+        .from(whatsappInstances)
+        .where(and(
+          eq(whatsappInstances.id, id),
+          eq(whatsappInstances.merchantId, merchantId),
+          eq(whatsappInstances.status, 'active'),
+        ))
+        .limit(1);
+      if (!target) throw new Error('Active WhatsApp instance not found');
+      await tx.update(whatsappInstances)
+        .set({ isPrimary: 0, updatedAt: formatDateForDB(new Date()) })
+        .where(eq(whatsappInstances.merchantId, merchantId));
+      await tx.update(whatsappInstances)
+        .set({ isPrimary: 1, updatedAt: formatDateForDB(new Date()) })
+        .where(and(
+          eq(whatsappInstances.id, id),
+          eq(whatsappInstances.merchantId, merchantId),
+          eq(whatsappInstances.status, 'active'),
+        ));
+    });
+  } finally {
+    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
+    if (releasedAll) connection.release();
+    else connection.destroy();
+  }
 }
 
 /**

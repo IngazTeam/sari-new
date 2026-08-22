@@ -1,7 +1,16 @@
-import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
-import { privacyHashExact } from '../accounts/privacy-hash';
+import type { RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
+import {
+  acquireWhatsAppInstanceLock,
+  assertWhatsAppPhoneAvailable,
+  releaseWhatsAppInstanceLocks,
+  WhatsAppPhoneOwnershipConflictError,
+  whatsAppMerchantLockNamespace,
+  whatsAppPhoneLockNamespace,
+} from '../channels/whatsapp/instance-ownership';
+
+export { WhatsAppInstanceLockBusyError as RestInstanceMutationBusyError } from '../channels/whatsapp/instance-ownership';
 
 const INSTANCE_ID_MAX = 2_147_483_647;
 const INSTANCE_STATUSES = new Set(['active', 'inactive', 'pending', 'expired']);
@@ -10,13 +19,6 @@ export class RestInstanceValidationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'RestInstanceValidationError';
-  }
-}
-
-export class RestInstanceMutationBusyError extends Error {
-  constructor() {
-    super('WhatsApp instance mutation is busy');
-    this.name = 'RestInstanceMutationBusyError';
   }
 }
 
@@ -56,11 +58,6 @@ interface LockedInstanceRow extends RowDataPacket {
   phoneNumber: string | null;
   status: string;
   isPrimary: number | string;
-}
-
-interface NamedLockRow extends RowDataPacket {
-  acquired?: number | string | null;
-  released?: number | string | null;
 }
 
 export type RestInstanceMutationResult =
@@ -172,36 +169,6 @@ export async function getPublicWhatsAppInstanceCounts(merchantId: number): Promi
   return { totalInstances, activeInstances };
 }
 
-function lockName(namespace: string): string {
-  return privacyHashExact(`rest-whatsapp-instance\u0000${namespace}`);
-}
-
-async function acquireNamedLock(connection: PoolConnection, namespace: string): Promise<string> {
-  const name = lockName(namespace);
-  const [rows] = await connection.execute<NamedLockRow[]>(
-    'SELECT GET_LOCK(?, 5) AS acquired',
-    [name],
-  );
-  if (Number(rows[0]?.acquired) !== 1) throw new RestInstanceMutationBusyError();
-  return name;
-}
-
-async function releaseNamedLocks(connection: PoolConnection, names: string[]): Promise<boolean> {
-  let releasedAll = true;
-  for (const name of [...names].reverse()) {
-    try {
-      const [rows] = await connection.execute<NamedLockRow[]>(
-        'SELECT RELEASE_LOCK(?) AS released',
-        [name],
-      );
-      if (Number(rows[0]?.released) !== 1) releasedAll = false;
-    } catch {
-      releasedAll = false;
-    }
-  }
-  return releasedAll;
-}
-
 /**
  * Applies the REST instance transition as one tenant-scoped transaction.
  * A per-merchant named lock serializes competing primary changes, while an
@@ -225,7 +192,7 @@ export async function mutateRestWhatsAppInstance(
   let transactionOpen = false;
 
   try {
-    heldLocks.push(await acquireNamedLock(connection, `merchant:${merchantId}`));
+    heldLocks.push(await acquireWhatsAppInstanceLock(connection, whatsAppMerchantLockNamespace(merchantId)));
     await connection.beginTransaction();
     transactionOpen = true;
 
@@ -259,30 +226,14 @@ export async function mutateRestWhatsAppInstance(
     }
 
     if (finalActive && target.phoneNumber) {
-      heldLocks.push(await acquireNamedLock(connection, `phone:${target.phoneNumber}`));
-      const [conflictRows] = await connection.execute<LockedInstanceRow[]>(
-        `SELECT id,
-                merchant_id AS merchantId,
-                phone_number AS phoneNumber,
-                status,
-                is_primary AS isPrimary
-           FROM whatsapp_instances
-          WHERE phone_number = ? AND status = 'active' AND id <> ?
-          FOR UPDATE`,
-        [target.phoneNumber, instanceId],
-      );
-      if (conflictRows.some(row => Number(row.merchantId) !== merchantId)) {
+      heldLocks.push(await acquireWhatsAppInstanceLock(connection, whatsAppPhoneLockNamespace(target.phoneNumber)));
+      try {
+        await assertWhatsAppPhoneAvailable(connection, target.phoneNumber, instanceId);
+      } catch (error) {
+        if (!(error instanceof WhatsAppPhoneOwnershipConflictError)) throw error;
         await connection.rollback();
         transactionOpen = false;
         return { kind: 'phone_conflict' };
-      }
-      if (conflictRows.length > 0) {
-        await connection.execute(
-          `UPDATE whatsapp_instances
-              SET status = 'inactive', is_primary = 0, updated_at = NOW()
-            WHERE merchant_id = ? AND phone_number = ? AND status = 'active' AND id <> ?`,
-          [merchantId, target.phoneNumber, instanceId],
-        );
       }
     }
 
@@ -358,7 +309,7 @@ export async function mutateRestWhatsAppInstance(
     if (transactionOpen) await connection.rollback();
     throw error;
   } finally {
-    const releasedAll = await releaseNamedLocks(connection, heldLocks);
+    const releasedAll = await releaseWhatsAppInstanceLocks(connection, heldLocks);
     if (releasedAll) connection.release();
     else connection.destroy();
   }

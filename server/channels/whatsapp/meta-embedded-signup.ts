@@ -76,8 +76,10 @@ export async function completeMetaEmbeddedSignup(input: {
   }
   const displayPhone = String(phoneResponse.data?.display_phone_number || '').replace(/[^0-9+]/g, '').slice(0, 20) || null;
   if (displayPhone) {
-    const conflicting = await getActiveInstanceByPhoneNumber(displayPhone, input.merchantId);
-    if (conflicting) throw new TRPCError({ code: 'CONFLICT', message: 'Phone number is already linked to another merchant' });
+    const conflicting = await getActiveInstanceByPhoneNumber(displayPhone);
+    if (conflicting && conflicting.id !== existing?.id) {
+      throw new TRPCError({ code: 'CONFLICT', message: 'Phone number is already linked to another instance' });
+    }
   }
 
   // Validate the local plan before subscribing the WABA or persisting the token.

@@ -123,8 +123,8 @@ export const whatsappInstancesRouter = router({
 
                 // A tenant can never transfer another tenant's number by toggling its own record.
                 if (instance.phoneNumber) {
-                    const conflicting = await getActiveInstanceByPhoneNumber(instance.phoneNumber, input.merchantId);
-                    if (conflicting) {
+                    const conflicting = await getActiveInstanceByPhoneNumber(instance.phoneNumber);
+                    if (conflicting && conflicting.id !== instance.id) {
                         throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
                     }
                 }
@@ -238,9 +238,9 @@ export const whatsappInstancesRouter = router({
                 }
             }
 
-            // Check: if phone number is already active elsewhere, deactivate it
+            // A duplicate active phone requires a separately verified transfer.
             if (input.phoneNumber) {
-                const conflicting = await getActiveInstanceByPhoneNumber(input.phoneNumber, input.merchantId);
+                const conflicting = await getActiveInstanceByPhoneNumber(input.phoneNumber);
                 if (conflicting) {
                     throw new TRPCError({ code: 'CONFLICT', message: 'رقم واتساب مرتبط بحساب آخر ويتطلب نقلًا إداريًا موثقًا' });
                 }
