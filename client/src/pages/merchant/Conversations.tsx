@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { MessageSquare, User, Bot, Clock, Search, Send, Loader2, Image as ImageIcon, FileText, Download, X, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { MessageSquare, User, Bot, Clock, Search, Send, Loader2, Image as ImageIcon, FileText, Download, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
@@ -581,12 +581,10 @@ export default function Conversations() {
                 {/* Image Lightbox Dialog */}
                 <Dialog open={!!lightboxImage} onOpenChange={() => setLightboxImage(null)}>
                   <DialogContent className="max-w-4xl max-h-[90vh] p-2 bg-black/90 border-none">
-                    <button
-                      onClick={() => setLightboxImage(null)}
-                      className="absolute top-3 left-3 z-50 p-1.5 rounded-full bg-white/20 hover:bg-white/40 transition-colors"
-                    >
-                      <X className="h-5 w-5 text-white" />
-                    </button>
+                    <DialogHeader className="sr-only">
+                      <DialogTitle>{t('merchantUx.actions.mediaPreview')}</DialogTitle>
+                      <DialogDescription>{t('merchantUx.actions.mediaPreview')}</DialogDescription>
+                    </DialogHeader>
                     {lightboxImage && (
                       <div className="flex items-center justify-center w-full h-full min-h-[300px]">
                         <img

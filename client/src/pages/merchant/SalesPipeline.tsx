@@ -8,6 +8,8 @@ import {
   MessageCircle, ExternalLink, RefreshCw,
 } from 'lucide-react';
 import { useLocation } from 'wouter';
+import { useTranslation } from 'react-i18next';
+import type { KeyboardEvent } from 'react';
 
 // ═══════════════════════════════════════════════════════════════
 // Navigation Helper
@@ -52,11 +54,20 @@ const STAGE_LABELS: Record<string, { label: string; color: string }> = {
   payment_failed: { label: 'فشل دفع', color: 'bg-red-100 text-red-800' },
 };
 
+function activateOnKeyboard(event: KeyboardEvent<HTMLElement>, action: () => void) {
+  if (event.currentTarget !== event.target) return;
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    action();
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // Component
 // ═══════════════════════════════════════════════════════════════
 
 export default function SalesPipeline() {
+  const { t } = useTranslation();
   const { data: actions } = trpc.salesPipeline.getActionCounts.useQuery();
   const { data: kpis } = trpc.salesPipeline.getKPIs.useQuery();
   const { data: pipeline } = trpc.salesPipeline.getPipeline.useQuery();
@@ -86,8 +97,12 @@ export default function SalesPipeline() {
       {/* ═══════ Row 1: Action Cards — "ماذا يحتاج انتباهك" ═══════ */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card
-          className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-300 transition-all"
+          role="button"
+          tabIndex={0}
+          aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات الجاهزة للدفع' })}
+          className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-emerald-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?stage=ready')}
+          onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?stage=ready'))}
         >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
@@ -104,8 +119,12 @@ export default function SalesPipeline() {
         </Card>
 
         <Card
-          className="border-orange-200 bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-orange-300 transition-all"
+          role="button"
+          tabIndex={0}
+          aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات التي تحتاج تدخلاً' })}
+          className="border-orange-200 bg-gradient-to-br from-orange-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-orange-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?needs_human=1')}
+          onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?needs_human=1'))}
         >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
@@ -122,8 +141,12 @@ export default function SalesPipeline() {
         </Card>
 
         <Card
-          className="border-amber-200 bg-gradient-to-br from-amber-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-amber-300 transition-all"
+          role="button"
+          tabIndex={0}
+          aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات ذات الدفع غير المكتمل' })}
+          className="border-amber-200 bg-gradient-to-br from-amber-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-amber-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?stage=payment_link_sent')}
+          onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?stage=payment_link_sent'))}
         >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
@@ -140,8 +163,12 @@ export default function SalesPipeline() {
         </Card>
 
         <Card
-          className="border-slate-200 bg-gradient-to-br from-slate-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-slate-300 transition-all"
+          role="button"
+          tabIndex={0}
+          aria-label={t('merchantUx.actions.openNamed', { name: 'المحادثات المتوقفة' })}
+          className="border-slate-200 bg-gradient-to-br from-slate-50 to-white cursor-pointer hover:shadow-md hover:ring-2 hover:ring-slate-300 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2"
           onClick={() => navigate('/merchant/conversations?stage=stalled')}
+          onKeyDown={(event) => activateOnKeyboard(event, () => navigate('/merchant/conversations?stage=stalled'))}
         >
           <CardContent className="pt-4 text-center">
             <div className="flex justify-center mb-2">
@@ -220,8 +247,12 @@ export default function SalesPipeline() {
                 return (
                   <div key={stage} className="flex items-center gap-2">
                     <div
-                      className={`px-3 py-2 rounded-lg text-center min-w-[80px] cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all ${info.color}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('merchantUx.actions.openNamed', { name: `محادثات مرحلة ${info.label}` })}
+                      className={`px-3 py-2 rounded-lg text-center min-w-[80px] cursor-pointer hover:ring-2 hover:ring-primary/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${info.color}`}
                       onClick={() => navigate(`/merchant/conversations?stage=${stage}`)}
+                      onKeyDown={(event) => activateOnKeyboard(event, () => navigate(`/merchant/conversations?stage=${stage}`))}
                       title={`عرض محادثات: ${info.label}`}
                     >
                       <p className="text-xl font-bold">{count}</p>
@@ -251,8 +282,12 @@ export default function SalesPipeline() {
                 {pipeline.hotLeads.map((lead: any) => (
                   <div
                     key={lead.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 border border-emerald-100 hover:bg-emerald-100/50 transition-colors cursor-pointer group"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('merchantUx.actions.openNamed', { name: `محادثة ${lead.customerName || lead.customerPhone}` })}
+                    className="flex items-center justify-between p-2 rounded-lg bg-emerald-50/50 border border-emerald-100 hover:bg-emerald-100/50 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
                     onClick={() => openConversation(lead.customerPhone, lead.customerName)}
+                    onKeyDown={(event) => activateOnKeyboard(event, () => openConversation(lead.customerPhone, lead.customerName))}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <Phone className="h-3 w-3 text-emerald-600 shrink-0" />
@@ -289,8 +324,12 @@ export default function SalesPipeline() {
                 {pipeline.paymentPending.map((item: any) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-amber-50/50 border border-amber-100 hover:bg-amber-100/50 transition-colors cursor-pointer group"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('merchantUx.actions.openNamed', { name: `محادثة ${item.customerName || item.customerPhone}` })}
+                    className="flex items-center justify-between p-2 rounded-lg bg-amber-50/50 border border-amber-100 hover:bg-amber-100/50 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
                     onClick={() => openConversation(item.customerPhone, item.customerName)}
+                    onKeyDown={(event) => activateOnKeyboard(event, () => openConversation(item.customerPhone, item.customerName))}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <ShoppingCart className="h-3 w-3 text-amber-600 shrink-0" />
@@ -330,8 +369,12 @@ export default function SalesPipeline() {
                 {pipeline.recentWins.map((win: any) => (
                   <div
                     key={win.id}
-                    className="flex items-center justify-between p-2 rounded-lg bg-green-50/50 border border-green-100 hover:bg-green-100/50 transition-colors cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('merchantUx.actions.openNamed', { name: `محادثة ${win.customerName || win.customerPhone}` })}
+                    className="flex items-center justify-between p-2 rounded-lg bg-green-50/50 border border-green-100 hover:bg-green-100/50 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2"
                     onClick={() => openConversation(win.customerPhone, win.customerName)}
+                    onKeyDown={(event) => activateOnKeyboard(event, () => openConversation(win.customerPhone, win.customerName))}
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <DollarSign className="h-3 w-3 text-green-600 shrink-0" />
@@ -364,8 +407,12 @@ export default function SalesPipeline() {
                   return (
                     <div
                       key={loss.id}
-                      className="flex items-center justify-between p-2 rounded-lg bg-red-50/50 border border-red-100 hover:bg-red-100/50 transition-colors cursor-pointer group"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={t('merchantUx.actions.openNamed', { name: `محادثة ${loss.customerName || loss.customerPhone}` })}
+                      className="flex items-center justify-between p-2 rounded-lg bg-red-50/50 border border-red-100 hover:bg-red-100/50 transition-colors cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
                       onClick={() => openConversation(loss.customerPhone, loss.customerName)}
+                      onKeyDown={(event) => activateOnKeyboard(event, () => openConversation(loss.customerPhone, loss.customerName))}
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-sm">{info.icon}</span>

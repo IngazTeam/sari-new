@@ -679,6 +679,7 @@ export default function BotSettings() {
                       <button
                         type="button"
                         onClick={() => setGroupKeywords(prev => prev.filter((_, idx) => idx !== i))}
+                        aria-label={t('merchantUx.actions.removeNamed', { name: kw })}
                         className="hover:text-destructive ml-1"
                       >
                         <X className="h-3 w-3" />

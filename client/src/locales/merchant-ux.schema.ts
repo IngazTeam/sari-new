@@ -45,6 +45,11 @@ export const actionCopyKeys = [
   'sendNamed', 'previousPage', 'nextPage', 'copyWebhookUrl', 'copyPhoneNumber',
   'copyMessageId', 'positiveFeedback', 'negativeFeedback', 'sendMessage',
   'closeForm', 'viewContentNamed', 'openConversationImage',
+  'removeNamed', 'selectNamed', 'revokeInviteNamed', 'copyQuotationNamed', 'sendPdfNamed',
+  'acceptNamed', 'rejectNamed', 'copyReferralLink', 'showSecretKey',
+  'hideSecretKey', 'markReadNamed', 'backToIntegrations', 'replyNamed',
+  'mediaPreview', 'quotationPreviewNamed', 'gridView', 'listView',
+  'chooseKnowledgeDocument',
 ] as const;
 
 type CopySection<Keys extends readonly string[]> = Record<Keys[number], string>;

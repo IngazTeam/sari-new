@@ -19,6 +19,7 @@ import {
   Clock, Send, Eye, DollarSign, BarChart3, FileText, Trash2,
 } from 'lucide-react';
 import { Link } from 'wouter';
+import { useTranslation } from 'react-i18next';
 
 const STATUS_MAP: Record<string, { label: string; icon: string; color: string }> = {
   sent: { label: 'مُرسل', icon: '📤', color: 'bg-blue-100 text-blue-800 border-blue-200' },
@@ -29,6 +30,7 @@ const STATUS_MAP: Record<string, { label: string; icon: string; color: string }>
 };
 
 export default function SalesHub() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: quotations, isLoading } = trpc.sariBrain.getQuotations.useQuery({ limit: 50 });
   const { data: stats } = trpc.sariBrain.getQuotationStats.useQuery();
@@ -219,7 +221,14 @@ export default function SalesHub() {
                         <span className="text-xs text-muted-foreground font-mono">{i + 1}.</span>
                         <Input value={item.name} onChange={(e) => updateItem(i, 'name', e.target.value)} placeholder="اسم المنتج/الخدمة" dir="auto" className="flex-1" />
                         {items.length > 1 && (
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400" onClick={() => removeItem(i)}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-red-400"
+                            onClick={() => removeItem(i)}
+                            aria-label={t('merchantUx.actions.removeNamed', { name: item.name || `${i + 1}` })}
+                          >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         )}
@@ -372,23 +381,49 @@ export default function SalesHub() {
                       <p className="text-[10px] text-muted-foreground">{q.currency}</p>
                     </div>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="نسخ للواتساب" onClick={() => copyWhatsApp(q.id)}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        title="نسخ للواتساب"
+                        onClick={() => copyWhatsApp(q.id)}
+                        aria-label={t('merchantUx.actions.copyQuotationNamed', { name: q.quotationNumber })}
+                      >
                         <Copy className="h-4 w-4" />
                       </Button>
                       <Button
+                        type="button"
                         variant="ghost" size="sm" className="h-8 w-8 p-0 text-primary"
                         title="إرسال PDF عبر واتساب"
                         onClick={() => handleSendPdf(q)}
                         disabled={sendPdfMut.isPending}
+                        aria-label={t('merchantUx.actions.sendPdfNamed', { name: q.quotationNumber })}
                       >
                         <Send className="h-4 w-4" />
                       </Button>
                       {q.status === 'sent' && (
                         <>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-600" title="قبول" onClick={() => statusMut.mutate({ quotationId: q.id, status: 'accepted' })}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-green-600"
+                            title="قبول"
+                            onClick={() => statusMut.mutate({ quotationId: q.id, status: 'accepted' })}
+                            aria-label={t('merchantUx.actions.acceptNamed', { name: q.quotationNumber })}
+                          >
                             <CheckCircle2 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600" title="رفض" onClick={() => statusMut.mutate({ quotationId: q.id, status: 'rejected' })}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-red-600"
+                            title="رفض"
+                            onClick={() => statusMut.mutate({ quotationId: q.id, status: 'rejected' })}
+                            aria-label={t('merchantUx.actions.rejectNamed', { name: q.quotationNumber })}
+                          >
                             <XCircle className="h-4 w-4" />
                           </Button>
                         </>

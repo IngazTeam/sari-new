@@ -244,6 +244,11 @@ export default function PaymentSettings() {
                   size="sm"
                   className="absolute left-1 top-1/2 -translate-y-1/2"
                   onClick={() => setShowSecretKey(!showSecretKey)}
+                  aria-label={t(
+                    showSecretKey
+                      ? 'merchantUx.actions.hideSecretKey'
+                      : 'merchantUx.actions.showSecretKey',
+                  )}
                 >
                   {showSecretKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>

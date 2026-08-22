@@ -76,6 +76,14 @@ const merchantUxAr: MerchantUxCopy = {
     positiveFeedback: 'تقييم الرد بأنه مفيد', negativeFeedback: 'تقييم الرد بأنه غير مفيد',
     sendMessage: 'إرسال الرسالة', closeForm: 'إغلاق النموذج',
     viewContentNamed: 'عرض محتوى {{name}}', openConversationImage: 'فتح صورة المحادثة',
+    removeNamed: 'إزالة {{name}}', selectNamed: 'اختيار {{name}}', revokeInviteNamed: 'إلغاء دعوة {{name}}',
+    copyQuotationNamed: 'نسخ عرض سعر {{name}} لواتساب', sendPdfNamed: 'إرسال PDF لعرض سعر {{name}}',
+    acceptNamed: 'قبول {{name}}', rejectNamed: 'رفض {{name}}', copyReferralLink: 'نسخ رابط الإحالة',
+    showSecretKey: 'إظهار المفتاح السري', hideSecretKey: 'إخفاء المفتاح السري',
+    markReadNamed: 'تحديد {{name}} كمقروء', backToIntegrations: 'العودة إلى التكاملات',
+    replyNamed: 'الرد على {{name}}', mediaPreview: 'معاينة ملف الوسائط',
+    quotationPreviewNamed: 'معاينة قالب {{name}}', gridView: 'عرض شبكي', listView: 'عرض قائمة',
+    chooseKnowledgeDocument: 'اختيار ملف المعرفة أو استبداله',
   },
 };
 

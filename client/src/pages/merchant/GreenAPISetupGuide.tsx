@@ -193,9 +193,11 @@ export default function GreenAPISetupGuide() {
                 <div className="flex items-center justify-between">
                   <code className="text-sm break-all">{webhookUrl}</code>
                   <Button
+                    type="button"
                     size="sm"
                     variant="ghost"
                     onClick={() => copyToClipboard(webhookUrl, "Webhook URL")}
+                    aria-label={t('merchantUx.actions.copyWebhookUrl')}
                   >
                     <Copy className="w-4 h-4" />
                   </Button>

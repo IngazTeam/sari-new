@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, User, Mail, Shield, Loader2, UserPlus, Crown, Eye, Briefcase, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const ROLE_OPTIONS = [
   { value: 'manager', label: 'مدير', description: 'كل شيء عدا الاشتراك', color: 'bg-blue-100 text-blue-800' },
@@ -33,6 +34,7 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function TeamManagement() {
+  const { t } = useTranslation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<string>('viewer');
@@ -252,10 +254,12 @@ export default function TeamManagement() {
                       <TableCell className="text-left">
                         {member.role !== 'owner' && (
                           <Button
+                            type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemove(member.id, member.userName)}
                             disabled={removeMutation.isPending}
+                            aria-label={t('merchantUx.actions.removeNamed', { name: member.userName })}
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
@@ -303,10 +307,12 @@ export default function TeamManagement() {
                     </TableCell>
                     <TableCell className="text-left">
                       <Button
+                        type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => revokeInviteMutation.mutate({ invitationId: inv.id })}
                         disabled={revokeInviteMutation.isPending}
+                        aria-label={t('merchantUx.actions.revokeInviteNamed', { name: inv.email })}
                       >
                         <Trash2 className="h-4 w-4 text-red-500" />
                       </Button>

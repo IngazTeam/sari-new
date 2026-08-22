@@ -126,17 +126,31 @@ export default function LanguageSettings() {
                 {t('languageSettingsPage.text5')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent
+              className="space-y-3"
+              role="radiogroup"
+              aria-label={t('languageSettingsPage.text4')}
+            >
               {languages.map((lang) => (
                 <Card
                   key={lang.code}
+                  role="radio"
+                  tabIndex={0}
+                  aria-checked={selectedLanguage === lang.code}
+                  aria-label={t('merchantUx.actions.selectNamed', { name: lang.nativeName })}
                   className={cn(
-                    "cursor-pointer transition-all hover:shadow-md",
+                    "cursor-pointer transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     selectedLanguage === lang.code
                       ? "border-primary border-2 bg-primary/5"
                       : "border-border hover:border-primary/50"
                   )}
                   onClick={() => handleLanguageSelect(lang.code)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      handleLanguageSelect(lang.code);
+                    }
+                  }}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">

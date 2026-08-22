@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +47,7 @@ const emptyForm: AgentFormData = {
 };
 
 export default function VirtualTeamPage() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: agents, isLoading } = trpc.virtualAgents.list.useQuery();
 
@@ -196,13 +198,17 @@ export default function VirtualTeamPage() {
                   {/* Action buttons - appear on hover */}
                   <div className="absolute bottom-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
+                      type="button"
                       onClick={() => openEdit(agent)}
+                      aria-label={t('merchantUx.actions.editNamed', { name: agent.name })}
                       className="p-1.5 rounded-lg bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
+                      type="button"
                       onClick={() => setDeleteConfirmId(agent.id)}
+                      aria-label={t('merchantUx.actions.deleteNamed', { name: agent.name })}
                       className="p-1.5 rounded-lg bg-red-500/30 backdrop-blur-sm text-white hover:bg-red-500/50 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -372,6 +378,8 @@ export default function VirtualTeamPage() {
                     key={key}
                     type="button"
                     onClick={() => setForm(f => ({ ...f, avatarEmoji: key }))}
+                    aria-label={t('merchantUx.actions.selectNamed', { name: AVATAR_LABELS[key as AvatarKey] })}
+                    aria-pressed={form.avatarEmoji === key}
                     className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${
                       form.avatarEmoji === key
                         ? 'bg-violet-100 dark:bg-violet-900/40 ring-2 ring-violet-500 scale-105 shadow-md'
@@ -462,6 +470,7 @@ export default function VirtualTeamPage() {
                       <button
                         type="button"
                         onClick={() => setForm(f => ({ ...f, triggerKeywords: f.triggerKeywords.filter((_, idx) => idx !== i) }))}
+                        aria-label={t('merchantUx.actions.removeNamed', { name: kw })}
                         className="hover:text-destructive transition-colors"
                       >
                         <X className="h-3 w-3" />

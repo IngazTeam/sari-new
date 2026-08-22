@@ -300,6 +300,7 @@ export default function BookingReviews() {
                                             </TableCell>
                                             <TableCell>
                                                 <Button
+                                                    type="button"
                                                     variant="ghost"
                                                     size="sm"
                                                     onClick={() => {
@@ -309,6 +310,9 @@ export default function BookingReviews() {
                                                         setReplyText(review.reply || '');
                                                         setShowReplyDialog(true);
                                                     }}
+                                                    aria-label={t('merchantUx.actions.replyNamed', {
+                                                        name: review.customerName || review.customerPhone,
+                                                    })}
                                                 >
                                                     <MessageSquare className="h-4 w-4" />
                                                 </Button>

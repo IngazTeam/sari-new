@@ -151,7 +151,13 @@ export default function Referrals() {
                 <div className="flex-1 p-3 bg-muted rounded-md font-mono text-sm break-all">
                   {referralLink}
                 </div>
-                <Button onClick={copyToClipboard} variant="outline" size="icon">
+                <Button
+                  type="button"
+                  onClick={copyToClipboard}
+                  variant="outline"
+                  size="icon"
+                  aria-label={t('merchantUx.actions.copyReferralLink')}
+                >
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>

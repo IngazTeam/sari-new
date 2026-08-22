@@ -205,20 +205,24 @@ export default function NotificationsPage() {
 
                         {!notification.isRead && (
                           <Button
+                            type="button"
                             size="sm"
                             variant="ghost"
                             onClick={() => handleMarkAsRead(notification.id)}
                             disabled={markAsReadMutation.isPending}
+                            aria-label={t('merchantUx.actions.markReadNamed', { name: notification.title })}
                           >
                             <Check className="h-4 w-4" />
                           </Button>
                         )}
 
                         <Button
+                          type="button"
                           size="sm"
                           variant="ghost"
                           onClick={() => handleDelete(notification.id)}
                           disabled={deleteMutation.isPending}
+                          aria-label={t('merchantUx.actions.deleteNamed', { name: notification.title })}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>

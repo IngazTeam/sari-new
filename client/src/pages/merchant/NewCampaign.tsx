@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLocation } from 'wouter';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { ArrowRight, Send, Image as ImageIcon, Users, Filter } from 'lucide-react';
+import { ArrowRight, Send, Users, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
@@ -147,9 +147,6 @@ export default function NewCampaign() {
                   value={formData.imageUrl}
                   onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
                 />
-                <Button type="button" variant="outline" size="icon">
-                  <ImageIcon className="w-4 h-4" />
-                </Button>
               </div>
               <p className="text-sm text-muted-foreground">
                 {t('newCampaignPage.text31')}

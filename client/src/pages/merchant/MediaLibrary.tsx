@@ -5,11 +5,14 @@ import { toast } from 'sonner';
 import {
   ImageIcon, Upload, Trash2, Grid3x3, List, Copy, Check,
   FileText, Package, Megaphone, LayoutTemplate, FolderOpen,
-  HardDrive, X, ZoomIn, Download, Search, Loader2,
+  HardDrive, ZoomIn, Download, Search, Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -289,6 +292,7 @@ export default function MediaLibrary() {
             const isActive = activeCategory === key;
             return (
               <button
+                type="button"
                 key={key}
                 onClick={() => setActiveCategory(key as any)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
@@ -319,14 +323,20 @@ export default function MediaLibrary() {
           {/* View Toggle */}
           <div className="flex border border-white/10 rounded-lg overflow-hidden">
             <button
+              type="button"
               onClick={() => setViewMode('grid')}
               className={`p-1.5 ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-muted-foreground hover:text-white'}`}
+              aria-label={t('merchantUx.actions.gridView')}
+              aria-pressed={viewMode === 'grid'}
             >
               <Grid3x3 className="h-3.5 w-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => setViewMode('list')}
               className={`p-1.5 ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-muted-foreground hover:text-white'}`}
+              aria-label={t('merchantUx.actions.listView')}
+              aria-pressed={viewMode === 'list'}
             >
               <List className="h-3.5 w-3.5" />
             </button>
@@ -358,31 +368,39 @@ export default function MediaLibrary() {
                   className="group relative bg-card/40 rounded-xl border border-white/5 hover:border-cyan-500/20 transition-all overflow-hidden"
                 >
                   {/* Thumbnail */}
-                  <div
-                    className="aspect-square bg-black/20 flex items-center justify-center cursor-pointer"
-                    onClick={() => isImage(mime) && setLightboxUrl(item.url)}
-                  >
-                    {isImage(mime) ? (
+                  {isImage(mime) ? (
+                    <button
+                      type="button"
+                      className="aspect-square bg-black/20 flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+                      onClick={() => setLightboxUrl(item.url)}
+                      aria-label={t('merchantUx.actions.viewNamed', { name })}
+                    >
                       <img src={item.url} alt={name} className="w-full h-full object-cover" />
-                    ) : (
+                    </button>
+                  ) : (
+                    <div className="aspect-square bg-black/20 flex items-center justify-center">
                       <FileText className="h-10 w-10 text-muted-foreground/40" />
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Overlay Actions */}
-                  <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="absolute top-2 left-2 flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
+                      type="button"
                       onClick={() => copyUrl(item.url, item.id)}
                       className="p-1.5 rounded-lg bg-black/60 backdrop-blur-sm text-white/80 hover:text-white"
                       title="نسخ الرابط"
+                      aria-label={t('merchantUx.actions.copyNamed', { name })}
                     >
                       {copiedId === item.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                     </button>
                     {isImage(mime) && (
                       <button
+                        type="button"
                         onClick={() => setLightboxUrl(item.url)}
                         className="p-1.5 rounded-lg bg-black/60 backdrop-blur-sm text-white/80 hover:text-white"
                         title="تكبير"
+                        aria-label={t('merchantUx.actions.viewNamed', { name })}
                       >
                         <ZoomIn className="h-3.5 w-3.5" />
                       </button>
@@ -418,8 +436,10 @@ export default function MediaLibrary() {
                         </div>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => setDeleteConfirm(item.id)}
                           className="p-1 rounded text-muted-foreground/40 hover:text-red-400 transition-colors"
+                          aria-label={t('merchantUx.actions.deleteNamed', { name })}
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
@@ -466,17 +486,21 @@ export default function MediaLibrary() {
                   <span className="text-xs text-muted-foreground">{formatSize(size)}</span>
 
                   {/* Actions */}
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                     <button
+                      type="button"
                       onClick={() => copyUrl(item.url, item.id)}
                       className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-white"
+                      aria-label={t('merchantUx.actions.copyNamed', { name })}
                     >
                       {copiedId === item.id ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                     </button>
                     {isImage(mime) && (
                       <button
+                        type="button"
                         onClick={() => setLightboxUrl(item.url)}
                         className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-white"
+                        aria-label={t('merchantUx.actions.viewNamed', { name })}
                       >
                         <ZoomIn className="h-3.5 w-3.5" />
                       </button>
@@ -488,8 +512,10 @@ export default function MediaLibrary() {
                       </>
                     ) : (
                       <button
+                        type="button"
                         onClick={() => setDeleteConfirm(item.id)}
                         className="p-1.5 rounded-lg hover:bg-red-500/10 text-muted-foreground/40 hover:text-red-400"
+                        aria-label={t('merchantUx.actions.deleteNamed', { name })}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -529,52 +555,47 @@ export default function MediaLibrary() {
       )}
 
       {/* ═════════ Lightbox ═════════ */}
-      {lightboxUrl && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 cursor-zoom-out"
-          onClick={() => setLightboxUrl(null)}
-        >
-          <div className="relative max-w-4xl max-h-[90vh]">
-            <Button
-              variant="ghost" size="sm"
-              className="absolute -top-10 left-0 text-white/60 hover:text-white z-10"
-              onClick={() => setLightboxUrl(null)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-            <img
-              src={lightboxUrl}
-              alt=""
-              className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex gap-2">
-              <Button
-                variant="ghost" size="sm"
-                className="text-white/60 hover:text-white text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigator.clipboard.writeText(lightboxUrl);
-                  toast.success('تم نسخ الرابط');
-                }}
-              >
-                <Copy className="h-3.5 w-3.5 ml-1" />
-                نسخ الرابط
-              </Button>
-              <a
-                href={lightboxUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white px-3 py-1.5"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Download className="h-3.5 w-3.5" />
-                فتح
-              </a>
+      <Dialog open={Boolean(lightboxUrl)} onOpenChange={(open) => { if (!open) setLightboxUrl(null); }}>
+        <DialogContent className="max-w-4xl border-0 bg-transparent p-0 shadow-none [&>button]:text-white">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{t('merchantUx.actions.mediaPreview')}</DialogTitle>
+            <DialogDescription>{t('merchantUx.actions.mediaPreview')}</DialogDescription>
+          </DialogHeader>
+          {lightboxUrl && (
+            <div className="relative max-h-[90vh]">
+              <img
+                src={lightboxUrl}
+                alt={t('merchantUx.actions.mediaPreview')}
+                className="max-h-[85vh] max-w-full rounded-xl object-contain shadow-2xl"
+              />
+              <div className="absolute -bottom-10 left-1/2 flex -translate-x-1/2 gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-white/60 hover:text-white"
+                  onClick={() => {
+                    navigator.clipboard.writeText(lightboxUrl);
+                    toast.success('تم نسخ الرابط');
+                  }}
+                >
+                  <Copy className="h-3.5 w-3.5 ml-1" />
+                  نسخ الرابط
+                </Button>
+                <a
+                  href={lightboxUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 text-xs text-white/60 hover:text-white"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  فتح
+                </a>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   AlertCircle, Percent, DollarSign, ShoppingBag,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const PROMO_TYPE_OPTIONS = [
   { value: 'percentage', label: 'خصم نسبة مئوية', icon: Percent, emoji: '💰' },
@@ -64,6 +65,7 @@ const defaultFormData: PromoFormData = {
 };
 
 export default function PromotionsPage() {
+  const { t } = useTranslation();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingPromo, setEditingPromo] = useState<number | null>(null);
   const [formData, setFormData] = useState<PromoFormData>(defaultFormData);
@@ -532,9 +534,11 @@ export default function PromotionsPage() {
                       <Pencil className="h-3 w-3 ml-1" /> تعديل
                     </Button>
                     <Button
+                      type="button"
                       variant="outline" size="sm"
                       className="text-destructive hover:bg-destructive/10"
                       onClick={() => setDeleteConfirm(promo.id)}
+                      aria-label={t('merchantUx.actions.deleteNamed', { name: promo.title })}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>

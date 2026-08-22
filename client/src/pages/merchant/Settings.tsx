@@ -502,9 +502,13 @@ export default function MerchantSettings() {
 
           {/* Upload area */}
           <div
+            role="button"
+            tabIndex={isUploading ? -1 : 0}
+            aria-disabled={isUploading}
+            aria-label={t('merchantUx.actions.chooseKnowledgeDocument')}
             className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
               isDragOver ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'
-            } ${isUploading ? 'pointer-events-none opacity-60' : ''}`}
+            } ${isUploading ? 'pointer-events-none opacity-60' : ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}
             onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
             onDragLeave={() => setIsDragOver(false)}
             onDrop={(e) => {
@@ -514,6 +518,12 @@ export default function MerchantSettings() {
               if (file) handleFileUpload(file);
             }}
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(event) => {
+              if (!isUploading && (event.key === 'Enter' || event.key === ' ')) {
+                event.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
           >
             <input
               ref={fileInputRef}

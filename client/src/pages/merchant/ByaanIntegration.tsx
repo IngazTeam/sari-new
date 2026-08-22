@@ -14,12 +14,14 @@ import {
 import { toast } from 'sonner';
 import { Link } from 'wouter';
 import { trpc } from '@/lib/trpc';
+import { useTranslation } from 'react-i18next';
 
 // ═══════════════════════════════════════════════════════════════
 // Main Component
 // ═══════════════════════════════════════════════════════════════
 
 export default function ByaanIntegration() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data, isLoading: loading } = trpc.integrations.getByaanStatus.useQuery();
   const [activeTab, setActiveTab] = useState('overview');
@@ -106,7 +108,12 @@ export default function ByaanIntegration() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/merchant/platform-integrations">
-            <Button variant="ghost" size="icon">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t('merchantUx.actions.backToIntegrations')}
+            >
               <ChevronLeft className="h-5 w-5" />
             </Button>
           </Link>

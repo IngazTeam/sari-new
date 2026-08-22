@@ -73,6 +73,14 @@ const merchantUxEn: MerchantUxCopy = {
     positiveFeedback: 'Rate response as helpful', negativeFeedback: 'Rate response as not helpful',
     sendMessage: 'Send message', closeForm: 'Close form',
     viewContentNamed: 'View {{name}} content', openConversationImage: 'Open conversation image',
+    removeNamed: 'Remove {{name}}', selectNamed: 'Select {{name}}', revokeInviteNamed: 'Revoke invitation for {{name}}',
+    copyQuotationNamed: 'Copy quotation {{name}} for WhatsApp', sendPdfNamed: 'Send quotation {{name}} PDF',
+    acceptNamed: 'Accept {{name}}', rejectNamed: 'Reject {{name}}', copyReferralLink: 'Copy referral link',
+    showSecretKey: 'Show secret key', hideSecretKey: 'Hide secret key',
+    markReadNamed: 'Mark {{name}} as read', backToIntegrations: 'Back to integrations',
+    replyNamed: 'Reply to {{name}}', mediaPreview: 'Media file preview',
+    quotationPreviewNamed: 'Preview {{name}} template', gridView: 'Grid view', listView: 'List view',
+    chooseKnowledgeDocument: 'Choose or replace the knowledge document',
   },
 };
 

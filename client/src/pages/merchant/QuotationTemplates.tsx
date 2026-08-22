@@ -3,13 +3,16 @@ import { trpc } from '@/lib/trpc';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
-  FileText, Plus, Trash2, Star, StarOff, Pencil, Eye, X,
-  Save, Image, ChevronDown, ChevronUp, Receipt,
+  FileText, Plus, Trash2, Star, StarOff, Pencil, Eye,
+  Save, Image, ChevronDown, ChevronUp, Receipt, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 // ═══════════════════════════════════════════════════════════════
 // Quotation Templates Management Page
@@ -301,17 +304,23 @@ export default function QuotationTemplates() {
               </div>
 
               <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="peer sr-only"
+                  checked={formDefault}
+                  onChange={(event) => setFormDefault(event.target.checked)}
+                />
                 <div
-                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-amber-400 peer-focus-visible:ring-offset-2 ${
                     formDefault
                       ? 'bg-amber-500 border-amber-500'
                       : 'border-white/20 group-hover:border-white/40'
                   }`}
-                  onClick={() => setFormDefault(!formDefault)}
+                  aria-hidden="true"
                 >
                   {formDefault && <Star className="h-3 w-3 text-white" />}
                 </div>
-                <span className="text-sm" onClick={() => setFormDefault(!formDefault)}>تعيين كقالب افتراضي</span>
+                <span className="text-sm">تعيين كقالب افتراضي</span>
               </label>
 
               <div className="flex gap-3 pt-2">
@@ -348,18 +357,20 @@ export default function QuotationTemplates() {
       )}
 
       {/* ═════════ Template Preview Modal ═════════ */}
-      {showPreview !== null && previewTemplate && !showForm && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowPreview(null)}>
-          <div className="max-w-md w-full" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-end mb-2">
-              <Button variant="ghost" size="sm" onClick={() => setShowPreview(null)} className="text-white/60 hover:text-white">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            {renderPreview(previewTemplate)}
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showPreview !== null && Boolean(previewTemplate) && !showForm}
+        onOpenChange={(open) => { if (!open) setShowPreview(null); }}
+      >
+        <DialogContent className="max-w-md border-0 bg-transparent p-0 shadow-none [&>button]:text-white">
+          <DialogHeader className="sr-only">
+            <DialogTitle>
+              {t('merchantUx.actions.quotationPreviewNamed', { name: previewTemplate?.name ?? '' })}
+            </DialogTitle>
+            <DialogDescription>{previewTemplate?.name}</DialogDescription>
+          </DialogHeader>
+          {previewTemplate && renderPreview(previewTemplate)}
+        </DialogContent>
+      </Dialog>
 
       {/* ═════════ Templates List ═════════ */}
       {isLoading ? (
@@ -464,9 +475,11 @@ export default function QuotationTemplates() {
                       </div>
                     ) : (
                       <Button
+                        type="button"
                         variant="ghost" size="sm"
                         className="h-8 w-8 p-0 text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
                         onClick={() => setDeleteConfirm(tmpl.id)}
+                        aria-label={t('merchantUx.actions.deleteNamed', { name: tmpl.name })}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
