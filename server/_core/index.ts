@@ -676,6 +676,17 @@ async function startServer() {
         }
       });
 
+      // Distributed REST limiter cleanup — bounded and primary-worker only.
+      cron.schedule('17 * * * *', async () => {
+        try {
+          const { pruneExpiredApiRateLimitWindows } = await import('../api/distributed-rate-limit');
+          const deleted = await pruneExpiredApiRateLimitWindows();
+          if (deleted > 0) console.log('[Cron] Expired API rate-limit windows pruned', { count: deleted });
+        } catch (error) {
+          logError('[Cron] API rate-limit cleanup failed', error);
+        }
+      });
+
       // Account deletion lifecycle (daily at 02:30). Failed requests are retained for manual review.
       cron.schedule('30 2 * * *', async () => {
         try {

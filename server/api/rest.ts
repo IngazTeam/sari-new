@@ -60,6 +60,7 @@ import {
   listApiFaqs,
   listApiProducts,
 } from './api-read-model';
+import { reserveApiRateLimit } from './distributed-rate-limit';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -177,29 +178,51 @@ function checkApiRateLimit(key: string, maxRequests: number = 100, windowMs: num
   return true;
 }
 
-// PEN-BYAAN-01: Separate rate limiters for sensitive operations
-const provisionLimitMap: Record<string, { count: number; resetAt: number }> = {};
-const syncLimitMap: Record<string, { count: number; resetAt: number }> = {};
-const destructiveLimitMap: Record<string, { count: number; resetAt: number }> = {};
-
-function checkProvisionLimit(key: string): boolean {
-  return checkSpecialLimit(provisionLimitMap, key, 5, 3600_000); // 5 per hour
+interface RestRateLimitDecision {
+  allowed: boolean;
+  retryAfterMs: number;
+  unavailable: boolean;
 }
 
-function checkSyncLimit(key: string): boolean {
-  return checkSpecialLimit(syncLimitMap, key, 10, 60_000); // 10 per minute
-}
-
-function checkSpecialLimit(map: Record<string, { count: number; resetAt: number }>, key: string, max: number, windowMs: number): boolean {
-  const now = Date.now();
-  const entry = map[key];
-  if (!entry || now > entry.resetAt) {
-    map[key] = { count: 1, resetAt: now + windowMs };
-    return true;
+async function checkDistributedLimit(key: string, maxRequests: number, windowMs: number): Promise<RestRateLimitDecision> {
+  try {
+    const decision = await reserveApiRateLimit({
+      namespace: 'sari-rest',
+      identity: key,
+      maxRequests,
+      windowMs,
+    });
+    return { allowed: decision.allowed, retryAfterMs: decision.retryAfterMs, unavailable: false };
+  } catch {
+    console.error('[SariAPI] Distributed rate-limit storage unavailable');
+    return { allowed: false, retryAfterMs: 0, unavailable: true };
   }
-  if (entry.count >= max) return false;
-  entry.count++;
-  return true;
+}
+
+function checkProvisionLimit(key: string): Promise<RestRateLimitDecision> {
+  return checkDistributedLimit(`provision:${key}`, 5, 3600_000); // 5 per hour
+}
+
+function checkSyncLimit(key: string): Promise<RestRateLimitDecision> {
+  return checkDistributedLimit(`sync:${key}`, 10, 60_000); // 10 per minute
+}
+
+function respondToDistributedLimit(
+  res: Response,
+  decision: RestRateLimitDecision,
+  error: string,
+  errorAr: string,
+): Response | null {
+  if (decision.allowed) return null;
+  if (decision.unavailable) {
+    return res.status(503).json({
+      error: 'API temporarily unavailable',
+      errorAr: 'واجهة API غير متاحة مؤقتًا',
+    });
+  }
+  const retryAfter = Math.max(1, Math.ceil(decision.retryAfterMs / 1_000));
+  res.setHeader('Retry-After', retryAfter);
+  return res.status(429).json({ error, errorAr, retryAfter });
 }
 
 // Validate email format
@@ -225,15 +248,6 @@ setInterval(() => {
   const now = Date.now();
   for (const key of Object.keys(rateLimitMap)) {
     if (rateLimitMap[key].resetAt < now) delete rateLimitMap[key];
-  }
-  for (const key of Object.keys(provisionLimitMap)) {
-    if (provisionLimitMap[key].resetAt < now) delete provisionLimitMap[key];
-  }
-  for (const key of Object.keys(syncLimitMap)) {
-    if (syncLimitMap[key].resetAt < now) delete syncLimitMap[key];
-  }
-  for (const key of Object.keys(destructiveLimitMap)) {
-    if (destructiveLimitMap[key].resetAt < now) delete destructiveLimitMap[key];
   }
 }, 300_000);
 
@@ -342,7 +356,7 @@ function validatePlatformKey(key: string): { platform: string } | null {
 }
 
 /** Platform auth middleware — validates X-Platform-Key header */
-function platformAuthMiddleware(req: PlatformRequest, res: Response, next: NextFunction) {
+async function platformAuthMiddleware(req: PlatformRequest, res: Response, next: NextFunction) {
   const platformKey = req.headers['x-platform-key'] as string;
   if (!platformKey) {
     return res.status(401).json({
@@ -352,9 +366,10 @@ function platformAuthMiddleware(req: PlatformRequest, res: Response, next: NextF
     });
   }
 
-  // Fingerprint the entire case-sensitive credential. Platform-key prefixes are
-  // shared and would let one tenant exhaust another tenant's limiter bucket.
-  if (!checkApiRateLimit(`platform_${privacyHashExact(platformKey)}`, 30, 60_000)) {
+  const networkIdentity = String(req.ip || req.socket.remoteAddress || 'unknown').slice(0, 64);
+  // A cheap per-network pre-auth shield bounds invalid-key floods without
+  // allocating one memory bucket for every attacker-controlled credential.
+  if (!checkApiRateLimit(`platform_pre_${privacyHashExact(networkIdentity)}`, 300, 60_000)) {
     return res.status(429).json({ error: 'Platform rate limit exceeded', errorAr: 'تجاوزت حد طلبات المنصة' });
   }
 
@@ -365,6 +380,23 @@ function platformAuthMiddleware(req: PlatformRequest, res: Response, next: NextF
 
   req.platform = result.platform;
   req.tenantDomain = req.body?.tenantDomain || req.headers['x-tenant-domain'] as string;
+  try {
+    const decision = await reserveApiRateLimit({
+      namespace: 'platform-global',
+      // Bind the durable global budget to the authenticated full credential.
+      // tenantDomain is caller-controlled until the route resolves ownership.
+      identity: `${result.platform}:${privacyHashExact(platformKey)}`,
+      maxRequests: 30,
+      windowMs: 60_000,
+    });
+    if (!decision.allowed) {
+      res.setHeader('Retry-After', Math.max(1, Math.ceil(decision.retryAfterMs / 1_000)));
+      return res.status(429).json({ error: 'Platform rate limit exceeded', errorAr: 'تجاوزت حد طلبات المنصة' });
+    }
+  } catch {
+    console.error('[SariAPI] Platform rate-limit storage unavailable');
+    return res.status(503).json({ error: 'Platform API temporarily unavailable', errorAr: 'واجهة المنصة غير متاحة مؤقتًا' });
+  }
   next();
 }
 
@@ -388,9 +420,8 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
     return res.status(401).json({ error: 'Invalid API key format', errorAr: 'تنسيق مفتاح API غير صالح' });
   }
 
-  // Hash the complete credential so two random keys cannot share a limiter
-  // bucket merely because their display prefixes collide.
-  if (!checkApiRateLimit(`api_${privacyHashExact(key)}`)) {
+  const networkIdentity = String(req.ip || req.socket.remoteAddress || 'unknown').slice(0, 64);
+  if (!checkApiRateLimit(`api_pre_${privacyHashExact(networkIdentity)}`, 300, 60_000)) {
     return res.status(429).json({
       error: 'Rate limit exceeded',
       errorAr: 'تجاوزت الحد الأقصى للطلبات (100/دقيقة)',
@@ -401,6 +432,26 @@ async function authMiddleware(req: AuthenticatedRequest, res: Response, next: Ne
   const result = await validateApiKey(key);
   if (!result) {
     return res.status(401).json({ error: 'Invalid or expired API key', errorAr: 'مفتاح API غير صالح أو منتهي' });
+  }
+
+  try {
+    const decision = await reserveApiRateLimit({
+      namespace: 'merchant-global',
+      identity: String(result.keyId),
+      maxRequests: 100,
+      windowMs: 60_000,
+    });
+    if (!decision.allowed) {
+      res.setHeader('Retry-After', Math.max(1, Math.ceil(decision.retryAfterMs / 1_000)));
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        errorAr: 'تجاوزت الحد الأقصى للطلبات (100/دقيقة)',
+        retryAfter: Math.max(1, Math.ceil(decision.retryAfterMs / 1_000)),
+      });
+    }
+  } catch {
+    console.error('[SariAPI] Merchant rate-limit storage unavailable');
+    return res.status(503).json({ error: 'API temporarily unavailable', errorAr: 'واجهة API غير متاحة مؤقتًا' });
   }
 
   req.merchant = result.merchant;
@@ -590,10 +641,13 @@ sariApiRouter.get('/products', async (req: AuthenticatedRequest, res: Response) 
 // ── POST /api/v1/sync/products — Bulk sync products ─────────
 sariApiRouter.post('/sync/products', async (req: AuthenticatedRequest, res: Response) => {
   // PEN-R2-02: Sync-specific rate limit for products
-  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
-  if (!checkSyncLimit(`sync_p_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`sync_p_${req.apiKeyId || 'unknown'}`),
+    'Sync rate limit exceeded (10/min)',
+    'تجاوزت حد المزامنة (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const { products, mode: rawMode } = req.body ?? {};
   if (rawMode !== undefined && rawMode !== 'append' && rawMode !== 'replace') {
@@ -703,12 +757,13 @@ sariApiRouter.post('/sync/faqs', async (req: AuthenticatedRequest, res: Response
 
 // ── POST /api/v1/brain/reset — Reset API-managed knowledge ──
 sariApiRouter.post('/brain/reset', async (req: AuthenticatedRequest, res: Response) => {
-  if (!checkSpecialLimit(destructiveLimitMap, `brain_reset_${req.apiKeyId || 'unknown'}`, 3, 3600_000)) {
-    return res.status(429).json({
-      error: 'Brain reset rate limit exceeded (3/hour)',
-      errorAr: 'تجاوزت حد إعادة الضبط (3/ساعة)',
-    });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkDistributedLimit(`brain_reset:${req.apiKeyId || 'unknown'}`, 3, 3600_000),
+    'Brain reset rate limit exceeded (3/hour)',
+    'تجاوزت حد إعادة الضبط (3/ساعة)',
+  );
+  if (limitResponse) return limitResponse;
 
   try {
     const merchantId = req.merchant.id;
@@ -789,9 +844,13 @@ sariApiRouter.get('/stats', async (req: AuthenticatedRequest, res: Response) => 
 sariPlatformRouter.post('/provision', async (req: PlatformRequest, res: Response) => {
   // Platform credentials are fingerprinted in limiter keys; prefixes can collide.
   const platformKey = String(req.headers['x-platform-key'] || 'unknown');
-  if (!checkProvisionLimit(privacyHashExact(platformKey))) {
-    return res.status(429).json({ error: 'Provision rate limit exceeded (5/hour)', errorAr: 'تجاوزت حد إنشاء الحسابات (5/ساعة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkProvisionLimit(privacyHashExact(platformKey)),
+    'Provision rate limit exceeded (5/hour)',
+    'تجاوزت حد إنشاء الحسابات (5/ساعة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const {
     name,
@@ -1167,10 +1226,13 @@ function merchantNotFound(res: Response) {
 
 // ── POST /api/v1/platform/sync/products — Sync products via Platform Key ──
 sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Response) => {
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkSyncLimit(`platform_sync_p_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`platform_sync_p_${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`),
+    'Sync rate limit exceeded (10/min)',
+    'تجاوزت حد المزامنة (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
@@ -1224,10 +1286,13 @@ sariPlatformRouter.post('/sync/products', async (req: PlatformRequest, res: Resp
 
 // ── POST /api/v1/platform/sync/trainees — Sync trainees via Platform Key ──
 sariPlatformRouter.post('/sync/trainees', async (req: PlatformRequest, res: Response) => {
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkSyncLimit(`platform_sync_t_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`platform_sync_t_${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`),
+    'Sync rate limit exceeded (10/min)',
+    'تجاوزت حد المزامنة (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
@@ -1279,10 +1344,13 @@ sariPlatformRouter.post('/sync/trainees', async (req: PlatformRequest, res: Resp
 
 // ── POST /api/v1/platform/sync/settings — Sync settings via Platform Key ──
 sariPlatformRouter.post('/sync/settings', async (req: PlatformRequest, res: Response) => {
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkSyncLimit(`platform_sync_s_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`platform_sync_s_${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`),
+    'Sync rate limit exceeded (10/min)',
+    'تجاوزت حد المزامنة (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
@@ -1326,10 +1394,13 @@ sariPlatformRouter.post('/sync/settings', async (req: PlatformRequest, res: Resp
 
 // ── POST /api/v1/platform/sync/faqs — Sync FAQs via Platform Key ──
 sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response) => {
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkSyncLimit(`platform_sync_f_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`platform_sync_f_${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`),
+    'Sync rate limit exceeded (10/min)',
+    'تجاوزت حد المزامنة (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
@@ -1383,10 +1454,13 @@ sariPlatformRouter.post('/sync/faqs', async (req: PlatformRequest, res: Response
 // The text is designed to be GPT-analyzable: sections, headings, structured content
 // so that Knowledge Engine extracts sales_intel + opportunities (same as website analysis).
 sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Response) => {
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkSpecialLimit(syncLimitMap, `platform_sync_k_${keyPrefix}`, 3, 60_000)) {
-    return res.status(429).json({ error: 'Knowledge sync rate limit exceeded (3/min)', errorAr: 'تجاوزت حد مزامنة المعرفة' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkDistributedLimit(`platform_sync_k:${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`, 3, 60_000),
+    'Knowledge sync rate limit exceeded (3/min)',
+    'تجاوزت حد مزامنة المعرفة',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
@@ -1607,10 +1681,13 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
 // ── GET /api/v1/platform/status — Check connection status + sync stats ──
 sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) => {
   // PEN-SYNC-03: Dedicated rate limit for status reads (DB-heavy)
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkApiRateLimit(`platform_status_${keyPrefix}`, 15, 60_000)) {
-    return res.status(429).json({ error: 'Status rate limit exceeded (15/min)', errorAr: 'تجاوزت حد فحص الحالة' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkDistributedLimit(`platform_status:${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`, 15, 60_000),
+    'Status rate limit exceeded (15/min)',
+    'تجاوزت حد فحص الحالة',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) {
@@ -1714,10 +1791,13 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
 // ── POST /api/v1/platform/request-resync — Request Byaan to push data again ──
 sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Response) => {
   // PEN-SYNC-05: Tight rate limit for resync (outbound HTTP trigger)
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkSpecialLimit(syncLimitMap, `platform_resync_${keyPrefix}`, 3, 60_000)) {
-    return res.status(429).json({ error: 'Resync rate limit exceeded (3/min)', errorAr: 'تجاوزت حد إعادة المزامنة (3/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkDistributedLimit(`platform_resync:${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`, 3, 60_000),
+    'Resync rate limit exceeded (3/min)',
+    'تجاوزت حد إعادة المزامنة (3/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
@@ -1767,10 +1847,13 @@ sariPlatformRouter.post('/request-resync', async (req: PlatformRequest, res: Res
 // ── GET /api/v1/platform/merchant/stats — Dashboard statistics ──
 sariPlatformRouter.get('/merchant/stats', async (req: PlatformRequest, res: Response) => {
   // SEC-1: Rate limit dashboard reads
-  const keyPrefix = (req.headers['x-platform-key'] as string)?.substring(0, 20) || 'unknown';
-  if (!checkApiRateLimit(`platform_dash_${keyPrefix}`, 60, 60_000)) {
-    return res.status(429).json({ error: 'Dashboard rate limit exceeded', errorAr: 'تجاوزت حد طلبات لوحة التحكم' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkDistributedLimit(`platform_dash:${req.platform || 'unknown'}:${req.tenantDomain || 'unscoped'}`, 60, 60_000),
+    'Dashboard rate limit exceeded',
+    'تجاوزت حد طلبات لوحة التحكم',
+  );
+  if (limitResponse) return limitResponse;
 
   const merchant = await resolveMerchantByDomain(req.tenantDomain);
   if (!merchant) return merchantNotFound(res);
@@ -2050,10 +2133,13 @@ sariPlatformRouter.put('/merchant/instances/:id', async (req: PlatformRequest, r
 // ── POST /api/v1/sync/trainees — Sync trainees from Byaan ───
 sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Response) => {
   // PEN-BYAAN-05: Sync-specific rate limit
-  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
-  if (!checkSyncLimit(`sync_t_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`sync_t_${req.apiKeyId || 'unknown'}`),
+    'Sync rate limit exceeded (10/min)',
+    'تجاوزت حد المزامنة (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const { trainees, mode: rawTraineeMode } = req.body ?? {};
   if (rawTraineeMode !== undefined && rawTraineeMode !== 'append' && rawTraineeMode !== 'replace') {
@@ -2101,10 +2187,13 @@ sariApiRouter.post('/sync/trainees', async (req: AuthenticatedRequest, res: Resp
 // ── POST /api/v1/sync/settings — Sync settings (whitelist) ──
 sariApiRouter.post('/sync/settings', async (req: AuthenticatedRequest, res: Response) => {
   // PEN-R2-02: Sync-specific rate limit for settings
-  const keyPrefix = req.headers.authorization?.substring(7, 19) || 'unknown';
-  if (!checkSyncLimit(`sync_s_${keyPrefix}`)) {
-    return res.status(429).json({ error: 'Sync rate limit exceeded (10/min)', errorAr: 'تجاوزت حد المزامنة (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`sync_s_${req.apiKeyId || 'unknown'}`),
+    'Sync rate limit exceeded (10/min)',
+    'تجاوزت حد المزامنة (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   const { settings } = req.body ?? {};
   if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
@@ -2228,9 +2317,13 @@ sariApiRouter.get('/conversions', async (req: AuthenticatedRequest, res: Respons
 
 // ── POST /api/v1/conversions — Record a conversion ──────────
 sariApiRouter.post('/conversions', async (req: AuthenticatedRequest, res: Response) => {
-  if (!checkSyncLimit(`conversion_${req.apiKeyId || 'unknown'}`)) {
-    return res.status(429).json({ error: 'Conversion write limit exceeded (10/min)', errorAr: 'تجاوزت حد تسجيل العمليات (10/دقيقة)' });
-  }
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkSyncLimit(`conversion_${req.apiKeyId || 'unknown'}`),
+    'Conversion write limit exceeded (10/min)',
+    'تجاوزت حد تسجيل العمليات (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ error: 'Conversion object is required', errorAr: 'بيانات العملية مطلوبة' });
   }

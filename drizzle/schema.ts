@@ -891,6 +891,17 @@ export const authLoginAttempts = mysqlTable("auth_login_attempts", {
 	index("auth_login_attempts_time_idx").on(table.attemptedAt),
 ]);
 
+export const apiRateLimitWindows = mysqlTable("api_rate_limit_windows", {
+	bucketHash: varchar("bucket_hash", { length: 64 }).primaryKey(),
+	windowStartedAt: timestamp("window_started_at", { mode: 'string', fsp: 3 }).notNull(),
+	expiresAt: timestamp("expires_at", { mode: 'string', fsp: 3 }).notNull(),
+	requestCount: int("request_count").default(0).notNull(),
+	createdAt: timestamp("created_at", { mode: 'string', fsp: 3 }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string', fsp: 3 }).defaultNow().onUpdateNow().notNull(),
+}, table => [
+	index("api_rate_limit_windows_expiry_idx").on(table.expiresAt),
+]);
+
 export const consentReceipts = mysqlTable("consent_receipts", {
 	id: int().autoincrement().primaryKey(),
 	userId: int("user_id").references(() => users.id, { onDelete: "set null" }),
