@@ -87,20 +87,3 @@ export function maskCredential(value: string | null | undefined): string | null 
   if (plaintext.length <= 8) return '********';
   return `${plaintext.slice(0, 4)}****${plaintext.slice(-4)}`;
 }
-
-type PublicPaymentGateway<T> = T extends Record<string, any>
-  ? Omit<T, 'secretKey' | 'webhookSecret'> & {
-      hasSecretKey: boolean;
-      hasWebhookSecret: boolean;
-    }
-  : T;
-
-export function toPublicPaymentGateway<T extends Record<string, any> | null | undefined>(gateway: T): PublicPaymentGateway<T> {
-  if (!gateway) return gateway as PublicPaymentGateway<T>;
-  const { secretKey: _secretKey, webhookSecret: _webhookSecret, ...safe } = gateway;
-  return {
-    ...safe,
-    hasSecretKey: Boolean(_secretKey),
-    hasWebhookSecret: Boolean(_webhookSecret),
-  } as PublicPaymentGateway<T>;
-}

@@ -95,7 +95,6 @@ import {
   createMessage,
   createNotification,
   createOccasionCampaign,
-  createOrUpdatePaymentGateway,
   createPlan,
   createPlanChangeLog,
   createProduct,
@@ -144,7 +143,6 @@ import {
   getAllCampaignsWithMerchants,
   getAllDiscountCoupons,
   getAllInvoices,
-  getAllPaymentGateways,
   getAllPlanChangeLogs,
   getAllPlans,
   getAllWhatsAppConnectionRequests,
@@ -328,7 +326,6 @@ import { createSessionToken } from './_core/auth';
 import { THIRTY_DAYS_MS } from '@shared/const';
 import { z } from 'zod';
 import { toPublicWhatsAppConnectionRequest, toPublicWhatsAppInstance, toPublicWhatsAppRequest } from './whatsapp/public-records';
-import { toPublicPaymentGateway } from './security/secrets';
 
 const passwordResetEmailSchema = z.string()
   .trim()
@@ -2590,7 +2587,7 @@ export const appRouter = router({
     createSession: protectedProcedure
       .input(z.object({
         planId: z.number().int().positive(),
-        gateway: z.enum(['tap', 'paypal']),
+        gateway: z.literal('tap'),
       }))
       .mutation(async () => {
         // New writes must use merchantSubscription.subscribe so entitlement and
@@ -2621,35 +2618,6 @@ export const appRouter = router({
         }
 
         return { status: toPublicSubscriptionPaymentStatus(payment.status) };
-      }),
-  }),
-
-  // Payment Gateways Router (Admin only)
-  paymentGateways: router({
-    list: adminProcedure.query(async () => {
-      const gateways = await getAllPaymentGateways();
-      return gateways.map(gateway => toPublicPaymentGateway(gateway));
-    }),
-
-    upsert: adminProcedure
-      .input(z.object({
-        gateway: z.enum(['tap', 'paypal']),
-        isEnabled: z.boolean(),
-        publicKey: z.string().optional(),
-        secretKey: z.string().optional(),
-        webhookSecret: z.string().optional(),
-        testMode: z.boolean(),
-      }))
-      .mutation(async ({ input }) => {
-        const result = await createOrUpdatePaymentGateway({
-          ...input,
-          isEnabled: input.isEnabled ? 1 : 0,
-          testMode: input.testMode ? 1 : 0,
-        });
-        if (!result) {
-          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to save payment gateway' });
-        }
-        return { success: true, gateway: toPublicPaymentGateway(result) };
       }),
   }),
 

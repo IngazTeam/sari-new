@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'node:crypto';
-import { handlePayPalWebhook, verifyPayPalSignature } from './paypal';
 import { handleGreenAPIWebhook } from './greenapi';
 import { handleMetaCloudWebhook, handleMetaWebhookVerification } from './meta-cloud';
 import { verifyGreenWebhookAuthorization } from './greenapi-auth';
@@ -16,7 +15,7 @@ import {
 } from './zid-security';
 import { handleCalendlyWebhook } from '../integrations/calendly';
 import { getIntegrationByType } from '../db';
-import { getPaymentGatewayByName, getPaymentTransactionByTapChargeId, getTapSettings } from '../db';
+import { getPaymentTransactionByTapChargeId, getTapSettings } from '../db';
 import { ENV } from '../_core/env';
 import { getMerchantPaymentSettings } from '../db';
 import * as dbPayments from '../db_payments';
@@ -102,43 +101,6 @@ router.post('/tap', async (req: Request, res: Response) => {
     }
   } catch (error) {
     console.error('[Tap Webhook] Error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-/**
- * PayPal Webhook Endpoint
- * POST /api/webhooks/paypal
- */
-router.post('/paypal', async (req: Request, res: Response) => {
-  try {
-    const headers = req.headers as Record<string, string>;
-    const body = JSON.stringify(req.body);
-
-    // Get PayPal gateway config
-    const paypalGateway = await getPaymentGatewayByName('paypal');
-    if (!paypalGateway || !paypalGateway.isEnabled) {
-      return res.status(400).json({ error: 'PayPal gateway not configured' });
-    }
-
-    // Verify signature
-    const webhookId = paypalGateway.publicKey || ''; // Store webhook ID in publicKey field
-    const isValid = await verifyPayPalSignature(headers, body, webhookId);
-    if (!isValid) {
-      console.error('[PayPal Webhook] Invalid signature');
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-
-    // Process webhook
-    const result = await handlePayPalWebhook(req.body);
-
-    if (result.success) {
-      return res.status(200).json({ message: result.message });
-    } else {
-      return res.status(400).json({ error: result.message });
-    }
-  } catch (error) {
-    console.error('[PayPal Webhook] Error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

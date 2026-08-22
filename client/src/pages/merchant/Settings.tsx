@@ -621,21 +621,15 @@ export default function MerchantSettings() {
         <CardContent>
           <div className="text-center py-12">
             <CreditCard className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">{t('settingsPage.comingSoon')}</h3>
+            <h3 className="text-lg font-semibold mb-2">Tap Payments</h3>
             <p className="text-muted-foreground mb-4">
-              {t('settingsPage.comingSoonDesc')}
+              {t('settingsPage.paymentMethodsDesc')}
             </p>
-            <div className="flex flex-wrap justify-center gap-4 mt-6">
-              <div className="px-4 py-2 bg-muted rounded-lg">
-                <span className="font-semibold">Tap</span>
-              </div>
-              <div className="px-4 py-2 bg-muted rounded-lg">
-                <span className="font-semibold">PayPal</span>
-              </div>
-              <div className="px-4 py-2 bg-muted rounded-lg">
-                <span className="font-semibold">Link</span>
-              </div>
-            </div>
+            <Button asChild>
+              <a href="/merchant/payment-settings">
+                {t('sidebar.merchant.paymentSettings')}
+              </a>
+            </Button>
           </div>
         </CardContent>
       </Card>

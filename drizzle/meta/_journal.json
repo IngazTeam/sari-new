@@ -253,6 +253,13 @@
       "when": 1787520000000,
       "tag": "0035_order_payment_link_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1787523600000,
+      "tag": "0036_retire_unused_payment_gateways",
+      "breakpoints": true
     }
   ]
 }

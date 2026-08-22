@@ -440,21 +440,6 @@ export const passwordResetTokens = mysqlTable("password_reset_tokens", {
 		index("password_reset_tokens_token_unique").on(table.token),
 	]);
 
-export const paymentGateways = mysqlTable("payment_gateways", {
-	id: int().autoincrement().primaryKey(),
-	gateway: mysqlEnum(['tap', 'paypal']).notNull(),
-	isEnabled: tinyint().default(0).notNull(),
-	publicKey: text(),
-	secretKey: text(),
-	webhookSecret: text(),
-	testMode: tinyint().default(1).notNull(),
-	createdAt: timestamp({ mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp({ mode: 'string' }).defaultNow().onUpdateNow().notNull(),
-},
-	(table) => [
-		index("payment_gateways_gateway_unique").on(table.gateway),
-	]);
-
 export const payments = mysqlTable("payments", {
 	id: int().autoincrement().primaryKey(),
 	merchantId: int().notNull().references(() => merchants.id, { onDelete: "cascade" }),
@@ -1749,8 +1734,6 @@ export type Payment = InferSelectModel<typeof payments>;
 export type InsertPayment = InferInsertModel<typeof payments>;
 export type PlanChangeLog = InferSelectModel<typeof planChangeLogs>;
 export type InsertPlanChangeLog = InferInsertModel<typeof planChangeLogs>;
-export type PaymentGateway = InferSelectModel<typeof paymentGateways>;
-export type InsertPaymentGateway = InferInsertModel<typeof paymentGateways>;
 export type Invoice = InferSelectModel<typeof invoices>;
 export type InsertInvoice = InferInsertModel<typeof invoices>;
 export type SallaConnection = InferSelectModel<typeof sallaConnections>;

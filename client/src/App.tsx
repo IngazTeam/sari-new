@@ -191,7 +191,6 @@ const MerchantsManagement = lazyLoad(() => import("./pages/admin/Merchants"));
 const MerchantDetails = lazyLoad(() => import("./pages/admin/MerchantDetails"));
 const AdminSettings = lazyLoad(() => import("./pages/admin/Settings"));
 const WhatsAppRequestsPage = lazyLoad(() => import("./pages/admin/WhatsAppRequestsPage"));
-const PaymentGateways = lazyLoad(() => import("./pages/admin/PaymentGateways"));
 const AdminCampaigns = lazyLoad(() => import("./pages/admin/Campaigns"));
 const SMTPSettings = lazyLoad(() => import("./pages/superadmin/SmtpSettings"));
 const AISettings = lazyLoad(() => import("./pages/admin/AISettings"));
@@ -1010,9 +1009,7 @@ function Router() {
       </Route>
 
       <Route path="/admin/payment-gateways">
-        <DashboardLayout>
-          <PaymentGateways />
-        </DashboardLayout>
+        <Redirect to="/admin/tap-settings" />
       </Route>
 
       <Route path="/admin/google-oauth">

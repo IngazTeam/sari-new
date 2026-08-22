@@ -71,9 +71,6 @@ import {
   planChangeLogs,
   PlanChangeLog,
   InsertPlanChangeLog,
-  paymentGateways,
-  PaymentGateway,
-  InsertPaymentGateway,
   invoices,
   Invoice,
   InsertInvoice,
@@ -333,14 +330,6 @@ function decryptWhatsAppInstance(record: WhatsAppInstance | undefined): WhatsApp
 
 function decryptWhatsAppRequest(record: WhatsAppRequest | undefined): WhatsAppRequest | undefined {
   return record ? { ...record, token: decryptSecret(record.token) } : undefined;
-}
-
-function decryptPaymentGateway(record: PaymentGateway | undefined): PaymentGateway | undefined {
-  return record ? {
-    ...record,
-    secretKey: decryptSecret(record.secretKey),
-    webhookSecret: decryptSecret(record.webhookSecret),
-  } : undefined;
 }
 
 function decryptMerchantPaymentSettings(record: MerchantPaymentSettings | undefined): MerchantPaymentSettings | undefined {
@@ -1993,74 +1982,6 @@ export async function deleteWhatsAppConnectionRequest(id: number): Promise<void>
   await db.delete(whatsappConnectionRequests).where(eq(whatsappConnectionRequests.id, id));
 }
 
-
-// ============================================
-// Payment Gateways Functions
-// ============================================
-
-export async function createOrUpdatePaymentGateway(gateway: InsertPaymentGateway): Promise<PaymentGateway | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const { secretKey, webhookSecret, ...publicGatewayFields } = gateway;
-  const encryptedGateway: InsertPaymentGateway = {
-    ...publicGatewayFields,
-    ...(secretKey !== undefined && { secretKey: encryptSecret(secretKey) }),
-    ...(webhookSecret !== undefined && { webhookSecret: encryptSecret(webhookSecret) }),
-  };
-
-  // Check if gateway already exists
-  const existing = await db.select().from(paymentGateways).where(eq(paymentGateways.gateway, gateway.gateway)).limit(1);
-
-  if (existing.length > 0) {
-    // Update existing gateway
-    await db.update(paymentGateways)
-      .set({
-        ...encryptedGateway,
-        updatedAt: formatDateForDB(new Date()),
-      })
-      .where(eq(paymentGateways.gateway, gateway.gateway));
-
-    return getPaymentGatewayByName(gateway.gateway);
-  } else {
-    // Create new gateway
-    const result = await db.insert(paymentGateways).values(encryptedGateway);
-    const insertedId = Number((result[0] as any).insertId);
-    return getPaymentGatewayById(insertedId);
-  }
-}
-
-export async function getPaymentGatewayById(id: number): Promise<PaymentGateway | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.select().from(paymentGateways).where(eq(paymentGateways.id, id)).limit(1);
-  return decryptPaymentGateway(result[0]);
-}
-
-export async function getPaymentGatewayByName(gateway: 'tap' | 'paypal'): Promise<PaymentGateway | undefined> {
-  const db = await getDb();
-  if (!db) return undefined;
-
-  const result = await db.select().from(paymentGateways).where(eq(paymentGateways.gateway, gateway)).limit(1);
-  return decryptPaymentGateway(result[0]);
-}
-
-export async function getAllPaymentGateways(): Promise<PaymentGateway[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const records = await db.select().from(paymentGateways);
-  return records.map(record => decryptPaymentGateway(record)!);
-}
-
-export async function getEnabledPaymentGateways(): Promise<PaymentGateway[]> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const records = await db.select().from(paymentGateways).where(eq(paymentGateways.isEnabled, 1));
-  return records.map(record => decryptPaymentGateway(record)!);
-}
 
 // ============================================
 // Additional Payment Functions

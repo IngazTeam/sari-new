@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.68 — محدّث بتوحيد روابط دفع الطلبات القادمة من المحادثة\
+**الإصدار:** 3.69 — محدّث بتقاعد مصدر بوابات المنصة المكرر وPayPal غير المستعمل\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -115,6 +115,7 @@
 92. أُغلق محليًا منح الاشتراك واستدعاء المزود من browser callback: كان `payment.handlePaymentCallback` العام يقبل أي نص ويطلب charge من Tap ثم يشغّل انتقال entitlement، وكان مسار `subscriptionPayments.verifyPayment` القديم يفعل الأمر نفسه لـTap/PayPal من المتصفح؛ كما كانت صفحة النجاح القديمة تعلن النجاح لمجرد رجوع mutation بلا خطأ. أصبح webhook الموقّع وحده يغيّر الدفع والاشتراك. callback العام query محلية بمعرف صارم وإجابة status واحدة؛ المرجع غير الموجود والمعلق كلاهما `processing` لمنع enumeration، والفشل/refund يختصران إلى `failed`. المسار القديم tenant-owned query محلية فقط، والواجهتان polling محدود 30 مرة دون خلفية وتعرضان pending صادقًا بعد المهلة. وُحد ملف callback قديم بتشفير تالف كـalias للصفحة canonical، وحُدثت حواجز Zid التاريخية لعقود OAuth وBasic Auth الحالية. اجتاز نطاق callback/state/claims 91/91، وملفا الأمن التاريخي وcallback 55/55، وبوابة الإصدار 725/725 مع TypeScript/build؛ يبقى replay منشور يثبت أن redirect لا يتصل بالمزود وأن webhook وحده يفعّل الاشتراك.
 93. أُغلق محليًا قبول عودة دفع الطلبات لحالة `AUTHORIZED` واستدعاء المزود من مسار التحقق: أصبحت `CAPTURED` وحدها نجاحًا ماليًا، بينما `AUTHORIZED/PENDING/unknown` تعود `processing`، والحالات النهائية السلبية تختصر إلى `failed`. استعلاما link/charge العامان يقرآن السجل المحلي فقط بمعرفات canonical، ويعيدان النتيجة الخشنة نفسها للمرجع الغائب أو غير المملوك بلا 404 oracle. أزيلت mutation التحقق التي كانت تطلب Tap وتغيّر الحالة من return page، وتقاعدت خمسة عملاء/routers مكررة غير محدودة واختبار legacy التابع لها. أوقفت واجهات refund غير المستهلكة لأن تنفيذها كان provider-first وقابلًا لسباق تجاوز المبلغ ويعلّم المحلي `refunded` قبل إثبات المزود؛ لا تعاد إلا بحجز ذري وidempotency وعميل محدود وwebhook موقّع. صفحتا العودة polling محدود 30 مرة دون خلفية ولا تعرضان نجاحًا قبل القبض. اجتازت المرحلة 113/113 فحصًا مركزًا، و730/730 بوابة إصدار، وTypeScript/build؛ بقيت مسارات charge مباشرة داخل الذكاء وأتمتة المحادثة للمرحلة التالية، واختبار Tap sandbox المنشور.
 94. أُغلقت محليًا آخر وصلتي Tap المباشرتين في إنشاء الطلب من المحادثة: كان `action-selector` و`order-from-chat` يرسلان charge من العامل بلا timeout/size bound أو idempotency، يعتمدان `isVerified` القديم، ويرسلان merchant/order/conversation metadata للمزود، ثم يكتبان الدفع من response غير موثق. أصبح المساران يصدران رابط checkout محليًا فقط؛ مُصدر canonical يقرأ الطلب المحفوظ ويثبت tenant والمبلغ والعملة والحالة وجاهزية المفتاح، وينشئ رابطًا ثابت المبلغ وصالحًا 24 ساعة واستخدامًا واحدًا. قيد `payment_links_order_id_unique` في `0035` يمنع رابطين للطلب، وduplicate race يستعيد الفائز ثم يعيد تدقيق هويته. router إنشاء رابط الطلب يستخدم الخدمة نفسها، وpreflight count-only يفشل عند duplicate/cross-tenant/amount drift/unsafe/orphan قبل migration. لا هاتف أو اسم أو secret أو اتصال Tap في كتّاب المحادثة؛ charge لا ينشأ إلا بعد دخول العميل checkout المركزي. اجتازت المرحلة 111/111 فحصًا مركزًا، و737/737 بوابة إصدار، وTypeScript/Drizzle/build؛ يبقى preflight وتطبيق `0035` وسباق MySQL ورحلة محادثة→checkout→webhook على Tap sandbox المنشور.
+95. أُغلق محليًا مصدر بوابات دفع منصة مكرر لم يكن يستهلكه أي checkout: كانت صفحة الإدارة تكتب أسرار Tap/PayPal في `payment_gateways` بينما Tap الفعلي يقرأ `tap_settings` للمنصة و`merchant_payment_settings` للتاجر. كما بقي PayPal webhook مركبًا بلا مسار شراء مستهلك، ويستخدم تحقق HMAC محليًا غير مطابق لعقد PayPal ثم يغيّر الدفع والاشتراك مباشرة. حُذفت الصفحة والـrouter ودوال DB وعميل/ويبهوك PayPal، وتحول المسار الإداري القديم إلى `/admin/tap-settings`، وصارت إعدادات التاجر تشير إلى Tap الحقيقي بدل وعد PayPal «قريبًا». migration `0036` يحذف المخزن المكرر ولا ينقل أسراره غير الموثقة إلى المصدر canonical؛ فاحص المخطط ومهاجر الأسرار لم يعودا يطلبانه. بقي enum `payments.payment_method` التاريخي متوافقًا مع الصفوف القديمة دون كاتب PayPal نشط. اجتازت المرحلة 170/170 فحصًا مركزًا و744/744 بوابة إصدار وTypeScript/Drizzle/build؛ يلزم backup وفحص rows/consumers وتدوير الاعتمادات قبل تطبيق `0036` على staging.
 
 **قرار الخطة:**
 
@@ -123,7 +124,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.68
+### حالة تنفيذ الجولة 3.69
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -157,6 +158,7 @@
 | سلطة callback اشتراكات Tap | مكتمل برمجيًا محليًا/replay منشور معلق | webhook الموقّع وحده يغيّر entitlement، callbackان local query فقط، unknown=pending، مراجع strict وpolling محدود؛ 91/91 مركز و725/725 بوابة إصدار |
 | حقيقة عودة دفع الطلبات وتقليص Tap legacy | مكتمل برمجيًا محليًا/sandbox منشور معلق | CAPTURED وحدها نجاح، status محلي coarse بلا enumeration، معرفات canonical، polling محدود، وحذف ستة أسطح legacy؛ 113/113 مركز و730/730 بوابة إصدار |
 | رابط دفع الطلب من المحادثة | مكتمل برمجيًا محليًا/`0035` وsandbox معلقان | لا direct Tap أو secret/PII في الكاتبين، رابط محلي واحد server-priced، readiness canonical، unique order وrace recovery؛ 111/111 مركز و737/737 بوابة إصدار |
+| تقاعد بوابات المنصة المكررة وPayPal | مكتمل برمجيًا محليًا/`0036` وstaging معلقان | Tap canonical فقط، لا PayPal client/webhook/API أو محرر أسرار مكرر، redirect للإدارة وفحص runtime منسجم؛ 170/170 مركز و744/744 بوابة إصدار |
 | أدوات الحمل والاستعادة | مكتملة محليًا/تنفيذ staging معلق | production deny دائم، GET allowlist وحدود، p50/p95/p99 و5xx، manifest read-only consistent مربوط بالمصدر وقاعدة معزولة، Runbook RPO≤15m/RTO≤60m؛ 10/10 بنتست و413/413 بوابة إصدار |
 | Chromium وسلسلة الإمداد | مكتمل محليًا/smoke staging معلق | system runtime موحد، explicit path آمن، sandbox افتراضي، lockfile واحد وaudit بلا allowlist؛ 0 Critical/0 High/11 Moderate/6 Low و418/418 بوابة إصدار |
 | نموذج العملاء والمتدربين | مكتمل محليًا/DB وByaan staging معلقان | مصدر واحد يختار `customer_profiles` للمتاجر و`byaan_trainees` النشط لبيان، بلا SQL على `customers` غير المملوك وبعزل `merchant_id`؛ 7/7 بنتست و425/425 بوابة إصدار |
@@ -191,7 +193,7 @@
 | رابط الدفع العام | مكتمل محليًا | `/pay/:linkId` وstatus/return/callback، URL canonical، والمبلغ من الخادم فقط |
 | Tap وwebhooks | مكتمل تعاقديًا محليًا | ربط المفتاح بالوضع، منع غير المتحقق، تحقق مبلغ/عملة/مرجع، انتقال ذري ونهائي واحد |
 | التشغيل والصلاحيات | مكتمل محليًا | حارس `/admin`، health محدود، readiness باستعلام DB، 5xx منقح، وفشل process صريح |
-| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 737/737 بوابة إصدار في 65 ملفًا، وDrizzle check وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 573,381 bytes raw / 171,549 bytes gzip، والخادم 3.8MB |
+| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 744/744 بوابة إصدار في 65 ملفًا، وDrizzle check وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 572,601 bytes raw / 171,296 bytes gzip، والخادم 3.7MB |
 | احتواء الأسرار والـPII | مكتمل محليًا/تشغيليًا مشروط | إزالة 197 artifact من الشجرة الحالية، تشفير AES-256-GCM، DTOs منقحة، logs منقحة و295/295 اختبار اختراق وانحدار؛ يلزم تدوير المفاتيح وتنظيف التاريخ وتطبيق migration 0003 |
 | مصدر حقيقة المخطط | مكتمل محليًا/تشغيليًا مشروط | صفر DDL في runtime، migrations `0003` و`0004` مسجّلة مع snapshots، readiness يفشل عند schema drift، و264/264 اختبار اختراق وانحدار للحزم المستهدفة؛ يلزم تطبيق staging وrestore drill |
 | التسجيل والموافقات وحقوق البيانات | مكتمل محليًا/تشغيليًا مشروط | تسجيل ذري، إيصالات موافقة مؤرخة، تسويق اختياري، تصدير وحذف وDSR وطابور admin واحتفاظ مشفر؛ 13/13 بنتست مخصص و173/173 بوابة أمن وانحدار، ويلزم تطبيق `0006` و`0007` وتمرين staging ومراجعة قانونية |
@@ -1602,6 +1604,7 @@ WhatsAppChannel
 | PROD-TAP-SUBSCRIPTION-CALLBACK-001 | P0 | منع browser callback من منح الاشتراك أو استدعاء المزود | Backend/Frontend/QA | query محلية coarse ومحدودة، webhook وحده يكتب، وredirect/webhook replay منشور ناجح |
 | PROD-TAP-ORDER-RETURN-001 | P0 | منع return page من إثبات القبض أو استدعاء المزود | Backend/Frontend/QA | CAPTURED وحدها نجاح، query محلية coarse بلا oracle، polling محدود، وTap sandbox replay ناجح |
 | PROD-TAP-CONVERSATION-LINK-001 | P0 | منع كتّاب المحادثة من إنشاء charge خارج checkout | Backend/AI/QA/DevOps | preflight نظيف و`0035`، رابط واحد server-priced، صفر direct Tap/PII وrace+webhook sandbox ناجحان |
+| PROD-PLATFORM-GATEWAY-RETIRE-001 | P0 | إزالة مصدر أسرار دفع مكرر وPayPal غير المستعمل | Backend/Frontend/Security/DevOps | backup وتدقيق consumers، `0036`، صفر PayPal surface، Tap canonical واحد، وتدوير الاعتمادات القديمة |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
 | DB-001 | P0 | migrations موحدة | Backend | صفر runtime DDL |
