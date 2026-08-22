@@ -19,17 +19,11 @@ import crypto from 'crypto';
 import {
   createExtractedFaq,
   createProduct,
-  deactivateInstancesByPhoneNumber,
-  getActiveInstanceByPhoneNumber,
   getKnowledgeDocByMerchantId,
   getMerchantById,
   getPool,
   getProductsByMerchantId,
-  getWhatsAppInstanceById,
-  getWhatsAppInstancesByMerchantId,
-  setWhatsAppInstanceAsPrimary,
   updateProduct,
-  updateWhatsAppInstance,
 } from '../db';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import { decryptSecret, encryptSecret } from '../security/secrets';
@@ -64,6 +58,16 @@ import {
   listApiProducts,
 } from './api-read-model';
 import { reserveApiRateLimit } from './distributed-rate-limit';
+import {
+  getPublicWhatsAppInstanceCounts,
+  listPublicWhatsAppInstances,
+  mutateRestWhatsAppInstance,
+  normalizeRestInstanceId,
+  normalizeRestInstanceMutationBody,
+  RestInstanceMutationBusyError,
+  RestInstanceValidationError,
+  type RestInstanceMutationResult,
+} from './instance-lifecycle';
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -1234,6 +1238,42 @@ function merchantNotFound(res: Response) {
   });
 }
 
+function respondToInstanceMutation(res: Response, result: RestInstanceMutationResult) {
+  if (result.kind === 'not_found') {
+    return res.status(404).json({ error: 'Instance not found', errorAr: 'الرقم غير موجود' });
+  }
+  if (result.kind === 'phone_conflict') {
+    return res.status(409).json({
+      error: 'Instance activation requires a verified phone transfer',
+      errorAr: 'تفعيل الرقم يتطلب نقل ملكية موثقًا',
+      code: 'VERIFIED_PHONE_TRANSFER_REQUIRED',
+    });
+  }
+  if (result.kind === 'primary_requires_active') {
+    return res.status(409).json({
+      error: 'Only an active instance can be primary',
+      errorAr: 'يجب أن يكون الرقم نشطًا ليصبح أساسيًا',
+      code: 'PRIMARY_INSTANCE_MUST_BE_ACTIVE',
+    });
+  }
+  return res.json({ success: true, instance: result.instance });
+}
+
+function respondToInstanceMutationError(res: Response, error: unknown) {
+  if (error instanceof RestInstanceValidationError) {
+    return res.status(400).json({ error: 'Invalid instance update', errorAr: 'تحديث الرقم غير صالح' });
+  }
+  if (error instanceof RestInstanceMutationBusyError) {
+    res.setHeader('Retry-After', '1');
+    return res.status(503).json({
+      error: 'Instance update is temporarily busy',
+      errorAr: 'تحديث الرقم مشغول مؤقتًا، أعد المحاولة',
+      code: 'INSTANCE_UPDATE_BUSY',
+    });
+  }
+  return null;
+}
+
 // ════════════════════════════════════════════════════════════════
 // Platform Sync Endpoints — X-Platform-Key authenticated
 // (Byaan sends data → Sari stores locally)
@@ -1949,20 +1989,10 @@ sariPlatformRouter.get('/merchant/instances', async (req: PlatformRequest, res: 
   if (!merchant) return merchantNotFound(res);
 
   try {
-    const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
-
+    const instances = await listPublicWhatsAppInstances(merchant.id);
     res.json({
       total: instances.length,
-      instances: instances.map((i: any) => ({
-        id: i.id,
-        instanceId: i.instanceId,
-        phoneNumber: i.phoneNumber,
-        displayName: i.displayName,
-        status: i.status,
-        isPrimary: i.isPrimary,
-        isActive: i.isActive,
-        createdAt: i.createdAt,
-      })),
+      instances,
     });
   } catch (e) {
     console.error('[SariAPI] Platform merchant instances failed:', e);
@@ -2040,9 +2070,8 @@ sariPlatformRouter.get('/merchant/status', async (req: PlatformRequest, res: Res
     const { getByaanConnection } = await import('../integrations/byaan');
     const connection = await getByaanConnection(merchant.id);
 
-    // Get WhatsApp instances count
-    const instances = await getWhatsAppInstancesByMerchantId(merchant.id);
-    const activeInstances = instances.filter((i: any) => i.status === 'active');
+    // Count safe projections in SQL; do not decrypt provider tokens to compute status.
+    const instanceCounts = await getPublicWhatsAppInstanceCounts(merchant.id);
 
     res.json({
       connected: true,
@@ -2052,9 +2081,9 @@ sariPlatformRouter.get('/merchant/status', async (req: PlatformRequest, res: Res
         status: merchant.status,
       },
       whatsapp: {
-        totalInstances: instances.length,
-        activeInstances: activeInstances.length,
-        hasActiveNumber: activeInstances.length > 0,
+        totalInstances: instanceCounts.totalInstances,
+        activeInstances: instanceCounts.activeInstances,
+        hasActiveNumber: instanceCounts.activeInstances > 0,
       },
       sync: connection ? {
         status: connection.sync_status,
@@ -2075,45 +2104,15 @@ sariPlatformRouter.put('/merchant/instances/:id', async (req: PlatformRequest, r
   if (!merchant) return merchantNotFound(res);
 
   try {
-    const instanceId = parseInt(req.params.id);
-    if (isNaN(instanceId)) {
-      return res.status(400).json({ error: 'Invalid instance ID', errorAr: 'معرف الرقم غير صالح' });
-    }
-
-    // Verify ownership — instance must belong to this merchant
-    const instance = await getWhatsAppInstanceById(instanceId);
-    if (!instance || (instance as any).merchantId !== merchant.id) {
-      return res.status(404).json({ error: 'Instance not found', errorAr: 'الرقم غير موجود' });
-    }
-
-    const { isActive, isPrimary } = req.body;
-
-    if (isPrimary === true) {
-      await setWhatsAppInstanceAsPrimary(instanceId, merchant.id);
-    }
-
-    if (typeof isActive === 'boolean') {
-      const newStatus = isActive ? 'active' : 'inactive';
-
-      // Check phone conflict when activating
-      if (newStatus === 'active' && (instance as any).phoneNumber) {
-        const conflicting = await getActiveInstanceByPhoneNumber(
-          (instance as any).phoneNumber, merchant.id
-        );
-        if (conflicting) {
-          await deactivateInstancesByPhoneNumber(
-            (instance as any).phoneNumber, merchant.id
-          );
-        }
-      }
-
-      await updateWhatsAppInstance(instanceId, { status: newStatus });
-    }
-
-    res.json({ success: true });
+    const instanceId = normalizeRestInstanceId(req.params.id);
+    const input = normalizeRestInstanceMutationBody(req.body);
+    const result = await mutateRestWhatsAppInstance(merchant.id, instanceId, input);
+    return respondToInstanceMutation(res, result);
   } catch (e) {
+    const handled = respondToInstanceMutationError(res, e);
+    if (handled) return handled;
     console.error('[SariAPI] Platform merchant instance toggle failed:', e);
-    res.status(500).json({ error: 'Failed to update instance', errorAr: 'فشل تحديث الرقم' });
+    return res.status(500).json({ error: 'Failed to update instance', errorAr: 'فشل تحديث الرقم' });
   }
 });
 
@@ -2379,19 +2378,10 @@ sariApiRouter.get('/integration', async (req: AuthenticatedRequest, res: Respons
 // ── GET /api/v1/instances — WhatsApp instances ──────────────
 sariApiRouter.get('/instances', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const instances = await getWhatsAppInstancesByMerchantId(req.merchant.id);
+    const instances = await listPublicWhatsAppInstances(req.merchant.id);
     res.json({
       total: instances.length,
-      data: instances.map((i: any) => ({
-        id: i.id,
-        instanceId: i.instanceId,
-        phoneNumber: i.phoneNumber,
-        displayName: i.displayName,
-        status: i.status,
-        isPrimary: i.isPrimary,
-        isActive: i.isActive,
-        createdAt: i.createdAt,
-      })),
+      data: instances,
     });
   } catch (e) {
     res.status(500).json({ error: 'Failed to fetch instances', errorAr: 'فشل جلب الأرقام' });
@@ -2401,43 +2391,13 @@ sariApiRouter.get('/instances', async (req: AuthenticatedRequest, res: Response)
 // ── PUT /api/v1/instances/:id — Toggle instance ─────────────
 sariApiRouter.put('/instances/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const instanceId = parseInt(req.params.id);
-    if (isNaN(instanceId)) {
-      return res.status(400).json({ error: 'Invalid instance ID' });
-    }
-
-    // Verify ownership
-    const instance = await getWhatsAppInstanceById(instanceId);
-    if (!instance || (instance as any).merchantId !== req.merchant.id) {
-      return res.status(404).json({ error: 'Instance not found', errorAr: 'الرقم غير موجود' });
-    }
-
-    const { isActive, isPrimary } = req.body;
-
-    if (isPrimary === true) {
-      await setWhatsAppInstanceAsPrimary(instanceId, req.merchant.id);
-    }
-
-    if (typeof isActive === 'boolean') {
-      const newStatus = isActive ? 'active' : 'inactive';
-
-      // VULN-3 FIX: Check phone conflict when activating
-      if (newStatus === 'active' && (instance as any).phoneNumber) {
-        const conflicting = await getActiveInstanceByPhoneNumber(
-          (instance as any).phoneNumber, req.merchant.id
-        );
-        if (conflicting) {
-          await deactivateInstancesByPhoneNumber(
-            (instance as any).phoneNumber, req.merchant.id
-          );
-        }
-      }
-
-      await updateWhatsAppInstance(instanceId, { status: newStatus });
-    }
-
-    res.json({ success: true });
+    const instanceId = normalizeRestInstanceId(req.params.id);
+    const input = normalizeRestInstanceMutationBody(req.body);
+    const result = await mutateRestWhatsAppInstance(req.merchant.id, instanceId, input);
+    return respondToInstanceMutation(res, result);
   } catch (e) {
-    res.status(500).json({ error: 'Failed to update instance', errorAr: 'فشل تحديث الرقم' });
+    const handled = respondToInstanceMutationError(res, e);
+    if (handled) return handled;
+    return res.status(500).json({ error: 'Failed to update instance', errorAr: 'فشل تحديث الرقم' });
   }
 });
