@@ -18,9 +18,20 @@ export const WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS = [{
     'is_primary',
     'created_at',
   ],
-  generatedColumns: ['active_primary_merchant_id'],
-  uniqueIndexes: ['whatsapp_instances_active_primary_merchant_unique'],
-  checkConstraints: ['whatsapp_instances_primary_requires_active_check'],
+  generatedColumns: [{
+    name: 'active_primary_merchant_id',
+    expression: "CASE WHEN status = 'active' AND is_primary = 1 THEN merchant_id ELSE NULL END",
+    storage: 'stored',
+  }],
+  uniqueIndexes: [{
+    name: 'whatsapp_instances_active_primary_merchant_unique',
+    columns: ['active_primary_merchant_id'],
+  }],
+  checkConstraints: [{
+    name: 'whatsapp_instances_primary_requires_active_check',
+    expression: "is_primary IN (0, 1) AND (is_primary = 0 OR status = 'active')",
+    enforced: true,
+  }],
 }] as const satisfies readonly SchemaRequirement[];
 
 export async function assertWhatsAppPrimarySchemaReady(
