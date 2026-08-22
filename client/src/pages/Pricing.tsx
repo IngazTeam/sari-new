@@ -7,28 +7,30 @@ import { Link } from 'wouter';
 import { CheckCircle2, ArrowRight, Loader2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { useTranslation } from 'react-i18next';
+import { QueryStateCard } from '@/components/QueryStateCard';
 
 export default function Pricing() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // Fetch plans from database
-  const { data: plans, isLoading, error } = trpc.subscriptionPlans.listPlans.useQuery();
+  const { data: plans, isLoading, isFetching, error, refetch } = trpc.subscriptionPlans.listPlans.useQuery();
+  const isArabic = i18n.resolvedLanguage === 'ar' || i18n.language === 'ar';
 
   const faqs = [
     {
-      question: 'هل يمكنني تغيير الباقة لاحقاً؟',
-      answer: 'نعم، يمكنك الترقية أو التخفيض في أي وقت. سيتم احتساب الفرق في السعر بشكل تناسبي.',
+      question: t('publicUx.pricing.faqTrialQuestion'),
+      answer: t('publicUx.pricing.faqTrialAnswer'),
     },
     {
-      question: 'ماذا يحدث إذا تجاوزت حد المحادثات؟',
-      answer: 'سيتم إيقاف الرد الآلي مؤقتاً حتى الشهر التالي، أو يمكنك الترقية للباقة الأعلى فوراً.',
+      question: t('publicUx.pricing.faqSourceQuestion'),
+      answer: t('publicUx.pricing.faqSourceAnswer'),
     },
     {
-      question: 'هل هناك فترة تجريبية مجانية؟',
-      answer: 'نعم، نوفر فترة تجريبية مجانية لمدة 7 أيام لجميع الباقات بدون الحاجة لبطاقة ائتمانية.',
+      question: t('publicUx.pricing.faqCancelQuestion'),
+      answer: t('publicUx.pricing.faqCancelAnswer'),
     },
     {
-      question: 'هل يمكنني إلغاء الاشتراك في أي وقت؟',
-      answer: 'نعم، يمكنك إلغاء الاشتراك في أي وقت دون أي رسوم إضافية. ستستمر الخدمة حتى نهاية الفترة المدفوعة.',
+      question: t('publicUx.pricing.faqTaxQuestion'),
+      answer: t('publicUx.pricing.faqTaxAnswer'),
     },
   ];
 
@@ -37,7 +39,13 @@ export default function Pricing() {
     if (!featuresStr) return [];
     try {
       const parsed = JSON.parse(featuresStr);
-      return Array.isArray(parsed) ? parsed : [];
+      return Array.isArray(parsed)
+        ? parsed
+            .filter((feature): feature is string => typeof feature === 'string')
+            .map((feature) => feature.trim())
+            .filter(Boolean)
+            .slice(0, 50)
+        : [];
     } catch {
       return [];
     }
@@ -54,12 +62,10 @@ export default function Pricing() {
         <div className="container relative py-20 md:py-32">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <h1 className="text-4xl md:text-6xl font-bold">
-                <span className="text-primary">
-                خطط تسعير واضحة
-              </span>
+              <span className="text-primary">{t('publicUx.pricing.heroTitle')}</span>
             </h1>
             <p className="text-xl text-muted-foreground">
-              اختر الباقة المناسبة لحجم متجرك. جميع الباقات تشمل فترة تجريبية مجانية 7 أيام
+              {t('publicUx.pricing.heroDescription')}
             </p>
           </div>
         </div>
@@ -70,20 +76,26 @@ export default function Pricing() {
         <div className="container">
           {/* Loading State */}
           {isLoading && (
-            <div className="flex justify-center items-center py-20">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              <span className="mr-3 text-lg text-muted-foreground">{t('pricingPage.text0')}</span>
+            <div className="flex justify-center items-center py-20" role="status" aria-live="polite">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden="true" />
+              <span className="ms-3 text-lg text-muted-foreground">{t('publicUx.pricing.loading')}</span>
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <div className="text-center py-20">
-              <p className="text-red-500 text-lg mb-4">{t('pricingPage.text1')}</p>
-              <Button onClick={() => window.location.reload()} variant="outline">
-                إعادة المحاولة
-              </Button>
-            </div>
+            <QueryStateCard
+              kind="error"
+              title={t('publicUx.pricing.errorTitle')}
+              description={t('publicUx.pricing.errorDescription')}
+              retryLabel={isFetching ? t('publicUx.pricing.retrying') : t('publicUx.pricing.retry')}
+              onRetry={() => void refetch()}
+              action={(
+                <Button asChild variant="outline">
+                  <Link href="/company/contact">{t('publicUx.pricing.contactSales')}</Link>
+                </Button>
+              )}
+            />
           )}
 
           {/* Plans Grid */}
@@ -92,6 +104,10 @@ export default function Pricing() {
               <div className="grid md:grid-cols-3 gap-8">
                 {plans.map((plan) => {
                   const features = parseFeatures(plan.features);
+                  const planName = isArabic ? plan.name : (plan.nameEn || plan.name);
+                  const planDescription = isArabic
+                    ? plan.description
+                    : (plan.descriptionEn || plan.description);
 
                   return (
                     <Card
@@ -100,18 +116,17 @@ export default function Pricing() {
                     >
                       <CardHeader className="text-center space-y-4 pt-8">
                         <div>
-                          <h3 className="text-2xl font-bold">{plan.name}</h3>
-                          <p className="text-sm text-muted-foreground">{plan.nameEn}</p>
+                          <h3 className="text-2xl font-bold">{planName}</h3>
                         </div>
                         <div>
                           <div className="flex items-baseline justify-center gap-2">
                             <span className="text-5xl font-bold">{plan.monthlyPrice}</span>
                             <span className="text-muted-foreground">{plan.currency}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-1">{t('pricingPage.text2')}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{t('publicUx.pricing.monthly')}</p>
                         </div>
-                        {plan.description && (
-                          <p className="text-sm text-muted-foreground">{plan.description}</p>
+                        {planDescription && (
+                          <p className="text-sm text-muted-foreground">{planDescription}</p>
                         )}
                       </CardHeader>
 
@@ -119,31 +134,25 @@ export default function Pricing() {
                         <ul className="space-y-3">
                           {/* Display max customers */}
                           <li className="flex items-start gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                            <span className="text-sm">{plan.maxCustomers} محادثة شهرياً</span>
+                            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                            <span className="text-sm">{t('publicUx.pricing.customerLimit', { count: plan.maxCustomers })}</span>
                           </li>
                           
                           {/* Display features from database */}
                           {features.map((feature, idx) => (
                             <li key={idx} className="flex items-start gap-2">
-                              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
                               <span className="text-sm">{feature}</span>
                             </li>
                           ))}
                         </ul>
 
-                        <Link href={`/subscribe/${plan.id}`}>
-                          <a className="block">
-                            <Button
-                              className="w-full"
-                              variant="outline"
-                              size="lg"
-                            >
-                              اشترك الآن
-                              <ArrowRight className="mr-2 w-4 h-4" />
-                            </Button>
-                          </a>
-                        </Link>
+                        <Button asChild className="w-full" variant="outline" size="lg">
+                          <Link href={`/subscribe/${plan.id}`}>
+                            {t('publicUx.pricing.choosePlan', { name: planName })}
+                            <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" aria-hidden="true" />
+                          </Link>
+                        </Button>
                       </CardContent>
                     </Card>
                   );
@@ -152,7 +161,7 @@ export default function Pricing() {
 
               <div className="text-center mt-12">
                 <p className="text-muted-foreground">
-                  جميع الأسعار بالريال السعودي ولا تشمل ضريبة القيمة المضافة (15%)
+                  {t('publicUx.pricing.vatNotice')}
                 </p>
               </div>
             </>
@@ -160,9 +169,16 @@ export default function Pricing() {
 
           {/* No Plans State */}
           {!isLoading && !error && (!plans || plans.length === 0) && (
-            <div className="text-center py-20">
-              <p className="text-muted-foreground text-lg">{t('pricingPage.text3')}</p>
-            </div>
+            <QueryStateCard
+              kind="empty"
+              title={t('publicUx.pricing.emptyTitle')}
+              description={t('publicUx.pricing.emptyDescription')}
+              action={(
+                <Button asChild variant="outline">
+                  <Link href="/company/contact">{t('publicUx.pricing.contactSales')}</Link>
+                </Button>
+              )}
+            />
           )}
         </div>
       </section>
@@ -172,10 +188,10 @@ export default function Pricing() {
         <div className="container">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              الأسئلة الشائعة
+              {t('publicUx.pricing.faqTitle')}
             </h2>
             <p className="text-lg text-muted-foreground">
-              إجابات على أكثر الأسئلة شيوعاً حول التسعير
+              {t('publicUx.pricing.faqSubtitle')}
             </p>
           </div>
 
@@ -196,19 +212,17 @@ export default function Pricing() {
       <section className="py-20 bg-primary text-white">
         <div className="container text-center space-y-8">
           <h2 className="text-3xl md:text-5xl font-bold">
-            جاهز للبدء؟
+            {t('publicUx.pricing.ctaTitle')}
           </h2>
           <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            ابدأ فترتك التجريبية المجانية الآن ولا تحتاج لبطاقة ائتمانية
+            {t('publicUx.pricing.ctaDescription')}
           </p>
-          <Link href="/subscribe">
-            <a>
-              <Button size="lg" variant="secondary" className="text-lg h-14 px-8">
-                اشترك الآن
-                <ArrowRight className="mr-2 w-5 h-5" />
-              </Button>
-            </a>
-          </Link>
+          <Button asChild size="lg" variant="secondary" className="text-lg h-14 px-8">
+            <Link href="/signup">
+              {t('publicUx.pricing.ctaButton')}
+              <ArrowRight className="ms-2 w-5 h-5 rtl:rotate-180" aria-hidden="true" />
+            </Link>
+          </Button>
         </div>
       </section>
 

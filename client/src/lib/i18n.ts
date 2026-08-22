@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import type { MerchantUxCopy } from '../locales/merchant-ux.schema';
 import type { AuthUxCopy } from '../locales/auth-ux.schema';
+import type { PublicUxCopy } from '../locales/public-ux.schema';
 
 export const SUPPORTED_LANGUAGE_CODES = [
   'ar',
@@ -19,6 +20,7 @@ export type SupportedLanguageCode = (typeof SUPPORTED_LANGUAGE_CODES)[number];
 type TranslationModule = { default: Record<string, unknown> };
 type MerchantUxModule = { default: MerchantUxCopy };
 type AuthUxModule = { default: AuthUxCopy };
+type PublicUxModule = { default: PublicUxCopy };
 
 // Keep every catalogue out of the application entry chunk. Vite emits one
 // independently cacheable chunk per language and fetches only the selected one.
@@ -62,11 +64,23 @@ const authUxLoaders: Record<SupportedLanguageCode, () => Promise<AuthUxModule>> 
   zh: () => import('../locales/auth-ux.en'),
 };
 
+const publicUxLoaders: Record<SupportedLanguageCode, () => Promise<PublicUxModule>> = {
+  ar: () => import('../locales/public-ux.ar'),
+  en: () => import('../locales/public-ux.en'),
+  fr: () => import('../locales/public-ux.en'),
+  tr: () => import('../locales/public-ux.en'),
+  es: () => import('../locales/public-ux.en'),
+  it: () => import('../locales/public-ux.en'),
+  de: () => import('../locales/public-ux.en'),
+  zh: () => import('../locales/public-ux.en'),
+};
+
 async function loadTranslations(language: SupportedLanguageCode): Promise<TranslationModule> {
-  const [legacy, merchantUx, authUx] = await Promise.all([
+  const [legacy, merchantUx, authUx, publicUx] = await Promise.all([
     translationLoaders[language](),
     merchantUxLoaders[language](),
     authUxLoaders[language](),
+    publicUxLoaders[language](),
   ]);
 
   return {
@@ -74,6 +88,7 @@ async function loadTranslations(language: SupportedLanguageCode): Promise<Transl
       ...legacy.default,
       merchantUx: merchantUx.default,
       authUx: authUx.default,
+      publicUx: publicUx.default,
     },
   };
 }
