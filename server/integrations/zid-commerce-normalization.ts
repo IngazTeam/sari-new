@@ -62,6 +62,15 @@ function requiredExternalId(value: unknown, kind: 'order' | 'customer'): string 
   return candidate;
 }
 
+export function normalizeZidOrderExternalId(value: unknown): string {
+  return requiredExternalId(value, 'order');
+}
+
+export function formatZidOrderSyncTime(value: Date): string {
+  if (!Number.isFinite(value.getTime())) throw new ZidCommerceSyncError('invalid_order');
+  return value.toISOString().slice(0, 23).replace('T', ' ');
+}
+
 function finiteNumber(value: unknown): number | null {
   if (typeof value !== 'number' && typeof value !== 'string') return null;
   if (typeof value === 'string' && !value.trim()) return null;
@@ -213,7 +222,7 @@ export function normalizeZidOrder(value: unknown, now = new Date()): NormalizedZ
     items: normalizedItems(order),
     shippingMethod: text(shippingMethod.name ?? shippingMethod.shipping_method ?? shipping.method_name, 255),
     orderDate: mysqlTimestamp(order.created_at ?? order.issue_date, now),
-    lastSyncedAt: now.toISOString().slice(0, 19).replace('T', ' '),
+    lastSyncedAt: formatZidOrderSyncTime(now),
   };
 }
 

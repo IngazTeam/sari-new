@@ -414,7 +414,9 @@ export const orders = mysqlTable("orders", {
 	giftMessage: text(),
 	reviewRequested: tinyint().default(0).notNull(),
 	reviewRequestedAt: timestamp({ mode: 'string' }),
-});
+}, (table) => [
+	uniqueIndex("orders_merchant_external_unique").on(table.merchantId, table.sallaOrderId),
+]);
 
 export const passwordResetAttempts = mysqlTable("password_reset_attempts", {
 	id: int().autoincrement().primaryKey(),
@@ -2442,6 +2444,7 @@ export const zidOrders = mysqlTable("zid_orders", {
 	currency: varchar({ length: 3 }).default('SAR').notNull(),
 	status: mysqlEnum(['pending', 'processing', 'completed', 'cancelled', 'refunded']).default('pending').notNull(),
 	paymentStatus: mysqlEnum("payment_status", ['pending', 'paid', 'failed', 'refunded']).default('pending').notNull(),
+	projectionStatus: mysqlEnum("projection_status", ['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']).default('pending').notNull(),
 
 	// Items
 	items: text().notNull(), // JSON array of order items
@@ -2456,7 +2459,7 @@ export const zidOrders = mysqlTable("zid_orders", {
 
 	// Dates
 	orderDate: timestamp("order_date", { mode: 'string' }),
-	lastSyncedAt: timestamp("last_synced_at", { mode: 'string' }),
+	lastSyncedAt: timestamp("last_synced_at", { mode: 'string', fsp: 3 }),
 	zidData: text("zid_data"), // Full JSON response from Zid API
 
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),

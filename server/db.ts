@@ -287,7 +287,9 @@ import {
   type NormalizedZidProduct,
 } from './integrations/zid-product-normalization';
 import {
+  formatZidOrderSyncTime,
   normalizeZidOrder,
+  normalizeZidOrderExternalId,
   normalizeZidPhone,
   type NormalizedZidCustomer,
   type NormalizedZidOrder,
@@ -7607,8 +7609,12 @@ export async function deactivateProductFromZid(
 /**
  * Upsert order from Zid
  */
-export async function upsertOrderFromZid(merchantId: number, zidOrder: any): Promise<void> {
-  await upsertNormalizedOrdersFromZid(merchantId, [normalizeZidOrder(zidOrder)]);
+export async function upsertOrderFromZid(
+  merchantId: number,
+  zidOrder: any,
+  occurredAt = new Date(),
+): Promise<void> {
+  await upsertNormalizedOrdersFromZid(merchantId, [normalizeZidOrder(zidOrder, occurredAt)]);
 }
 
 /** Persist validated Zid source orders and their usable Sari projections atomically. */
@@ -7624,7 +7630,7 @@ export async function upsertNormalizedOrdersFromZid(
       // Upsert the uniquely constrained source row first. InnoDB keeps the
       // duplicate-key row lock until commit, serializing concurrent webhook
       // projections for the same merchant/order without a global lock.
-      await tx.insert(zidOrders).values({
+      const sourceData = {
         merchantId,
         zidOrderId: zidOrder.externalId,
         zidOrderNumber: zidOrder.orderNumber,
@@ -7635,82 +7641,111 @@ export async function upsertNormalizedOrdersFromZid(
         currency: zidOrder.currency,
         status: zidOrder.status,
         paymentStatus: zidOrder.paymentStatus,
+        projectionStatus: zidOrder.sariStatus,
         items: zidOrder.items,
         shippingAddress: null,
         shippingMethod: zidOrder.shippingMethod,
         orderDate: zidOrder.orderDate,
         lastSyncedAt: zidOrder.lastSyncedAt,
         zidData: null,
-      }).onDuplicateKeyUpdate({
-        set: {
-          zidOrderNumber: zidOrder.orderNumber,
-          customerName: zidOrder.customerName,
-          customerEmail: zidOrder.customerEmail,
-          customerPhone: zidOrder.customerPhone,
-          totalAmount: zidOrder.totalAmount,
-          currency: zidOrder.currency,
-          status: zidOrder.status,
-          paymentStatus: zidOrder.paymentStatus,
-          items: zidOrder.items,
-          shippingAddress: null,
-          shippingMethod: zidOrder.shippingMethod,
-          orderDate: zidOrder.orderDate,
-          lastSyncedAt: zidOrder.lastSyncedAt,
-          zidData: null,
-        },
+      };
+      await tx.insert(zidOrders).values(sourceData).onDuplicateKeyUpdate({
+        set: { zidOrderId: sql`${zidOrders.zidOrderId}` },
       });
+      await tx.update(zidOrders).set(sourceData).where(and(
+        eq(zidOrders.merchantId, merchantId),
+        eq(zidOrders.zidOrderId, zidOrder.externalId),
+        or(isNull(zidOrders.lastSyncedAt), lte(zidOrders.lastSyncedAt, zidOrder.lastSyncedAt)),
+      ));
 
-      if (zidOrder.customerPhone && zidOrder.totalAmountCents !== null) {
+      const sourceRow = await tx.select().from(zidOrders)
+        .where(and(
+          eq(zidOrders.merchantId, merchantId),
+          eq(zidOrders.zidOrderId, zidOrder.externalId),
+        ))
+        .limit(1);
+      const canonical = sourceRow[0];
+      const canonicalAmount = Number(canonical?.totalAmount);
+      const canonicalAmountCents = Number.isFinite(canonicalAmount)
+        ? Math.round(canonicalAmount * 100)
+        : null;
+      const canonicalPhone = normalizeZidPhone(canonical?.customerPhone);
+      if (
+        canonical
+        && canonicalPhone
+        && canonicalAmountCents !== null
+        && canonicalAmountCents >= 0
+        && canonicalAmountCents <= 2_147_483_647
+        && (canonical.currency === 'SAR' || canonical.currency === 'USD')
+      ) {
         const namespacedExternalId = `zid:${zidOrder.externalId}`;
-        const sourceRow = await tx.select({ id: zidOrders.id, sariOrderId: zidOrders.sariOrderId })
-          .from(zidOrders)
-          .where(and(
-            eq(zidOrders.merchantId, merchantId),
-            eq(zidOrders.zidOrderId, zidOrder.externalId),
-          ))
-          .limit(1);
         const projection = {
           merchantId,
           sallaOrderId: namespacedExternalId,
-          orderNumber: zidOrder.orderNumber,
-          customerPhone: zidOrder.customerPhone,
-          customerName: zidOrder.customerName || zidOrder.customerPhone,
-          customerEmail: zidOrder.customerEmail,
-          items: zidOrder.items,
-          totalAmount: zidOrder.totalAmountCents,
-          currency: zidOrder.currency as 'SAR' | 'USD',
-          status: zidOrder.sariStatus,
+          orderNumber: canonical.zidOrderNumber,
+          customerPhone: canonicalPhone,
+          customerName: canonical.customerName || canonicalPhone,
+          customerEmail: canonical.customerEmail,
+          items: canonical.items,
+          totalAmount: canonicalAmountCents,
+          currency: canonical.currency as 'SAR' | 'USD',
+          status: canonical.projectionStatus,
         };
-        let sariOrderId = sourceRow[0]?.sariOrderId || null;
-        if (sariOrderId) {
-          await tx.update(orders).set(projection).where(eq(orders.id, sariOrderId));
-        } else {
-          const existingProjection = await tx.select({ id: orders.id })
-            .from(orders)
-            .where(and(
-              eq(orders.merchantId, merchantId),
-              eq(orders.sallaOrderId, namespacedExternalId),
-            ))
-            .limit(1);
-          if (existingProjection[0]) {
-            sariOrderId = existingProjection[0].id;
-            await tx.update(orders).set(projection).where(eq(orders.id, sariOrderId));
-          } else {
-            const inserted = await tx.insert(orders).values({
-              ...projection,
-              ...(zidOrder.orderDate ? { createdAt: zidOrder.orderDate } : {}),
-            });
-            sariOrderId = Number((inserted[0] as any).insertId);
-          }
-          if (sourceRow[0]) {
-            await tx.update(zidOrders).set({ sariOrderId }).where(eq(zidOrders.id, sourceRow[0].id));
-          }
-        }
+        await tx.insert(orders).values({
+          ...projection,
+          ...(canonical.orderDate ? { createdAt: canonical.orderDate } : {}),
+        }).onDuplicateKeyUpdate({ set: projection });
+        const projectionRow = await tx.select({ id: orders.id }).from(orders).where(and(
+          eq(orders.merchantId, merchantId),
+          eq(orders.sallaOrderId, namespacedExternalId),
+        )).limit(1);
+        if (!projectionRow[0]) throw new Error('ZID_ORDER_PROJECTION_MISSING');
+        await tx.update(zidOrders).set({ sariOrderId: projectionRow[0].id }).where(eq(zidOrders.id, canonical.id));
         projectedOrders += 1;
       }
     }
   });
   return { sourceOrders: normalizedOrders.length, projectedOrders };
+}
+
+export async function cancelOrderFromZid(
+  merchantId: number,
+  externalIdValue: unknown,
+  occurredAt = new Date(),
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const externalId = normalizeZidOrderExternalId(externalIdValue);
+  const eventTime = formatZidOrderSyncTime(occurredAt);
+  await db.transaction(async tx => {
+    await tx.update(zidOrders).set({
+      status: 'cancelled',
+      projectionStatus: 'cancelled',
+      lastSyncedAt: eventTime,
+    }).where(and(
+      eq(zidOrders.merchantId, merchantId),
+      eq(zidOrders.zidOrderId, externalId),
+      or(isNull(zidOrders.lastSyncedAt), lte(zidOrders.lastSyncedAt, eventTime)),
+    ));
+    const current = await tx.select({
+      sariOrderId: zidOrders.sariOrderId,
+      status: zidOrders.status,
+      lastSyncedAt: zidOrders.lastSyncedAt,
+    }).from(zidOrders).where(and(
+      eq(zidOrders.merchantId, merchantId),
+      eq(zidOrders.zidOrderId, externalId),
+    )).limit(1);
+    if (
+      current[0]?.sariOrderId
+      && current[0].status === 'cancelled'
+      && current[0].lastSyncedAt === eventTime
+    ) {
+      await tx.update(orders).set({ status: 'cancelled' }).where(and(
+        eq(orders.id, current[0].sariOrderId),
+        eq(orders.merchantId, merchantId),
+      ));
+    }
+  });
 }
 
 /** Persist the minimized Zid customer directory without creating marketing consent. */
@@ -9396,23 +9431,7 @@ export async function saveZidOrder(merchantId: number, orderData: any) {
   // never create a structurally incomplete row.
   if (orderData.totalAmount === undefined || orderData.totalAmount === null) {
     if (orderData.status !== 'cancelled') return null;
-    await db.transaction(async tx => {
-      const existing = await tx.select({ id: zidOrders.id, sariOrderId: zidOrders.sariOrderId })
-        .from(zidOrders)
-        .where(and(eq(zidOrders.merchantId, merchantId), eq(zidOrders.zidOrderId, externalId)))
-        .limit(1);
-      if (!existing[0]) return;
-      await tx.update(zidOrders).set({
-        status: 'cancelled',
-        lastSyncedAt: formatDateForDB(new Date()),
-      }).where(eq(zidOrders.id, existing[0].id));
-      if (existing[0].sariOrderId) {
-        await tx.update(orders).set({ status: 'cancelled' }).where(and(
-          eq(orders.id, existing[0].sariOrderId),
-          eq(orders.merchantId, merchantId),
-        ));
-      }
-    });
+    await cancelOrderFromZid(merchantId, externalId);
   } else {
     let items: unknown[] = [];
     if (Array.isArray(orderData.items)) items = orderData.items;
