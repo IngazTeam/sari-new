@@ -13,6 +13,7 @@ import {
   whatsAppMerchantLockNamespace,
   whatsAppPhoneLockNamespace,
 } from './channels/whatsapp/instance-ownership';
+import { assertWhatsAppPrimarySchemaReady } from './channels/whatsapp/schema-readiness';
 
 // Helper function to format Date for MySQL timestamp comparison
 function formatDateForDB(date: Date): string {
@@ -2998,6 +2999,7 @@ export async function getActiveInstanceByPhoneNumber(
  * Create a new WhatsApp instance
  */
 export async function createWhatsAppInstance(data: InsertWhatsAppInstance): Promise<WhatsAppInstance | undefined> {
+  await assertWhatsAppPrimarySchemaReady();
   const db = await getDb();
   if (!db) return undefined;
   if (!Number.isSafeInteger(data.merchantId) || data.merchantId < 1) {
@@ -3109,6 +3111,7 @@ export async function getWhatsAppInstanceByInstanceId(instanceId: string): Promi
  * Update WhatsApp instance
  */
 export async function updateWhatsAppInstance(id: number, data: Partial<InsertWhatsAppInstance>): Promise<void> {
+  await assertWhatsAppPrimarySchemaReady();
   const db = await getDb();
   if (!db) return;
   if (!Number.isSafeInteger(id) || id < 1 || data.merchantId !== undefined || 'id' in data) {
@@ -3192,6 +3195,7 @@ export async function updateWhatsAppInstance(id: number, data: Partial<InsertWha
  * This will unset all other instances for the merchant
  */
 export async function setWhatsAppInstanceAsPrimary(id: number, merchantId: number): Promise<void> {
+  await assertWhatsAppPrimarySchemaReady();
   const db = await getDb();
   if (!db) return;
   if (!Number.isSafeInteger(id) || id < 1 || !Number.isSafeInteger(merchantId) || merchantId < 1) {
@@ -3237,6 +3241,7 @@ export async function setWhatsAppInstanceAsPrimary(id: number, merchantId: numbe
  * Delete WhatsApp instance
  */
 export async function deleteWhatsAppInstance(id: number): Promise<void> {
+  await assertWhatsAppPrimarySchemaReady();
   const db = await getDb();
   if (!db) return;
   if (!Number.isSafeInteger(id) || id < 1) throw new Error('Invalid WhatsApp instance ID');
@@ -3310,6 +3315,7 @@ export async function getExpiredWhatsAppInstances(): Promise<WhatsAppInstance[]>
  * Mark WhatsApp instance as expired
  */
 export async function markWhatsAppInstanceExpired(id: number): Promise<void> {
+  await assertWhatsAppPrimarySchemaReady();
   const db = await getDb();
   if (!db) return;
   if (!Number.isSafeInteger(id) || id < 1) throw new Error('Invalid WhatsApp instance ID');

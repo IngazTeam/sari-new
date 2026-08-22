@@ -11,6 +11,7 @@
  */
 
 import { inspectSchemaRequirements, type SchemaRequirement } from '../db/schema-readiness';
+import { WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS } from '../channels/whatsapp/schema-readiness';
 
 // These names are the deployed Drizzle names, including legacy camelCase tables.
 export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
@@ -37,13 +38,7 @@ export const CRITICAL_SCHEMA_REQUIREMENTS: readonly SchemaRequirement[] = [
   { table: 'bot_settings', columns: ['auto_discount_enabled', 'auto_discount_max_percent', 'auto_discount_expire_hours', 'custom_instructions'] },
   { table: 'whatsappConnections', columns: ['apiToken'] },
   { table: 'whatsapp_connection_requests', columns: ['apiToken'] },
-  {
-    table: 'whatsapp_instances',
-    columns: ['provider', 'webhook_token_hash', 'phone_number_id', 'active_phone_identity_hash'],
-    generatedColumns: ['active_primary_merchant_id'],
-    uniqueIndexes: ['whatsapp_instances_active_primary_merchant_unique'],
-    checkConstraints: ['whatsapp_instances_primary_requires_active_check'],
-  },
+  ...WHATSAPP_PRIMARY_SCHEMA_REQUIREMENTS,
   { table: 'whatsapp_message_deliveries', columns: ['idempotency_key', 'provider_message_id', 'status'] },
   { table: 'payment_gateways' },
   { table: 'subscription_plans', columns: ['conversation_limit', 'message_limit', 'voice_message_limit'] },

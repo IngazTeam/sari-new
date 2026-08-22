@@ -10,6 +10,7 @@ import {
 import { getPool } from '../db';
 import { encryptSecret, isEncryptedSecret } from '../security/secrets';
 import { privacyHash } from './privacy-hash';
+import { assertWhatsAppPrimarySchemaReady } from '../channels/whatsapp/schema-readiness';
 
 type ConsentType = 'terms' | 'privacy' | 'marketing';
 export type AdminAccountDeletionReason =
@@ -742,6 +743,7 @@ export async function resolveDataSubjectRequest(input: {
 }
 
 export async function requestAccountDeletion(userId: number, password: string) {
+  await assertWhatsAppPrimarySchemaReady('account deletion channel suspension');
   const pool = await getPool();
   if (!pool) throw new Error('Database not available');
   const connection = await pool.getConnection();
@@ -863,6 +865,7 @@ export async function requestAccountDeletionByAdmin(input: {
   affectedMerchantCount: number;
   alreadyScheduled: boolean;
 }> {
+  await assertWhatsAppPrimarySchemaReady('admin account deletion channel suspension');
   if (input.confirmation !== `DELETE-${input.merchantId}`) {
     throw new Error('ADMIN_DELETION_CONFIRMATION_INVALID');
   }

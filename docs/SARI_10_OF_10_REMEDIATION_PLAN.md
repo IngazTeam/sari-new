@@ -1,6 +1,6 @@
 # خطة إصلاح وتطوير ساري للوصول إلى 10/10
 
-**الإصدار:** 3.55 — محدّث بجاهزية fail-closed لقيود primary\
+**الإصدار:** 3.56 — محدّث بحراسة كل كتّاب primary الداخلية\
 **التاريخ:** 22 أغسطس 2026\
 **حالة الوثيقة:** خطة تنفيذ معتمدة مبدئيًا\
 **النطاق:** الأمن، المعمار، قناة واتساب، الامتثال، جودة المنتج، تجربة المستخدم، التشغيل، وإثبات السوق
@@ -102,6 +102,7 @@
 79. أُغلق محليًا غياب primary عند أول إنشاء أو عند تفعيل حالة قديمة: أصبح create/update المركزيان يشغلان election الموحّد داخل المعاملة، وأضيف helper خام لمسار REST يعمل على اتصال named lock نفسه ويصلح أي متجر active بلا primary حتى مع `isPrimary=false`. يحتفظ الاختيار بالـprimary الحالي وإلا ينتخب الأقدم وفق createdAt/id، ثم يصفر الأعلام ويثبت فائزًا واحدًا. أضيفت 8 حواجز بنتست وحالة MySQL ثامنة تثبت أن أول active يصبح primary، ثم تصفّر الأعلام عمدًا عبر SQL وتثبت أن انتقال REST يعيد invariant. اجتاز 65/65 النطاق المركز و638/638 بوابة إصدار في 65 ملفًا وTypeScript/build؛ حالات MySQL الثماني skipped محليًا بصدق. يبقى تشغيل 8/8 وrepair audit للبيانات القديمة على staging.
 80. أضيف محليًا خط دفاع مادي لحالة primary واتساب في MySQL: عمود generated مخزن لا يعرض `merchant_id` إلا للصف `active+primary` وفهرس unique يمنع primary نشطًا ثانيًا حتى عبر SQL مباشر، وقيد CHECK يحصر العلم في 0/1 ويمنع primary على صف غير نشط. جُمعت الإضافات في `ALTER TABLE` واحد كي يكون فشل بيانات legacy ذريًا ولا يترك migration جزئية. أضيف preflight قراءة فقط يعرض أعداد المتاجر zero/multi-primary والصفوف inactive-primary والأعلام غير الثنائية دون هواتف أو معرفات، وحالة MySQL تاسعة تحاول تجاوز القيود مباشرة. اجتاز 56/56 النطاق المركز وTypeScript/Drizzle؛ بقيت 9 حالات DB skipped بصدق محليًا. بوابة الإصدار والبناء النهائية موثقتان في التقرير 0.78، ويبقى تشغيل preflight وتطبيق `0032` ثم 9/9 على staging.
 81. أُغلق محليًا قبول التطبيق لمخطط واتساب ناقص الحواجز: توسع عقد schema readiness من أسماء الجداول/الأعمدة إلى التحقق من generated columns والفهارس unique وCHECK constraints عبر `INFORMATION_SCHEMA`. أصبحت `/ready` الحرجة ومسارات REST ترفض نسخة بلا `0032`، كما ترفض عمودًا عاديًا بالاسم نفسه أو فهرسًا non-unique أو CHECK مفقودًا، مع بقاء الاستجابة العامة منقحة. اجتاز 5/5 بنتست جديد و63/63 نطاق readiness و648/648 بوابة إصدار في 65 ملفًا وTypeScript/build؛ يبقى إثبات readiness 503 قبل migration و200 بعدها على staging.
+82. أُغلق محليًا تجاوز readiness عبر الاستدعاءات الداخلية: صار عقد واتساب المادي مصدرًا واحدًا مشتركًا للبوابة العامة وREST، وتعمل حراسته قبل أي وصول DB في create/update/setPrimary/delete/expiry وقبل معامَلتي تعليق القناة عند حذف الحساب ذاتيًا أو إداريًا. لم يوضع الحارس داخل helper يملك lock/transaction كي لا يطلب اتصالًا ثانيًا أو يسبب starvation. اجتاز 5/5 بنتست جديد و78/78 نطاقًا متداخلًا و653/653 بوابة إصدار في 65 ملفًا وTypeScript/build؛ يبقى smoke للـcron والحذف وواجهات الربط قبل/بعد `0032` على staging.
 
 **قرار الخطة:**
 
@@ -110,7 +111,7 @@
 - التوسع إلى عملاء إضافيين: يبدأ بعد إغلاق موانع P0.
 - الإطلاق العام: بعد إتمام بوابة الإطلاق الواردة في نهاية الوثيقة.
 
-### حالة تنفيذ الجولة 3.55
+### حالة تنفيذ الجولة 3.56
 
 هذه البنود نُفذت وتحققت **محليًا**، ولا تُعد منشورة أو مغلقة إنتاجيًا قبل migration وإعادة الاختبار:
 
@@ -162,10 +163,11 @@
 | primary واحد لكل متجر واتساب نشط | مكتمل محليًا/MySQL repair proof معلق | election بعد create/update/REST وعلى اتصال المعاملة، إصلاح zero-primary حتمي؛ 8/8 حراس و638/638 بوابة إصدار، و8 DB skipped محليًا بصدق |
 | قيد primary النشط داخل MySQL | مكتمل محليًا/preflight وmigration staging معلقان | generated nullable + unique وCHECK active-only في DDL ذري، preflight مجمع وdirect-SQL proof؛ 5/5 حراس و643/643 بوابة إصدار، و9 DB skipped محليًا بصدق |
 | جاهزية قيود primary | مكتملة محليًا/smoke النشر معلق | فحص generated/unique/CHECK فعلي في البوابة العامة وREST، ورفض ثلاثة أشكال drift؛ 5/5 حراس و648/648 بوابة إصدار |
+| حراسة كتّاب primary الداخلية | مكتملة محليًا/smoke staging معلق | عقد مركزي واحد وfail-closed قبل DB لخمسة كتّاب وحذف الحساب، بلا فحص داخل lock؛ 5/5 حراس و653/653 بوابة إصدار |
 | رابط الدفع العام | مكتمل محليًا | `/pay/:linkId` وstatus/return/callback، URL canonical، والمبلغ من الخادم فقط |
 | Tap وwebhooks | مكتمل تعاقديًا محليًا | ربط المفتاح بالوضع، منع غير المتحقق، تحقق مبلغ/عملة/مرجع، انتقال ذري ونهائي واحد |
 | التشغيل والصلاحيات | مكتمل محليًا | حارس `/admin`، health محدود، readiness باستعلام DB، 5xx منقح، وفشل process صريح |
-| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 648/648 بوابة إصدار في 65 ملفًا، وDrizzle check وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 573,302 bytes raw / 171,503 bytes gzip، ومهلة AST الثقيلة محددة وحدها لمنع flake |
+| جودة الإصدار | ناجح محليًا | TypeScript صفر أخطاء، 653/653 بوابة إصدار في 65 ملفًا، وDrizzle check وبناء الواجهة والخادم وميزانية الحزمة ناجحة؛ main 573,302 bytes raw / 171,503 bytes gzip، ومهلة AST الثقيلة محددة وحدها لمنع flake |
 | احتواء الأسرار والـPII | مكتمل محليًا/تشغيليًا مشروط | إزالة 197 artifact من الشجرة الحالية، تشفير AES-256-GCM، DTOs منقحة، logs منقحة و295/295 اختبار اختراق وانحدار؛ يلزم تدوير المفاتيح وتنظيف التاريخ وتطبيق migration 0003 |
 | مصدر حقيقة المخطط | مكتمل محليًا/تشغيليًا مشروط | صفر DDL في runtime، migrations `0003` و`0004` مسجّلة مع snapshots، readiness يفشل عند schema drift، و264/264 اختبار اختراق وانحدار للحزم المستهدفة؛ يلزم تطبيق staging وrestore drill |
 | التسجيل والموافقات وحقوق البيانات | مكتمل محليًا/تشغيليًا مشروط | تسجيل ذري، إيصالات موافقة مؤرخة، تسويق اختياري، تصدير وحذف وDSR وطابور admin واحتفاظ مشفر؛ 13/13 بنتست مخصص و173/173 بوابة أمن وانحدار، ويلزم تطبيق `0006` و`0007` وتمرين staging ومراجعة قانونية |
@@ -694,6 +696,22 @@
 8. على staging، إثبات 503 قبل `0032` و200 بعدها، ثم إزالة كل قيد على نسخة قابلة للرمي وإثبات 503 منفصلًا دون طباعة أسماء المخطط للعميل.
 
 **معيار القبول:** لا تستقبل النسخة traffic عندما يكون أي من generated/unique/CHECK ناقصًا أو مزيف النوع، تمر 648/648 محليًا، ويثبت smoke المنشور انتقال readiness من 503 إلى 200 بعد migration فقط.
+
+### SEC-WA-PRIMARY-WRITER-GATE-001: حراسة كل كتّاب primary الداخلية
+
+**الحالة في الجولة 3.56:** مكتمل برمجيًا محليًا؛ الكتابات المركزية وتعليق القناة عند حذف الحساب تفشل قبل DB عند schema drift، وإثبات staging معلق.
+
+المهام:
+
+1. نقل متطلبات جدول واتساب والأعمدة وgenerated/unique/CHECK إلى ثابت typed واحد بدل نسخها بين البوابات.
+2. استخدام الثابت نفسه في `CRITICAL_SCHEMA_REQUIREMENTS` وREST لمنع انحراف المتطلبات مستقبلًا.
+3. استدعاء الحارس قبل `getDb/getPool` في create/update/setPrimary/delete/expiry حتى تشمل routers وMeta وcron وmigration helpers التي تعتمد الحدود المركزية.
+4. حراسة طلب حذف الحساب الذاتي والإداري قبل فتح المعاملة لأنهما يكتبان status/is_primary/hash عبر SQL خام.
+5. عدم استدعاء الحارس من helper الانتخاب الذي يملك PoolConnection ومعاملة؛ نتيجة الحارس cached وتُحسم قبل امتلاك named lock.
+6. حراس AST تقطع كل boundary وتثبت ترتيب schema gate قبل أول وصول DB، وتمنع نسخ المتطلبات داخل REST.
+7. على staging، اختبر كل كاتب مع `0032` ناقصًا: يجب ألا يبدأ lock أو transaction أو mutation، ثم ينجح بعد migration.
+
+**معيار القبول:** لا توجد كتابة production إلى `whatsapp_instances` عبر الحدود المعروفة قبل تحقق العقد المادي، 653/653 محليًا، وsmoke staging يثبت صفر mutation/lock leak عند drift.
 
 ### REL-001: توحيد Node وpnpm والاعتماديات
 
@@ -1376,6 +1394,7 @@ WhatsAppChannel
 | SEC-WA-PRIMARY-INVARIANT-001 | P0 | فرض primary واحد عبر كل الكتابات | Backend/QA/DevOps | create/update/REST تصلح zero-primary، و8/8 MySQL وتدقيق legacy ناجحان |
 | SEC-WA-PRIMARY-DB-001 | P0 | فرض primary النشط داخل MySQL | Backend/QA/DevOps | preflight نظيف، `0032` ذري، direct SQL مرفوض و9/9 MySQL بلا skip |
 | SEC-WA-PRIMARY-SCHEMA-READINESS-001 | P0 | منع تشغيل نسخة بلا قيود primary | Backend/QA/DevOps | generated/unique/CHECK مطابقة، `/ready` 503 قبل `0032` و200 بعدها بلا تسريب |
+| SEC-WA-PRIMARY-WRITER-GATE-001 | P0 | حراسة كل كتّاب primary الداخلية | Backend/QA/DevOps | كل mutation تفشل قبل DB عند drift، بلا اتصال ثانٍ داخل lock، وsmoke cron/delete ناجح |
 | REL-001 | P0 | frozen install وTypeScript | Tech Lead | install/check/build ناجحة |
 | REL-002 | P0 | CI مركزية | DevOps | merge gates مفعلة |
 | DB-001 | P0 | migrations موحدة | Backend | صفر runtime DDL |

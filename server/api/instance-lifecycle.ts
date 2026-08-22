@@ -1,6 +1,6 @@
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '../db';
-import { assertRuntimeSchema } from '../db/schema-readiness';
+import { assertWhatsAppPrimarySchemaReady } from '../channels/whatsapp/schema-readiness';
 import {
   acquireWhatsAppInstanceLock,
   activeWhatsAppPhoneIdentityHash,
@@ -109,13 +109,7 @@ export function normalizeRestInstanceMutationBody(value: unknown): RestInstanceM
 }
 
 async function assertInstanceSchema(): Promise<void> {
-  await assertRuntimeSchema('REST WhatsApp instance lifecycle', [{
-    table: 'whatsapp_instances',
-    columns: ['id', 'merchant_id', 'instance_id', 'phone_number', 'active_phone_identity_hash', 'status', 'is_primary', 'created_at'],
-    generatedColumns: ['active_primary_merchant_id'],
-    uniqueIndexes: ['whatsapp_instances_active_primary_merchant_unique'],
-    checkConstraints: ['whatsapp_instances_primary_requires_active_check'],
-  }]);
+  await assertWhatsAppPrimarySchemaReady('REST WhatsApp instance lifecycle');
 }
 
 function mapPublicInstance(row: PublicInstanceRow | LockedInstanceRow & { instanceId: string; createdAt: string | Date }): PublicWhatsAppInstance {
