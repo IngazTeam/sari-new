@@ -815,51 +815,6 @@ export async function updateMerchant(id: number, data: Partial<InsertMerchant>):
   await db.update(merchants).set(data).where(eq(merchants.id, id));
 }
 
-/**
- * Get onboarding status for a merchant
- */
-export async function getOnboardingStatus(merchantId: number) {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-
-  const merchant = await getMerchantById(merchantId);
-  if (!merchant) throw new Error('Merchant not found');
-
-  return {
-    completed: merchant.onboardingCompleted,
-    currentStep: merchant.onboardingStep,
-    completedAt: merchant.onboardingCompletedAt,
-  };
-}
-
-/**
- * Update onboarding step for a merchant
- */
-export async function updateOnboardingStep(merchantId: number, step: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-
-  await db.update(merchants)
-    .set({ onboardingStep: step })
-    .where(eq(merchants.id, merchantId));
-}
-
-/**
- * Mark onboarding as completed for a merchant
- */
-export async function completeOnboarding(merchantId: number): Promise<void> {
-  const db = await getDb();
-  if (!db) throw new Error('Database not initialized');
-
-  await db.update(merchants)
-    .set({
-      onboardingCompleted: 1,
-      onboardingStep: 4,
-      onboardingCompletedAt: formatDateForDB(new Date()),
-    })
-    .where(eq(merchants.id, merchantId));
-}
-
 // ============================================
 // Knowledge Base Document Management
 // ============================================
@@ -6095,6 +6050,50 @@ export async function getServiceReviewsByService(serviceId: number) {
 }
 
 // Setup Wizard Progress
+export type MerchantChannelReadiness = 'none' | 'pending' | 'connected';
+
+/**
+ * Read channel readiness without decrypting or returning provider credentials.
+ * The product has carried three WhatsApp persistence models; readiness must
+ * recognize all of them while keeping the response secret-free.
+ */
+export async function getMerchantChannelReadiness(
+  merchantId: number,
+): Promise<MerchantChannelReadiness> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const [connections, requests, instances] = await Promise.all([
+    db.select({ status: whatsappConnections.status })
+      .from(whatsappConnections)
+      .where(eq(whatsappConnections.merchantId, merchantId)),
+    db.select({ status: whatsappConnectionRequests.status })
+      .from(whatsappConnectionRequests)
+      .where(eq(whatsappConnectionRequests.merchantId, merchantId)),
+    db.select({ status: whatsappInstances.status })
+      .from(whatsappInstances)
+      .where(eq(whatsappInstances.merchantId, merchantId)),
+  ]);
+
+  if (
+    connections.some(({ status }) => status === 'connected') ||
+    requests.some(({ status }) => status === 'connected') ||
+    instances.some(({ status }) => status === 'active')
+  ) {
+    return 'connected';
+  }
+
+  if (
+    connections.some(({ status }) => status === 'pending') ||
+    requests.some(({ status }) => status === 'pending' || status === 'approved') ||
+    instances.some(({ status }) => status === 'pending')
+  ) {
+    return 'pending';
+  }
+
+  return 'none';
+}
+
 export async function getSetupWizardProgress(merchantId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -6126,8 +6125,8 @@ export async function completeSetupWizard(merchantId: number) {
     .set({ isCompleted: 1, completedAt: now })
     .where(eq(setupWizardProgress.merchantId, merchantId));
 
-  // Also update merchant table أ¢â‚¬â€‌ mark both setup AND onboarding as completed
-  // to prevent the duplicate OnboardingWizard popup from appearing on dashboard
+  // setupCompleted is the canonical readiness source. Legacy onboarding fields
+  // remain synchronized only for backwards-compatible reporting/migrations.
   await db.update(merchants)
     .set({
       setupCompleted: 1,

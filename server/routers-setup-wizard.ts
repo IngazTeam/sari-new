@@ -154,7 +154,7 @@ export const setupWizardRouter = router({
       const merchant = await getMerchantByUserId(ctx.user.id);
       if (!merchant) throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
 
-      const completedSteps = [...new Set(input.completedSteps)].sort((a, b) => a - b);
+      const completedSteps = Array.from(new Set(input.completedSteps)).sort((a, b) => a - b);
       await updateSetupWizardProgress(merchant.id, {
         currentStep: input.currentStep,
         completedSteps: JSON.stringify(completedSteps),

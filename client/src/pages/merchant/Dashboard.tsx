@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MessageSquare, Send, Users, TrendingUp, ArrowUp, ArrowDown, Package, UserPlus, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight, Activity, DollarSign, Smartphone, Brain, Sparkles, Zap, Target, GraduationCap, Dna, AlertTriangle, TrendingDown, Rocket, Circle, RefreshCw, Globe } from 'lucide-react';
-import { OnboardingWizard } from '@/components/OnboardingWizard';
 import { DashboardSkeleton } from '@/components/DashboardSkeleton';
 import { TrialBanner } from '@/components/TrialBanner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -40,11 +39,9 @@ function AnimatedNumber({ value, duration = 1200, prefix = '', suffix = '' }: { 
 export default function MerchantDashboard() {
   const { t, i18n } = useTranslation();
   const { formatCurrency } = useCurrency();
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [dateRange, setDateRange] = useState(30);
   const { data: merchant, isLoading: merchantLoading } = trpc.merchants.getCurrent.useQuery(undefined as any);
-  const { data: onboardingStatus } = trpc.merchants.getOnboardingStatus.useQuery(undefined as any);
-  const completeOnboarding = trpc.merchants.completeOnboarding.useMutation();
+  const { data: onboardingStatus, isLoading: onboardingLoading } = trpc.merchants.getOnboardingStatus.useQuery(undefined as any);
   // Performance: load only 5 recent conversations instead of ALL
   const { data: recentConversations, isLoading: conversationsLoading } = trpc.conversations.listRecent.useQuery({ limit: 5 });
   const { data: conversationCount } = trpc.conversations.count.useQuery(undefined as any);
@@ -81,23 +78,10 @@ export default function MerchantDashboard() {
     retry: false,
   });
 
-  const isLoading = merchantLoading || conversationsLoading || campaignsLoading || summaryLoading;
-
-  // Show onboarding wizard for new merchants
-  useEffect(() => {
-    if (onboardingStatus && !onboardingStatus.completed) {
-      setShowOnboarding(true);
-    }
-  }, [onboardingStatus]);
-
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-  };
-
-  const handleOnboardingSkip = async () => {
-    await completeOnboarding.mutateAsync();
-    setShowOnboarding(false);
-  };
+  const isLoading = merchantLoading || onboardingLoading || conversationsLoading || campaignsLoading || summaryLoading;
+  const setupCompleted = onboardingStatus?.setupCompleted === true;
+  const channelReady = onboardingStatus?.stage === 'ready';
+  const channelPending = onboardingStatus?.stage === 'channel_pending';
 
   // Main stats with growth indicators
   const mainStats = [
@@ -179,16 +163,28 @@ export default function MerchantDashboard() {
 
   return (
     <>
-      {showOnboarding && (
-        <OnboardingWizard
-          onComplete={handleOnboardingComplete}
-          onSkip={handleOnboardingSkip}
-        />
-      )}
-
       <div className="space-y-6">
         {/* Trial Banner */}
         <TrialBanner />
+
+        {!setupCompleted && (
+          <Card role="status" className="border-2 border-amber-300 bg-amber-50/80 dark:border-amber-800 dark:bg-amber-950/30">
+            <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <h2 className="font-bold text-amber-950 dark:text-amber-100">أكمل إعداد نشاطك قبل الإطلاق</h2>
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  يمكنك استكشاف لوحة التحكم الآن، لكن لن نعرض متجرك كجاهز حتى تراجع الملف وتؤكد الإعداد.
+                </p>
+              </div>
+              <Link href="/merchant/setup-wizard">
+                <Button className="shrink-0 gap-2">
+                  إكمال الإعداد
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
 
         {/* ═══ Getting Started Checklist — للتجار الجدد ═══ */}
         {(conversationCount === 0 && (dashboardStats?.totalOrders || 0) === 0) && (
@@ -206,26 +202,44 @@ export default function MerchantDashboard() {
               </div>
 
               <div className="space-y-3">
-                {/* Step 1: Setup — always completed if they're here */}
-                <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                  <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-green-800 dark:text-green-200">إعداد النشاط التجاري</p>
-                    <p className="text-xs text-green-600 dark:text-green-400">تم بنجاح ✓</p>
+                {/* Step 1: Canonical setup state */}
+                <Link href={setupCompleted ? '/merchant/dashboard' : '/merchant/setup-wizard'}>
+                  <div className={`flex items-center gap-3 p-3 rounded-xl border ${setupCompleted
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                    : 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800 cursor-pointer'
+                  }`}>
+                    {setupCompleted
+                      ? <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0" />
+                      : <Circle className="h-5 w-5 text-amber-600 shrink-0" />}
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${setupCompleted ? 'text-green-800 dark:text-green-200' : 'text-amber-900 dark:text-amber-100'}`}>إعداد النشاط التجاري</p>
+                      <p className={`text-xs ${setupCompleted ? 'text-green-600 dark:text-green-400' : 'text-amber-700 dark:text-amber-300'}`}>
+                        {setupCompleted ? 'تمت المراجعة والتأكيد ✓' : 'غير مكتمل — راجع بيانات النشاط وأكدها'}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </Link>
 
                 {/* Step 2: Connect WhatsApp */}
                 <Link href="/merchant/whatsapp">
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-700 cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all">
-                    <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center shadow-sm">
+                  <div className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all ${channelReady
+                    ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
+                    : channelPending
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-800'
+                      : 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-300 dark:border-green-700'
+                  }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-sm ${channelReady ? 'bg-green-600' : channelPending ? 'bg-amber-500' : 'bg-green-500'}`}>
                       <Smartphone className="h-4 w-4 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-green-800 dark:text-green-200">اربط واتسابك الآن</p>
-                      <p className="text-xs text-green-600 dark:text-green-400">الخطوة الأهم — ساري يبدأ يرد على عملائك فوراً</p>
+                      <p className={`text-sm font-bold ${channelPending ? 'text-amber-900 dark:text-amber-100' : 'text-green-800 dark:text-green-200'}`}>
+                        {channelReady ? 'واتساب متصل ✓' : channelPending ? 'ربط واتساب قيد الإجراء' : 'اربط واتسابك الآن'}
+                      </p>
+                      <p className={`text-xs ${channelPending ? 'text-amber-700 dark:text-amber-300' : 'text-green-600 dark:text-green-400'}`}>
+                        {channelReady ? 'القناة جاهزة لاستقبال رسائل العملاء' : channelPending ? 'تابع حالة الطلب وأكمل التحقق' : 'لن تبدأ الردود قبل اكتمال الربط والتحقق'}
+                      </p>
                     </div>
-                    <ArrowRight className="h-4 w-4 text-green-600" />
+                    {channelReady ? <CheckCircle2 className="h-5 w-5 text-green-600" /> : <ArrowRight className={`h-4 w-4 ${channelPending ? 'text-amber-600' : 'text-green-600'}`} />}
                   </div>
                 </Link>
 
@@ -265,13 +279,21 @@ export default function MerchantDashboard() {
                 </div>
                 <div>
                   <h2 className="text-lg font-bold flex items-center gap-2">
-                    🧠 ساري يعمل الآن
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-                    </span>
+                    {channelReady ? '🧠 ساري يعمل الآن' : '🧠 ساري في وضع الإعداد'}
+                    {channelReady && (
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                      </span>
+                    )}
                   </h2>
-                  <p className="text-sm text-muted-foreground">مساعدك الذكي يراقب نشاطك ويساعد عملائك</p>
+                  <p className="text-sm text-muted-foreground">
+                    {channelReady
+                      ? 'مساعدك الذكي متصل بالقناة ويساعد عملاءك'
+                      : setupCompleted
+                        ? 'أكمل ربط القناة حتى يبدأ ساري باستقبال رسائل العملاء'
+                        : 'راجع إعداد نشاطك ثم اربط القناة لتفعيل العمل الفعلي'}
+                  </p>
                 </div>
               </div>
               <Link href="/merchant/sari-brain">

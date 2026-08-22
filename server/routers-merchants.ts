@@ -11,7 +11,6 @@ import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "./_core/trpc";
 import {
   cancelMerchantSubscription,
-  completeOnboarding,
   createMerchantSubscription,
   getActiveSubscriptionByMerchantId,
   getActiveSubscriptionPlans,
@@ -21,16 +20,16 @@ import {
   getMerchantByUserId,
   getMerchantCurrentSubscription,
   getMerchantSubscriptionById,
-  getOnboardingStatus,
+  getMerchantChannelReadiness,
   getPlanById,
   getPool,
   getSubscriptionPlanById,
+  getSetupWizardProgress,
   rawUpdateSubscriptionEndDate,
   updateMerchant,
   updateMerchantCurrentSubscriptionId,
   updateMerchantCustomerLimit,
   updateMerchantSubscriptionStatus,
-  updateOnboardingStep,
   updateUser,
 } from './db';
 import { syncGreenAPIData } from "./data-sync/green-api-sync";
@@ -38,6 +37,7 @@ import {
   getAdminAccountDeletionImpact,
   requestAccountDeletionByAdmin,
 } from './accounts/lifecycle';
+import { resolveMerchantReadiness } from './onboarding-readiness';
 
 // PEN-ESC-05 FIX: Rate limiter for escalation phone chain updates
 const _escalationPhoneRateLimit: Record<number, number> = {};
@@ -555,35 +555,34 @@ export const merchantsRouter = router({
             });
         }),
 
-    // Get onboarding status
+    // Canonical readiness state. Browsing is allowed before setup, but only the
+    // setup wizard and a connected channel can advance the merchant to ready.
     getOnboardingStatus: protectedProcedure.query(async ({ ctx }) => {
         const merchant = await getMerchantByUserId(ctx.user.id);
         if (!merchant) {
             throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
         }
-        return await getOnboardingStatus(merchant.id);
-    }),
 
-    // Update onboarding step
-    updateOnboardingStep: protectedProcedure
-        .input(z.object({ step: z.number().min(0).max(4) }))
-        .mutation(async ({ input, ctx }) => {
-            const merchant = await getMerchantByUserId(ctx.user.id);
-            if (!merchant) {
-                throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-            }
-            await updateOnboardingStep(merchant.id, input.step);
-            return { success: true };
-        }),
+        const [progress, channelState] = await Promise.all([
+            getSetupWizardProgress(merchant.id),
+            getMerchantChannelReadiness(merchant.id),
+        ]);
+        const setupCompleted = merchant.setupCompleted === 1;
+        const currentStep = setupCompleted
+            ? 10
+            : Math.max(1, Math.min(10, Number(progress?.currentStep ?? 1)));
+        const readiness = resolveMerchantReadiness(setupCompleted, channelState);
 
-    // Complete onboarding
-    completeOnboarding: protectedProcedure.mutation(async ({ ctx }) => {
-        const merchant = await getMerchantByUserId(ctx.user.id);
-        if (!merchant) {
-            throw new TRPCError({ code: 'NOT_FOUND', message: 'Merchant not found' });
-        }
-        await completeOnboarding(merchant.id);
-        return { success: true };
+        return {
+            // Backwards-compatible alias: completed means setup completed, not live.
+            completed: setupCompleted,
+            setupCompleted,
+            currentStep,
+            completedAt: merchant.setupCompletedAt ?? progress?.completedAt ?? null,
+            channelState,
+            ...readiness,
+            canBrowse: true,
+        };
     }),
 
     // ============================================
