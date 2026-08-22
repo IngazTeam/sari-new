@@ -8041,16 +8041,10 @@ export const appRouter = router({
 
       const settings = await getMerchantPaymentSettings(merchant.id);
 
-      // Return settings with masked secret key
-      if (settings?.tapSecretKey) {
-        const { maskSecret } = await import('./payment/payment-link-policy');
-        return {
-          ...settings,
-          tapSecretKey: maskSecret(settings.tapSecretKey),
-        };
-      }
+      if (!settings) return null;
 
-      return settings;
+      const { toMerchantPaymentSettingsView } = await import('./payment/payment-link-policy');
+      return toMerchantPaymentSettingsView(settings);
     }),
 
     // Save/update payment settings
@@ -8074,12 +8068,15 @@ export const appRouter = router({
         const secretWasSupplied = Boolean(input.tapSecretKey && !input.tapSecretKey.includes('****'));
         const effectiveSecret = secretWasSupplied ? input.tapSecretKey! : existingSettings?.tapSecretKey;
         const effectivePublicKey = input.tapPublicKey || existingSettings?.tapPublicKey;
-        const { tapKeyMatchesMode } = await import('./payment/payment-link-policy');
+        const { tapKeyMatchesMode, tapPublicKeyMatchesMode } = await import('./payment/payment-link-policy');
         if (input.tapEnabled && (!effectiveSecret || !effectivePublicKey)) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'أدخل مفتاحي Tap العام والسري قبل التفعيل' });
         }
         if (effectiveSecret && !tapKeyMatchesMode(effectiveSecret, input.tapTestMode)) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع مفتاح Tap لا يطابق وضع الاختبار/الإنتاج المحدد' });
+        }
+        if (effectivePublicKey && !tapPublicKeyMatchesMode(effectivePublicKey, input.tapTestMode)) {
+          throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع مفتاح Tap العام لا يطابق وضع الاختبار/الإنتاج المحدد' });
         }
 
         const credentialsChanged = secretWasSupplied
@@ -8118,11 +8115,13 @@ export const appRouter = router({
       }
 
       const settings = await getMerchantPaymentSettings(merchant.id);
-      if (!settings?.tapSecretKey) {
+      if (!settings?.tapPublicKey || !settings.tapSecretKey) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'لم يتم إدخال مفاتيح Tap' });
       }
-      const { tapKeyMatchesMode } = await import('./payment/payment-link-policy');
-      if (!tapKeyMatchesMode(settings.tapSecretKey, Boolean(settings.tapTestMode))) {
+      const { tapKeyMatchesMode, tapPublicKeyMatchesMode } = await import('./payment/payment-link-policy');
+      const testMode = Boolean(settings.tapTestMode);
+      if (!tapKeyMatchesMode(settings.tapSecretKey, testMode)
+        || !tapPublicKeyMatchesMode(settings.tapPublicKey, testMode)) {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'نوع المفتاح لا يطابق وضع الاختبار/الإنتاج' });
       }
 
@@ -8144,6 +8143,7 @@ export const appRouter = router({
           await setMerchantPaymentVerified(merchant.id, true);
           return { success: true, message: 'تم التحقق من الاتصال بنجاح' };
         } else {
+          await setMerchantPaymentVerified(merchant.id, false);
           const error = await response.json().catch(() => ({}));
           throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -8177,7 +8177,8 @@ export const appRouter = router({
         }
 
         const settings = await getMerchantPaymentSettings(merchant.id);
-        if (!settings?.tapEnabled || !settings?.tapSecretKey || !settings.isVerified) {
+        const { isTapPaymentReady } = await import('./payment/payment-link-policy');
+        if (!settings || !isTapPaymentReady(settings)) {
           throw new TRPCError({ code: 'BAD_REQUEST', message: 'الدفع الإلكتروني غير مفعل' });
         }
 

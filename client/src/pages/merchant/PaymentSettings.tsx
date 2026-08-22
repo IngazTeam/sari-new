@@ -43,11 +43,19 @@ export default function PaymentSettings() {
 
   // Fetch current settings
   const { data: settings, isLoading, refetch } = trpc.merchantPayments.getSettings.useQuery();
+  const hasStoredTapKeys = Boolean(settings?.tapPublicKey && settings?.hasTapSecretKey);
+  const credentialInputsDirty = Boolean(settings) && (
+    tapPublicKey !== (settings?.tapPublicKey || '')
+    || Boolean(tapSecretKey.trim())
+    || tapTestMode !== Boolean(settings?.tapTestMode)
+  );
 
   // Mutations
   const saveMutation = trpc.merchantPayments.saveSettings.useMutation({
     onSuccess: () => {
       toast.success(t('paymentSettingsPage.text0'));
+      setTapSecretKey('');
+      setShowSecretKey(false);
       refetch();
     },
     onError: (error: any) => {
@@ -70,7 +78,7 @@ export default function PaymentSettings() {
     if (settings) {
       setTapEnabled(!!settings.tapEnabled);
       setTapPublicKey(settings.tapPublicKey || '');
-      setTapSecretKey(settings.tapSecretKey || '');
+      setTapSecretKey('');
       setTapTestMode(!!settings.tapTestMode);
       setAutoSendPaymentLink(!!settings.autoSendPaymentLink);
       setPaymentLinkMessage(settings.paymentLinkMessage || '');
@@ -128,7 +136,7 @@ export default function PaymentSettings() {
             {t('paymentSettingsPage.text30')}
           </p>
         </div>
-        {settings?.isVerified && (
+        {settings?.isReadyForPayments && (
           <Badge variant="default" className="bg-green-600">
             <CheckCircle2 className="h-4 w-4 ml-1" />
             {t('paymentSettingsPage.text21')}
@@ -256,6 +264,11 @@ export default function PaymentSettings() {
               <p className="text-xs text-muted-foreground">
                 {t('paymentSettingsPage.text25')}
               </p>
+              {settings?.hasTapSecretKey && !tapSecretKey && (
+                <p className="text-xs text-green-700 dark:text-green-400">
+                  المفتاح السري محفوظ بأمان. اترك الحقل فارغاً للإبقاء عليه، أو أدخل مفتاحاً جديداً لاستبداله.
+                </p>
+              )}
             </div>
           </div>
 
@@ -313,7 +326,7 @@ export default function PaymentSettings() {
             <Button
               variant="outline"
               onClick={handleTestConnection}
-              disabled={isTesting || !tapSecretKey}
+              disabled={isTesting || !hasStoredTapKeys || credentialInputsDirty}
             >
               {isTesting ? (
                 <Loader2 className="h-4 w-4 ml-2 animate-spin" />
@@ -323,7 +336,12 @@ export default function PaymentSettings() {
               {t('paymentSettingsPage.text29')}
             </Button>
           </div>
-          {tapEnabled && !settings?.isVerified && (
+          {credentialInputsDirty && (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              احفظ تغييرات المفاتيح أو وضع Tap قبل اختبار الاتصال.
+            </p>
+          )}
+          {tapEnabled && !settings?.isReadyForPayments && (
             <p className="text-sm text-amber-700 dark:text-amber-400">
               لن تُنشأ روابط دفع حتى تحفظ المفاتيح وتنجح خطوة «اختبار الاتصال».
             </p>
@@ -397,7 +415,7 @@ export default function PaymentSettings() {
               </div>
 
               <div className="flex items-center gap-2">
-                {settings.tapSecretKey ? (
+                {settings.hasTapSecretKey ? (
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                 ) : (
                   <XCircle className="h-5 w-5 text-muted-foreground" />
@@ -406,7 +424,7 @@ export default function PaymentSettings() {
               </div>
 
               <div className="flex items-center gap-2">
-                {settings.isVerified ? (
+                {settings.credentialsVerified ? (
                   <CheckCircle2 className="h-5 w-5 text-green-600" />
                 ) : (
                   <XCircle className="h-5 w-5 text-muted-foreground" />

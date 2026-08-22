@@ -5,8 +5,12 @@ import {
   halalasToTapAmount,
   normalizeSaudiPhone,
   readPaymentLinkId,
+  hasVerifiedTapCredentials,
+  isTapPaymentReady,
   maskSecret,
   tapKeyMatchesMode,
+  tapPublicKeyMatchesMode,
+  toMerchantPaymentSettingsView,
 } from './payment/payment-link-policy';
 
 describe('payment public URL truth', () => {
@@ -61,6 +65,59 @@ describe('payment-link policy', () => {
     expect(tapKeyMatchesMode('sk_live_example', false)).toBe(true);
     expect(tapKeyMatchesMode('sk_live_example', true)).toBe(false);
     expect(tapKeyMatchesMode('sk_test_example', false)).toBe(false);
+  });
+
+  it('requires both Tap key types to agree with the selected mode', () => {
+    expect(tapPublicKeyMatchesMode('pk_test_example', true)).toBe(true);
+    expect(tapPublicKeyMatchesMode('pk_live_example', false)).toBe(true);
+    expect(tapPublicKeyMatchesMode('pk_live_example', true)).toBe(false);
+    expect(tapPublicKeyMatchesMode('pk_test_example', false)).toBe(false);
+    expect(tapPublicKeyMatchesMode('pk_test_****', true)).toBe(false);
+  });
+
+  it('separates verified credentials from operational payment readiness', () => {
+    const verified = {
+      tapEnabled: 0,
+      tapPublicKey: 'pk_test_example',
+      tapSecretKey: 'sk_test_example',
+      tapTestMode: 1,
+      isVerified: 1,
+      lastVerifiedAt: '2026-08-22 12:00:00',
+    };
+
+    expect(hasVerifiedTapCredentials(verified)).toBe(true);
+    expect(isTapPaymentReady(verified)).toBe(false);
+    expect(isTapPaymentReady({ ...verified, tapEnabled: 1 })).toBe(true);
+    expect(hasVerifiedTapCredentials({ ...verified, tapPublicKey: 'pk_live_example' })).toBe(false);
+  });
+
+  it('never serializes the Tap secret or reports stale readiness', () => {
+    const view = toMerchantPaymentSettingsView({
+      tapEnabled: 1,
+      tapPublicKey: 'pk_test_example',
+      tapSecretKey: 'sk_test_super-secret',
+      tapTestMode: 1,
+      isVerified: 1,
+      lastVerifiedAt: '2026-08-22 12:00:00',
+    });
+
+    expect(view).not.toHaveProperty('tapSecretKey');
+    expect(JSON.stringify(view)).not.toContain('super-secret');
+    expect(view.hasTapSecretKey).toBe(true);
+    expect(view.credentialsVerified).toBe(true);
+    expect(view.isReadyForPayments).toBe(true);
+
+    const stale = toMerchantPaymentSettingsView({
+      tapEnabled: 1,
+      tapPublicKey: 'pk_live_example',
+      tapSecretKey: 'sk_test_super-secret',
+      tapTestMode: 1,
+      isVerified: 1,
+      lastVerifiedAt: '2026-08-22 12:00:00',
+    });
+    expect(stale.credentialsVerified).toBe(false);
+    expect(stale.isReadyForPayments).toBe(false);
+    expect(stale.lastVerifiedAt).toBeNull();
   });
 
   it('never reveals short secrets while masking', () => {

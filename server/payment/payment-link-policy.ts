@@ -64,6 +64,49 @@ export function tapKeyMatchesMode(secretKey: string, testMode: boolean): boolean
   return normalized.startsWith('sk_live_');
 }
 
+export function tapPublicKeyMatchesMode(publicKey: string, testMode: boolean): boolean {
+  const normalized = publicKey.trim().toLowerCase();
+  if (!normalized || normalized.includes('*')) return false;
+  if (testMode) return normalized.startsWith('pk_test_');
+  return normalized.startsWith('pk_live_');
+}
+
+export interface TapPaymentSettingsState {
+  tapEnabled: number | boolean | null;
+  tapPublicKey?: string | null;
+  tapSecretKey?: string | null;
+  tapTestMode: number | boolean | null;
+  isVerified: number | boolean | null;
+  lastVerifiedAt?: string | Date | null;
+}
+
+export function hasVerifiedTapCredentials(settings: TapPaymentSettingsState): boolean {
+  const testMode = Boolean(settings.tapTestMode);
+  return Boolean(settings.isVerified)
+    && tapPublicKeyMatchesMode(settings.tapPublicKey ?? '', testMode)
+    && tapKeyMatchesMode(settings.tapSecretKey ?? '', testMode);
+}
+
+export function isTapPaymentReady(settings: TapPaymentSettingsState): boolean {
+  return Boolean(settings.tapEnabled) && hasVerifiedTapCredentials(settings);
+}
+
+export function toMerchantPaymentSettingsView<T extends TapPaymentSettingsState>(settings: T) {
+  const { tapSecretKey, ...publicSettings } = settings;
+  const credentialsVerified = hasVerifiedTapCredentials(settings);
+
+  return {
+    ...publicSettings,
+    // A presence bit lets the UI preserve an existing secret without receiving
+    // even a masked fragment that could be mistaken for a writable credential.
+    hasTapSecretKey: Boolean(tapSecretKey?.trim()),
+    isVerified: credentialsVerified ? 1 : 0,
+    credentialsVerified,
+    isReadyForPayments: Boolean(settings.tapEnabled) && credentialsVerified,
+    lastVerifiedAt: credentialsVerified ? settings.lastVerifiedAt ?? null : null,
+  };
+}
+
 export function maskSecret(secret: string): string {
   if (secret.length <= 8) return '********';
   return `${secret.slice(0, 4)}****${secret.slice(-4)}`;
