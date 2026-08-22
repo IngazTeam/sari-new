@@ -46,25 +46,23 @@ export default function ServiceForm() {
     { serviceId: serviceId! },
     { enabled: isEdit }
   );
-  const { data: staffData } = trpc.staff.list.useQuery({ activeOnly: true });
-
   const createMutation = trpc.services.create.useMutation({
     onSuccess: () => {
-      toast.success(t('serviceFormPage.text0'));
+      toast.success(t('merchantUx.serviceForm.created'));
       setLocation('/merchant/services');
     },
     onError: (error: any) => {
-      toast.error('فشل إنشاء الخدمة: ' + error.message);
+      toast.error(t('merchantUx.serviceForm.createFailed', { message: error.message }));
     },
   });
 
   const updateMutation = trpc.services.update.useMutation({
     onSuccess: () => {
-      toast.success(t('serviceFormPage.text1'));
+      toast.success(t('merchantUx.serviceForm.updated'));
       setLocation('/merchant/services');
     },
     onError: (error: any) => {
-      toast.error('فشل تحديث الخدمة: ' + error.message);
+      toast.error(t('merchantUx.serviceForm.updateFailed', { message: error.message }));
     },
   });
 
@@ -130,7 +128,7 @@ export default function ServiceForm() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-muted-foreground">{t('serviceFormPage.text2')}</p>
+            <p className="mt-4 text-muted-foreground">{t('merchantUx.serviceForm.loading')}</p>
           </div>
         </div>
       </div>
@@ -147,13 +145,13 @@ export default function ServiceForm() {
           className="mb-4"
         >
           <ArrowLeft className="ml-2 h-4 w-4" />
-          {t('serviceFormPage.text40')}
+          {t('merchantUx.serviceForm.back')}
         </Button>
         <h1 className="text-3xl font-bold">
-          {isEdit ? t('serviceFormPage.text34') : t('serviceFormPage.text35')}
+          {isEdit ? t('merchantUx.serviceForm.editTitle') : t('merchantUx.serviceForm.addTitle')}
         </h1>
         <p className="text-muted-foreground mt-2">
-          {isEdit ? t('serviceFormPage.text36') : t('serviceFormPage.text37')}
+          {isEdit ? t('merchantUx.serviceForm.editDescription') : t('merchantUx.serviceForm.addDescription')}
         </p>
       </div>
 
@@ -161,43 +159,43 @@ export default function ServiceForm() {
         {/* Basic Information */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('serviceFormPage.text3')}</CardTitle>
-            <CardDescription>{t('serviceFormPage.text4')}</CardDescription>
+            <CardTitle>{t('merchantUx.serviceForm.basicInfo')}</CardTitle>
+            <CardDescription>{t('merchantUx.serviceForm.basicInfoDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="name">{t('serviceFormPage.text5')}</Label>
+              <Label htmlFor="name">{t('merchantUx.serviceForm.name')}</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder={t('serviceFormPage.text6')}
+                placeholder={t('merchantUx.serviceForm.namePlaceholder')}
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="description">{t('serviceFormPage.text7')}</Label>
+              <Label htmlFor="description">{t('merchantUx.serviceForm.description')}</Label>
               <Textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder={t('serviceFormPage.text8')}
+                placeholder={t('merchantUx.serviceForm.descriptionPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div>
-              <Label htmlFor="categoryId">{t('serviceFormPage.text9')}</Label>
+              <Label htmlFor="categoryId">{t('merchantUx.serviceForm.category')}</Label>
               <Select
                 value={formData.categoryId || 'none'}
                 onValueChange={(value) => setFormData({ ...formData, categoryId: value === 'none' ? '' : value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder={t('serviceFormPage.text10')} />
+                  <SelectValue placeholder={t('merchantUx.serviceForm.selectCategory')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{t('serviceFormPage.text11')}</SelectItem>
+                  <SelectItem value="none">{t('merchantUx.serviceForm.noCategory')}</SelectItem>
                   {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id.toString()}>
                       {cat.name}
@@ -212,12 +210,12 @@ export default function ServiceForm() {
         {/* Pricing */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('serviceFormPage.text12')}</CardTitle>
-            <CardDescription>{t('serviceFormPage.text13')}</CardDescription>
+            <CardTitle>{t('merchantUx.serviceForm.pricing')}</CardTitle>
+            <CardDescription>{t('merchantUx.serviceForm.pricingDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="priceType">{t('serviceFormPage.text14')}</Label>
+              <Label htmlFor="priceType">{t('merchantUx.serviceForm.priceType')}</Label>
               <Select
                 value={formData.priceType}
                 onValueChange={(value: any) => setFormData({ ...formData, priceType: value })}
@@ -226,16 +224,16 @@ export default function ServiceForm() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">{t('serviceFormPage.text15')}</SelectItem>
-                  <SelectItem value="variable">{t('serviceFormPage.text16')}</SelectItem>
-                  <SelectItem value="custom">{t('serviceFormPage.text17')}</SelectItem>
+                  <SelectItem value="fixed">{t('merchantUx.serviceForm.fixedPrice')}</SelectItem>
+                  <SelectItem value="variable">{t('merchantUx.serviceForm.variablePrice')}</SelectItem>
+                  <SelectItem value="custom">{t('merchantUx.serviceForm.customPrice')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {formData.priceType === 'fixed' && (
               <div>
-                <Label htmlFor="basePrice">{t('serviceFormPage.text18')}</Label>
+                <Label htmlFor="basePrice">{t('merchantUx.serviceForm.basePrice')}</Label>
                 <Input
                   id="basePrice"
                   type="number"
@@ -251,7 +249,7 @@ export default function ServiceForm() {
             {formData.priceType === 'variable' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="minPrice">{t('serviceFormPage.text19')}</Label>
+                  <Label htmlFor="minPrice">{t('merchantUx.serviceForm.minPrice')}</Label>
                   <Input
                     id="minPrice"
                     type="number"
@@ -263,7 +261,7 @@ export default function ServiceForm() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="maxPrice">{t('serviceFormPage.text20')}</Label>
+                  <Label htmlFor="maxPrice">{t('merchantUx.serviceForm.maxPrice')}</Label>
                   <Input
                     id="maxPrice"
                     type="number"
@@ -282,13 +280,13 @@ export default function ServiceForm() {
         {/* Time Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('serviceFormPage.text21')}</CardTitle>
-            <CardDescription>{t('serviceFormPage.text22')}</CardDescription>
+            <CardTitle>{t('merchantUx.serviceForm.timeSettings')}</CardTitle>
+            <CardDescription>{t('merchantUx.serviceForm.timeDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="durationMinutes">{t('serviceFormPage.text23')}</Label>
+                <Label htmlFor="durationMinutes">{t('merchantUx.serviceForm.duration')}</Label>
                 <Input
                   id="durationMinutes"
                   type="number"
@@ -299,7 +297,7 @@ export default function ServiceForm() {
                 />
               </div>
               <div>
-                <Label htmlFor="bufferTimeMinutes">{t('serviceFormPage.text24')}</Label>
+                <Label htmlFor="bufferTimeMinutes">{t('merchantUx.serviceForm.bufferTime')}</Label>
                 <Input
                   id="bufferTimeMinutes"
                   type="number"
@@ -315,15 +313,15 @@ export default function ServiceForm() {
         {/* Booking Settings */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('serviceFormPage.text25')}</CardTitle>
-            <CardDescription>{t('serviceFormPage.text26')}</CardDescription>
+            <CardTitle>{t('merchantUx.serviceForm.bookingSettings')}</CardTitle>
+            <CardDescription>{t('merchantUx.serviceForm.bookingDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label>{t('serviceFormPage.text27')}</Label>
+                <Label>{t('merchantUx.serviceForm.requiresAppointment')}</Label>
                 <p className="text-sm text-muted-foreground">
-                  {t('serviceFormPage.text41')}
+                  {t('merchantUx.serviceForm.requiresAppointmentDescription')}
                 </p>
               </div>
               <Switch
@@ -337,7 +335,7 @@ export default function ServiceForm() {
             {formData.requiresAppointment && (
               <>
                 <div>
-                  <Label htmlFor="maxBookingsPerDay">{t('serviceFormPage.text28')}</Label>
+                  <Label htmlFor="maxBookingsPerDay">{t('merchantUx.serviceForm.maxBookings')}</Label>
                   <Input
                     id="maxBookingsPerDay"
                     type="number"
@@ -345,12 +343,12 @@ export default function ServiceForm() {
                     onChange={(e) =>
                       setFormData({ ...formData, maxBookingsPerDay: e.target.value })
                     }
-                    placeholder={t('serviceFormPage.text29')}
+                    placeholder={t('merchantUx.serviceForm.maxBookingsPlaceholder')}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="advanceBookingDays">{t('serviceFormPage.text30')}</Label>
+                  <Label htmlFor="advanceBookingDays">{t('merchantUx.serviceForm.advanceDays')}</Label>
                   <Input
                     id="advanceBookingDays"
                     type="number"
@@ -361,7 +359,7 @@ export default function ServiceForm() {
                     placeholder="30"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    {t('serviceFormPage.text42')}
+                    {t('merchantUx.serviceForm.advanceDaysDescription')}
                   </p>
                 </div>
               </>
@@ -372,12 +370,12 @@ export default function ServiceForm() {
         {/* Display Order */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('serviceFormPage.text31')}</CardTitle>
-            <CardDescription>{t('serviceFormPage.text32')}</CardDescription>
+            <CardTitle>{t('merchantUx.serviceForm.displaySettings')}</CardTitle>
+            <CardDescription>{t('merchantUx.serviceForm.displayDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div>
-              <Label htmlFor="displayOrder">{t('serviceFormPage.text33')}</Label>
+              <Label htmlFor="displayOrder">{t('merchantUx.serviceForm.displayOrder')}</Label>
               <Input
                 id="displayOrder"
                 type="number"
@@ -386,7 +384,7 @@ export default function ServiceForm() {
                 placeholder="0"
               />
               <p className="text-sm text-muted-foreground mt-1">
-                {t('serviceFormPage.text43')}
+                {t('merchantUx.serviceForm.displayOrderDescription')}
               </p>
             </div>
           </CardContent>
@@ -400,7 +398,7 @@ export default function ServiceForm() {
             onClick={() => setLocation('/merchant/services')}
             className="flex-1"
           >
-            {t('serviceFormPage.text44')}
+            {t('merchantUx.serviceForm.cancel')}
           </Button>
           <Button
             type="submit"
@@ -409,9 +407,9 @@ export default function ServiceForm() {
           >
             <Save className="ml-2 h-4 w-4" />
             {createMutation.isPending || updateMutation.isPending
-              ? t('serviceFormPage.text45')
+              ? t('merchantUx.serviceForm.saving')
               : isEdit
-              ? t('serviceFormPage.text38') : t('serviceFormPage.text39')}
+              ? t('merchantUx.serviceForm.update') : t('merchantUx.serviceForm.add')}
           </Button>
         </div>
       </form>

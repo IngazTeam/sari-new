@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import type { MerchantUxCopy } from '../locales/merchant-ux.schema';
 
 export const SUPPORTED_LANGUAGE_CODES = [
   'ar',
@@ -15,6 +16,7 @@ export const SUPPORTED_LANGUAGE_CODES = [
 export type SupportedLanguageCode = (typeof SUPPORTED_LANGUAGE_CODES)[number];
 
 type TranslationModule = { default: Record<string, unknown> };
+type MerchantUxModule = { default: MerchantUxCopy };
 
 // Keep every catalogue out of the application entry chunk. Vite emits one
 // independently cacheable chunk per language and fetches only the selected one.
@@ -28,6 +30,35 @@ const translationLoaders: Record<SupportedLanguageCode, () => Promise<Translatio
   de: () => import('../locales/de.json'),
   zh: () => import('../locales/zh.json'),
 };
+
+// The recovered merchant flows use a typed semantic catalogue. Arabic and
+// English have first-party copy; other locales get explicit English copy until
+// their reviewed translation exists, rather than falling through mismatched
+// legacy text0/text1 maps.
+const merchantUxLoaders: Record<SupportedLanguageCode, () => Promise<MerchantUxModule>> = {
+  ar: () => import('../locales/merchant-ux.ar'),
+  en: () => import('../locales/merchant-ux.en'),
+  fr: () => import('../locales/merchant-ux.en'),
+  tr: () => import('../locales/merchant-ux.en'),
+  es: () => import('../locales/merchant-ux.en'),
+  it: () => import('../locales/merchant-ux.en'),
+  de: () => import('../locales/merchant-ux.en'),
+  zh: () => import('../locales/merchant-ux.en'),
+};
+
+async function loadTranslations(language: SupportedLanguageCode): Promise<TranslationModule> {
+  const [legacy, merchantUx] = await Promise.all([
+    translationLoaders[language](),
+    merchantUxLoaders[language](),
+  ]);
+
+  return {
+    default: {
+      ...legacy.default,
+      merchantUx: merchantUx.default,
+    },
+  };
+}
 
 function normalizeLanguage(candidate?: string | null): SupportedLanguageCode | null {
   if (!candidate) return null;
@@ -63,7 +94,7 @@ function detectInitialLanguage(): SupportedLanguageCode {
 async function ensureLanguageLoaded(language: SupportedLanguageCode): Promise<void> {
   if (i18n.hasResourceBundle(language, 'translation')) return;
 
-  const module = await translationLoaders[language]();
+  const module = await loadTranslations(language);
   i18n.addResourceBundle(language, 'translation', module.default, true, true);
 }
 
@@ -82,7 +113,7 @@ export function initializeI18n(): Promise<typeof i18n> {
 
   initializationPromise = (async () => {
     const initialLanguage = detectInitialLanguage();
-    const initialTranslations = await translationLoaders[initialLanguage]();
+    const initialTranslations = await loadTranslations(initialLanguage);
 
     await i18n
       .use(initReactI18next)

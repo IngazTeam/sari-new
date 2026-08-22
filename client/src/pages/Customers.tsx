@@ -219,7 +219,6 @@ export default function Customers() {
             <UserPlus className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            // @ts-ignore
             <div className="text-2xl font-bold">{stats?.newThisMonth || 0}</div>
             <p className="text-xs text-muted-foreground">{t('customersPage.text4')}</p>
           </CardContent>

@@ -95,7 +95,6 @@ export default function Reports() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            // @ts-ignore
             <div className="text-2xl font-bold">{stats?.readRate || 0}%</div>
             <p className="text-xs text-muted-foreground mt-1">
               {t('reportsPage.text20')}
@@ -227,13 +226,11 @@ export default function Reports() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium">{t('reportsPage.text16')}</span>
-                // @ts-ignore
                 <span className="text-sm text-muted-foreground">{stats?.readRate || 0}%</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-primary/100 transition-all" 
-                  // @ts-ignore
                   style={{ width: `${stats?.readRate || 0}%` }}
                 />
               </div>

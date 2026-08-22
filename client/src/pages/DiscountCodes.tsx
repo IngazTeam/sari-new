@@ -38,7 +38,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Ticket, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Percent, DollarSign, Gift, Calendar, Star, Sparkles } from "lucide-react";
+import { QueryStateCard } from "@/components/QueryStateCard";
+import { Ticket, Plus, Trash2, ToggleLeft, ToggleRight, Zap, Percent, DollarSign, Gift, Calendar, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
 
@@ -49,8 +50,8 @@ const DISCOUNT_TEMPLATES = [
   {
     id: 'percentage_10',
     icon: Percent,
-    label: 'خصم 10%',
-    description: 'خصم نسبة مئوية على الطلب',
+    labelKey: 'merchantUx.discounts.templatePercentage10Label',
+    descriptionKey: 'merchantUx.discounts.templatePercentage10Description',
     gradient: 'from-blue-500/20 to-cyan-500/20',
     iconColor: 'text-blue-400',
     preset: { code: 'SAVE10', type: 'percentage' as const, value: '10', minOrderAmount: '100', maxUses: '100', expiresAt: '' },
@@ -58,8 +59,8 @@ const DISCOUNT_TEMPLATES = [
   {
     id: 'percentage_25',
     icon: Sparkles,
-    label: 'خصم 25%',
-    description: 'خصم كبير للعروض الخاصة',
+    labelKey: 'merchantUx.discounts.templatePercentage25Label',
+    descriptionKey: 'merchantUx.discounts.templatePercentage25Description',
     gradient: 'from-violet-500/20 to-purple-500/20',
     iconColor: 'text-violet-400',
     preset: { code: 'MEGA25', type: 'percentage' as const, value: '25', minOrderAmount: '200', maxUses: '50', expiresAt: '' },
@@ -67,8 +68,8 @@ const DISCOUNT_TEMPLATES = [
   {
     id: 'fixed_50',
     icon: DollarSign,
-    label: 'خصم 50 ريال',
-    description: 'خصم مبلغ ثابت من الطلب',
+    labelKey: 'merchantUx.discounts.templateFixed50Label',
+    descriptionKey: 'merchantUx.discounts.templateFixed50Description',
     gradient: 'from-emerald-500/20 to-green-500/20',
     iconColor: 'text-emerald-400',
     preset: { code: 'FLAT50', type: 'fixed' as const, value: '50', minOrderAmount: '200', maxUses: '100', expiresAt: '' },
@@ -76,8 +77,8 @@ const DISCOUNT_TEMPLATES = [
   {
     id: 'welcome',
     icon: Gift,
-    label: 'عرض ترحيبي',
-    description: 'خصم للعملاء الجدد',
+    labelKey: 'merchantUx.discounts.templateWelcomeLabel',
+    descriptionKey: 'merchantUx.discounts.templateWelcomeDescription',
     gradient: 'from-amber-500/20 to-orange-500/20',
     iconColor: 'text-amber-400',
     preset: { code: 'WELCOME', type: 'percentage' as const, value: '15', minOrderAmount: '50', maxUses: '', expiresAt: '' },
@@ -85,8 +86,8 @@ const DISCOUNT_TEMPLATES = [
   {
     id: 'seasonal',
     icon: Calendar,
-    label: 'عرض موسمي',
-    description: 'خصم محدود المدة للمواسم',
+    labelKey: 'merchantUx.discounts.templateSeasonalLabel',
+    descriptionKey: 'merchantUx.discounts.templateSeasonalDescription',
     gradient: 'from-rose-500/20 to-pink-500/20',
     iconColor: 'text-rose-400',
     preset: { code: 'SEASON30', type: 'percentage' as const, value: '30', minOrderAmount: '150', maxUses: '200', expiresAt: getDateAfterDays(30) },
@@ -94,8 +95,8 @@ const DISCOUNT_TEMPLATES = [
   {
     id: 'flash',
     icon: Zap,
-    label: 'فلاش سيل',
-    description: 'خصم سريع لمدة قصيرة',
+    labelKey: 'merchantUx.discounts.templateFlashLabel',
+    descriptionKey: 'merchantUx.discounts.templateFlashDescription',
     gradient: 'from-yellow-500/20 to-amber-500/20',
     iconColor: 'text-yellow-400',
     preset: { code: 'FLASH40', type: 'percentage' as const, value: '40', minOrderAmount: '100', maxUses: '30', expiresAt: getDateAfterDays(3) },
@@ -109,7 +110,7 @@ function getDateAfterDays(days: number): string {
 }
 
 export default function DiscountCodes() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null);
   const [newCode, setNewCode] = useState({
@@ -122,14 +123,25 @@ export default function DiscountCodes() {
   });
 
   // Queries
-  const { data: codes, refetch } = trpc.discounts.list.useQuery();
-  const { data: stats } = trpc.discounts.getStats.useQuery();
+  const {
+    data: codes,
+    isLoading: codesLoading,
+    error: codesError,
+    refetch: refetchCodes,
+  } = trpc.discounts.list.useQuery();
+  const {
+    data: stats,
+    error: statsError,
+    refetch: refetchStats,
+  } = trpc.discounts.getStats.useQuery();
+
+  const refreshDiscounts = () => void Promise.all([refetchCodes(), refetchStats()]);
 
   // Mutations
   const createMutation = trpc.discounts.create.useMutation({
     onSuccess: () => {
-      toast.success("تم إنشاء كود الخصم بنجاح");
-      refetch();
+      toast.success(t('merchantUx.discounts.created'));
+      refreshDiscounts();
       setIsCreateDialogOpen(false);
       setNewCode({
         code: "",
@@ -141,40 +153,42 @@ export default function DiscountCodes() {
       });
     },
     onError: (error: any) => {
-      toast.error(error.message || "فشل إنشاء كود الخصم");
+      toast.error(error.message || t('merchantUx.discounts.createFailed'));
     },
   });
 
   const updateMutation = trpc.discounts.update.useMutation({
     onSuccess: () => {
-      toast.success("تم تحديث كود الخصم");
-      refetch();
+      toast.success(t('merchantUx.discounts.updated'));
+      refreshDiscounts();
     },
     onError: (error: any) => {
-      toast.error(error.message || "فشل تحديث كود الخصم");
+      toast.error(error.message || t('merchantUx.discounts.updateFailed'));
     },
   });
 
   const deleteMutation = trpc.discounts.delete.useMutation({
     onSuccess: () => {
-      toast.success("تم حذف كود الخصم");
-      refetch();
+      toast.success(t('merchantUx.discounts.deleted'));
+      refreshDiscounts();
       setDeleteTarget(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "فشل حذف كود الخصم");
+      toast.error(error.message || t('merchantUx.discounts.deleteFailed'));
     },
   });
 
   const handleCreate = () => {
     if (!newCode.code || !newCode.value) {
-      toast.error("يرجى إدخال الكود وقيمة الخصم");
+      toast.error(t('merchantUx.discounts.requiredFields'));
       return;
     }
 
     const value = Number(newCode.value);
     if (!Number.isFinite(value) || value <= 0 || (newCode.type === "percentage" && value > 100)) {
-      toast.error(newCode.type === "percentage" ? "نسبة الخصم يجب أن تكون بين 0 و100" : "قيمة الخصم غير صالحة");
+      toast.error(newCode.type === "percentage"
+        ? t('merchantUx.discounts.invalidPercentage')
+        : t('merchantUx.discounts.invalidValue'));
       return;
     }
 
@@ -207,34 +221,54 @@ export default function DiscountCodes() {
   };
 
   const formatDate = (date: Date | string | null) => {
-    if (!date) return "-";
-    return new Date(date).toLocaleDateString("ar-SA");
+    if (!date) return t('merchantUx.discounts.noExpiry');
+    return new Date(date).toLocaleDateString(i18n.language);
   };
+
+  if (codesLoading) {
+    return (
+      <div className="flex min-h-[320px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" aria-label={t('merchantUx.discounts.loading')} />
+      </div>
+    );
+  }
+
+  if (codesError || statsError) {
+    return (
+      <QueryStateCard
+        kind="error"
+        title={t('merchantUx.discounts.loadFailed')}
+        description={(codesError || statsError)?.message}
+        retryLabel={t('merchantUx.discounts.retry')}
+        onRetry={refreshDiscounts}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{t('discountCodesPage.text0')}</h1>
-          <p className="text-muted-foreground">{t('discountCodesPage.text1')}</p>
+          <h1 className="text-3xl font-bold">{t('merchantUx.discounts.title')}</h1>
+          <p className="text-muted-foreground">{t('merchantUx.discounts.description')}</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="ml-2 h-4 w-4" />{t('discountCodes.auto_0')}</Button>
+              <Plus className="ml-2 h-4 w-4" />{t('merchantUx.discounts.add')}</Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>{t('discountCodesPage.text2')}</DialogTitle>
-              <DialogDescription>{t('discountCodes.auto_1')}</DialogDescription>
+              <DialogTitle>{t('merchantUx.discounts.createTitle')}</DialogTitle>
+              <DialogDescription>{t('merchantUx.discounts.createDescription')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="code">{t('discountCodesPage.text3')}</Label>
+                <Label htmlFor="code">{t('merchantUx.discounts.code')}</Label>
                 <Input
                   id="code"
-                  placeholder={t('discountCodesPage.text4')}
+                  placeholder={t('merchantUx.discounts.codePlaceholder')}
                   value={newCode.code}
                   onChange={(e) => setNewCode({ ...newCode, code: e.target.value.toUpperCase() })}
                 />
@@ -242,7 +276,7 @@ export default function DiscountCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="type">{t('discountCodesPage.text5')}</Label>
+                  <Label htmlFor="type">{t('merchantUx.discounts.type')}</Label>
                   <Select
                     value={newCode.type}
                     onValueChange={(value: "percentage" | "fixed") =>
@@ -253,15 +287,17 @@ export default function DiscountCodes() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="percentage">{t('discountCodesPage.text6')}</SelectItem>
-                      <SelectItem value="fixed">{t('discountCodesPage.text7')}</SelectItem>
+                      <SelectItem value="percentage">{t('merchantUx.discounts.percentage')}</SelectItem>
+                      <SelectItem value="fixed">{t('merchantUx.discounts.fixed')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="value">
-                    القيمة * {newCode.type === "percentage" ? "(%)" : "(ريال)"}
+                    {t('merchantUx.discounts.value')} {newCode.type === "percentage"
+                      ? '(%)'
+                      : `(${t('merchantUx.discounts.currencyUnit')})`}
                   </Label>
                   <Input
                     id="value"
@@ -274,7 +310,7 @@ export default function DiscountCodes() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="minOrderAmount">{t('discountCodesPage.text8')}</Label>
+                <Label htmlFor="minOrderAmount">{t('merchantUx.discounts.minimumOrder')}</Label>
                 <Input
                   id="minOrderAmount"
                   type="number"
@@ -286,7 +322,7 @@ export default function DiscountCodes() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="maxUses">{t('discountCodesPage.text9')}</Label>
+                  <Label htmlFor="maxUses">{t('merchantUx.discounts.maxUses')}</Label>
                   <Input
                     id="maxUses"
                     type="number"
@@ -297,7 +333,7 @@ export default function DiscountCodes() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="expiresAt">{t('discountCodesPage.text10')}</Label>
+                  <Label htmlFor="expiresAt">{t('merchantUx.discounts.expiresAt')}</Label>
                   <Input
                     id="expiresAt"
                     type="date"
@@ -309,10 +345,12 @@ export default function DiscountCodes() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                إلغاء
+                {t('merchantUx.discounts.cancel')}
               </Button>
               <Button onClick={handleCreate} disabled={createMutation.isPending}>
-                {createMutation.isPending ? "جاري الإنشاء..." : "إنشاء"}
+                {createMutation.isPending
+                  ? t('merchantUx.discounts.creating')
+                  : t('merchantUx.discounts.create')}
               </Button>
             </div>
           </DialogContent>
@@ -323,34 +361,34 @@ export default function DiscountCodes() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('discountCodesPage.text11')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('merchantUx.discounts.totalCodes')}</CardTitle>
             <Ticket className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.total || 0}</div>
-            <p className="text-xs text-muted-foreground">{t('discountCodesPage.text12')}</p>
+            <p className="text-xs text-muted-foreground">{t('merchantUx.discounts.totalCodesDescription')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('discountCodesPage.text13')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('merchantUx.discounts.activeCodes')}</CardTitle>
             <ToggleRight className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.active || 0}</div>
-            <p className="text-xs text-muted-foreground">{t('discountCodesPage.text14')}</p>
+            <p className="text-xs text-muted-foreground">{t('merchantUx.discounts.activeCodesDescription')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('discountCodesPage.text15')}</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('merchantUx.discounts.totalUsage')}</CardTitle>
             <Ticket className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats?.used || 0}</div>
-            <p className="text-xs text-muted-foreground">{t('discountCodesPage.text16')}</p>
+            <p className="text-xs text-muted-foreground">{t('merchantUx.discounts.totalUsageDescription')}</p>
           </CardContent>
         </Card>
       </div>
@@ -363,8 +401,8 @@ export default function DiscountCodes() {
               <Sparkles className="h-5 w-5 text-violet-400" />
             </div>
             <div>
-              <CardTitle className="text-lg">قوالب سريعة</CardTitle>
-              <CardDescription>اختر قالب جاهز وعدّل عليه بسهولة</CardDescription>
+              <CardTitle className="text-lg">{t('merchantUx.discounts.templatesTitle')}</CardTitle>
+              <CardDescription>{t('merchantUx.discounts.templatesDescription')}</CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -381,8 +419,8 @@ export default function DiscountCodes() {
                   <div className={`mx-auto mb-2 p-2 rounded-lg bg-background/30 w-fit`}>
                     <Icon className={`h-5 w-5 ${tmpl.iconColor}`} />
                   </div>
-                  <p className="text-sm font-semibold text-white">{tmpl.label}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{tmpl.description}</p>
+                  <p className="text-sm font-semibold text-white">{t(tmpl.labelKey)}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-1">{t(tmpl.descriptionKey)}</p>
                 </button>
               );
             })}
@@ -393,28 +431,28 @@ export default function DiscountCodes() {
       {/* Discount Codes Table */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('discountCodesPage.text17')}</CardTitle>
-          <CardDescription>{t('discountCodesPage.text18')}</CardDescription>
+          <CardTitle>{t('merchantUx.discounts.listTitle')}</CardTitle>
+          <CardDescription>{t('merchantUx.discounts.listDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {!codes || codes.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Ticket className="mx-auto h-12 w-12 mb-4 opacity-50" />
-              <p>{t('discountCodesPage.text19')}</p>
-              <p className="text-sm">{t('discountCodesPage.text20')}</p>
+              <p>{t('merchantUx.discounts.emptyTitle')}</p>
+              <p className="text-sm">{t('merchantUx.discounts.emptyDescription')}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('discountCodesPage.text21')}</TableHead>
-                  <TableHead>{t('discountCodesPage.text22')}</TableHead>
-                  <TableHead>{t('discountCodesPage.text23')}</TableHead>
-                  <TableHead>{t('discountCodesPage.text24')}</TableHead>
-                  <TableHead>{t('discountCodesPage.text25')}</TableHead>
-                  <TableHead>{t('discountCodesPage.text26')}</TableHead>
-                  <TableHead>{t('discountCodesPage.text27')}</TableHead>
-                  <TableHead className="text-left">{t('discountCodesPage.text28')}</TableHead>
+                  <TableHead>{t('merchantUx.discounts.columnCode')}</TableHead>
+                  <TableHead>{t('merchantUx.discounts.columnType')}</TableHead>
+                  <TableHead>{t('merchantUx.discounts.columnValue')}</TableHead>
+                  <TableHead>{t('merchantUx.discounts.columnMinimum')}</TableHead>
+                  <TableHead>{t('merchantUx.discounts.columnUsage')}</TableHead>
+                  <TableHead>{t('merchantUx.discounts.columnExpiry')}</TableHead>
+                  <TableHead>{t('merchantUx.discounts.columnStatus')}</TableHead>
+                  <TableHead className="text-left">{t('merchantUx.discounts.columnActions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -422,13 +460,19 @@ export default function DiscountCodes() {
                   <TableRow key={code.id}>
                     <TableCell className="font-mono font-bold">{code.code}</TableCell>
                     <TableCell>
-                      {code.type === "percentage" ? "نسبة مئوية" : "مبلغ ثابت"}
+                      {code.type === "percentage"
+                        ? t('merchantUx.discounts.percentageType')
+                        : t('merchantUx.discounts.fixedType')}
                     </TableCell>
                     <TableCell>
-                      {code.type === "percentage" ? `${code.value}%` : `${code.value} ريال`}
+                      {code.type === "percentage"
+                        ? `${code.value}%`
+                        : `${code.value} ${t('merchantUx.discounts.currencyUnit')}`}
                     </TableCell>
                     <TableCell>
-                      {code.minOrderAmount ? `${code.minOrderAmount} ريال` : "-"}
+                      {code.minOrderAmount
+                        ? `${code.minOrderAmount} ${t('merchantUx.discounts.currencyUnit')}`
+                        : '-'}
                     </TableCell>
                     <TableCell>
                       {code.usedCount} / {code.maxUses || "∞"}
@@ -436,9 +480,9 @@ export default function DiscountCodes() {
                     <TableCell>{formatDate(code.expiresAt)}</TableCell>
                     <TableCell>
                       {code.isActive ? (
-                        <Badge variant="default" className="bg-green-600">{t('discountCodesPage.text29')}</Badge>
+                        <Badge variant="default" className="bg-green-600">{t('merchantUx.discounts.active')}</Badge>
                       ) : (
-                        <Badge variant="secondary">{t('discountCodesPage.text30')}</Badge>
+                        <Badge variant="secondary">{t('merchantUx.discounts.inactive')}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-left">
@@ -475,18 +519,20 @@ export default function DiscountCodes() {
       <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>هل أنت متأكد من حذف هذا الكود؟</AlertDialogTitle>
+            <AlertDialogTitle>{t('merchantUx.discounts.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              سيتم حذف كود الخصم نهائياً ولن تتمكن من استعادته. هل تريد المتابعة؟
+              {t('merchantUx.discounts.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('merchantUx.discounts.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              {deleteMutation.isPending ? "جاري الحذف..." : "حذف الكود"}
+              {deleteMutation.isPending
+                ? t('merchantUx.discounts.deleting')
+                : t('merchantUx.discounts.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

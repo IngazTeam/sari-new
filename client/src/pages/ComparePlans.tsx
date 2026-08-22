@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 
 export default function ComparePlans() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, setLocation] = useLocation();
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
 
@@ -32,22 +32,23 @@ export default function ComparePlans() {
   // Upgrade/downgrade mutation
   const upgradeMutation = trpc.merchantSubscription.upgradePlan.useMutation({
     onSuccess: () => {
-      toast.success(t('comparePlansPage.text0'));
+      toast.success(t('merchantUx.comparePlans.updated'));
       setLocation('/merchant/subscription');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'فشل تحديث الباقة');
+      toast.error(error.message || t('merchantUx.comparePlans.updateFailed'));
     },
   });
 
   const handleSelectPlan = (planId: number) => {
     if (!currentSubscription) {
-      toast.error(t('comparePlansPage.text1'));
+      toast.error(t('merchantUx.comparePlans.noActiveSubscription'));
       return;
     }
 
     if (planId === currentSubscription.planId) {
-      toast.info(t('comparePlansPage.text2'));
+      const currentPlanName = plans?.find((plan) => plan.id === planId)?.name ?? '';
+      toast.info(t('merchantUx.comparePlans.currentPlan', { name: currentPlanName }));
       return;
     }
 
@@ -71,9 +72,9 @@ export default function ComparePlans() {
       <div className="container mx-auto py-8">
         <QueryStateCard
           kind="error"
-          title="تعذر تحميل مقارنة الباقات"
+          title={t('merchantUx.comparePlans.loadFailed')}
           description={(plansError || subscriptionError)?.message}
-          retryLabel="إعادة المحاولة"
+          retryLabel={t('merchantUx.comparePlans.retry')}
           onRetry={() => void Promise.all([refetchPlans(), refetchSubscription()])}
         />
       </div>
@@ -85,11 +86,11 @@ export default function ComparePlans() {
       <div className="container mx-auto py-8">
         <QueryStateCard
           kind="empty"
-          title="لا توجد باقات متاحة حاليًا"
-          description="لا يمكن تغيير الاشتراك حتى تعود بيانات الباقات من الخادم."
+          title={t('merchantUx.comparePlans.noPlans')}
+          description={t('merchantUx.comparePlans.noPlansDescription')}
           action={(
             <Button type="button" variant="outline" onClick={() => setLocation('/merchant/subscription')}>
-              العودة إلى الاشتراك
+              {t('merchantUx.comparePlans.back')}
             </Button>
           )}
         />
@@ -103,25 +104,27 @@ export default function ComparePlans() {
 
   // Define features to compare
   const features = [
-    { key: 'maxCustomers', label: 'عدد العملاء', value: (plan: ComparablePlan) => plan.maxCustomers, unlimited: 999999 },
-    { key: 'maxWhatsAppNumbers', label: 'أرقام الواتساب', value: (plan: ComparablePlan) => plan.maxWhatsAppNumbers, unlimited: 999999 },
-    { key: 'conversationLimit', label: 'المحادثات الشهرية', value: (plan: ComparablePlan) => plan.conversationLimit, unlimited: -1 },
-    { key: 'voiceMessageLimit', label: 'الرسائل الصوتية', value: (plan: ComparablePlan) => plan.voiceMessageLimit, unlimited: -1 },
+    { key: 'maxCustomers', label: t('merchantUx.comparePlans.customers'), value: (plan: ComparablePlan) => plan.maxCustomers, unlimited: 999999 },
+    { key: 'maxWhatsAppNumbers', label: t('merchantUx.comparePlans.whatsappNumbers'), value: (plan: ComparablePlan) => plan.maxWhatsAppNumbers, unlimited: 999999 },
+    { key: 'conversationLimit', label: t('merchantUx.comparePlans.monthlyConversations'), value: (plan: ComparablePlan) => plan.conversationLimit, unlimited: -1 },
+    { key: 'voiceMessageLimit', label: t('merchantUx.comparePlans.voiceMessages'), value: (plan: ComparablePlan) => plan.voiceMessageLimit, unlimited: -1 },
   ];
 
   return (
     <div className="container mx-auto py-8 px-4">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">{t('comparePlansPage.text4')}</h1>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t('comparePlans.auto_0')}</p>
+        <h1 className="text-4xl font-bold mb-4">{t('merchantUx.comparePlans.title')}</h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{t('merchantUx.comparePlans.subtitle')}</p>
       </div>
 
       {/* Current Plan Badge */}
       {currentSubscription && (
         <div className="mb-8 text-center">
           <Badge variant="secondary" className="text-lg px-4 py-2">
-            باقتك الحالية: {sortedPlans.find(p => p.id === currentSubscription.planId)?.name}
+            {t('merchantUx.comparePlans.currentPlan', {
+              name: sortedPlans.find((plan) => plan.id === currentSubscription.planId)?.name ?? '',
+            })}
           </Badge>
         </div>
       )}
@@ -131,7 +134,7 @@ export default function ComparePlans() {
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b-2">
-              <th className="p-4 text-right font-semibold bg-muted/50 sticky right-0 z-10">{t('comparePlans.auto_1')}</th>
+              <th className="p-4 text-right font-semibold bg-muted/50 sticky right-0 z-10">{t('merchantUx.comparePlans.feature')}</th>
               {sortedPlans.map((plan) => (
                 <th key={plan.id} className="p-4 text-center min-w-[200px]">
                   <Card className={`${
@@ -142,7 +145,7 @@ export default function ComparePlans() {
                     <CardHeader>
                       <div className="flex items-center justify-center gap-2 mb-2">
                         {currentSubscription?.planId === plan.id && (
-                          <Badge variant="secondary">{t('comparePlansPage.text5')}</Badge>
+                          <Badge variant="secondary">{t('merchantUx.comparePlans.currentBadge')}</Badge>
                         )}
                       </div>
                       <CardTitle className="text-2xl">{plan.name}</CardTitle>
@@ -151,10 +154,12 @@ export default function ComparePlans() {
                       </CardDescription>
                       <div className="mt-4">
                         <div className="text-3xl font-bold">
-                          {Number(plan.monthlyPrice) === 0 ? 'مجاناً' : `${Number(plan.monthlyPrice).toLocaleString()} ${plan.currency}`}
+                          {Number(plan.monthlyPrice) === 0
+                            ? t('merchantUx.comparePlans.free')
+                            : `${Number(plan.monthlyPrice).toLocaleString(i18n.language)} ${plan.currency}`}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          شهرياً
+                          {t('merchantUx.comparePlans.monthly')}
                         </div>
                       </div>
                     </CardHeader>
@@ -171,11 +176,11 @@ export default function ComparePlans() {
                       >
                         {upgradeMutation.isPending && selectedPlanId === plan.id ? (
                           <>
-                            <Loader2 className="h-4 w-4 animate-spin ml-2" />{t('comparePlans.auto_3')}
+                            <Loader2 className="h-4 w-4 animate-spin ml-2" />{t('merchantUx.comparePlans.updating')}
                           </>
                         ) : (
                           <>
-                            {t('comparePlans.auto_5')}<ArrowRight className="h-4 w-4 mr-2" />
+                            {t('merchantUx.comparePlans.select')}<ArrowRight className="h-4 w-4 mr-2" />
                           </>
                         )}
                       </Button>
@@ -193,7 +198,9 @@ export default function ComparePlans() {
                 </td>
                 {sortedPlans.map((plan) => {
                   const value = Number(feature.value(plan) ?? 0);
-                  const formattedValue = value === feature.unlimited ? 'غير محدود' : value.toLocaleString();
+                  const formattedValue = value === feature.unlimited
+                    ? t('merchantUx.comparePlans.unlimited')
+                    : value.toLocaleString(i18n.language);
                   
                   return (
                     <td key={plan.id} className="p-4 text-center">
@@ -211,10 +218,10 @@ export default function ComparePlans() {
       <div className="mt-12 text-center">
         <Card className="max-w-2xl mx-auto">
           <CardContent className="pt-6">
-            <h3 className="text-xl font-semibold mb-2">{t('comparePlansPage.text6')}</h3>
-            <p className="text-muted-foreground mb-4">{t('comparePlans.auto_6')}</p>
+            <h3 className="text-xl font-semibold mb-2">{t('merchantUx.comparePlans.helpTitle')}</h3>
+            <p className="text-muted-foreground mb-4">{t('merchantUx.comparePlans.helpDescription')}</p>
             <Button variant="outline" onClick={() => setLocation('/merchant/subscription')}>
-              العودة إلى صفحة الاشتراك
+              {t('merchantUx.comparePlans.back')}
             </Button>
           </CardContent>
         </Card>

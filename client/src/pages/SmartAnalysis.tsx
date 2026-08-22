@@ -479,15 +479,11 @@ export default function SmartAnalysis() {
                    status.analysisStatus === 'analyzing' ? <Loader2 className="h-5 w-5 text-blue-500 animate-spin" /> :
                    status.analysisStatus === 'failed' ? <XCircle className="h-5 w-5 text-red-500" /> :
                    <AlertCircle className="h-5 w-5 text-gray-400" />}
-                  // @ts-ignore
                   <span>آخر تحليل: {status.websiteUrl}</span>
-                  // @ts-ignore
                   {getPlatformBadge(status.platformType)}
                 </div>
-                // @ts-ignore
                 {status.lastAnalysisDate && (
                   <span className="text-sm text-muted-foreground">
-                    // @ts-ignore
                     {new Date(status.lastAnalysisDate).toLocaleDateString("ar-SA")}
                   </span>
                 )}
