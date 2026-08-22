@@ -7569,6 +7569,7 @@ export const appRouter = router({
           isTapPaymentReady,
           normalizeSaudiPhone,
           readPaymentLinkId,
+          readPaymentLinkContext,
           validateTapCheckoutCharge,
         } =
           await import('./payment/payment-link-policy');
@@ -7599,7 +7600,11 @@ export const appRouter = router({
         }
 
         const idempotentReference = buildTapCheckoutIdempotentReference(link.id, input.checkoutAttemptId);
-        const localMetadata = { paymentLinkId: link.id };
+        const linkContext = readPaymentLinkContext(link.metadata);
+        const localMetadata = {
+          paymentLinkId: link.id,
+          ...(linkContext.conversationId ? { conversationId: linkContext.conversationId } : {}),
+        };
         const chargePayload = {
           amount: halalasToTapAmount(link.amount),
           currency: link.currency,

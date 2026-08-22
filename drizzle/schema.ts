@@ -404,6 +404,7 @@ export const orders = mysqlTable("orders", {
 	currency: mysqlEnum(['SAR', 'USD']).default('SAR').notNull(),
 	discountCode: varchar({ length: 50 }),
 	status: mysqlEnum(['pending', 'paid', 'processing', 'shipped', 'delivered', 'cancelled']).default('pending').notNull(),
+	paymentStatus: mysqlEnum("payment_status", ['unpaid', 'paid', 'refunded']).default('unpaid').notNull(),
 	paymentUrl: text(),
 	trackingNumber: varchar({ length: 100 }),
 	notes: text(),
@@ -1857,6 +1858,7 @@ export const orderPayments = mysqlTable("order_payments", {
 
 	// Webhook & Error Handling
 	lastWebhookAt: timestamp("last_webhook_at", { mode: 'string' }),
+	lastWebhookStatus: varchar("last_webhook_status", { length: 32 }),
 	errorMessage: text("error_message"),
 	errorCode: varchar("error_code", { length: 50 }),
 

@@ -48,15 +48,30 @@ export function normalizeSaudiPhone(phone: string): string {
   return digits;
 }
 
-export function readPaymentLinkId(metadata: string | null | undefined): number | null {
-  if (!metadata) return null;
+export function readPaymentLinkContext(metadata: string | null | undefined): {
+  paymentLinkId: number | null;
+  conversationId: number | null;
+} {
+  const empty = { paymentLinkId: null, conversationId: null };
+  if (!metadata) return empty;
   try {
-    const value = JSON.parse(metadata)?.paymentLinkId;
-    const parsed = typeof value === 'number' ? value : Number(value);
-    return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+    const parsed = JSON.parse(metadata);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return empty;
+    const positiveInteger = (value: unknown) => {
+      const candidate = typeof value === 'number' ? value : Number(value);
+      return Number.isSafeInteger(candidate) && candidate > 0 ? candidate : null;
+    };
+    return {
+      paymentLinkId: positiveInteger(parsed.paymentLinkId),
+      conversationId: positiveInteger(parsed.conversationId),
+    };
   } catch {
-    return null;
+    return empty;
   }
+}
+
+export function readPaymentLinkId(metadata: string | null | undefined): number | null {
+  return readPaymentLinkContext(metadata).paymentLinkId;
 }
 
 export function buildTapCheckoutIdempotentReference(

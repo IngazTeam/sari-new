@@ -546,6 +546,7 @@ export async function executeAction(params: {
             const issued = await issueCanonicalOrderPaymentLink({
               merchantId,
               orderId: order.id,
+              conversationId,
               requestedAmountInHalalas: totalAmount,
               title: `طلب واتساب #${order.id}`,
             });

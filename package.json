@@ -27,6 +27,7 @@
     "preflight:whatsapp-active-primary": "node scripts/preflight-whatsapp-active-primary.mjs",
     "preflight:tap-payment-identity": "node scripts/preflight-tap-payment-identity.mjs",
     "preflight:order-payment-link-identity": "node scripts/preflight-order-payment-link-identity.mjs",
+    "preflight:tap-order-effects": "node scripts/preflight-tap-order-effects.mjs",
     "ops:load:dry-run": "node scripts/ops/load-gate.mjs --dry-run",
     "ops:load": "node scripts/ops/load-gate.mjs",
     "ops:restore:snapshot": "node scripts/ops/restore-manifest.mjs --mode=snapshot",

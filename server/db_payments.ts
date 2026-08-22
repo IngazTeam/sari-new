@@ -2,17 +2,14 @@
  * ط¯ظˆط§ظ„ ظ‚ط§ط¹ط¯ط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ظ„ظ†ط¸ط§ظ… ط§ظ„ط¯ظپط¹ Tap Payments
  */
 
-import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte } from "drizzle-orm";
 import { 
   orderPayments, 
-  paymentLinks, 
-  paymentRefunds,
+  paymentLinks,
   type OrderPayment,
   type NewOrderPayment,
   type PaymentLink,
-  type NewPaymentLink,
-  type PaymentRefund,
-  type NewPaymentRefund
+  type NewPaymentLink
 } from "../drizzle/schema";
 import { getDb as _getDb } from "./db";
 
@@ -26,16 +23,6 @@ async function getDb() {
 // ============================================
 // Order Payments Functions
 // ============================================
-
-/**
- * ط¥ظ†ط´ط§ط، ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ ط¬ط¯ظٹط¯ط©
- */
-export async function createOrderPayment(data: NewOrderPayment): Promise<OrderPayment | null> {
-  const db = await getDb();
-  const [payment] = await db.insert(orderPayments).values(data).$returningId();
-  if (!payment) return null;
-  return await getOrderPaymentById(payment.id);
-}
 
 /**
  * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ ط¨ط§ظ„ظ…ط¹ط±ظپ
@@ -131,69 +118,6 @@ export async function getOrderPaymentsByMerchant(
 /**
  * طھط­ط¯ظٹط« ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
  */
-export async function updateOrderPayment(
-  id: number,
-  data: Partial<NewOrderPayment>
-): Promise<OrderPayment | null> {
-  const db = await getDb();
-  await db
-    .update(orderPayments)
-    .set({ ...data, updatedAt: new Date().toISOString() })
-    .where(eq(orderPayments.id, id));
-  return await getOrderPaymentById(id);
-}
-
-/**
- * طھط­ط¯ظٹط« ط­ط§ظ„ط© ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
- */
-export async function updateOrderPaymentStatus(
-  id: number,
-  status: 'pending' | 'authorized' | 'captured' | 'failed' | 'cancelled' | 'refunded',
-  additionalData?: {
-    paymentMethod?: string;
-    errorMessage?: string;
-    errorCode?: string;
-  }
-): Promise<OrderPayment | null> {
-  const db = await getDb();
-  const updateData: any = {
-    status,
-    updatedAt: new Date().toISOString(),
-  };
-
-  // طھط­ط¯ظٹط« timestamps ط­ط³ط¨ ط§ظ„ط­ط§ظ„ط©
-  const now = new Date().toISOString();
-  if (status === 'authorized') {
-    updateData.authorizedAt = now;
-  } else if (status === 'captured') {
-    updateData.capturedAt = now;
-  } else if (status === 'failed') {
-    updateData.failedAt = now;
-  } else if (status === 'refunded') {
-    updateData.refundedAt = now;
-  }
-
-  // ط¥ط¶ط§ظپط© ط§ظ„ط¨ظٹط§ظ†ط§طھ ط§ظ„ط¥ط¶ط§ظپظٹط©
-  if (additionalData) {
-    Object.assign(updateData, additionalData);
-  }
-
-  await db
-    .update(orderPayments)
-    .set(updateData)
-    .where(eq(orderPayments.id, id));
-
-  return await getOrderPaymentById(id);
-}
-
-/**
- * ط­ط°ظپ ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
- */
-export async function deleteOrderPayment(id: number): Promise<void> {
-  const db = await getDb();
-  await db.delete(orderPayments).where(eq(orderPayments.id, id));
-}
-
 /**
  * ط¥ط­طµط§ط¦ظٹط§طھ ط§ظ„ط¯ظپط¹ ظ„طھط§ط¬ط±
  */
@@ -356,51 +280,6 @@ export async function getPaymentLinkByBookingId(bookingId: number): Promise<Paym
 /**
  * طھط­ط¯ظٹط« ط±ط§ط¨ط· ط¯ظپط¹
  */
-export async function updatePaymentLink(
-  id: number,
-  data: Partial<NewPaymentLink>
-): Promise<PaymentLink | null> {
-  const db = await getDb();
-  await db
-    .update(paymentLinks)
-    .set({ ...data, updatedAt: new Date().toISOString() })
-    .where(eq(paymentLinks.id, id));
-  return await getPaymentLinkById(id);
-}
-
-/**
- * ط²ظٹط§ط¯ط© ط¹ط¯ط§ط¯ ط§ط³طھط®ط¯ط§ظ… ط±ط§ط¨ط· ط§ظ„ط¯ظپط¹
- */
-export async function incrementPaymentLinkUsage(
-  id: number,
-  amount: number,
-  success: boolean,
-  merchantId?: number,
-): Promise<void> {
-  const db = await getDb();
-  const conditions = [eq(paymentLinks.id, id)];
-  if (merchantId !== undefined) conditions.push(eq(paymentLinks.merchantId, merchantId));
-
-  await db
-    .update(paymentLinks)
-    .set({
-      usageCount: sql`${paymentLinks.usageCount} + ${success ? 1 : 0}`,
-      successfulPayments: sql`${paymentLinks.successfulPayments} + ${success ? 1 : 0}`,
-      failedPayments: sql`${paymentLinks.failedPayments} + ${success ? 0 : 1}`,
-      totalCollected: sql`${paymentLinks.totalCollected} + ${success ? amount : 0}`,
-      status: sql`CASE
-        WHEN ${paymentLinks.maxUsageCount} IS NOT NULL
-          AND ${paymentLinks.usageCount} + ${success ? 1 : 0} >= ${paymentLinks.maxUsageCount}
-        THEN 'completed' ELSE ${paymentLinks.status} END`,
-      isActive: sql`CASE
-        WHEN ${paymentLinks.maxUsageCount} IS NOT NULL
-          AND ${paymentLinks.usageCount} + ${success ? 1 : 0} >= ${paymentLinks.maxUsageCount}
-        THEN 0 ELSE ${paymentLinks.isActive} END`,
-      updatedAt: new Date().toISOString(),
-    })
-    .where(and(...conditions));
-}
-
 export async function createOrderPaymentIdempotent(
   data: NewOrderPayment & { tapChargeId: string },
 ): Promise<OrderPayment> {
@@ -436,238 +315,4 @@ export async function disablePaymentLink(id: number): Promise<void> {
       updatedAt: new Date().toISOString(),
     })
     .where(eq(paymentLinks.id, id));
-}
-
-/**
- * ط­ط°ظپ ط±ط§ط¨ط· ط¯ظپط¹
- */
-export async function deletePaymentLink(id: number): Promise<void> {
-  const db = await getDb();
-  await db.delete(paymentLinks).where(eq(paymentLinks.id, id));
-}
-
-// ============================================
-// Payment Refunds Functions
-// ============================================
-
-/**
- * ط¥ظ†ط´ط§ط، ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
- */
-export async function createPaymentRefund(data: NewPaymentRefund): Promise<PaymentRefund | null> {
-  const db = await getDb();
-  const [refund] = await db.insert(paymentRefunds).values(data).$returningId();
-  if (!refund) return null;
-  return await getPaymentRefundById(refund.id);
-}
-
-/**
- * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹ ط¨ط§ظ„ظ…ط¹ط±ظپ
- */
-export async function getPaymentRefundById(id: number): Promise<PaymentRefund | null> {
-  const db = await getDb();
-  const [refund] = await db
-    .select()
-    .from(paymentRefunds)
-    .where(eq(paymentRefunds.id, id));
-  return refund || null;
-}
-
-/**
- * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¹ظ…ظ„ظٹط§طھ ط§ظ„ط§ط³طھط±ط¬ط§ط¹ ظ„ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹
- */
-export async function getPaymentRefundsByPaymentId(paymentId: number): Promise<PaymentRefund[]> {
-  const db = await getDb();
-  return await db
-    .select()
-    .from(paymentRefunds)
-    .where(eq(paymentRefunds.paymentId, paymentId))
-    .orderBy(desc(paymentRefunds.createdAt));
-}
-
-/**
- * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ط¹ظ…ظ„ظٹط§طھ ط§ظ„ط§ط³طھط±ط¬ط§ط¹ ظ„طھط§ط¬ط±
- */
-export async function getPaymentRefundsByMerchant(
-  merchantId: number,
-  filters?: {
-    status?: string;
-    limit?: number;
-  }
-): Promise<PaymentRefund[]> {
-  const db = await getDb();
-  
-  const conditions = [eq(paymentRefunds.merchantId, merchantId)];
-  
-  if (filters?.status) {
-    conditions.push(eq(paymentRefunds.status, filters.status as any));
-  }
-
-  return await db
-    .select()
-    .from(paymentRefunds)
-    .where(and(...conditions))
-    .orderBy(desc(paymentRefunds.createdAt))
-    .limit(filters?.limit || 50);
-}
-
-/**
- * طھط­ط¯ظٹط« ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
- */
-export async function updatePaymentRefund(
-  id: number,
-  data: Partial<NewPaymentRefund>
-): Promise<PaymentRefund | null> {
-  const db = await getDb();
-  await db
-    .update(paymentRefunds)
-    .set({ ...data, updatedAt: new Date().toISOString() })
-    .where(eq(paymentRefunds.id, id));
-  return await getPaymentRefundById(id);
-}
-
-/**
- * طھط­ط¯ظٹط« ط­ط§ظ„ط© ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
- */
-export async function updatePaymentRefundStatus(
-  id: number,
-  status: 'pending' | 'completed' | 'failed',
-  errorMessage?: string
-): Promise<PaymentRefund | null> {
-  const db = await getDb();
-  const updateData: any = {
-    status,
-    updatedAt: new Date().toISOString(),
-  };
-
-  if (status === 'completed') {
-    updateData.completedAt = new Date().toISOString();
-  }
-
-  if (errorMessage) {
-    updateData.errorMessage = errorMessage;
-  }
-
-  await db
-    .update(paymentRefunds)
-    .set(updateData)
-    .where(eq(paymentRefunds.id, id));
-
-  return await getPaymentRefundById(id);
-}
-
-/**
- * ط­ط°ظپ ط¹ظ…ظ„ظٹط© ط§ط³طھط±ط¬ط§ط¹
- */
-export async function deletePaymentRefund(id: number): Promise<void> {
-  const db = await getDb();
-  await db.delete(paymentRefunds).where(eq(paymentRefunds.id, id));
-}
-
-// ============================================
-// Helper Functions for Webhook Processing
-// ============================================
-
-/**
- * ط§ظ„ط­طµظˆظ„ ط¹ظ„ظ‰ ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ ط¨ظ…ط¹ط±ظپ Tap Charge (alias)
- */
-export async function getPaymentByTapChargeId(tapChargeId: string): Promise<OrderPayment | null> {
-  return await getOrderPaymentByTapChargeId(tapChargeId);
-}
-
-/**
- * طھط­ط¯ظٹط« ط­ط§ظ„ط© ظ…ط¹ط§ظ…ظ„ط© ط¯ظپط¹ (alias ظ„ظ„طھظˆط§ظپظ‚ ظ…ط¹ webhook)
- */
-export async function updatePaymentStatus(
-  id: number,
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled',
-  additionalData?: {
-    tapResponse?: string;
-    errorMessage?: string;
-    errorCode?: string;
-  }
-): Promise<OrderPayment | null> {
-  // طھط­ظˆظٹظ„ ط§ظ„ط­ط§ظ„ط© ط¥ظ„ظ‰ ط§ظ„ط­ط§ظ„ط© ط§ظ„ظ…ظ†ط§ط³ط¨ط© ظپظٹ ط§ظ„ظ†ط¸ط§ظ…
-  let dbStatus: 'pending' | 'authorized' | 'captured' | 'failed' | 'cancelled' | 'refunded';
-  
-  switch (status) {
-    case 'completed':
-      dbStatus = 'captured';
-      break;
-    case 'processing':
-      dbStatus = 'authorized';
-      break;
-    case 'refunded':
-      dbStatus = 'refunded';
-      break;
-    case 'cancelled':
-      dbStatus = 'cancelled';
-      break;
-    case 'failed':
-      dbStatus = 'failed';
-      break;
-    default:
-      dbStatus = 'pending';
-  }
-
-  return await updateOrderPaymentStatus(id, dbStatus, additionalData);
-}
-
-/**
- * Atomically transition a payment from the status observed by the webhook.
- * This is the compare-and-set boundary that prevents concurrent duplicate
- * webhooks from incrementing link counters or applying order side effects twice.
- */
-export async function transitionPaymentStatus(
-  id: number,
-  expectedStatus: OrderPayment['status'],
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled',
-  additionalData?: {
-    tapResponse?: string;
-    errorMessage?: string;
-    errorCode?: string;
-  },
-): Promise<boolean> {
-  const db = await getDb();
-  const dbStatus = status === 'completed'
-    ? 'captured'
-    : status === 'processing'
-      ? 'authorized'
-      : status;
-  const now = new Date().toISOString();
-  const updateData: Record<string, unknown> = {
-    status: dbStatus,
-    updatedAt: now,
-    ...additionalData,
-  };
-  if (dbStatus === 'authorized') updateData.authorizedAt = now;
-  if (dbStatus === 'captured') updateData.capturedAt = now;
-  if (dbStatus === 'failed') updateData.failedAt = now;
-  if (dbStatus === 'refunded') updateData.refundedAt = now;
-
-  const result = await db
-    .update(orderPayments)
-    .set(updateData)
-    .where(and(eq(orderPayments.id, id), eq(orderPayments.status, expectedStatus)));
-  return Number((result[0] as any)?.affectedRows || 0) === 1;
-}
-
-/**
- * ط­ظپط¸ ط³ط¬ظ„ webhook
- */
-export async function createWebhookLog(data: {
-  merchantId: number;
-  paymentId: number;
-  provider: string;
-  eventType: string;
-  processedAt: Date;
-}): Promise<void> {
-  // ظٹظ…ظƒظ† ط¥ط¶ط§ظپط© ط¬ط¯ظˆظ„ webhook_logs ظ„ط§ط­ظ‚ط§ظ‹
-  // ط­ط§ظ„ظٹط§ظ‹ ظ†ط­ظپط¸ ظپظٹ logs
-  console.log('[WebhookLog]', {
-    merchantId: data.merchantId,
-    paymentId: data.paymentId,
-    provider: data.provider,
-    eventType: data.eventType,
-    processedAt: data.processedAt
-  });
 }

@@ -1,6 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import type { PaymentLink } from '../../drizzle/schema';
-import { getMerchantPaymentSettings, getOrderById, updateOrder } from '../db';
+import { getConversationById, getMerchantPaymentSettings, getOrderById, updateOrder } from '../db';
 import { createPaymentLink, getPaymentLinkByOrderId } from '../db_payments';
 import { getPaymentLinkAvailability, isTapPaymentReady } from './payment-link-policy';
 import { publicPaymentUrls } from '../utils/public-url';
@@ -81,6 +81,7 @@ export async function issueCanonicalOrderPaymentLink(input: {
   merchantId: number;
   orderId: number;
   requestedAmountInHalalas?: number;
+  conversationId?: number;
   title?: string;
   description?: string | null;
   expiresAt?: string;
@@ -102,6 +103,15 @@ export async function issueCanonicalOrderPaymentLink(input: {
     || (input.requestedAmountInHalalas != null && input.requestedAmountInHalalas !== order.totalAmount)
   ) {
     return { issued: false, reason: 'order_not_payable' };
+  }
+  if (input.conversationId != null) {
+    if (!Number.isSafeInteger(input.conversationId) || input.conversationId <= 0) {
+      throw new OrderPaymentLinkIntegrityError();
+    }
+    const conversation = await getConversationById(input.conversationId);
+    if (!conversation || conversation.merchantId !== input.merchantId) {
+      throw new OrderPaymentLinkIntegrityError();
+    }
   }
 
   const paymentSettings = await getMerchantPaymentSettings(input.merchantId);
@@ -139,7 +149,10 @@ export async function issueCanonicalOrderPaymentLink(input: {
       isActive: 1,
       orderId: input.orderId,
       bookingId: null,
-      metadata: JSON.stringify({ source: 'order_checkout' }),
+      metadata: JSON.stringify({
+        source: 'order_checkout',
+        ...(input.conversationId ? { conversationId: input.conversationId } : {}),
+      }),
     });
   } catch (error) {
     if (!isDuplicateEntryError(error)) throw error;
