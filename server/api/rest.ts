@@ -555,9 +555,6 @@ async function byaanTenantSignatureMiddleware(req: PlatformRequest, res: Respons
   }
 }
 
-// PEN-SYNC-13: Body size limit on platform sync endpoints (prevents OOM via oversized payloads)
-sariPlatformRouter.use(express.json({ limit: '2mb' }));
-
 // Apply auth to merchant routes
 sariApiRouter.use(authMiddleware);
 sariApiRouter.use(apiKeyPermissionMiddleware);
@@ -608,10 +605,25 @@ sariApiRouter.get('/brain/sources', async (req: AuthenticatedRequest, res: Respo
 
 // ── POST /api/v1/brain/test — Test Sari with a question ─────
 sariApiRouter.post('/brain/test', async (req: AuthenticatedRequest, res: Response) => {
-  const { question } = req.body;
-  if (!question || typeof question !== 'string' || question.length < 1 || question.length > 500) {
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ error: 'question is required (1-500 chars)', errorAr: 'السؤال مطلوب (1-500 حرف)' });
   }
+  const body = req.body as Record<string, unknown>;
+  if (Object.keys(body).length !== 1 || !Object.prototype.hasOwnProperty.call(body, 'question')) {
+    return res.status(400).json({ error: 'Only question is allowed', errorAr: 'يسمح بحقل السؤال فقط' });
+  }
+  const question = typeof body.question === 'string' ? body.question.trim() : '';
+  if (!question || question.length > 500 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(question)) {
+    return res.status(400).json({ error: 'question is required (1-500 chars)', errorAr: 'السؤال مطلوب (1-500 حرف)' });
+  }
+
+  const limitResponse = respondToDistributedLimit(
+    res,
+    await checkDistributedLimit(`brain_test:${req.apiKeyId || 'unknown'}`, 10, 60_000),
+    'Brain test rate limit exceeded (10/min)',
+    'تجاوزت حد اختبار المساعد (10/دقيقة)',
+  );
+  if (limitResponse) return limitResponse;
 
   try {
     const { chatWithSari } = await import('../ai/sari-personality');

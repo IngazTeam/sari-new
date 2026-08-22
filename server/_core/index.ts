@@ -86,6 +86,10 @@ async function startServer() {
   // Reject abusive sources before allocating/parsing up to 2 MB per delivery.
   app.use('/api/webhooks', webhookLimiter, express.json({ limit: '2mb', verify: retainSignedRawBody }));
   app.use('/api/v1/platform', express.json({ limit: '2mb', verify: retainSignedRawBody }));
+  // Public integration APIs never need the 26 MB voice-transcription envelope.
+  // Platform requests are already parsed above with raw-byte retention; the
+  // generic parser skips populated bodies while covering merchant-key routes.
+  app.use('/api/v1', express.json({ limit: '2mb' }));
   // Parse public-support requests under a tight route-specific cap. The later
   // global parser skips an already parsed body, so this endpoint never receives
   // the 26 MB allowance required by voice transcription.
@@ -510,11 +514,13 @@ async function startServer() {
   app.use('/api', (err: any, req: any, res: any, next: any) => {
     const isInvalidJson = err?.type === 'entity.parse.failed'
       || (err instanceof SyntaxError && Number((err as SyntaxError & { status?: number }).status) === 400);
+    const isPayloadTooLarge = err?.type === 'entity.too.large'
+      || Number(err?.status || err?.statusCode) === 413;
     logError('API request failed', err, {
       requestId: req.headers?.['x-request-id'],
       method: req.method,
       path: req.path,
-      status: isInvalidJson ? 400 : err?.status || err?.statusCode || 500,
+      status: isInvalidJson ? 400 : isPayloadTooLarge ? 413 : err?.status || err?.statusCode || 500,
     });
 
     // Always return JSON for API errors
@@ -525,6 +531,14 @@ async function startServer() {
         error: 'Invalid JSON payload',
         errorAr: 'صيغة JSON غير صالحة',
         code: 'INVALID_JSON',
+      });
+    }
+
+    if (isPayloadTooLarge) {
+      return res.status(413).json({
+        error: 'Request payload too large',
+        errorAr: 'حجم الطلب أكبر من الحد المسموح',
+        code: 'PAYLOAD_TOO_LARGE',
       });
     }
 
