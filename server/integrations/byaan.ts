@@ -11,6 +11,7 @@
  */
 
 import { getPool } from '../db';
+import { normalizeCustomerProfileCount } from '../db/customer-intelligence';
 import { assertRuntimeSchema } from '../db/schema-readiness';
 import crypto from 'crypto';
 import { decryptSecret, encryptSecret } from '../security/secrets';
@@ -462,6 +463,19 @@ export async function syncByaanSiteContent(merchantId: number, pageType: string,
   );
 }
 
+/** Count the active audience synced from a Byaan tenant. */
+export async function getActiveByaanTraineeCount(merchantId: number): Promise<number> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) return 0;
+  await ensureByaanTables();
+  const dbConn = await getPool();
+  if (!dbConn) return 0;
+  const [rows] = await (dbConn as any).execute(
+    `SELECT COUNT(*) AS cnt FROM byaan_trainees WHERE merchant_id = ? AND status = 'active'`,
+    [merchantId],
+  );
+  return normalizeCustomerProfileCount((rows as Array<{ cnt?: unknown }>)?.[0]?.cnt);
+}
+
 /** Get sync stats for a merchant */
 export async function getByaanSyncStats(merchantId: number): Promise<{ trainees: number; faqs: number; courses: number; sitePages: number }> {
   const dbConn = await getPool();
@@ -472,10 +486,10 @@ export async function getByaanSyncStats(merchantId: number): Promise<{ trainees:
     const [p] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM products WHERE merchant_id = ?`, [merchantId]);
     const [s] = await (dbConn as any).execute(`SELECT COUNT(*) as cnt FROM byaan_site_content WHERE merchant_id = ?`, [merchantId]);
     return {
-      trainees: (t as any[])?.[0]?.cnt || 0,
-      faqs: (f as any[])?.[0]?.cnt || 0,
-      courses: (p as any[])?.[0]?.cnt || 0,
-      sitePages: (s as any[])?.[0]?.cnt || 0,
+      trainees: normalizeCustomerProfileCount((t as any[])?.[0]?.cnt),
+      faqs: normalizeCustomerProfileCount((f as any[])?.[0]?.cnt),
+      courses: normalizeCustomerProfileCount((p as any[])?.[0]?.cnt),
+      sitePages: normalizeCustomerProfileCount((s as any[])?.[0]?.cnt),
     };
   } catch { return { trainees: 0, faqs: 0, courses: 0, sitePages: 0 }; }
 }

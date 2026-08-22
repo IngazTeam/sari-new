@@ -8,7 +8,8 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
-import { getMerchantByUserId, getProductsByMerchantId, getPool } from "./db";
+import { getMerchantByUserId, getProductsByMerchantId } from "./db";
+import { getIntegrationAudienceCount } from "./integrations/audience-count";
 
 export const integrationsRouter = router({
     // Get current connected platform
@@ -45,14 +46,7 @@ export const integrationsRouter = router({
         const products = await getProductsByMerchantId(merchant.id);
         let customerCount = 0;
         try {
-            const pool = await getPool();
-            if (pool) {
-                const [rows] = await pool.execute(
-                    `SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`,
-                    [merchant.id]
-                );
-                customerCount = (rows as any[])?.[0]?.cnt || 0;
-            }
+            customerCount = await getIntegrationAudienceCount(merchant.id, source);
         } catch { /* skip */ }
 
         return {

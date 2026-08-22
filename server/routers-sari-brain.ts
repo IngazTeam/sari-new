@@ -29,6 +29,7 @@ import {
   updateWebsiteAnalysis,
 } from './db';
 import { assertRuntimeSchema } from './db/schema-readiness';
+import { getIntegrationAudienceCount } from './integrations/audience-count';
 
 // ─── PEN-BRAIN-02 FIX: Flag-based table initialization ───────────────────
 /**
@@ -1924,23 +1925,20 @@ ${fencedContent}`,
         })) || [];
       } catch { /* skip */ }
 
-      // Customers
-      let customerCount = 0;
-      try {
-        const [rows] = await (dbConn as any).execute(
-          `SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`, [merchant.id]
-        );
-        customerCount = (rows as any[])?.[0]?.cnt || 0;
-      } catch { /* skip */ }
-
       // Last sync time from byaan_connections
       let lastSyncAt: string | null = null;
       let integrationPlatform: string | null = null;
       try {
-        const { getByaanConnection } = await import('./integrations/byaan');
+        const { getByaanConnection, getIntegrationSource } = await import('./integrations/byaan');
         const conn = await getByaanConnection(merchant.id);
         lastSyncAt = conn?.last_sync_at || null;
-        integrationPlatform = conn?.platform || null;
+        integrationPlatform = await getIntegrationSource(merchant.id);
+      } catch { /* skip */ }
+
+      // Customers for stores, active trainees for Byaan.
+      let customerCount = 0;
+      try {
+        customerCount = await getIntegrationAudienceCount(merchant.id, integrationPlatform);
       } catch { /* skip */ }
 
       return {
@@ -1954,7 +1952,7 @@ ${fencedContent}`,
         customers: customerCount,
         lastSyncAt,
         integrationPlatform,
-        hasData: products.length > 0 || faqCount > 0 || knowledgeSectionCount > 0 || discoveredPages.length > 0,
+        hasData: products.length > 0 || faqCount > 0 || knowledgeSectionCount > 0 || discoveredPages.length > 0 || customerCount > 0,
       };
     } catch (error) {
       console.error('[SariBrain] getIntegrationSyncStatus failed:', error);

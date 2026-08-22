@@ -1506,8 +1506,8 @@ sariPlatformRouter.post('/sync/knowledge', async (req: PlatformRequest, res: Res
     let customerCount = 0;
     if (pool) {
       try {
-        const [rows] = await pool.execute(`SELECT COUNT(*) as cnt FROM customer_profiles WHERE merchant_id = ?`, [merchantId]);
-        customerCount = (rows as any[])?.[0]?.cnt || 0;
+        const { getCustomerProfileCount } = await import('../db/customer-intelligence');
+        customerCount = await getCustomerProfileCount(merchantId);
       } catch { /* skip */ }
     }
     if (customerCount > 0 || products.length > 0) {
@@ -1593,6 +1593,7 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
 
   try {
     const { getByaanConnection } = await import('../integrations/byaan');
+    const { getIntegrationAudienceCount } = await import('../integrations/audience-count');
     const connection = await getByaanConnection(merchant.id);
 
     // Get product + customer counts
@@ -1607,11 +1608,7 @@ sariPlatformRouter.get('/status', async (req: PlatformRequest, res: Response) =>
 
     if (pool) {
       try {
-        const [rows] = await pool.execute(
-          `SELECT COUNT(*) as cnt FROM customers WHERE merchant_id = ?`,
-          [merchant.id]
-        );
-        customerCount = (rows as any[])?.[0]?.cnt || 0;
+        customerCount = await getIntegrationAudienceCount(merchant.id, req.platform);
       } catch (e) { /* skip */ }
 
       // FAQs count + categories

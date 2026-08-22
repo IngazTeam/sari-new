@@ -32,6 +32,22 @@ export interface CustomerProfile {
 
 export type CustomerTier = 'new' | 'returning' | 'loyal' | 'vip' | 'at_risk';
 
+export function normalizeCustomerProfileCount(value: unknown): number {
+  const count = Number(value);
+  return Number.isSafeInteger(count) && count >= 0 ? count : 0;
+}
+
+export async function getCustomerProfileCount(merchantId: number): Promise<number> {
+  if (!Number.isSafeInteger(merchantId) || merchantId <= 0) return 0;
+  const pool = await getPool();
+  if (!pool) return 0;
+  const [rows] = await pool.execute(
+    'SELECT COUNT(*) AS cnt FROM customer_profiles WHERE merchant_id = ?',
+    [merchantId],
+  );
+  return normalizeCustomerProfileCount((rows as Array<{ cnt?: unknown }>)[0]?.cnt);
+}
+
 
 // ═══════════════════════════════════════════════════════════════
 // CRUD
